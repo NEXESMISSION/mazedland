@@ -29,18 +29,44 @@ const SITE_URL =
 export const metadata: Metadata = {
   metadataBase: SITE_URL ? new URL(SITE_URL) : undefined,
   applicationName: "Batta",
+  title: {
+    default: "Batta — Real Estate Auctions",
+    template: "%s · Batta",
+  },
+  description:
+    "Tunisia's first dedicated real-estate auction platform. Transparency. Speed. Trust.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     title: "Batta",
     statusBarStyle: "black-translucent",
-    startupImage: ["/icons/apple-touch-icon.svg"],
+    startupImage: ["/logo-square.png"],
   },
   icons: {
-    icon: [
-      { url: "/icons/icon.svg", type: "image/svg+xml" },
+    icon: [{ url: "/logo-square.png", type: "image/png" }],
+    apple: [{ url: "/logo-square.png", sizes: "180x180", type: "image/png" }],
+    shortcut: ["/logo-square.png"],
+  },
+  openGraph: {
+    title: "Batta — Real Estate Auctions",
+    description:
+      "Tunisia's first dedicated real-estate auction platform. Transparency. Speed. Trust.",
+    type: "website",
+    siteName: "Batta",
+    images: [
+      {
+        url: "/logo.png",
+        width: 1536,
+        height: 1024,
+        alt: "Batta — Real Estate Auctions",
+      },
     ],
-    apple: [{ url: "/icons/apple-touch-icon.svg", sizes: "180x180", type: "image/svg+xml" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Batta — Real Estate Auctions",
+    description: "Tunisia's first dedicated real-estate auction platform.",
+    images: ["/logo.png"],
   },
   formatDetection: { telephone: false },
 };

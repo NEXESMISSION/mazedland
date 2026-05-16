@@ -251,8 +251,45 @@ function SlideCard({
       draggable={false}
     >
       {/* Brand-gradient backdrop — painted under the photo so a slow
-          image load or a broken URL never leaves the slide black. */}
-      <div className="absolute inset-0 bg-gradient-to-br from-batta-navy via-batta-navy-deep to-black" />
+          image load or a broken URL never leaves the slide black. When
+          there's no image to display we promote this surface to the
+          "catalogue cover" treatment so the slide reads as an
+          intentional brand panel, not a broken slot. */}
+      {showImage ? (
+        <div className="absolute inset-0 bg-gradient-to-br from-batta-navy via-batta-navy-deep to-black" />
+      ) : (
+        <div className="batta-surface-navy-luxe absolute inset-0">
+          {/* Radial gold glow + decorative concentric arcs centred on
+              the slide. Pure CSS, no asset request — sits in for the
+              missing photograph and lets the slide land as a designed
+              composition. */}
+          <div
+            aria-hidden
+            className="absolute inset-0 opacity-90"
+            style={{
+              background:
+                "radial-gradient(60% 80% at 50% 35%, rgba(244, 215, 122, 0.18) 0%, rgba(212, 175, 55, 0.08) 35%, transparent 70%)",
+            }}
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 50% 38%, transparent 70px, rgba(212, 175, 55, 0.12) 71px, transparent 72px), radial-gradient(circle at 50% 38%, transparent 110px, rgba(212, 175, 55, 0.08) 111px, transparent 112px)",
+            }}
+          />
+          {/* Gold monogram seal — the missing-photo affordance. */}
+          <div
+            aria-hidden
+            className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2"
+          >
+            <div className="batta-monogram-filled flex h-14 w-14 items-center justify-center text-[20px] font-extrabold">
+              B
+            </div>
+          </div>
+        </div>
+      )}
 
       {showImage && (
         <Image
@@ -268,8 +305,16 @@ function SlideCard({
         />
       )}
 
-      {/* Dark gradient overlay so the text always reads. */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/15" />
+      {/* Dark gradient overlay so the text always reads. Lighter when
+          there's no photo behind it — the brand composition already
+          provides contrast on its own. */}
+      <div
+        className={`absolute inset-0 ${
+          showImage
+            ? "bg-gradient-to-t from-black/80 via-black/35 to-black/15"
+            : "bg-gradient-to-t from-black/55 via-transparent to-transparent"
+        }`}
+      />
 
       {/* Text overlay */}
       <div

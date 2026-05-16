@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, Link } from "@/i18n/navigation";
 import { BackButton } from "./BackButton";
@@ -86,53 +87,23 @@ export function TopBar() {
 
 function BrandMark() {
   const t = useTranslations("brand");
-  const locale = useLocale();
-  const isRTL = locale === "ar";
+  // Sized to fit the 56px top bar comfortably with breathing room.
+  // The wide image is roughly 3:2 (gavel + wordmark) so 132×40 keeps
+  // proportions while staying inside the bar. `priority` skips the
+  // lazy-load — this is above-the-fold on every page that shows the
+  // bar. `unoptimized` is intentional for PNG with transparent BG:
+  // Next's optimizer can lose the gold gradient subtleties on small
+  // widths; pass-through keeps the file pristine.
   return (
-    <Link href="/" className="flex items-center gap-2.5">
-      <Logomark />
-      <div className="leading-none">
-        <div
-          className={`gradient-gold-text text-[18px] font-extrabold tracking-tight ${
-            isRTL ? "font-arabic" : ""
-          }`}
-        >
-          {t("name")}
-        </div>
-        <div className="mt-1 text-[9px] font-bold uppercase tracking-[0.24em] text-muted">
-          {t("domain").replace(/^https?:\/\//, "")}
-        </div>
-      </div>
+    <Link href="/" className="flex items-center" aria-label={t("name")}>
+      <Image
+        src="/logo.png"
+        alt={t("name")}
+        width={132}
+        height={40}
+        priority
+        className="h-9 w-auto shrink-0"
+      />
     </Link>
-  );
-}
-
-/**
- * Logomark — small dark seal with a gold gavel. Same recipe as the
- * mazed-auto avatar logo (rounded square + gradient gold mark), so
- * the two products look like a family.
- */
-function Logomark() {
-  return (
-    <svg
-      width="32"
-      height="32"
-      viewBox="0 0 36 36"
-      aria-hidden="true"
-      className="shrink-0 rounded-full ring-1 ring-gold/40"
-    >
-      <defs>
-        <linearGradient id="batta-gold-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%"  stopColor="#F4D77A" />
-          <stop offset="50%" stopColor="#D4AF37" />
-          <stop offset="100%" stopColor="#8B6F1F" />
-        </linearGradient>
-      </defs>
-      <rect width="36" height="36" rx="18" fill="#0a0a0a" />
-      {/* gavel head + handle in metallic gold */}
-      <rect x="14.5" y="11" width="11" height="4.5" rx="1" fill="url(#batta-gold-grad)" transform="rotate(-32 20 13.2)" />
-      <rect x="11" y="18.5" width="14" height="2" rx="1" fill="url(#batta-gold-grad)" transform="rotate(-32 18 19.5)" />
-      <rect x="9" y="26.5" width="18" height="1.5" rx="0.75" fill="url(#batta-gold-grad)" />
-    </svg>
   );
 }

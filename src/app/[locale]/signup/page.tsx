@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { getTranslations, getLocale } from "next-intl/server";
 import { SignupForm } from "@/components/auth/SignupForm";
 import { Link } from "@/i18n/navigation";
@@ -12,7 +13,14 @@ export default async function SignupPage() {
       <div className="batta-frame-gold relative p-7">
         <div className="relative">
           <div className="flex flex-col items-center text-center">
-            <span className="batta-monogram size-12 text-[20px] font-extrabold">B</span>
+            <Image
+              src="/logo-square.png"
+              alt={t("brand.name")}
+              width={64}
+              height={64}
+              priority
+              className="h-16 w-16"
+            />
             <span className="batta-eyebrow mt-3">Open an account</span>
             <h1
               className={`mt-2 text-[26px] font-extrabold leading-tight tracking-tight ${

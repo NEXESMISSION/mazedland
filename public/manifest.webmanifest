@@ -6,28 +6,28 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#FAF8F3",
-  "theme_color": "#1F4E79",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "lang": "ar",
   "dir": "rtl",
   "categories": ["finance", "business", "shopping"],
   "icons": [
     {
-      "src": "/icons/icon.svg",
+      "src": "/logo-square.png",
       "sizes": "any",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-maskable.svg",
+      "src": "/logo-square.png",
       "sizes": "any",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/apple-touch-icon.svg",
+      "src": "/logo-square.png",
       "sizes": "180x180",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     }
   ],
@@ -36,13 +36,13 @@
       "name": "Browse properties",
       "short_name": "Browse",
       "url": "/properties",
-      "icons": [{ "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/logo-square.png", "sizes": "any", "type": "image/png" }]
     },
     {
       "name": "My watchlist",
       "short_name": "Watchlist",
       "url": "/watchlist",
-      "icons": [{ "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/logo-square.png", "sizes": "any", "type": "image/png" }]
     }
   ]
 }

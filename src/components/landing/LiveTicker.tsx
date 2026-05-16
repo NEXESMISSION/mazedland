@@ -51,8 +51,24 @@ export async function LiveTicker() {
     items = PLACEHOLDERS;
   }
 
-  // Duplicate the list so the marquee loops without a visible seam.
-  // aria-hidden the second copy so screen readers don't double-read.
+  // The CSS marquee translates 0 → -50% of the track, which only loops
+  // seamlessly when ONE copy (= half the track) is at least the
+  // viewport width. With only a few auctions the half-track is narrower
+  // than the screen, leaving a visible empty gap between cycles — the
+  // "the bar breaks and is empty" bug.
+  //
+  // Pad the per-copy item list until each copy holds at least
+  // MIN_ITEMS_PER_COPY cells. A cell is ~220-280px, so 12 cells ≈
+  // 3000px which covers any realistic viewport. We then render the
+  // padded sequence twice — the animation is unchanged.
+  const MIN_ITEMS_PER_COPY = 12;
+  const reps = Math.max(1, Math.ceil(MIN_ITEMS_PER_COPY / items.length));
+  const sequence: TickerItem[] = [];
+  for (let i = 0; i < reps; i++) sequence.push(...items);
+
+  // Duplicate the (padded) list so the marquee loops without a visible
+  // seam. aria-hidden the second copy so screen readers don't
+  // double-read.
   return (
     <div
       className="relative overflow-hidden border-y border-batta-gold/20 bg-batta-surface/60 py-2.5 backdrop-blur-sm"
@@ -63,11 +79,11 @@ export async function LiveTicker() {
       <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-batta-paper to-transparent" />
       <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-batta-paper to-transparent" />
       <ul className="batta-marquee">
-        {items.map((it) => (
-          <TickerCell key={`a-${it.id}`} item={it} locale={locale} />
+        {sequence.map((it, i) => (
+          <TickerCell key={`a-${i}-${it.id}`} item={it} locale={locale} />
         ))}
-        {items.map((it) => (
-          <TickerCell key={`b-${it.id}`} item={it} locale={locale} ariaHidden />
+        {sequence.map((it, i) => (
+          <TickerCell key={`b-${i}-${it.id}`} item={it} locale={locale} ariaHidden />
         ))}
       </ul>
     </div>
