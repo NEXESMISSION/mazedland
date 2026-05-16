@@ -1,0 +1,48 @@
+{
+  "name": "Batta — Tunisia Real Estate Auctions",
+  "short_name": "Batta",
+  "description": "Tunisia's first dedicated real-estate auction platform. Transparency. Speed. Trust.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF8F3",
+  "theme_color": "#1F4E79",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["finance", "business", "shopping"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Browse properties",
+      "short_name": "Browse",
+      "url": "/properties",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "My watchlist",
+      "short_name": "Watchlist",
+      "url": "/watchlist",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}

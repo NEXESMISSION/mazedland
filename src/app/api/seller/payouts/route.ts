@@ -1,0 +1,76 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSupabase } from "@/lib/supabase/server";
+import { isSameOrigin } from "@/lib/sameOrigin";
+
+/**
+ * Seller payout endpoint.
+ *
+ *   POST  → request_payout(amount, iban) RPC. The DB enforces the amount
+ *           ≤ available balance check; we just translate exceptions.
+ *   GET   → list the caller's own payouts (RLS handles isolation).
+ *
+ * Sellers can also have a request rejected; the rejection notes come
+ * back in the row's reviewer_notes column and are surfaced in the UI.
+ */
+export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
+  }
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "auth" }, { status: 401 });
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const amount = Number(body.amount);
+  const iban = typeof body.iban === "string" ? body.iban.trim() : null;
+
+  if (!amount || amount <= 0) {
+    return NextResponse.json({ error: "invalid_amount" }, { status: 400 });
+  }
+  // Soft IBAN guard — the bank handles real validation. We just reject
+  // obviously-broken input so the admin queue doesn't fill with junk.
+  if (iban && (iban.length < 15 || iban.length > 34)) {
+    return NextResponse.json({ error: "invalid_iban" }, { status: 400 });
+  }
+
+  const { data, error } = await supabase.rpc("request_payout", {
+    p_amount: amount,
+    p_iban: iban,
+  });
+  if (error) {
+    const code = error.message.includes("insufficient_balance")
+      ? "insufficient_balance"
+      : error.message.includes("invalid_amount")
+        ? "invalid_amount"
+        : error.message.includes("auth")
+          ? "auth"
+          : error.message;
+    return NextResponse.json(
+      { error: code, detail: error.details ?? error.message },
+      { status: 400 },
+    );
+  }
+  return NextResponse.json(data);
+}
+
+export async function GET() {
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "auth" }, { status: 401 });
+  }
+
+  const { data, error } = await supabase
+    .from("seller_payouts")
+    .select("id, amount, status, iban, payment_method, reviewer_notes, processed_at, created_at")
+    .eq("seller_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ payouts: data ?? [] });
+}

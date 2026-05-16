@@ -1,0 +1,39 @@
+import { FileWarning } from "lucide-react";
+
+export default function AdminFraud() {
+  return (
+    <div>
+      <span className="batta-eyebrow">Risk desk</span>
+      <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
+        Fraud signals
+      </h2>
+      <p className="mt-1 text-[12px] text-muted">
+        Detection lives in the auction-engine + bid-route. The dashboard here will surface:
+      </p>
+      <ul className="mt-5 space-y-2.5 rounded-xl bg-surface p-5 text-[12.5px] text-foreground/85 ring-1 ring-border">
+        <Bullet>Shill bidding suspects (same IP / device fingerprint as the seller)</Bullet>
+        <Bullet>Bid-retraction count per bidder</Bullet>
+        <Bullet>Listings flagged by users</Bullet>
+        <Bullet>KYC re-submission attempts after rejection</Bullet>
+        <Bullet>Money-laundering thresholds (LCB-FT) — large-amount alerts</Bullet>
+      </ul>
+      <div className="batta-tone-warn mt-5 flex items-start gap-3 rounded-xl p-4 text-[12px]">
+        <FileWarning className="size-4 shrink-0" strokeWidth={2.2} />
+        <span>
+          <strong className="font-extrabold uppercase tracking-[0.14em]">Roadmap:</strong>{" "}
+          shipped after the first 100 real bids land — easier to tune detectors against
+          actual signal than synthetic data.
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function Bullet({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-2">
+      <span aria-hidden className="mt-2 inline-block size-1.5 shrink-0 rounded-full bg-gold" />
+      <span>{children}</span>
+    </li>
+  );
+}

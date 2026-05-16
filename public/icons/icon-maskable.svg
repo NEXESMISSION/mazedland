@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Maskable icon: full-bleed navy background fills the entire canvas
+       so Android can crop to any shape (circle, squircle, rounded
+       square). The glyph stays inside the 80% safe zone (centered, max
+       radius 205px from center). -->
+  <rect width="512" height="512" fill="#1F4E79"/>
+  <g transform="translate(96 96) scale(0.625)">
+    <path d="M128 312 L284 156 L356 228 L200 384 Z" fill="#FFFFFF"/>
+    <rect x="312" y="114" width="84" height="42" rx="12" fill="#FFFFFF" transform="rotate(-45 354 135)"/>
+    <rect x="86" y="412" width="196" height="28" rx="12" fill="#FFFFFF"/>
+  </g>
+</svg>
