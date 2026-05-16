@@ -480,14 +480,13 @@ function buildHeroSlides(
   }
 
   // Always finish with a brand slide so the carousel pitches Batta
-  // itself before looping back to the first listing. Image is a
-  // seeded picsum URL so the slot ships actual photography even on a
-  // fresh DB — swap to a real curated photo (Tunis skyline, Sidi
-  // Bou Said) once we have one. The seed keeps the photo stable
-  // across renders so we don't get a different picture every refresh.
+  // itself before looping back to the first listing. Uses the BATTA
+  // logo asset on its black background — on-brand, no external
+  // dependency, no random-image surprises. Swap to a curated Tunis /
+  // Sidi Bou Said skyline once we have one.
   slides.push({
     id: "brand-pitch",
-    imageUrl: "https://picsum.photos/seed/batta-hero/1600/1100",
+    imageUrl: "/logo.png",
     eyebrow: isRTL ? `مباشر · ${liveCount} مزاد` : `Live · ${liveCount} auctions`,
     title: isRTL
       ? "بِع واشترِ بشفافية المزاد"
