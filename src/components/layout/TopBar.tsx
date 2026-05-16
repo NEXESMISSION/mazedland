@@ -87,22 +87,19 @@ export function TopBar() {
 
 function BrandMark() {
   const t = useTranslations("brand");
-  // Sized to fit the 56px top bar comfortably with breathing room.
-  // The wide image is roughly 3:2 (gavel + wordmark) so 132×40 keeps
-  // proportions while staying inside the bar. `priority` skips the
-  // lazy-load — this is above-the-fold on every page that shows the
-  // bar. `unoptimized` is intentional for PNG with transparent BG:
-  // Next's optimizer can lose the gold gradient subtleties on small
-  // widths; pass-through keeps the file pristine.
+  // Sized to dominate the top bar — `h-11` (44px) on mobile, `h-12`
+  // (48px) on desktop. The wide 3:2 logo means width auto-scales to
+  // ~66-72px. `priority` skips the lazy-load — this is above-the-fold
+  // on every page that shows the bar.
   return (
     <Link href="/" className="flex items-center" aria-label={t("name")}>
       <Image
         src="/logo.png"
         alt={t("name")}
-        width={132}
-        height={40}
+        width={180}
+        height={120}
         priority
-        className="h-9 w-auto shrink-0"
+        className="h-11 w-auto shrink-0 lg:h-12"
       />
     </Link>
   );

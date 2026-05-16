@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { routing } from "@/i18n/routing";
 import { MobileShell } from "@/components/layout/MobileShell";
+import { SplashScreen } from "@/components/layout/SplashScreen";
 import { ToastProvider } from "@/components/ui/Toast";
 import type { Metadata } from "next";
 
@@ -52,6 +53,7 @@ export default async function LocaleLayout({
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <ToastProvider>
+        <SplashScreen />
         <MobileShell>{children}</MobileShell>
       </ToastProvider>
     </NextIntlClientProvider>
