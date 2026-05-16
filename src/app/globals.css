@@ -420,8 +420,10 @@ html, body { overscroll-behavior-y: contain; }
   border-color: var(--gold-deep);
 }
 
-/* Editorial frame — dark surface card with a gold hairline. The
-   `-gold` variant adds an inset gold border 6px in. */
+/* Editorial frame — dark surface card with a single hairline. The
+   `-gold` variant uses a gold-tinted hairline instead of neutral
+   border. Single-border on purpose — the earlier double-border
+   (outer + inset ::before) read as overdesigned. */
 .batta-frame {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -434,14 +436,6 @@ html, body { overscroll-behavior-y: contain; }
   border: 1px solid rgba(212, 175, 55, 0.35);
   border-radius: var(--radius-lg);
   color: var(--foreground);
-}
-.batta-frame-gold::before {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  border: 1px solid rgba(212, 175, 55, 0.30);
-  border-radius: calc(var(--radius-lg) - 6px);
-  pointer-events: none;
 }
 
 /* Hero navy luxe surface — the dark catalogue cover. Auto uses a
