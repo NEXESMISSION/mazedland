@@ -56,7 +56,11 @@ export default async function AdminPayoutsPage({
   query = query.order("created_at", { ascending: status === "requested" });
 
   const { data, error } = await query;
-  const rows = (data ?? []) as Array<{
+  // PostgREST returns embedded relations as arrays (Supabase types it
+  // that way even for many-to-one FKs). We map it down to a single
+  // object so the JSX below can use `p.seller?.full_name` without
+  // worrying about the array shape.
+  type RawRow = {
     id: string;
     seller_id: string;
     amount: number;
@@ -66,8 +70,15 @@ export default async function AdminPayoutsPage({
     reviewer_notes: string | null;
     processed_at: string | null;
     created_at: string;
-    seller: { id: string; full_name: string | null; phone: string | null } | null;
-  }>;
+    seller:
+      | { id: string; full_name: string | null; phone: string | null }
+      | { id: string; full_name: string | null; phone: string | null }[]
+      | null;
+  };
+  const rows = ((data ?? []) as unknown as RawRow[]).map((r) => ({
+    ...r,
+    seller: Array.isArray(r.seller) ? (r.seller[0] ?? null) : r.seller,
+  }));
 
   return (
     <div>
@@ -162,9 +173,9 @@ export default async function AdminPayoutsPage({
                       IBAN {p.iban}
                     </div>
                   )}
-                  {p.phone && (
+                  {p.seller?.phone && (
                     <div className="mt-1 text-[11px] text-muted">
-                      Tél {p.seller?.phone ?? "—"}
+                      Tél {p.seller.phone}
                     </div>
                   )}
                   {p.reviewer_notes && (

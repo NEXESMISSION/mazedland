@@ -29,12 +29,13 @@ export default async function PaymentFailed({
   const locale = await getLocale();
   const safeReturn = returnUrl && returnUrl.startsWith("/") ? returnUrl : "/";
 
-  let payment: {
+  type PaymentRow = {
     id: string;
     amount: number;
     kind: string;
     auction_id: string | null;
-  } | null = null;
+  };
+  let payment: PaymentRow | null = null;
   if (id) {
     const supabase = await getServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
@@ -45,7 +46,7 @@ export default async function PaymentFailed({
         .eq("id", id)
         .eq("user_id", user.id)
         .maybeSingle();
-      payment = data as typeof payment;
+      payment = (data as unknown as PaymentRow) ?? null;
     }
   }
 
