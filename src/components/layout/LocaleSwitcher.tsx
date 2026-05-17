@@ -3,6 +3,7 @@
 import { useLocale } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import type { ReactElement } from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Check, ChevronDown, Globe } from "lucide-react";
 
@@ -19,15 +20,52 @@ const FULL: Record<string, string> = {
   fr: "Français",
   en: "English",
 };
-// Cute mini-flags. Two-character emoji per locale — renders the
-// native country glyph wherever the OS supports flag emoji. On
-// systems that don't (Windows < 11 default), the OS shows the
-// fallback letter pair which is still recognizable.
-const FLAG: Record<string, string> = {
-  ar: "🇹🇳", // Tunisia — Batta's home market for Arabic copy
-  fr: "🇫🇷",
-  en: "🇬🇧",
-};
+// Inline SVG flags. We avoid emoji flags because Windows doesn't ship
+// the regional-indicator glyphs by default, so 🇹🇳 falls back to "TN"
+// — visually broken next to the locale label.
+function FlagSvg({ code }: { code: string }) {
+  const stripes: Record<string, ReactElement> = {
+    ar: (
+      // Tunisia — red field with white disc + red crescent/star
+      <>
+        <rect width="20" height="14" fill="#e70013" />
+        <circle cx="10" cy="7" r="3.6" fill="#ffffff" />
+        <circle cx="10.9" cy="7" r="2.8" fill="#e70013" />
+        <polygon
+          points="10.55,5.55 10.86,6.5 11.85,6.5 11.05,7.1 11.35,8.05 10.55,7.45 9.75,8.05 10.05,7.1 9.25,6.5 10.24,6.5"
+          fill="#ffffff"
+        />
+      </>
+    ),
+    fr: (
+      // France — vertical blue/white/red
+      <>
+        <rect width="6.67" height="14" x="0"     fill="#0055a4" />
+        <rect width="6.67" height="14" x="6.67"  fill="#ffffff" />
+        <rect width="6.67" height="14" x="13.33" fill="#ef4135" />
+      </>
+    ),
+    en: (
+      // UK Union Jack — simplified
+      <>
+        <rect width="20" height="14" fill="#012169" />
+        <path d="M0,0 L20,14 M20,0 L0,14" stroke="#ffffff" strokeWidth="2.4" />
+        <path d="M0,0 L20,14 M20,0 L0,14" stroke="#c8102e" strokeWidth="1.2" />
+        <path d="M10,0 V14 M0,7 H20" stroke="#ffffff" strokeWidth="3.6" />
+        <path d="M10,0 V14 M0,7 H20" stroke="#c8102e" strokeWidth="2" />
+      </>
+    ),
+  };
+  return (
+    <svg
+      viewBox="0 0 20 14"
+      className="block h-3.5 w-5 shrink-0 overflow-hidden rounded-[2px] ring-1 ring-black/10"
+      aria-hidden
+    >
+      {stripes[code] ?? null}
+    </svg>
+  );
+}
 
 /**
  * Custom locale switcher with a popover menu.
@@ -149,21 +187,20 @@ export function LocaleSwitcher() {
                         : "text-foreground hover:bg-surface-2"
                     }`}
                   >
-                    <span className="text-base leading-none" aria-hidden>
-                      {FLAG[l] ?? "🌐"}
-                    </span>
+                    <FlagSvg code={l} />
                     <span className="flex-1 truncate">
                       {FULL[l] ?? l.toUpperCase()}
                     </span>
-                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
-                      {l}
-                    </span>
-                    {active && (
+                    {active ? (
                       <Check
                         className="size-4 text-gold"
                         strokeWidth={2.5}
                         aria-hidden
                       />
+                    ) : (
+                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">
+                        {l}
+                      </span>
                     )}
                   </button>
                 </li>
