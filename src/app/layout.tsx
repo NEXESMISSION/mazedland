@@ -72,12 +72,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  themeColor: "#ffffff",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
-  colorScheme: "dark",
+  colorScheme: "light",
 };
 
 export default async function RootLayout({
@@ -94,13 +94,13 @@ export default async function RootLayout({
       // shouldn't be disabled during route transitions.
       data-scroll-behavior="smooth"
       className={`${jakarta.variable} ${cairo.variable} h-full antialiased`}
-      // Inline bg kills the white FOUC flash — paints with the very
-      // first HTML byte, before globals.css resolves.
-      style={{ background: "#0a0a0a" }}
+      // Inline bg paints with the first HTML byte, before globals.css
+      // resolves — keeps the initial paint on-brand.
+      style={{ background: "#ffffff" }}
     >
       <body
         className="min-h-full bg-background text-foreground font-sans"
-        style={{ background: "#0a0a0a" }}
+        style={{ background: "#ffffff" }}
       >
         {children}
         <PWARegister />

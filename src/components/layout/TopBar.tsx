@@ -48,7 +48,7 @@ export function TopBar() {
 
   return (
     <header
-      className="fixed inset-x-0 top-0 z-40 bg-[#0a0a0a] border-b border-border shadow-[0_2px_18px_rgba(0,0,0,0.35)] pt-safe"
+      className="fixed inset-x-0 top-0 z-40 bg-white border-b border-border pt-safe"
       style={{ height: "calc(var(--batta-topbar-h) + var(--batta-safe-top))" }}
     >
       <div className="mx-auto flex h-[var(--batta-topbar-h)] max-w-[var(--max-w-wide)] items-center gap-2 px-4">

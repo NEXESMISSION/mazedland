@@ -264,7 +264,7 @@ export function CheckoutClient({
         </section>
 
         {/* Sticky submit */}
-        <div className="sticky bottom-0 -mx-4 px-4 py-3 bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-[var(--border)] pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:static lg:mx-0 lg:px-0 lg:py-0 lg:bg-transparent lg:backdrop-blur-none lg:border-0">
+        <div className="sticky bottom-0 -mx-4 px-4 py-3 bg-white/95 backdrop-blur-xl border-t border-[var(--border)] pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:static lg:mx-0 lg:px-0 lg:py-0 lg:bg-transparent lg:backdrop-blur-none lg:border-0">
           <button
             type="button"
             onClick={submit}

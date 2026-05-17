@@ -560,7 +560,7 @@ function ActiveComposer({
         className={cn(
           "space-y-2.5",
           "sticky bottom-0 z-30 -mx-4 px-4 py-3",
-          "bg-[#0a0a0a]/95 backdrop-blur-xl",
+          "bg-white/95 backdrop-blur-xl",
           "border-t border-[var(--border)]",
           "pb-[calc(0.75rem+env(safe-area-inset-bottom))]",
           "lg:static lg:bottom-auto lg:mx-0 lg:px-0 lg:py-0",

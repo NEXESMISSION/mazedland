@@ -71,7 +71,7 @@ export function KYCShell({
           DESKTOP
           ============================================================ */}
       <div className="hidden lg:flex lg:flex-col lg:flex-1 lg:min-h-screen">
-        <header className="sticky top-0 z-40 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-[var(--border)]">
+        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[var(--border)]">
           <div className="max-w-[var(--max-w-content)] mx-auto px-8 h-16 flex items-center gap-6">
             <Link
               href={backHref as `/${string}`}
