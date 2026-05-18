@@ -1,7 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Bell, BellDot, X, ShieldCheck, ShieldX, CheckCircle2, AlertTriangle } from "lucide-react";
+import { createPortal } from "react-dom";
+import {
+  Bell,
+  BellDot,
+  X,
+  ShieldCheck,
+  ShieldX,
+  CheckCircle2,
+  AlertTriangle,
+  CheckCheck,
+} from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 
@@ -18,20 +28,24 @@ type NotificationRow = {
 const POLL_MS = 60_000;
 
 /**
- * Bell icon + dropdown — drops into the TopBar trailing area for
- * authenticated users. Loads the most recent 20 notifications on
- * open, subscribes to realtime inserts for live unread-badge updates,
- * and falls back to a 60s poll if realtime is unavailable.
- *
- * No-ops cleanly for signed-out users (the API returns empty + 0).
+ * Bell icon + fullscreen modal popup. The bell sits in the TopBar
+ * trailing area; tapping it opens a centered overlay (portal) with
+ * a gold gradient header and a scrollable list. Realtime + a 60s
+ * poll keep the unread badge fresh; signed-out users see nothing.
  */
 export function NotificationBell() {
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [marking, setMarking] = useState(false);
-  const popoverRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -49,19 +63,12 @@ export function NotificationBell() {
     }
   }, []);
 
-  // Initial load + 60s poll. Realtime would be nicer here; ship the
-  // poll first, layer realtime once we confirm the publication is
-  // serving (migration 0023 adds notifications to supabase_realtime).
   useEffect(() => {
     void refresh();
     const id = window.setInterval(() => void refresh(), POLL_MS);
     return () => window.clearInterval(id);
   }, [refresh]);
 
-  // Realtime subscription — listens for new rows targeted at this
-  // user. We don't filter by user_id at the channel level since the
-  // RLS policy on `notifications` already restricts what flows back
-  // through the publication, so we just refresh the list on any event.
   useEffect(() => {
     const supabase = getBrowserSupabase();
     const channel = supabase
@@ -77,25 +84,17 @@ export function NotificationBell() {
     };
   }, [refresh]);
 
-  // Click outside / Escape to dismiss.
+  // Lock body scroll + Escape-to-close when the modal is open.
   useEffect(() => {
     if (!open) return;
-    function onDocClick(e: MouseEvent) {
-      if (
-        popoverRef.current
-        && !popoverRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
-    document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
     };
   }, [open]);
 
@@ -135,21 +134,16 @@ export function NotificationBell() {
     }
   }
 
-  // Don't render the bell for signed-out users. Distinguish "not
-  // signed in" (initial 0/empty) from "signed in, no unread" by
-  // waiting for the first refresh — the API returns 0+empty either
-  // way, so we render the bell after first load unconditionally and
-  // let signed-out users just see an empty dropdown.
   if (!loaded) return null;
 
   const Icon = unread > 0 ? BellDot : Bell;
 
   return (
-    <div className="relative">
+    <>
       <button
         type="button"
         aria-label="Notifications"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(true)}
         className="relative inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-[var(--surface-2)] transition-colors"
       >
         <Icon
@@ -157,63 +151,115 @@ export function NotificationBell() {
           strokeWidth={2}
         />
         {unread > 0 && (
-          <span className="absolute top-1.5 right-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[10px] font-bold text-white ring-2 ring-white">
+          <span className="absolute top-1 right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[10px] font-bold text-white ring-2 ring-white">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
       </button>
 
-      {open && (
-        <div
-          ref={popoverRef}
-          className="absolute z-50 mt-2 w-[320px] max-w-[calc(100vw-24px)] rounded-2xl bg-[var(--surface)] shadow-xl ring-1 ring-[var(--border)] overflow-hidden ltr:right-0 rtl:left-0"
-        >
-          <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
-            <h3 className="text-[13px] font-bold text-foreground">
-              Notifications
-            </h3>
-            <div className="flex items-center gap-1">
-              {unread > 0 && (
-                <button
-                  type="button"
-                  onClick={markAllRead}
-                  disabled={marking}
-                  className="text-[11px] font-bold text-[var(--gold)] hover:text-[var(--gold-bright)]"
-                >
-                  Tout marquer lu
-                </button>
-              )}
-              <button
-                type="button"
-                aria-label="Fermer"
-                onClick={() => setOpen(false)}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[var(--foreground-muted)] hover:bg-[var(--surface-2)]"
-              >
-                <X className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-            </div>
-          </div>
+      {open && mounted
+        && createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Notifications"
+          >
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-[batta-float-up_220ms_ease-out_both]"
+              onClick={() => setOpen(false)}
+            />
 
-          {items.length === 0 ? (
-            <div className="px-6 py-10 text-center text-[12px] text-[var(--foreground-muted)]">
-              <Bell className="mx-auto mb-2 h-6 w-6 opacity-40" strokeWidth={1.5} />
-              Aucune notification pour le moment.
-            </div>
-          ) : (
-            <ul className="max-h-[60vh] divide-y divide-[var(--border)] overflow-y-auto">
-              {items.map((n) => (
-                <NotificationItem
-                  key={n.id}
-                  item={n}
-                  onRead={() => markOneRead(n.id)}
-                  onClose={() => setOpen(false)}
+            {/* Dialog card */}
+            <div
+              ref={dialogRef}
+              tabIndex={-1}
+              className="relative w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden rounded-3xl bg-[var(--surface)] shadow-[var(--shadow-lg)] ring-1 ring-[var(--border)] focus:outline-none animate-[batta-float-up_300ms_ease-out_both]"
+            >
+              {/* Gradient header — the favorites-page look */}
+              <div className="relative overflow-hidden batta-gradient-gold px-6 py-7 text-white">
+                <div
+                  aria-hidden
+                  className="batta-gradient-blob batta-gradient-blob-sm -top-12 -right-10"
                 />
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </div>
+                <div
+                  aria-hidden
+                  className="batta-gradient-blob batta-gradient-blob-lg -bottom-16 -left-12"
+                />
+                <div className="relative flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="inline-flex items-center gap-2">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/30 backdrop-blur-sm">
+                        <Bell className="h-4 w-4 text-white" strokeWidth={2.2} />
+                      </span>
+                      <h3 className="text-[18px] font-extrabold tracking-tight text-white">
+                        Notifications
+                      </h3>
+                    </div>
+                    <p className="mt-1.5 text-[12px] text-white/85">
+                      {unread > 0
+                        ? `${unread} non lue${unread > 1 ? "s" : ""}`
+                        : "Tout est à jour"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Fermer"
+                    onClick={() => setOpen(false)}
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/25"
+                  >
+                    <X className="h-4 w-4" strokeWidth={2.4} />
+                  </button>
+                </div>
+                {unread > 0 && (
+                  <div className="relative mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={markAllRead}
+                      disabled={marking}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold text-white ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/25 disabled:opacity-60"
+                    >
+                      <CheckCheck className="h-3.5 w-3.5" strokeWidth={2.4} />
+                      Tout marquer lu
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Body */}
+              {items.length === 0 ? (
+                <div className="flex flex-1 flex-col items-center justify-center px-8 py-16 text-center">
+                  <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--gold-faint)]">
+                    <Bell
+                      className="h-6 w-6 text-[var(--gold)]"
+                      strokeWidth={1.8}
+                    />
+                  </div>
+                  <p className="text-[14px] font-bold text-foreground">
+                    Aucune notification pour le moment
+                  </p>
+                  <p className="mt-1 text-[12px] text-[var(--foreground-muted)]">
+                    Vous serez prévenu(e) ici dès qu&apos;il y a du nouveau.
+                  </p>
+                </div>
+              ) : (
+                <ul className="flex-1 divide-y divide-[var(--border)] overflow-y-auto">
+                  {items.map((n) => (
+                    <NotificationItem
+                      key={n.id}
+                      item={n}
+                      onRead={() => markOneRead(n.id)}
+                      onClose={() => setOpen(false)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
@@ -230,9 +276,9 @@ function NotificationItem({
   const { Icon, tone } = iconForKind(item.kind);
 
   const content = (
-    <div className="flex gap-3 px-4 py-3">
+    <div className="flex gap-3 px-5 py-4">
       <span
-        className={`mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${tone}`}
+        className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tone}`}
       >
         <Icon className="h-4 w-4" strokeWidth={2} />
       </span>
@@ -250,7 +296,7 @@ function NotificationItem({
             {item.body}
           </p>
         )}
-        <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-[var(--foreground-muted)]">
+        <p className="mt-1.5 text-[10px] uppercase tracking-[0.14em] text-[var(--foreground-muted)]">
           {timeAgo(item.created_at)}
         </p>
       </div>
@@ -266,7 +312,9 @@ function NotificationItem({
             onRead();
             onClose();
           }}
-          className={`block hover:bg-[var(--surface-2)] ${unread ? "bg-[var(--gold-faint)]/40" : ""}`}
+          className={`block transition-colors hover:bg-[var(--surface-2)] ${
+            unread ? "bg-[var(--gold-faint)]/60" : ""
+          }`}
         >
           {content}
         </Link>
@@ -276,7 +324,7 @@ function NotificationItem({
   return (
     <li
       onClick={onRead}
-      className={`cursor-default ${unread ? "bg-[var(--gold-faint)]/40" : ""}`}
+      className={`cursor-default ${unread ? "bg-[var(--gold-faint)]/60" : ""}`}
     >
       {content}
     </li>

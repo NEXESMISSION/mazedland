@@ -253,26 +253,69 @@ html, body { overscroll-behavior-y: contain; }
    Brand accents — blue (primary) + red (secondary)
    ============================================ */
 
-/* Was a polished-brass gradient; now a flat solid blue. Cleaner,
-   more modern, less marketing-y. */
+/* The elegant 3-stop blue gradient — diagonal, from primary to
+   bright to deep. Used as the signature brand surface across
+   hero blocks, primary CTAs, monograms, and any "branded fill"
+   slot. The favorites empty-state pioneered this; everything
+   downstream pulls from this single utility so the look stays
+   consistent. */
+.batta-gradient-gold,
 .gradient-gold {
-  background: var(--gold);
+  background-image: linear-gradient(
+    135deg,
+    var(--gold) 0%,
+    var(--gold-bright) 50%,
+    var(--gold-deep) 100%
+  );
+  background-color: var(--gold); /* fallback */
 }
 
-/* Was gradient-clipped gold text; now solid blue. The brand wordmark
-   + headline prices use this for visual weight without going metallic. */
+/* Gradient-clipped text — for the brand wordmark and headline
+   prices we want metallic weight without losing legibility. The
+   `-webkit-` prefix is needed for Safari/iOS support. */
 .gradient-gold-text,
-.batta-gold-text {
-  color: var(--gold);
+.batta-gold-text,
+.batta-gradient-gold-text {
+  background-image: linear-gradient(
+    135deg,
+    var(--gold) 0%,
+    var(--gold-bright) 50%,
+    var(--gold-deep) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--gold-deep); /* fallback for browsers that can't clip */
   letter-spacing: -0.01em;
 }
 
-/* Block-fill primary — for buttons / pills where we want a solid
-   blue surface with white ink. */
+/* Block-fill primary — for buttons / pills where we want the
+   gradient surface with white ink. */
 .batta-gold-fill {
-  background: var(--gold);
+  background-image: linear-gradient(
+    135deg,
+    var(--gold) 0%,
+    var(--gold-bright) 50%,
+    var(--gold-deep) 100%
+  );
+  background-color: var(--gold);
   color: #ffffff;
 }
+
+/* Decorative gradient halo — drop two of these inside a relative
+   container with `overflow-hidden` for the soft-bubble depth
+   effect from the favorites empty-state. Pair with `-translate`
+   classes to position them. */
+.batta-gradient-blob {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  filter: blur(60px);
+  z-index: 0;
+}
+.batta-gradient-blob-sm { width: 14rem; height: 14rem; }
+.batta-gradient-blob-lg { width: 18rem; height: 18rem; background: rgba(255, 255, 255, 0.10); }
 
 /* Glass — translucent white over blurred content, for the BottomTabBar
    and any chrome that hovers over the page. */
@@ -341,7 +384,13 @@ html, body { overscroll-behavior-y: contain; }
   background: var(--gold-faint);
 }
 .batta-monogram-filled {
-  background: var(--gold);
+  background-image: linear-gradient(
+    135deg,
+    var(--gold) 0%,
+    var(--gold-bright) 50%,
+    var(--gold-deep) 100%
+  );
+  background-color: var(--gold);
   color: #ffffff;
   border-color: var(--gold-deep);
 }
@@ -414,23 +463,31 @@ html, body { overscroll-behavior-y: contain; }
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: var(--gold);
+  background-image: linear-gradient(
+    135deg,
+    var(--gold) 0%,
+    var(--gold-bright) 50%,
+    var(--gold-deep) 100%
+  );
+  background-color: var(--gold);
+  background-size: 200% 200%;
+  background-position: 0% 0%;
   color: #ffffff;
   border: 1px solid var(--gold-deep);
   font-weight: 600;
   letter-spacing: 0;
   border-radius: var(--radius);
-  transition: background 160ms ease, box-shadow 220ms ease, transform 160ms ease;
-  box-shadow: var(--shadow-sm);
+  transition: background-position 320ms ease, box-shadow 220ms ease, transform 160ms ease;
+  box-shadow: var(--shadow-gold);
 }
 .batta-btn-luxe:active {
   transform: scale(0.985);
-  background: var(--gold-deep);
+  background-position: 100% 100%;
 }
 @media (hover: hover) {
   .batta-btn-luxe:hover {
-    background: var(--gold-bright);
-    box-shadow: var(--shadow-md);
+    background-position: 100% 100%;
+    box-shadow: var(--shadow-md), var(--shadow-gold);
   }
 }
 
