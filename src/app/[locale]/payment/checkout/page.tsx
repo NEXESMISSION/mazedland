@@ -3,14 +3,14 @@ import { getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { depositForOpening } from "@/lib/utils";
-import { paymentInstructions } from "@/lib/payments";
+import { paymentInstructions, fetchPayeeDetails } from "@/lib/payments";
 import { CheckoutClient } from "./CheckoutClient";
 
 export const dynamic = "force-dynamic";
 
-export type CheckoutKind = "deposit" | "buy_now" | "final_payment";
+export type CheckoutKind = "deposit" | "buy_now" | "final_payment" | "listing_fee";
 
-const VALID_KINDS: CheckoutKind[] = ["deposit", "buy_now", "final_payment"];
+const VALID_KINDS: CheckoutKind[] = ["deposit", "buy_now", "final_payment", "listing_fee"];
 
 /**
  * Manual-receipt checkout — replaces the gateway-redirect flow.
@@ -44,11 +44,13 @@ export default async function CheckoutEntry({
     redirect(`/${locale}/login?next=${encodeURIComponent(back)}`);
   }
 
+  const payee = await fetchPayeeDetails(supabase);
+
   // ─── Re-upload mode ───
   if (paymentParam) {
     const { data: pay } = await supabase
       .from("payments")
-      .select("id, user_id, kind, amount, auction_id, status")
+      .select("id, user_id, kind, amount, auction_id, property_id, status")
       .eq("id", paymentParam)
       .single();
     if (!pay || pay.user_id !== user.id) notFound();
@@ -58,17 +60,20 @@ export default async function CheckoutEntry({
 
     const auction = pay.auction_id
       ? await fetchAuctionSummary(pay.auction_id)
-      : null;
+      : pay.property_id
+        ? await fetchPropertySummary(pay.property_id)
+        : null;
 
     return (
       <CheckoutClient
         paymentId={pay.id as string}
-        kind={(pay.kind as CheckoutKind) ?? "deposit"}
+        kind={mapDbKindToCheckoutKind(pay.kind)}
         amount={Number(pay.amount)}
         auction={auction}
         instructions={paymentInstructions({
           paymentId: pay.id as string,
           amountTND: Number(pay.amount),
+          payee,
         })}
         locale={locale}
         reupload={pay.status === "pending_review"}
@@ -184,11 +189,57 @@ export default async function CheckoutEntry({
         governorate: a.property.governorate,
         heroPhotoPath: heroPhoto?.storage_path ?? null,
       }}
-      instructions={paymentInstructions({ paymentId, amountTND: amount })}
+      instructions={paymentInstructions({ paymentId, amountTND: amount, payee })}
       locale={locale}
       reupload={false}
     />
   );
+}
+
+/**
+ * Map the DB-side payment_kind enum value to the CheckoutKind union
+ * the client component understands. Older kinds in the DB (legacy
+ * deposit_lock) map to the modern 'deposit' label.
+ */
+function mapDbKindToCheckoutKind(dbKind: string): CheckoutKind {
+  switch (dbKind) {
+    case "deposit_lock":
+    case "deposit":
+      return "deposit";
+    case "buy_now":
+      return "buy_now";
+    case "final_payment":
+      return "final_payment";
+    case "listing_fee":
+      return "listing_fee";
+    default:
+      return "deposit";
+  }
+}
+
+async function fetchPropertySummary(propertyId: string) {
+  const supabase = await getServerSupabase();
+  const { data } = await supabase
+    .from("properties")
+    .select(
+      `id, title, governorate, photos:property_photos (storage_path, sort_order)`,
+    )
+    .eq("id", propertyId)
+    .single();
+  if (!data) return null;
+  const p = data as unknown as {
+    id: string;
+    title: string;
+    governorate: string;
+    photos: { storage_path: string; sort_order: number }[];
+  };
+  const hero = p.photos?.sort((x, y) => x.sort_order - y.sort_order)[0];
+  return {
+    id: p.id,
+    title: p.title,
+    governorate: p.governorate,
+    heroPhotoPath: hero?.storage_path ?? null,
+  };
 }
 
 async function fetchAuctionSummary(auctionId: string) {

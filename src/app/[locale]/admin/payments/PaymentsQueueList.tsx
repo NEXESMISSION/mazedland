@@ -12,8 +12,14 @@ import {
   Smartphone,
   FileText,
   AlertTriangle,
+  Star,
+  ArrowUpToLine,
+  Megaphone,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+
+const DURATION_OPTIONS = [7, 30, 90] as const;
+type PromoKey = "home_featured" | "top_listed" | "banner";
 
 export type PaymentReviewItem = {
   id: string;
@@ -31,8 +37,11 @@ export type PaymentReviewItem = {
   adminNotes: string | null;
   reviewedAt: string | null;
   auctionId: string | null;
+  propertyId: string | null;
   propertyTitle: string | null;
   propertyGovernorate: string | null;
+  /** Only set when kind === 'listing_fee' — which promos the seller picked. */
+  promos: { homeFeatured: boolean; topListed: boolean; banner: boolean } | null;
 };
 
 export function PaymentsQueueList({
@@ -47,18 +56,30 @@ export function PaymentsQueueList({
   const [busy, setBusy] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<PaymentReviewItem | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [acceptingListing, setAcceptingListing] =
+    useState<PaymentReviewItem | null>(null);
+  const [durations, setDurations] = useState<Record<PromoKey, number>>({
+    home_featured: 30,
+    top_listed: 30,
+    banner: 30,
+  });
 
   async function decide(
     item: PaymentReviewItem,
     verdict: "captured" | "failed",
     notes?: string,
+    durationsOverride?: Record<PromoKey, number>,
   ) {
     setBusy(item.id);
     try {
       const res = await fetch(`/api/admin/payments/${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verdict, notes }),
+        body: JSON.stringify({
+          verdict,
+          notes,
+          durations: durationsOverride,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -74,12 +95,30 @@ export function PaymentsQueueList({
       setBusy(null);
       setRejecting(null);
       setRejectReason("");
+      setAcceptingListing(null);
     }
   }
 
   function openReject(item: PaymentReviewItem) {
     setRejecting(item);
     setRejectReason("");
+  }
+
+  function openAcceptListing(item: PaymentReviewItem) {
+    setAcceptingListing(item);
+    setDurations({
+      home_featured: item.promos?.homeFeatured ? 30 : 0,
+      top_listed: item.promos?.topListed ? 30 : 0,
+      banner: item.promos?.banner ? 30 : 0,
+    });
+  }
+
+  function onListingAccept(item: PaymentReviewItem) {
+    if (item.kind === "listing_fee") {
+      openAcceptListing(item);
+    } else {
+      decide(item, "captured");
+    }
   }
 
   return (
@@ -133,7 +172,13 @@ export function PaymentsQueueList({
             {/* Property context */}
             {item.propertyTitle && (
               <a
-                href={item.auctionId ? `/auctions/${item.auctionId}` : "#"}
+                href={
+                  item.auctionId
+                    ? `/auctions/${item.auctionId}`
+                    : item.propertyId
+                      ? `/admin/properties#${item.propertyId}`
+                      : "#"
+                }
                 target="_blank"
                 rel="noreferrer"
                 className="mt-3 flex items-center gap-2 rounded-lg bg-[var(--surface-2)]/60 px-2.5 py-2 text-[12px] hover:bg-[var(--surface-2)]"
@@ -144,6 +189,31 @@ export function PaymentsQueueList({
                 </span>
                 <ExternalLink className="h-3 w-3 text-[var(--foreground-muted)]" />
               </a>
+            )}
+
+            {/* Promotions picked by the seller (listing_fee only) */}
+            {item.kind === "listing_fee" && item.promos && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {item.promos.homeFeatured && (
+                  <PromoChip icon={<Star className="h-3 w-3" />} label="Accueil" />
+                )}
+                {item.promos.topListed && (
+                  <PromoChip
+                    icon={<ArrowUpToLine className="h-3 w-3" />}
+                    label="Top recherche"
+                  />
+                )}
+                {item.promos.banner && (
+                  <PromoChip icon={<Megaphone className="h-3 w-3" />} label="Bannière" />
+                )}
+                {!item.promos.homeFeatured &&
+                  !item.promos.topListed &&
+                  !item.promos.banner && (
+                    <span className="text-[10.5px] text-[var(--foreground-muted)] italic">
+                      Pas d&apos;option payante.
+                    </span>
+                  )}
+              </div>
             )}
 
             {/* Receipt preview */}
@@ -167,7 +237,7 @@ export function PaymentsQueueList({
                 <button
                   type="button"
                   disabled={busy === item.id || !item.receiptUrl}
-                  onClick={() => decide(item, "captured")}
+                  onClick={() => onListingAccept(item)}
                   className="flex-1 inline-flex h-10 items-center justify-center gap-1.5 rounded-[var(--radius)] bg-[var(--gold)] text-white font-bold text-[13px] hover:bg-[var(--gold-bright)] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {busy === item.id ? (
@@ -216,6 +286,92 @@ export function PaymentsQueueList({
           </article>
         ))}
       </div>
+
+      {/* Listing-fee accept modal — admin picks promo durations */}
+      {acceptingListing && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+          onClick={() => !busy && setAcceptingListing(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-[var(--surface)] p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-[16px] font-bold text-foreground">
+              Valider l&apos;annonce
+            </h3>
+            <p className="mt-1 text-[12px] text-[var(--foreground-muted)] leading-relaxed">
+              L&apos;annonce passe en ligne. Choisissez la durée de chaque
+              option achetée (0 = ne pas activer).
+            </p>
+
+            <div className="mt-3 space-y-2.5">
+              {acceptingListing.promos?.homeFeatured && (
+                <DurationRow
+                  icon={<Star className="h-3.5 w-3.5" />}
+                  label="Mise en avant accueil"
+                  value={durations.home_featured}
+                  onChange={(v) =>
+                    setDurations((d) => ({ ...d, home_featured: v }))
+                  }
+                />
+              )}
+              {acceptingListing.promos?.topListed && (
+                <DurationRow
+                  icon={<ArrowUpToLine className="h-3.5 w-3.5" />}
+                  label="Top recherche"
+                  value={durations.top_listed}
+                  onChange={(v) =>
+                    setDurations((d) => ({ ...d, top_listed: v }))
+                  }
+                />
+              )}
+              {acceptingListing.promos?.banner && (
+                <DurationRow
+                  icon={<Megaphone className="h-3.5 w-3.5" />}
+                  label="Bannière d'accueil"
+                  value={durations.banner}
+                  onChange={(v) => setDurations((d) => ({ ...d, banner: v }))}
+                />
+              )}
+              {!acceptingListing.promos?.homeFeatured &&
+                !acceptingListing.promos?.topListed &&
+                !acceptingListing.promos?.banner && (
+                  <p className="rounded-lg bg-[var(--surface-2)]/40 px-3 py-2 text-[12px] text-[var(--foreground-muted)]">
+                    Aucune option promotionnelle sélectionnée. L&apos;annonce
+                    sera simplement publiée.
+                  </p>
+                )}
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                disabled={busy === acceptingListing.id}
+                onClick={() => setAcceptingListing(null)}
+                className="flex-1 h-10 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] text-foreground font-semibold text-[13px]"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={busy === acceptingListing.id}
+                onClick={() =>
+                  decide(acceptingListing, "captured", undefined, durations)
+                }
+                className="flex-1 h-10 rounded-[var(--radius)] bg-[var(--gold)] text-white font-bold text-[13px] hover:bg-[var(--gold-bright)] disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-1.5"
+              >
+                {busy === acceptingListing.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" strokeWidth={2.5} />
+                )}
+                Valider &amp; publier
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reject modal */}
       {rejecting && (
@@ -275,6 +431,71 @@ export function PaymentsQueueList({
         </div>
       )}
     </>
+  );
+}
+
+function PromoChip({
+  icon,
+  label,
+}: {
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--gold-faint)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--gold)] ring-1 ring-[var(--gold)]/25">
+      {icon}
+      {label}
+    </span>
+  );
+}
+
+function DurationRow({
+  icon,
+  label,
+  value,
+  onChange,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="rounded-lg bg-[var(--surface-2)]/40 px-3 py-2.5">
+      <div className="flex items-center gap-1.5 text-[12px] font-semibold text-foreground">
+        <span className="text-[var(--gold)]">{icon}</span>
+        {label}
+      </div>
+      <div className="mt-2 flex gap-1.5">
+        {DURATION_OPTIONS.map((days) => (
+          <button
+            key={days}
+            type="button"
+            onClick={() => onChange(days)}
+            className={
+              "flex-1 h-8 rounded-full text-[11px] font-bold transition " +
+              (value === days
+                ? "bg-[var(--gold)] text-white"
+                : "bg-[var(--surface)] text-foreground ring-1 ring-[var(--border)] hover:ring-[var(--gold-soft)]")
+            }
+          >
+            {days} j
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => onChange(0)}
+          className={
+            "flex-1 h-8 rounded-full text-[11px] font-bold transition " +
+            (value === 0
+              ? "bg-[var(--surface-2)] text-foreground ring-1 ring-[var(--border)]"
+              : "bg-[var(--surface)] text-[var(--foreground-muted)] ring-1 ring-[var(--border)] hover:ring-[var(--gold-soft)]")
+          }
+        >
+          0
+        </button>
+      </div>
+    </div>
   );
 }
 

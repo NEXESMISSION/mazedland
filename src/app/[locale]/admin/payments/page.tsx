@@ -21,6 +21,7 @@ const KIND_LABELS: Record<string, string> = {
   inspection_fee: "Inspection",
   subscription: "Abonnement",
   deposit_release: "Remboursement",
+  listing_fee: "Annonce + options",
 };
 
 /**
@@ -47,9 +48,10 @@ export default async function AdminPaymentsPage({
     .from("payments")
     .select(
       `id, user_id, kind, provider, amount, status, receipt_url,
-       receipt_uploaded_at, admin_notes, reviewed_at, auction_id,
+       receipt_uploaded_at, admin_notes, reviewed_at, auction_id, property_id, metadata,
        buyer:profiles!payments_user_id_fkey (full_name, phone),
-       auction:auctions (id, property:properties (title, governorate))`,
+       auction:auctions (id, property:properties (title, governorate)),
+       property:properties!payments_property_id_fkey (id, title, governorate)`,
     );
 
   if (status !== "all") {
@@ -76,11 +78,14 @@ export default async function AdminPaymentsPage({
     admin_notes: string | null;
     reviewed_at: string | null;
     auction_id: string | null;
+    property_id: string | null;
+    metadata: Record<string, unknown> | null;
     buyer: { full_name: string | null; phone: string | null } | null;
     auction: {
       id: string;
       property: { title: string; governorate: string } | null;
     } | null;
+    property: { id: string; title: string; governorate: string } | null;
   };
   const rows = (data ?? []) as unknown as Row[];
 
@@ -93,6 +98,14 @@ export default async function AdminPaymentsPage({
           .createSignedUrl(row.receipt_url, 3600);
         receiptSignedUrl = signed?.signedUrl ?? null;
       }
+      const promosObj = (row.metadata as { promos?: Record<string, boolean> } | null)?.promos ?? null;
+      const promos = promosObj
+        ? {
+            homeFeatured: !!promosObj.home_featured,
+            topListed: !!promosObj.top_listed,
+            banner: !!promosObj.banner,
+          }
+        : null;
       return {
         id: row.id,
         userId: row.user_id,
@@ -109,8 +122,12 @@ export default async function AdminPaymentsPage({
         adminNotes: row.admin_notes,
         reviewedAt: row.reviewed_at,
         auctionId: row.auction_id,
-        propertyTitle: row.auction?.property?.title ?? null,
-        propertyGovernorate: row.auction?.property?.governorate ?? null,
+        propertyId: row.property_id ?? row.property?.id ?? null,
+        propertyTitle:
+          row.auction?.property?.title ?? row.property?.title ?? null,
+        propertyGovernorate:
+          row.auction?.property?.governorate ?? row.property?.governorate ?? null,
+        promos,
       };
     }),
   );

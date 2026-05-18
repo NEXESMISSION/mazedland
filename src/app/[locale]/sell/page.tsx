@@ -2,7 +2,7 @@ import { redirect } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { SellForm } from "@/components/sell/SellForm";
+import { SellForm, type SellFormPricing } from "@/components/sell/SellForm";
 import { PayoutRequestTrigger } from "@/components/sell/PayoutRequestModal";
 import { formatTND } from "@/lib/utils";
 import {
@@ -93,6 +93,8 @@ export default async function SellLandingPage({
     .single();
   const kycVerified = profile?.kyc_status === "verified";
 
+  const pricing = await fetchSellPricing(supabase);
+
   if (!kycVerified) {
     return (
       <div className="flex min-h-[calc(100dvh-var(--batta-topbar-h)-var(--batta-bottombar-total)-var(--batta-safe-top)-var(--batta-safe-bottom))] items-center justify-center px-4 py-8">
@@ -138,7 +140,7 @@ export default async function SellLandingPage({
           <p className="mt-1.5 text-[12.5px] text-muted">{t("sell.subtitle")}</p>
         </header>
         <div className="mt-5">
-          <SellForm />
+          <SellForm pricing={pricing} />
         </div>
       </div>
     );
@@ -189,7 +191,7 @@ export default async function SellLandingPage({
           <p className="mt-1.5 text-[12.5px] text-muted">{t("sell.subtitle")}</p>
         </header>
         <div className="mt-5">
-          <SellForm />
+          <SellForm pricing={pricing} />
         </div>
       </div>
     );
@@ -591,3 +593,33 @@ function StatusPill({
   );
 }
 
+/**
+ * Pull the four tunable price keys from `app_settings` so the sell form
+ * can show "+15 TND" labels on each promotion option. Falls back to safe
+ * defaults if a key is missing so the page doesn't crash on a fresh DB.
+ */
+async function fetchSellPricing(
+  supabase: Awaited<ReturnType<typeof getServerSupabase>>,
+): Promise<SellFormPricing> {
+  const { data } = await supabase
+    .from("app_settings")
+    .select("key, value")
+    .in("key", [
+      "listing_fee_tnd",
+      "promo_home_featured_tnd",
+      "promo_top_listed_tnd",
+      "promo_banner_tnd",
+    ]);
+  const m = new Map<string, number>();
+  for (const r of data ?? []) {
+    const v = (r as { value: unknown }).value;
+    const n = typeof v === "number" ? v : Number(v);
+    m.set((r as { key: string }).key, Number.isFinite(n) ? n : 0);
+  }
+  return {
+    listing_fee_tnd: m.get("listing_fee_tnd") ?? 20,
+    promo_home_featured_tnd: m.get("promo_home_featured_tnd") ?? 15,
+    promo_top_listed_tnd: m.get("promo_top_listed_tnd") ?? 10,
+    promo_banner_tnd: m.get("promo_banner_tnd") ?? 30,
+  };
+}

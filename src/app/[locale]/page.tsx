@@ -7,7 +7,6 @@ import { RecentBidsFeed } from "@/components/landing/RecentBidsFeed";
 import { CoverageStrip } from "@/components/landing/CoverageStrip";
 import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
-import { HomeSearch } from "@/components/landing/HomeSearch";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
@@ -24,6 +23,7 @@ import {
   Briefcase,
   Gavel,
   MapPin,
+  PlusCircle,
 } from "lucide-react";
 
 // Row type for the "Recently hammered" rail — declared at the top of
@@ -62,13 +62,18 @@ export default async function LandingPage() {
   let trending: AuctionWithProperty[] = [];
   let recent: AuctionWithProperty[] = [];
   let hammered: HammeredRow[] = [];
+  // "Nouveautés" rail — newest listings (by auction created_at), distinct
+  // from trending which sorts by ends_at + paid placement. Renders as the
+  // same horizontal property-card scroller so it visually parallels "Les
+  // plus suivis" but answers a different intent ("what's new").
+  let nouveautes: AuctionWithProperty[] = [];
   let savedIds = new Set<string>();
   let loggedIn = false;
   let liveCount = 0;
 
   try {
     const supabase = await getServerSupabase();
-    const [liveRes, hammeredRes, userRes] = await Promise.all([
+    const [liveRes, hammeredRes, nouveautesRes, userRes] = await Promise.all([
       supabase
         .from("auctions")
         .select(`
@@ -100,11 +105,46 @@ export default async function LandingPage() {
         .eq("property.status", "ready")
         .order("hammer_at", { ascending: false })
         .limit(8),
+      // "Nouveautés" — newest live/scheduled auctions, ordered by when
+      // the auction row was created. Independent query (not a slice of
+      // `liveRes`) so the freshness signal isn't biased by the trending
+      // sort's paid-placement bubble.
+      supabase
+        .from("auctions")
+        .select(`
+          *,
+          property:properties!inner (
+            *,
+            photos:property_photos (id, storage_path, sort_order, caption)
+          )
+        `)
+        .in("status", ["scheduled", "live", "extending"])
+        .eq("property.status", "ready")
+        .order("created_at", { ascending: false })
+        .limit(10),
       supabase.auth.getUser(),
     ]);
 
     const rows = (liveRes.data ?? []) as unknown as AuctionWithProperty[];
     liveCount = liveRes.count ?? rows.length;
+
+    // Paid placements bubble to the top. promo_banner outranks
+    // promo_home_featured so banner-paying sellers get the carousel
+    // slot AND the trending lead. Stable in PG sort order otherwise so
+    // ends_at ordering is preserved within each tier.
+    rows.sort((a, b) => {
+      const ap = (a.property ?? {}) as {
+        promo_banner?: boolean;
+        promo_home_featured?: boolean;
+      };
+      const bp = (b.property ?? {}) as {
+        promo_banner?: boolean;
+        promo_home_featured?: boolean;
+      };
+      const aScore = (ap.promo_banner ? 2 : 0) + (ap.promo_home_featured ? 1 : 0);
+      const bScore = (bp.promo_banner ? 2 : 0) + (bp.promo_home_featured ? 1 : 0);
+      return bScore - aScore;
+    });
 
     // Surfaces:
     //   - trending rail (first 8, horizontal scroller)
@@ -117,10 +157,13 @@ export default async function LandingPage() {
     trending = rows.slice(0, 8);
     recent = rows.length >= 12 ? rows.slice(8) : rows;
     hammered = (hammeredRes.data ?? []) as unknown as HammeredRow[];
+    nouveautes = (nouveautesRes.data ?? []) as unknown as AuctionWithProperty[];
 
     loggedIn = !!userRes.data.user;
-    if (loggedIn && rows.length > 0) {
-      const ids = rows.map((r) => r.id);
+    if (loggedIn && (rows.length > 0 || nouveautes.length > 0)) {
+      const ids = Array.from(
+        new Set([...rows.map((r) => r.id), ...nouveautes.map((r) => r.id)]),
+      );
       const { data: saves } = await supabase
         .from("watchlist")
         .select("auction_id")
@@ -152,13 +195,6 @@ export default async function LandingPage() {
         })}
         isRTL={isRTL}
       />
-
-      {/* Search bar — the marketplace's primary action, missing until
-          now. Posts to /auctions?view=classic so intent-driven users
-          jump straight into a filtered catalogue. */}
-      <div className="mt-4">
-        <HomeSearch isRTL={isRTL} />
-      </div>
 
       {/* LIVE TICKER */}
       <section className="mt-5">
@@ -210,6 +246,66 @@ export default async function LandingPage() {
             <TrendingSkeleton />
           </TrendingRail>
         )}
+      </section>
+
+      {/* ─── "Nouveautés" rail — sibling of the trending rail above,
+          sorted by created_at desc instead of ends_at + paid placement.
+          Same card layout so it feels familiar, different headline so
+          the user understands the section answers "what's new" rather
+          than "what's hottest". Only rendered when we actually have
+          fresh inventory — falls back to nothing rather than empty
+          skeletons because the trending rail above already absorbs the
+          "we just opened" copy. */}
+      {nouveautes.length > 0 && (
+        <section className="mt-7">
+          <RailHeader
+            eyebrow={t("home.nouveautesEyebrow")}
+            title={t("home.nouveautesTitle")}
+            countLabel={nouveautes.length}
+            ctaHref="/auctions"
+            ChevronEnd={ChevronEnd}
+            isRTL={isRTL}
+            seeAllLabel={t("home.seeAll")}
+            flush
+          />
+          <TrendingRail>
+            {nouveautes.map((a, i) => (
+              <div key={a.id} className="w-[230px] shrink-0 snap-start">
+                <PropertyCard
+                  auction={a}
+                  saved={savedIds.has(a.id)}
+                  loggedIn={loggedIn}
+                  priority={i < 3}
+                />
+              </div>
+            ))}
+            <div className="w-1 shrink-0" />
+          </TrendingRail>
+        </section>
+      )}
+
+      {/* ─── Seller CTA banner — different shape from the auction-focused
+          banners above. Gold gradient, persistent (no DB dependency),
+          monetises the pay-per-post flow we just built. Tapping lands the
+          seller on /sell where they pick promos + pay. */}
+      <section className="mt-6 px-4">
+        <Link
+          href="/sell"
+          className="batta-fade-up flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)] p-3 text-black shadow-lg shadow-[var(--gold)]/20 active:scale-[0.99] transition"
+        >
+          <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-black/12">
+            <PlusCircle className="size-5" strokeWidth={2} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-black/65">
+              {t("home.sellPromoEyebrow")}
+            </div>
+            <div className="truncate text-sm font-extrabold">
+              {t("home.sellPromoTitle")}
+            </div>
+          </div>
+          <ArrowUpRight className="size-4 shrink-0" strokeWidth={2.5} />
+        </Link>
       </section>
 
       {/* Live activity feed — header-less, runs as a quiet tape under

@@ -78,7 +78,11 @@ export async function LiveTicker() {
       {/* Edge fades so items don't visually pop in/out. */}
       <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-batta-paper to-transparent" />
       <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-batta-paper to-transparent" />
-      <ul className="batta-marquee">
+      {/* Slower than the default marquee duration (40s) — the live
+          ticker shares the .batta-marquee animation with PartnersMarquee,
+          so the override is inline to keep this surface calmer without
+          slowing other marquees. */}
+      <ul className="batta-marquee" style={{ animationDuration: "70s" }}>
         {sequence.map((it, i) => (
           <TickerCell key={`a-${i}-${it.id}`} item={it} locale={locale} />
         ))}

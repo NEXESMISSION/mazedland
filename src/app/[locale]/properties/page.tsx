@@ -68,6 +68,15 @@ export default async function PropertiesIndex({
     const [auctionsRes, userRes] = await Promise.all([query, supabase.auth.getUser()]);
     if (auctionsRes.error) console.error("[/properties] supabase error", auctionsRes.error);
     auctions = (auctionsRes.data ?? []) as unknown as AuctionWithProperty[];
+    // Paid "Top of search" placement bubbles to the top. PostgREST
+    // doesn't easily order by a foreign-table column at the outer level,
+    // so we sort client-side; the result set is capped at 48 so the
+    // cost is negligible.
+    auctions.sort((a, b) => {
+      const ap = (a.property ?? {}) as { promo_top_listed?: boolean };
+      const bp = (b.property ?? {}) as { promo_top_listed?: boolean };
+      return (bp.promo_top_listed ? 1 : 0) - (ap.promo_top_listed ? 1 : 0);
+    });
     loggedIn = !!userRes.data.user;
 
     if (loggedIn && auctions.length > 0) {

@@ -46,6 +46,9 @@ export async function PATCH(
   const body = await req.json().catch(() => ({}));
   const verdict: "captured" | "failed" = body.verdict;
   const notes: string = (body.notes ?? "").trim().slice(0, 500);
+  // durations is { home_featured, top_listed, banner } in days. Only honored
+  // when accepting a listing_fee payment.
+  const durations = (body.durations ?? {}) as Record<string, number>;
   if (verdict !== "captured" && verdict !== "failed") {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }
@@ -62,7 +65,7 @@ export async function PATCH(
   // Fetch the payment so we can build a meaningful notification body.
   const { data: payment } = await admin
     .from("payments")
-    .select("id, user_id, kind, amount, auction_id, status")
+    .select("id, user_id, kind, amount, auction_id, property_id, status")
     .eq("id", paymentId)
     .single();
   if (!payment) {
@@ -73,6 +76,37 @@ export async function PATCH(
       { error: "already_resolved", status: payment.status },
       { status: 409 },
     );
+  }
+
+  // ─── Listing-fee branch: delegate to the RPC which handles the
+  // property promotion + flag/duration application + notification in one
+  // transaction. The buyer-side notification for accept/reject is
+  // enqueued inside the RPC, so we return early.
+  if (payment.kind === "listing_fee") {
+    if (verdict === "captured") {
+      const sanitized: Record<string, number> = {};
+      for (const k of ["home_featured", "top_listed", "banner"]) {
+        const v = Number(durations?.[k] ?? 0);
+        sanitized[k] = Number.isFinite(v) && v > 0 ? Math.min(365, Math.floor(v)) : 0;
+      }
+      const { error } = await admin.rpc("accept_listing_payment", {
+        p_payment_id: paymentId,
+        p_durations: sanitized,
+      });
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ ok: true });
+    } else {
+      const { error } = await admin.rpc("reject_listing_payment", {
+        p_payment_id: paymentId,
+        p_reason: notes,
+      });
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ ok: true });
+    }
   }
 
   // Update the payment row. The `_on_payment_captured` trigger fires
@@ -101,6 +135,7 @@ export async function PATCH(
     inspection_fee: "votre inspection",
     subscription: "votre abonnement",
     deposit_release: "votre remboursement",
+    listing_fee: "votre annonce",
   };
   const what = KIND_LABELS[payment.kind] ?? "votre paiement";
 

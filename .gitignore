@@ -9,3 +9,7 @@ build
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+
+# Local dev-only — Supabase CLI workspace + Claude Code preview launcher.
+supabase/.temp/
+.claude/launch.json

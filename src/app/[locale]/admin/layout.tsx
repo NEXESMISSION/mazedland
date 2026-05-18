@@ -8,9 +8,11 @@ import {
   Users,
   ShieldCheck,
   FileWarning,
+  FileText,
   Mailbox,
   Wallet,
   ReceiptText,
+  Settings as SettingsIcon,
 } from "lucide-react";
 
 /**
@@ -51,6 +53,8 @@ export default async function AdminLayout({
     { href: "/admin/users", label: "Users", Icon: Users },
     { href: "/admin/fraud", label: "Fraud", Icon: FileWarning },
     { href: "/admin/waitlist", label: "Waitlist", Icon: Mailbox },
+    { href: "/admin/legal-docs", label: "Legal docs", Icon: FileText },
+    { href: "/admin/settings", label: "Settings", Icon: SettingsIcon },
   ] as const;
 
   return (

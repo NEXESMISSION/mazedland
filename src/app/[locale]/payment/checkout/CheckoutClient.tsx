@@ -52,6 +52,11 @@ const KIND_TITLES: Record<CheckoutKind, { label: string; body: string }> = {
     label: "Paiement final",
     body: "Solde du prix d'adjudication, déduction faite de la caution.",
   },
+  listing_fee: {
+    label: "Frais d'annonce",
+    body:
+      "Frais de publication + options choisies. Votre annonce passe en ligne dès validation du reçu.",
+  },
 };
 
 const PROVIDER_ICONS: Record<PaymentProvider, typeof Building2> = {

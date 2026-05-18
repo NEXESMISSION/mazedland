@@ -63,7 +63,18 @@ export default async function EditListingPage({
         <p className="mt-1.5 text-[12.5px] text-muted">{t("sell.editSubtitle")}</p>
       </header>
       <div className="mt-5">
-        <SellForm initial={initial} />
+        {/* Pricing is required by SellForm's type, but edit-mode skips
+            the promo step entirely (carry-over rule) so the values are
+            inert here — pass zeros. */}
+        <SellForm
+          initial={initial}
+          pricing={{
+            listing_fee_tnd: 0,
+            promo_home_featured_tnd: 0,
+            promo_top_listed_tnd: 0,
+            promo_banner_tnd: 0,
+          }}
+        />
       </div>
     </div>
   );
