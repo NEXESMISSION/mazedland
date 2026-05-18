@@ -1,0 +1,130 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { isSameOrigin } from "@/lib/sameOrigin";
+
+/**
+ * Admin receipt review.
+ *
+ * PATCH body:
+ *   {
+ *     verdict: "captured" | "failed",
+ *     notes?: string,   // required when verdict === "failed"
+ *   }
+ *
+ * accept (captured):
+ *   - Flips payments.status to 'captured'.
+ *   - Downstream DB triggers (`_on_payment_captured`) fire — deposit
+ *     row creation for `deposit_lock`, auction close for `buy_now`, etc.
+ *   - Inserts a 'payment_accepted' notification for the buyer.
+ *
+ * reject (failed):
+ *   - Flips payments.status to 'failed'.
+ *   - Saves admin_notes (the reason; shown to the buyer).
+ *   - Inserts a 'payment_rejected' notification linking to the receipt
+ *     upload page so the buyer can re-submit with the corrected
+ *     receipt.
+ */
+export async function PATCH(
+  req: NextRequest,
+  ctx: { params: Promise<{ id: string }> },
+) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
+  }
+  const { id: paymentId } = await ctx.params;
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
+
+  const { data: profile } = await supabase
+    .from("profiles").select("role").eq("id", user.id).single();
+  if (profile?.role !== "admin") {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const verdict: "captured" | "failed" = body.verdict;
+  const notes: string = (body.notes ?? "").trim().slice(0, 500);
+  if (verdict !== "captured" && verdict !== "failed") {
+    return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  }
+  if (verdict === "failed" && !notes) {
+    return NextResponse.json(
+      { error: "reason_required", detail: "Une raison est requise pour rejeter un paiement." },
+      { status: 400 },
+    );
+  }
+
+  const admin = getServiceSupabase();
+  if (!admin) return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
+
+  // Fetch the payment so we can build a meaningful notification body.
+  const { data: payment } = await admin
+    .from("payments")
+    .select("id, user_id, kind, amount, auction_id, status")
+    .eq("id", paymentId)
+    .single();
+  if (!payment) {
+    return NextResponse.json({ error: "payment_not_found" }, { status: 404 });
+  }
+  if (payment.status === "captured" || payment.status === "failed" || payment.status === "refunded") {
+    return NextResponse.json(
+      { error: "already_resolved", status: payment.status },
+      { status: 409 },
+    );
+  }
+
+  // Update the payment row. The `_on_payment_captured` trigger fires
+  // when status flips to 'captured' and handles the auction-side
+  // bookkeeping (auction_deposits row insert, close_auction_on_purchase
+  // for buy_now, etc).
+  const { error: updErr } = await admin
+    .from("payments")
+    .update({
+      status: verdict,
+      admin_notes: verdict === "failed" ? notes : null,
+      reviewer_id: user.id,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", paymentId);
+  if (updErr) {
+    return NextResponse.json({ error: updErr.message }, { status: 500 });
+  }
+
+  // Notify the buyer.
+  const KIND_LABELS: Record<string, string> = {
+    deposit_lock: "votre caution",
+    buy_now: "votre achat",
+    final_payment: "votre paiement final",
+    commission: "votre commission",
+    inspection_fee: "votre inspection",
+    subscription: "votre abonnement",
+    deposit_release: "votre remboursement",
+  };
+  const what = KIND_LABELS[payment.kind] ?? "votre paiement";
+
+  const link = payment.auction_id
+    ? `/auctions/${payment.auction_id}`
+    : "/account/payments";
+
+  if (verdict === "captured") {
+    await admin.rpc("enqueue_notification", {
+      p_user_id: payment.user_id,
+      p_kind: "payment_accepted",
+      p_title: `Reçu validé — ${what} confirmée`,
+      p_body: `Votre paiement de ${Number(payment.amount).toFixed(2)} TND a été vérifié et accepté.`,
+      p_link: link,
+    });
+  } else {
+    await admin.rpc("enqueue_notification", {
+      p_user_id: payment.user_id,
+      p_kind: "payment_rejected",
+      p_title: `Reçu refusé — ${what}`,
+      p_body: `Motif : ${notes}. Vous pouvez téléverser un nouveau reçu.`,
+      p_link: `/payment/checkout?payment=${paymentId}`,
+    });
+  }
+
+  return NextResponse.json({ ok: true });
+}

@@ -1,0 +1,184 @@
+import { Link } from "@/i18n/navigation";
+import { getServerSupabase } from "@/lib/supabase/server";
+import { PaymentsQueueList, type PaymentReviewItem } from "./PaymentsQueueList";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const STATUS_TABS = [
+  { value: "pending_review", label: "En attente" },
+  { value: "captured", label: "Validés" },
+  { value: "failed", label: "Refusés" },
+  { value: "all", label: "Tous" },
+] as const;
+type StatusTab = (typeof STATUS_TABS)[number]["value"];
+
+const KIND_LABELS: Record<string, string> = {
+  deposit_lock: "Caution",
+  buy_now: "Achat",
+  final_payment: "Paiement final",
+  commission: "Commission",
+  inspection_fee: "Inspection",
+  subscription: "Abonnement",
+  deposit_release: "Remboursement",
+};
+
+/**
+ * Admin payments review queue. Lists `payments` filtered by status,
+ * with signed URLs for each receipt so the admin can render them.
+ *
+ * Receipts live in the private `receipts` bucket; we mint 60-min
+ * signed URLs server-side so the admin sees the proof inline without
+ * exposing storage paths to the browser.
+ */
+export default async function AdminPaymentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const { status: statusParam } = await searchParams;
+  const supabase = await getServerSupabase();
+
+  const status: StatusTab = STATUS_TABS.some((s) => s.value === statusParam)
+    ? (statusParam as StatusTab)
+    : "pending_review";
+
+  let query = supabase
+    .from("payments")
+    .select(
+      `id, user_id, kind, provider, amount, status, receipt_url,
+       receipt_uploaded_at, admin_notes, reviewed_at, auction_id,
+       buyer:profiles!payments_user_id_fkey (full_name, phone),
+       auction:auctions (id, property:properties (title, governorate))`,
+    );
+
+  if (status !== "all") {
+    query = query.eq("status", status);
+  } else {
+    query = query.in("status", ["pending_review", "captured", "failed"]);
+  }
+  query = query.order(
+    status === "pending_review" ? "receipt_uploaded_at" : "reviewed_at",
+    { ascending: status === "pending_review" },
+  );
+
+  const { data, error } = await query;
+
+  type Row = {
+    id: string;
+    user_id: string;
+    kind: string;
+    provider: string;
+    amount: number;
+    status: string;
+    receipt_url: string | null;
+    receipt_uploaded_at: string | null;
+    admin_notes: string | null;
+    reviewed_at: string | null;
+    auction_id: string | null;
+    buyer: { full_name: string | null; phone: string | null } | null;
+    auction: {
+      id: string;
+      property: { title: string; governorate: string } | null;
+    } | null;
+  };
+  const rows = (data ?? []) as unknown as Row[];
+
+  const items: PaymentReviewItem[] = await Promise.all(
+    rows.map(async (row) => {
+      let receiptSignedUrl: string | null = null;
+      if (row.receipt_url) {
+        const { data: signed } = await supabase.storage
+          .from("receipts")
+          .createSignedUrl(row.receipt_url, 3600);
+        receiptSignedUrl = signed?.signedUrl ?? null;
+      }
+      return {
+        id: row.id,
+        userId: row.user_id,
+        buyerName: row.buyer?.full_name ?? null,
+        buyerPhone: row.buyer?.phone ?? null,
+        kind: row.kind,
+        kindLabel: KIND_LABELS[row.kind] ?? row.kind,
+        provider: row.provider,
+        amount: Number(row.amount),
+        status: row.status,
+        receiptUrl: receiptSignedUrl,
+        receiptPath: row.receipt_url,
+        receiptUploadedAt: row.receipt_uploaded_at,
+        adminNotes: row.admin_notes,
+        reviewedAt: row.reviewed_at,
+        auctionId: row.auction_id,
+        propertyTitle: row.auction?.property?.title ?? null,
+        propertyGovernorate: row.auction?.property?.governorate ?? null,
+      };
+    }),
+  );
+
+  return (
+    <div>
+      <span className="batta-eyebrow">Receipts desk</span>
+      <div className="mt-1.5 flex items-end justify-between gap-3">
+        <h2 className="text-[22px] font-extrabold leading-tight tracking-tight">
+          File de paiements
+        </h2>
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] ${
+            status === "pending_review"
+              ? "batta-tone-warn"
+              : "bg-surface-2 text-muted ring-1 ring-border"
+          }`}
+        >
+          {items.length}
+        </span>
+      </div>
+      <p className="mt-1 text-[12px] text-muted">
+        Vérifiez chaque reçu (virement bancaire ou D17). Validez pour
+        déclencher les effets en aval (caution, clôture d&apos;enchère).
+        Refusez avec un motif clair — l&apos;acheteur reçoit une
+        notification.
+      </p>
+
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {STATUS_TABS.map((tab) => {
+          const active = tab.value === status;
+          return (
+            <Link
+              key={tab.value}
+              href={
+                (tab.value === "pending_review"
+                  ? "/admin/payments"
+                  : `/admin/payments?status=${tab.value}`) as `/admin/payments`
+              }
+              className={`px-3 h-8 inline-flex items-center rounded-full text-xs font-bold border transition-colors ${
+                active
+                  ? "bg-[var(--gold)] text-white border-[var(--gold)]"
+                  : "bg-[var(--surface)] text-[var(--foreground-muted)] border-[var(--border)] hover:border-[var(--gold-soft)]"
+              }`}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </div>
+
+      {error && (
+        <div className="mt-4 rounded-[var(--radius-md)] bg-red-500/10 border border-red-500/30 p-4 text-sm text-red-300">
+          {error.message}
+        </div>
+      )}
+
+      {items.length === 0 ? (
+        <div className="batta-frame-gold relative mt-5 px-6 py-10 text-center text-[13px] text-muted">
+          {status === "pending_review"
+            ? "Aucun reçu en attente."
+            : "Aucun paiement dans cette vue."}
+        </div>
+      ) : (
+        <div className="mt-5">
+          <PaymentsQueueList items={items} view={status} />
+        </div>
+      )}
+    </div>
+  );
+}

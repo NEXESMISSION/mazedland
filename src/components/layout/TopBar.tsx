@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePathname, Link } from "@/i18n/navigation";
 import { BackButton } from "./BackButton";
 import { LocaleSwitcher } from "./LocaleSwitcher";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const ROOT_TAB_PATHS = new Set(["/", "/properties", "/watchlist", "/account"]);
 
@@ -76,8 +77,9 @@ export function TopBar() {
           )}
         </div>
 
-        {/* TRAILING — locale switcher */}
-        <div className="flex items-center">
+        {/* TRAILING — notifications bell + locale switcher */}
+        <div className="flex items-center gap-1">
+          <NotificationBell />
           <LocaleSwitcher />
         </div>
       </div>

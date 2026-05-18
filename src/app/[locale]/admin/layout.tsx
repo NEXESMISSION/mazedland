@@ -10,6 +10,7 @@ import {
   FileWarning,
   Mailbox,
   Wallet,
+  ReceiptText,
 } from "lucide-react";
 
 /**
@@ -44,6 +45,7 @@ export default async function AdminLayout({
     { href: "/admin", label: "Overview", Icon: LayoutDashboard },
     { href: "/admin/properties", label: "Properties", Icon: Building2 },
     { href: "/admin/kyc-queue", label: "KYC queue", Icon: ShieldCheck },
+    { href: "/admin/payments", label: "Payments", Icon: ReceiptText },
     { href: "/admin/payouts", label: "Payouts", Icon: Wallet },
     { href: "/admin/inspectors", label: "Inspectors", Icon: ClipboardCheck },
     { href: "/admin/users", label: "Users", Icon: Users },

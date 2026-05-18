@@ -5,6 +5,9 @@ import { Check, X, ImageIcon, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 
+const DEFAULT_REJECT_REASON =
+  "Photo de la CIN illisible — reprenez avec un meilleur éclairage.";
+
 export interface KycSubmissionView {
   id: string;
   user_id: string;
@@ -37,6 +40,8 @@ export function KycQueueList({
   // Tracks which submission is currently being approved/rejected so we
   // can disable both buttons without locking the whole list.
   const [busy, setBusy] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState<KycSubmissionView | null>(null);
+  const [rejectReason, setRejectReason] = useState(DEFAULT_REJECT_REASON);
 
   // The "submitted" tab is the only actionable view; archive tabs are
   // read-only. Mazed-auto has bulk-select on top of this; we keep the
@@ -73,23 +78,24 @@ export function KycQueueList({
       setItems((arr) => arr.filter((i) => i.id !== sub.id));
       toast(
         decision === "verified"
-          ? "Soumission approuvée"
-          : "Soumission rejetée",
+          ? "Soumission approuvée — l'utilisateur est notifié."
+          : "Soumission rejetée — l'utilisateur est notifié.",
         decision === "verified" ? "success" : "warning",
       );
     } finally {
       setBusy(null);
+      setRejecting(null);
+      setRejectReason(DEFAULT_REJECT_REASON);
     }
   }
 
+  function openReject(sub: KycSubmissionView) {
+    setRejectReason(DEFAULT_REJECT_REASON);
+    setRejecting(sub);
+  }
+
   function reject(sub: KycSubmissionView) {
-    const reason = window.prompt(
-      "Raison du rejet (visible par l'utilisateur)",
-      "Photo de la CIN illisible — reprenez avec un meilleur éclairage.",
-    );
-    if (reason === null) return;
-    const trimmed = reason.trim().slice(0, 500);
-    decide(sub, "rejected", trimmed || undefined);
+    openReject(sub);
   }
 
   return (
@@ -187,6 +193,63 @@ export function KycQueueList({
           )}
         </article>
       ))}
+
+      {/* Reject modal — replaces the old window.prompt */}
+      {rejecting && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+          onClick={() => !busy && setRejecting(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-[var(--surface)] p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-[16px] font-bold text-foreground">
+              Motif du rejet KYC
+            </h3>
+            <p className="mt-1 text-[12px] text-[var(--foreground-muted)] leading-relaxed">
+              L&apos;utilisateur reçoit une notification avec ce message et
+              peut relancer la vérification depuis sa page KYC.
+            </p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={4}
+              maxLength={500}
+              autoFocus
+              className="mt-3 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)]/40 p-2.5 text-[13px] font-medium text-foreground placeholder:text-[var(--foreground-muted)] focus:border-[var(--gold)] focus:outline-none focus:ring-1 focus:ring-[var(--gold)]/40"
+            />
+            <div className="mt-1 text-[10px] text-[var(--foreground-muted)] text-end">
+              {rejectReason.length} / 500
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                disabled={busy === rejecting.id}
+                onClick={() => setRejecting(null)}
+                className="flex-1 h-10 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] text-foreground font-semibold text-[13px]"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={busy === rejecting.id || rejectReason.trim().length < 5}
+                onClick={() =>
+                  decide(rejecting, "rejected", rejectReason.trim())
+                }
+                className="flex-1 h-10 rounded-[var(--radius)] bg-red-600 text-white font-bold text-[13px] hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-1.5"
+              >
+                {busy === rejecting.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <X className="h-4 w-4" strokeWidth={2.5} />
+                )}
+                Rejeter et notifier
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
