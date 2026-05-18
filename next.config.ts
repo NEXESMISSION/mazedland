@@ -11,6 +11,15 @@ const nextConfig: NextConfig = {
     root: import.meta.dirname,
   },
   images: {
+    // AVIF first, then WebP. AVIF is ~25–30 % smaller than WebP at the
+    // same perceptual quality; next/image negotiates per request based
+    // on the browser's Accept header so older browsers transparently
+    // fall back to WebP. Our seed sources are WebP — the optimizer
+    // decodes and re-encodes to AVIF on demand, caching the result.
+    formats: ["image/avif", "image/webp"],
+    // Long-cache optimized variants on the CDN. They're keyed by
+    // (source URL + width + quality + format) so this is safe.
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co" },
       { protocol: "https", hostname: "images.unsplash.com" },
@@ -87,6 +96,16 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Content-Type", value: "application/manifest+json; charset=utf-8" },
           { key: "Cache-Control", value: "public, max-age=3600" },
+        ],
+      },
+      // Seed property images — content-addressable (re-encoded only
+      // when the optimization script runs), safe to long-cache.
+      // immutable lets the browser skip even the conditional GET on
+      // the second visit.
+      {
+        source: "/properties/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
     ];

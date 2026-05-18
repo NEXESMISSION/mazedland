@@ -4,7 +4,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { AuctionWithProperty } from "@/lib/types";
 import { formatTND, depositForOpening } from "@/lib/utils";
-import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { Countdown } from "@/components/auction/Countdown";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
 import { SixthOfferForm } from "@/components/auction/SixthOfferForm";
@@ -183,17 +183,21 @@ export default async function AuctionDetail({
           variants instead of the full-res original (often 1500×1000+). */}
       {photos.length > 1 && (
         <div className="snap-rail hide-scrollbar flex gap-2 overflow-x-auto px-4 pt-3">
-          {photos.slice(1, 8).map((p) => (
-            <Image
-              key={p.id}
-              src={propertyPhotoUrl(p.storage_path)}
-              alt=""
-              width={80}
-              height={80}
-              sizes="80px"
-              className="aspect-square w-20 shrink-0 snap-start rounded-xl object-cover ring-1 ring-border transition hover:ring-gold/50"
-            />
-          ))}
+          {photos.slice(1, 8).map((p) => {
+            const src = propertyPhotoUrl(p.storage_path);
+            return (
+              <Image
+                key={p.id}
+                src={src}
+                alt=""
+                width={80}
+                height={80}
+                sizes="80px"
+                unoptimized={isStaticSeedPath(src)}
+                className="aspect-square w-20 shrink-0 snap-start rounded-xl object-cover ring-1 ring-border transition hover:ring-gold/50"
+              />
+            );
+          })}
         </div>
       )}
 

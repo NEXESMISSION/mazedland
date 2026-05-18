@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
 
 type Photo = {
@@ -65,11 +65,12 @@ export function HeroCarousel({
       <div className="relative aspect-[4/5] overflow-hidden bg-surface-2 sm:aspect-[4/3]">
         {photos.length > 0 ? (
           photos.map((p, i) => {
+            const src = propertyPhotoUrl(p.storage_path);
             const blur = IMAGE_BLUR_MAP[p.storage_path];
             return (
               <Image
                 key={p.id}
-                src={propertyPhotoUrl(p.storage_path)}
+                src={src}
                 alt={alt}
                 fill
                 priority={i === 0}
@@ -77,6 +78,7 @@ export function HeroCarousel({
                 sizes="(min-width: 1024px) 1100px, 100vw"
                 placeholder={blur ? "blur" : "empty"}
                 blurDataURL={blur}
+                unoptimized={isStaticSeedPath(src)}
                 className={`object-cover transition-opacity duration-700 ease-out ${
                   i === index ? "opacity-100 z-0" : "opacity-0 z-0"
                 }`}

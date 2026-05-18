@@ -8,16 +8,17 @@
 //   - Other GETs     : stale-while-revalidate into RUNTIME_CACHE.
 //   - Cross-origin & non-GET: passthrough, never cached.
 
-const VERSION = "batta-v3";
+const VERSION = "batta-v4";
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const IMAGE_CACHE = `${VERSION}-images`;
 
 // Soft caps — we trim FIFO-style when we exceed these (oldest entries
-// die first). The numbers are tuned for a Batta browse session: a user
-// hitting the index pages might touch 60-100 thumbnails, and a typical
-// supabase/_next/data response is ~10-50 KB, so 80 of each is generous.
-const MAX_IMAGE_ENTRIES = 120;
+// die first). 120 was too tight for a single rail scroll because the
+// browser fetches each photo at multiple widths (responsive `sizes`),
+// so a 30-card catalogue would blow past the cap. 400 covers the whole
+// seed set plus a few sessions of fresh uploads without bloating disk.
+const MAX_IMAGE_ENTRIES = 400;
 const MAX_RUNTIME_ENTRIES = 80;
 
 const PRECACHE = [

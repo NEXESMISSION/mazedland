@@ -9,7 +9,7 @@ import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeSearch } from "@/components/landing/HomeSearch";
 import { PropertyCard } from "@/components/property/PropertyCard";
-import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { AuctionWithProperty } from "@/lib/types";
@@ -556,13 +556,19 @@ function HammeredCard({
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
         {photo ? (
-          <Image
-            src={propertyPhotoUrl(photo.storage_path)}
-            alt=""
-            fill
-            sizes="(min-width: 1024px) 220px, 200px"
-            className="object-cover transition duration-500 group-hover:scale-105"
-          />
+          (() => {
+            const src = propertyPhotoUrl(photo.storage_path);
+            return (
+              <Image
+                src={src}
+                alt=""
+                fill
+                sizes="(min-width: 1024px) 220px, 200px"
+                unoptimized={isStaticSeedPath(src)}
+                className="object-cover transition duration-500 group-hover:scale-105"
+              />
+            );
+          })()
         ) : (
           <div className="flex h-full items-center justify-center text-3xl text-foreground/15">🏛️</div>
         )}

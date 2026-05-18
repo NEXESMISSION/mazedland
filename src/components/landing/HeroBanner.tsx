@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
+import { isStaticSeedPath } from "@/lib/imageUrl";
 
 export type HeroSlide = {
   /** Unique id for keying. Auction id when sourced from DB, "fallback-N" otherwise. */
@@ -299,6 +300,7 @@ function SlideCard({
           priority={priority}
           loading={priority ? "eager" : "lazy"}
           onError={() => setImageBroken(true)}
+          unoptimized={isStaticSeedPath(slide.imageUrl!)}
           className="object-cover transition-transform duration-[6000ms] ease-out group-hover:scale-105"
           draggable={false}
         />

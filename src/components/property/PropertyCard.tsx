@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { formatTND, minBidIncrement } from "@/lib/utils";
 import type { AuctionWithProperty } from "@/lib/types";
 import { ArrowUpRight, Gavel, Users, Tag } from "lucide-react";
-import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { LiveTimer } from "@/components/landing/LiveTimer";
@@ -87,16 +87,22 @@ export async function PropertyCard({
             // back to "empty" (no placeholder) — real uploads don't
             // have a blur yet.
             (() => {
+              const src = propertyPhotoUrl(heroPhoto.storage_path);
               const blur = IMAGE_BLUR_MAP[heroPhoto.storage_path];
+              // Skip /_next/image for static seed photos — they're already
+              // small webps and the optimizer's cold-function round-trip
+              // dwarfs the file fetch itself.
+              const unoptimized = isStaticSeedPath(src);
               return (
                 <Image
-                  src={propertyPhotoUrl(heroPhoto.storage_path)}
+                  src={src}
                   alt={property.title}
                   fill
                   sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw"
                   priority={priority}
                   placeholder={blur ? "blur" : "empty"}
                   blurDataURL={blur}
+                  unoptimized={unoptimized}
                   className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                 />
               );

@@ -1,4 +1,17 @@
 /**
+ * Returns true for static seed images that live in /public/properties/*.
+ *
+ * These webps are already 480-800px and 20-40KB, so routing them through
+ * the Vercel Image Optimizer adds a cold-function round-trip without
+ * shrinking them further. Components use this flag to set
+ * `unoptimized` on next/image — the browser fetches the file directly,
+ * the SW caches it once, and every revisit is a cache hit.
+ */
+export function isStaticSeedPath(url: string): boolean {
+  return url.startsWith("/properties/");
+}
+
+/**
  * Resolve a storage path (bucket-relative) to a public URL on the
  * Supabase storage CDN. We don't go through `storage.from(...).getPublicUrl`
  * here so we can construct URLs in server components without a client
