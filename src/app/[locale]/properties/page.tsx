@@ -3,6 +3,11 @@ import { Link } from "@/i18n/navigation";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { AuctionWithProperty } from "@/lib/types";
+import {
+  buildIlikeOrClause,
+  normalizeSearchQuery,
+  PROPERTY_SEARCH_FIELDS,
+} from "@/lib/search";
 import { Search, SlidersHorizontal } from "lucide-react";
 
 const GOVERNORATES = [
@@ -27,6 +32,7 @@ export default async function PropertiesIndex({
   const locale = await getLocale();
   const isRTL = locale === "ar";
   const sp = await searchParams;
+  const cleanedQ = normalizeSearchQuery(sp.q);
 
   let auctions: AuctionWithProperty[] = [];
   let savedAuctionIds = new Set<string>();
@@ -49,7 +55,15 @@ export default async function PropertiesIndex({
 
     if (sp.gov) query = query.eq("property.governorate", sp.gov);
     if (sp.type) query = query.eq("property.type", sp.type);
-    if (sp.q) query = query.ilike("property.title", `%${sp.q}%`);
+    if (cleanedQ) {
+      // Search title + description + every location field. PostgREST
+      // `.or()` against a nested table needs `foreignTable` so the
+      // ilike binds to the joined `properties` row, not `auctions`.
+      query = query.or(
+        buildIlikeOrClause(cleanedQ, PROPERTY_SEARCH_FIELDS),
+        { foreignTable: "property" },
+      );
+    }
 
     const [auctionsRes, userRes] = await Promise.all([query, supabase.auth.getUser()]);
     if (auctionsRes.error) console.error("[/properties] supabase error", auctionsRes.error);
@@ -147,7 +161,7 @@ export default async function PropertiesIndex({
 
         <div className="mt-5">
           {auctions.length === 0 ? (
-            <EmptyState />
+            cleanedQ ? <NoSearchResults q={cleanedQ} /> : <EmptyState />
           ) : (
             <div className="grid grid-cols-2 gap-3 pb-6 lg:grid-cols-4 lg:gap-5">
               {auctions.map((a, i) => (
@@ -221,6 +235,33 @@ function EmptyState() {
           className="batta-btn-luxe tap-target mt-6 px-5 py-2.5 text-[12.5px]"
         >
           List your estate
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// Separate state from the true empty-catalogue case — a buyer who
+// typed a search should be told their *query* came up empty (and
+// offered a one-tap reset), not that the marketplace is shut.
+function NoSearchResults({ q }: { q: string }) {
+  return (
+    <div className="batta-frame relative px-6 py-10 text-center">
+      <div className="relative">
+        <span className="batta-monogram mx-auto mb-4 size-12 text-[20px]">
+          <Search className="size-5" strokeWidth={1.8} />
+        </span>
+        <p className="text-[18px] font-bold text-foreground">
+          No matches for &ldquo;{q}&rdquo;
+        </p>
+        <p className="mt-2 text-[12px] text-muted">
+          Try a different keyword, governorate, or property type.
+        </p>
+        <Link
+          href="/properties"
+          className="batta-btn-ghost-gold tap-target mt-6 px-5 py-2.5 text-[12.5px]"
+        >
+          Clear search
         </Link>
       </div>
     </div>

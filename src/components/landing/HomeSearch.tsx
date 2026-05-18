@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { normalizeSearchQuery } from "@/lib/search";
 import { Search, MapPin } from "lucide-react";
 
 const GOVERNORATES = [
@@ -38,7 +39,10 @@ export function HomeSearch({ isRTL: _isRTL }: { isRTL: boolean }) {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (q.trim()) params.set("q", q.trim());
+    // Strip ilike wildcards + `or()` separators here so the
+    // /auctions server query doesn't have to re-clean the same input.
+    const cleanQ = normalizeSearchQuery(q);
+    if (cleanQ) params.set("q", cleanQ);
     if (gov) params.set("gov", gov);
     if (type) params.set("type", type);
     const qs = params.toString();
