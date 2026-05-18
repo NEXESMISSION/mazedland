@@ -8,6 +8,7 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { Countdown } from "@/components/auction/Countdown";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
 import { SixthOfferForm } from "@/components/auction/SixthOfferForm";
+import { HeroCarousel } from "@/components/auction/HeroCarousel";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { Link } from "@/i18n/navigation";
 import {
@@ -118,28 +119,20 @@ export default async function AuctionDetail({
     myInspection = ins ?? null;
   }
 
-  return (
-    <div className="mx-auto max-w-[var(--max-w)] pb-8 lg:max-w-[var(--max-w-wide)]">
-      {/* ─── PHOTO GALLERY — full-bleed cinematic hero ─── */}
-      <div className="batta-photo-overlay relative">
-        <div className="relative aspect-[4/5] overflow-hidden bg-surface-2 sm:aspect-[4/3]">
-          {photos[0] ? (
-            // Next/Image: above-the-fold hero, so `priority` skips lazy
-            // loading and the `sizes` hint lets the optimizer pick the
-            // right width (capped at the desktop content max-width).
-            <Image
-              src={propertyPhotoUrl(photos[0].storage_path)}
-              alt={property.title}
-              fill
-              priority
-              sizes="(min-width: 1024px) 1100px, 100vw"
-              className="object-cover"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-7xl text-foreground/15">🏛️</div>
-          )}
-        </div>
+  // While the auction is live, the "Placer une enchère" CTA detaches
+  // from the document flow and floats above the bottom tab bar — always
+  // visible, no scrolling required. We reserve room for it via extra
+  // bottom padding so the last card isn't covered.
+  const showFloatingBidCta = !isDirect && isLive;
 
+  return (
+    <div
+      className={`mx-auto max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)] ${
+        showFloatingBidCta ? "pb-32" : "pb-8"
+      }`}
+    >
+      {/* ─── PHOTO GALLERY — full-bleed cinematic hero with auto-rotate ─── */}
+      <HeroCarousel photos={photos} alt={property.title}>
         {/* Top row — LIVE pulse + lot chip + verified */}
         <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex items-start justify-between gap-2 px-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -149,7 +142,7 @@ export default async function AuctionDetail({
                 {t("auction.live")}
               </span>
             )}
-            <span className="batta-tabular inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/60 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-gold backdrop-blur-md">
+            <span className="batta-tabular inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/55 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white backdrop-blur-md">
               Lot · {lotNo}
             </span>
             <span className="batta-gold-fill inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
@@ -157,25 +150,25 @@ export default async function AuctionDetail({
               {t("auction.verified")}
             </span>
           </div>
-          <span className="batta-tabular pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/60 px-2.5 py-1 text-[10px] font-bold text-foreground backdrop-blur-md">
+          <span className="batta-tabular pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/55 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-md">
             {totalBids} · {t("auction.totalBids")}
           </span>
         </div>
 
         {/* Bottom overlay — type pill + bold title + location. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-5 pt-14">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-12 pt-16">
           <span className="batta-gold-fill inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
             <Gavel className="size-3" strokeWidth={2.5} />
             {t(`auction.types.${auction.type}`)}
           </span>
           <h1
-            className={`mt-3 text-pretty text-[28px] font-extrabold leading-[1.05] tracking-tight text-white drop-shadow ${
+            className={`mt-3 text-pretty text-[28px] font-extrabold leading-[1.05] tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] ${
               isRTL ? "font-arabic" : ""
             }`}
           >
             {property.title}
           </h1>
-          <div className="mt-1.5 flex items-center gap-1 text-[12px] font-medium text-white/85">
+          <div className="mt-1.5 flex items-center gap-1 text-[12px] font-semibold text-white/95 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
             <MapPin className="size-3.5" strokeWidth={2} />
             <span className="truncate">
               {property.governorate}
@@ -183,7 +176,7 @@ export default async function AuctionDetail({
             </span>
           </div>
         </div>
-      </div>
+      </HeroCarousel>
 
       {/* Thumbnails — horizontal contact-sheet rail. Next/Image with
           explicit small width so the optimizer hands back ~80px-wide
@@ -258,31 +251,14 @@ export default async function AuctionDetail({
       </section>
       )}
 
-      {/* ─── PURCHASE ACTIONS — auctions only ─── */}
-      {!isDirect && (
+      {/* ─── PURCHASE STATUS — auctions only, post-live states ───
+              The active "Placer une enchère" CTA is rendered as a
+              floating bottom bar at the end of this component so it
+              stays visible while the user scrolls through specs,
+              provenance, the map, and documents. */}
+      {!isDirect && !isLive && (
       <section className="mx-4 mt-3 space-y-2">
-        {isLive ? (
-          <>
-            <Link
-              href={`/auctions/${auction.id}/bid` as never}
-              className="block h-12 rounded-[var(--radius)] bg-gradient-to-b from-[var(--gold-bright)] to-[var(--gold)] text-black font-bold text-[14px] inline-flex items-center justify-center gap-2 shadow-[var(--shadow-gold)] hover:shadow-[0_0_24px_rgba(212,175,55,0.45)] active:scale-[0.99] transition-all w-full"
-            >
-              <Gavel className="h-4 w-4" strokeWidth={2.5} />
-              Placer une enchère
-            </Link>
-            {hasBuyNow && !isOwner && (
-              <Link
-                href={`/auctions/${auction.id}/bid` as never}
-                className="block text-center text-[12px] text-[var(--foreground-muted)] hover:text-[var(--gold)] py-1"
-              >
-                ou achat immédiat à{" "}
-                <span className="font-bold text-foreground">
-                  {formatTND(Number(auction.buy_now_price), locale)}
-                </span>
-              </Link>
-            )}
-          </>
-        ) : auction.winner_user_id && userId === auction.winner_user_id ? (
+        {auction.winner_user_id && userId === auction.winner_user_id ? (
           <div className="flex items-center justify-between gap-3 py-2 px-1">
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-[0.16em] font-bold text-[var(--gold)]">
@@ -464,6 +440,44 @@ export default async function AuctionDetail({
 
       {/* Spacer above the bottom tab bar so the last card isn't covered. */}
       <div aria-hidden className="h-6" />
+
+      {/* ─── FLOATING BID CTA ───
+              Sticks to the bottom of the viewport, sitting just above
+              the global BottomTabBar (which is `--batta-bottombar-h`
+              tall, plus the iOS safe area). Stays visible for the
+              entire scroll of the detail page so the primary action
+              is one tap away. */}
+      {showFloatingBidCta && (
+        <div
+          className="fixed inset-x-0 z-40 px-4"
+          style={{
+            bottom: "calc(var(--batta-bottombar-h) + env(safe-area-inset-bottom) + 12px)",
+          }}
+        >
+          <div className="mx-auto max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)]">
+            <div className="rounded-2xl border border-border bg-white/95 p-3 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.25)] backdrop-blur-xl">
+              <Link
+                href={`/auctions/${auction.id}/bid` as never}
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[var(--radius)] bg-[var(--gold)] text-[14px] font-bold text-white shadow-[var(--shadow-gold)] transition-all hover:bg-[var(--gold-bright)] active:scale-[0.99]"
+              >
+                <Gavel className="h-4 w-4" strokeWidth={2.5} />
+                Placer une enchère
+              </Link>
+              {hasBuyNow && !isOwner && (
+                <Link
+                  href={`/auctions/${auction.id}/bid` as never}
+                  className="mt-1.5 block py-1 text-center text-[12px] text-[var(--foreground-muted)] hover:text-[var(--gold)]"
+                >
+                  ou achat immédiat à{" "}
+                  <span className="font-bold text-foreground">
+                    {formatTND(Number(auction.buy_now_price), locale)}
+                  </span>
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

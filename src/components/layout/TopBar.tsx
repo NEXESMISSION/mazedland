@@ -87,19 +87,19 @@ export function TopBar() {
 
 function BrandMark() {
   const t = useTranslations("brand");
-  // Sized to dominate the top bar — `h-11` (44px) on mobile, `h-12`
-  // (48px) on desktop. The wide 3:2 logo means width auto-scales to
-  // ~66-72px. `priority` skips the lazy-load — this is above-the-fold
-  // on every page that shows the bar.
+  // Wordmark sized to read clearly in the top bar — `h-8` (32px) on
+  // mobile, `h-9` (36px) on desktop. The ~2.5:1 wordmark auto-scales
+  // its width via `w-auto`. `priority` skips the lazy-load — this is
+  // above-the-fold on every page that shows the bar.
   return (
     <Link href="/" className="flex items-center" aria-label={t("name")}>
       <Image
         src="/logo.png"
         alt={t("name")}
-        width={180}
-        height={120}
+        width={890}
+        height={277}
         priority
-        className="h-11 w-auto shrink-0 lg:h-12"
+        className="h-8 w-auto shrink-0 lg:h-9"
       />
     </Link>
   );

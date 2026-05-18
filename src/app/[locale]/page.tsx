@@ -178,6 +178,7 @@ export default async function LandingPage() {
           ctaHref="/auctions"
           ChevronEnd={ChevronEnd}
           isRTL={isRTL}
+          flush
         />
         {trending.length > 0 ? (
           <TrendingRail>
