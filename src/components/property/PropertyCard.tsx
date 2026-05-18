@@ -5,6 +5,7 @@ import { formatTND, minBidIncrement } from "@/lib/utils";
 import type { AuctionWithProperty } from "@/lib/types";
 import { ArrowUpRight, Gavel, Users, Tag } from "lucide-react";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { LiveTimer } from "@/components/landing/LiveTimer";
 
@@ -80,14 +81,26 @@ export async function PropertyCard({
             // /render/image transform on top: projects without the
             // transformations add-on return 400 from that endpoint
             // and the image silently fails to load.
-            <Image
-              src={propertyPhotoUrl(heroPhoto.storage_path)}
-              alt={property.title}
-              fill
-              sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw"
-              priority={priority}
-              className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-            />
+            //
+            // blurDataURL: if this photo is a seeded listing we have a
+            // pre-baked 16-px blur in IMAGE_BLUR_MAP. Otherwise fall
+            // back to "empty" (no placeholder) — real uploads don't
+            // have a blur yet.
+            (() => {
+              const blur = IMAGE_BLUR_MAP[heroPhoto.storage_path];
+              return (
+                <Image
+                  src={propertyPhotoUrl(heroPhoto.storage_path)}
+                  alt={property.title}
+                  fill
+                  sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw"
+                  priority={priority}
+                  placeholder={blur ? "blur" : "empty"}
+                  blurDataURL={blur}
+                  className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                />
+              );
+            })()
           ) : (
             <div className="flex h-full items-center justify-center text-5xl text-foreground/15">
               🏛️
@@ -142,7 +155,7 @@ export async function PropertyCard({
           {/* Bottom-trailing — polished-brass arrow chip. Rotates on
               hover so the card feels alive. */}
           <div className="absolute bottom-2.5 end-2.5">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-b from-gold-bright to-gold text-black ring-1 ring-black/10 shadow-[var(--shadow-gold)] transition-transform group-hover:scale-110 group-hover:rotate-45">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[var(--gold)] text-white ring-1 ring-black/5 shadow-[var(--shadow-gold)] transition-transform group-hover:scale-110 group-hover:rotate-45">
               <ArrowUpRight className="size-4" strokeWidth={2.5} />
             </span>
           </div>

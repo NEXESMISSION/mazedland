@@ -8,14 +8,14 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "text-black bg-gradient-to-b from-[var(--gold-bright)] to-[var(--gold)] shadow-[var(--shadow-gold),inset_0_1px_0_0_rgba(255,255,255,0.25)] hover:shadow-[0_0_24px_rgba(212,175,55,0.45),inset_0_1px_0_0_rgba(255,255,255,0.3)] hover:from-[#f4d03f] hover:to-[var(--gold-bright)]",
+          "text-white bg-[var(--gold)] shadow-[var(--shadow-gold)] hover:bg-[var(--gold-bright)] hover:shadow-[0_8px_24px_-6px_rgba(30,58,138,0.35)]",
         secondary:
           "bg-[var(--surface-2)] text-foreground border border-[var(--border)] hover:bg-[var(--surface-3)] hover:border-[var(--gold-soft)]",
         outline:
-          "border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold-faint)] hover:shadow-[0_0_18px_rgba(212,175,55,0.18)]",
+          "border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold-faint)]",
         ghost: "text-foreground hover:bg-[var(--surface-2)]",
         danger:
-          "bg-[var(--danger)] text-white hover:bg-red-600 shadow-[0_4px_14px_rgba(220,38,38,0.25)]",
+          "bg-[var(--danger)] text-white hover:bg-red-600 shadow-[0_4px_14px_-4px_rgba(220,38,38,0.30)]",
         link:
           "text-[var(--gold)] underline-offset-4 hover:underline p-0 font-semibold",
       },

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/imageCompress";
 import type { PropertyType } from "@/lib/types";
 import { Camera, FileText, Trash2, CheckCircle2 } from "lucide-react";
 
@@ -145,15 +146,29 @@ export function SellForm({ initial }: { initial?: SellFormInitial } = {}) {
         // through a single name. Same value as propId.
         const prop = { id: propId };
 
-        // 2. Upload photos in parallel; storage paths are owner-scoped to
-        //    satisfy the storage RLS policy that gates uploads on
-        //    `(storage.foldername(name))[1] = auth.uid()`. In edit mode
-        //    we APPEND — existing photos stay; the user can use the
-        //    photo manager (TBD) to remove specific shots later.
+        // 2. Compress + upload photos in parallel. Storage paths are
+        //    owner-scoped to satisfy the storage RLS policy that gates
+        //    uploads on `(storage.foldername(name))[1] = auth.uid()`.
+        //    In edit mode we APPEND — existing photos stay; the user
+        //    can use the photo manager (TBD) to remove specific shots
+        //    later.
+        //
+        //    compressImage runs decode → 1600px resize → WebP q0.80 on
+        //    a canvas. A 4 MB phone capture lands at ~250 KB without a
+        //    perceptual loss, and the resulting File still uploads
+        //    through the same supabase.storage path. The helper is
+        //    failure-tolerant: on any error it returns the original
+        //    file unchanged so the upload never breaks on the
+        //    compression step.
         if (photos.length > 0) {
+          const compressed = await Promise.all(
+            photos.map((file) =>
+              compressImage(file, { maxEdge: 1600, quality: 0.8, format: "webp" }),
+            ),
+          );
           const photoUploads = await Promise.all(
-            photos.map(async (file, i) => {
-              const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+            compressed.map(async (file, i) => {
+              const ext = file.name.split(".").pop()?.toLowerCase() || "webp";
               const path = `${user.id}/${prop.id}/photo-${Date.now()}-${i}.${ext}`;
               const { error } = await supabase.storage.from("properties").upload(path, file, {
                 contentType: file.type, upsert: false,
@@ -267,7 +282,7 @@ export function SellForm({ initial }: { initial?: SellFormInitial } = {}) {
                 <Trash2 className="size-3" />
               </button>
               {i === 0 && (
-                <span className="absolute bottom-1 rounded-full bg-batta-gold px-1.5 py-0.5 text-[9px] font-bold text-batta-cream-deep ltr:left-1 rtl:right-1">
+                <span className="absolute bottom-1 rounded-full bg-batta-gold px-1.5 py-0.5 text-[9px] font-bold text-white ltr:left-1 rtl:right-1">
                   COVER
                 </span>
               )}

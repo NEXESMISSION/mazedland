@@ -5,21 +5,17 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { Home, Search, Plus, Heart, User } from "lucide-react";
 
 /**
- * Bottom tab bar — full-width, flush-bottom, rounded top corners.
+ * Bottom tab bar — full-width, flush-bottom, clean white surface.
  *
- *   - Spans the whole viewport width and welds to the bottom edge so
- *     it reads as a native-app tab bar (iOS/Android), not a detached
- *     pill. The top corners are rounded so the bar still feels
- *     modern — without that the bar would look like a flat strip.
- *   - The bar background extends under the home indicator on iPhones
- *     (the wrapper takes the safe-area inset as bottom padding), but
- *     the icon row's height stays a clean `--bottombar-h` so the
- *     visible content zone is the same on every device.
- *   - Five cells, with cell 3 reserved for the gold **Sell FAB** —
- *     the polished-brass disc that lifts above the bar's top edge so
- *     it pops out of the rounded curve.
- *   - Active state: gold icon + label, with a 1px gold pin glowing
- *     just inside the top corner of the cell.
+ *   - Frosted white background that lets the page peek through subtly,
+ *     anchored to the bottom edge. A single hairline top border keeps
+ *     it crisp without competing with content.
+ *   - Five cells. Cell 3 is the navy "Sell" FAB — a saturated disc
+ *     that lifts above the bar's top edge so it pops as the action.
+ *   - Active tab: navy icon + label + small underline pip below the
+ *     label. Inactive: muted zinc. Hover lightly darkens.
+ *   - Safe-area aware: the visible icon row is `--bottombar-h` tall;
+ *     the bar background extends below it for the iPhone home indicator.
  */
 
 type Tab = {
@@ -27,7 +23,7 @@ type Tab = {
   labelKey: "home" | "browse" | "sell" | "watchlist" | "account";
   Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   match: (p: string) => boolean;
-  /** Renders the floating gold FAB instead of a regular cell. */
+  /** Renders the floating navy FAB instead of a regular cell. */
   isCenter?: boolean;
 };
 
@@ -84,12 +80,8 @@ export function BottomTabBar() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-center rounded-t-3xl border-t border-gold/20 bg-[rgba(14,14,14,0.96)] backdrop-blur-xl shadow-[0_-12px_36px_-8px_rgba(0,0,0,0.6)]"
+      className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-center border-t border-border bg-white/90 backdrop-blur-xl shadow-[0_-4px_20px_-8px_rgba(15,23,42,0.06)]"
       style={{
-        // Bar height = visible icon-row height + the device's safe-area
-        // inset (home indicator on iPhone). The background extends all
-        // the way to the bottom edge; only the content row uses the
-        // visible height.
         height: "calc(var(--batta-bottombar-h) + env(safe-area-inset-bottom))",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
@@ -99,9 +91,9 @@ export function BottomTabBar() {
         const active = tab.match(pathname);
 
         if (tab.isCenter) {
-          // Polished-brass FAB. Negative translate lifts the disc
-          // above the bar's top edge so it pops out of the rounded
-          // corner curve — the visual "sell" focal point.
+          // Navy FAB — saturated, lifted, white plus icon. The deep
+          // blue against the white bar makes it the visual focal point
+          // without needing a metallic gradient.
           return (
             <Link
               key={tab.href}
@@ -111,11 +103,11 @@ export function BottomTabBar() {
               aria-current={active ? "page" : undefined}
             >
               <span
-                className={`relative inline-flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full bg-gradient-to-b from-[#f7e07a] via-gold-bright to-gold-soft shadow-[var(--shadow-gold),inset_0_1px_0_0_rgba(255,255,255,0.35),inset_0_-1px_0_0_rgba(0,0,0,0.15)] transition-transform active:scale-95 ${
+                className={`relative inline-flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full bg-[var(--gold)] text-white shadow-[var(--shadow-gold)] ring-4 ring-white transition-transform active:scale-95 ${
                   active ? "scale-105" : "hover:scale-[1.03]"
                 }`}
               >
-                <Plus className="size-6 text-black" strokeWidth={3} />
+                <Plus className="size-6" strokeWidth={2.5} />
               </span>
             </Link>
           );
@@ -126,16 +118,13 @@ export function BottomTabBar() {
             key={tab.href}
             href={tab.href}
             className={`relative flex h-full min-w-0 flex-col items-center justify-center gap-1 px-1 transition-colors ${
-              active ? "text-gold" : "text-muted hover:text-foreground"
+              active
+                ? "text-[var(--gold)]"
+                : "text-[var(--foreground-subtle)] hover:text-[var(--foreground)]"
             }`}
             aria-label={t(tab.labelKey)}
             aria-current={active ? "page" : undefined}
           >
-            {/* Top gold pin — sits just inside the rounded top so it
-                glows along the curve without bleeding off. */}
-            {active && (
-              <span className="absolute top-1.5 h-1 w-10 rounded-full bg-gold shadow-[0_0_12px_var(--gold-glow)]" />
-            )}
             <Icon
               className={`size-5 transition-transform ${active ? "scale-110" : ""}`}
               strokeWidth={active ? 2.5 : 2}
@@ -143,6 +132,12 @@ export function BottomTabBar() {
             <span className="max-w-full truncate text-[10px] font-semibold leading-tight">
               {t(tab.labelKey)}
             </span>
+            {/* Active indicator — a tiny navy dot below the label
+                instead of the old glowing top pin. Cleaner, doesn't
+                compete with the FAB above. */}
+            {active && (
+              <span className="absolute bottom-1.5 h-1 w-1 rounded-full bg-[var(--gold)]" />
+            )}
           </Link>
         );
       })}

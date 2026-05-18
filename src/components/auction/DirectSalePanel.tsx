@@ -100,7 +100,7 @@ export function DirectSalePanel({
           <button
             type="button"
             onClick={buy}
-            className="block h-12 w-full rounded-[var(--radius)] bg-gradient-to-b from-[var(--gold-bright)] to-[var(--gold)] text-black font-bold text-[14px] inline-flex items-center justify-center gap-2 shadow-[var(--shadow-gold)] hover:shadow-[0_0_24px_rgba(212,175,55,0.45)] active:scale-[0.99] transition-all"
+            className="block h-12 w-full rounded-[var(--radius)] bg-[var(--gold)] text-white font-bold text-[14px] inline-flex items-center justify-center gap-2 shadow-[var(--shadow-gold)] hover:bg-[var(--gold-bright)] active:scale-[0.99] transition-all"
           >
             <Tag className="h-4 w-4" strokeWidth={2.5} />
             {!userId

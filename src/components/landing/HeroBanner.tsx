@@ -213,7 +213,7 @@ export function HeroBanner({
                 onClick={() => jumpTo(i)}
                 className={`pointer-events-auto h-1.5 rounded-full transition-all duration-300 ${
                   i === index
-                    ? "w-6 bg-gold shadow-[0_0_8px_rgba(212,175,55,0.6)]"
+                    ? "w-6 bg-gold shadow-[0_0_6px_rgba(30,58,138,0.35)]"
                     : "w-1.5 bg-white/40 hover:bg-white/60"
                 }`}
               />
@@ -251,12 +251,11 @@ function SlideCard({
       draggable={false}
     >
       {/* Brand-gradient backdrop — painted under the photo so a slow
-          image load or a broken URL never leaves the slide black. When
-          there's no image to display we promote this surface to the
-          "catalogue cover" treatment so the slide reads as an
-          intentional brand panel, not a broken slot. */}
+          image load or a broken URL never leaves the slide blank.
+          Navy → deep navy gradient on a white page reads as a
+          sophisticated "we're loading the photo" placeholder. */}
       {showImage ? (
-        <div className="absolute inset-0 bg-gradient-to-br from-batta-navy via-batta-navy-deep to-black" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[var(--gold-deep)] via-[var(--gold)] to-[var(--gold-deep)]" />
       ) : (
         <div className="batta-surface-navy-luxe absolute inset-0">
           {/* Radial gold glow + decorative concentric arcs centred on
@@ -268,7 +267,7 @@ function SlideCard({
             className="absolute inset-0 opacity-90"
             style={{
               background:
-                "radial-gradient(60% 80% at 50% 35%, rgba(244, 215, 122, 0.18) 0%, rgba(212, 175, 55, 0.08) 35%, transparent 70%)",
+                "radial-gradient(60% 80% at 50% 35%, rgba(30, 58, 138, 0.10) 0%, rgba(30, 58, 138, 0.05) 35%, transparent 70%)",
             }}
           />
           <div
@@ -276,7 +275,7 @@ function SlideCard({
             className="absolute inset-0"
             style={{
               backgroundImage:
-                "radial-gradient(circle at 50% 38%, transparent 70px, rgba(212, 175, 55, 0.12) 71px, transparent 72px), radial-gradient(circle at 50% 38%, transparent 110px, rgba(212, 175, 55, 0.08) 111px, transparent 112px)",
+                "radial-gradient(circle at 50% 38%, transparent 70px, rgba(30, 58, 138, 0.10) 71px, transparent 72px), radial-gradient(circle at 50% 38%, transparent 110px, rgba(30, 58, 138, 0.06) 111px, transparent 112px)",
             }}
           />
           {/* Gold monogram seal — the missing-photo affordance. */}

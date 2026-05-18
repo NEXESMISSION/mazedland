@@ -66,14 +66,14 @@ export function BookInspectionForm({
         return;
       }
 
-      // Kick the user into the payment-initiate flow with kind=inspection_fee.
-      // The /payment/initiate endpoint inserts a `payments` row and returns
-      // the gateway hosted URL; the mock flow routes through /payment/mock.
+      // Kick the user into the manual receipt-upload flow.
+      // /payment/initiate now creates a `payments` row with status='pending'
+      // and returns its id; the checkout page handles provider choice +
+      // bank/D17 instructions + receipt upload (no gateway redirect).
       const initRes = await fetch("/api/payments/initiate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          provider: "konnect",
           kind: "inspection_fee",
           amount: KIND_FEES[kind].min,
           inspection_id: data.id,
@@ -83,8 +83,8 @@ export function BookInspectionForm({
         setError("Could not start payment");
         return;
       }
-      const init = (await initRes.json()) as { hostedUrl: string };
-      window.location.href = init.hostedUrl;
+      const init = (await initRes.json()) as { paymentId: string };
+      window.location.href = `/payment/checkout?payment=${init.paymentId}`;
     });
   }
 

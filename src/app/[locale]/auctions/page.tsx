@@ -196,13 +196,17 @@ function TypeChip({
   href: "/auctions";
   active: boolean;
 }) {
+  // Fixed height + symmetric padding so chips line up regardless of
+  // label length — `tap-target`'s 44×44 minimum was pushing short
+  // Arabic labels like "أرض" out to 44px wide while longer labels
+  // sat at natural width, breaking the row's rhythm.
   return (
     <Link
       href={href}
-      className={`tap-target shrink-0 snap-start whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-[0.12em] transition ${
+      className={`inline-flex h-9 shrink-0 snap-start items-center justify-center whitespace-nowrap rounded-full border px-4 text-[12.5px] font-semibold transition-colors ${
         active
-          ? "border-gold-deep bg-gold-faint text-gold-bright shadow-[0_0_12px_var(--gold-glow)]"
-          : "border-border bg-surface text-muted hover:border-gold/40"
+          ? "border-[var(--gold)] bg-[var(--gold)] text-white"
+          : "border-[var(--border)] bg-white text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
       }`}
     >
       {label}

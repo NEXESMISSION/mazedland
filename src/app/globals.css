@@ -24,24 +24,27 @@
   --foreground-muted: #52525b;
   --foreground-subtle: #71717a;
 
-  /* Primary — BLUE. Replaces what was the "gold" accent across
-     the codebase. We keep the `--gold-*` variable names so every
+  /* Primary — DEEP NAVY BLUE. Sophisticated luxury feel (think
+     Hermès packaging blue, BNP Paribas, the navy of a banker's
+     suit). Replaces what was the "gold" accent across the
+     codebase — we keep the `--gold-*` variable names so every
      existing `bg-gold` / `text-gold-bright` / `border-gold-soft`
-     class keeps working — they just render blue now. */
-  --gold:        #2563eb;  /* blue-600 — primary fill */
-  --gold-bright: #3b82f6;  /* blue-500 — hover / active glow */
-  --gold-soft:   #60a5fa;  /* blue-400 — soft borders */
-  --gold-deep:   #1d4ed8;  /* blue-700 — pressed state */
-  --gold-faint:  rgba(37, 99, 235, 0.08);
-  --gold-glow:   rgba(37, 99, 235, 0.28);
+     class keeps working without a sweep, they just render navy now. */
+  --gold:        #1e3a8a;  /* blue-900 — primary fill, deep navy */
+  --gold-bright: #2563eb;  /* blue-600 — hover lift */
+  --gold-soft:   #c7d2fe;  /* indigo-200 — soft borders / tints */
+  --gold-deep:   #172554;  /* blue-950 — pressed, almost black */
+  --gold-faint:  rgba(30, 58, 138, 0.06);
+  --gold-glow:   rgba(30, 58, 138, 0.22);
 
-  /* Accent — RED. The second accent the user asked for. Use for
-     sale-price badges, urgent CTAs, "Live now" pulse, errors. */
+  /* Accent — RED. The second accent the user asked for. Used
+     sparingly: live-now pulse, sale badges, the "Live · X auctions"
+     count, error states, destructive actions. */
   --accent:        #dc2626;  /* red-600 */
-  --accent-bright: #ef4444;  /* red-500 */
-  --accent-soft:   #fca5a5;  /* red-300 */
-  --accent-deep:   #b91c1c;  /* red-700 */
-  --accent-faint:  rgba(220, 38, 38, 0.08);
+  --accent-bright: #ef4444;  /* red-500 — hover */
+  --accent-soft:   #fecaca;  /* red-200 — soft borders */
+  --accent-deep:   #991b1b;  /* red-800 — pressed */
+  --accent-faint:  rgba(220, 38, 38, 0.06);
 
   /* States — semantic. Kept distinct from accent so a "danger" red
      toast doesn't get confused with the brand red. */
@@ -63,7 +66,7 @@
   --shadow-sm:   0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-md:   0 4px 12px rgba(15, 23, 42, 0.06);
   --shadow-lg:   0 16px 40px -8px rgba(15, 23, 42, 0.10);
-  --shadow-gold: 0 6px 20px -6px rgba(37, 99, 235, 0.22), 0 2px 6px rgba(37, 99, 235, 0.10);
+  --shadow-gold: 0 6px 20px -6px rgba(30, 58, 138, 0.20), 0 2px 6px rgba(30, 58, 138, 0.10);
 
   /* Mobile-app shell. Unchanged — pure layout math. */
   --topbar-h: 56px;
@@ -354,13 +357,13 @@ html, body { overscroll-behavior-y: contain; }
   border-radius: var(--radius-lg);
   color: var(--foreground);
 }
-/* `-gold` variant: the same white card with a subtle blue-tinted
+/* `-gold` variant: the same white card with a subtle navy-tinted
    border so it reads as a "branded" empty-state slot. No inset
    pseudo-border (the old double-border was overdesigned). */
 .batta-frame-gold {
   position: relative;
   background: var(--surface);
-  border: 1px solid rgba(37, 99, 235, 0.20);
+  border: 1px solid rgba(30, 58, 138, 0.15);
   border-radius: var(--radius-lg);
   color: var(--foreground);
 }
@@ -496,19 +499,21 @@ html, body { overscroll-behavior-y: contain; }
 }
 
 /* Photo-card overlay — soft scrim so floating badges stay legible
-   on bright photos. Reduced strength vs. dark-mode original. */
+   on bright photos. Stronger bottom band where the title sits. */
 .batta-photo-overlay::after {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0.20) 0%,
-    rgba(0, 0, 0, 0) 30%,
-    rgba(0, 0, 0, 0) 70%,
-    rgba(0, 0, 0, 0.28) 100%
+    rgba(0, 0, 0, 0.32) 0%,
+    rgba(0, 0, 0, 0.08) 22%,
+    rgba(0, 0, 0, 0) 45%,
+    rgba(0, 0, 0, 0.35) 70%,
+    rgba(0, 0, 0, 0.78) 100%
   );
   pointer-events: none;
+  z-index: 1;
 }
 
 /* ============================================

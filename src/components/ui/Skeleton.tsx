@@ -53,13 +53,13 @@ export function SkeletonDetailPage() {
         <SkeletonBar height="h-3" width="w-1/2" />
       </div>
       <div className="mx-4 mt-4 rounded-2xl batta-surface-navy p-5">
-        <SkeletonBar className="bg-white/15" height="h-3" width="w-1/3" />
+        <SkeletonBar height="h-3" width="w-1/3" />
         <div className="mt-2">
-          <SkeletonBar className="bg-white/20" height="h-8" width="w-2/3" />
+          <SkeletonBar height="h-8" width="w-2/3" />
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <SkeletonBar className="bg-white/15" height="h-12" />
-          <SkeletonBar className="bg-white/15" height="h-12" />
+          <SkeletonBar height="h-12" />
+          <SkeletonBar height="h-12" />
         </div>
       </div>
       <div className="batta-frame mx-4 mt-3 p-4">

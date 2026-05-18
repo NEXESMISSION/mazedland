@@ -38,19 +38,21 @@ export function KYCShell({
           MOBILE
           ============================================================ */}
       <div className="lg:hidden flex flex-col flex-1">
-        <header className="flex items-center justify-between px-4 pt-4 pb-1">
+        <header className="flex items-center gap-3 px-4 pt-4 pb-2">
           <Link
             href={backHref as `/${string}`}
             aria-label="Retour"
-            className="h-12 w-12 rounded-full bg-[var(--surface)] border-2 border-[var(--gold-soft)] text-[var(--gold)] flex items-center justify-center shadow-[var(--shadow-md)] hover:bg-[var(--gold-faint)] hover:border-[var(--gold)] active:scale-95 transition-all"
+            className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-[var(--foreground-muted)] flex items-center justify-center hover:border-[var(--gold)] hover:text-[var(--gold)] active:scale-95 transition-all rtl:rotate-180"
           >
-            <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
+            <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
           </Link>
-          <div className="font-bold text-sm">{resolvedTitle}</div>
+          <div className="flex-1 min-w-0 text-center text-[13px] font-bold tracking-tight truncate">
+            {resolvedTitle}
+          </div>
           <Link
             href="/"
             aria-label="Annuler"
-            className="h-10 w-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--danger)]/40 hover:text-[var(--danger)] transition-colors"
+            className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-[var(--foreground-subtle)] flex items-center justify-center hover:border-[var(--danger)]/40 hover:text-[var(--danger)] transition-colors"
           >
             <X className="h-4 w-4" />
           </Link>

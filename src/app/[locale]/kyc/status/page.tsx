@@ -160,7 +160,7 @@ export default function KYCStatusPage() {
           <div
             className="absolute inset-0 rounded-full"
             style={{
-              background: "radial-gradient(circle, rgba(212,175,55,0.35), transparent)",
+              background: "radial-gradient(circle, rgba(30, 58, 138, 0.22), transparent)",
             }}
           />
           <div className="relative h-full w-full rounded-full bg-[var(--gold-faint)] border-2 border-[var(--gold)] flex items-center justify-center">

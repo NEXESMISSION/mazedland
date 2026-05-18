@@ -1,3 +1,6 @@
+"use client";
+
+import { usePathname } from "@/i18n/navigation";
 import { TopBar } from "./TopBar";
 import { BottomTabBar } from "./BottomTabBar";
 import { ScrollToTop } from "./ScrollToTop";
@@ -6,19 +9,42 @@ import { PullToRefresh } from "@/components/ui/PullToRefresh";
 /**
  * Mobile-app shell — top bar, scrollable main, bottom tab bar.
  *
- * The bars sit OUTSIDE the PullToRefresh wrapper on purpose.
- * PullToRefresh applies `will-change: transform` to its inner
- * container, which creates a new containing block for any
- * `position: fixed` descendants. If the bars lived inside, they'd
- * anchor to the wrapper (full document height) instead of the
- * viewport, and the bottom bar would only appear after the user
- * scrolled to the page's bottom.
+ * Flow routes (KYC, payment, auth) opt out of the chrome — they render
+ * their own dedicated header (KYCShell, CheckoutClient, auth forms) so
+ * stacking the global TopBar + BottomTabBar on top produces a double
+ * back button and wasted vertical space.
  *
- * Keeping the bars at this level also means the top bar stays
- * rock-steady while the main content rubber-bands during pull —
- * which is the correct native gesture feel.
+ * The bars sit OUTSIDE the PullToRefresh wrapper on purpose: that
+ * wrapper sets `will-change: transform`, creating a new containing
+ * block for fixed descendants — bars inside would anchor to the
+ * wrapper's full height instead of the viewport.
  */
+function isFlowRoute(pathname: string): boolean {
+  return (
+    pathname.startsWith("/kyc") ||
+    pathname.startsWith("/payment") ||
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password" ||
+    pathname === "/verify-email" ||
+    pathname === "/verify-phone"
+  );
+}
+
 export function MobileShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const flow = isFlowRoute(pathname);
+
+  if (flow) {
+    return (
+      <>
+        <ScrollToTop />
+        <main className="min-h-screen">{children}</main>
+      </>
+    );
+  }
+
   return (
     <>
       <ScrollToTop />
