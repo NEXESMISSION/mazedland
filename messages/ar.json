@@ -156,7 +156,41 @@
     "depositGated": "يجب دفع تأمين {amount} د.ت قبل المزايدة.",
     "ownerCannotBid": "لا يمكنك المزايدة على إعلانك.",
     "extendingNotice": "+10 دقائق — مزايدة في آخر 5 دقائق.",
-    "depositInProgress": "جاري فتح الدفع…"
+    "depositInProgress": "جاري فتح الدفع…",
+    "placeBid": "قدّم عرضك",
+    "buyNowFor": "أو شراء فوري بسعر",
+    "endedShort": "انتهى المزاد",
+    "wonByYou": "رسا · لقد فزت",
+    "myWins": "مكتسباتي"
+  },
+  "home": {
+    "trendingEyebrow": "مباشر الآن",
+    "trendingTitle": "الأكثر متابعة",
+    "moreToExplore": "اكتشف المزيد",
+    "browseByType": "تصفح حسب النوع",
+    "browseByPrice": "تصفح حسب السعر",
+    "recentlyHammered": "بيعت مؤخراً",
+    "realPrices": "أسعار حقيقية",
+    "seeAll": "الكل",
+    "heroLive": "مباشر",
+    "heroBidCta": "زايد",
+    "heroBrowseCta": "تصفح",
+    "heroBrandTitle": "بيت المزادات العقارية في تونس",
+    "heroBrandEyebrow": "مباشر · {count} مزاد",
+    "soldChip": "بيع"
+  },
+  "search": {
+    "placeholder": "ابحث عن عقار…",
+    "submit": "بحث",
+    "governorate": "الولاية",
+    "allWilayas": "كل الولايات",
+    "type": "النوع",
+    "allTypes": "كل الأنواع"
+  },
+  "gallery": {
+    "prev": "الصورة السابقة",
+    "next": "الصورة التالية",
+    "goToPhoto": "الذهاب للصورة {n}"
   },
   "property": {
     "type": "نوع العقار",

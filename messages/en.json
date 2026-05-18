@@ -156,7 +156,41 @@
     "depositGated": "You need to lock the {amount} TND deposit before bidding.",
     "ownerCannotBid": "You can't bid on your own listing.",
     "extendingNotice": "+10 minutes added — someone bid in the last 5 minutes.",
-    "depositInProgress": "Opening payment…"
+    "depositInProgress": "Opening payment…",
+    "placeBid": "Place a bid",
+    "buyNowFor": "or buy now for",
+    "endedShort": "Auction ended",
+    "wonByYou": "Hammered · you won",
+    "myWins": "My acquisitions"
+  },
+  "home": {
+    "trendingEyebrow": "Live now",
+    "trendingTitle": "Trending now",
+    "moreToExplore": "More to explore",
+    "browseByType": "Browse by type",
+    "browseByPrice": "Browse by price",
+    "recentlyHammered": "Recently hammered",
+    "realPrices": "real prices",
+    "seeAll": "See all",
+    "heroLive": "Live",
+    "heroBidCta": "Bid",
+    "heroBrowseCta": "Browse",
+    "heroBrandTitle": "Tunisia's real-estate auction house",
+    "heroBrandEyebrow": "Live · {count} auctions",
+    "soldChip": "Sold"
+  },
+  "search": {
+    "placeholder": "Search auctions…",
+    "submit": "Search",
+    "governorate": "Governorate",
+    "allWilayas": "All wilayas",
+    "type": "Type",
+    "allTypes": "All types"
+  },
+  "gallery": {
+    "prev": "Previous photo",
+    "next": "Next photo",
+    "goToPhoto": "Go to photo {n}"
   },
   "property": {
     "type": "Type",

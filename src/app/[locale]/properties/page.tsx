@@ -185,13 +185,17 @@ function TypeChip({
   href: "/properties";
   active: boolean;
 }) {
+  // Same rationale as the auctions page TypeChip — fixed height,
+  // symmetric padding, solid navy active state. The previous
+  // `tap-target` forced 44px minimum width which uneven-spaced
+  // short labels.
   return (
     <Link
       href={href}
-      className={`tap-target shrink-0 snap-start whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-[0.12em] transition ${
+      className={`inline-flex h-9 shrink-0 snap-start items-center justify-center whitespace-nowrap rounded-full border px-4 text-[12.5px] font-semibold transition-colors ${
         active
-          ? "border-gold-deep bg-gold-faint text-gold-bright shadow-[0_0_12px_var(--gold-glow)]"
-          : "border-border bg-surface text-muted hover:border-gold/40"
+          ? "border-[var(--gold)] bg-[var(--gold)] text-white"
+          : "border-[var(--border)] bg-white text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
       }`}
     >
       {label}

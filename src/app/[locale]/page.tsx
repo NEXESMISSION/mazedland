@@ -141,7 +141,15 @@ export default async function LandingPage() {
           auction. Fallback brand slides kick in when the DB has nothing
           live so the carousel never renders empty. */}
       <HeroBanner
-        slides={buildHeroSlides(trending, locale, isRTL, liveCount)}
+        slides={buildHeroSlides(trending, locale, liveCount, {
+          liveWord: t("home.heroLive"),
+          tnd: t("common.tnd"),
+          bidCta: t("home.heroBidCta"),
+          browseCta: t("home.heroBrowseCta"),
+          brandTitle: t("home.heroBrandTitle"),
+          brandSlogan: t("brand.slogan"),
+          brandEyebrow: t("home.heroBrandEyebrow", { count: liveCount }),
+        })}
         isRTL={isRTL}
       />
 
@@ -172,12 +180,13 @@ export default async function LandingPage() {
       {/* Trending rail — horizontal scroller of the top 8 hottest auctions. */}
       <section className="mt-7">
         <RailHeader
-          eyebrow={isRTL ? "مباشر الآن" : "Live now"}
-          title={isRTL ? "الأكثر متابعة" : "Trending now"}
+          eyebrow={t("home.trendingEyebrow")}
+          title={t("home.trendingTitle")}
           countLabel={trending.length}
           ctaHref="/auctions"
           ChevronEnd={ChevronEnd}
           isRTL={isRTL}
+          seeAllLabel={t("home.seeAll")}
           flush
         />
         {trending.length > 0 ? (
@@ -222,10 +231,11 @@ export default async function LandingPage() {
       {recent.length > 0 && (
         <section className="mt-9 px-4">
           <RailHeader
-            title={isRTL ? "اكتشف المزيد" : "More to explore"}
+            title={t("home.moreToExplore")}
             ctaHref="/auctions"
             ChevronEnd={ChevronEnd}
             isRTL={isRTL}
+            seeAllLabel={t("home.seeAll")}
             flush
           />
           <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
@@ -248,7 +258,7 @@ export default async function LandingPage() {
           so the eye reads "category" not "tile". No borders. */}
       <section className="mt-10 px-4">
         <h3 className={`text-[15px] font-bold leading-tight ${isRTL ? "font-arabic" : ""}`}>
-          {isRTL ? "تصفح حسب النوع" : "Browse by type"}
+          {t("home.browseByType")}
         </h3>
         <div className="snap-rail hide-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
           {PROPERTY_TYPES.map((pt) => (
@@ -275,7 +285,7 @@ export default async function LandingPage() {
           function — tap the pill itself). */}
       <section className="mt-7 px-4">
         <h3 className={`text-[15px] font-bold leading-tight ${isRTL ? "font-arabic" : ""}`}>
-          {isRTL ? "تصفح حسب السعر" : "Browse by price"}
+          {t("home.browseByPrice")}
         </h3>
         <div className="snap-rail hide-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
           {PRICE_BUCKETS.map((b) => (
@@ -300,14 +310,14 @@ export default async function LandingPage() {
           <div className="flex items-baseline justify-between px-4">
             <h3 className={`inline-flex items-center gap-1.5 text-[15px] font-bold leading-tight ${isRTL ? "font-arabic" : ""}`}>
               <Gavel className="size-3.5 text-gold" strokeWidth={2.5} />
-              {isRTL ? "بيعت مؤخراً" : "Recently hammered"}
+              {t("home.recentlyHammered")}
             </h3>
-            <span className="text-[11px] text-muted">{isRTL ? "أسعار حقيقية" : "real prices"}</span>
+            <span className="text-[11px] text-muted">{t("home.realPrices")}</span>
           </div>
           <div className="snap-rail hide-scrollbar mt-3 flex gap-3 overflow-x-auto px-4 pb-1">
             {hammered.map((h) => (
               <div key={h.id} className="w-[200px] shrink-0 snap-start">
-                <HammeredCard row={h} locale={locale} isRTL={isRTL} />
+                <HammeredCard row={h} locale={locale} isRTL={isRTL} soldLabel={t("home.soldChip")} tnd={t("common.tnd")} />
               </div>
             ))}
             <div className="w-1 shrink-0" />
@@ -376,6 +386,7 @@ function RailHeader({
   ctaHref,
   ChevronEnd,
   isRTL,
+  seeAllLabel,
   flush,
   noCta,
 }: {
@@ -391,6 +402,9 @@ function RailHeader({
   ctaHref: "/properties" | "/auctions";
   ChevronEnd: React.ComponentType<{ className?: string }>;
   isRTL: boolean;
+  /** Pre-translated "See all" label. Server component callers pass
+      `t("home.seeAll")`. */
+  seeAllLabel: string;
   flush?: boolean;
   noCta?: boolean;
 }) {
@@ -436,7 +450,7 @@ function RailHeader({
           }
           className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-[11px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
         >
-          {isRTL ? "الكل" : "See all"}
+          {seeAllLabel}
           <ChevronEnd className="size-3" />
         </Link>
       )}
@@ -456,8 +470,17 @@ function RailHeader({
 function buildHeroSlides(
   trending: AuctionWithProperty[],
   locale: string,
-  isRTL: boolean,
   liveCount: number,
+  labels: {
+    liveWord: string;
+    tnd: string;
+    bidCta: string;
+    browseCta: string;
+    brandTitle: string;
+    brandSlogan: string;
+    /** "Live · {n}" — the server caller resolves the ICU placeholder. */
+    brandEyebrow: string;
+  },
 ): HeroSlide[] {
   const slides: HeroSlide[] = [];
   for (const a of trending.slice(0, 5)) {
@@ -471,32 +494,28 @@ function buildHeroSlides(
       id: a.id,
       imageUrl: propertyPhotoUrl(photo.storage_path),
       eyebrow: isLive
-        ? `${isRTL ? "مباشر" : "Live"} · ${property.governorate}`
+        ? `${labels.liveWord} · ${property.governorate}`
         : property.governorate,
       title: property.title,
-      subtitle: `${formatTND(price, locale)} ${isRTL ? "د.ت" : "TND"}`,
+      subtitle: `${formatTND(price, locale)} ${labels.tnd}`,
       href: `/auctions/${a.id}`,
-      ctaLabel: isRTL ? "زايد" : "Bid",
+      ctaLabel: labels.bidCta,
     });
   }
 
   // Always finish with a brand slide so the carousel pitches Batta
   // itself before looping back to the first listing. Uses the BATTA
   // logo asset on its black background — on-brand, no external
-  // dependency, no random-image surprises. Swap to a curated Tunis /
-  // Sidi Bou Said skyline once we have one.
+  // dependency, no random-image surprises.
+  void liveCount;
   slides.push({
     id: "brand-pitch",
     imageUrl: "/logo.png",
-    eyebrow: isRTL ? `مباشر · ${liveCount} مزاد` : `Live · ${liveCount} auctions`,
-    title: isRTL
-      ? "بِع واشترِ بشفافية المزاد"
-      : "Tunisia's real-estate auction house",
-    subtitle: isRTL
-      ? "شفافية. سرعة. ثقة."
-      : "Transparency. Speed. Trust.",
+    eyebrow: labels.brandEyebrow,
+    title: labels.brandTitle,
+    subtitle: labels.brandSlogan,
     href: "/properties",
-    ctaLabel: isRTL ? "تصفح" : "Browse",
+    ctaLabel: labels.browseCta,
   });
 
   return slides;
@@ -540,10 +559,14 @@ function HammeredCard({
   row,
   locale,
   isRTL,
+  soldLabel,
+  tnd,
 }: {
   row: HammeredRow;
   locale: string;
   isRTL: boolean;
+  soldLabel: string;
+  tnd: string;
 }) {
   const photo = row.property.photos
     ?.slice()
@@ -574,14 +597,14 @@ function HammeredCard({
         )}
         <span className="batta-gold-fill absolute top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.14em] ltr:left-2 rtl:right-2">
           <Gavel className="size-2.5" strokeWidth={2.5} />
-          {isRTL ? "بيع" : "Sold"}
+          {soldLabel}
         </span>
       </div>
       <div className="p-3">
         <div className="batta-tabular gradient-gold-text text-[18px] font-extrabold leading-none">
           {formatTND(price, locale)}
           <span className="ms-1 text-[9px] font-bold uppercase tracking-[0.14em] text-muted">
-            {isRTL ? "د.ت" : "TND"}
+            {tnd}
           </span>
         </div>
         <div className={`mt-1.5 line-clamp-1 text-[12px] font-bold text-foreground ${isRTL ? "font-arabic" : ""}`}>

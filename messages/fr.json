@@ -156,7 +156,41 @@
     "depositGated": "Vous devez bloquer la garantie de {amount} TND avant d'enchérir.",
     "ownerCannotBid": "Vous ne pouvez pas enchérir sur votre propre annonce.",
     "extendingNotice": "+10 minutes ajoutées — enchère dans les 5 dernières minutes.",
-    "depositInProgress": "Ouverture du paiement…"
+    "depositInProgress": "Ouverture du paiement…",
+    "placeBid": "Placer une enchère",
+    "buyNowFor": "ou achat immédiat à",
+    "endedShort": "Enchère terminée",
+    "wonByYou": "Adjugé · vous avez gagné",
+    "myWins": "Mes acquisitions"
+  },
+  "home": {
+    "trendingEyebrow": "En direct",
+    "trendingTitle": "Les plus suivis",
+    "moreToExplore": "À découvrir",
+    "browseByType": "Parcourir par type",
+    "browseByPrice": "Parcourir par prix",
+    "recentlyHammered": "Récemment adjugés",
+    "realPrices": "prix réels",
+    "seeAll": "Tout voir",
+    "heroLive": "En direct",
+    "heroBidCta": "Enchérir",
+    "heroBrowseCta": "Explorer",
+    "heroBrandTitle": "La maison des enchères immobilières tunisiennes",
+    "heroBrandEyebrow": "En direct · {count} enchères",
+    "soldChip": "Vendu"
+  },
+  "search": {
+    "placeholder": "Rechercher un bien…",
+    "submit": "Rechercher",
+    "governorate": "Gouvernorat",
+    "allWilayas": "Tous les gouvernorats",
+    "type": "Type",
+    "allTypes": "Tous les types"
+  },
+  "gallery": {
+    "prev": "Photo précédente",
+    "next": "Photo suivante",
+    "goToPhoto": "Aller à la photo {n}"
   },
   "property": {
     "type": "Type",
