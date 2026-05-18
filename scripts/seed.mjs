@@ -14,6 +14,7 @@ import { config as loadEnv } from "dotenv";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { LISTINGS } from "./seed-listings.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: path.join(__dirname, "..", ".env.local") });
@@ -139,344 +140,86 @@ console.log(`  ✓ ${1 + 4 + 1 + 1 + 1 + inspectorIds.length} users (password: $
 // stale-property wipe below knows whose listings to consider.
 const SEED_OWNERS = [ahmed, sami, leila, diaspora, agency, bank, bailiff];
 
-// Real-estate stock photos from Unsplash (whitelisted in next.config.ts CSP).
-// Image pool — curated Unsplash URLs covering the property types we
-// list. All free + properly licensed (Unsplash license). Hosted on
-// images.unsplash.com which is whitelisted in next.config.ts so
-// Next/Image's optimizer can resize + serve WebP/AVIF on demand.
-const HOUSE       = "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1600&q=80";
-const HOUSE_2     = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1600&q=80";
-const HOUSE_3     = "https://images.unsplash.com/photo-1605114589013-92e842e72cce?w=1600&q=80";
-const APT_LIVING  = "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1600&q=80";
-const APT_KITCHEN = "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1600&q=80";
-const APT_LIVING_2 = "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=1600&q=80";
-const BEDROOM     = "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1600&q=80";
-const BATHROOM    = "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1600&q=80";
-const VILLA       = "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1600&q=80";
-const VILLA_POOL  = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1600&q=80";
-const VILLA_MED   = "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1600&q=80";
-const TERRACE     = "https://images.unsplash.com/photo-1600210492493-0946911123ea?w=1600&q=80";
-const LAND        = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1600&q=80";
-const LAND_OLIVE  = "https://images.unsplash.com/photo-1568043210943-0e8c7e8e2e1a?w=1600&q=80";
-const LAND_AGRI   = "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1600&q=80";
-const COMMERCIAL  = "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&q=80";
-const OFFICE      = "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1600&q=80";
-const OFFICE_2    = "https://images.unsplash.com/photo-1497215842964-222b430dc094?w=1600&q=80";
-const SHOP        = "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=1600&q=80";
-const BEACH_VIEW  = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&q=80";
-const COURTYARD   = "https://images.unsplash.com/photo-1601760561441-16420502c7e0?w=1600&q=80";
+// Photos and listing data come from scripts/seed-listings.mjs, which is
+// populated by scripts/download-property-images.mjs. Each listing has a
+// stable `slug` and one or more local WebP photos under
+// /public/properties/<slug>/<n>.webp.
 
-const properties = [
-  // ─── TUNIS — 12 listings (premium market) ─────────────────────────────────
-  {
-    owner: ahmed,
-    title: "شقة S+2 مفروشة بالكامل · المنزه 6",
-    description: "شقة فاخرة بتشطيبات حديثة، تطل على حديقة عمومية. مصعد، موقف سيارة خاص، قريبة من المدارس والمواصلات. ملف قانوني سليم 100%.",
-    type: "apartment", area_sqm: 105, rooms: 3, bathrooms: 2, floor: 4, year_built: 2018,
-    governorate: "Tunis", delegation: "Le Manzah", address: "Rue Ibn Khaldoun, El Manzah 6",
-    lat: 36.852, lng: 10.150,
-    photos: [APT_LIVING, APT_KITCHEN, BEDROOM],
-    docs: ["Titre foncier", "Certificat de propriété", "Plan de situation"],
-  },
-  {
-    owner: bank,
-    title: "🏛️ STB · Local commercial 220m² · Lac 2",
-    description: "Local commercial situé au rez-de-chaussée d'un immeuble standing. Idéal restaurant, bureau ou showroom. Mise à prix sous valeur de marché — bien adjugé suite procédure de saisie.",
-    type: "commercial", area_sqm: 220, rooms: null, bathrooms: 2, floor: 0, year_built: 2010,
-    governorate: "Tunis", delegation: "Les Berges du Lac", address: "Rue du Lac Lochness, Lac 2",
-    lat: 36.842, lng: 10.265,
-    photos: [COMMERCIAL, SHOP, OFFICE],
-    docs: ["Titre foncier", "PV de saisie", "Rapport d'expertise judiciaire"],
-  },
-  {
-    owner: bank,
-    title: "🏛️ STB · Villa duplex 320m² · La Marsa Plage",
-    description: "Villa duplex sur 2 niveaux, terrain 480m². Bien adjugé suite procédure de recouvrement. Vente à la barre — toutes garanties bancaires.",
-    type: "villa", area_sqm: 320, rooms: 5, bathrooms: 4, floor: 0, year_built: 2008,
-    governorate: "Tunis", delegation: "La Marsa", address: "Rue de la Plage, La Marsa Plage",
-    lat: 36.886, lng: 10.323,
-    photos: [VILLA, HOUSE, VILLA_POOL, BEACH_VIEW],
-    docs: ["Titre foncier", "PV de saisie", "Acte de prêt original", "Rapport d'expertise"],
-  },
-  {
-    owner: agency,
-    title: "Appartement haut standing S+3 · Les Jardins de Carthage",
-    description: "Vendu par Tecnocasa. Résidence sécurisée, ascenseur, parking sous-sol. Belle exposition Sud-Ouest, grand balcon. Dossier impeccable.",
-    type: "apartment", area_sqm: 145, rooms: 4, bathrooms: 2, floor: 2, year_built: 2020,
-    governorate: "Tunis", delegation: "Carthage", address: "Les Jardins de Carthage",
-    lat: 36.857, lng: 10.323,
-    photos: [APT_LIVING, APT_KITCHEN, BEDROOM, BATHROOM],
-    docs: ["Titre foncier", "Règlement de copropriété", "Certificat de propriété"],
-  },
-  {
-    owner: ahmed,
-    title: "Studio S+0 meublé · La Goulette",
-    description: "Studio entièrement meublé et équipé, à 100m de la plage. Idéal investissement Airbnb / location courte durée. Vendu meublé.",
-    type: "apartment", area_sqm: 38, rooms: 1, bathrooms: 1, floor: 2, year_built: 2012,
-    governorate: "Tunis", delegation: "La Goulette", address: "Rue de la Plage, La Goulette",
-    lat: 36.819, lng: 10.305,
-    photos: [APT_LIVING_2, APT_KITCHEN],
-    docs: ["Titre foncier", "Inventaire mobilier"],
-  },
-  {
-    owner: agency,
-    title: "Penthouse S+4 vue mer · Les Berges du Lac 1",
-    description: "Penthouse exceptionnel au dernier étage avec terrasse panoramique de 80m². Vue dégagée sur le lac et la baie de Tunis. Standing premium, prestations haut de gamme.",
-    type: "apartment", area_sqm: 260, rooms: 5, bathrooms: 3, floor: 8, year_built: 2019,
-    governorate: "Tunis", delegation: "Les Berges du Lac", address: "Avenue de la Bourse, Lac 1",
-    lat: 36.840, lng: 10.247,
-    photos: [APT_LIVING, TERRACE, BEDROOM, APT_KITCHEN],
-    docs: ["Titre foncier", "Certificat de propriété", "Règlement de copropriété"],
-  },
-  {
-    owner: leila,
-    title: "Appartement S+2 · Mutuelleville",
-    description: "Appartement traversant dans résidence calme du centre. 2 chambres, double living, cuisine équipée. Proche écoles françaises et ambassades.",
-    type: "apartment", area_sqm: 120, rooms: 3, bathrooms: 2, floor: 3, year_built: 2005,
-    governorate: "Tunis", delegation: "Mutuelleville", address: "Rue de Madrid, Mutuelleville",
-    lat: 36.819, lng: 10.171,
-    photos: [APT_LIVING, APT_KITCHEN, BEDROOM],
-    docs: ["Titre foncier", "Quitus charges syndicat"],
-  },
-  {
-    owner: sami,
-    title: "Villa · El Aouina",
-    description: "Villa familiale 4 chambres avec jardin 200m². Garage 2 voitures. Quartier résidentiel, proche aéroport. Travaux de rafraîchissement à prévoir.",
-    type: "villa", area_sqm: 240, rooms: 4, bathrooms: 3, floor: 0, year_built: 1998,
-    governorate: "Tunis", delegation: "El Aouina", address: "Rue Hassan Ibn Noaman, El Aouina",
-    lat: 36.857, lng: 10.247,
-    photos: [VILLA, HOUSE_2, COURTYARD],
-    docs: ["Titre foncier", "Permis de bâtir"],
-  },
-  {
-    owner: leila,
-    title: "Maison traditionnelle · Sidi Bou Saïd",
-    description: "Petite maison de charme dans le village bleu et blanc. Architecture typique, 2 chambres, patio, terrasse vue mer. Bien rare.",
-    type: "house", area_sqm: 110, rooms: 2, bathrooms: 2, floor: 0, year_built: 1965,
-    governorate: "Tunis", delegation: "Sidi Bou Saïd", address: "Rue Sidi El Houssine, Sidi Bou Saïd",
-    lat: 36.870, lng: 10.347,
-    photos: [HOUSE_3, COURTYARD, TERRACE],
-    docs: ["Titre foncier", "Certificat de propriété", "Avis Patrimoine"],
-  },
-  {
-    owner: sami,
-    title: "Appartement S+1 · Bardo",
-    description: "Bien d'investissement à fort potentiel locatif. Proche faculté du Bardo et tramway. Rénovation légère conseillée.",
-    type: "apartment", area_sqm: 72, rooms: 2, bathrooms: 1, floor: 2, year_built: 1990,
-    governorate: "Tunis", delegation: "Le Bardo", address: "Avenue 14 Janvier, Le Bardo",
-    lat: 36.811, lng: 10.135,
-    photos: [APT_LIVING_2, APT_KITCHEN],
-    docs: ["Titre foncier"],
-  },
-  {
-    owner: leila,
-    title: "Terrain à bâtir 600m² · La Soukra",
-    description: "Terrain plat, viabilisé, dans lotissement résidentiel. Proche autoroute et zone commerciale. Idéal villa familiale.",
-    type: "land", area_sqm: 600, rooms: null, bathrooms: null, floor: null, year_built: null,
-    governorate: "Tunis", delegation: "La Soukra", address: "Lotissement Riadh, La Soukra",
-    lat: 36.881, lng: 10.235,
-    photos: [LAND, LAND_AGRI],
-    docs: ["Titre foncier", "Certificat de bornage", "Permis de lotir"],
-  },
-  {
-    owner: agency,
-    title: "Bureau plateau 180m² · Centre Urbain Nord",
-    description: "Plateau de bureaux en open space, 4 salles fermées + accueil. Climatisation centralisée, fibre optique installée. Parking sous-sol 4 places.",
-    type: "office", area_sqm: 180, rooms: 5, bathrooms: 2, floor: 5, year_built: 2016,
-    governorate: "Tunis", delegation: "Centre Urbain Nord", address: "Rue Lac Toba, Centre Urbain Nord",
-    lat: 36.842, lng: 10.193,
-    photos: [OFFICE, OFFICE_2, COMMERCIAL],
-    docs: ["Titre foncier", "Permis d'usage commercial", "Plan d'aménagement"],
-  },
+// Owner rotation — each listing index gets one of these owners. Banks
+// and bailiffs only own a small handful of "distressed" listings; the
+// rest are spread across individuals + the agency.
+function ownerForIndex(i) {
+  // Specific distressed/judicial listings (indices below) get bank/bailiff:
+  //   11 = centre-ville terrain + maison (judicial)
+  //   13 = Sidi Mansour km3 promoteur (bank-foreclosure, premium land)
+  //   29 = Villa front-mer Sidi Mansour (bank-foreclosure, premium villa)
+  if (i === 11) return bailiff;
+  if (i === 13 || i === 29) return bank;
+  // Agency carries the higher-end villa listings.
+  if ([20, 23, 26, 27, 30, 33].includes(i)) return agency;
+  // Individuals rotate through the rest.
+  const rotation = [ahmed, sami, leila];
+  return rotation[i % rotation.length];
+}
 
-  // ─── SFAX — 5 listings ────────────────────────────────────────────────────
-  {
-    owner: leila,
-    title: "أرض بناء 800m² · حي السلام · صفاقس",
-    description: "أرض جاهزة للبناء، مقسمة، مع شهادة تخطيط. مستوية، تطل على شارعين. مناسبة لفيلا أو عمارة سكنية.",
-    type: "land", area_sqm: 800, rooms: null, bathrooms: null, floor: null, year_built: null,
-    governorate: "Sfax", delegation: "El Salam", address: "حي السلام, صفاقس",
-    lat: 34.728, lng: 10.762,
-    photos: [LAND, LAND_OLIVE],
-    docs: ["Titre foncier", "Certificat de bornage", "Permis de lotir"],
-  },
-  {
-    owner: agency,
-    title: "Bureau professionnel 90m² · Sfax Centre",
-    description: "Bureau au 1er étage, idéal cabinet médical, avocat, ou expert-comptable. Ascenseur, climatisation centrale, parking visiteurs.",
-    type: "office", area_sqm: 90, rooms: 4, bathrooms: 1, floor: 1, year_built: 2017,
-    governorate: "Sfax", delegation: "Sfax Médina", address: "Avenue Ali Belhouane, Sfax",
-    lat: 34.7398, lng: 10.7600,
-    photos: [OFFICE, OFFICE_2],
-    docs: ["Titre foncier", "Permis d'usage commercial"],
-  },
-  {
-    owner: ahmed,
-    title: "Villa S+4 · Sakiet Eddaier",
-    description: "Villa neuve livrée 2022, jardin paysager 250m², garage 2 voitures, salle de jeux au sous-sol. Quartier résidentiel calme, sécurisé.",
-    type: "villa", area_sqm: 310, rooms: 5, bathrooms: 4, floor: 0, year_built: 2022,
-    governorate: "Sfax", delegation: "Sakiet Eddaier", address: "Cité El Hadhik, Sakiet Eddaier",
-    lat: 34.812, lng: 10.722,
-    photos: [VILLA, HOUSE_3, COURTYARD, BEDROOM],
-    docs: ["Titre foncier", "Permis de bâtir", "Procès-verbal de réception"],
-  },
-  {
-    owner: sami,
-    title: "Appartement S+2 · Route Soukra Sfax",
-    description: "Appartement traversant dans immeuble récent. 2 chambres, salon double, cuisine américaine. Proche établissements scolaires.",
-    type: "apartment", area_sqm: 115, rooms: 3, bathrooms: 2, floor: 3, year_built: 2016,
-    governorate: "Sfax", delegation: "Route Soukra", address: "Route Soukra km 4, Sfax",
-    lat: 34.768, lng: 10.738,
-    photos: [APT_LIVING_2, APT_KITCHEN, BEDROOM],
-    docs: ["Titre foncier", "Règlement de copropriété"],
-  },
-  {
-    owner: leila,
-    title: "Ferme avec oliviers 3 hectares · Sfax Sud",
-    description: "Exploitation oléicole en production. 320 oliviers adultes, puits artésien, hangar agricole. Excellente rentabilité, comptabilité disponible.",
-    type: "land", area_sqm: 30000, rooms: null, bathrooms: null, floor: null, year_built: null,
-    governorate: "Sfax", delegation: "Mahres", address: "Route de Mahres km 18",
-    lat: 34.531, lng: 10.501,
-    photos: [LAND_OLIVE, LAND_AGRI, LAND],
-    docs: ["Titre foncier", "Certificat d'exploitation agricole", "Étude pédologique"],
-  },
+// Build a description-decorator: distressed listings get a 🏛️/⚖️ prefix
+// so they read as bank-foreclosure or judicial sale in the UI without
+// needing a separate flag.
+function titleForListing(i, base) {
+  if (i === 11) return `⚖️ Vente judiciaire · ${base}`;
+  if (i === 13 || i === 29) return `🏛️ STB · ${base}`;
+  return base;
+}
+function descForListing(i, base) {
+  if (i === 11) return `${base}\n\nVente publique sur exécution. Mise à prix fixée par jugement. Adjudication au plus offrant en audience publique.`;
+  if (i === 13 || i === 29) return `${base}\n\nBien adjugé suite à procédure de recouvrement bancaire STB. Toutes garanties juridiques apportées par la banque.`;
+  return base;
+}
 
-  // ─── SOUSSE + MONASTIR + MAHDIA — 5 listings ──────────────────────────────
-  {
-    owner: sami,
-    title: "Appartement S+1 · Centre-ville Sousse",
-    description: "À 5 minutes à pied de la médina. Bien rénové en 2023. Idéal investissement locatif (tourisme). Charges réduites.",
-    type: "apartment", area_sqm: 65, rooms: 2, bathrooms: 1, floor: 3, year_built: 1995,
-    governorate: "Sousse", delegation: "Sousse Médina", address: "Avenue Habib Bourguiba, Sousse",
-    lat: 35.8256, lng: 10.6411,
-    photos: [APT_LIVING, APT_KITCHEN],
-    docs: ["Titre foncier", "Quittance fonctionnaire"],
-  },
-  {
-    owner: agency,
-    title: "Villa moderne · Sousse Khézama Est",
-    description: "Villa contemporaine livrée 2021, terrain 450m². Cuisine américaine, dressing, suite parentale. Domotique installée. Vue dégagée.",
-    type: "villa", area_sqm: 290, rooms: 4, bathrooms: 3, floor: 0, year_built: 2021,
-    governorate: "Sousse", delegation: "Khézama Est", address: "Rue Cheikh Mohamed El Fadhel, Khézama Est",
-    lat: 35.852, lng: 10.620,
-    photos: [VILLA_MED, VILLA_POOL, BEDROOM, APT_KITCHEN],
-    docs: ["Titre foncier", "Permis de bâtir", "Certificat de conformité"],
-  },
-  {
-    owner: ahmed,
-    title: "Studio · Port El Kantaoui",
-    description: "Studio vue port avec balcon. Résidence avec piscine et accès plage. Idéal pied-à-terre vacances ou location saisonnière.",
-    type: "apartment", area_sqm: 42, rooms: 1, bathrooms: 1, floor: 2, year_built: 2008,
-    governorate: "Sousse", delegation: "Port El Kantaoui", address: "Résidence Marina, Port El Kantaoui",
-    lat: 35.892, lng: 10.591,
-    photos: [APT_LIVING_2, BEACH_VIEW],
-    docs: ["Titre foncier", "Règlement de copropriété"],
-  },
-  {
-    owner: leila,
-    title: "Appartement S+2 · Monastir Centre",
-    description: "Bien rénové, à 200m de la plage et de la marina. Climatisation, ascenseur. Excellent rapport locatif saisonnier.",
-    type: "apartment", area_sqm: 95, rooms: 3, bathrooms: 2, floor: 4, year_built: 2010,
-    governorate: "Monastir", delegation: "Monastir Médina", address: "Avenue Habib Bourguiba, Monastir",
-    lat: 35.762, lng: 10.831,
-    photos: [APT_LIVING, APT_KITCHEN, BEDROOM],
-    docs: ["Titre foncier", "Quittance copropriété"],
-  },
-  {
-    owner: ahmed,
-    title: "Villa pied dans l'eau · Mahdia",
-    description: "Villa exceptionnelle accès direct plage. 4 chambres, terrasse vue mer 360°, jardin tropical. Bien rare sur ce segment.",
-    type: "villa", area_sqm: 380, rooms: 5, bathrooms: 4, floor: 0, year_built: 2014,
-    governorate: "Mahdia", delegation: "Mahdia Plage", address: "Route de la Corniche, Mahdia",
-    lat: 35.503, lng: 11.061,
-    photos: [VILLA_MED, BEACH_VIEW, TERRACE, VILLA_POOL],
-    docs: ["Titre foncier", "Permis de bâtir", "Étude de sol"],
-  },
+// Generic legal-docs bundle per property type.
+function docsForType(t, ownerIdx) {
+  // Bank/bailiff listings have more procedural documents on file.
+  if (ownerIdx === 11) {
+    return ["Jugement d'adjudication", "PV de saisie immobilière", "Rapport d'expertise judiciaire", "Cahier des charges"];
+  }
+  if (ownerIdx === 13 || ownerIdx === 29) {
+    return ["Titre foncier", "PV de saisie", "Acte de prêt original", "Rapport d'expertise"];
+  }
+  if (t === "land") return ["Titre foncier", "Certificat de bornage", "Permis de lotir"];
+  if (t === "villa") return ["Titre foncier", "Permis de bâtir", "Certificat de conformité"];
+  return ["Titre foncier", "Certificat de propriété"];
+}
 
-  // ─── HAMMAMET + NABEUL — 4 listings ───────────────────────────────────────
-  {
-    owner: leila,
-    title: "Villa avec piscine · Hammamet Sud",
-    description: "Villa de standing 280 m² sur terrain de 600 m². 4 chambres, double salon, cuisine équipée, piscine 8x4, garage 2 voitures. Vue mer indirecte. Quartier résidentiel calme.",
-    type: "villa", area_sqm: 280, rooms: 4, bathrooms: 3, floor: 0, year_built: 2015,
-    governorate: "Nabeul", delegation: "Hammamet", address: "Route touristique, Hammamet Sud",
-    lat: 36.378, lng: 10.563,
-    photos: [VILLA, VILLA_POOL, HOUSE_3, BEDROOM],
-    docs: ["Titre foncier", "Permis de bâtir", "Quitus fiscal"],
-  },
-  {
-    owner: agency,
-    title: "Appartement S+2 · Yasmine Hammamet",
-    description: "Appartement dans résidence avec piscine, à 5 minutes de la marina. Climatisation centrale, parking. Belle vue sur les jardins.",
-    type: "apartment", area_sqm: 88, rooms: 3, bathrooms: 2, floor: 2, year_built: 2009,
-    governorate: "Nabeul", delegation: "Yasmine Hammamet", address: "Médina Méditerranéa, Yasmine Hammamet",
-    lat: 36.367, lng: 10.554,
-    photos: [APT_LIVING_2, APT_KITCHEN, BEACH_VIEW],
-    docs: ["Titre foncier", "Règlement de copropriété"],
-  },
-  {
-    owner: sami,
-    title: "Maison · Nabeul Centre",
-    description: "Maison de ville 3 chambres, patio andalou central, terrasse aménagée. Quartier authentique proche du souk de poteries.",
-    type: "house", area_sqm: 160, rooms: 3, bathrooms: 2, floor: 0, year_built: 1985,
-    governorate: "Nabeul", delegation: "Nabeul Médina", address: "Rue du Souk, Nabeul",
-    lat: 36.451, lng: 10.735,
-    photos: [HOUSE_2, COURTYARD, TERRACE],
-    docs: ["Titre foncier"],
-  },
-  {
-    owner: ahmed,
-    title: "Terrain agricole 2 hectares · Korba",
-    description: "Terrain agricole irrigué. Plantation d'agrumes en production (orangers, mandariniers). Forage individuel, bassin d'irrigation.",
-    type: "land", area_sqm: 20000, rooms: null, bathrooms: null, floor: null, year_built: null,
-    governorate: "Nabeul", delegation: "Korba", address: "Route de Korba km 8",
-    lat: 36.575, lng: 10.860,
-    photos: [LAND_AGRI, LAND_OLIVE],
-    docs: ["Titre foncier", "Certificat d'exploitation agricole"],
-  },
+// Project a LISTINGS row into the seed-property shape, with owner +
+// photo path + decorated title/description applied.
+const properties = LISTINGS.map((l, i) => ({
+  slug: l.slug,
+  owner: ownerForIndex(i),
+  title: titleForListing(i, l.title),
+  description: descForListing(i, l.description),
+  type: l.type,
+  area_sqm: l.area_sqm,
+  rooms: l.rooms ?? null,
+  bathrooms: l.bathrooms ?? null,
+  floor: l.type === "apartment" ? (l.floor ?? 0) : null,
+  year_built: l.year_built ?? null,
+  governorate: l.governorate,
+  delegation: l.delegation,
+  address: l.address,
+  lat: l.lat,
+  lng: l.lng,
+  // Local optimized WebP — one image per listing for now (the scraper
+  // fetched only the cover from tayara). Path resolves to /public/...
+  photos: l.images.map((_, idx) => `/properties/${l.slug}/${idx + 1}.webp`),
+  docs: docsForType(l.type, i),
+  // Stash the listing-quoted asking price so the auction-plan below can
+  // pick realistic opening/reserve/sale figures off it.
+  askingPrice: l.price,
+}));
 
-  // ─── OTHER GOVERNORATES — 4 listings ──────────────────────────────────────
-  {
-    owner: bailiff,
-    title: "⚖️ Vente judiciaire · Maison R+1 · Bizerte",
-    description: "Maison de ville sur 2 niveaux, vente publique sur exécution. Mise à prix fixée par jugement n° 2025/4521.",
-    type: "house", area_sqm: 180, rooms: 4, bathrooms: 2, floor: 0, year_built: 2000,
-    governorate: "Bizerte", delegation: "Bizerte Nord", address: "Rue de la République, Bizerte",
-    lat: 37.272, lng: 9.873,
-    photos: [HOUSE, APT_LIVING],
-    docs: ["Jugement d'adjudication", "PV de saisie immobilière", "Rapport d'expertise judiciaire"],
-  },
-  {
-    owner: leila,
-    title: "Houch traditionnel · Djerba Houmt Souk",
-    description: "Maison djerbienne traditionnelle (houch), 3 chambres autour du patio. Coupoles, voûtes, mosaïques d'origine. Travaux d'entretien à prévoir.",
-    type: "house", area_sqm: 200, rooms: 3, bathrooms: 2, floor: 0, year_built: 1955,
-    governorate: "Médenine", delegation: "Houmt Souk", address: "Rue Mohamed Ferjani, Houmt Souk",
-    lat: 33.875, lng: 10.857,
-    photos: [HOUSE_3, COURTYARD, TERRACE],
-    docs: ["Titre foncier", "Certificat de propriété"],
-  },
-  {
-    owner: sami,
-    title: "Villa · Kelibia",
-    description: "Villa familiale 4 chambres, vue Cap Bon. Jardin avec figuiers et oliviers. À 800m de la plage de Mansoura.",
-    type: "villa", area_sqm: 220, rooms: 4, bathrooms: 3, floor: 0, year_built: 2011,
-    governorate: "Nabeul", delegation: "Kelibia", address: "Route de Mansoura, Kelibia",
-    lat: 36.851, lng: 11.094,
-    photos: [VILLA_MED, HOUSE, TERRACE, BEACH_VIEW],
-    docs: ["Titre foncier", "Permis de bâtir"],
-  },
-  {
-    owner: ahmed,
-    title: "Appartement S+1 · Gabès Centre",
-    description: "Appartement lumineux, traversant. Cuisine équipée, salle d'eau rénovée. Proche corniche et avenue Habib Bourguiba.",
-    type: "apartment", area_sqm: 78, rooms: 2, bathrooms: 1, floor: 2, year_built: 2002,
-    governorate: "Gabès", delegation: "Gabès Médina", address: "Avenue Farhat Hached, Gabès",
-    lat: 33.881, lng: 10.098,
-    photos: [APT_LIVING_2, APT_KITCHEN],
-    docs: ["Titre foncier"],
-  },
-];
+// Sanity-check that the derived list has the expected shape.
+console.log(`  → ${properties.length} listings derived (${properties.filter(p => p.type === "land").length} land, ${properties.filter(p => p.type !== "land").length} house/villa)`);
+
 
 // Wipe any properties owned by a seed user that aren't in the current
 // list — e.g. older mock listings from a prior version of this file.
@@ -570,267 +313,320 @@ if (existingAuctions?.length) {
   await sb.from("auctions").delete().in("id", ids);
 }
 
-// Each plan row references a propertyIdx into the `properties` array
-// above. Mix of live english/sealed/dutch, scheduled, ended_sold,
-// direct sales (listing_type='direct' with a fixed sale_price), and
-// auctions with a buy_now_price escape hatch.
+// Each plan row references a propertyIdx into the LISTINGS-derived
+// `properties` array above. Mix of live english/sealed/dutch,
+// scheduled, ended_sold, direct sales (listing_type='direct' with a
+// fixed sale_price), and auctions with a buy_now_price escape hatch.
+//
+// Tuned so each listing's auction/sale prices stay close to its
+// tayara asking price — opening = 75-85%, reserve ≈ ask, buy_now ≈
+// 110-120%.
 const auctionPlan = [
-  // ─── 0 · Apt Le Manzah — English LIVE, ends in 6h, hot bidding
+  // ── 0 · Land Mahres main road — English LIVE, ends in 36h
   { propertyIdx: 0, type: "english", listing_type: "auction",
-    opening_price: 380_000, reserve_price: 410_000,
-    starts_at: hoursFromNow(-48), ends_at: hoursFromNow(6), status: "live",
+    opening_price: 230_000, reserve_price: 295_000,
+    starts_at: hoursFromNow(-24), ends_at: hoursFromNow(36), status: "live",
     bids: [
-      { user: sami,    amount: 380_000, max: 395_000 },
-      { user: leila,   amount: 385_000, max: 405_000, isProxy: true },
-      { user: ahmed,   amount: 390_000, max: 420_000 },
-      { user: sami,    amount: 395_000 },
-      { user: diaspora,amount: 400_000, max: 440_000 },
-      { user: ahmed,   amount: 405_000 },
+      { user: sami,    amount: 230_000 },
+      { user: ahmed,   amount: 245_000 },
+      { user: diaspora,amount: 260_000, max: 295_000, isProxy: true },
     ],
   },
-  // ─── 1 · STB Local Lac 2 — English LIVE, ends in 22h
-  { propertyIdx: 1, type: "english", listing_type: "auction",
-    opening_price: 1_200_000, reserve_price: 1_350_000,
-    starts_at: hoursFromNow(-12), ends_at: hoursFromNow(22), status: "live",
-    bids: [
-      { user: leila,    amount: 1_200_000 },
-      { user: diaspora, amount: 1_210_000, max: 1_280_000, isProxy: true },
-    ],
+  // ── 1 · Land Aéroport km10 4942m² — DIRECT SALE négociable
+  { propertyIdx: 1, type: "english", listing_type: "direct",
+    opening_price: 140_000, sale_price: 140_000, sale_negotiable: true,
+    starts_at: hoursFromNow(-72), ends_at: daysFromNow(60), status: "live",
+    current_price: 140_000, bids: [],
   },
-  // ─── 2 · STB Villa La Marsa — Sealed LIVE, ends in 3 days
+  // ── 2 · Olive farm Agareb 19ha — Sealed LIVE, premium agricultural
   { propertyIdx: 2, type: "sealed", listing_type: "auction",
-    opening_price: 1_500_000, reserve_price: 1_700_000,
+    opening_price: 700_000, reserve_price: 850_000,
+    starts_at: hoursFromNow(-36), ends_at: daysFromNow(4), status: "live",
+    bids: [
+      { user: leila,    amount: 720_000 },
+      { user: ahmed,    amount: 780_000 },
+      { user: diaspora, amount: 820_000 },
+    ],
+  },
+  // ── 3 · Sfax centre-ville terrain — English LIVE + BUY NOW
+  { propertyIdx: 3, type: "english", listing_type: "auction",
+    opening_price: 240_000, reserve_price: 300_000, buy_now_price: 380_000,
+    starts_at: hoursFromNow(-12), ends_at: daysFromNow(2), status: "live",
+    bids: [
+      { user: ahmed, amount: 240_000 },
+      { user: sami,  amount: 255_000 },
+    ],
+  },
+  // ── 4 · Manzel Chaker km18 agricole — DIRECT SALE négociable
+  { propertyIdx: 4, type: "english", listing_type: "direct",
+    opening_price: 90_000, sale_price: 90_000, sale_negotiable: true,
+    starts_at: hoursFromNow(-100), ends_at: daysFromNow(60), status: "live",
+    current_price: 90_000, bids: [],
+  },
+  // ── 5 · Sidi Mansour Sakiet Eddaer — English LIVE, ends in 8h
+  { propertyIdx: 5, type: "english", listing_type: "auction",
+    opening_price: 20_000, reserve_price: 27_000,
+    starts_at: hoursFromNow(-30), ends_at: hoursFromNow(8), status: "live",
+    bids: [
+      { user: sami,    amount: 20_000 },
+      { user: ahmed,   amount: 22_000 },
+      { user: leila,   amount: 24_000 },
+      { user: diaspora,amount: 26_500, max: 32_000, isProxy: true },
+    ],
+  },
+  // ── 6 · Sakiet Ezzit terrain à bâtir — English LIVE, ends in 18h
+  { propertyIdx: 6, type: "english", listing_type: "auction",
+    opening_price: 125_000, reserve_price: 150_000,
+    starts_at: hoursFromNow(-18), ends_at: hoursFromNow(18), status: "live",
+    bids: [
+      { user: ahmed, amount: 125_000 },
+      { user: leila, amount: 135_000, max: 160_000, isProxy: true },
+    ],
+  },
+  // ── 7 · Teniour km16 13000m² — Sealed LIVE
+  { propertyIdx: 7, type: "sealed", listing_type: "auction",
+    opening_price: 140_000, reserve_price: 175_000,
     starts_at: hoursFromNow(-24), ends_at: daysFromNow(3), status: "live",
     bids: [
-      { user: ahmed,    amount: 1_600_000 },
-      { user: leila,    amount: 1_680_000 },
-      { user: diaspora, amount: 1_720_000 },
+      { user: sami,  amount: 145_000 },
+      { user: leila, amount: 165_000 },
     ],
   },
-  // ─── 3 · Penthouse Carthage S+3 — English LIVE
-  { propertyIdx: 3, type: "english", listing_type: "auction",
-    opening_price: 720_000, reserve_price: 800_000,
-    starts_at: hoursFromNow(-6), ends_at: hoursFromNow(36), status: "live",
+  // ── 8 · Route El Ain km7.5 533m² — DIRECT SALE (ferme)
+  { propertyIdx: 8, type: "english", listing_type: "direct",
+    opening_price: 95_000, sale_price: 95_000, sale_negotiable: false,
+    starts_at: hoursFromNow(-50), ends_at: daysFromNow(45), status: "live",
+    current_price: 95_000, bids: [],
+  },
+  // ── 9 · El Hencha agricole — DIRECT SALE négociable
+  { propertyIdx: 9, type: "english", listing_type: "direct",
+    opening_price: 150_000, sale_price: 150_000, sale_negotiable: true,
+    starts_at: hoursFromNow(-200), ends_at: daysFromNow(75), status: "live",
+    current_price: 150_000, bids: [],
+  },
+  // ── 10 · Sidi Abdelkafi deux lots — English ENDED & SOLD
+  { propertyIdx: 10, type: "english", listing_type: "auction",
+    opening_price: 12_000, reserve_price: 16_000,
+    starts_at: daysFromNow(-18), ends_at: daysFromNow(-11), status: "ended_sold",
+    winner_user_id: sami, winner_amount: 18_500, hammer_at: daysFromNow(-11),
+    current_price: 18_500,
     bids: [
-      { user: ahmed,    amount: 720_000 },
-      { user: sami,     amount: 740_000 },
-      { user: diaspora, amount: 760_000, max: 820_000, isProxy: true },
+      { user: ahmed, amount: 12_000 },
+      { user: leila, amount: 14_500 },
+      { user: sami,  amount: 18_500, max: 22_000 },
     ],
   },
-  // ─── 4 · Studio La Goulette — DIRECT SALE (négociable)
-  { propertyIdx: 4, type: "english", listing_type: "direct",
-    opening_price: 145_000, sale_price: 145_000, sale_negotiable: true,
-    starts_at: hoursFromNow(-72), ends_at: daysFromNow(60), status: "live",
-    current_price: 145_000,
-    bids: [],
+  // ── 11 · ⚖️ Bailiff judicial — Centre terrain+maison — English LIVE
+  { propertyIdx: 11, type: "english", listing_type: "auction",
+    opening_price: 285_000, reserve_price: null,
+    starts_at: hoursFromNow(-48), ends_at: hoursFromNow(48), status: "live",
+    bids: [
+      { user: sami,  amount: 285_000 },
+      { user: leila, amount: 305_000 },
+      { user: ahmed, amount: 320_000 },
+    ],
   },
-  // ─── 5 · Penthouse Lac 1 — English SCHEDULED, opens in 2 days
-  { propertyIdx: 5, type: "english", listing_type: "auction",
-    opening_price: 1_800_000, reserve_price: 2_000_000,
+  // ── 12 · Menzel Chaker terrain — English SCHEDULED, opens in 2d
+  { propertyIdx: 12, type: "english", listing_type: "auction",
+    opening_price: 105_000, reserve_price: 130_000,
     starts_at: daysFromNow(2), ends_at: daysFromNow(9), status: "scheduled",
     bids: [],
   },
-  // ─── 6 · Mutuelleville S+2 — Sealed SCHEDULED
-  { propertyIdx: 6, type: "sealed", listing_type: "auction",
-    opening_price: 480_000, reserve_price: 540_000,
-    starts_at: daysFromNow(1), ends_at: daysFromNow(8), status: "scheduled",
-    bids: [],
-  },
-  // ─── 7 · Villa El Aouina — English LIVE
-  { propertyIdx: 7, type: "english", listing_type: "auction",
-    opening_price: 850_000, reserve_price: 920_000,
-    starts_at: hoursFromNow(-30), ends_at: hoursFromNow(48), status: "live",
+  // ── 13 · 🏛️ STB · Sidi Mansour km3 promoteur — Sealed LIVE, premium land
+  { propertyIdx: 13, type: "sealed", listing_type: "auction",
+    opening_price: 700_000, reserve_price: 850_000,
+    starts_at: hoursFromNow(-30), ends_at: daysFromNow(5), status: "live",
     bids: [
-      { user: ahmed,    amount: 850_000 },
-      { user: leila,    amount: 870_000 },
-      { user: diaspora, amount: 900_000, max: 1_000_000, isProxy: true },
+      { user: ahmed,    amount: 720_000 },
+      { user: agency,   amount: 780_000 },
+      { user: diaspora, amount: 820_000 },
     ],
   },
-  // ─── 8 · Maison Sidi Bou Saïd — DIRECT SALE (charm bien, ferme)
-  { propertyIdx: 8, type: "english", listing_type: "direct",
-    opening_price: 650_000, sale_price: 650_000, sale_negotiable: false,
-    starts_at: hoursFromNow(-120), ends_at: daysFromNow(45), status: "live",
-    current_price: 650_000,
-    bids: [],
+  // ── 14 · Route El Afrane terrain — DIRECT SALE négociable
+  { propertyIdx: 14, type: "english", listing_type: "direct",
+    opening_price: 280_000, sale_price: 280_000, sale_negotiable: true,
+    starts_at: hoursFromNow(-90), ends_at: daysFromNow(60), status: "live",
+    current_price: 280_000, bids: [],
   },
-  // ─── 9 · Apt Bardo — English ENDED & SOLD (last week)
-  { propertyIdx: 9, type: "english", listing_type: "auction",
-    opening_price: 95_000, reserve_price: 110_000,
-    starts_at: daysFromNow(-14), ends_at: daysFromNow(-7), status: "ended_sold",
-    winner_user_id: diaspora, winner_amount: 128_000, hammer_at: daysFromNow(-7),
-    current_price: 128_000,
+  // ── 15 · Route Tunis lotissement — DIRECT SALE (ferme, prix unitaire)
+  { propertyIdx: 15, type: "english", listing_type: "direct",
+    opening_price: 35_000, sale_price: 35_000, sale_negotiable: false,
+    starts_at: hoursFromNow(-150), ends_at: daysFromNow(90), status: "live",
+    current_price: 35_000, bids: [],
+  },
+  // ── 16 · Route Gabes km2.5 — English LIVE + BUY NOW
+  { propertyIdx: 16, type: "english", listing_type: "auction",
+    opening_price: 390_000, reserve_price: 475_000, buy_now_price: 550_000,
+    starts_at: hoursFromNow(-12), ends_at: daysFromNow(4), status: "live",
     bids: [
-      { user: ahmed,    amount: 95_000 },
-      { user: leila,    amount: 105_000 },
-      { user: diaspora, amount: 128_000, max: 150_000 },
+      { user: leila,    amount: 390_000 },
+      { user: ahmed,    amount: 415_000 },
+      { user: diaspora, amount: 440_000, max: 510_000, isProxy: true },
     ],
   },
-  // ─── 10 · Terrain La Soukra 600m² — DIRECT SALE (négociable)
-  { propertyIdx: 10, type: "english", listing_type: "direct",
-    opening_price: 285_000, sale_price: 285_000, sale_negotiable: true,
-    starts_at: hoursFromNow(-200), ends_at: daysFromNow(90), status: "live",
-    current_price: 285_000,
-    bids: [],
-  },
-  // ─── 11 · Bureau CUN — English SCHEDULED
-  { propertyIdx: 11, type: "english", listing_type: "auction",
-    opening_price: 620_000, reserve_price: 700_000,
-    starts_at: daysFromNow(4), ends_at: daysFromNow(11), status: "scheduled",
-    bids: [],
-  },
-  // ─── 12 · Terrain 800m² Sfax — English LIVE + BUY NOW
-  { propertyIdx: 12, type: "english", listing_type: "auction",
-    opening_price: 165_000, reserve_price: 185_000, buy_now_price: 220_000,
-    starts_at: hoursFromNow(-8), ends_at: daysFromNow(5), status: "live",
+  // ── 17 · Teniour km21 — English LIVE, ends in 12h
+  { propertyIdx: 17, type: "english", listing_type: "auction",
+    opening_price: 80_000, reserve_price: 100_000,
+    starts_at: hoursFromNow(-24), ends_at: hoursFromNow(12), status: "live",
     bids: [
-      { user: ahmed, amount: 165_000 },
-      { user: sami,  amount: 172_000 },
+      { user: sami,  amount: 80_000 },
+      { user: ahmed, amount: 90_000 },
+      { user: leila, amount: 96_000 },
     ],
   },
-  // ─── 13 · Bureau Sfax Centre — DIRECT SALE
-  { propertyIdx: 13, type: "english", listing_type: "direct",
-    opening_price: 195_000, sale_price: 195_000, sale_negotiable: true,
-    starts_at: hoursFromNow(-60), ends_at: daysFromNow(50), status: "live",
-    current_price: 195_000,
-    bids: [],
-  },
-  // ─── 14 · Villa Sakiet Eddaier — English LIVE
-  { propertyIdx: 14, type: "english", listing_type: "auction",
-    opening_price: 580_000, reserve_price: 650_000,
-    starts_at: hoursFromNow(-18), ends_at: daysFromNow(2), status: "live",
-    bids: [
-      { user: sami,  amount: 580_000 },
-      { user: leila, amount: 600_000, max: 640_000, isProxy: true },
-    ],
-  },
-  // ─── 15 · Apt Route Soukra Sfax — English SCHEDULED
-  { propertyIdx: 15, type: "english", listing_type: "auction",
-    opening_price: 235_000, reserve_price: 265_000,
+  // ── 18 · Teniour km15 route principale — English SCHEDULED
+  { propertyIdx: 18, type: "english", listing_type: "auction",
+    opening_price: 340_000, reserve_price: 420_000,
     starts_at: daysFromNow(3), ends_at: daysFromNow(10), status: "scheduled",
     bids: [],
   },
-  // ─── 16 · Ferme oliviers Sfax 3ha — Sealed LIVE
-  { propertyIdx: 16, type: "sealed", listing_type: "auction",
-    opening_price: 320_000, reserve_price: 380_000,
-    starts_at: hoursFromNow(-36), ends_at: daysFromNow(4), status: "live",
+  // ── 19 · Route Gremda km13 — English LIVE
+  { propertyIdx: 19, type: "english", listing_type: "auction",
+    opening_price: 175_000, reserve_price: 220_000,
+    starts_at: hoursFromNow(-20), ends_at: daysFromNow(2), status: "live",
     bids: [
-      { user: leila, amount: 350_000 },
-      { user: ahmed, amount: 380_000 },
+      { user: ahmed, amount: 175_000 },
+      { user: sami,  amount: 195_000 },
     ],
   },
-  // ─── 17 · Apt Sousse Centre — Dutch LIVE (ticks down 145k→95k)
-  { propertyIdx: 17, type: "dutch", listing_type: "auction",
-    opening_price: 95_000,
-    dutch_start_price: 145_000, dutch_floor_price: 95_000,
-    dutch_decrement: 2_500, dutch_tick_seconds: 1800, // -2.5k every 30 min
-    starts_at: hoursFromNow(-3), ends_at: hoursFromNow(45), status: "live",
+  // ── 20 · Villa El Ain/Afrane 1684m² — English LIVE, hot bidding
+  { propertyIdx: 20, type: "english", listing_type: "auction",
+    opening_price: 700_000, reserve_price: 800_000,
+    starts_at: hoursFromNow(-48), ends_at: hoursFromNow(60), status: "live",
+    bids: [
+      { user: sami,    amount: 700_000 },
+      { user: ahmed,   amount: 730_000 },
+      { user: leila,   amount: 760_000 },
+      { user: diaspora,amount: 790_000, max: 880_000, isProxy: true },
+    ],
+  },
+  // ── 21 · Kerkennah maison + garage — DIRECT SALE (ferme)
+  { propertyIdx: 21, type: "english", listing_type: "direct",
+    opening_price: 125_000, sale_price: 125_000, sale_negotiable: false,
+    starts_at: hoursFromNow(-72), ends_at: daysFromNow(50), status: "live",
+    current_price: 125_000, bids: [],
+  },
+  // ── 22 · Kerkennah vue mer Charqui — English LIVE
+  { propertyIdx: 22, type: "english", listing_type: "auction",
+    opening_price: 105_000, reserve_price: 130_000,
+    starts_at: hoursFromNow(-15), ends_at: daysFromNow(3), status: "live",
+    bids: [
+      { user: leila, amount: 105_000 },
+      { user: ahmed, amount: 115_000, max: 140_000, isProxy: true },
+    ],
+  },
+  // ── 23 · Villa charme Saltania — English LIVE + proxy battle
+  { propertyIdx: 23, type: "english", listing_type: "auction",
+    opening_price: 380_000, reserve_price: 445_000,
+    starts_at: hoursFromNow(-24), ends_at: daysFromNow(2), status: "live",
+    bids: [
+      { user: ahmed,    amount: 380_000 },
+      { user: leila,    amount: 405_000 },
+      { user: diaspora, amount: 420_000, max: 480_000, isProxy: true },
+    ],
+  },
+  // ── 24 · Bounouma pieds dans l'eau — Sealed LIVE, premium villa
+  { propertyIdx: 24, type: "sealed", listing_type: "auction",
+    opening_price: 820_000, reserve_price: 950_000,
+    starts_at: hoursFromNow(-12), ends_at: daysFromNow(6), status: "live",
+    bids: [
+      { user: ahmed,    amount: 850_000 },
+      { user: diaspora, amount: 910_000 },
+    ],
+  },
+  // ── 25 · Villa Sidi Mansour — English ENDED & SOLD (recent)
+  { propertyIdx: 25, type: "english", listing_type: "auction",
+    opening_price: 310_000, reserve_price: 370_000,
+    starts_at: daysFromNow(-20), ends_at: daysFromNow(-13), status: "ended_sold",
+    winner_user_id: diaspora, winner_amount: 395_000, hammer_at: daysFromNow(-13),
+    current_price: 395_000,
+    bids: [
+      { user: ahmed,    amount: 310_000 },
+      { user: leila,    amount: 350_000 },
+      { user: diaspora, amount: 395_000, max: 425_000 },
+    ],
+  },
+  // ── 26 · Villa Route Taniour km2.5 — English LIVE
+  { propertyIdx: 26, type: "english", listing_type: "auction",
+    opening_price: 620_000, reserve_price: 720_000,
+    starts_at: hoursFromNow(-30), ends_at: daysFromNow(2), status: "live",
+    bids: [
+      { user: ahmed, amount: 620_000 },
+      { user: sami,  amount: 660_000 },
+      { user: leila, amount: 685_000 },
+    ],
+  },
+  // ── 27 · Villa Bouzayen km8 — English SCHEDULED
+  { propertyIdx: 27, type: "english", listing_type: "auction",
+    opening_price: 660_000, reserve_price: 775_000,
+    starts_at: daysFromNow(4), ends_at: daysFromNow(11), status: "scheduled",
     bids: [],
   },
-  // ─── 18 · Villa Khézama Sousse — English LIVE
-  { propertyIdx: 18, type: "english", listing_type: "auction",
-    opening_price: 920_000, reserve_price: 1_050_000,
-    starts_at: hoursFromNow(-24), ends_at: daysFromNow(3), status: "live",
+  // ── 28 · Villa Teniour km3 — DIRECT SALE négociable
+  { propertyIdx: 28, type: "english", listing_type: "direct",
+    opening_price: 375_000, sale_price: 375_000, sale_negotiable: true,
+    starts_at: hoursFromNow(-100), ends_at: daysFromNow(60), status: "live",
+    current_price: 375_000, bids: [],
+  },
+  // ── 29 · 🏛️ STB Villa Front mer — English LIVE, premium bank-sale
+  { propertyIdx: 29, type: "english", listing_type: "auction",
+    opening_price: 950_000, reserve_price: 1_100_000,
+    starts_at: hoursFromNow(-36), ends_at: daysFromNow(4), status: "live",
     bids: [
-      { user: ahmed,    amount: 920_000 },
-      { user: leila,    amount: 950_000 },
-      { user: diaspora, amount: 980_000, max: 1_080_000, isProxy: true },
+      { user: ahmed,    amount: 950_000 },
+      { user: diaspora, amount: 1_005_000, max: 1_180_000, isProxy: true },
+      { user: leila,    amount: 1_040_000 },
     ],
   },
-  // ─── 19 · Studio Port El Kantaoui — English ENDED & SOLD
-  { propertyIdx: 19, type: "english", listing_type: "auction",
-    opening_price: 78_000, reserve_price: 92_000,
-    starts_at: daysFromNow(-21), ends_at: daysFromNow(-14), status: "ended_sold",
-    winner_user_id: ahmed, winner_amount: 105_000, hammer_at: daysFromNow(-14),
-    current_price: 105_000,
-    bids: [
-      { user: leila,    amount: 78_000 },
-      { user: diaspora, amount: 88_000 },
-      { user: ahmed,    amount: 105_000, max: 115_000 },
-    ],
-  },
-  // ─── 20 · Apt Monastir — English LIVE + BUY NOW
-  { propertyIdx: 20, type: "english", listing_type: "auction",
-    opening_price: 215_000, reserve_price: 240_000, buy_now_price: 280_000,
-    starts_at: hoursFromNow(-10), ends_at: hoursFromNow(50), status: "live",
-    bids: [
-      { user: sami,  amount: 215_000 },
-      { user: ahmed, amount: 225_000 },
-    ],
-  },
-  // ─── 21 · Villa pied dans l'eau Mahdia — English LIVE, premium
-  { propertyIdx: 21, type: "english", listing_type: "auction",
-    opening_price: 1_400_000, reserve_price: 1_600_000,
-    starts_at: hoursFromNow(-48), ends_at: daysFromNow(5), status: "live",
-    bids: [
-      { user: diaspora, amount: 1_400_000, max: 1_700_000, isProxy: true },
-      { user: leila,    amount: 1_450_000 },
-      { user: ahmed,    amount: 1_500_000 },
-    ],
-  },
-  // ─── 22 · Villa Hammamet Sud — English LIVE
-  { propertyIdx: 22, type: "english", listing_type: "auction",
-    opening_price: 720_000, reserve_price: 800_000,
-    starts_at: hoursFromNow(-6), ends_at: daysFromNow(2), status: "live",
-    bids: [
-      { user: ahmed,    amount: 720_000 },
-      { user: sami,     amount: 740_000 },
-      { user: diaspora, amount: 760_000, max: 820_000, isProxy: true },
-    ],
-  },
-  // ─── 23 · Apt Yasmine Hammamet — English SCHEDULED
-  { propertyIdx: 23, type: "english", listing_type: "auction",
-    opening_price: 175_000, reserve_price: 200_000,
+  // ── 30 · Villa Cité Essaada Soukra — English SCHEDULED
+  { propertyIdx: 30, type: "english", listing_type: "auction",
+    opening_price: 520_000, reserve_price: 600_000,
     starts_at: daysFromNow(5), ends_at: daysFromNow(12), status: "scheduled",
     bids: [],
   },
-  // ─── 24 · Maison Nabeul Centre — DIRECT SALE (négociable)
-  { propertyIdx: 24, type: "english", listing_type: "direct",
-    opening_price: 245_000, sale_price: 245_000, sale_negotiable: true,
-    starts_at: hoursFromNow(-100), ends_at: daysFromNow(60), status: "live",
-    current_price: 245_000,
+  // ── 31 · Villa style américain Route Gabes — DIRECT SALE (ferme)
+  { propertyIdx: 31, type: "english", listing_type: "direct",
+    opening_price: 350_000, sale_price: 350_000, sale_negotiable: false,
+    starts_at: hoursFromNow(-80), ends_at: daysFromNow(45), status: "live",
+    current_price: 350_000, bids: [],
+  },
+  // ── 32 · Villa Route Mahdia km4 — Dutch LIVE (450k → 290k tick-down)
+  { propertyIdx: 32, type: "dutch", listing_type: "auction",
+    opening_price: 290_000,
+    dutch_start_price: 450_000, dutch_floor_price: 290_000,
+    dutch_decrement: 5_000, dutch_tick_seconds: 3600, // -5k/hr
+    starts_at: hoursFromNow(-4), ends_at: hoursFromNow(60), status: "live",
     bids: [],
   },
-  // ─── 25 · Terrain agricole Korba 2ha — English LIVE + BUY NOW
-  { propertyIdx: 25, type: "english", listing_type: "auction",
-    opening_price: 320_000, reserve_price: 370_000, buy_now_price: 420_000,
-    starts_at: hoursFromNow(-12), ends_at: daysFromNow(6), status: "live",
+  // ── 33 · Villa neuve Lafrane km4.5 — English LIVE + BUY NOW
+  { propertyIdx: 33, type: "english", listing_type: "auction",
+    opening_price: 400_000, reserve_price: 480_000, buy_now_price: 580_000,
+    starts_at: hoursFromNow(-18), ends_at: daysFromNow(3), status: "live",
     bids: [
-      { user: leila, amount: 320_000 },
+      { user: sami,    amount: 400_000 },
+      { user: diaspora,amount: 430_000, max: 520_000, isProxy: true },
     ],
   },
-  // ─── 26 · Bailiff Maison Bizerte — English LIVE, judicial sale
-  { propertyIdx: 26, type: "english", listing_type: "auction",
-    opening_price: 285_000, reserve_price: null,
-    starts_at: hoursFromNow(-72), ends_at: hoursFromNow(48), status: "live",
+  // ── 34 · Villa 1100m² Sakiet Ezzit — English LIVE
+  { propertyIdx: 34, type: "english", listing_type: "auction",
+    opening_price: 450_000, reserve_price: 540_000,
+    starts_at: hoursFromNow(-20), ends_at: daysFromNow(3), status: "live",
     bids: [
-      { user: sami,  amount: 285_000 },
-      { user: leila, amount: 295_000 },
-      { user: ahmed, amount: 305_000 },
+      { user: ahmed, amount: 450_000 },
+      { user: leila, amount: 480_000 },
+      { user: sami,  amount: 510_000 },
     ],
   },
-  // ─── 27 · Houch traditionnel Djerba — DIRECT SALE (négociable)
-  { propertyIdx: 27, type: "english", listing_type: "direct",
-    opening_price: 180_000, sale_price: 180_000, sale_negotiable: true,
-    starts_at: hoursFromNow(-150), ends_at: daysFromNow(75), status: "live",
-    current_price: 180_000,
-    bids: [],
-  },
-  // ─── 28 · Villa Kelibia — Sealed SCHEDULED
-  { propertyIdx: 28, type: "sealed", listing_type: "auction",
-    opening_price: 520_000, reserve_price: 600_000,
-    starts_at: daysFromNow(2), ends_at: daysFromNow(9), status: "scheduled",
-    bids: [],
-  },
-  // ─── 29 · Apt Gabès Centre — English ENDED & SOLD
-  { propertyIdx: 29, type: "english", listing_type: "auction",
-    opening_price: 78_000, reserve_price: 95_000,
-    starts_at: daysFromNow(-30), ends_at: daysFromNow(-23), status: "ended_sold",
-    winner_user_id: sami, winner_amount: 102_000, hammer_at: daysFromNow(-23),
-    current_price: 102_000,
+  // ── 35 · Maison Route Mahdia km10 — English ENDED & SOLD
+  { propertyIdx: 35, type: "english", listing_type: "auction",
+    opening_price: 120_000, reserve_price: 155_000,
+    starts_at: daysFromNow(-25), ends_at: daysFromNow(-18), status: "ended_sold",
+    winner_user_id: ahmed, winner_amount: 172_000, hammer_at: daysFromNow(-18),
+    current_price: 172_000,
     bids: [
-      { user: ahmed, amount: 78_000 },
-      { user: leila, amount: 92_000 },
-      { user: sami,  amount: 102_000, max: 110_000 },
+      { user: leila,    amount: 120_000 },
+      { user: sami,     amount: 145_000 },
+      { user: ahmed,    amount: 172_000, max: 195_000 },
     ],
   },
 ];
@@ -900,14 +696,18 @@ console.log(`  ✓ ${createdAuctions} auctions, ${createdBids} bids, ${createdDe
 console.log("→ Creating inspections…");
 await sb.from("inspections").delete().in("requested_by", [ahmed, sami, leila, diaspora]);
 const inspections = [
-  { property: propertyIds[0].id,  requestedBy: diaspora, inspector: inspectorIds[0], kind: "virtual_live", scheduled_at: daysFromNow(2),  status: "scheduled", fee: 350 },
-  { property: propertyIds[2].id,  requestedBy: leila,    inspector: inspectorIds[3], kind: "full",         scheduled_at: daysFromNow(-3), status: "approved",  fee: 800, report: "mock/reports/marsa-villa.pdf" },
-  { property: propertyIds[3].id,  requestedBy: ahmed,    inspector: inspectorIds[0], kind: "full",         scheduled_at: daysFromNow(1),  status: "scheduled", fee: 700 },
-  { property: propertyIds[5].id,  requestedBy: diaspora, inspector: inspectorIds[0], kind: "virtual_live", scheduled_at: daysFromNow(4),  status: "requested", fee: 400 },
-  { property: propertyIds[14].id, requestedBy: ahmed,    inspector: inspectorIds[2], kind: "standard",     scheduled_at: daysFromNow(-7), status: "approved",  fee: 350, report: "mock/reports/sfax-villa.pdf" },
-  { property: propertyIds[18].id, requestedBy: leila,    inspector: inspectorIds[1], kind: "full",         scheduled_at: daysFromNow(3),  status: "scheduled", fee: 750 },
-  { property: propertyIds[21].id, requestedBy: diaspora, inspector: inspectorIds[1], kind: "full",         scheduled_at: daysFromNow(-1), status: "approved",  fee: 900, report: "mock/reports/mahdia-villa.pdf" },
-  { property: propertyIds[26].id, requestedBy: sami,     inspector: inspectorIds[3], kind: "standard",     scheduled_at: daysFromNow(-4), status: "approved",  fee: 300, report: "mock/reports/bizerte-house.pdf" },
+  // All inspectors are Sfax-area, so route inspections to the Sfax
+  // inspector (index 2) for most jobs; the architect (0) handles the
+  // high-value bank villa and the agricultural engineer (1) takes the
+  // ferme + the rural plots. Lawyer (3) covers judicial sales.
+  { property: propertyIds[2].id,  requestedBy: ahmed,    inspector: inspectorIds[2], kind: "standard",     scheduled_at: daysFromNow(2),  status: "scheduled", fee: 400 },                                                  // Agareb 19ha olive farm
+  { property: propertyIds[11].id, requestedBy: leila,    inspector: inspectorIds[3], kind: "full",         scheduled_at: daysFromNow(-3), status: "approved",  fee: 750, report: "mock/reports/sfax-judicial.pdf" },         // Judicial centre-ville
+  { property: propertyIds[13].id, requestedBy: diaspora, inspector: inspectorIds[0], kind: "full",         scheduled_at: daysFromNow(1),  status: "scheduled", fee: 900 },                                                  // STB Sidi Mansour km3
+  { property: propertyIds[20].id, requestedBy: ahmed,    inspector: inspectorIds[2], kind: "full",         scheduled_at: daysFromNow(4),  status: "requested", fee: 700 },                                                  // Villa 1684m El Ain
+  { property: propertyIds[23].id, requestedBy: leila,    inspector: inspectorIds[2], kind: "standard",     scheduled_at: daysFromNow(-7), status: "approved",  fee: 350, report: "mock/reports/villa-saltania.pdf" },        // Villa Saltania
+  { property: propertyIds[24].id, requestedBy: diaspora, inspector: inspectorIds[0], kind: "virtual_live", scheduled_at: daysFromNow(3),  status: "scheduled", fee: 450 },                                                  // Bounouma pieds-eau
+  { property: propertyIds[29].id, requestedBy: diaspora, inspector: inspectorIds[0], kind: "full",         scheduled_at: daysFromNow(-1), status: "approved",  fee: 1100, report: "mock/reports/villa-front-mer.pdf" },      // STB Villa Front mer
+  { property: propertyIds[33].id, requestedBy: sami,     inspector: inspectorIds[2], kind: "standard",     scheduled_at: daysFromNow(-4), status: "approved",  fee: 350, report: "mock/reports/villa-lafrane.pdf" },         // Villa neuve Lafrane
 ];
 for (const ins of inspections) {
   await sb.from("inspections").insert({
@@ -923,13 +723,13 @@ console.log(`  ✓ ${inspections.length} inspections`);
 console.log("→ Creating payments…");
 await sb.from("payments").delete().in("user_id", [ahmed, sami, leila, diaspora]);
 const payments = [
-  { user: diaspora, kind: "deposit_lock",  provider: "konnect", amount: 9_500,  status: "captured" },
-  { user: ahmed,    kind: "deposit_lock",  provider: "paymee",  amount: 38_000, status: "captured" },
-  { user: leila,    kind: "deposit_lock",  provider: "konnect", amount: 22_000, status: "captured" },
-  { user: diaspora, kind: "commission",    provider: "konnect", amount: 1_280,  status: "captured" }, // 1% of 128k sale
-  { user: ahmed,    kind: "inspection_fee",provider: "flouci",  amount: 700,    status: "captured" },
-  { user: leila,    kind: "inspection_fee",provider: "konnect", amount: 600,    status: "captured" },
-  { user: agency,   kind: "subscription",  provider: "paymee",  amount: 299,    status: "captured" }, // Pro tier
+  { user: diaspora, kind: "deposit_lock",  provider: "bank_transfer", amount: 9_500,  status: "captured" },
+  { user: ahmed,    kind: "deposit_lock",  provider: "d17",           amount: 38_000, status: "captured" },
+  { user: leila,    kind: "deposit_lock",  provider: "bank_transfer", amount: 22_000, status: "captured" },
+  { user: diaspora, kind: "commission",    provider: "bank_transfer", amount: 1_280,  status: "captured" }, // 1% of 128k sale
+  { user: ahmed,    kind: "inspection_fee",provider: "d17",           amount: 700,    status: "captured" },
+  { user: leila,    kind: "inspection_fee",provider: "bank_transfer", amount: 600,    status: "captured" },
+  { user: agency,   kind: "subscription",  provider: "bank_transfer", amount: 299,    status: "captured" }, // Pro tier
 ];
 for (const p of payments) {
   await sb.from("payments").insert({
