@@ -158,10 +158,11 @@ export async function PropertyCard({
             />
           </div>
 
-          {/* Bottom-trailing — polished-brass arrow chip. Rotates on
-              hover so the card feels alive. */}
+          {/* Bottom-trailing — polished-brass arrow chip. Gold gradient
+              fill (matches the FAB / splash / modal header) so the
+              affordance feels metallic, not flat. Rotates on hover. */}
           <div className="absolute bottom-2.5 end-2.5">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[var(--gold)] text-white ring-1 ring-black/5 shadow-[var(--shadow-gold)] transition-transform group-hover:scale-110 group-hover:rotate-45">
+            <span className="batta-gradient-gold inline-flex h-9 w-9 items-center justify-center rounded-full text-white ring-1 ring-black/5 shadow-[var(--shadow-gold)] transition-transform group-hover:scale-110 group-hover:rotate-45">
               <ArrowUpRight className="size-4" strokeWidth={2.5} />
             </span>
           </div>

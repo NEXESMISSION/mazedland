@@ -91,9 +91,9 @@ export function BottomTabBar() {
         const active = tab.match(pathname);
 
         if (tab.isCenter) {
-          // Navy FAB — saturated, lifted, white plus icon. The deep
-          // blue against the white bar makes it the visual focal point
-          // without needing a metallic gradient.
+          // Gold-gradient FAB — same metallic 135° sweep as the splash,
+          // brand mark, and notification modal header. White ring keeps
+          // it floating above the bar's hairline border.
           return (
             <Link
               key={tab.href}
@@ -103,7 +103,7 @@ export function BottomTabBar() {
               aria-current={active ? "page" : undefined}
             >
               <span
-                className={`relative inline-flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full bg-[var(--gold)] text-white shadow-[var(--shadow-gold)] ring-4 ring-white transition-transform active:scale-95 ${
+                className={`batta-gradient-gold relative inline-flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full text-white shadow-[var(--shadow-gold)] ring-4 ring-white transition-transform active:scale-95 ${
                   active ? "scale-105" : "hover:scale-[1.03]"
                 }`}
               >
