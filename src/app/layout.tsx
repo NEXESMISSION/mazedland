@@ -125,6 +125,25 @@ export default async function RootLayout({
             time on the map iframe. */}
         <link rel="dns-prefetch" href="https://tile.openstreetmap.org" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Preload the splash-screen wordmark so it paints before any
+            JS hydrates. AVIF is ~4 KB; the second preload covers the
+            handful of browsers (older Safari, Firefox without AVIF) that
+            need WebP. The `imagesrcset` makes the browser pick exactly
+            one — no double download. */}
+        <link
+          rel="preload"
+          as="image"
+          href="/logo.avif"
+          type="image/avif"
+          fetchPriority="high"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href="/logo.webp"
+          type="image/webp"
+          fetchPriority="high"
+        />
       </head>
       <body
         className="min-h-full bg-background text-foreground font-sans"

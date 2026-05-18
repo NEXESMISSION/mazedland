@@ -90,17 +90,20 @@ export function TopBar() {
 function BrandMark() {
   const t = useTranslations("brand");
   // Wordmark sized to read clearly in the top bar — `h-8` (32px) on
-  // mobile, `h-9` (36px) on desktop. The ~2.5:1 wordmark auto-scales
+  // mobile, `h-9` (36px) on desktop. The ~3.2:1 wordmark auto-scales
   // its width via `w-auto`. `priority` skips the lazy-load — this is
-  // above-the-fold on every page that shows the bar.
+  // above-the-fold on every page that shows the bar. The asset is
+  // also `<link rel="preload">`-ed in the root layout, so by the
+  // time this paints it's already in cache.
   return (
     <Link href="/" className="flex items-center" aria-label={t("name")}>
       <Image
         src="/logo.png"
         alt={t("name")}
-        width={890}
-        height={277}
+        width={257}
+        height={80}
         priority
+        sizes="116px"
         className="h-8 w-auto shrink-0 lg:h-9"
       />
     </Link>
