@@ -66,36 +66,33 @@ export function SplashScreen() {
       <div className="batta-gradient-blob batta-gradient-blob-lg -bottom-24 -left-16" />
 
       {/* Logo — preloaded in <head>, served via <picture> so AVIF
-          (4 KB) wins where supported, with WebP fallback. The white
-          frosted plate gives the dark wordmark a clean stage on the
-          blue gradient. */}
-      <div className="relative animate-[batta-float-up_500ms_ease-out_both]">
-        <div className="rounded-3xl bg-white/95 px-7 py-5 shadow-[var(--shadow-lg)] ring-1 ring-white/40 backdrop-blur-sm">
-          <picture>
-            <source srcSet="/logo.avif" type="image/avif" />
-            <source srcSet="/logo.webp" type="image/webp" />
-            <img
-              src="/logo.png"
-              alt="Batta"
-              width={528}
-              height={164}
-              decoding="async"
-              fetchPriority="high"
-              className="h-16 w-auto sm:h-20"
-            />
-          </picture>
-        </div>
-      </div>
+          (4 KB) wins where supported, with WebP fallback. The CSS
+          filter (`brightness(0) invert(1)`) flips the dark wordmark
+          to pure white so it reads directly on the gradient without
+          any backing plate. */}
+      <picture className="relative animate-[batta-float-up_500ms_ease-out_both]">
+        <source srcSet="/logo.avif" type="image/avif" />
+        <source srcSet="/logo.webp" type="image/webp" />
+        <img
+          src="/logo.png"
+          alt="Batta"
+          width={528}
+          height={164}
+          decoding="async"
+          fetchPriority="high"
+          className="batta-splash-logo h-14 w-auto sm:h-16"
+        />
+      </picture>
 
-      {/* Loading dots */}
+      {/* Thin progress bar — a single white sliver runs left to right
+          under the logo. Cleaner than bouncing dots and on-brand with
+          the linear/stripe-style premium loaders. */}
       <div
-        className="relative mt-10 flex items-center gap-2"
+        className="relative mt-10 h-[2px] w-40 overflow-hidden rounded-full bg-white/20"
         role="status"
         aria-label="Chargement"
       >
-        <span className="batta-splash-dot" style={{ animationDelay: "0ms" }} />
-        <span className="batta-splash-dot" style={{ animationDelay: "160ms" }} />
-        <span className="batta-splash-dot" style={{ animationDelay: "320ms" }} />
+        <span className="batta-splash-bar" />
       </div>
     </div>
   );
