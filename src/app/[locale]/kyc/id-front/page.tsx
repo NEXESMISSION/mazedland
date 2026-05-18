@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Camera, Check, CheckCircle2, Loader2, RotateCcw } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
@@ -12,7 +12,31 @@ import { updateKycDraft } from "@/lib/kycDraft";
 export default function KYCIdFrontPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [url, setUrl] = useState<string | null>(null);
+  // previewUrl is a blob:// URL fired the moment the user picks a file —
+  // safe to render as <img src>. storedUrl is the private-bucket storage
+  // path that lands in the draft once the upload finishes; not viewable.
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [storedUrl, setStoredUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const previewRef = useRef<string | null>(null);
+
+  // Revoke the blob URL on unmount or when it's replaced — otherwise
+  // the browser hangs onto the picked file in memory.
+  useEffect(() => {
+    return () => {
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+    };
+  }, []);
+
+  function reset() {
+    if (previewRef.current) {
+      URL.revokeObjectURL(previewRef.current);
+      previewRef.current = null;
+    }
+    setPreviewUrl(null);
+    setStoredUrl(null);
+    setUploading(false);
+  }
 
   return (
     <KYCShell current={0} backHref="/kyc/start">
@@ -27,17 +51,31 @@ export default function KYCIdFrontPage() {
           </p>
         </div>
 
-        {url ? (
-          <div className="relative aspect-[4/3] rounded-[var(--radius-md)] overflow-hidden border-2 border-[var(--success)]">
+        {previewUrl ? (
+          <div
+            className={`relative aspect-[4/3] rounded-[var(--radius-md)] overflow-hidden border-2 ${
+              storedUrl ? "border-[var(--success)]" : "border-[var(--gold)]"
+            }`}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={url}
+              src={previewUrl}
               alt="CIN recto"
               className="h-full w-full object-cover"
             />
-            <div className="absolute top-2 end-2 h-7 w-7 rounded-full bg-[var(--success)] flex items-center justify-center">
-              <Check className="h-4 w-4 text-white" strokeWidth={3} />
-            </div>
+            {uploading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/45 backdrop-blur-sm">
+                <Loader2 className="h-7 w-7 text-white animate-spin" />
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-white">
+                  Téléversement…
+                </span>
+              </div>
+            )}
+            {storedUrl && !uploading && (
+              <div className="absolute top-2 end-2 h-7 w-7 rounded-full bg-[var(--success)] flex items-center justify-center shadow-md">
+                <Check className="h-4 w-4 text-white" strokeWidth={3} />
+              </div>
+            )}
           </div>
         ) : (
           <NativeCapture
@@ -45,15 +83,22 @@ export default function KYCIdFrontPage() {
             facing="environment"
             folder="kyc"
             label="Photographier le recto"
+            onPreview={(u) => {
+              if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+              previewRef.current = u;
+              setPreviewUrl(u);
+              setUploading(true);
+            }}
             onCaptured={(u) => {
-              setUrl(u);
+              setStoredUrl(u);
+              setUploading(false);
               updateKycDraft({ idFrontUrl: u });
             }}
           >
-            {({ open, uploading }) => (
+            {({ open, uploading: nativeUploading }) => (
               <button
                 onClick={open}
-                disabled={uploading}
+                disabled={nativeUploading}
                 className="relative aspect-[4/3] w-full rounded-[var(--radius-md)] border-2 border-dashed border-[var(--border)] hover:border-[var(--gold)] bg-[var(--surface)] overflow-hidden transition-colors"
               >
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
@@ -63,11 +108,6 @@ export default function KYCIdFrontPage() {
                     Touchez pour ouvrir l&apos;appareil photo
                   </div>
                 </div>
-                {uploading && (
-                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                    <Loader2 className="h-8 w-8 text-[var(--gold)] animate-spin" />
-                  </div>
-                )}
               </button>
             )}
           </NativeCapture>
@@ -79,13 +119,14 @@ export default function KYCIdFrontPage() {
           <Tip text="Le texte doit être net et lisible" />
         </ul>
 
-        {url && (
+        {previewUrl && (
           <div className="flex gap-2">
             <Button
               variant="secondary"
               size="lg"
               fullWidth
-              onClick={() => setUrl(null)}
+              onClick={reset}
+              disabled={uploading}
             >
               <RotateCcw className="h-4 w-4" />
               Reprendre
@@ -93,12 +134,20 @@ export default function KYCIdFrontPage() {
             <Button
               size="lg"
               fullWidth
+              disabled={!storedUrl || uploading}
               onClick={() => {
                 toast("Recto capturé", "success");
                 router.push("/kyc/id-back");
               }}
             >
-              Continuer
+              {uploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Téléversement…
+                </>
+              ) : (
+                "Continuer"
+              )}
             </Button>
           </div>
         )}

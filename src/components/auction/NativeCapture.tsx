@@ -35,8 +35,15 @@ interface BaseProps {
   facing?: "user" | "environment";
   /** Sub-folder under the user's bucket (e.g. "kyc", "properties"). */
   folder: string;
-  /** Called with the public URL once the file is uploaded. */
+  /** Called with the storage url/path once the file is uploaded. For
+   *  private buckets (kyc, etc.) this is the storage path — useless as
+   *  `<img src>`. Use `onPreview` for display. */
   onCaptured: (url: string) => void;
+  /** Optional — fires synchronously the moment the user picks a file,
+   *  with a local `URL.createObjectURL` blob URL. Renders the preview
+   *  instantly without waiting for compression + upload. The caller is
+   *  responsible for revoking the URL on unmount or replacement. */
+  onPreview?: (previewUrl: string) => void;
   /** Optional override for the visible button label. */
   label?: string;
   /** Disable the trigger (during another in-flight action). */
@@ -87,6 +94,7 @@ export function NativeCapture({
   facing = "environment",
   folder,
   onCaptured,
+  onPreview,
   label,
   disabled,
   className,
@@ -138,6 +146,19 @@ export function NativeCapture({
         log("validate rejected", { reason: v.reason });
         toast(v.reason, "warning");
         return;
+      }
+    }
+    // Synchronous preview — fires the blob URL before compression so the
+    // UI can render the photo INSTANTLY while compress + upload run in
+    // the background. Critical for private buckets (kyc) where the
+    // storage path isn't a usable `<img src>`.
+    if (kind === "photo" && onPreview) {
+      try {
+        const previewUrl = URL.createObjectURL(f);
+        log("preview blob url emitted", { previewUrl });
+        onPreview(previewUrl);
+      } catch (e) {
+        log("preview blob url failed (non-fatal)", e);
       }
     }
     setUploading(true);

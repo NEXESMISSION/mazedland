@@ -156,15 +156,22 @@ export default function KYCStatusPage() {
   return (
     <KYCShell current={3}>
       <div className="space-y-6 py-8 text-center">
-        <div className="relative mx-auto h-24 w-24">
+        <div className="relative mx-auto h-28 w-28">
+          {/* Soft outer halo for depth — same recipe as the favorites
+              empty state, scaled to a single icon. */}
           <div
+            aria-hidden
             className="absolute inset-0 rounded-full"
             style={{
-              background: "radial-gradient(circle, rgba(30, 58, 138, 0.22), transparent)",
+              background:
+                "radial-gradient(circle, rgba(30,58,138,0.28), transparent 70%)",
             }}
           />
-          <div className="relative h-full w-full rounded-full bg-[var(--gold-faint)] border-2 border-[var(--gold)] flex items-center justify-center">
-            <Clock className="h-11 w-11 text-[var(--gold)]" strokeWidth={2} />
+          {/* Gradient disc + slow conic spin ring → "review in progress"
+              feels alive without spamming a hard spinner. */}
+          <div className="relative h-full w-full rounded-full batta-gradient-gold shadow-[var(--shadow-gold)] flex items-center justify-center">
+            <span className="absolute inset-[-6px] rounded-full border-2 border-[var(--gold-soft)]/40 border-t-[var(--gold)] animate-spin [animation-duration:2.4s]" />
+            <Clock className="relative h-12 w-12 text-white" strokeWidth={2} />
           </div>
         </div>
 

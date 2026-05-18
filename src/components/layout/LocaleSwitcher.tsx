@@ -94,7 +94,6 @@ export function LocaleSwitcher() {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const isRTL = locale === "ar";
 
   // Close on Escape + on outside click. The listener attaches only
   // while the menu is open so we don't keep a global handler around
@@ -155,14 +154,18 @@ export function LocaleSwitcher() {
         />
       </button>
 
-      {/* Popover menu — animated in below the trigger. */}
+      {/* Popover menu — animated in below the trigger. Anchored to
+          the inline-END of the trigger (logical), which is the right
+          edge in LTR and the left edge in RTL. That keeps the menu
+          growing INTO the viewport instead of off-screen on the side
+          where the switcher actually sits. `max-w-[calc(100vw-1rem)]`
+          is a hard safety net so the menu never bleeds past either
+          screen edge on narrow phones. */}
       {open && (
         <div
           role="menu"
           aria-label="Languages"
-          className={`batta-fade-up absolute top-full z-50 mt-2 min-w-[200px] origin-top overflow-hidden rounded-xl border border-gold/30 bg-surface shadow-[0_18px_40px_-12px_rgba(0,0,0,0.7),0_0_0_1px_rgba(0,0,0,0.4)] backdrop-blur-xl ${
-            isRTL ? "left-0" : "right-0"
-          }`}
+          className="batta-fade-up absolute end-0 top-full z-50 mt-2 w-[220px] max-w-[calc(100vw-1rem)] origin-top overflow-hidden rounded-xl border border-gold/30 bg-surface shadow-[0_18px_40px_-12px_rgba(0,0,0,0.7),0_0_0_1px_rgba(0,0,0,0.4)] backdrop-blur-xl"
         >
           {/* Eyebrow inside the menu so the user knows what they're
               looking at without a header bar. */}
