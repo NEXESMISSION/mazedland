@@ -266,7 +266,7 @@ export default async function AuctionDetail({
           <div className="flex items-center justify-between gap-3 py-2 px-1">
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-[0.16em] font-bold text-[var(--gold)]">
-                Adjugé · vous avez gagné
+                {t("auction.wonByYou")}
               </div>
               <div className="batta-tabular mt-0.5 text-base font-bold text-foreground">
                 {formatTND(Number(auction.winner_amount ?? currentPrice), locale)}
@@ -276,12 +276,12 @@ export default async function AuctionDetail({
               href="/account/wins"
               className="shrink-0 text-[12px] font-semibold text-[var(--gold)] hover:underline"
             >
-              Mes acquisitions →
+              {t("auction.myWins")} →
             </Link>
           </div>
         ) : (
           <div className="text-center text-[12px] text-[var(--foreground-muted)] py-2">
-            Enchère terminée
+            {t("auction.endedShort")}
           </div>
         )}
       </section>
@@ -465,14 +465,14 @@ export default async function AuctionDetail({
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[var(--radius)] bg-[var(--gold)] text-[14px] font-bold text-white shadow-[var(--shadow-gold)] transition-all hover:bg-[var(--gold-bright)] active:scale-[0.99]"
               >
                 <Gavel className="h-4 w-4" strokeWidth={2.5} />
-                Placer une enchère
+                {t("auction.placeBid")}
               </Link>
               {hasBuyNow && !isOwner && (
                 <Link
                   href={`/auctions/${auction.id}/bid` as never}
                   className="mt-1.5 block py-1 text-center text-[12px] text-[var(--foreground-muted)] hover:text-[var(--gold)]"
                 >
-                  ou achat immédiat à{" "}
+                  {t("auction.buyNowFor")}{" "}
                   <span className="font-bold text-foreground">
                     {formatTND(Number(auction.buy_now_price), locale)}
                   </span>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
@@ -36,6 +37,7 @@ export function HeroCarousel({
   alt: string;
   children?: React.ReactNode;
 }) {
+  const t = useTranslations();
   const [index, setIndex] = useState(0);
   const pauseUntil = useRef(0);
   const count = photos.length;
@@ -100,7 +102,7 @@ export function HeroCarousel({
         <>
           <button
             type="button"
-            aria-label="Photo précédente"
+            aria-label={t("gallery.prev")}
             onClick={() => go(-1)}
             className="absolute top-1/2 z-20 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md ring-1 ring-white/20 hover:bg-black/75 active:scale-95 transition-all ltr:left-3 rtl:right-3"
           >
@@ -109,7 +111,7 @@ export function HeroCarousel({
           </button>
           <button
             type="button"
-            aria-label="Photo suivante"
+            aria-label={t("gallery.next")}
             onClick={() => go(1)}
             className="absolute top-1/2 z-20 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md ring-1 ring-white/20 hover:bg-black/75 active:scale-95 transition-all ltr:right-3 rtl:left-3"
           >
@@ -123,7 +125,7 @@ export function HeroCarousel({
               <button
                 key={p.id}
                 type="button"
-                aria-label={`Aller à la photo ${i + 1}`}
+                aria-label={t("gallery.goToPhoto", { n: i + 1 })}
                 onClick={() => jumpTo(i)}
                 className={`block h-1.5 rounded-full transition-all ${
                   i === index

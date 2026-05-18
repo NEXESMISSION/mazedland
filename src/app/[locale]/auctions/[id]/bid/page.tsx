@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { depositForOpening } from "@/lib/utils";
 import { BidComposer } from "@/components/auction/BidComposer";
@@ -29,6 +29,7 @@ export default async function BidPage({
 }) {
   const { id } = await params;
   const locale = await getLocale();
+  const t = await getTranslations();
   const supabase = await getServerSupabase();
 
   const [auctionRes, bidCountRes, initialBidsRes, userRes] = await Promise.all([
@@ -116,7 +117,7 @@ export default async function BidPage({
           knows they're in the bid flow. */}
       <header className="max-w-[var(--max-w)] mx-auto px-4 pt-4 lg:max-w-[var(--max-w-wide)] lg:px-8 lg:pt-6">
         <div className="text-[10px] uppercase tracking-[0.22em] font-extrabold text-[var(--gold)]">
-          Placer une enchère
+          {t("auction.placeBid")}
         </div>
         <div className="mt-1 flex items-baseline justify-between gap-3">
           <h1 className="text-[20px] lg:text-[26px] font-extrabold leading-tight tracking-tight truncate">
