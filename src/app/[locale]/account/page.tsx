@@ -7,7 +7,6 @@ import {
   Wallet,
   ChevronRight,
   ChevronLeft,
-  LogIn,
   LogOut,
   Building2,
   Trophy,
@@ -16,6 +15,7 @@ import {
   Briefcase,
   UserCog,
   Gavel,
+  ArrowRight,
 } from "lucide-react";
 
 /**
@@ -59,36 +59,62 @@ export default async function AccountPage() {
 
   if (!userId) {
     return (
-      <div className="mx-auto max-w-[var(--max-w)] px-4 py-6 lg:max-w-[var(--max-w-content)]">
-        <section className="batta-surface-navy-luxe relative overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25">
-          <span className="batta-eyebrow inline-flex items-center gap-2">
-            <span className="size-1.5 rounded-full bg-gold pulse-gold" />
-            Members area
-          </span>
-          <h1
-            className={`mt-3 text-[24px] font-extrabold leading-tight tracking-tight ${
-              isRTL ? "font-arabic" : ""
-            }`}
-          >
-            <span className="gradient-gold-text">{t("guestTitle")}</span>
-          </h1>
-          <p className="mt-2.5 text-[13.5px] leading-relaxed text-muted">{t("guestBody")}</p>
-          <div className="mt-5 flex gap-2.5">
-            <Link
-              href="/login"
-              className="batta-btn-luxe tap-target flex-1 px-5 py-3 text-[13.5px]"
-            >
-              <LogIn className="size-4" strokeWidth={2} />
-              {t("login")}
-            </Link>
-            <Link
-              href="/signup"
-              className="batta-btn-ghost-gold tap-target flex-1 px-5 py-3 text-[13.5px]"
-            >
-              {t("signup")}
-            </Link>
+      <div className="mx-auto flex min-h-[calc(100dvh-9rem)] max-w-[var(--max-w)] flex-col items-center justify-center px-6">
+        <div className="relative w-full max-w-sm">
+          {/* Ambient gold blob behind the card, very low opacity. */}
+          <div
+            aria-hidden
+            className="batta-gradient-blob batta-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
+          />
+
+          <div className="relative overflow-hidden rounded-3xl bg-surface ring-1 ring-border shadow-[var(--shadow-md)]">
+            {/* Top gold accent strip. */}
+            <div aria-hidden className="batta-gradient-gold h-[2px] w-full" />
+
+            <div className="p-7 sm:p-8">
+              <div className="flex flex-col items-center text-center">
+                <h1
+                  className={`text-[24px] font-extrabold leading-[1.1] tracking-tight ${
+                    isRTL ? "font-arabic" : ""
+                  }`}
+                >
+                  <span className="gradient-gold-text">{t("guestTitle")}</span>
+                </h1>
+                <p className="mt-2 text-[12.5px] text-muted">
+                  Connectez-vous pour gérer vos enchères et votre profil.
+                </p>
+              </div>
+
+              <div className="mt-7 flex flex-col gap-2.5">
+                <Link
+                  href="/signup"
+                  className="batta-btn-luxe tap-target w-full px-6 py-3 text-[14px]"
+                >
+                  {t("signup")}
+                </Link>
+                <Link
+                  href="/login"
+                  className="batta-btn-ghost-gold tap-target w-full px-6 py-3 text-[14px]"
+                >
+                  {t("login")}
+                </Link>
+              </div>
+            </div>
+
+            <div className="border-t border-border bg-surface-2 px-7 py-4 text-center sm:px-8">
+              <Link
+                href="/auctions"
+                className="inline-flex items-center gap-1.5 text-[12px] font-bold text-muted transition hover:text-gold-bright"
+              >
+                Explorer sans compte
+                <ArrowRight
+                  className={`size-3 ${isRTL ? "rotate-180" : ""}`}
+                  strokeWidth={2.4}
+                />
+              </Link>
+            </div>
           </div>
-        </section>
+        </div>
       </div>
     );
   }

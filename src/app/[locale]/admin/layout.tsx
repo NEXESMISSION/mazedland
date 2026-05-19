@@ -12,6 +12,7 @@ import {
   Mailbox,
   Wallet,
   ReceiptText,
+  Bell,
   Settings as SettingsIcon,
 } from "lucide-react";
 
@@ -52,6 +53,7 @@ export default async function AdminLayout({
     { href: "/admin/inspectors", label: "Inspectors", Icon: ClipboardCheck },
     { href: "/admin/users", label: "Users", Icon: Users },
     { href: "/admin/fraud", label: "Fraud", Icon: FileWarning },
+    { href: "/admin/notifications", label: "Notifications", Icon: Bell },
     { href: "/admin/waitlist", label: "Waitlist", Icon: Mailbox },
     { href: "/admin/legal-docs", label: "Legal docs", Icon: FileText },
     { href: "/admin/settings", label: "Settings", Icon: SettingsIcon },

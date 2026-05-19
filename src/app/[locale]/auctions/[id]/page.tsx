@@ -6,6 +6,7 @@ import type { AuctionWithProperty } from "@/lib/types";
 import { formatTND, depositForOpening } from "@/lib/utils";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { Countdown } from "@/components/auction/Countdown";
+import { AuctionCalendarMenu } from "@/components/auction/AuctionCalendarMenu";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
 import { SixthOfferForm } from "@/components/auction/SixthOfferForm";
 import { HeroCarousel } from "@/components/auction/HeroCarousel";
@@ -250,6 +251,22 @@ export default async function AuctionDetail({
                 {formatTND(deposit, locale)} {t("common.tnd")}
               </div>
             </div>
+          </div>
+
+          {/* Calendar reminder — sits right under the countdown so the
+              user sees the "set a reminder" affordance at the moment
+              they're parsing the time-to-close. Hidden for ended
+              auctions inside the menu itself. */}
+          <div className="mt-4 flex justify-end">
+            <AuctionCalendarMenu
+              auctionId={auction.id}
+              endsAt={auction.ends_at}
+              startsAt={auction.starts_at ?? null}
+              status={auction.status}
+              title={property.title}
+              governorate={property.governorate}
+              delegation={property.delegation ?? null}
+            />
           </div>
         </div>
       </section>

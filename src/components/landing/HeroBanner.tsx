@@ -41,7 +41,7 @@ export type HeroSlide = {
  */
 export function HeroBanner({
   slides,
-  intervalMs = 5000,
+  intervalMs = 3500,
   resumeAfterMs = 6000,
   isRTL = false,
 }: {

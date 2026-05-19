@@ -161,15 +161,22 @@
     "buyNowFor": "ou achat immédiat à",
     "endedShort": "Enchère terminée",
     "wonByYou": "Adjugé · vous avez gagné",
-    "myWins": "Mes acquisitions"
+    "myWins": "Mes acquisitions",
+    "calendar": {
+      "closingLabel": "Rappel clôture",
+      "openingLabel": "Rappel ouverture",
+      "google": "Ajouter à Google Calendar",
+      "appleOutlook": "Apple Calendar / Outlook (.ics)",
+      "openedGoogle": "Google Calendar ouvert — n'oubliez pas d'enregistrer.",
+      "downloaded": "Fichier .ics téléchargé"
+    }
   },
   "home": {
     "trendingEyebrow": "En direct",
     "trendingTitle": "Les plus suivis",
     "nouveautesEyebrow": "Nouveau",
     "nouveautesTitle": "Fraîchement publiés",
-    "sellPromoEyebrow": "Vous avez un bien ?",
-    "sellPromoTitle": "Publiez-le · en ligne sous 24 h",
+    "endingSoonEyebrow": "Bientôt clos",
     "moreToExplore": "À découvrir",
     "browseByType": "Parcourir par type",
     "browseByPrice": "Parcourir par prix",

@@ -81,8 +81,14 @@ export async function LiveTicker() {
       {/* Slower than the default marquee duration (40s) — the live
           ticker shares the .batta-marquee animation with PartnersMarquee,
           so the override is inline to keep this surface calmer without
-          slowing other marquees. */}
-      <ul className="batta-marquee" style={{ animationDuration: "70s" }}>
+          slowing other marquees. animationPlayState is forced to
+          "running" inline so the shared .batta-marquee:hover pause rule
+          can't stop this ticker — the live signal never freezes, even
+          on hover or while a finger sits on it. */}
+      <ul
+        className="batta-marquee"
+        style={{ animationDuration: "160s", animationPlayState: "running" }}
+      >
         {sequence.map((it, i) => (
           <TickerCell key={`a-${i}-${it.id}`} item={it} locale={locale} />
         ))}

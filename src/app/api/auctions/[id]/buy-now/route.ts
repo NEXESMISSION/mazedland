@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 
 /**
@@ -122,6 +123,21 @@ export async function POST(
       { error: payErr?.message ?? "payment_insert_failed" },
       { status: 500 },
     );
+  }
+
+  // Confirmation receipt for the buyer — they now need to upload proof of
+  // payment on /payment/checkout. The admin will issue a payment_accepted
+  // notification on approval.
+  const admin = getServiceSupabase();
+  if (admin) {
+    const titleClause = a.property.title ? `« ${a.property.title} »` : "ce bien";
+    await admin.rpc("enqueue_notification", {
+      p_user_id: user.id,
+      p_kind: "buy_now_initiated",
+      p_title: "Achat initié",
+      p_body: `Téléversez votre reçu pour finaliser l'achat de ${titleClause} (${amount.toFixed(2)} TND).`,
+      p_link: `/payment/checkout?payment=${payment.id}`,
+    });
   }
 
   return NextResponse.json({ ok: true, paymentId: payment.id, amount });

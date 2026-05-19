@@ -23,7 +23,6 @@ import {
   Briefcase,
   Gavel,
   MapPin,
-  PlusCircle,
 } from "lucide-react";
 
 // Row type for the "Recently hammered" rail — declared at the top of
@@ -284,29 +283,23 @@ export default async function LandingPage() {
         </section>
       )}
 
-      {/* ─── Seller CTA banner — different shape from the auction-focused
-          banners above. Gold gradient, persistent (no DB dependency),
-          monetises the pay-per-post flow we just built. Tapping lands the
-          seller on /sell where they pick promos + pay. */}
-      <section className="mt-6 px-4">
-        <Link
-          href="/sell"
-          className="batta-fade-up flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)] p-3 text-black shadow-lg shadow-[var(--gold)]/20 active:scale-[0.99] transition"
-        >
-          <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-black/12">
-            <PlusCircle className="size-5" strokeWidth={2} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-black/65">
-              {t("home.sellPromoEyebrow")}
-            </div>
-            <div className="truncate text-sm font-extrabold">
-              {t("home.sellPromoTitle")}
-            </div>
-          </div>
-          <ArrowUpRight className="size-4 shrink-0" strokeWidth={2.5} />
-        </Link>
-      </section>
+      {/* ─── Second hero — same shape as the top carousel, but its
+          payload is the "ending soon" continuation: trending items
+          beyond the first 5, still sorted by ends_at asc. Gives the
+          urgency thread a second surface lower on the page. Hidden
+          when there's no second-tier urgency to show. */}
+      {trending.length > 5 && (
+        <div className="mt-6">
+          <HeroBanner
+            slides={buildEndingSoonSlides(trending.slice(5, 10), locale, {
+              endingSoonWord: t("home.endingSoonEyebrow"),
+              tnd: t("common.tnd"),
+              bidCta: t("home.heroBidCta"),
+            })}
+            isRTL={isRTL}
+          />
+        </div>
+      )}
 
       {/* Live activity feed — header-less, runs as a quiet tape under
           the trending rail. The vertical marquee says "this place is
@@ -614,6 +607,38 @@ function buildHeroSlides(
     ctaLabel: labels.browseCta,
   });
 
+  return slides;
+}
+
+/**
+ * Slides for the second-tier hero — the items closest to closing after
+ * the top hero's headliners. Same shape as `buildHeroSlides` but the
+ * eyebrow leads with "Bientôt clos" instead of "En direct", so the
+ * surface reads as urgency-on-urgency rather than a duplicate of the
+ * top hero. No brand-pitch slide — this carousel is purely listings.
+ */
+function buildEndingSoonSlides(
+  rows: AuctionWithProperty[],
+  locale: string,
+  labels: { endingSoonWord: string; tnd: string; bidCta: string },
+): HeroSlide[] {
+  const slides: HeroSlide[] = [];
+  for (const a of rows) {
+    const property = a.property;
+    const photo = property.photos
+      ?.sort((p, q) => p.sort_order - q.sort_order)[0];
+    if (!photo) continue;
+    const price = a.current_price ?? a.opening_price;
+    slides.push({
+      id: a.id,
+      imageUrl: propertyPhotoUrl(photo.storage_path),
+      eyebrow: `${labels.endingSoonWord} · ${property.governorate}`,
+      title: property.title,
+      subtitle: `${formatTND(price, locale)} ${labels.tnd}`,
+      href: `/auctions/${a.id}`,
+      ctaLabel: labels.bidCta,
+    });
+  }
   return slides;
 }
 

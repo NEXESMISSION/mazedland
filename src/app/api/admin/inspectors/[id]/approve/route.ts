@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -36,6 +37,18 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     .update({ role: "inspector" })
     .eq("id", id);
   if (e2) return NextResponse.json({ error: e2.message }, { status: 500 });
+
+  // Notify the new inspector.
+  const admin = getServiceSupabase();
+  if (admin) {
+    await admin.rpc("enqueue_notification", {
+      p_user_id: id,
+      p_kind: "inspector_approved",
+      p_title: "Vous êtes approuvé comme inspecteur",
+      p_body: "Votre compte inspecteur a été validé. Vous pouvez désormais accepter des missions sur Batta.tn.",
+      p_link: "/inspector",
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }
