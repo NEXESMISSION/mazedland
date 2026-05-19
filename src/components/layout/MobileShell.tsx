@@ -14,10 +14,12 @@ import { PullToRefresh } from "@/components/ui/PullToRefresh";
  * stacking the global TopBar + BottomTabBar on top produces a double
  * back button and wasted vertical space.
  *
- * The bars sit OUTSIDE the PullToRefresh wrapper on purpose: that
- * wrapper sets `will-change: transform`, creating a new containing
- * block for fixed descendants — bars inside would anchor to the
- * wrapper's full height instead of the viewport.
+ * The bars sit OUTSIDE the PullToRefresh wrapper as a belt-and-braces
+ * measure — the wrapper used to set `will-change: transform` which
+ * created a containing block for fixed descendants. That's been
+ * removed (the active translate during a pull already promotes a
+ * compositor layer), so fixed children now anchor to the viewport
+ * the way they should.
  */
 function isFlowRoute(pathname: string): boolean {
   return (

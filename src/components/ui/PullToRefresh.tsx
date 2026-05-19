@@ -168,8 +168,17 @@ export function PullToRefresh({
       </div>
 
       {/* The wrap is what we translate during the pull so the content
-          follows the gesture. Full-bleed by default. */}
-      <div ref={wrapRef} style={{ willChange: "transform" }}>
+          follows the gesture. Full-bleed by default.
+          ─── We intentionally do NOT set `will-change: transform`
+          here: per CSS spec, will-change promotes this element to a
+          new containing block, which makes any `position: fixed`
+          descendant (e.g. the auction detail page's floating bid CTA)
+          anchor to the wrap's full document height instead of the
+          viewport. The active translate3d(...) we set during the
+          gesture already promotes a compositor layer, so dropping
+          will-change costs us nothing while letting fixed children
+          actually float. */}
+      <div ref={wrapRef}>
         {children}
       </div>
     </>

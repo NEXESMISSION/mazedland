@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Link } from "@/i18n/navigation";
+import { useParams } from "next/navigation";
 import { AlertTriangle, RotateCcw, Home } from "lucide-react";
 
 /**
@@ -24,6 +24,13 @@ export default function LocaleError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  // Plain useParams + raw <a> here on purpose — when this boundary
+  // fires, the NextIntlClientProvider context may not be available
+  // (we're rendered as a sibling, not a child, of the layout). The
+  // i18n Link helper would crash with "no intl context".
+  const params = useParams<{ locale?: string }>();
+  const locale = typeof params?.locale === "string" ? params.locale : "fr";
+
   useEffect(() => {
     // Best-effort visibility for whoever is watching the console —
     // in prod this is the only signal we get unless Sentry is wired.
@@ -61,13 +68,13 @@ export default function LocaleError({
           <RotateCcw className="size-4" strokeWidth={2.2} />
           Réessayer
         </button>
-        <Link
-          href="/"
+        <a
+          href={`/${locale}`}
           className="tap-target inline-flex h-11 items-center justify-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-2)] text-foreground text-[13px] font-semibold hover:border-[var(--gold-soft)] hover:text-[var(--gold)] transition-colors"
         >
           <Home className="size-4" strokeWidth={2.2} />
           Accueil
-        </Link>
+        </a>
       </div>
     </div>
   );

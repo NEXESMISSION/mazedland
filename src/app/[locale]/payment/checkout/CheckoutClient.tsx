@@ -98,6 +98,36 @@ export function CheckoutClient({
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+
+  async function cancelPayment() {
+    if (cancelling) return;
+    const ok = window.confirm(
+      "Annuler ce paiement ? Vous pourrez en démarrer un nouveau à tout moment.",
+    );
+    if (!ok) return;
+    setCancelling(true);
+    try {
+      const res = await fetch(`/api/payments/${paymentId}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          detail?: string;
+        };
+        toast(data.detail ?? data.error ?? "Annulation impossible.", "error");
+        setCancelling(false);
+        return;
+      }
+      setCancelled(true);
+    } catch {
+      toast("Erreur réseau lors de l'annulation.", "error");
+      setCancelling(false);
+    }
+  }
 
   const active = useMemo(
     () => instructions.find((p) => p.value === provider) ?? instructions[0],
@@ -209,6 +239,34 @@ export function CheckoutClient({
       toast(e instanceof Error ? e.message : "Erreur réseau.", "error");
       setSubmitting(false);
     }
+  }
+
+  if (cancelled) {
+    return (
+      <div className="min-h-screen bg-background">
+        <main className="max-w-2xl mx-auto px-4 lg:px-8 py-10 lg:py-16 text-center">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-2)] text-[var(--foreground-muted)]">
+            <X className="h-8 w-8" strokeWidth={2.2} />
+          </div>
+          <h1 className="mt-4 text-[22px] font-extrabold leading-tight">
+            Paiement annulé
+          </h1>
+          <p className="mt-2 text-[13px] text-[var(--foreground-muted)] leading-relaxed max-w-md mx-auto">
+            Aucun montant n&apos;a été prélevé. Vous pouvez recommencer
+            depuis l&apos;annonce quand vous voulez.
+          </p>
+          <div className="mt-8">
+            <a
+              href={`/${locale}`}
+              className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] text-white px-5 text-[13px] font-bold hover:bg-[var(--gold-bright)]"
+            >
+              Retour à l&apos;accueil
+              <ArrowRight className="ml-1.5 h-4 w-4" />
+            </a>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if (submitted) {
@@ -474,6 +532,20 @@ export function CheckoutClient({
           Délai de validation typique : moins de 24 h. Vous serez notifié(e)
           dès que l&apos;équipe Batta a vérifié votre paiement.
         </p>
+
+        {/* Cancel escape-hatch — only offered before a receipt is in
+            review. Once the admin queue has it, the user can't bow out
+            from the client; they have to contact support. */}
+        {!reupload && (
+          <button
+            type="button"
+            onClick={cancelPayment}
+            disabled={cancelling}
+            className="block w-full text-center text-[12px] text-[var(--foreground-muted)] hover:text-red-400 py-2 transition-colors disabled:opacity-50"
+          >
+            {cancelling ? "Annulation…" : "Annuler ce paiement"}
+          </button>
+        )}
       </main>
     </div>
   );

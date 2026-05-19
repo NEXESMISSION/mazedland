@@ -29,6 +29,26 @@ export function SignupForm() {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    // Phone is optional, but if present we want a sane Tunisia format
+    // so a downstream SMS provider doesn't bounce. Accept the local
+    // 8-digit form (12345678) or the E.164 form (+21612345678); we
+    // normalize to E.164 before sending.
+    let normalizedPhone: string | null = null;
+    if (phone.trim()) {
+      const digits = phone.replace(/[^\d+]/g, "");
+      if (/^\+216\d{8}$/.test(digits)) {
+        normalizedPhone = digits;
+      } else if (/^00216\d{8}$/.test(digits)) {
+        normalizedPhone = `+${digits.slice(2)}`;
+      } else if (/^\d{8}$/.test(digits)) {
+        normalizedPhone = `+216${digits}`;
+      } else {
+        setError(
+          "Numéro de téléphone invalide — utilisez 12345678 ou +21612345678.",
+        );
+        return;
+      }
+    }
     startTransition(async () => {
       const supabase = getBrowserSupabase();
       const { data, error } = await supabase.auth.signUp({
@@ -36,7 +56,7 @@ export function SignupForm() {
         password,
         // Only stash the safe display fields. The trigger reads these
         // and ignores any other key (including a hypothetical `role`).
-        options: { data: { full_name: fullName, phone } },
+        options: { data: { full_name: fullName, phone: normalizedPhone } },
       });
       if (error) {
         setError(error.message);
@@ -67,7 +87,13 @@ export function SignupForm() {
     <form onSubmit={onSubmit} className="space-y-4">
       <Field label="Full name" value={fullName} onChange={setFullName} required />
       <Field label="Email" type="email" value={email} onChange={setEmail} required />
-      <Field label="Phone" type="tel" value={phone} onChange={setPhone} />
+      <Field
+        label="Téléphone (optionnel)"
+        type="tel"
+        value={phone}
+        onChange={setPhone}
+        placeholder="12345678"
+      />
       <Field
         label="Password (min 8)"
         type="password"
@@ -95,7 +121,7 @@ export function SignupForm() {
 }
 
 function Field({
-  label, type = "text", value, onChange, required, minLength,
+  label, type = "text", value, onChange, required, minLength, placeholder,
 }: {
   label: string;
   type?: string;
@@ -103,6 +129,7 @@ function Field({
   onChange: (v: string) => void;
   required?: boolean;
   minLength?: number;
+  placeholder?: string;
 }) {
   return (
     <label className="block">
@@ -112,6 +139,7 @@ function Field({
         value={value}
         required={required}
         minLength={minLength}
+        placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
       />
