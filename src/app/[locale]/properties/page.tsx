@@ -1,278 +1,155 @@
-import { getTranslations, getLocale } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
-import { PropertyCard } from "@/components/property/PropertyCard";
 import { getServerSupabase } from "@/lib/supabase/server";
-import type { AuctionWithProperty } from "@/lib/types";
-import {
-  buildIlikeOrClause,
-  normalizeSearchQuery,
-  PROPERTY_SEARCH_FIELDS,
-} from "@/lib/search";
-import { Search, SlidersHorizontal } from "lucide-react";
+import type { AuctionWithProperty, PropertyType } from "@/lib/types";
+import { ExploreView } from "@/components/explore/ExploreView";
+import type { ExploreFilter } from "@/components/explore/ExploreFeed";
 
-const GOVERNORATES = [
-  "Tunis", "Ariana", "Ben Arous", "Manouba",
-  "Sousse", "Monastir", "Mahdia", "Nabeul",
-  "Sfax", "Bizerte", "Gabès", "Médenine",
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const PAGE_SIZE = 12;
+
+const VALID_TYPES: PropertyType[] = [
+  "apartment", "house", "villa", "land",
+  "commercial", "office", "warehouse", "farm",
 ];
 
-const TYPES = ["apartment", "house", "villa", "land", "commercial", "office"] as const;
-
 /**
- * Catalogue index — sticky search head, then an editorial title row,
- * then a 2-up (mobile) / 4-up (desktop) grid of estate cards. All
- * surfaces use the auto-style black + gold tokens.
+ * Explore — paginated listing index.
+ *
+ * The server fetches page 1 of the catalogue (12 items) plus the total
+ * row count, the user's auth state, and the user's saved-auction ids
+ * so the heart icon paints filled on first render. The client-side
+ * <ExploreView/> takes over from there: filter switching, page jumps
+ * (1, 2, 3, …), and view-mode toggle (grid ↔ reels) are all driven
+ * through /api/explore.
  */
-export default async function PropertiesIndex({
+export default async function ExplorePage({
   searchParams,
 }: {
-  searchParams: Promise<{ gov?: string; type?: string; q?: string }>;
+  searchParams: Promise<{
+    filter?: string;
+    types?: string;
+    gov?: string;
+    min_price?: string;
+    max_price?: string;
+    min_area?: string;
+    min_rooms?: string;
+    page?: string;
+  }>;
 }) {
-  const t = await getTranslations();
-  const locale = await getLocale();
-  const isRTL = locale === "ar";
   const sp = await searchParams;
-  const cleanedQ = normalizeSearchQuery(sp.q);
+  const initialFilter: ExploreFilter =
+    sp.filter === "auction" || sp.filter === "direct" ? sp.filter : "all";
 
-  let auctions: AuctionWithProperty[] = [];
-  let savedAuctionIds = new Set<string>();
+  const types = (sp.types ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter((s): s is PropertyType => (VALID_TYPES as string[]).includes(s));
+  const gov = sp.gov?.trim() || null;
+  const minPrice = numOrNull(sp.min_price);
+  const maxPrice = numOrNull(sp.max_price);
+  const minArea = numOrNull(sp.min_area);
+  const minRooms = numOrNull(sp.min_rooms);
+  const initialPage = clamp(Number(sp.page ?? 1), 1, 9999);
+  const from = (initialPage - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  let items: AuctionWithProperty[] = [];
+  let totalCount = 0;
+  let totalPages = 1;
   let loggedIn = false;
+  let savedAuctionIds: string[] = [];
+
   try {
     const supabase = await getServerSupabase();
-    let query = supabase
+    let q = supabase
       .from("auctions")
-      .select(`
+      .select(
+        `
         *,
         property:properties!inner (
           *,
           photos:property_photos (id, storage_path, sort_order, caption)
         )
-      `)
+      `,
+        { count: "exact" },
+      )
       .in("status", ["scheduled", "live", "extending"])
       .eq("property.status", "ready")
-      .order("ends_at", { ascending: true })
-      .limit(48);
+      .order("created_at", { ascending: false })
+      .range(from, to);
 
-    if (sp.gov) query = query.eq("property.governorate", sp.gov);
-    if (sp.type) query = query.eq("property.type", sp.type);
-    if (cleanedQ) {
-      // Search title + description + every location field. PostgREST
-      // `.or()` against a nested table needs `foreignTable` so the
-      // ilike binds to the joined `properties` row, not `auctions`.
-      query = query.or(
-        buildIlikeOrClause(cleanedQ, PROPERTY_SEARCH_FIELDS),
-        { foreignTable: "property" },
+    if (initialFilter === "auction") q = q.eq("listing_type", "auction");
+    else if (initialFilter === "direct") q = q.eq("listing_type", "direct");
+
+    if (types.length > 0) q = q.in("property.type", types);
+    if (gov) q = q.eq("property.governorate", gov);
+    if (minArea !== null) q = q.gte("property.area_sqm", minArea);
+    if (minRooms !== null) q = q.gte("property.rooms", minRooms);
+    if (minPrice !== null) {
+      q = q.or(
+        `current_price.gte.${minPrice},sale_price.gte.${minPrice},opening_price.gte.${minPrice}`,
+      );
+    }
+    if (maxPrice !== null) {
+      q = q.or(
+        `current_price.lte.${maxPrice},sale_price.lte.${maxPrice},opening_price.lte.${maxPrice}`,
       );
     }
 
-    const [auctionsRes, userRes] = await Promise.all([query, supabase.auth.getUser()]);
-    if (auctionsRes.error) console.error("[/properties] supabase error", auctionsRes.error);
-    auctions = (auctionsRes.data ?? []) as unknown as AuctionWithProperty[];
-    // Paid "Top of search" placement bubbles to the top. PostgREST
-    // doesn't easily order by a foreign-table column at the outer level,
-    // so we sort client-side; the result set is capped at 48 so the
-    // cost is negligible.
-    auctions.sort((a, b) => {
-      const ap = (a.property ?? {}) as { promo_top_listed?: boolean };
-      const bp = (b.property ?? {}) as { promo_top_listed?: boolean };
-      return (bp.promo_top_listed ? 1 : 0) - (ap.promo_top_listed ? 1 : 0);
-    });
+    const [rowsRes, userRes] = await Promise.all([q, supabase.auth.getUser()]);
+    if (rowsRes.error) {
+      console.error("[/properties] supabase error", rowsRes.error);
+    }
+    items = (rowsRes.data ?? []) as unknown as AuctionWithProperty[];
+    totalCount = rowsRes.count ?? items.length;
+    totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
     loggedIn = !!userRes.data.user;
 
-    if (loggedIn && auctions.length > 0) {
-      const ids = auctions.map((a) => a.id);
+    if (loggedIn && items.length > 0) {
+      const ids = items.map((a) => a.id);
       const { data: saves } = await supabase
         .from("watchlist")
         .select("auction_id")
         .eq("user_id", userRes.data.user!.id)
         .in("auction_id", ids);
-      savedAuctionIds = new Set((saves ?? []).map((s) => s.auction_id as string));
+      savedAuctionIds = (saves ?? []).map((s) => s.auction_id as string);
     }
   } catch (err) {
-    console.warn("[/properties] supabase unavailable:", err instanceof Error ? err.message : err);
+    console.warn(
+      "[/properties] supabase unavailable:",
+      err instanceof Error ? err.message : err,
+    );
   }
 
-  const activeType = sp.type ?? "";
-  const activeGov = sp.gov ?? "";
-
   return (
-    <div className="mx-auto max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)]">
-      {/* Sticky search head — pure dark surface flush with the top bar. */}
-      <div className="sticky top-[calc(var(--batta-topbar-h)+var(--batta-safe-top))] z-30 bg-background/95 backdrop-blur-md">
-        <form className="px-4 pt-3" action="" method="get">
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted ltr:left-3.5 rtl:right-3.5" strokeWidth={2} />
-              <input
-                name="q"
-                defaultValue={sp.q ?? ""}
-                placeholder={t("common.search")}
-                className="w-full rounded-full border border-border bg-surface py-2.5 text-[13px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold/40 ltr:pl-9 ltr:pr-3 rtl:pl-3 rtl:pr-9"
-              />
-            </div>
-            <select
-              name="gov"
-              defaultValue={activeGov}
-              className="tap-target rounded-full border border-border bg-surface px-3 text-[12.5px] font-medium text-foreground focus:border-gold focus:outline-none"
-              aria-label="Governorate"
-            >
-              <option value="">{t("common.all")}</option>
-              {GOVERNORATES.map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="batta-gold-fill tap-target inline-flex size-10 items-center justify-center rounded-full shadow-[var(--shadow-gold)] ring-1 ring-black/10"
-              aria-label={t("common.filter")}
-            >
-              <SlidersHorizontal className="size-4" strokeWidth={2.2} />
-            </button>
-          </div>
-
-          {/* Type chip rail */}
-          <div className="snap-rail hide-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-3">
-            <TypeChip
-              label={t("common.all")}
-              href={buildHref({ ...sp, type: undefined })}
-              active={!activeType}
-            />
-            {TYPES.map((tp) => (
-              <TypeChip
-                key={tp}
-                label={t(`property.types.${tp}`)}
-                href={buildHref({ ...sp, type: tp })}
-                active={activeType === tp}
-              />
-            ))}
-          </div>
-        </form>
-        <div aria-hidden className="batta-gold-rule" />
-      </div>
-
-      {/* Editorial page title */}
-      <div className="px-4 pt-5">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <span className="batta-eyebrow">The catalogue</span>
-            <h1
-              className={`mt-1.5 text-[26px] font-extrabold leading-tight tracking-tight ${
-                isRTL ? "font-arabic" : ""
-              }`}
-            >
-              {t("nav.properties")}
-            </h1>
-          </div>
-          <span className="batta-pill-gold mb-1">
-            {auctions.length} · {t("auction.live")}
-          </span>
-        </div>
-
-        <div className="mt-5">
-          {auctions.length === 0 ? (
-            cleanedQ ? <NoSearchResults q={cleanedQ} /> : <EmptyState />
-          ) : (
-            <div className="grid grid-cols-2 gap-3 pb-6 lg:grid-cols-4 lg:gap-5">
-              {auctions.map((a, i) => (
-                <PropertyCard
-                  key={a.id}
-                  auction={a}
-                  saved={savedAuctionIds.has(a.id)}
-                  loggedIn={loggedIn}
-                  priority={i < 4}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+    <ExploreView
+      initialItems={items}
+      initialFilter={initialFilter}
+      initialPage={initialPage}
+      initialTotalPages={totalPages}
+      initialTotalCount={totalCount}
+      loggedIn={loggedIn}
+      savedAuctionIds={savedAuctionIds}
+      initialExtra={{
+        types,
+        gov,
+        minPrice,
+        maxPrice,
+        minArea,
+        minRooms,
+      }}
+    />
   );
 }
 
-function buildHref(sp: { q?: string; gov?: string; type?: string }) {
-  const params = new URLSearchParams();
-  if (sp.q) params.set("q", sp.q);
-  if (sp.gov) params.set("gov", sp.gov);
-  if (sp.type) params.set("type", sp.type);
-  const qs = params.toString();
-  return (qs ? `/properties?${qs}` : "/properties") as "/properties";
+function numOrNull(v: string | null | undefined): number | null {
+  if (v === undefined || v === null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
-function TypeChip({
-  label,
-  href,
-  active,
-}: {
-  label: string;
-  href: "/properties";
-  active: boolean;
-}) {
-  // Same rationale as the auctions page TypeChip — fixed height,
-  // symmetric padding, solid navy active state. The previous
-  // `tap-target` forced 44px minimum width which uneven-spaced
-  // short labels.
-  return (
-    <Link
-      href={href}
-      className={`inline-flex h-9 shrink-0 snap-start items-center justify-center whitespace-nowrap rounded-full border px-4 text-[12.5px] font-semibold transition-colors ${
-        active
-          ? "border-[var(--gold)] bg-[var(--gold)] text-white"
-          : "border-[var(--border)] bg-white text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
-      }`}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="batta-frame-gold relative px-6 py-10 text-center">
-      <div className="relative">
-        <span className="batta-monogram batta-monogram-filled mx-auto mb-4 size-12 text-[20px]">
-          ✦
-        </span>
-        <p className="text-[20px] font-bold text-foreground">
-          The catalogue is closed
-        </p>
-        <p className="mt-2 text-[12px] text-muted">
-          Consignments are being prepared. Check back shortly.
-        </p>
-        <Link
-          href="/sell"
-          className="batta-btn-luxe tap-target mt-6 px-5 py-2.5 text-[12.5px]"
-        >
-          List your estate
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-// Separate state from the true empty-catalogue case — a buyer who
-// typed a search should be told their *query* came up empty (and
-// offered a one-tap reset), not that the marketplace is shut.
-function NoSearchResults({ q }: { q: string }) {
-  return (
-    <div className="batta-frame relative px-6 py-10 text-center">
-      <div className="relative">
-        <span className="batta-monogram mx-auto mb-4 size-12 text-[20px]">
-          <Search className="size-5" strokeWidth={1.8} />
-        </span>
-        <p className="text-[18px] font-bold text-foreground">
-          No matches for &ldquo;{q}&rdquo;
-        </p>
-        <p className="mt-2 text-[12px] text-muted">
-          Try a different keyword, governorate, or property type.
-        </p>
-        <Link
-          href="/properties"
-          className="batta-btn-ghost-gold tap-target mt-6 px-5 py-2.5 text-[12.5px]"
-        >
-          Clear search
-        </Link>
-      </div>
-    </div>
-  );
+function clamp(n: number, min: number, max: number) {
+  if (!Number.isFinite(n)) return min;
+  return Math.max(min, Math.min(max, Math.floor(n)));
 }
