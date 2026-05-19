@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { isValidIban, normalizeIban } from "@/lib/iban";
 
 /**
  * Seller payout endpoint.
@@ -24,14 +25,20 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const amount = Number(body.amount);
-  const iban = typeof body.iban === "string" ? body.iban.trim() : null;
+  // We always store the canonical (no-space, uppercase) form. Saves the
+  // admin from having to compare "FR14 2004..." against "FR142004..."
+  // when reconciling a transfer.
+  const ibanRaw = typeof body.iban === "string" ? body.iban : null;
+  const iban = ibanRaw ? normalizeIban(ibanRaw) : null;
 
   if (!amount || amount <= 0) {
     return NextResponse.json({ error: "invalid_amount" }, { status: 400 });
   }
-  // Soft IBAN guard — the bank handles real validation. We just reject
-  // obviously-broken input so the admin queue doesn't fill with junk.
-  if (iban && (iban.length < 15 || iban.length > 34)) {
+  // IBAN is optional (rare, but the RPC handles the null case by
+  // emailing the seller for one later). If supplied, it must pass
+  // ISO 13616 mod-97 — a typo'd IBAN that only failed length-check
+  // costs the operator a manual bank-call to fix, vs. a hard reject.
+  if (iban !== null && !isValidIban(iban)) {
     return NextResponse.json({ error: "invalid_iban" }, { status: 400 });
   }
 

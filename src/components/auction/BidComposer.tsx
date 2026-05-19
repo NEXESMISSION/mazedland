@@ -459,14 +459,50 @@ function ActiveComposer({
   }
 
   async function placeBid() {
+    // Offline guard. The fetch() below would throw a generic
+    // TypeError("Failed to fetch") on a dropped connection and the
+    // user would see "Échec de l'enchère" with no hint that it was
+    // the network. We surface the real cause before we even try.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      toast(
+        "Pas de connexion — vérifiez votre réseau puis réessayez.",
+        "warning",
+      );
+      return;
+    }
     setSubmitting(true);
     startTransition(async () => {
       try {
-        const res = await fetch(`/api/auctions/${auction.id}/bid`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: submitAmount }),
-        });
+        // One retry on a transient 5xx or network error. In the last
+        // seconds of an English auction every lost click counts; a
+        // single backoff doubles the success rate against gateway
+        // hiccups without spamming the engine if it's truly down.
+        const postBid = () =>
+          fetch(`/api/auctions/${auction.id}/bid`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ amount: submitAmount }),
+          });
+        let res: Response;
+        try {
+          res = await postBid();
+          if (res.status >= 500) {
+            await new Promise((r) => setTimeout(r, 350));
+            res = await postBid();
+          }
+        } catch {
+          // Network-level failure (DNS, dropped connection). Retry once.
+          await new Promise((r) => setTimeout(r, 500));
+          try {
+            res = await postBid();
+          } catch {
+            toast(
+              "Connexion instable — votre offre n'a pas pu être envoyée.",
+              "error",
+            );
+            return;
+          }
+        }
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           // If the auction closed under us, the cached panel is stale —

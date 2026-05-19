@@ -7,6 +7,7 @@ import { Modal, ModalFooter } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { formatTND } from "@/lib/utils";
+import { isValidIban, normalizeIban } from "@/lib/iban";
 
 interface Props {
   open: boolean;
@@ -46,7 +47,14 @@ export function PayoutRequestModal({ open, onClose, available, locale }: Props) 
     return Number.isFinite(n) ? n : 0;
   })();
   const amountValid = amount > 0 && amount <= available;
-  const ibanValid = iban.trim().length >= 15 && iban.trim().length <= 34;
+  // mod-97 checksum, not just length. Cuts down on payouts going
+  // nowhere because of a transposed digit — the typo is caught
+  // before the user even submits, with a clear error.
+  const normalizedIban = normalizeIban(iban);
+  const ibanValid = isValidIban(normalizedIban);
+  // Show a "looks wrong" hint only after the user has typed enough
+  // to make the verdict meaningful — avoids red text on every keystroke.
+  const ibanShowError = normalizedIban.length >= 15 && !ibanValid;
 
   async function submit() {
     if (!amountValid || !ibanValid || submitting) return;
@@ -55,7 +63,7 @@ export function PayoutRequestModal({ open, onClose, available, locale }: Props) 
       const res = await fetch("/api/seller/payouts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, iban: iban.trim() }),
+        body: JSON.stringify({ amount, iban: normalizedIban }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -134,9 +142,15 @@ export function PayoutRequestModal({ open, onClose, available, locale }: Props) 
             maxLength={34}
             autoComplete="off"
           />
-          <p className="mt-1.5 text-[11px] text-[var(--foreground-subtle)]">
-            Votre IBAN tunisien (commence par TN, 24 caractères).
-          </p>
+          {ibanShowError ? (
+            <p className="mt-1.5 text-[11px] text-red-400">
+              Cet IBAN n&apos;est pas valide — vérifiez les chiffres.
+            </p>
+          ) : (
+            <p className="mt-1.5 text-[11px] text-[var(--foreground-subtle)]">
+              Votre IBAN tunisien (commence par TN, 24 caractères).
+            </p>
+          )}
         </div>
 
         {/* Disclosure */}

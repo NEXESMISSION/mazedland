@@ -4,6 +4,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { SellForm, type SellFormPricing } from "@/components/sell/SellForm";
 import { PayoutRequestTrigger } from "@/components/sell/PayoutRequestModal";
+import { CancelAuctionButton } from "@/components/sell/CancelAuctionButton";
 import { formatTND } from "@/lib/utils";
 import {
   Plus,
@@ -440,6 +441,21 @@ export default async function SellLandingPage({
                     {t("schedule.viewAuction")}
                     <ChevronEnd className="size-3.5" strokeWidth={2} />
                   </Link>
+                )}
+                {/* Seller-initiated cancel — only offered while no bids
+                    have landed yet. The API double-checks the bid count
+                    (race window between page load and click), so this
+                    UI gate is cosmetic; the authoritative check is
+                    server-side. */}
+                {auction
+                  && ["scheduled", "live", "extending"].includes(auction.status)
+                  && bids === 0 && (
+                  <div className="mt-2">
+                    <CancelAuctionButton
+                      auctionId={auction.id}
+                      propertyTitle={p.title}
+                    />
+                  </div>
                 )}
               </li>
             );
