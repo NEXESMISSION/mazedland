@@ -35,12 +35,16 @@ export async function POST(
   // Ownership check — the user can only initiate payment for their own listings.
   const { data: prop } = await supabase
     .from("properties")
-    .select("id, owner_id, status")
+    .select("id, owner_id, status, listing_type")
     .eq("id", propertyId)
     .single();
   if (!prop || prop.owner_id !== user.id) {
     return NextResponse.json({ error: "not_owner" }, { status: 403 });
   }
+  // Trust the DB row, not the client body — the user could lie about
+  // listing_type to pay the cheaper fee. The SellForm just-inserted row
+  // is authoritative.
+  const isOffer = prop.listing_type === "direct";
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const promosIn = (body.promos ?? {}) as Record<string, unknown>;
@@ -61,6 +65,7 @@ export async function POST(
     .select("key, value")
     .in("key", [
       "listing_fee_tnd",
+      "listing_fee_offer_tnd",
       "promo_home_featured_tnd",
       "promo_top_listed_tnd",
       "promo_banner_tnd",
@@ -71,7 +76,12 @@ export async function POST(
     const n = typeof v === "number" ? v : Number(v);
     priceMap.set(r.key as string, Number.isFinite(n) ? n : 0);
   }
-  const base = priceMap.get("listing_fee_tnd") ?? 0;
+  // Offers and auctions are priced separately by the admin. Default
+  // offer fee falls back to the auction fee if the offer key is unset
+  // (older deployments before migration 0028).
+  const base = isOffer
+    ? (priceMap.get("listing_fee_offer_tnd") ?? priceMap.get("listing_fee_tnd") ?? 0)
+    : (priceMap.get("listing_fee_tnd") ?? 0);
   const homeFee = promos.home_featured ? (priceMap.get("promo_home_featured_tnd") ?? 0) : 0;
   const topFee  = promos.top_listed    ? (priceMap.get("promo_top_listed_tnd") ?? 0)    : 0;
   const bnrFee  = promos.banner        ? (priceMap.get("promo_banner_tnd") ?? 0)        : 0;
@@ -101,6 +111,7 @@ export async function POST(
         amount,
         metadata: {
           promos,
+          listing_type: isOffer ? "direct" : "auction",
           base_fee: base,
           home_featured_fee: homeFee,
           top_listed_fee: topFee,
@@ -123,6 +134,7 @@ export async function POST(
       status: "pending",
       metadata: {
         promos,
+        listing_type: isOffer ? "direct" : "auction",
         base_fee: base,
         home_featured_fee: homeFee,
         top_listed_fee: topFee,
@@ -135,5 +147,16 @@ export async function POST(
   if (insErr || !created) {
     return NextResponse.json({ error: insErr?.message ?? "insert_failed" }, { status: 500 });
   }
+
+  // Submission receipt to the seller. Listing-fee accept/reject already
+  // enqueue their own notifications later via the SQL RPC.
+  await admin.rpc("enqueue_notification", {
+    p_user_id: user.id,
+    p_kind: "listing_submitted",
+    p_title: "Annonce soumise",
+    p_body: `Téléversez votre reçu (${amount.toFixed(2)} TND) pour publier votre annonce. L'équipe la validera ensuite.`,
+    p_link: `/payment/checkout?payment=${created.id}`,
+  });
+
   return NextResponse.json({ paymentId: created.id, amount });
 }

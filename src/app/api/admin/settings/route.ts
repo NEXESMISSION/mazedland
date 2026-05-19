@@ -5,6 +5,7 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 
 const NUMERIC_KEYS = [
   "listing_fee_tnd",
+  "listing_fee_offer_tnd",
   "promo_home_featured_tnd",
   "promo_top_listed_tnd",
   "promo_banner_tnd",

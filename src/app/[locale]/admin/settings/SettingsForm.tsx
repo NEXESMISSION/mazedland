@@ -7,6 +7,7 @@ import { Check, Loader2, Save } from "lucide-react";
 
 export type SettingsValues = {
   listing_fee_tnd: number;
+  listing_fee_offer_tnd: number;
   promo_home_featured_tnd: number;
   promo_top_listed_tnd: number;
   promo_banner_tnd: number;
@@ -52,9 +53,14 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
     <form onSubmit={onSave} className="space-y-6">
       <Section title="Tarifs (TND)" hint="Définissent ce que le vendeur paie au moment de publier.">
         <NumField
-          label="Frais de base par annonce"
+          label="Frais — Enchère"
           value={values.listing_fee_tnd}
           onChange={(v) => update("listing_fee_tnd", v)}
+        />
+        <NumField
+          label="Frais — Offre directe"
+          value={values.listing_fee_offer_tnd}
+          onChange={(v) => update("listing_fee_offer_tnd", v)}
         />
         <NumField
           label="Option : Mise en avant (accueil)"

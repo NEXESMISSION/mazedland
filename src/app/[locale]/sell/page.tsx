@@ -606,6 +606,7 @@ async function fetchSellPricing(
     .select("key, value")
     .in("key", [
       "listing_fee_tnd",
+      "listing_fee_offer_tnd",
       "promo_home_featured_tnd",
       "promo_top_listed_tnd",
       "promo_banner_tnd",
@@ -618,6 +619,7 @@ async function fetchSellPricing(
   }
   return {
     listing_fee_tnd: m.get("listing_fee_tnd") ?? 20,
+    listing_fee_offer_tnd: m.get("listing_fee_offer_tnd") ?? 15,
     promo_home_featured_tnd: m.get("promo_home_featured_tnd") ?? 15,
     promo_top_listed_tnd: m.get("promo_top_listed_tnd") ?? 10,
     promo_banner_tnd: m.get("promo_banner_tnd") ?? 30,

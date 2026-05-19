@@ -6,6 +6,7 @@ export const revalidate = 0;
 
 const KEYS = [
   "listing_fee_tnd",
+  "listing_fee_offer_tnd",
   "promo_home_featured_tnd",
   "promo_top_listed_tnd",
   "promo_banner_tnd",
@@ -33,6 +34,7 @@ export default async function AdminSettingsPage() {
 
   const initial: SettingsValues = {
     listing_fee_tnd: numFrom(map.get("listing_fee_tnd")?.value, 20),
+    listing_fee_offer_tnd: numFrom(map.get("listing_fee_offer_tnd")?.value, 15),
     promo_home_featured_tnd: numFrom(map.get("promo_home_featured_tnd")?.value, 15),
     promo_top_listed_tnd: numFrom(map.get("promo_top_listed_tnd")?.value, 10),
     promo_banner_tnd: numFrom(map.get("promo_banner_tnd")?.value, 30),
