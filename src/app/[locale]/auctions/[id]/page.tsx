@@ -120,11 +120,21 @@ export default async function AuctionDetail({
     myInspection = ins ?? null;
   }
 
-  // While the auction is live, the "Placer une enchère" CTA detaches
-  // from the document flow and floats above the bottom tab bar — always
-  // visible, no scrolling required. We reserve room for it via extra
-  // bottom padding so the last card isn't covered.
-  const showFloatingBidCta = !isDirect && isLive;
+  // The "Placer une enchère" CTA detaches from the document flow and
+  // floats above the bottom tab bar — always visible, no scrolling
+  // required. We show it for every biddable state (scheduled, live,
+  // extending) so the action is reachable even before the server-side
+  // cron flips a just-opened auction's status to `live`. The bid page
+  // itself handles the "not yet open" / "already ended" banners. We
+  // reserve room for the floating bar via extra bottom padding so the
+  // last in-flow card isn't covered.
+  const isEnded =
+    auction.status === "ended_sold" ||
+    auction.status === "ended_unsold" ||
+    auction.status === "awarded" ||
+    auction.status === "cancelled" ||
+    auction.status === "sixth_offer_window";
+  const showFloatingBidCta = !isDirect && !isEnded;
 
   return (
     <div
