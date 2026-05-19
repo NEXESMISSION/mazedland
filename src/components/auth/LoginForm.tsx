@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
+import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { stripLocalePrefix } from "@/i18n/routing";
 
@@ -77,6 +78,14 @@ export function LoginForm() {
     <form onSubmit={onSubmit} className="space-y-4">
       <Field label="Email" type="email" value={email} onChange={setEmail} required />
       <Field label="Password" type="password" value={password} onChange={setPassword} required />
+      <div className="flex justify-end -mt-1">
+        <Link
+          href="/forgot-password"
+          className="text-[11.5px] font-semibold text-batta-cream/75 hover:text-gold-bright"
+        >
+          Mot de passe oublié ?
+        </Link>
+      </div>
       {error && <p className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>}
       <button
         type="submit"

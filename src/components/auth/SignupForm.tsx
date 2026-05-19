@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
@@ -52,45 +52,14 @@ export function SignupForm() {
   }
 
   if (pendingEmail) {
-    // Best-effort "open inbox" link: only the major web mailers map
-    // cleanly to a URL. Users on Outlook desktop / Apple Mail just see
-    // the back-to-login button.
-    const domain = pendingEmail.split("@")[1] ?? "";
-    const inboxUrl =
-      domain === "gmail.com" ? "https://mail.google.com" :
-      domain === "outlook.com" || domain === "hotmail.com" || domain === "live.com"
-        ? "https://outlook.live.com" :
-      domain === "yahoo.com" || domain === "yahoo.fr"
-        ? "https://mail.yahoo.com" :
-      null;
     return (
-      <div className="batta-frame-gold relative p-6 text-center">
-        <div className="relative">
-          <span className="batta-monogram batta-monogram-filled mx-auto mb-3 size-12 text-[18px]">
-            <MailCheck className="size-5" strokeWidth={1.75} />
-          </span>
-          <h2 className="batta-serif text-[18px] font-semibold text-batta-cream">{t("signup.checkEmailTitle")}</h2>
-          <p className="mt-2 text-sm text-batta-cream/75">
-            {t("signup.checkEmailBody", { email: pendingEmail })}
-          </p>
-          <div className="mt-5 flex flex-col gap-2">
-            {inboxUrl && (
-              <a
-                href={inboxUrl} target="_blank" rel="noopener noreferrer"
-                className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13px]"
-              >
-                {t("signup.openInbox")}
-              </a>
-            )}
-            <Link
-              href="/login"
-              className="batta-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px]"
-            >
-              {t("signup.backToLogin")}
-            </Link>
-          </div>
-        </div>
-      </div>
+      <ConfirmationSent
+        email={pendingEmail}
+        backToLoginLabel={t("signup.backToLogin")}
+        openInboxLabel={t("signup.openInbox")}
+        title={t("signup.checkEmailTitle")}
+        body={t("signup.checkEmailBody", { email: pendingEmail })}
+      />
     );
   }
 
@@ -147,5 +116,112 @@ function Field({
         className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
       />
     </label>
+  );
+}
+
+/**
+ * "Check your email" card with a resend button. We rate-limit on the
+ * client (30s between attempts) to avoid hammering Supabase's resend
+ * endpoint, which itself rate-limits per-user.
+ */
+function ConfirmationSent({
+  email, title, body, openInboxLabel, backToLoginLabel,
+}: {
+  email: string;
+  title: string;
+  body: string;
+  openInboxLabel: string;
+  backToLoginLabel: string;
+}) {
+  const [resentAt, setResentAt] = useState<number | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resendError, setResendError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  // Tick the cooldown counter once per second while it's > 0 so the
+  // button label updates live.
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => {
+      setCooldown((c) => Math.max(0, c - 1));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [cooldown]);
+
+  const domain = email.split("@")[1] ?? "";
+  const inboxUrl =
+    domain === "gmail.com" ? "https://mail.google.com" :
+    domain === "outlook.com" || domain === "hotmail.com" || domain === "live.com"
+      ? "https://outlook.live.com" :
+    domain === "yahoo.com" || domain === "yahoo.fr"
+      ? "https://mail.yahoo.com" :
+    null;
+
+  async function resend() {
+    if (cooldown > 0 || resending) return;
+    setResendError(null);
+    setResending(true);
+    try {
+      const supabase = getBrowserSupabase();
+      const { error } = await supabase.auth.resend({ type: "signup", email });
+      if (error) {
+        setResendError(error.message);
+        return;
+      }
+      setResentAt(Date.now());
+      setCooldown(30);
+    } finally {
+      setResending(false);
+    }
+  }
+
+  return (
+    <div className="batta-frame-gold relative p-6 text-center">
+      <div className="relative">
+        <span className="batta-monogram batta-monogram-filled mx-auto mb-3 size-12 text-[18px]">
+          <MailCheck className="size-5" strokeWidth={1.75} />
+        </span>
+        <h2 className="batta-serif text-[18px] font-semibold text-batta-cream">{title}</h2>
+        <p className="mt-2 text-sm text-batta-cream/75">{body}</p>
+        {resentAt && !resendError && (
+          <p className="batta-tone-ok mt-3 rounded-lg px-3 py-1.5 text-[11px] inline-block">
+            Email renvoyé.
+          </p>
+        )}
+        {resendError && (
+          <p className="batta-tone-bad mt-3 rounded-lg px-3 py-1.5 text-[11px]">
+            {resendError}
+          </p>
+        )}
+        <div className="mt-5 flex flex-col gap-2">
+          {inboxUrl && (
+            <a
+              href={inboxUrl} target="_blank" rel="noopener noreferrer"
+              className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13px]"
+            >
+              {openInboxLabel}
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={resend}
+            disabled={cooldown > 0 || resending}
+            className="batta-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
+          >
+            {resending
+              ? "Envoi…"
+              : cooldown > 0
+                ? `Renvoyer (${cooldown}s)`
+                : "Renvoyer l'email"}
+          </button>
+          <Link
+            href="/login"
+            className="text-[12px] text-batta-cream/70 hover:text-gold-bright"
+          >
+            {backToLoginLabel}
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
