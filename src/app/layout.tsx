@@ -1,23 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Cairo } from "next/font/google";
-import { getLocale } from "next-intl/server";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { PWARegister } from "@/components/layout/PWARegister";
+import { Suspense } from "react";
+import { ClientLogger } from "@/components/dev/ClientLogger";
 import "./globals.css";
 
 // Jakarta only — same family the mazed auto codebase ships with.
 // Pairs cleanly with the black + gold palette and reads great at every
-// size from a 10px eyebrow to a 36px hero title. Arabic falls back to
-// Cairo via html[dir="rtl"] rules in globals.css.
+// size from a 10px eyebrow to a 36px hero title.
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin", "latin-ext"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  display: "swap",
-});
-
-const cairo = Cairo({
-  variable: "--font-cairo",
-  subsets: ["arabic", "latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
 });
@@ -83,9 +76,6 @@ export const viewport: Viewport = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const locale = await getLocale();
-  const dir = locale === "ar" ? "rtl" : "ltr";
-
   // Origin of the Supabase project so the browser can warm a TLS +
   // HTTP/2 connection before we issue the first auth/db/storage call.
   // Skipped when unset (dev with `.env.example` only).
@@ -96,12 +86,12 @@ export default async function RootLayout({
 
   return (
     <html
-      lang={locale}
-      dir={dir}
+      lang="fr"
+      dir="ltr"
       // Tells Next.js this `scroll-behavior: smooth` is intentional and
       // shouldn't be disabled during route transitions.
       data-scroll-behavior="smooth"
-      className={`${jakarta.variable} ${cairo.variable} h-full antialiased`}
+      className={`${jakarta.variable} h-full antialiased`}
       // Inline bg paints with the first HTML byte, before globals.css
       // resolves — keeps the initial paint on-brand.
       style={{ background: "#ffffff" }}
@@ -151,6 +141,9 @@ export default async function RootLayout({
       >
         {children}
         <PWARegister />
+        <Suspense fallback={null}>
+          <ClientLogger />
+        </Suspense>
       </body>
     </html>
   );

@@ -1,11 +1,9 @@
 import { defineRouting } from "next-intl/routing";
 
 export const routing = defineRouting({
-  // Arabic is the default — primary market is Tunisia. French and English
-  // are supported for francophone Tunisians and the diaspora / foreign
-  // investors flagged in the business plan (TRE, EU, Gulf).
-  locales: ["ar", "fr", "en"] as const,
-  defaultLocale: "ar",
+  // French only. ar/en were dropped — Tunisian francophone market.
+  locales: ["fr"] as const,
+  defaultLocale: "fr",
   localePrefix: "always",
   localeCookie: {
     maxAge: 60 * 60 * 24 * 365,

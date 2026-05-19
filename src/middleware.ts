@@ -1,9 +1,14 @@
 import createIntlMiddleware from "next-intl/middleware";
 import { createServerClient } from "@supabase/ssr";
-import { type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
+import { log } from "./lib/log";
 
 const intlMiddleware = createIntlMiddleware(routing);
+
+// Legacy locale prefixes we used to support. Now redirected to /fr to
+// preserve bookmarks, share links, and any indexed URLs.
+const LEGACY_LOCALES = ["ar", "en"] as const;
 
 /**
  * Two-stage middleware:
@@ -23,12 +28,30 @@ const intlMiddleware = createIntlMiddleware(routing);
  * Supabase env not configured? Return the next-intl response unchanged
  * (dev clones without `.env.local` keep working).
  */
+const mwLog = log.scope("mw");
+
 export async function middleware(req: NextRequest) {
+  const t0 = performance.now();
+  const { pathname, search } = req.nextUrl;
+
+  // Legacy /ar/* and /en/* → /fr/* (preserve querystring + hash).
+  for (const legacy of LEGACY_LOCALES) {
+    if (pathname === `/${legacy}` || pathname.startsWith(`/${legacy}/`)) {
+      const rest = pathname.slice(legacy.length + 1) || "/";
+      const target = new URL(`/fr${rest === "/" ? "" : rest}${search}`, req.url);
+      mwLog.info(`redirect ${pathname} → ${target.pathname}`);
+      return NextResponse.redirect(target, 308);
+    }
+  }
+
   const res = intlMiddleware(req);
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return res;
+  if (!url || !key) {
+    mwLog.debug(`${req.method} ${pathname}`, { ms: Math.round(performance.now() - t0), supa: "no-env" });
+    return res;
+  }
 
   const supabase = createServerClient(url, key, {
     cookies: {
@@ -44,10 +67,15 @@ export async function middleware(req: NextRequest) {
     },
   });
 
-  // Refresh the token if needed. We don't care about the user object
-  // here — the side effect of cookie writes via setAll is the point.
-  await supabase.auth.getUser();
+  try {
+    // Refresh the token if needed. We don't care about the user object
+    // here — the side effect of cookie writes via setAll is the point.
+    await supabase.auth.getUser();
+  } catch (err) {
+    mwLog.warn(`session refresh failed: ${err instanceof Error ? err.message : err}`);
+  }
 
+  mwLog.debug(`${req.method} ${pathname}`, { ms: Math.round(performance.now() - t0) });
   return res;
 }
 

@@ -1,10 +1,8 @@
 /**
  * Batta.tn — manual payment instructions.
  *
- * Tunisian banking realities: API integrations with Konnect / Paymee /
- * Flouci require commercial agreements that we don't yet have, and D17
- * has no public API at all. So instead of trying to drive a gateway,
- * we run an offline flow:
+ * The app is intentionally gateway-free. Every payment runs through
+ * the same offline flow:
  *
  *   1. Buyer picks bank transfer or D17 at checkout.
  *   2. Shown the payee details + a unique reference.
@@ -13,9 +11,6 @@
  *   5. Admin reviews on /admin/payments; accept → status='captured'
  *      (downstream triggers fire), reject → status='failed' with a
  *      reason the buyer sees in their notifications.
- *
- * Replace this module with a real gateway abstraction once API access
- * is in place.
  */
 
 import type { PaymentProvider } from "./types";
