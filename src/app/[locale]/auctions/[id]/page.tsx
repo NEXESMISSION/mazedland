@@ -171,10 +171,7 @@ export default async function AuctionDetail({
           </h1>
           <div className="mt-1.5 flex items-center gap-1 text-[12px] font-semibold text-white/95 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
             <MapPin className="size-3.5" strokeWidth={2} />
-            <span className="truncate">
-              {property.governorate}
-              {property.delegation ? ` · ${property.delegation}` : ""}
-            </span>
+            <span className="truncate">{property.governorate}</span>
           </div>
         </div>
       </HeroCarousel>
@@ -265,7 +262,6 @@ export default async function AuctionDetail({
               status={auction.status}
               title={property.title}
               governorate={property.governorate}
-              delegation={property.delegation ?? null}
             />
           </div>
         </div>
@@ -367,7 +363,7 @@ export default async function AuctionDetail({
         <PropertyMap
           lat={Number(property.lat)}
           lng={Number(property.lng)}
-          address={property.address ?? `${property.governorate}${property.delegation ? " · " + property.delegation : ""}`}
+          address={property.address ?? property.governorate}
         />
       )}
 

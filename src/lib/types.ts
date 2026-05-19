@@ -51,7 +51,6 @@ export type Property = {
   floor: number | null;
   year_built: number | null;
   governorate: string;
-  delegation: string | null;
   address: string | null;
   lat: number | null;
   lng: number | null;

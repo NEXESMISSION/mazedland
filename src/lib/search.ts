@@ -44,6 +44,5 @@ export const PROPERTY_SEARCH_FIELDS = [
   "title",
   "description",
   "governorate",
-  "delegation",
   "address",
 ] as const;

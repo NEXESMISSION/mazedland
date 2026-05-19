@@ -25,7 +25,7 @@ export async function GET(
     .select(`
       id, ends_at, starts_at, status, current_price, opening_price,
       property:properties (
-        title, governorate, delegation
+        title, governorate
       )
     `)
     .eq("id", id)
@@ -45,7 +45,6 @@ export async function GET(
     property: {
       title: string;
       governorate: string;
-      delegation: string | null;
     };
   };
 
@@ -65,9 +64,7 @@ export async function GET(
   const price = a.current_price ?? a.opening_price;
   const priceLabel = price != null ? `${Number(price).toLocaleString("fr-FR")} TND` : "";
 
-  const location = [a.property.governorate, a.property.delegation]
-    .filter(Boolean)
-    .join(", ");
+  const location = a.property.governorate;
 
   // Per-event descriptions — the close and open events tell different
   // stories. Sentinel "__blank__" survives .filter(Boolean) so we can

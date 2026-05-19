@@ -25,7 +25,6 @@ export function AuctionCalendarMenu({
   status,
   title,
   governorate,
-  delegation,
 }: {
   auctionId: string;
   endsAt: string;
@@ -33,7 +32,6 @@ export function AuctionCalendarMenu({
   status: string;
   title: string;
   governorate: string;
-  delegation: string | null;
 }) {
   const t = useTranslations("auction.calendar");
   const { toast } = useToast();
@@ -100,7 +98,7 @@ export function AuctionCalendarMenu({
     const summary = isScheduled
       ? `Ouverture des enchères: ${title}`
       : `Enchère: ${title}`;
-    const location = [governorate, delegation].filter(Boolean).join(", ");
+    const location = governorate;
     const url = `${window.location.origin}/fr/auctions/${auctionId}`;
     const details = [
       isScheduled

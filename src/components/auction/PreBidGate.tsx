@@ -164,10 +164,7 @@ export function PreBidGate({
             </h2>
             <div className="mt-1.5 inline-flex items-center gap-1.5 text-base text-white/75 font-light">
               <MapPin className="h-4 w-4" />
-              <span>
-                {property.governorate}
-                {property.delegation ? ` · ${property.delegation}` : ""}
-              </span>
+              <span>{property.governorate}</span>
             </div>
 
             <div className="mt-5 flex items-end justify-between gap-4">

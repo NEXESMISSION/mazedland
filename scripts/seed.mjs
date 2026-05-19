@@ -204,7 +204,6 @@ const properties = LISTINGS.map((l, i) => ({
   floor: l.type === "apartment" ? (l.floor ?? 0) : null,
   year_built: l.year_built ?? null,
   governorate: l.governorate,
-  delegation: l.delegation,
   address: l.address,
   lat: l.lat,
   lng: l.lng,
@@ -266,7 +265,7 @@ for (const p of properties) {
     await sb.from("properties").update({
       description: p.description, type: p.type, area_sqm: p.area_sqm,
       rooms: p.rooms, bathrooms: p.bathrooms, floor: p.floor, year_built: p.year_built,
-      governorate: p.governorate, delegation: p.delegation, address: p.address,
+      governorate: p.governorate, address: p.address,
       lat: p.lat, lng: p.lng, status: "ready",
       reviewed_by: admin, reviewed_at: new Date().toISOString(),
     }).eq("id", id);
@@ -275,7 +274,7 @@ for (const p of properties) {
       owner_id: p.owner, title: p.title, description: p.description, type: p.type,
       area_sqm: p.area_sqm, rooms: p.rooms, bathrooms: p.bathrooms,
       floor: p.floor, year_built: p.year_built,
-      governorate: p.governorate, delegation: p.delegation, address: p.address,
+      governorate: p.governorate, address: p.address,
       lat: p.lat, lng: p.lng, status: "ready",
       reviewed_by: admin, reviewed_at: new Date().toISOString(),
     }).select("id").single();

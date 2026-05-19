@@ -24,7 +24,7 @@ export default async function EditListingPage({
 
   const { data: prop } = await supabase
     .from("properties")
-    .select("id, owner_id, title, description, type, area_sqm, rooms, bathrooms, floor, year_built, governorate, delegation, address, status, listing_type, sale_price, sale_negotiable")
+    .select("id, owner_id, title, description, type, area_sqm, rooms, bathrooms, floor, year_built, governorate, address, status, listing_type, sale_price, sale_negotiable")
     .eq("id", id)
     .single();
   if (!prop) notFound();
@@ -43,7 +43,6 @@ export default async function EditListingPage({
     floor: prop.floor as number | null,
     year_built: prop.year_built as number | null,
     governorate: prop.governorate as string,
-    delegation: (prop.delegation as string | null) ?? null,
     address: (prop.address as string | null) ?? null,
     listing_type: ((prop.listing_type as ListingType | null) ?? "auction"),
     sale_price: prop.sale_price as number | null,

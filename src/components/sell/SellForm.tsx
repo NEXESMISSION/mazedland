@@ -87,7 +87,6 @@ export type SellFormInitial = {
   floor: number | null;
   year_built: number | null;
   governorate: string;
-  delegation: string | null;
   address: string | null;
   listing_type: ListingType;
   sale_price: number | null;
@@ -142,7 +141,6 @@ export function SellForm({
     initial?.year_built != null ? String(initial.year_built) : "",
   );
   const [governorate, setGovernorate] = useState(initial?.governorate ?? "Tunis");
-  const [delegation, setDelegation] = useState(initial?.delegation ?? "");
   const [address, setAddress] = useState(initial?.address ?? "");
   const [photos, setPhotos] = useState<File[]>([]);
 
@@ -310,7 +308,7 @@ export function SellForm({
             .update({
               title, description: description || null, type,
               ...features,
-              governorate, delegation: delegation || null, address: address || null,
+              governorate, address: address || null,
               listing_type: listingType,
               sale_price: salePriceVal,
               sale_negotiable: saleNegotiableVal,
@@ -327,7 +325,7 @@ export function SellForm({
               owner_id: user.id,
               title, description: description || null, type,
               ...features,
-              governorate, delegation: delegation || null, address: address || null,
+              governorate, address: address || null,
               listing_type: listingType,
               sale_price: salePriceVal,
               sale_negotiable: saleNegotiableVal,
@@ -721,18 +719,11 @@ export function SellForm({
             </option>
           ))}
         </Select>
-        <div className="grid grid-cols-2 gap-3">
-          <Field
-            label={t("sell.form.delegation")}
-            value={delegation}
-            onChange={setDelegation}
-          />
-          <Field
-            label={t("sell.form.address")}
-            value={address}
-            onChange={setAddress}
-          />
-        </div>
+        <Field
+          label={t("sell.form.address")}
+          value={address}
+          onChange={setAddress}
+        />
       </Section>
 
       {/* 5. PHOTOS */}
