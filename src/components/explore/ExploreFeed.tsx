@@ -251,11 +251,20 @@ export function ExploreFeed({
         viewToggle={viewToggle}
       />
 
-      {/* Snap-scroll feed */}
+      {/* Snap-scroll feed
+          ─── `data-prevent-pull-to-refresh` tells the global
+          PullToRefresh wrapper to bail when the user's swipe starts
+          inside here — otherwise an unscrolled body + a downward
+          drag at the top of the feed would fire a router.refresh()
+          instead of letting the snap container navigate to the
+          previous card.
+          ─── `touchAction: 'pan-y'` keeps the gesture vertical-only
+          so the browser doesn't fight us with default behaviours. */}
       <div
         ref={containerRef}
+        data-prevent-pull-to-refresh
         className="hide-scrollbar h-full w-full snap-y snap-mandatory overflow-y-scroll overscroll-y-contain"
-        style={{ scrollSnapStop: "always" }}
+        style={{ scrollSnapStop: "always", touchAction: "pan-y" }}
       >
         {items.length === 0 && !loading ? (
           <EmptyState filter={filter} />

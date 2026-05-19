@@ -84,6 +84,16 @@ export function PullToRefresh({
         startY.current = null;
         return;
       }
+      // Bail when the touch lands inside an internal scroller (e.g.
+      // the Reels feed's snap container). Without this guard,
+      // window.scrollY is 0 because the body never scrolls — the
+      // inner element does — and PullToRefresh would otherwise
+      // hijack every downward swipe and refresh the page.
+      const target = e.target as Element | null;
+      if (target?.closest("[data-prevent-pull-to-refresh]")) {
+        startY.current = null;
+        return;
+      }
       startY.current = e.touches[0].clientY;
     }
 
