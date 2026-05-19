@@ -49,6 +49,24 @@ function bidErrorLabel(code: string | undefined): string {
   return BID_ERROR_LABELS[code] ?? code;
 }
 
+/**
+ * Human-friendly "opens in 3 j 4 h" / "opens dans 12 min" string used by
+ * the not-yet-started gate. We snap to coarse units because the gate
+ * card doesn't tick — re-fetching on auction page nav is the implicit
+ * refresh.
+ */
+function formatStartsIn(startsAt: string | null): string {
+  if (!startsAt) return "bientôt";
+  const ms = new Date(startsAt).getTime() - Date.now();
+  if (ms <= 0) return "dans un instant";
+  const min = Math.floor(ms / 60_000);
+  if (min < 60) return `dans ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `dans ${h} h`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? "demain" : `dans ${d} j`;
+}
+
 interface Props {
   auction: AuctionWithProperty;
   userId: string | null;
@@ -78,8 +96,30 @@ export function BidComposer({
 }: Props) {
   const router = useRouter();
   const isLive = auction.status === "live" || auction.status === "extending";
+  const isScheduled = auction.status === "scheduled";
 
-  // ─── Gate 0: auction not live → ended banner (winner or generic) ──────
+  // ─── Gate 0a: auction hasn't started yet → "opens in <countdown>" card.
+  //     Previously this fell through to EndedBanner ("Cette enchère est
+  //     terminée"), which is obviously wrong for a scheduled lot — the
+  //     auction detail page sends users here from a CTA shown for every
+  //     biddable state including `scheduled`, so we have to handle it.
+  if (isScheduled) {
+    return (
+      <PreBidGate
+        tone="muted"
+        icon={<Clock className="h-7 w-7" />}
+        title="L'enchère n'a pas encore commencé"
+        body={`Elle ouvre ${formatStartsIn(auction.starts_at)}. Activez la cloche sur la page de l'annonce pour être prévenu(e) au démarrage.`}
+        ctaLabel="Retour à l'annonce"
+        onCta={() => router.push(`/auctions/${auction.id}` as never)}
+        auction={auction}
+        totalBids={totalBids}
+        locale={locale}
+      />
+    );
+  }
+
+  // ─── Gate 0b: auction not live → ended banner (winner or generic) ─────
   if (!isLive) {
     const userWon =
       auction.winner_user_id != null && auction.winner_user_id === userId;

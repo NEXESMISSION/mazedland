@@ -457,6 +457,19 @@
     "viewAuction": "Voir la page de l'enchère",
     "alreadyHasAuction": "Ce bien a déjà une enchère — ",
     "viewIt": "voir",
-    "notReady": "Cette annonce est encore en révision. Nous vous notifions à l'approbation."
+    "notReady": "Cette annonce est encore en révision. Nous vous notifions à l'approbation.",
+    "errors": {
+      "openingTooLow": "La mise à prix doit être d'au moins 1 000 TND.",
+      "openingTooHigh": "La mise à prix est trop élevée.",
+      "reserveBelowOpening": "Le prix de réserve doit être supérieur ou égal à la mise à prix.",
+      "endBeforeStart": "L'heure de fin doit être après l'heure de début.",
+      "endInPast": "La fin de l'enchère doit être dans le futur.",
+      "tooShort": "L'enchère doit durer au moins 30 minutes.",
+      "tooLong": "L'enchère ne peut pas durer plus de 60 jours.",
+      "dutchStartBelowFloor": "Le prix de départ doit être supérieur au prix plancher.",
+      "dutchDecrementInvalid": "La baisse par tick est invalide (positive et inférieure à l'écart départ-plancher).",
+      "dutchTickInvalid": "L'intervalle du tick doit être entre 30 s et 24 h.",
+      "couldNotSchedule": "Impossible de programmer l'enchère. Réessayez."
+    }
   }
 }

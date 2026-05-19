@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS=--max-http-header-size=65536 next dev",
+    "dev": "cross-env NODE_OPTIONS=\"--max-http-header-size=65536 --dns-result-order=ipv4first\" next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

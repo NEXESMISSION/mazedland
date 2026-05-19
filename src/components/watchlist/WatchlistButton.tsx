@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Heart } from "lucide-react";
 
 /**
@@ -33,8 +33,12 @@ export function WatchlistButton({
     e.stopPropagation();
 
     if (!loggedIn) {
+      // window.location.pathname includes the `/fr` locale prefix.
+      // LoginForm's safeNextPath + stripLocalePrefix together strip
+      // it back off before the post-login redirect, so we can pass
+      // the full visible URL here.
       const here = typeof window !== "undefined" ? window.location.pathname : "/";
-      router.push(`/login?next=${encodeURIComponent(here)}`);
+      router.push(`/login?next=${encodeURIComponent(here)}` as never);
       return;
     }
 

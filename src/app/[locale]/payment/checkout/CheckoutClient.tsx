@@ -18,6 +18,7 @@ import { useToast } from "@/components/ui/Toast";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatTND, cn } from "@/lib/utils";
 import { getBrowserSupabase } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/imageCompress";
 import type { ProviderInstructions } from "@/lib/payments";
 import type { PaymentProvider } from "@/lib/payments/types";
 import type { CheckoutKind } from "./page";
@@ -64,12 +65,18 @@ const PROVIDER_ICONS: Record<PaymentProvider, typeof Building2> = {
   d17: Smartphone,
 };
 
-const MAX_FILE_MB = 8;
+// 25 MB raw → modern iPhone photos can be 12-20 MB before compression.
+// Images get compressed client-side before upload (final upload typically
+// 200-600 KB). PDFs pass through unchanged and the limit is the cap.
+const MAX_FILE_MB = 25;
 const ACCEPTED_TYPES = [
   "image/jpeg",
+  "image/jpg",
   "image/png",
   "image/webp",
+  "image/avif",
   "image/heic",
+  "image/heif",
   "application/pdf",
 ];
 
@@ -111,7 +118,15 @@ export function CheckoutClient({
   function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (!ACCEPTED_TYPES.includes(f.type)) {
+    // Some mobile pickers report empty `type` for HEIC files — fall
+    // back to extension matching so we don't reject a legitimate photo
+    // just because the OS didn't sniff its MIME.
+    const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
+    const looksImage =
+      f.type.startsWith("image/") ||
+      ["jpg", "jpeg", "png", "webp", "avif", "heic", "heif"].includes(ext);
+    const looksPdf = f.type === "application/pdf" || ext === "pdf";
+    if (!looksImage && !looksPdf && !ACCEPTED_TYPES.includes(f.type)) {
       toast("Formats acceptés : JPG, PNG, WebP, HEIC, PDF.", "error");
       return;
     }
@@ -133,18 +148,39 @@ export function CheckoutClient({
         setSubmitting(false);
         return;
       }
+
+      // Compress image receipts before upload. Receipts are review-only
+      // (admin eyeballs them) so the document-tier WebP preset gives us
+      // tight files (~250-500 KB) while keeping bank-statement text
+      // crisp. PDFs and non-image files pass through unchanged.
+      let toUpload = file;
+      if (file.type.startsWith("image/")) {
+        try {
+          toUpload = await compressImage(file, {
+            maxEdge: 2000,
+            quality: 0.86,
+            format: "webp",
+          });
+        } catch {
+          // compressImage already falls back to the original on its
+          // own errors, but be defensive here too in case the import
+          // itself throws on some exotic browser.
+          toUpload = file;
+        }
+      }
+
       // Path under the receipts bucket — owner-scoped per RLS in
       // migration 0023.
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
+      const ext = toUpload.name.split(".").pop()?.toLowerCase() ?? "bin";
       const safePid = paymentId.replace(/[^a-z0-9-]/gi, "");
       const path = `${auth.user.id}/${safePid}-${Date.now()}.${ext}`;
 
       const { error: upErr } = await supabase.storage
         .from("receipts")
-        .upload(path, file, {
+        .upload(path, toUpload, {
           cacheControl: "3600",
           upsert: false,
-          contentType: file.type,
+          contentType: toUpload.type,
         });
       if (upErr) {
         toast(`Échec du téléversement : ${upErr.message}`, "error");
@@ -159,6 +195,11 @@ export function CheckoutClient({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        // We uploaded to storage but couldn't attach the receipt to
+        // the payment row. Best-effort cleanup so we don't leave an
+        // orphan file in the bucket; ignore errors because the
+        // periodic janitor will sweep it anyway.
+        void supabase.storage.from("receipts").remove([path]);
         toast(data.error ?? "Échec de la soumission.", "error");
         setSubmitting(false);
         return;

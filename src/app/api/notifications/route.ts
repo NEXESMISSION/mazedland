@@ -100,20 +100,15 @@ export async function PATCH(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   if (!isSameOrigin(req)) {
-    console.warn("[api/notifications DELETE] cross-origin blocked");
     return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
   }
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    console.warn("[api/notifications DELETE] no user — 401");
     return NextResponse.json({ error: "auth" }, { status: 401 });
   }
 
   const body = await req.json().catch(() => ({}));
-  console.log(
-    `[api/notifications DELETE] user=${user.id.slice(0, 8)}  body=${JSON.stringify(body).slice(0, 200)}`,
-  );
 
   let del = supabase
     .from("notifications")
@@ -138,12 +133,7 @@ export async function DELETE(req: NextRequest) {
   // successful delete from a no-op.
   const { data, error } = await del.select("id");
   if (error) {
-    console.error("[api/notifications DELETE] supabase error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  const deletedCount = data?.length ?? 0;
-  console.log(
-    `[api/notifications DELETE] user=${user.id.slice(0, 8)}  deletedCount=${deletedCount}`,
-  );
-  return NextResponse.json({ ok: true, deletedCount });
+  return NextResponse.json({ ok: true, deletedCount: data?.length ?? 0 });
 }

@@ -15,12 +15,36 @@ import { stripLocalePrefix } from "@/i18n/routing";
  * the redundant prefix from `next` before pushing to avoid producing
  * `/ar/ar/auctions/...`.
  */
+/**
+ * Reject anything that, despite starting with "/", could be parsed by
+ * the browser as a foreign origin:
+ *   - `//evil.com` and `/\evil.com` are protocol-relative (browser
+ *     treats them as host).
+ *   - URLs with embedded `:` (scheme), or already-absolute URLs.
+ *   - `\` in any position (Windows-style separator confuses some
+ *     normalizers).
+ * The current code prepends `/${locale}` which neutralizes the obvious
+ * cases, but we still defence-in-depth here so a future refactor doesn't
+ * accidentally make this an open redirect.
+ */
+function safeNextPath(raw: string | null): string {
+  if (!raw) return "/";
+  if (!raw.startsWith("/")) return "/";
+  if (raw.startsWith("//") || raw.startsWith("/\\")) return "/";
+  if (raw.includes("\\")) return "/";
+  // Bare scheme-relative or absolute URL via a creative encoding
+  // (very rare, but cheap to block).
+  if (/^\/+[a-z][a-z0-9+.-]*:/i.test(raw)) return "/";
+  return raw;
+}
+
 export function LoginForm() {
   const t = useTranslations();
   const locale = useLocale();
   const searchParams = useSearchParams();
   const rawNext = searchParams.get("next");
-  const next = rawNext && rawNext.startsWith("/") ? stripLocalePrefix(rawNext) : "/";
+  const safeNext = safeNextPath(rawNext);
+  const next = safeNext === "/" ? "/" : stripLocalePrefix(safeNext);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

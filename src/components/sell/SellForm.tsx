@@ -172,6 +172,19 @@ export function SellForm({
   const [success, setSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  // Resume-on-retry: the first half of doSubmit creates a property row,
+  // then uploads photos/docs, then kicks off payment. If anything past
+  // the property insert throws (storage outage, RLS, network blip), we
+  // remember the propertyId so the next submit UPDATEs the same row
+  // instead of creating a second ghost property. Same logic for photos
+  // and docs — we mark which uploads already succeeded so a retry only
+  // does the work that's still missing.
+  const [resumeState, setResumeState] = useState<{
+    propertyId: string | null;
+    uploadedPhotoPaths: { storage_path: string; sort_order: number }[];
+    uploadedDocPaths: { kindId: string; storage_path: string; kind: string }[];
+  }>({ propertyId: null, uploadedPhotoPaths: [], uploadedDocPaths: [] });
+
   // Fetch the admin-controlled catalog for the currently-selected property
   // type. Refetches whenever `type` changes.
   useEffect(() => {
@@ -201,10 +214,38 @@ export function SellForm({
     return () => { cancelled = true; };
   }, [type]);
 
+  // Object-URL cache for the picked photo thumbnails. We create one URL
+  // per File and reuse it across renders — without this, every render
+  // called URL.createObjectURL(f) afresh, leaking blob URLs (each is a
+  // few MB held by the browser until the page unloads). On unmount or
+  // when a file is removed, we revoke the URL so the blob can be GC'd.
+  const photoUrls = useMemo(() => {
+    return photos.map((f) => URL.createObjectURL(f));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photos]);
+  useEffect(() => {
+    return () => {
+      for (const url of photoUrls) URL.revokeObjectURL(url);
+    };
+  }, [photoUrls]);
+
   function addPhotos(files: FileList | null) {
     if (!files) return;
-    const next = [...photos, ...Array.from(files)].slice(0, 10);
+    const incoming = Array.from(files);
+    // Reject non-images defensively even though the <input> uses
+    // accept="image/*" — that hint can be bypassed on mobile pickers.
+    const valid = incoming.filter((f) => f.type.startsWith("image/"));
+    const merged = [...photos, ...valid];
+    const dropped = merged.length - Math.min(merged.length, 10);
+    const next = merged.slice(0, 10);
     setPhotos(next);
+    if (incoming.length !== valid.length) {
+      setError("Seules les images sont acceptées (les fichiers non-image ont été ignorés).");
+    } else if (dropped > 0) {
+      setError(`Maximum 10 photos — les ${dropped} fichier(s) en trop ont été ignoré(s).`);
+    } else {
+      setError(null);
+    }
   }
 
   function setDocFile(kindId: string, file: File | null) {
@@ -233,11 +274,31 @@ export function SellForm({
   }, [baseFee, pricing, promoHome, promoTop, promoBanner]);
 
   // ─── Step-1 validation (advance to promos, or submit in edit mode) ───
+  // Length caps mirror the DB column maxima (title varchar, description
+  // and address text). We clamp client-side so the user sees a friendly
+  // message instead of a Postgres "value too long" 500 after waiting
+  // for photos to upload.
+  const TITLE_MAX = 140;
+  const DESCRIPTION_MAX = 4000;
+  const ADDRESS_MAX = 300;
   function validateDetails(): string | null {
-    if (!title.trim()) return t("sell.form.errorTitleRequired");
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) return t("sell.form.errorTitleRequired");
+    if (trimmedTitle.length > TITLE_MAX) {
+      return `Le titre est trop long (max ${TITLE_MAX} caractères).`;
+    }
+    if (description.length > DESCRIPTION_MAX) {
+      return `La description est trop longue (max ${DESCRIPTION_MAX} caractères).`;
+    }
+    if (address.length > ADDRESS_MAX) {
+      return `L'adresse est trop longue (max ${ADDRESS_MAX} caractères).`;
+    }
     if (listingType === "direct") {
       const p = Number(salePrice);
       if (!p || p <= 0) return "Veuillez indiquer un prix de vente valide.";
+      if (p > 1_000_000_000) {
+        return "Le prix de vente est invalide.";
+      }
     }
     if (!isEdit && photos.length === 0) return t("sell.form.errorPhotoRequired");
     if (!isEdit) {
@@ -281,6 +342,10 @@ export function SellForm({
 
       try {
         // 1. Create or update the property row.
+        //    On retry (after a partial-failure error in step 2 or 3), we
+        //    reuse the previously-created propertyId so we don't litter
+        //    the DB with ghost rows. The resumeState ref preserves it
+        //    across submissions in this session.
         let propId: string;
         // Listing-type guard rails for the DB CHECK constraint:
         // sale_price must be set when direct, must be NULL when auction.
@@ -302,84 +367,140 @@ export function SellForm({
           year_built: visible.year_built && yearBuilt ? Number(yearBuilt) : null,
         };
 
+        const propPayload = {
+          title, description: description || null, type,
+          ...features,
+          governorate, address: address || null,
+          listing_type: listingType,
+          sale_price: salePriceVal,
+          sale_negotiable: saleNegotiableVal,
+          status: "pending_review" as const,
+        };
+
         if (isEdit && initial) {
           const { error: uErr } = await supabase
             .from("properties")
-            .update({
-              title, description: description || null, type,
-              ...features,
-              governorate, address: address || null,
-              listing_type: listingType,
-              sale_price: salePriceVal,
-              sale_negotiable: saleNegotiableVal,
-              status: "pending_review",
-              rejection_reason: null,
-            })
+            .update({ ...propPayload, rejection_reason: null })
             .eq("id", initial.id);
           if (uErr) throw new Error(uErr.message);
           propId = initial.id;
+        } else if (resumeState.propertyId) {
+          // Retry path — last attempt got past property insert but
+          // failed on photos or docs. UPDATE so any field tweaked since
+          // the previous attempt still gets persisted.
+          const { error: uErr } = await supabase
+            .from("properties")
+            .update(propPayload)
+            .eq("id", resumeState.propertyId);
+          if (uErr) throw new Error(uErr.message);
+          propId = resumeState.propertyId;
         } else {
           const { data: prop, error: pErr } = await supabase
             .from("properties")
-            .insert({
-              owner_id: user.id,
-              title, description: description || null, type,
-              ...features,
-              governorate, address: address || null,
-              listing_type: listingType,
-              sale_price: salePriceVal,
-              sale_negotiable: saleNegotiableVal,
-              status: "pending_review",
-            })
+            .insert({ owner_id: user.id, ...propPayload })
             .select("id")
             .single();
           if (pErr || !prop) throw new Error(pErr?.message ?? "property insert failed");
           propId = prop.id;
+          // Remember it immediately so a crash between insert and photo
+          // upload still lets us resume on the next submit.
+          setResumeState((s) => ({ ...s, propertyId: propId }));
         }
 
         // 2. Photos.
+        //    Skip anything already uploaded in a previous attempt — we
+        //    keep the list of (storage_path, sort_order) entries from
+        //    successful uploads in resumeState.uploadedPhotoPaths.
         if (photos.length > 0) {
-          const compressed = await Promise.all(
-            photos.map((file) =>
-              compressImage(file, { maxEdge: 1600, quality: 0.8, format: "webp" }),
-            ),
-          );
-          const photoUploads = await Promise.all(
-            compressed.map(async (file, i) => {
+          const alreadyUploaded = resumeState.uploadedPhotoPaths;
+          const startIdx = alreadyUploaded.length;
+          const remaining = photos.slice(startIdx);
+          let newlyUploaded = [...alreadyUploaded];
+
+          if (remaining.length > 0) {
+            const compressed = await Promise.all(
+              remaining.map((file) =>
+                compressImage(file, { maxEdge: 1600, quality: 0.8, format: "webp" }),
+              ),
+            );
+            for (let i = 0; i < compressed.length; i++) {
+              const file = compressed[i];
+              const sortOrder = startIdx + i;
               const ext = file.name.split(".").pop()?.toLowerCase() || "webp";
-              const path = `${user.id}/${propId}/photo-${Date.now()}-${i}.${ext}`;
+              const path = `${user.id}/${propId}/photo-${Date.now()}-${sortOrder}.${ext}`;
               const { error } = await supabase.storage.from("properties").upload(path, file, {
                 contentType: file.type, upsert: false,
               });
-              if (error) throw new Error(`photo ${i}: ${error.message}`);
-              return { storage_path: path, sort_order: i };
-            }),
-          );
-          await supabase.from("property_photos").insert(
-            photoUploads.map((p) => ({ ...p, property_id: propId })),
-          );
+              if (error) {
+                // Persist progress so far before bubbling — next retry
+                // resumes from this index instead of redoing everything.
+                setResumeState((s) => ({ ...s, uploadedPhotoPaths: newlyUploaded }));
+                throw new Error(`photo ${sortOrder}: ${error.message}`);
+              }
+              newlyUploaded = [...newlyUploaded, { storage_path: path, sort_order: sortOrder }];
+            }
+            setResumeState((s) => ({ ...s, uploadedPhotoPaths: newlyUploaded }));
+          }
+
+          // DB insert. property_photos has no natural unique constraint
+          // we can rely on, so we use plain insert and clear the
+          // "uploaded but not inserted" buffer right after success.
+          // A retry that gets here will have an empty newlyUploaded
+          // (cleared below) and become a no-op.
+          if (newlyUploaded.length > 0) {
+            const { error: photoInsertErr } = await supabase
+              .from("property_photos")
+              .insert(newlyUploaded.map((p) => ({ ...p, property_id: propId })));
+            if (photoInsertErr) {
+              throw new Error(`property_photos: ${photoInsertErr.message}`);
+            }
+            setResumeState((s) => ({ ...s, uploadedPhotoPaths: [] }));
+          }
         }
 
         // 3. Docs — per-kind, label snapshot stored on property_documents.kind.
         const docEntries = Object.entries(docFiles);
         if (docEntries.length > 0) {
           const labelById = new Map(docKinds.map((k) => [k.id, k.label]));
-          const docUploads = await Promise.all(
-            docEntries.map(async ([kindId, file], i) => {
-              const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
-              const path = `${user.id}/${propId}/doc-${Date.now()}-${i}.${ext}`;
-              const { error } = await supabase.storage
-                .from("property-documents")
-                .upload(path, file, { contentType: file.type, upsert: false });
-              if (error) throw new Error(`doc ${i}: ${error.message}`);
-              return {
-                property_id: propId,
-                kind: labelById.get(kindId) ?? "Autre",
-                storage_path: path,
-              };
-            }),
+          const uploadedKinds = new Set(
+            resumeState.uploadedDocPaths.map((d) => d.kindId),
           );
-          await supabase.from("property_documents").insert(docUploads);
+          let newDocUploads = [...resumeState.uploadedDocPaths];
+
+          for (let i = 0; i < docEntries.length; i++) {
+            const [kindId, file] = docEntries[i];
+            if (uploadedKinds.has(kindId)) continue;
+            const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
+            const path = `${user.id}/${propId}/doc-${Date.now()}-${i}.${ext}`;
+            const { error } = await supabase.storage
+              .from("property-documents")
+              .upload(path, file, { contentType: file.type, upsert: false });
+            if (error) {
+              setResumeState((s) => ({ ...s, uploadedDocPaths: newDocUploads }));
+              throw new Error(`doc ${i}: ${error.message}`);
+            }
+            newDocUploads = [
+              ...newDocUploads,
+              { kindId, storage_path: path, kind: labelById.get(kindId) ?? "Autre" },
+            ];
+          }
+          setResumeState((s) => ({ ...s, uploadedDocPaths: newDocUploads }));
+
+          if (newDocUploads.length > 0) {
+            const { error: docInsertErr } = await supabase
+              .from("property_documents")
+              .insert(
+                newDocUploads.map((d) => ({
+                  property_id: propId,
+                  kind: d.kind,
+                  storage_path: d.storage_path,
+                })),
+              );
+            if (docInsertErr) {
+              throw new Error(`property_documents: ${docInsertErr.message}`);
+            }
+            setResumeState((s) => ({ ...s, uploadedDocPaths: [] }));
+          }
         }
 
         // 4. Edit mode: carry-over rule — no new payment, return to dashboard.
@@ -732,14 +853,14 @@ export function SellForm({
         hint={t("sell.form.photosHint")}
       >
         <div className="grid grid-cols-3 gap-2.5">
-          {photos.map((f, i) => (
+          {photos.map((_, i) => (
             <div
               key={i}
               className="relative aspect-square overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-2)] shadow-sm"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={URL.createObjectURL(f)}
+                src={photoUrls[i]}
                 alt=""
                 className="size-full object-cover"
               />

@@ -13,7 +13,6 @@ import { LiveTimer } from "@/components/landing/LiveTimer";
 import { Pagination } from "@/components/ui/Pagination";
 import {
   ArrowUpRight,
-  ArrowUp,
   Gavel,
   Tag,
   Share2,
@@ -24,6 +23,20 @@ import {
 export type ExploreFilter = "all" | "auction" | "direct";
 
 const REELS_PAGE_SIZE = 8;
+// How long a cached page stays fresh. Live auctions update their
+// `current_price` and countdown in real time; 45s is long enough to
+// make back-navigation feel instant but short enough that a returning
+// user never sees a stale price for more than a swipe.
+const PAGE_CACHE_TTL_MS = 45_000;
+
+type PageData = {
+  items: AuctionWithProperty[];
+  page: number;
+  totalPages: number;
+  totalCount: number;
+};
+
+type CacheEntry = { data: PageData; cachedAt: number };
 
 /**
  * Reels-style vertical feed with numbered pagination.
@@ -66,10 +79,6 @@ export function ExploreFeed({
     initialTotalCount ?? initialItems.length,
   );
   const [loading, setLoading] = useState(false);
-  // Tracks whether the user has scrolled past the first card. Drives
-  // visibility of the floating "back to top" button — hidden when at
-  // the top so it doesn't sit on top of the first card uselessly.
-  const [scrolled, setScrolled] = useState(false);
   // Initial heart state per auction id, pre-resolved on the server so
   // the user's saved listings show up filled on first paint.
   const savedSet = useMemo(() => new Set(savedAuctionIds), [savedAuctionIds]);
@@ -79,61 +88,157 @@ export function ExploreFeed({
   // a fresh one and overwrite the new feed.
   const requestToken = useRef(0);
 
-  // Snap-y scroll listener — flips `scrolled` once the user is past
-  // ~half the first card. Reset on every page change.
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    function onScroll() {
-      const top = el!.scrollTop;
-      setScrolled(top > 80);
-    }
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [items.length]);
+  // ─── Data optimisation layer ──────────────────────────────────────
+  //
+  // pageCache — in-memory store keyed by `${filter}:${page}`. Pages
+  //   stay fresh for PAGE_CACHE_TTL_MS so back-navigation (swipe
+  //   page 3 → page 2) is instant instead of re-hitting the network.
+  //
+  // inflight — map of currently-running fetches by the same key. If
+  //   the user fires the same request twice (e.g. two quick filter
+  //   pill clicks), we await the original promise instead of opening
+  //   a second TCP connection.
+  //
+  // Both live in refs so they don't trigger re-renders and survive
+  // across React's StrictMode double-invocation in dev.
+  const pageCache = useRef(new Map<string, CacheEntry>());
+  const inflight = useRef(new Map<string, Promise<PageData>>());
 
-  const scrollToTop = useCallback(() => {
-    containerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  // Seed the cache with the server-side initial slice so the very
+  // first navigation away-and-back doesn't refetch what we already
+  // painted. Runs once per (initialFilter, initialPage) pair.
+  useEffect(() => {
+    const key = `${initialFilter}:${initialPage}`;
+    pageCache.current.set(key, {
+      data: {
+        items: initialItems,
+        page: initialPage,
+        totalPages: initialTotalPages,
+        totalCount: initialTotalCount ?? initialItems.length,
+      },
+      cachedAt: Date.now(),
+    });
+    // Intentionally only seeds once on mount — subsequent fetches
+    // refresh the cache themselves.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const fetchPage = useCallback(
+    async (
+      pageNum: number,
+      filterVal: ExploreFilter,
+      opts: { force?: boolean } = {},
+    ): Promise<PageData> => {
+      const key = `${filterVal}:${pageNum}`;
+
+      // 1. Cache hit (fresh) — return synchronously.
+      if (!opts.force) {
+        const cached = pageCache.current.get(key);
+        if (cached && Date.now() - cached.cachedAt < PAGE_CACHE_TTL_MS) {
+          return cached.data;
+        }
+      }
+
+      // 2. Same request already in flight — piggyback on it.
+      const existing = inflight.current.get(key);
+      if (existing) return existing;
+
+      // 3. Network round-trip.
+      const promise = (async () => {
+        const res = await fetch(
+          `/api/explore?filter=${filterVal}&limit=${REELS_PAGE_SIZE}&page=${pageNum}`,
+        );
+        if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+        const data = (await res.json()) as PageData;
+        pageCache.current.set(key, { data, cachedAt: Date.now() });
+        return data;
+      })();
+      inflight.current.set(key, promise);
+      try {
+        return await promise;
+      } finally {
+        inflight.current.delete(key);
+      }
+    },
+    [],
+  );
 
   const goToPage = useCallback(
     async (nextPage: number, nextFilter: ExploreFilter = filter) => {
       const token = ++requestToken.current;
-      setLoading(true);
+      const key = `${nextFilter}:${nextPage}`;
+      // Show the loading shim only when the page isn't already in
+      // cache — if we have it warm, we paint instantly and skip the
+      // spinner flash entirely.
+      const cached = pageCache.current.get(key);
+      const fromCache =
+        cached && Date.now() - cached.cachedAt < PAGE_CACHE_TTL_MS;
+      if (!fromCache) setLoading(true);
+
       try {
-        const res = await fetch(
-          `/api/explore?filter=${nextFilter}&limit=${REELS_PAGE_SIZE}&page=${nextPage}`,
-          { cache: "no-store" },
-        );
-        if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
-        const data = (await res.json()) as {
-          items: AuctionWithProperty[];
-          page: number;
-          totalPages: number;
-          totalCount: number;
-        };
-        if (requestToken.current !== token) return;
+        const data = await fetchPage(nextPage, nextFilter);
+        if (requestToken.current !== token) return; // superseded
         setItems(data.items);
         setPage(data.page);
         setTotalPages(data.totalPages);
         setTotalCount(data.totalCount);
         containerRef.current?.scrollTo({ top: 0 });
-        setScrolled(false);
       } finally {
         if (requestToken.current === token) setLoading(false);
       }
     },
-    [filter],
+    [fetchPage, filter],
   );
 
   const applyFilter = useCallback(
     async (next: ExploreFilter) => {
       if (next === filter) return;
+      // Drop cached pages for the OLD filter — they're stale to the
+      // user's new intent and would just eat memory. Also clear any
+      // still-running fetches so they don't overwrite the new feed.
+      pageCache.current.clear();
+      inflight.current.clear();
       setFilter(next);
       await goToPage(1, next);
     },
     [filter, goToPage],
   );
+
+  // Prefetch the NEXT page in the background once the current page
+  // paints, so swiping into "Page X" → picking page X+1 feels
+  // instant. Uses requestIdleCallback when available (browser tells
+  // us when it's truly idle); falls back to a setTimeout. Fire-and-
+  // forget — errors are swallowed because this is purely speculative.
+  useEffect(() => {
+    if (loading) return;
+    if (page >= totalPages) return;
+    const key = `${filter}:${page + 1}`;
+    const cached = pageCache.current.get(key);
+    if (cached && Date.now() - cached.cachedAt < PAGE_CACHE_TTL_MS) return;
+
+    type IdleWindow = Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    const w = window as IdleWindow;
+    let idleHandle: number | null = null;
+    let timeoutHandle: number | null = null;
+
+    const run = () => {
+      void fetchPage(page + 1, filter).catch(() => {});
+    };
+    if (typeof w.requestIdleCallback === "function") {
+      idleHandle = w.requestIdleCallback(run, { timeout: 1500 });
+    } else {
+      timeoutHandle = window.setTimeout(run, 400);
+    }
+    return () => {
+      if (idleHandle !== null && typeof w.cancelIdleCallback === "function") {
+        w.cancelIdleCallback(idleHandle);
+      }
+      if (timeoutHandle !== null) window.clearTimeout(timeoutHandle);
+    };
+  }, [fetchPage, filter, loading, page, totalPages]);
 
   return (
     <div className="relative h-[calc(100dvh-var(--batta-topbar-h)-var(--batta-safe-top)-var(--batta-bottombar-total))] w-full overflow-hidden bg-[var(--background)]">
@@ -198,22 +303,6 @@ export function ExploreFeed({
           </div>
         )}
       </div>
-
-      {/* Back-to-top — appears after the first card so swiping up to
-          retrace your steps is just a tap away. Sits bottom-right above
-          the global FAB / bottom tab bar. */}
-      <button
-        type="button"
-        onClick={scrollToTop}
-        aria-label="Retour en haut"
-        className={`absolute right-4 bottom-6 z-40 inline-flex size-11 items-center justify-center rounded-full border border-[var(--border)] bg-white text-foreground shadow-[var(--shadow-md)] transition-all duration-300 active:scale-90 ${
-          scrolled
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-3 opacity-0"
-        }`}
-      >
-        <ArrowUp className="size-5" strokeWidth={2.4} />
-      </button>
     </div>
   );
 }
@@ -350,85 +439,77 @@ function FeedCard({
       : "Mise à prix";
 
   return (
-    <article className="relative h-full w-full snap-start snap-always overflow-hidden bg-[var(--background)]">
-      {/* PHOTO — top 52% of viewport. Status pill is anchored to the
-          bottom edge of the photo so the card body underneath can lead
-          with the title (the user's first reading move). */}
-      <div className="absolute inset-x-0 top-0 h-[52%] overflow-hidden bg-[var(--surface-2)]">
-        {heroPhoto ? (
-          (() => {
-            const src = propertyPhotoUrl(heroPhoto.storage_path);
-            const blur = IMAGE_BLUR_MAP[heroPhoto.storage_path];
-            const unoptimized = isStaticSeedPath(src);
-            return (
-              <Image
-                src={src}
-                alt={property.title}
-                fill
-                sizes="100vw"
-                priority={priority}
-                placeholder={blur ? "blur" : "empty"}
-                blurDataURL={blur}
-                unoptimized={unoptimized}
-                className="object-cover"
-              />
-            );
-          })()
+    <article className="relative h-full w-full snap-start snap-always overflow-hidden bg-black">
+      {/* PHOTO — full-bleed, fills the entire card. TikTok-style:
+          the photo is the canvas; everything else floats on top. */}
+      {heroPhoto ? (
+        (() => {
+          const src = propertyPhotoUrl(heroPhoto.storage_path);
+          const blur = IMAGE_BLUR_MAP[heroPhoto.storage_path];
+          const unoptimized = isStaticSeedPath(src);
+          return (
+            <Image
+              src={src}
+              alt={property.title}
+              fill
+              sizes="100vw"
+              priority={priority}
+              placeholder={blur ? "blur" : "empty"}
+              blurDataURL={blur}
+              unoptimized={unoptimized}
+              className="object-cover"
+            />
+          );
+        })()
+      ) : (
+        <div className="flex h-full items-center justify-center text-7xl text-white/15">
+          🏛️
+        </div>
+      )}
+
+      {/* Top scrim — fades the photo into the filter-rail area so the
+          white pills overhead stay readable on bright photos. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/30 to-transparent" />
+      {/* Bottom scrim — gives the floating info card a soft landing
+          when the photo behind it is busy/light-toned. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[40%] bg-gradient-to-t from-black/45 via-black/15 to-transparent" />
+
+      {/* TOP BADGES on the photo — status pill (leading) + LOT tag
+          (trailing). Smaller h-6 chips, denser text — every saved px
+          here = more photo visible. */}
+      <div className="absolute inset-x-3 top-[60px] z-20 flex items-start justify-between gap-2">
+        {isDirect ? (
+          <span className="batta-gradient-gold inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-[9.5px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)]">
+            <Tag className="size-3" strokeWidth={2.5} />
+            Offre directe
+          </span>
+        ) : isLive ? (
+          <span className="inline-flex h-6 items-center gap-1 rounded-full bg-red-500 px-2.5 text-white shadow-[0_4px_16px_-4px_rgba(239,68,68,0.55)]">
+            <span className="batta-pulse-dot size-1.5 rounded-full bg-white" />
+            <span className="text-[9.5px] font-extrabold uppercase tracking-[0.12em]">
+              En direct
+            </span>
+            <span aria-hidden className="text-white/50">·</span>
+            <LiveTimer
+              endsAt={auction.ends_at}
+              className="batta-tabular text-[10px] font-bold"
+            />
+          </span>
         ) : (
-          <div className="flex h-full items-center justify-center text-7xl text-foreground/15">
-            🏛️
-          </div>
+          <span className="inline-flex h-6 items-center gap-1 rounded-full border border-white/20 bg-black/50 px-2.5 text-[9.5px] font-extrabold uppercase tracking-[0.12em] text-white backdrop-blur-md">
+            <Gavel className="size-3" strokeWidth={2.5} />
+            {t(`auction.types.${auction.type}`)}
+          </span>
         )}
 
-        {/* Light scrim under the filter rail so the white pills stay
-            readable on bright photos. */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/25 to-transparent" />
-        {/* Bottom scrim — keeps the status pill anchored over the photo
-            readable on any background. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/45 to-transparent" />
-
-        {/* Lot tag — top-leading. A subtle "LOT · A2F4" mono badge
-            that gives each card a numbered-consignment feel. */}
-        <div className="absolute left-4 top-16 z-10">
-          <span className="batta-tabular inline-flex h-6 items-center gap-1 rounded-full border border-white/25 bg-black/40 px-2.5 font-mono text-[9.5px] font-bold tracking-[0.14em] text-white backdrop-blur-md">
-            LOT · {lotNo}
-          </span>
-        </div>
-
-        {/* Status pill — anchored to the BOTTOM-LEADING of the photo,
-            half-overlapping the seam between photo and card. Hot signal
-            sits exactly where the eye lands when scanning a new card. */}
-        <div className="absolute -bottom-3 left-4 z-20">
-          {isDirect ? (
-            <span className="batta-gradient-gold inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-white shadow-[var(--shadow-gold)] ring-2 ring-white">
-              <Tag className="size-3.5" strokeWidth={2.5} />
-              Offre directe
-            </span>
-          ) : isLive ? (
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-red-500 px-3 text-white shadow-[0_4px_16px_-4px_rgba(239,68,68,0.6)] ring-2 ring-white">
-              <span className="batta-pulse-dot size-1.5 rounded-full bg-white" />
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.14em]">
-                En direct
-              </span>
-              <span aria-hidden className="text-white/50">·</span>
-              <LiveTimer
-                endsAt={auction.ends_at}
-                className="batta-tabular text-[10.5px] font-bold"
-              />
-            </span>
-          ) : (
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-foreground px-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white shadow-[var(--shadow-md)] ring-2 ring-white">
-              <Gavel className="size-3.5" strokeWidth={2.5} />
-              {t(`auction.types.${auction.type}`)}
-            </span>
-          )}
-        </div>
+        <span className="batta-tabular inline-flex h-6 shrink-0 items-center gap-0.5 rounded-full border border-white/20 bg-black/40 px-2 font-mono text-[9px] font-bold tracking-[0.12em] text-white backdrop-blur-md">
+          LOT · {lotNo}
+        </span>
       </div>
 
-      {/* Right action rail — heart + share float over the photo as
-          glass discs. Positioned over photo only; never near the card
-          content. */}
-      <div className="absolute right-4 top-[26%] z-20 flex flex-col items-center gap-3">
+      {/* RIGHT ACTION RAIL — vertical glass icon column. Anchored to
+          sit just above the info card with consistent breathing room. */}
+      <div className="absolute right-3 bottom-[28%] z-20 flex flex-col items-center gap-2.5">
         <WatchlistButton
           auctionId={auction.id}
           initialSaved={saved}
@@ -439,119 +520,89 @@ function FeedCard({
           type="button"
           onClick={onShare}
           aria-label="Partager"
-          className="inline-flex size-11 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white backdrop-blur-md transition active:scale-90 hover:bg-black/60"
+          className="inline-flex size-10 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white backdrop-blur-md transition active:scale-90 hover:bg-black/60"
         >
-          <Share2 className="size-5" strokeWidth={2.2} />
+          <Share2 className="size-[18px]" strokeWidth={2.2} />
         </button>
       </div>
 
-      {/* INFO CARD — white, rounded top corners, ~48% of viewport.
-          Layout flows: title → spec chips → divider → price + CTA. */}
+      {/* FLOATING INFO CARD — compact 2-row layout to maximise photo
+          surface area. Row 1: title + meta line. Row 2: price + CTA.
+          Padding tightened from p-4 → p-2.5; margins bleed wider. */}
       <div
-        className="absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-[28px] bg-[var(--background)] px-5 pb-6 pt-7"
-        style={{
-          top: "49%",
-          boxShadow: "0 -18px 40px -16px rgba(15,23,42,0.16)",
-        }}
+        className="absolute inset-x-2.5 z-10 rounded-2xl border border-white/60 bg-white/96 px-3.5 py-3 shadow-[0_18px_44px_-18px_rgba(15,23,42,0.45)] backdrop-blur-xl"
+        style={{ bottom: "10px" }}
       >
-        {/* Title leads — first thing the eye lands on when card snaps in */}
+        {/* Title — single line, big enough to read */}
         <h2
           dir="auto"
-          className="line-clamp-2 text-[22px] font-extrabold leading-[1.2] tracking-tight text-foreground"
+          className="line-clamp-1 text-[15.5px] font-extrabold leading-tight tracking-tight text-foreground"
         >
           {property.title}
         </h2>
 
-        {/* Spec chips — small bordered pills with subtle gold tint, more
-            premium than plain "·" separators. Each spec is its own tap-
-            sized chip so the eye can scan them in any order. */}
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <SpecChip
-            icon={<MapPin className="size-3.5" strokeWidth={2} />}
-            label={property.governorate}
-          />
-          <SpecChip
-            label={t(`property.types.${property.type}`)}
-            uppercase
-          />
+        {/* Meta — inline dot-separated row instead of chip stack.
+            Saves a whole row of vertical space vs. the chip layout. */}
+        <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10.5px] font-semibold text-[var(--foreground-muted)]">
+          <span className="inline-flex items-center gap-1">
+            <MapPin
+              className="size-3 text-[var(--gold)]"
+              strokeWidth={2.2}
+            />
+            {property.governorate}
+          </span>
+          <span aria-hidden className="opacity-40">·</span>
+          <span className="uppercase tracking-[0.1em]">
+            {t(`property.types.${property.type}`)}
+          </span>
           {property.area_sqm ? (
-            <SpecChip label={`${property.area_sqm} m²`} mono />
+            <>
+              <span aria-hidden className="opacity-40">·</span>
+              <span className="batta-tabular">{property.area_sqm} m²</span>
+            </>
           ) : null}
           {property.rooms ? (
-            <SpecChip label={`${property.rooms} pièces`} />
+            <>
+              <span aria-hidden className="opacity-40">·</span>
+              <span className="batta-tabular">{property.rooms} p.</span>
+            </>
           ) : null}
         </div>
 
-        {/* Hairline divider — separates specs from the price-decision
-            block. Gold tint matches the brand palette. */}
-        <div
-          aria-hidden
-          className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-[var(--gold-soft)]/30 to-transparent"
-        />
-
-        {/* Price + CTA — the decision block. Price gets eyebrow + big
-            gold-gradient number; "négociable" chip drops in below if
-            the seller flagged the offer as open to talk. */}
-        <div className="mt-4 flex items-end justify-between gap-3">
+        {/* Price + CTA — same row, vertical-center aligned. Compact. */}
+        <div className="mt-2 flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--gold)]">
+            <div className="text-[8.5px] font-extrabold uppercase tracking-[0.18em] text-[var(--gold)]">
               {priceLabel}
             </div>
             <div
               dir="ltr"
-              className="batta-tabular mt-1 inline-flex items-baseline gap-1.5"
+              className="batta-tabular mt-0.5 inline-flex items-baseline gap-1"
             >
-              <span className="gradient-gold-text text-[30px] font-extrabold leading-none">
+              <span className="gradient-gold-text text-[22px] font-extrabold leading-none">
                 {formatTND(price, locale)}
               </span>
-              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--foreground-muted)]">
+              <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[var(--foreground-muted)]">
                 {t("common.tnd")}
               </span>
+              {isDirect && auction.sale_negotiable && (
+                <span className="ms-1 inline-flex items-center rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-[0.12em] text-emerald-700 ring-1 ring-emerald-200">
+                  Négo.
+                </span>
+              )}
             </div>
-            {isDirect && auction.sale_negotiable && (
-              <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.14em] text-emerald-700 ring-1 ring-emerald-200">
-                Négociable
-              </span>
-            )}
           </div>
-        </div>
 
-        {/* Primary CTA — full-width gold pill. Sits at the very bottom
-            of the card so the thumb has the same target on every card. */}
-        <Link
-          href={`/auctions/${auction.id}` as `/auctions/${string}`}
-          className="batta-gradient-gold tap-target mt-auto flex w-full items-center justify-center gap-1.5 rounded-full px-5 py-3.5 text-[13.5px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] ring-1 ring-black/5 transition active:scale-[0.98]"
-        >
-          {isDirect ? "Voir l'offre" : "Enchérir maintenant"}
-          <ArrowUpRight className="size-4" strokeWidth={2.5} />
-        </Link>
+          <Link
+            href={`/auctions/${auction.id}` as `/auctions/${string}`}
+            className="batta-gradient-gold tap-target inline-flex shrink-0 items-center justify-center gap-1 rounded-full px-3.5 py-2.5 text-[11.5px] font-extrabold uppercase tracking-[0.1em] text-white shadow-[var(--shadow-gold)] ring-1 ring-black/5 transition active:scale-[0.98]"
+          >
+            {isDirect ? "Voir" : "Enchérir"}
+            <ArrowUpRight className="size-3.5" strokeWidth={2.5} />
+          </Link>
+        </div>
       </div>
     </article>
-  );
-}
-
-function SpecChip({
-  icon,
-  label,
-  uppercase = false,
-  mono = false,
-}: {
-  icon?: React.ReactNode;
-  label: string;
-  uppercase?: boolean;
-  mono?: boolean;
-}) {
-  return (
-    <span
-      className={
-        "inline-flex h-7 items-center gap-1 rounded-full border border-[var(--border)] bg-white px-2.5 text-[11.5px] font-semibold text-foreground " +
-        (uppercase ? "uppercase tracking-[0.12em] text-[11px] " : "") +
-        (mono ? "batta-tabular " : "")
-      }
-    >
-      {icon && <span className="text-[var(--gold)]">{icon}</span>}
-      {label}
-    </span>
   );
 }
 

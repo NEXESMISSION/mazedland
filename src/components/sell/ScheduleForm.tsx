@@ -36,7 +36,7 @@ export function ScheduleForm({ propertyId }: { propertyId: string }) {
   const t = useTranslations();
   const router = useRouter();
   const [type, setType] = useState<AuctionType>("english");
-  const [openingPrice, setOpeningPrice] = useState<string>("250000");
+  const [openingPrice, setOpeningPrice] = useState<string>("");
   const [reservePrice, setReservePrice] = useState<string>("");
   const [startsAt, setStartsAt] = useState<string>(defaultStart());
   const [endsAt, setEndsAt] = useState<string>(defaultEnd());
@@ -55,14 +55,70 @@ export function ScheduleForm({ propertyId }: { propertyId: string }) {
     setError(null);
     const opening = Number(openingPrice);
     if (!opening || opening < 1000) {
-      setError("Opening price must be at least 1,000 TND.");
+      setError(t("schedule.errors.openingTooLow"));
       return;
+    }
+    if (opening > 1_000_000_000) {
+      setError(t("schedule.errors.openingTooHigh"));
+      return;
+    }
+    // Reserve price guard — if set, it should be ≥ opening (otherwise
+    // the reserve has no effect and confuses the seller).
+    if (reservePrice) {
+      const rp = Number(reservePrice);
+      if (!Number.isFinite(rp) || rp < opening) {
+        setError(t("schedule.errors.reserveBelowOpening"));
+        return;
+      }
     }
     const startsIso = new Date(startsAt).toISOString();
     const endsIso = new Date(endsAt).toISOString();
     if (new Date(endsIso) <= new Date(startsIso)) {
-      setError("End must be after start.");
+      setError(t("schedule.errors.endBeforeStart"));
       return;
+    }
+    // Duration sanity: at least 30 min, at most 60 days. Without these
+    // a typo (e.g. picking the wrong month) can ship a 6-month auction
+    // that the seller didn't intend, or a 1-minute "live" window that
+    // ends before anyone can bid.
+    const durationMs = new Date(endsIso).getTime() - new Date(startsIso).getTime();
+    if (durationMs < 30 * 60_000) {
+      setError(t("schedule.errors.tooShort"));
+      return;
+    }
+    if (durationMs > 60 * 86_400_000) {
+      setError(t("schedule.errors.tooLong"));
+      return;
+    }
+    // Past end guard — datetime-local lets the user type anything,
+    // including a year ago. Without this check, the auction lands in
+    // an immediately-ended state with no recovery.
+    if (new Date(endsIso).getTime() <= Date.now()) {
+      setError(t("schedule.errors.endInPast"));
+      return;
+    }
+
+    // Dutch sanity: start_price > floor_price, decrement positive,
+    // tick interval reasonable. Without these the engine produces
+    // either a stuck price (decrement=0) or jumps below floor in one
+    // tick (start ≈ floor with a big decrement).
+    if (type === "dutch") {
+      const dStart = Number(dutchStart) || opening * 1.2;
+      const dFloor = Number(dutchFloor) || opening;
+      const dDec = Number(dutchDecrement) || 5000;
+      const dTick = Number(dutchTick) || 1800;
+      if (dStart <= dFloor) {
+        setError(t("schedule.errors.dutchStartBelowFloor"));
+        return;
+      }
+      if (dDec <= 0 || dDec >= dStart - dFloor) {
+        setError(t("schedule.errors.dutchDecrementInvalid"));
+        return;
+      }
+      if (dTick < 30 || dTick > 86_400) {
+        setError(t("schedule.errors.dutchTickInvalid"));
+        return;
+      }
     }
 
     // If start is in the past or within the next minute, treat the auction
@@ -94,7 +150,7 @@ export function ScheduleForm({ propertyId }: { propertyId: string }) {
 
       const { data, error } = await supabase.from("auctions").insert(payload).select("id").single();
       if (error || !data) {
-        setError(error?.message ?? "Could not schedule auction.");
+        setError(error?.message ?? t("schedule.errors.couldNotSchedule"));
         return;
       }
       setCreatedId(data.id as string);

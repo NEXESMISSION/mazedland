@@ -139,7 +139,7 @@ export default async function AuctionDetail({
   return (
     <div
       className={`mx-auto max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)] ${
-        showFloatingBidCta ? "pb-32" : "pb-8"
+        showFloatingBidCta ? "pb-48" : "pb-8"
       }`}
     >
       {/* ─── PHOTO GALLERY — full-bleed cinematic hero with auto-rotate ─── */}
@@ -476,23 +476,36 @@ export default async function AuctionDetail({
               is one tap away. */}
       {showFloatingBidCta && (
         <div
-          className="fixed inset-x-0 z-40 px-4"
+          // z-50 so we sit ABOVE the global BottomTabBar (z-40) and its
+          // centered FAB (which is `-translate-y-5` and would otherwise
+          // overlap the bid button on phones).
+          //
+          // bottom offset clears the FAB's lifted disc:
+          //   tab_bar_h + safe_area + FAB_lift (~24px) + breathing room (12px)
+          // ≈ var(--batta-bottombar-h) + safe-area + 36px.
+          className="fixed inset-x-0 z-50 px-4"
           style={{
-            bottom: "calc(var(--batta-bottombar-h) + env(safe-area-inset-bottom) + 12px)",
+            bottom:
+              "calc(var(--batta-bottombar-h) + env(safe-area-inset-bottom) + 36px)",
           }}
         >
           <div className="mx-auto max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)]">
-            <div className="rounded-2xl border border-border bg-white/95 p-3 shadow-[0_10px_30px_-10px_rgba(15,23,42,0.25)] backdrop-blur-xl">
+            <div className="rounded-2xl border border-[var(--border)] bg-white/95 p-2.5 shadow-[0_14px_36px_-12px_rgba(15,23,42,0.35)] backdrop-blur-xl">
               <Link
                 href={`/auctions/${auction.id}/bid` as never}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[var(--radius)] bg-[var(--gold)] text-[14px] font-bold text-white shadow-[var(--shadow-gold)] transition-all hover:bg-[var(--gold-bright)] active:scale-[0.99]"
+                className="batta-gradient-gold inline-flex h-12 w-full items-center justify-center gap-2 rounded-full text-[14px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] ring-1 ring-black/5 transition-all active:scale-[0.99]"
               >
                 <Gavel className="h-4 w-4" strokeWidth={2.5} />
                 {t("auction.placeBid")}
               </Link>
               {hasBuyNow && !isOwner && (
                 <Link
-                  href={`/auctions/${auction.id}/bid` as never}
+                  // Buy-now jumps straight to the unified checkout (it
+                  // does not require a deposit, so routing through the
+                  // bid page's deposit gate would block a legitimate
+                  // buy-now flow). Login/KYC checks happen on the
+                  // checkout page itself.
+                  href={`/payment/checkout?type=buy_now&auction=${auction.id}` as never}
                   className="mt-1.5 block py-1 text-center text-[12px] text-[var(--foreground-muted)] hover:text-[var(--gold)]"
                 >
                   {t("auction.buyNowFor")}{" "}
