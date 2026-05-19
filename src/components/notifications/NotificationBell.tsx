@@ -498,7 +498,7 @@ export function NotificationBell() {
                     Tout est calme. Allez jeter un œil aux enchères.
                   </p>
                   <Link
-                    href="/auctions"
+                    href="/properties"
                     onClick={() => setOpen(false)}
                     className="mt-5 inline-flex items-center gap-1.5 rounded-full batta-gold-fill px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]"
                   >

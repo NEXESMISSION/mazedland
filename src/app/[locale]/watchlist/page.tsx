@@ -119,7 +119,7 @@ export default async function WatchlistPage() {
                   {t("browseCta")}
                 </Link>
                 <Link
-                  href="/auctions"
+                  href={{ pathname: "/properties", query: { filter: "auction" } }}
                   className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-6 text-[13px] font-bold text-white backdrop-blur-sm hover:bg-white/20"
                 >
                   <Sparkles className="size-4" strokeWidth={2.5} />

@@ -244,25 +244,40 @@ export function CheckoutClient({
   if (cancelled) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-2xl mx-auto px-4 lg:px-8 py-10 lg:py-16 text-center">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-2)] text-[var(--foreground-muted)]">
-            <X className="h-8 w-8" strokeWidth={2.2} />
-          </div>
-          <h1 className="mt-4 text-[22px] font-extrabold leading-tight">
-            Paiement annulé
-          </h1>
-          <p className="mt-2 text-[13px] text-[var(--foreground-muted)] leading-relaxed max-w-md mx-auto">
-            Aucun montant n&apos;a été prélevé. Vous pouvez recommencer
-            depuis l&apos;annonce quand vous voulez.
-          </p>
-          <div className="mt-8">
-            <a
-              href={`/${locale}`}
-              className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] text-white px-5 text-[13px] font-bold hover:bg-[var(--gold-bright)]"
-            >
-              Retour à l&apos;accueil
-              <ArrowRight className="ml-1.5 h-4 w-4" />
-            </a>
+        <main className="max-w-md mx-auto px-4 py-10 lg:py-16">
+          {/* Obviously-cancelled card — the previous version was a few
+              tiny lines on a white page that read as "blank" to several
+              testers. The red ring, full-width card surface, and the
+              prominent return-to-listing CTA make the state legible at
+              a glance. */}
+          <div className="rounded-2xl border-2 border-red-300 bg-red-50 p-6 text-center shadow-lg">
+            <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white shadow-md shadow-red-500/30">
+              <X className="h-8 w-8" strokeWidth={2.8} />
+            </div>
+            <h1 className="mt-4 text-[22px] font-extrabold leading-tight text-red-900">
+              Paiement annulé
+            </h1>
+            <p className="mt-2 text-[13px] text-red-900/80 leading-relaxed">
+              Aucun montant n&apos;a été prélevé. Vous pouvez relancer le
+              paiement à tout moment depuis l&apos;annonce.
+            </p>
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {auction && (
+                <a
+                  href={`/${locale}/auctions/${auction.id}`}
+                  className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-white border border-red-200 text-red-900 px-5 text-[13px] font-bold hover:border-red-400"
+                >
+                  Retour à l&apos;annonce
+                </a>
+              )}
+              <a
+                href={`/${locale}`}
+                className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] text-white px-5 text-[13px] font-bold hover:bg-[var(--gold-bright)]"
+              >
+                Accueil
+                <ArrowRight className="ml-1.5 h-4 w-4" />
+              </a>
+            </div>
           </div>
         </main>
       </div>
@@ -503,7 +518,13 @@ export function CheckoutClient({
           )}
         </section>
 
-        {/* Submit */}
+        {/* Submit + helper hint */}
+        {!file && !submitting && (
+          <p className="text-center text-[12px] font-semibold text-[var(--gold-deep)] bg-[var(--gold-faint)] rounded-[var(--radius)] py-2 px-3">
+            Sélectionnez d&apos;abord votre reçu ci-dessus pour activer
+            le bouton.
+          </p>
+        )}
         <button
           type="button"
           onClick={submit}
@@ -534,17 +555,22 @@ export function CheckoutClient({
         </p>
 
         {/* Cancel escape-hatch — only offered before a receipt is in
-            review. Once the admin queue has it, the user can't bow out
-            from the client; they have to contact support. */}
+            review, and parked under a divider with explicit labelling
+            so nobody mistakes it for an alternative pay button. */}
         {!reupload && (
-          <button
-            type="button"
-            onClick={cancelPayment}
-            disabled={cancelling}
-            className="block w-full text-center text-[12px] text-[var(--foreground-muted)] hover:text-red-400 py-2 transition-colors disabled:opacity-50"
-          >
-            {cancelling ? "Annulation…" : "Annuler ce paiement"}
-          </button>
+          <div className="mt-2 pt-3 border-t border-[var(--border)] text-center space-y-1">
+            <p className="text-[11px] text-[var(--foreground-subtle)]">
+              Vous ne souhaitez plus payer maintenant ?
+            </p>
+            <button
+              type="button"
+              onClick={cancelPayment}
+              disabled={cancelling}
+              className="text-[12px] font-semibold text-[var(--foreground-muted)] underline underline-offset-2 hover:text-red-500 py-1 transition-colors disabled:opacity-50"
+            >
+              {cancelling ? "Annulation…" : "Annuler ce paiement"}
+            </button>
+          </div>
         )}
       </main>
     </div>

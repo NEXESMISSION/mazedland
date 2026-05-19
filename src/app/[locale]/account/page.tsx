@@ -103,7 +103,7 @@ export default async function AccountPage() {
 
             <div className="border-t border-border bg-surface-2 px-7 py-4 text-center sm:px-8">
               <Link
-                href="/auctions"
+                href="/properties"
                 className="inline-flex items-center gap-1.5 text-[12px] font-bold text-muted transition hover:text-gold-bright"
               >
                 Explorer sans compte

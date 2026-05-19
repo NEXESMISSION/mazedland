@@ -152,7 +152,7 @@ export function AuctionEndModal({ auction, userId, locale }: Props) {
             ? `L'offre gagnante était de ${formatTND(outcome.winningPrice, locale)}. Votre caution sera remboursée sous 24 heures.`
             : "Votre caution sera remboursée sous 24 heures. Bonne chance pour la prochaine.",
           primary: (
-            <Link href="/auctions" className="block">
+            <Link href="/properties" className="block">
               <Button size="md" fullWidth>
                 <ArrowRight className="h-4 w-4" />
                 Autres enchères
@@ -186,7 +186,7 @@ export function AuctionEndModal({ auction, userId, locale }: Props) {
           title: "Enchère annulée",
           body: "L'enchère a été annulée par le vendeur ou l'administration. Votre caution sera remboursée intégralement.",
           primary: (
-            <Link href="/auctions" className="block">
+            <Link href="/properties" className="block">
               <Button size="md" fullWidth>
                 Autres enchères
               </Button>

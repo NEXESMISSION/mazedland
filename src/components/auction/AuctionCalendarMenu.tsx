@@ -169,16 +169,27 @@ export function AuctionCalendarMenu({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-foreground ring-1 ring-gold/25 transition hover:ring-gold/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold active:scale-[0.98]"
+        className={
+          // Solid button affordance: filled surface, real height (h-10),
+          // proper padding, gold-soft ring + subtle shadow so it reads as
+          // a tappable action — not the thin pill it used to be.
+          "inline-flex h-10 items-center gap-2 rounded-full bg-surface px-4 " +
+          "text-[12px] font-extrabold uppercase tracking-[0.14em] text-foreground " +
+          "ring-1 ring-gold/35 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.35)] " +
+          "transition-all hover:bg-surface-2 hover:ring-gold/60 " +
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold " +
+          "active:scale-[0.98] " +
+          (open ? "ring-gold/60 bg-surface-2" : "")
+        }
       >
-        <CalendarPlus className="size-3.5 text-gold" strokeWidth={2.25} />
+        <CalendarPlus className="size-4 text-gold" strokeWidth={2.4} />
         {buttonLabel}
       </button>
 
       {open && (
         <div
           role="menu"
-          className="absolute z-20 mt-2 w-60 origin-top rounded-xl border border-gold/25 bg-surface p-1.5 shadow-xl shadow-black/40 backdrop-blur-sm ltr:right-0 ltr:origin-top-right rtl:left-0 rtl:origin-top-left"
+          className="absolute z-30 mt-2 w-64 origin-top rounded-xl border border-gold/25 bg-surface p-1.5 shadow-2xl shadow-black/50 backdrop-blur-sm ltr:right-0 ltr:origin-top-right rtl:left-0 rtl:origin-top-left"
         >
           {iosFirst ? [icsItem, googleItem] : [googleItem, icsItem]}
         </div>

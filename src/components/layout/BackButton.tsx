@@ -10,7 +10,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 const ROOT_PATHS = new Set([
   "/",
   "/properties",
-  "/auctions",
   "/watchlist",
   "/account",
 ]);

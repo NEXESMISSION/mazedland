@@ -150,7 +150,7 @@ export function DirectSalePanel({
           <div className="text-center text-[12px] text-[var(--foreground-muted)] py-2">
             Annonce retirée.{" "}
             <Link
-              href="/auctions"
+              href="/properties"
               className="text-[var(--gold)] font-semibold hover:underline"
             >
               Voir d&apos;autres biens

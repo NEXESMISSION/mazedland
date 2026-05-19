@@ -218,7 +218,7 @@ export default async function LandingPage() {
           eyebrow={t("home.trendingEyebrow")}
           title={t("home.trendingTitle")}
           countLabel={trending.length}
-          ctaHref="/auctions"
+          ctaHref="/properties"
           ChevronEnd={ChevronEnd}
           isRTL={isRTL}
           seeAllLabel={t("home.seeAll")}
@@ -261,7 +261,7 @@ export default async function LandingPage() {
             eyebrow={t("home.nouveautesEyebrow")}
             title={t("home.nouveautesTitle")}
             countLabel={nouveautes.length}
-            ctaHref="/auctions"
+            ctaHref="/properties"
             ChevronEnd={ChevronEnd}
             isRTL={isRTL}
             seeAllLabel={t("home.seeAll")}
@@ -321,7 +321,7 @@ export default async function LandingPage() {
         <section className="mt-9 px-4">
           <RailHeader
             title={t("home.moreToExplore")}
-            ctaHref="/auctions"
+            ctaHref="/properties"
             ChevronEnd={ChevronEnd}
             isRTL={isRTL}
             seeAllLabel={t("home.seeAll")}
@@ -485,10 +485,11 @@ function RailHeader({
   eyebrow?: string;
   title: string;
   countLabel?: number;
-  /** Accepts either the legacy /properties target or the new classic
-      view at /auctions?view=classic. The typed-Link constraint widens
-      to the union so the locale-aware Link can resolve both. */
-  ctaHref: "/properties" | "/auctions";
+  /** All "see all" CTAs point at /properties — the unified Explore
+      surface (Reels + Grid + numbered pagination). The /auctions
+      index was removed (it was a duplicate of /properties); the
+      detail route /auctions/[id] still exists for individual lots. */
+  ctaHref: "/properties";
   ChevronEnd: React.ComponentType<{ className?: string }>;
   isRTL: boolean;
   /** Pre-translated "See all" label. Server component callers pass
@@ -528,15 +529,10 @@ function RailHeader({
         </h3>
       </div>
       {!noCta && (
-        // "/auctions" is the classic-view listing surface; the home's
-        // See-all links point here so they share a visual language
-        // (white cards on a quiet background) with the search target.
+        // Every "See all" link goes to the unified Explore page —
+        // user picks Grid vs Reels there via the toolbar toggle.
         <Link
-          href={
-            ctaHref === "/auctions"
-              ? { pathname: "/auctions", query: { view: "classic" } }
-              : ctaHref
-          }
+          href={ctaHref}
           className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-[11px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
         >
           {seeAllLabel}

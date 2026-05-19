@@ -18,7 +18,7 @@ const GOVERNORATES = [
 const TYPE_KEYS = ["apartment", "villa", "house", "land", "commercial", "office"] as const;
 
 /**
- * Home search — keyword + governorate + type, submits to /auctions.
+ * Home search — keyword + governorate + type, submits to /properties.
  *
  * This is the marketplace's missing primary action: an inline search
  * the moment a user lands. Without it the home reads as a magazine
@@ -40,13 +40,15 @@ export function HomeSearch({ isRTL: _isRTL }: { isRTL: boolean }) {
     e.preventDefault();
     const params = new URLSearchParams();
     // Strip ilike wildcards + `or()` separators here so the
-    // /auctions server query doesn't have to re-clean the same input.
+    // /properties server query doesn't have to re-clean the same input.
     const cleanQ = normalizeSearchQuery(q);
     if (cleanQ) params.set("q", cleanQ);
     if (gov) params.set("gov", gov);
-    if (type) params.set("type", type);
+    // The new Explore page expects `types` (comma-separated list); a
+    // single picked type maps cleanly to a one-element list.
+    if (type) params.set("types", type);
     const qs = params.toString();
-    router.push((qs ? `/auctions?${qs}` : "/auctions") as `/auctions`);
+    router.push((qs ? `/properties?${qs}` : "/properties") as `/properties`);
   }
 
   return (

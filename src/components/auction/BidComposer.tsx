@@ -191,8 +191,8 @@ export function BidComposer({
         tone="gold"
         icon={<Wallet className="h-7 w-7" />}
         title="Verrouillez la caution pour rejoindre l'enchère"
-        body={`Caution remboursable de ${formatTND(depositAmount, locale)} — débloque l'enchère immédiatement.`}
-        ctaLabel={`Payer ${formatTND(depositAmount, locale)}`}
+        body="Une caution remboursable réserve votre place dans l'enchère et se débloque instantanément après paiement."
+        ctaLabel={`Payer la caution`}
         ctaIcon={<Wallet className="h-4 w-4" />}
         onCta={() =>
           router.push(
@@ -202,10 +202,20 @@ export function BidComposer({
         auction={auction}
         totalBids={totalBids}
         locale={locale}
+        // Math card — makes the "Why 29 000?" relationship explicit
+        // so the user doesn't confuse the deposit (10% slice) with
+        // the price they'd ultimately be bidding on.
+        priceContext={{
+          label: "Caution requise",
+          amount: depositAmount,
+          relation: "10 % du prix d'ouverture",
+          baseLabel: "Prix d'ouverture",
+          baseAmount: auction.opening_price,
+        }}
         bullets={[
-          "Montant fixe (10% du prix d'ouverture) — réserve votre place",
-          "Intégralement remboursée sous 24 heures si vous ne gagnez pas",
-          "Déduite du prix final si vous remportez l'enchère",
+          "Réservée à votre seul compte — elle bloque votre place dans l'enchère.",
+          "Remboursée sous 24 heures si vous ne remportez pas le lot.",
+          "Déduite du prix final si vous gagnez — pas de double paiement.",
         ]}
       />
     );

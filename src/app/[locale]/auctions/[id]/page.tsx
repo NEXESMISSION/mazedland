@@ -259,23 +259,26 @@ export default async function AuctionDetail({
               </div>
             </div>
           </div>
-
-          {/* Calendar reminder — sits right under the countdown so the
-              user sees the "set a reminder" affordance at the moment
-              they're parsing the time-to-close. Hidden for ended
-              auctions inside the menu itself. */}
-          <div className="mt-4 flex justify-end">
-            <AuctionCalendarMenu
-              auctionId={auction.id}
-              endsAt={auction.ends_at}
-              startsAt={auction.starts_at ?? null}
-              status={auction.status}
-              title={property.title}
-              governorate={property.governorate}
-            />
-          </div>
         </div>
       </section>
+      )}
+
+      {/* Calendar reminder — its own row OUTSIDE the price card. The
+          card uses overflow-hidden to clip its gradient inner; that was
+          also clipping the calendar dropdown panel and the bottom-half
+          of the button itself. Sitting in a sibling row gives the menu
+          room to open downward without fighting the card's clip. */}
+      {!isDirect && (
+        <div className="mx-4 mt-3 flex justify-end">
+          <AuctionCalendarMenu
+            auctionId={auction.id}
+            endsAt={auction.ends_at}
+            startsAt={auction.starts_at ?? null}
+            status={auction.status}
+            title={property.title}
+            governorate={property.governorate}
+          />
+        </div>
       )}
 
       {/* ─── PURCHASE STATUS — auctions only, post-live states ───

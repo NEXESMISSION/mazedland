@@ -9,6 +9,26 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { cn } from "@/lib/utils";
 import type { AuctionWithProperty } from "@/lib/types";
 
+/**
+ * Optional "math card" for gates whose CTA amount is derived from a
+ * larger reference figure — typically the deposit gate where the
+ * 29 000 TND figure is 10% of the 290 000 TND opening price. Showing
+ * both numbers + the relation makes the deposit feel transparent
+ * instead of arbitrary.
+ */
+export interface PriceContext {
+  /** Eyebrow above the big number, e.g. "Caution requise". */
+  label: string;
+  /** The amount the user is being asked to commit (in TND). */
+  amount: number;
+  /** How the amount was computed, e.g. "10% du prix d'ouverture". */
+  relation: string;
+  /** Underlying reference figure, e.g. "Prix d'ouverture". */
+  baseLabel: string;
+  /** Numeric reference, e.g. 290_000. */
+  baseAmount: number;
+}
+
 interface Props {
   tone: "muted" | "warning" | "gold";
   icon: React.ReactNode;
@@ -21,6 +41,8 @@ interface Props {
   auction: AuctionWithProperty;
   totalBids: number;
   locale: string;
+  /** Optional pricing-math block (deposit gate uses this). */
+  priceContext?: PriceContext;
 }
 
 /**
@@ -44,28 +66,30 @@ export function PreBidGate({
   auction,
   totalBids,
   locale,
+  priceContext,
 }: Props) {
   const property = auction.property;
   const photos = property.photos?.sort((a, b) => a.sort_order - b.sort_order) ?? [];
   const heroPhoto = photos[0];
   const currentPrice = auction.current_price ?? auction.opening_price;
 
+  // Light-theme palette — matches the rest of the app (white surfaces
+  // with gold/amber accents). Each tone is the ring color + the icon
+  // disc treatment. The card body is always white so dark text stays
+  // readable on every gate.
   const palette = {
     muted: {
       ring: "border-[var(--border)]",
-      bg: "bg-[var(--surface)]",
       iconBg: "bg-[var(--surface-2)] text-[var(--foreground-muted)]",
     },
     warning: {
-      ring: "border-amber-500/40",
-      bg: "bg-amber-500/5",
-      iconBg: "bg-amber-500/15 text-amber-400",
+      ring: "border-amber-300",
+      iconBg: "bg-amber-100 text-amber-700",
     },
     gold: {
-      ring: "border-[var(--gold)]/40",
-      bg: "bg-gradient-to-br from-[var(--surface)] to-[#1a1408]",
+      ring: "border-[var(--gold-soft)]",
       iconBg:
-        "bg-[var(--gold-faint)] text-[var(--gold)] shadow-[var(--shadow-gold)]",
+        "batta-gradient-gold text-white shadow-[var(--shadow-gold)]",
     },
   }[tone];
 
@@ -73,46 +97,105 @@ export function PreBidGate({
     <>
       {/* ─── MOBILE — compact stack ─── */}
       <div className="lg:hidden space-y-4">
-        <div className="flex items-baseline justify-between gap-3 flex-wrap">
-          <div className="batta-tabular text-2xl font-extrabold leading-none gradient-gold-text">
-            {formatTND(currentPrice, locale)}
+        {/* PRICE STRIP — outside the gate card so the auction's current
+            figure is always front-and-center, separately from the gate's
+            own "you must pay X" prompt. Eyebrow + big gold number,
+            followed by the live chip + bid counter on a clean row. */}
+        <div>
+          <div className="text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-[var(--gold)]">
+            Prix actuel
           </div>
-          <div className="inline-flex items-center gap-2 text-[11px] text-[var(--foreground-muted)]">
-            <span className="inline-flex items-center gap-1 px-1.5 h-5 rounded-full bg-[var(--gold-faint)] border border-[var(--gold)]/30 text-[var(--gold)] text-[10px] font-bold uppercase tracking-[0.15em]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--gold)] pulse-gold" />
+          <div className="mt-0.5 flex items-baseline gap-2">
+            <span className="batta-tabular gradient-gold-text text-[28px] font-extrabold leading-none">
+              {formatTND(currentPrice, locale)}
+            </span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--foreground-muted)]">
+              TND
+            </span>
+          </div>
+          <div className="mt-2 inline-flex items-center gap-2 text-[11px] text-[var(--foreground-muted)]">
+            <span className="inline-flex h-5 items-center gap-1 rounded-full bg-red-500/10 px-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-red-600 ring-1 ring-red-500/30">
+              <span className="batta-pulse-dot h-1.5 w-1.5 rounded-full bg-red-500" />
               En direct
             </span>
             <Countdown endsAt={auction.ends_at} />
-            <span className="text-[var(--border-strong)]">·</span>
+            <span className="opacity-40">·</span>
             <span className="batta-tabular">
               {totalBids} {totalBids === 1 ? "offre" : "offres"}
             </span>
           </div>
         </div>
 
-        <div className={`rounded-[var(--radius-md)] border ${palette.ring} ${palette.bg} p-5 space-y-4`}>
+        {/* GATE CARD — white background, light-theme palette. The icon
+            disc adopts the per-tone treatment (gold gradient for the
+            deposit gate, amber for owner-warning, neutral for muted). */}
+        <div
+          className={`rounded-2xl border-2 ${palette.ring} bg-white p-5 shadow-sm`}
+        >
           <div className="flex items-start gap-3">
-            <div className={`h-12 w-12 rounded-full ${palette.iconBg} flex items-center justify-center shrink-0`}>
+            <div
+              className={`h-12 w-12 rounded-full ${palette.iconBg} flex items-center justify-center shrink-0`}
+            >
               {icon}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-extrabold text-base leading-tight">{title}</h3>
-              <p className="text-xs text-[var(--foreground-muted)] mt-1.5 leading-relaxed">{body}</p>
+              <h3 className="text-[15px] font-extrabold leading-tight text-foreground">
+                {title}
+              </h3>
+              <p className="mt-1.5 text-[12.5px] leading-relaxed text-[var(--foreground-muted)]">
+                {body}
+              </p>
             </div>
           </div>
 
+          {/* PRICE MATH — only when caller passes priceContext (the
+              deposit gate). Makes the "why 29 000?" question obvious:
+              shows the big number, then the relation + reference price
+              just below so the two figures don't look interchangeable. */}
+          {priceContext && (
+            <div className="mt-4 rounded-xl bg-[var(--gold-faint)] p-3.5 ring-1 ring-[var(--gold-soft)]">
+              <div className="text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-[var(--gold)]">
+                {priceContext.label}
+              </div>
+              <div className="mt-1 flex items-baseline gap-1.5">
+                <span className="batta-tabular gradient-gold-text text-[28px] font-extrabold leading-none">
+                  {formatTND(priceContext.amount, locale)}
+                </span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--foreground-muted)]">
+                  TND
+                </span>
+              </div>
+              <div className="mt-1.5 text-[11px] text-[var(--foreground-muted)]">
+                <span className="font-semibold text-foreground">
+                  {priceContext.relation}
+                </span>
+                {" — "}
+                {priceContext.baseLabel}{" "}
+                <span className="batta-tabular font-bold text-foreground">
+                  {formatTND(priceContext.baseAmount, locale)} TND
+                </span>
+              </div>
+            </div>
+          )}
+
           {bullets && bullets.length > 0 && (
-            <ul className="space-y-1.5 text-xs text-[var(--foreground-muted)] ms-1">
+            <ul className="mt-4 space-y-1.5">
               {bullets.map((b, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-[var(--gold)] shrink-0 mt-0.5" />
+                <li
+                  key={i}
+                  className="flex items-start gap-2 text-[12.5px] leading-relaxed text-foreground"
+                >
+                  <CheckCircle2
+                    className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5"
+                    strokeWidth={2.4}
+                  />
                   <span>{b}</span>
                 </li>
               ))}
             </ul>
           )}
 
-          <Button onClick={onCta} size="md" fullWidth>
+          <Button onClick={onCta} size="md" fullWidth className="mt-5">
             {ctaIcon}
             {ctaLabel}
           </Button>
@@ -190,8 +273,10 @@ export function PreBidGate({
           </div>
         </div>
 
-        {/* Gate card */}
-        <div className={`relative overflow-hidden rounded-[28px] border ${palette.ring} ${palette.bg} p-9 xl:p-10`}>
+        {/* Gate card — desktop. Same light theme as mobile; the soft
+            gold radial bloom on the gold-tone variant keeps the
+            consigned-piece feel without going dark on us. */}
+        <div className={`relative overflow-hidden rounded-[28px] border ${palette.ring} bg-white p-9 xl:p-10 shadow-sm`}>
           {tone === "gold" && (
             <div
               aria-hidden

@@ -84,7 +84,7 @@ const KIND_CONFIG: KindDef[] = [
     fields: [
       { key: "title", label: "Titre", type: "text", required: true, maxLength: 200, placeholder: "Nouvelle fonctionnalité disponible" },
       { key: "body", label: "Message", type: "textarea", maxLength: 1000, placeholder: "Décrivez l'annonce." },
-      { key: "link", label: "Lien (optionnel)", type: "url", maxLength: 500, placeholder: "/auctions" },
+      { key: "link", label: "Lien (optionnel)", type: "url", maxLength: 500, placeholder: "/properties" },
       { key: "cta_label", label: "Libellé du bouton", type: "text", maxLength: 60, placeholder: "En savoir plus", helper: "Texte du bouton d'action affiché avec le lien." },
     ],
   },
