@@ -1,20 +1,20 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { AuctionWithProperty } from "@/lib/types";
-import { formatTND, depositForOpening } from "@/lib/utils";
-import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
+import { formatTND } from "@/lib/utils";
+import { parseMonetizationSettings, resolveDeposit } from "@/lib/pricing";
 import { Countdown } from "@/components/auction/Countdown";
 import { AuctionCalendarMenu } from "@/components/auction/AuctionCalendarMenu";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
 import { SixthOfferForm } from "@/components/auction/SixthOfferForm";
 import { HeroCarousel } from "@/components/auction/HeroCarousel";
 import { PropertyMap } from "@/components/property/PropertyMap";
+import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
 import { Link } from "@/i18n/navigation";
 import {
   MapPin, Ruler, BedDouble, Bath, Building2, Calendar,
-  ShieldCheck, ClipboardCheck, FileText, Lock, Gavel, Download,
+  ShieldCheck, ClipboardCheck, FileText, Lock, Gavel, Download, Clock,
 } from "lucide-react";
 
 /**
@@ -74,9 +74,49 @@ export default async function AuctionDetail({
     .select("id, kind")
     .eq("property_id", property.id);
   const documents = (docsRows ?? []) as Array<{ id: string; kind: string }>;
+
+  // Per-type characteristics catalog → drives the Specifications tiles.
+  // The attributes JSONB is the source of truth; rows created before
+  // migration 0037 only have the legacy columns, so we backfill the
+  // canonical keys from those so old listings still show their specs.
+  const { data: attrKindRows } = await supabase
+    .from("property_attribute_kinds")
+    .select("field_key, label, data_type, options, unit, sort_order")
+    .eq("property_type", property.type)
+    .order("sort_order")
+    .order("label");
+  const attrKinds = (attrKindRows ?? []) as Array<{
+    field_key: string;
+    label: string;
+    data_type: string;
+    options: { value: string; label: string }[] | null;
+    unit: string | null;
+  }>;
+  const attrs: Record<string, string | number | boolean> = {
+    ...(property.attributes ?? {}),
+  };
+  const legacyCols: Record<string, number | null> = {
+    area_sqm: property.area_sqm,
+    rooms: property.rooms,
+    bathrooms: property.bathrooms,
+    floor: property.floor,
+    year_built: property.year_built,
+  };
+  for (const [k, v] of Object.entries(legacyCols)) {
+    if (attrs[k] == null && v != null) attrs[k] = v;
+  }
+
   const userId = userRes.data.user?.id ?? null;
   const currentPrice = auction.current_price ?? auction.opening_price;
-  const deposit = depositForOpening(auction.opening_price);
+  // Deposit is admin-configurable (free / fixed / percent + free window).
+  const { data: depRow } = await supabase
+    .from("app_settings").select("value").eq("key", "deposit").maybeSingle();
+  const depCfg = parseMonetizationSettings(
+    new Map<string, unknown>([["deposit", depRow?.value]]),
+  ).deposit;
+  const { required: depositRequired, amount: deposit } = resolveDeposit(
+    depCfg, auction.opening_price,
+  );
   const isLive = auction.status === "live" || auction.status === "extending";
   // listing_type='direct' → fixed-price sale, no bidding. DirectSalePanel
   // owns the price + CTA; we skip the auction price card and bid CTA below.
@@ -89,8 +129,9 @@ export default async function AuctionDetail({
   // "Verify identity", "Pay deposit", and the actual bid form.
   let kycVerified = false;
   let hasActiveDeposit = false;
+  let depositUnderReview = false;
   if (userId) {
-    const [profileRes, depositRes] = await Promise.all([
+    const [profileRes, depositRes, pendRes] = await Promise.all([
       supabase.from("profiles").select("kyc_status").eq("id", userId).single(),
       supabase
         .from("auction_deposits")
@@ -100,9 +141,18 @@ export default async function AuctionDetail({
         .is("released_at", null)
         .is("forfeited_at", null)
         .maybeSingle(),
+      supabase
+        .from("payments")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("auction_id", id)
+        .eq("kind", "deposit_lock")
+        .eq("status", "pending_review")
+        .limit(1),
     ]);
     kycVerified = profileRes.data?.kyc_status === "verified";
     hasActiveDeposit = !!depositRes.data;
+    depositUnderReview = (pendRes.data?.length ?? 0) > 0;
   }
   const isOwner = userId !== null && userId === property.owner_id;
 
@@ -134,7 +184,10 @@ export default async function AuctionDetail({
     auction.status === "awarded" ||
     auction.status === "cancelled" ||
     auction.status === "sixth_offer_window";
-  const showFloatingBidCta = !isDirect && !isEnded;
+  // Owners can land on their own auction but should never see the
+  // bid CTA — there's a server-side guard on /bid that already blocks
+  // them, and showing the button just to gate it later is confusing.
+  const showFloatingBidCta = !isDirect && !isEnded && !isOwner;
 
   return (
     <div
@@ -144,7 +197,13 @@ export default async function AuctionDetail({
     >
       {/* ─── PHOTO GALLERY — full-bleed cinematic hero with auto-rotate ─── */}
       <HeroCarousel photos={photos} alt={property.title}>
-        {/* Top row — LIVE pulse + lot chip + verified */}
+        {/* Top row — just LIVE/status on the left, bid count on the
+            right. LOT and the "Vérifié" badge used to sit here too,
+            but four pills in a row was too busy on phones. LOT now
+            lives in the bottom meta row (it's a reference number, not
+            a callout); verification is implicit at the platform
+            level and shown more carefully inside the body via the
+            inspector + KYC sections. */}
         <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex items-start justify-between gap-2 px-3">
           <div className="flex flex-wrap items-center gap-2">
             {isLive && (
@@ -153,20 +212,15 @@ export default async function AuctionDetail({
                 {t("auction.live")}
               </span>
             )}
-            <span className="batta-tabular inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/55 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white backdrop-blur-md">
-              Lot · {lotNo}
-            </span>
-            <span className="batta-gold-fill inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
-              <ShieldCheck className="size-3" strokeWidth={2.5} />
-              {t("auction.verified")}
-            </span>
           </div>
-          <span className="batta-tabular pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/55 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-md">
-            {totalBids} · {t("auction.totalBids")}
-          </span>
+          {totalBids > 0 && (
+            <span className="batta-tabular pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/55 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-md">
+              {totalBids} · {t("auction.totalBids")}
+            </span>
+          )}
         </div>
 
-        {/* Bottom overlay — type pill + bold title + location. */}
+        {/* Bottom overlay — type pill + bold title + location · lot. */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-12 pt-16">
           <span className="batta-gold-fill inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
             <Gavel className="size-3" strokeWidth={2.5} />
@@ -179,35 +233,21 @@ export default async function AuctionDetail({
           >
             {property.title}
           </h1>
-          <div className="mt-1.5 flex items-center gap-1 text-[12px] font-semibold text-white/95 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
-            <MapPin className="size-3.5" strokeWidth={2} />
-            <span className="truncate">{property.governorate}</span>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] font-semibold text-white/95 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="size-3.5" strokeWidth={2} />
+              <span className="truncate">{property.governorate}</span>
+            </span>
+            <span aria-hidden className="opacity-40">·</span>
+            <span className="batta-tabular font-mono text-[10.5px] uppercase tracking-[0.12em] text-white/65">
+              Lot {lotNo}
+            </span>
           </div>
         </div>
       </HeroCarousel>
 
-      {/* Thumbnails — horizontal contact-sheet rail. Next/Image with
-          explicit small width so the optimizer hands back ~80px-wide
-          variants instead of the full-res original (often 1500×1000+). */}
-      {photos.length > 1 && (
-        <div className="snap-rail hide-scrollbar flex gap-2 overflow-x-auto px-4 pt-3">
-          {photos.slice(1, 8).map((p) => {
-            const src = propertyPhotoUrl(p.storage_path);
-            return (
-              <Image
-                key={p.id}
-                src={src}
-                alt=""
-                width={80}
-                height={80}
-                sizes="80px"
-                unoptimized={isStaticSeedPath(src)}
-                className="aspect-square w-20 shrink-0 snap-start rounded-xl object-cover ring-1 ring-border transition hover:ring-gold/50"
-              />
-            );
-          })}
-        </div>
-      )}
+      {/* (Thumbnails now live inside HeroCarousel — clickable, in sync with
+          the slider — so there's no separate static rail here.) */}
 
       {/* ─── DIRECT-SALE PANEL — replaces the auction price card + bid CTA
               when the listing is a fixed-price direct sale ─── */}
@@ -227,11 +267,11 @@ export default async function AuctionDetail({
         <div className="relative p-6">
           <div className="flex items-baseline justify-between gap-3">
             <span className="batta-eyebrow inline-flex items-center gap-2">
-              <span className="size-1.5 rounded-full bg-gold pulse-gold" />
-              {t("auction.currentBid")}
+              {isLive && <span className="size-1.5 rounded-full bg-gold pulse-gold" />}
+              {isEnded ? "Résultat" : isLive ? t("auction.currentBid") : "Mise à prix"}
             </span>
             <div className="batta-tabular text-[10px] text-muted">
-              from {formatTND(auction.opening_price, locale)} {t("common.tnd")}
+              dès {formatTND(auction.opening_price, locale)} {t("common.tnd")}
             </div>
           </div>
           <div
@@ -239,26 +279,67 @@ export default async function AuctionDetail({
               isRTL ? "font-arabic" : ""
             }`}
           >
-            {formatTND(currentPrice, locale)}
+            {formatTND(
+              isEnded && auction.winner_amount
+                ? Number(auction.winner_amount)
+                : currentPrice,
+              locale,
+            )}
             <span className="ms-2 text-[14px] font-bold uppercase tracking-[0.16em] text-gold/80">
               {t("common.tnd")}
             </span>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2">
-            <div className="rounded-xl bg-surface-2 px-3.5 py-3 ring-1 ring-gold/15">
-              <div className="batta-eyebrow text-[9px]">{t("auction.endsIn")}</div>
-              <div className="batta-tabular mt-1 text-[15px] font-bold text-foreground">
-                <Countdown endsAt={auction.ends_at} />
+          {/* Ended → a single clear result line. Live/scheduled → the
+              countdown + deposit the bidder still needs. */}
+          {isEnded ? (
+            <div
+              className={`mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold ${
+                auction.status === "ended_unsold"
+                  ? "bg-surface-2 text-muted ring-1 ring-border"
+                  : auction.status === "cancelled"
+                    ? "batta-tone-bad"
+                    : "batta-tone-ok"
+              }`}
+            >
+              <Gavel className="size-4 shrink-0" strokeWidth={2.2} />
+              {auction.status === "ended_unsold"
+                ? "Invendu — prix de réserve non atteint"
+                : auction.status === "cancelled"
+                  ? "Enchère annulée"
+                  : "Adjugé"}
+            </div>
+          ) : (
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <div className="rounded-xl bg-surface-2 px-3.5 py-3 ring-1 ring-gold/15">
+                {/* Pre-live: count down to the start, so a seller who set
+                    a time range immediately sees when the auction opens.
+                    Once it's live, the same tile counts down to the end. */}
+                {(() => {
+                  const startsAt = auction.starts_at;
+                  const startsAtMs = startsAt ? new Date(startsAt).getTime() : null;
+                  const showStart =
+                    !isLive && startsAtMs !== null && startsAtMs > Date.now();
+                  return (
+                    <>
+                      <div className="batta-eyebrow text-[9px]">
+                        {showStart ? t("auction.startsIn") : t("auction.endsIn")}
+                      </div>
+                      <div className="batta-tabular mt-1 text-[15px] font-bold text-foreground">
+                        <Countdown endsAt={showStart ? (startsAt as string) : auction.ends_at} />
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+              <div className="rounded-xl bg-surface-2 px-3.5 py-3 ring-1 ring-gold/15">
+                <div className="batta-eyebrow text-[9px]">{t("auction.depositRequired")}</div>
+                <div className="batta-tabular mt-1 text-[15px] font-bold text-foreground">
+                  {depositRequired ? `${formatTND(deposit, locale)} ${t("common.tnd")}` : "Gratuit"}
+                </div>
               </div>
             </div>
-            <div className="rounded-xl bg-surface-2 px-3.5 py-3 ring-1 ring-gold/15">
-              <div className="batta-eyebrow text-[9px]">{t("auction.depositRequired")}</div>
-              <div className="batta-tabular mt-1 text-[15px] font-bold text-foreground">
-                {formatTND(deposit, locale)} {t("common.tnd")}
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </section>
       )}
@@ -281,15 +362,14 @@ export default async function AuctionDetail({
         </div>
       )}
 
-      {/* ─── PURCHASE STATUS — auctions only, post-live states ───
-              The active "Placer une enchère" CTA is rendered as a
-              floating bottom bar at the end of this component so it
-              stays visible while the user scrolls through specs,
-              provenance, the map, and documents. */}
-      {!isDirect && !isLive && (
-      <section className="mx-4 mt-3 space-y-2">
-        {auction.winner_user_id && userId === auction.winner_user_id ? (
-          <div className="flex items-center justify-between gap-3 py-2 px-1">
+      {/* ─── "You won" row — only for the winner. The generic ended state
+              is already shown in the price card above, so non-winners get
+              nothing extra here. ─── */}
+      {!isDirect
+        && auction.winner_user_id
+        && userId === auction.winner_user_id && (
+        <section className="mx-4 mt-3">
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-[var(--gold-faint)] px-4 py-3 ring-1 ring-[var(--gold-soft)]">
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-[0.16em] font-bold text-[var(--gold)]">
                 {t("auction.wonByYou")}
@@ -299,18 +379,13 @@ export default async function AuctionDetail({
               </div>
             </div>
             <Link
-              href="/account/wins"
+              href={{ pathname: "/account/activity", query: { tab: "gagnees" } }}
               className="shrink-0 text-[12px] font-semibold text-[var(--gold)] hover:underline"
             >
               {t("auction.myWins")} →
             </Link>
           </div>
-        ) : (
-          <div className="text-center text-[12px] text-[var(--foreground-muted)] py-2">
-            {t("auction.endedShort")}
-          </div>
-        )}
-      </section>
+        </section>
       )}
 
       {/* ─── SIXTH-OFFER WINDOW (Tunisian-law 1/6 rule) ─── */}
@@ -332,25 +407,32 @@ export default async function AuctionDetail({
       <section className="mx-4 mt-6">
         <h2 className="batta-eyebrow flex items-center gap-2">
           <span aria-hidden className="batta-gold-rule-short" />
-          Specifications
+          Caractéristiques
         </h2>
         <div className="mt-3 grid grid-cols-3 gap-2">
           <Spec Icon={Building2} label={t("property.type")} value={t(`property.types.${property.type}`)} />
-          {property.area_sqm != null && (
-            <Spec Icon={Ruler} label={t("property.area")} value={`${property.area_sqm} m²`} />
-          )}
-          {property.rooms != null && (
-            <Spec Icon={BedDouble} label={t("property.rooms")} value={String(property.rooms)} />
-          )}
-          {property.bathrooms != null && (
-            <Spec Icon={Bath} label={t("property.bathrooms")} value={String(property.bathrooms)} />
-          )}
-          {property.floor != null && (
-            <Spec Icon={Building2} label={t("property.floor")} value={String(property.floor)} />
-          )}
-          {property.year_built != null && (
-            <Spec Icon={Calendar} label={t("property.yearBuilt")} value={String(property.year_built)} />
-          )}
+          {attrKinds.map((k) => {
+            const raw = attrs[k.field_key];
+            // Skip empties and unchecked booleans (we only stored `true`).
+            if (raw == null || raw === "" || raw === false) return null;
+            let value: string;
+            if (k.data_type === "boolean") {
+              value = "Oui";
+            } else if (k.data_type === "select") {
+              value =
+                k.options?.find((o) => o.value === raw)?.label ?? String(raw);
+            } else {
+              value = k.unit ? `${raw} ${k.unit}` : String(raw);
+            }
+            return (
+              <Spec
+                key={k.field_key}
+                Icon={specIcon(k.field_key)}
+                label={k.label}
+                value={value}
+              />
+            );
+          })}
         </div>
       </section>
 
@@ -359,7 +441,7 @@ export default async function AuctionDetail({
         <section className="batta-frame mx-4 mt-5 p-5">
           <h2 className="batta-eyebrow flex items-center gap-2">
             <span aria-hidden className="batta-gold-rule-short" />
-            Provenance
+            Description
           </h2>
           <p
             className={`mt-2 whitespace-pre-line text-[13.5px] leading-relaxed text-foreground/85 ${
@@ -392,7 +474,7 @@ export default async function AuctionDetail({
               {t("property.inspectionReport")}
             </div>
             <div className="mt-0.5 text-[11px] text-muted">
-              Status: {myInspection.status}
+              Statut : {myInspection.status}
             </div>
           </div>
           <a
@@ -400,7 +482,7 @@ export default async function AuctionDetail({
             target="_blank" rel="noopener noreferrer"
             className="batta-btn-luxe tap-target shrink-0 px-4 py-2 text-[11.5px]"
           >
-            Open
+            Ouvrir
           </a>
         </section>
       ) : (
@@ -409,19 +491,19 @@ export default async function AuctionDetail({
             <ClipboardCheck className="size-4" strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="batta-eyebrow">Pre-bid</div>
+            <div className="batta-eyebrow">Avant d&apos;enchérir</div>
             <div className="mt-0.5 text-[15px] font-bold text-foreground">
               {t("property.requestInspection")}
             </div>
             <div className="mt-0.5 text-[11px] text-muted">
-              Independent report from an accredited inspector.
+              Rapport indépendant d&apos;un expert agréé.
             </div>
           </div>
           <Link
             href={`/inspectors/book?property=${property.id}` as `/inspectors/book`}
             className="batta-btn-luxe tap-target shrink-0 px-4 py-2 text-[11.5px]"
           >
-            Book
+            Réserver
           </Link>
         </section>
       )}
@@ -430,18 +512,20 @@ export default async function AuctionDetail({
       <section className="batta-frame mx-4 mt-4 p-5">
         <h2 className="batta-eyebrow flex items-center gap-2">
           <span aria-hidden className="batta-gold-rule-short" />
-          Catalogue · documents
+          Documents
         </h2>
         <h3 className="mt-1 flex items-center gap-2 text-[16px] font-bold text-foreground">
           <FileText className="size-4 text-gold" strokeWidth={2} />
           {t("property.documents")}
         </h3>
         <p className="mt-1.5 text-[11px] text-muted">
-          {t("auction.depositRequired_long")}
+          {isEnded
+            ? "Accès réservé aux participants vérifiés."
+            : t("auction.depositRequired_long")}
         </p>
         <ul className="mt-3 divide-y divide-border">
           {documents.length === 0 && (
-            <li className="py-3 text-[12px] text-muted">No documents uploaded yet.</li>
+            <li className="py-3 text-[12px] text-muted">Aucun document pour le moment.</li>
           )}
           {documents.map((d) => {
             const canDownload = isOwner || (kycVerified && hasActiveDeposit);
@@ -449,14 +533,14 @@ export default async function AuctionDetail({
               <li key={d.id} className="flex items-center justify-between gap-3 py-2.5">
                 <span className="text-[13px] text-foreground/85">{d.kind}</span>
                 {canDownload ? (
-                  <a
-                    href={`/api/property/document/${d.id}`}
-                    target="_blank" rel="noopener noreferrer"
-                    className="batta-gold-fill inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)]"
+                  <PropertyDocumentOpenButton
+                    docId={d.id}
+                    title={d.kind}
+                    className="batta-gold-fill inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-95"
                   >
                     <Download className="size-3" strokeWidth={2.5} />
-                    PDF
-                  </a>
+                    Ouvrir
+                  </PropertyDocumentOpenButton>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] text-muted">
                     <Lock className="size-3" strokeWidth={2} /> KYC + deposit
@@ -494,13 +578,25 @@ export default async function AuctionDetail({
         >
           <div className="mx-auto max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)]">
             <div className="rounded-2xl border border-[var(--border)] bg-white/95 p-2.5 shadow-[0_14px_36px_-12px_rgba(15,23,42,0.35)] backdrop-blur-xl">
-              <Link
-                href={`/auctions/${auction.id}/bid` as never}
-                className="batta-gradient-gold inline-flex h-12 w-full items-center justify-center gap-2 rounded-full text-[14px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] ring-1 ring-black/5 transition-all active:scale-[0.99]"
-              >
-                <Gavel className="h-4 w-4" strokeWidth={2.5} />
-                {t("auction.placeBid")}
-              </Link>
+              {depositUnderReview && !hasActiveDeposit ? (
+                // Receipt already sent — don't prompt to pay again. Calm
+                // "we're checking it" pill that links to the payment status.
+                <Link
+                  href="/account/payments"
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-amber-300 bg-amber-50 text-[13.5px] font-bold text-amber-700 transition-all active:scale-[0.99]"
+                >
+                  <Clock className="h-4 w-4" strokeWidth={2.5} />
+                  Caution en cours de validation
+                </Link>
+              ) : (
+                <Link
+                  href={`/auctions/${auction.id}/bid` as never}
+                  className="batta-gradient-gold inline-flex h-12 w-full items-center justify-center gap-2 rounded-full text-[14px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] ring-1 ring-black/5 transition-all active:scale-[0.99]"
+                >
+                  <Gavel className="h-4 w-4" strokeWidth={2.5} />
+                  {isLive ? t("auction.placeBid") : "Réserver ma place"}
+                </Link>
+              )}
               {hasBuyNow && !isOwner && (
                 <Link
                   // Buy-now jumps straight to the unified checkout (it
@@ -523,6 +619,29 @@ export default async function AuctionDetail({
       )}
     </div>
   );
+}
+
+// Maps an attribute field_key to a fitting icon for its spec tile. Numeric
+// measures get a ruler, rooms a bed, etc.; everything else falls back to
+// the building glyph.
+function specIcon(
+  key: string,
+): React.ComponentType<{ className?: string; strokeWidth?: number }> {
+  switch (key) {
+    case "area_sqm":
+    case "land_area_sqm":
+    case "frontage_m":
+    case "ceiling_height_m":
+      return Ruler;
+    case "rooms":
+      return BedDouble;
+    case "bathrooms":
+      return Bath;
+    case "year_built":
+      return Calendar;
+    default:
+      return Building2;
+  }
 }
 
 function Spec({

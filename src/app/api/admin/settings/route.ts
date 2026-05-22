@@ -3,13 +3,6 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 
-const NUMERIC_KEYS = [
-  "listing_fee_tnd",
-  "listing_fee_offer_tnd",
-  "promo_home_featured_tnd",
-  "promo_top_listed_tnd",
-  "promo_banner_tnd",
-] as const;
 const TEXT_KEYS = [
   "payee_name",
   "payee_bank",
@@ -18,12 +11,19 @@ const TEXT_KEYS = [
   "payee_d17",
 ] as const;
 
+type Mode = "free" | "fixed" | "percent";
+
+function cleanValue(mode: Mode, raw: unknown): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return mode === "percent" ? Math.min(100, n) : Math.min(1_000_000, n);
+}
+
 /**
- * PUT /api/admin/settings — bulk update tunable prices + payee fields.
- *
- * Admin-only. Coerces inputs: numeric keys clamp to [0, 100000]; text
- * keys trim + cap at 200 chars. Anything not in the allowlist is
- * ignored to keep the surface tight.
+ * PUT /api/admin/settings — admin-only. Persists the structured
+ * monetization config (listing fees, promos, deposit) + payee fields into
+ * app_settings as jsonb. Validates modes/values; ignores anything off the
+ * allowlist to keep the surface tight.
  */
 export async function PUT(req: NextRequest) {
   if (!isSameOrigin(req)) {
@@ -42,42 +42,68 @@ export async function PUT(req: NextRequest) {
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const rows: { key: string; value: unknown; updated_by: string }[] = [];
 
-  for (const key of NUMERIC_KEYS) {
-    if (!(key in body)) continue;
-    const n = Number(body[key]);
-    if (!Number.isFinite(n) || n < 0 || n > 100000) {
-      return NextResponse.json(
-        { error: "invalid_number", key },
-        { status: 400 },
-      );
-    }
-    rows.push({ key, value: n, updated_by: user.id });
+  // ── Listing fees ─────────────────────────────────────────────────────
+  // Auctions: free | fixed only (no price at posting time for a percent).
+  function listingFee(key: string, allowPercent: boolean) {
+    const v = body[key] as { mode?: unknown; value?: unknown } | undefined;
+    if (!v || typeof v !== "object") return;
+    let m = (["free", "fixed", "percent"] as const).includes(v.mode as Mode)
+      ? (v.mode as Mode) : "fixed";
+    if (m === "percent" && !allowPercent) m = "fixed";
+    rows.push({ key, value: { mode: m, value: cleanValue(m, v.value) }, updated_by: user!.id });
   }
+  listingFee("fee_listing_auction", false);
+  listingFee("fee_listing_direct", true);
+
+  // ── Promo add-ons ────────────────────────────────────────────────────
+  for (const key of ["promo_home", "promo_top", "promo_banner"]) {
+    const v = body[key] as { enabled?: unknown; value?: unknown } | undefined;
+    if (!v || typeof v !== "object") continue;
+    rows.push({
+      key,
+      value: { enabled: v.enabled === true, value: cleanValue("fixed", v.value) },
+      updated_by: user.id,
+    });
+  }
+
+  // ── Deposit ──────────────────────────────────────────────────────────
+  {
+    const v = body.deposit as { mode?: unknown; value?: unknown; free_until?: unknown } | undefined;
+    if (v && typeof v === "object") {
+      const m = (["free", "fixed", "percent"] as const).includes(v.mode as Mode)
+        ? (v.mode as Mode) : "percent";
+      let freeUntil: string | null = null;
+      if (typeof v.free_until === "string" && v.free_until.trim()) {
+        const d = new Date(v.free_until);
+        if (!Number.isNaN(d.getTime())) freeUntil = d.toISOString();
+        else return NextResponse.json({ error: "invalid_date", key: "deposit.free_until" }, { status: 400 });
+      }
+      rows.push({
+        key: "deposit",
+        value: { mode: m, value: cleanValue(m, v.value), free_until: freeUntil },
+        updated_by: user.id,
+      });
+    }
+  }
+
+  // ── Payee text ───────────────────────────────────────────────────────
   for (const key of TEXT_KEYS) {
     if (!(key in body)) continue;
     const raw = body[key];
     if (typeof raw !== "string") {
       return NextResponse.json({ error: "invalid_text", key }, { status: 400 });
     }
-    const v = raw.trim().slice(0, 200);
-    rows.push({ key, value: v, updated_by: user.id });
+    rows.push({ key, value: raw.trim().slice(0, 200), updated_by: user.id });
   }
 
-  if (rows.length === 0) {
-    return NextResponse.json({ ok: true, updated: 0 });
-  }
+  if (rows.length === 0) return NextResponse.json({ ok: true, updated: 0 });
 
   const admin = getServiceSupabase();
   if (!admin) {
     return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
   }
-
-  const { error } = await admin
-    .from("app_settings")
-    .upsert(rows, { onConflict: "key" });
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  const { error } = await admin.from("app_settings").upsert(rows, { onConflict: "key" });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ ok: true, updated: rows.length });
 }

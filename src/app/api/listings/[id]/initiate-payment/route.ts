@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { parseMonetizationSettings, resolveListingFee } from "@/lib/pricing";
 
 /**
  * POST /api/listings/[id]/initiate-payment
@@ -35,7 +36,7 @@ export async function POST(
   // Ownership check — the user can only initiate payment for their own listings.
   const { data: prop } = await supabase
     .from("properties")
-    .select("id, owner_id, status, listing_type")
+    .select("id, owner_id, status, listing_type, sale_price")
     .eq("id", propertyId)
     .single();
   if (!prop || prop.owner_id !== user.id) {
@@ -59,49 +60,55 @@ export async function POST(
     return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
   }
 
-  // Pull current prices.
+  // Resolve the authoritative fee from the admin's monetization settings.
   const { data: priceRows } = await admin
     .from("app_settings")
     .select("key, value")
     .in("key", [
-      "listing_fee_tnd",
-      "listing_fee_offer_tnd",
-      "promo_home_featured_tnd",
-      "promo_top_listed_tnd",
-      "promo_banner_tnd",
+      "fee_listing_auction", "fee_listing_direct",
+      "promo_home", "promo_top", "promo_banner",
     ]);
-  const priceMap = new Map<string, number>();
-  for (const r of priceRows ?? []) {
-    const v = r.value;
-    const n = typeof v === "number" ? v : Number(v);
-    priceMap.set(r.key as string, Number.isFinite(n) ? n : 0);
-  }
-  // Offers and auctions are priced separately by the admin. Default
-  // offer fee falls back to the auction fee if the offer key is unset
-  // (older deployments before migration 0028).
-  const base = isOffer
-    ? (priceMap.get("listing_fee_offer_tnd") ?? priceMap.get("listing_fee_tnd") ?? 0)
-    : (priceMap.get("listing_fee_tnd") ?? 0);
-  const homeFee = promos.home_featured ? (priceMap.get("promo_home_featured_tnd") ?? 0) : 0;
-  const topFee  = promos.top_listed    ? (priceMap.get("promo_top_listed_tnd") ?? 0)    : 0;
-  const bnrFee  = promos.banner        ? (priceMap.get("promo_banner_tnd") ?? 0)        : 0;
+  const map = new Map<string, unknown>();
+  for (const r of priceRows ?? []) map.set(r.key as string, r.value);
+  const mon = parseMonetizationSettings(map);
+
+  // Direct-offer fees can be a % of the sale price; auctions can't (no
+  // price yet) so they resolve to free/fixed only.
+  const salePrice = isOffer ? Number(prop.sale_price ?? 0) || null : null;
+  const base = resolveListingFee(isOffer ? mon.feeListingDirect : mon.feeListingAuction, salePrice);
+  // Only count promos the admin left enabled.
+  const homeFee = promos.home_featured && mon.promoHome.enabled ? mon.promoHome.value : 0;
+  const topFee  = promos.top_listed    && mon.promoTop.enabled  ? mon.promoTop.value  : 0;
+  const bnrFee  = promos.banner        && mon.promoBanner.enabled ? mon.promoBanner.value : 0;
   const amount = Math.round((base + homeFee + topFee + bnrFee) * 100) / 100;
+
+  // Free posting (admin set it so, or all options off) → no payment. The
+  // listing is already pending_review; admins were notified by the
+  // properties trigger. Send the seller a submission ack (parity with the
+  // paid path) and tell the client to show success, not checkout.
   if (amount <= 0) {
-    return NextResponse.json(
-      { error: "zero_amount", detail: "Le tarif est à 0 — paiement non requis." },
-      { status: 400 },
-    );
+    await admin.rpc("enqueue_notification", {
+      p_user_id: user.id,
+      p_kind: "listing_submitted",
+      p_title: "Annonce soumise",
+      p_body: "Votre annonce est en cours de validation par l'équipe. Vous serez notifié(e) dès qu'elle est publiée.",
+      p_link: "/sell",
+    });
+    return NextResponse.json({ free: true });
   }
 
   // Reuse an existing actionable payment row for this property + user.
-  const { data: existing } = await admin
+  // limit(1) (not maybeSingle, which throws on >1 and would spawn dupes).
+  const { data: existingRows } = await admin
     .from("payments")
     .select("id, status")
     .eq("user_id", user.id)
     .eq("property_id", propertyId)
     .eq("kind", "listing_fee")
     .in("status", ["pending", "pending_review"])
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const existing = existingRows?.[0];
 
   if (existing) {
     // Refresh amount + promo selection in case the user changed their picks.
@@ -145,6 +152,21 @@ export async function POST(
     .select("id")
     .single();
   if (insErr || !created) {
+    // Lost a concurrent create race: the partial unique index
+    // (payments_one_active_property) rejected our duplicate. Re-fetch the
+    // row the winning request inserted and return it instead of a raw 500.
+    if (insErr && /duplicate|unique/i.test(insErr.message)) {
+      const { data: raceRows } = await admin
+        .from("payments")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("property_id", propertyId)
+        .eq("kind", "listing_fee")
+        .in("status", ["pending", "pending_review"])
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (raceRows?.[0]) return NextResponse.json({ paymentId: raceRows[0].id, amount });
+    }
     return NextResponse.json({ error: insErr?.message ?? "insert_failed" }, { status: 500 });
   }
 

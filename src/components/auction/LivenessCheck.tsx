@@ -14,7 +14,12 @@ import {
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
 import { uploadToBucket } from "@/lib/upload";
+import { compressImage } from "@/lib/imageCompress";
 import { getBrowserSupabase } from "@/lib/supabase/client";
+
+// Selfie / triptych compression — WebP @ 1280 long edge is plenty for
+// admin face-match review and shaves ~60% off the raw canvas JPEG.
+const SELFIE_COMPRESS = { maxEdge: 1280, quality: 0.8, format: "webp" } as const;
 
 const TAG = "[Liveness]";
 function log(...args: unknown[]) {
@@ -530,12 +535,21 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
 
     try {
       const tImg = performance.now();
-      const imgFile = new File(
+      const rawImgFile = new File(
         [frontSnapshotRef.current ?? new Blob([])],
         `liveness-front-${Date.now()}.jpg`,
         { type: "image/jpeg" },
       );
-      log("uploading front image", { sizeBytes: imgFile.size });
+      // Re-encode through the shared pipeline: canvas-JPEG → WebP, with
+      // EXIF orientation honoured (not that a same-tab canvas blob has
+      // any EXIF, but the size win still applies). Typically drops a
+      // ~250 KB JPEG to ~90–130 KB WebP without visible difference on
+      // an admin's review screen.
+      const imgFile = await compressImage(rawImgFile, SELFIE_COMPRESS);
+      log("uploading front image", {
+        rawKB: Math.round(rawImgFile.size / 1024),
+        finalKB: Math.round(imgFile.size / 1024),
+      });
       const imgRes = await uploadToBucket(imgFile, liveUser.id, "kyc");
       log("front image upload done", {
         ms: Math.round(performance.now() - tImg),
@@ -550,12 +564,16 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
       );
       if (triptychBlob) {
         const tTri = performance.now();
-        const triFile = new File(
+        const rawTriFile = new File(
           [triptychBlob],
           `liveness-triptych-${Date.now()}.jpg`,
           { type: "image/jpeg" },
         );
-        log("uploading triptych", { sizeBytes: triFile.size });
+        const triFile = await compressImage(rawTriFile, SELFIE_COMPRESS);
+        log("uploading triptych", {
+          rawKB: Math.round(rawTriFile.size / 1024),
+          finalKB: Math.round(triFile.size / 1024),
+        });
         const triRes = await uploadToBucket(triFile, liveUser.id, "kyc");
         triptychUrl = triRes.url;
         log("triptych upload done", {
@@ -709,7 +727,7 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
                   done
                     ? "bg-emerald-500 text-white"
                     : active
-                      ? "bg-[var(--gold)] text-black animate-pulse"
+                      ? "bg-[var(--gold)] text-white animate-pulse"
                       : "bg-[var(--surface-2)] text-[var(--foreground-muted)]"
                 }`}
               >

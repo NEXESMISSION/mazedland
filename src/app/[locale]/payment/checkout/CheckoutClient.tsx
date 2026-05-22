@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import {
   Building2,
   Smartphone,
@@ -9,13 +8,12 @@ import {
   Check,
   Upload,
   Loader2,
-  ShieldCheck,
   ArrowRight,
+  AlertCircle,
   FileText,
   X,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
-import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatTND, cn } from "@/lib/utils";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/imageCompress";
@@ -43,7 +41,7 @@ const KIND_TITLES: Record<CheckoutKind, { label: string; body: string }> = {
   deposit: {
     label: "Caution de participation",
     body:
-      "10% du prix d'ouverture — remboursée sous 24 h si vous ne remportez pas l'enchère.",
+      "Caution remboursable — déduite du prix final si vous gagnez, restituée après la clôture sinon.",
   },
   buy_now: {
     label: "Achat",
@@ -183,8 +181,14 @@ export function CheckoutClient({
       // (admin eyeballs them) so the document-tier WebP preset gives us
       // tight files (~250-500 KB) while keeping bank-statement text
       // crisp. PDFs and non-image files pass through unchanged.
+      // Always run it through compressImage: it converts HEIC→webp (even
+      // when the picker reports an EMPTY mime type, which is why iPhone
+      // receipts were uploading as raw, unviewable .heic), compresses real
+      // images, and returns PDFs/other files untouched.
       let toUpload = file;
-      if (file.type.startsWith("image/")) {
+      const ext0 = file.name.split(".").pop()?.toLowerCase() ?? "";
+      const isPdf = file.type === "application/pdf" || ext0 === "pdf";
+      if (!isPdf) {
         try {
           toUpload = await compressImage(file, {
             maxEdge: 2000,
@@ -192,9 +196,6 @@ export function CheckoutClient({
             format: "webp",
           });
         } catch {
-          // compressImage already falls back to the original on its
-          // own errors, but be defensive here too in case the import
-          // itself throws on some exotic browser.
           toUpload = file;
         }
       }
@@ -264,10 +265,14 @@ export function CheckoutClient({
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
               {auction && (
                 <a
-                  href={`/${locale}/auctions/${auction.id}`}
+                  href={
+                    kind === "listing_fee"
+                      ? `/${locale}/sell`
+                      : `/${locale}/auctions/${auction.id}`
+                  }
                   className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-white border border-red-200 text-red-900 px-5 text-[13px] font-bold hover:border-red-400"
                 >
-                  Retour à l&apos;annonce
+                  {kind === "listing_fee" ? "Voir mes annonces" : "Retour à l'annonce"}
                 </a>
               )}
               <a
@@ -285,35 +290,77 @@ export function CheckoutClient({
   }
 
   if (submitted) {
+    // Final "what happens after validation" step depends on what was paid.
+    const finalStep =
+      kind === "listing_fee"
+        ? "Votre annonce passe en ligne automatiquement."
+        : kind === "deposit"
+          ? "Votre caution devient active — vous pourrez enchérir."
+          : "La vente est confirmée et finalisée.";
+    const steps = [
+      "Notre équipe vérifie votre reçu (moins de 24 h).",
+      "Vous recevez une notification : validé ou correction demandée.",
+      finalStep,
+    ];
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-2xl mx-auto px-4 lg:px-8 py-10 lg:py-16 text-center">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[var(--gold-faint)]">
-            <Check className="h-8 w-8 text-[var(--gold)]" strokeWidth={2.5} />
-          </div>
-          <h1 className="mt-4 text-[22px] font-extrabold leading-tight">
-            Reçu transmis
-          </h1>
-          <p className="mt-2 text-[13px] text-[var(--foreground-muted)] leading-relaxed max-w-md mx-auto">
-            Notre équipe vérifie votre paiement sous 24 h. Vous recevrez
-            une notification dès que le reçu est validé ou si une
-            correction est nécessaire.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row gap-2 justify-center">
-            {auction && (
+        <main className="mx-auto max-w-md px-4 py-12 lg:py-16">
+          <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
+            <div className="flex flex-col items-center bg-gradient-to-b from-emerald-500/10 to-transparent px-6 pt-8 pb-6 text-center">
+              <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/30">
+                <Check className="h-8 w-8" strokeWidth={2.8} />
+              </div>
+              <h1 className="mt-4 text-[22px] font-extrabold leading-tight">
+                Reçu transmis
+              </h1>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--foreground-muted)]">
+                Justificatif de{" "}
+                <span className="font-bold text-foreground">
+                  {formatTND(amount, locale)}
+                </span>
+                {auction ? (
+                  <>
+                    {" "}pour{" "}
+                    <span className="font-bold text-foreground">{auction.title}</span>
+                  </>
+                ) : null}{" "}
+                bien reçu.
+              </p>
+            </div>
+
+            <ol className="space-y-3 border-t border-[var(--border)] px-6 py-5">
+              {steps.map((s, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--gold-faint)] text-[11px] font-extrabold text-[var(--gold)] ring-1 ring-[var(--gold-soft)]">
+                    {i + 1}
+                  </span>
+                  <span className="text-[12.5px] leading-relaxed text-[var(--foreground-muted)]">
+                    {s}
+                  </span>
+                </li>
+              ))}
+            </ol>
+
+            <div className="flex flex-col gap-2 border-t border-[var(--border)] p-4">
               <a
-                href={`/${locale}/auctions/${auction.id}`}
-                className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] px-5 text-[13px] font-semibold hover:border-[var(--gold-soft)]"
+                href={`/${locale}`}
+                className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] px-5 text-[13px] font-bold text-white hover:bg-[var(--gold-bright)]"
               >
-                Retour à l&apos;annonce
+                Accueil <ArrowRight className="ml-1.5 h-4 w-4" />
               </a>
-            )}
-            <a
-              href={`/${locale}`}
-              className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] text-white px-5 text-[13px] font-bold hover:bg-[var(--gold-bright)]"
-            >
-              Accueil <ArrowRight className="ml-1.5 h-4 w-4" />
-            </a>
+              {auction && (
+                <a
+                  href={
+                    kind === "listing_fee"
+                      ? `/${locale}/sell`
+                      : `/${locale}/auctions/${auction.id}`
+                  }
+                  className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface-2)] px-5 text-[13px] font-semibold hover:border-[var(--gold-soft)]"
+                >
+                  {kind === "listing_fee" ? "Voir mes annonces" : "Retour à l'annonce"}
+                </a>
+              )}
+            </div>
           </div>
         </main>
       </div>
@@ -322,128 +369,93 @@ export function CheckoutClient({
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-2xl mx-auto px-4 lg:px-8 py-6 lg:py-10 space-y-5">
-        {/* Summary card */}
-        <section className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] overflow-hidden">
+      <main className="mx-auto max-w-md space-y-4 px-4 py-6">
+        {/* ── HERO: what you're paying + how much ── */}
+        <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 text-center">
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--gold)]">
+            {meta.label}
+          </div>
           {auction && (
-            <div className="flex gap-3 p-3">
-              <div className="relative h-20 w-20 shrink-0 rounded-xl overflow-hidden bg-[var(--surface-2)]">
-                {auction.heroPhotoPath ? (
-                  <Image
-                    src={propertyPhotoUrl(auction.heroPhotoPath)}
-                    alt={auction.title}
-                    fill
-                    sizes="80px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-2xl text-foreground/15">
-                    🏛️
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--gold)]">
-                  {meta.label}
-                </div>
-                <h1 className="mt-0.5 text-[15px] font-bold leading-tight line-clamp-2">
-                  {auction.title}
-                </h1>
-                <div className="mt-1 text-[11px] text-[var(--foreground-muted)]">
-                  {auction.governorate}
-                </div>
-              </div>
+            <div className="mt-0.5 text-[14px] font-bold leading-tight line-clamp-1">
+              {auction.title}
             </div>
           )}
-          <div className="border-t border-[var(--border)] bg-[var(--surface-2)]/40 px-4 py-3 flex items-baseline justify-between gap-3">
-            <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
-              Montant à payer
-            </span>
-            <span className="batta-tabular text-2xl font-extrabold text-[var(--gold)]">
-              {formatTND(amount, locale)}
+          <div className="batta-tabular gradient-gold-text mt-3 text-[40px] font-extrabold leading-none">
+            {formatTND(amount, locale)}
+            <span className="ms-1 text-[12px] font-bold uppercase text-[var(--foreground-muted)]">
+              TND
             </span>
           </div>
-          <p className="px-4 pb-3 pt-2 text-[11px] text-[var(--foreground-muted)] leading-relaxed">
+          <p className="mx-auto mt-2 max-w-xs text-[11.5px] leading-snug text-[var(--foreground-muted)]">
             {meta.body}
           </p>
         </section>
 
         {reupload && (
-          <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2.5 text-[12px] text-red-900">
-            Votre reçu précédent a été refusé. Vérifiez les détails ci-dessous
-            et téléversez un nouveau justificatif.
+          <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[12px] text-red-900">
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            <span>Reçu précédent refusé — vérifiez les coordonnées et renvoyez un nouveau justificatif.</span>
           </div>
         )}
 
-        {/* Provider tabs */}
-        <section>
-          <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)] mb-2 inline-flex items-center gap-1.5">
-            <ShieldCheck className="h-3 w-3 text-[var(--gold)]" />
-            Mode de paiement
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {instructions.map((p) => {
-              const Icon = PROVIDER_ICONS[p.value];
-              const isActive = provider === p.value;
-              return (
-                <button
-                  key={p.value}
-                  type="button"
-                  onClick={() => setProvider(p.value)}
+        {/* ── STEP 1: choose method (big toggles) ── */}
+        <Step n={1} title="Choisissez le mode de paiement" />
+        <div className="grid grid-cols-2 gap-2.5">
+          {instructions.map((p) => {
+            const Icon = PROVIDER_ICONS[p.value];
+            const isActive = provider === p.value;
+            return (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => setProvider(p.value)}
+                aria-pressed={isActive}
+                className={cn(
+                  "relative flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition",
+                  isActive
+                    ? "border-[var(--gold)] bg-[var(--gold-faint)]"
+                    : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--gold-soft)]",
+                )}
+              >
+                {isActive && (
+                  <span className="absolute right-2 top-2 inline-flex size-5 items-center justify-center rounded-full bg-[var(--gold)] text-white">
+                    <Check className="size-3" strokeWidth={3} />
+                  </span>
+                )}
+                <span
                   className={cn(
-                    "rounded-xl border p-3 transition-colors flex items-center gap-2.5 text-start",
-                    isActive
-                      ? "border-[var(--gold)] bg-[var(--gold-faint)]"
-                      : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--gold-soft)]",
+                    "inline-flex size-11 items-center justify-center rounded-xl",
+                    isActive ? "bg-[var(--gold)] text-white" : "bg-[var(--surface-2)] text-[var(--foreground-muted)]",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-                      isActive
-                        ? "bg-[var(--gold)] text-white"
-                        : "bg-[var(--surface-2)] text-[var(--foreground-muted)]",
-                    )}
-                  >
-                    <Icon className="h-4 w-4" strokeWidth={2} />
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-bold">{p.shortLabel}</div>
-                    <div className="text-[10px] text-[var(--foreground-muted)] line-clamp-1">
-                      {p.value === "bank_transfer" ? "RIB / IBAN" : "Mobile money"}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+                  <Icon className="size-5" strokeWidth={2} />
+                </span>
+                <span className="text-[13px] font-bold text-foreground">
+                  {p.value === "bank_transfer" ? "Virement (RIB)" : "D17 mobile"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-        {/* Instructions */}
+        {/* ── STEP 2: pay — copyable bank details ── */}
         {active && (
-          <section className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-4 space-y-3">
-            <div>
-              <h2 className="text-[14px] font-bold">{active.label}</h2>
-              <p className="mt-1 text-[12px] text-[var(--foreground-muted)] leading-relaxed">
-                {active.description}
-              </p>
-            </div>
-            <ol className="space-y-2.5">
-              {active.fields.map((field) => (
-                <li
+          <>
+            <Step n={2} title="Payez avec ces coordonnées" />
+            <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
+              {active.fields.map((field, i) => (
+                <div
                   key={field.label}
-                  className="flex items-center justify-between gap-3 rounded-lg bg-[var(--surface-2)]/60 px-3 py-2.5"
+                  className={cn(
+                    "flex items-center justify-between gap-3 px-4 py-3",
+                    i > 0 && "border-t border-[var(--border)]",
+                  )}
                 >
                   <div className="min-w-0">
                     <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-[var(--foreground-muted)]">
                       {field.label}
                     </div>
-                    <div
-                      className={cn(
-                        "mt-0.5 text-[13px] font-bold text-foreground break-words",
-                        field.mono && "batta-tabular",
-                      )}
-                    >
+                    <div className={cn("mt-0.5 text-[14px] font-bold text-foreground break-words", field.mono && "batta-tabular")}>
                       {field.value}
                     </div>
                   </div>
@@ -451,128 +463,111 @@ export function CheckoutClient({
                     <button
                       type="button"
                       onClick={() => copyValue(field.label, field.value)}
-                      className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
-                      aria-label={`Copier ${field.label}`}
+                      className={cn(
+                        "shrink-0 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition",
+                        copiedField === field.label
+                          ? "bg-[var(--gold)] text-white"
+                          : "bg-[var(--surface-2)] text-foreground hover:bg-[var(--gold-faint)] hover:text-[var(--gold)]",
+                      )}
                     >
                       {copiedField === field.label ? (
-                        <Check className="h-3.5 w-3.5 text-[var(--gold)]" strokeWidth={2.5} />
+                        <><Check className="size-3.5" strokeWidth={2.5} /> Copié</>
                       ) : (
-                        <Copy className="h-3.5 w-3.5" strokeWidth={2} />
+                        <><Copy className="size-3.5" strokeWidth={2} /> Copier</>
                       )}
                     </button>
                   )}
-                </li>
-              ))}
-            </ol>
-            <div className="rounded-lg bg-[var(--gold-faint)] px-3 py-2 text-[11.5px] text-[var(--gold-deep)] leading-relaxed">
-              <strong className="font-bold">Étape suivante : </strong>
-              {active.nextStep}
-            </div>
-          </section>
-        )}
-
-        {/* Receipt upload */}
-        <section className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-4">
-          <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)] mb-2 inline-flex items-center gap-1.5">
-            <Upload className="h-3 w-3 text-[var(--gold)]" />
-            Téléverser le reçu
-          </div>
-          {file ? (
-            <div className="flex items-center gap-3 rounded-lg border border-[var(--gold-soft)] bg-[var(--gold-faint)]/40 p-3">
-              <FileText className="h-5 w-5 text-[var(--gold)]" strokeWidth={2} />
-              <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-semibold truncate">{file.name}</div>
-                <div className="text-[11px] text-[var(--foreground-muted)]">
-                  {(file.size / 1024).toFixed(0)} Ko · {file.type.split("/")[1] ?? "fichier"}
                 </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setFile(null);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
-                className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:border-red-300 hover:text-red-600"
-                aria-label="Retirer le fichier"
-              >
-                <X className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
+              ))}
             </div>
-          ) : (
-            <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[var(--border)] bg-[var(--surface-2)]/40 p-6 text-center cursor-pointer hover:border-[var(--gold-soft)] hover:bg-[var(--gold-faint)]/30 transition-colors">
-              <Upload className="h-6 w-6 text-[var(--foreground-muted)]" strokeWidth={1.8} />
-              <span className="text-[13px] font-semibold">
-                Sélectionner une photo ou un PDF
-              </span>
-              <span className="text-[11px] text-[var(--foreground-muted)]">
-                JPG · PNG · PDF · max {MAX_FILE_MB} Mo
-              </span>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={ACCEPTED_TYPES.join(",")}
-                onChange={onPickFile}
-                className="sr-only"
-              />
-            </label>
-          )}
-        </section>
-
-        {/* Submit + helper hint */}
-        {!file && !submitting && (
-          <p className="text-center text-[12px] font-semibold text-[var(--gold-deep)] bg-[var(--gold-faint)] rounded-[var(--radius)] py-2 px-3">
-            Sélectionnez d&apos;abord votre reçu ci-dessus pour activer
-            le bouton.
-          </p>
+          </>
         )}
+
+        {/* ── STEP 3: upload receipt ── */}
+        <Step n={3} title="Téléversez le reçu du virement" />
+        {file ? (
+          <div className="flex items-center gap-3 rounded-2xl border border-[var(--gold-soft)] bg-[var(--gold-faint)]/40 p-3.5">
+            <FileText className="size-5 shrink-0 text-[var(--gold)]" strokeWidth={2} />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] font-semibold">{file.name}</div>
+              <div className="text-[11px] text-[var(--foreground-muted)]">
+                {(file.size / 1024).toFixed(0)} Ko
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setFile(null);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+              className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:border-red-300 hover:text-red-600"
+              aria-label="Retirer le fichier"
+            >
+              <X className="size-4" strokeWidth={2} />
+            </button>
+          </div>
+        ) : (
+          <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-[var(--gold-soft)] bg-[var(--gold-faint)]/30 p-7 text-center transition hover:border-[var(--gold)] hover:bg-[var(--gold-faint)]/60">
+            <Upload className="size-7 text-[var(--gold)]" strokeWidth={1.8} />
+            <span className="text-[14px] font-bold text-foreground">Choisir une photo ou un PDF</span>
+            <span className="text-[11px] text-[var(--foreground-muted)]">
+              JPG · PNG · HEIC · PDF · max {MAX_FILE_MB} Mo
+            </span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ACCEPTED_TYPES.join(",")}
+              onChange={onPickFile}
+              className="sr-only"
+            />
+          </label>
+        )}
+
+        {/* ── Big submit ── */}
         <button
           type="button"
           onClick={submit}
           disabled={!file || submitting}
           className={cn(
-            "block w-full rounded-[var(--radius)] h-12 font-bold text-[14px] inline-flex items-center justify-center gap-2 transition-all",
+            "inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold transition-all",
             !file || submitting
-              ? "bg-[var(--surface-2)] text-[var(--foreground-muted)] cursor-not-allowed"
-              : "bg-[var(--gold)] text-white hover:bg-[var(--gold-bright)] shadow-[var(--shadow-gold)]",
+              ? "cursor-not-allowed bg-[var(--surface-2)] text-[var(--foreground-muted)]"
+              : "bg-[var(--gold)] text-white shadow-[var(--shadow-gold)] hover:bg-[var(--gold-bright)]",
           )}
         >
           {submitting ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Envoi en cours…
-            </>
+            <><Loader2 className="size-5 animate-spin" /> Envoi…</>
           ) : (
-            <>
-              <Upload className="h-4 w-4" strokeWidth={2.5} />
-              Envoyer le reçu pour validation
-            </>
+            <><Upload className="size-5" strokeWidth={2.5} /> Envoyer le reçu</>
           )}
         </button>
-
-        <p className="text-center text-[11px] text-[var(--foreground-muted)] leading-relaxed">
-          Délai de validation typique : moins de 24 h. Vous serez notifié(e)
-          dès que l&apos;équipe Batta a vérifié votre paiement.
+        <p className="text-center text-[11px] text-[var(--foreground-muted)]">
+          {file ? "Validation sous 24 h — vous serez notifié(e)." : "Téléversez d'abord le reçu pour activer le bouton."}
         </p>
 
-        {/* Cancel escape-hatch — only offered before a receipt is in
-            review, and parked under a divider with explicit labelling
-            so nobody mistakes it for an alternative pay button. */}
+        {/* Cancel — small, out of the way */}
         {!reupload && (
-          <div className="mt-2 pt-3 border-t border-[var(--border)] text-center space-y-1">
-            <p className="text-[11px] text-[var(--foreground-subtle)]">
-              Vous ne souhaitez plus payer maintenant ?
-            </p>
-            <button
-              type="button"
-              onClick={cancelPayment}
-              disabled={cancelling}
-              className="text-[12px] font-semibold text-[var(--foreground-muted)] underline underline-offset-2 hover:text-red-500 py-1 transition-colors disabled:opacity-50"
-            >
-              {cancelling ? "Annulation…" : "Annuler ce paiement"}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={cancelPayment}
+            disabled={cancelling}
+            className="mx-auto block text-[12px] font-semibold text-[var(--foreground-subtle)] underline underline-offset-2 hover:text-red-500 disabled:opacity-50"
+          >
+            {cancelling ? "Annulation…" : "Annuler ce paiement"}
+          </button>
         )}
       </main>
+    </div>
+  );
+}
+
+function Step({ n, title }: { n: number; title: string }) {
+  return (
+    <div className="flex items-center gap-2.5 pt-1">
+      <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--gold)] text-[13px] font-extrabold text-white">
+        {n}
+      </span>
+      <span className="text-[14px] font-bold text-foreground">{title}</span>
     </div>
   );
 }

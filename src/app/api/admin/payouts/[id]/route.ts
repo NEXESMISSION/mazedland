@@ -58,6 +58,25 @@ export async function PATCH(
     .eq("id", id)
     .single();
 
+  // Re-validate the balance before paying out: the seller's net can erode
+  // after the request (e.g. a sale's payment was later refunded), and the
+  // request-time check is now stale. Block the payout if it exceeds what's
+  // still owed (lifetime_net − already paid out).
+  if (status === "paid" && payout?.seller_id) {
+    const { data: bal } = await supabase.rpc("seller_balance", {
+      p_seller_id: payout.seller_id,
+    });
+    const net = Number((bal as { lifetime_net?: number } | null)?.lifetime_net ?? 0);
+    const paidOut = Number((bal as { paid_out?: number } | null)?.paid_out ?? 0);
+    const payable = Math.round((net - paidOut) * 100) / 100;
+    if (Number(payout.amount) > payable + 0.001) {
+      return NextResponse.json(
+        { error: "balance_insufficient", detail: `payable: ${payable}, payout: ${payout.amount}` },
+        { status: 409 },
+      );
+    }
+  }
+
   const { error } = await supabase
     .from("seller_payouts")
     .update(update)
@@ -79,7 +98,7 @@ export async function PATCH(
           p_kind: "payout_processing",
           p_title: "Versement en cours",
           p_body: `Votre demande de versement de ${amountFmt} TND est en cours de traitement.`,
-          p_link: "/account/payouts",
+          p_link: "/sell#payouts",
         });
       } else if (status === "paid") {
         await admin.rpc("enqueue_notification", {
@@ -87,7 +106,7 @@ export async function PATCH(
           p_kind: "payout_paid",
           p_title: "Versement effectué",
           p_body: `Votre versement de ${amountFmt} TND a été envoyé${ibanTail ? ` (IBAN ${ibanTail})` : ""}.`,
-          p_link: "/account/payouts",
+          p_link: "/sell#payouts",
         });
       } else if (status === "rejected") {
         await admin.rpc("enqueue_notification", {
@@ -97,7 +116,7 @@ export async function PATCH(
           p_body: notes
             ? `Motif : ${notes}. Vous pouvez soumettre une nouvelle demande.`
             : `Votre demande de versement de ${amountFmt} TND a été refusée.`,
-          p_link: "/account/payouts",
+          p_link: "/sell#payouts",
         });
       }
     }

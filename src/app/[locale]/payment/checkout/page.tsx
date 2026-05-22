@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
-import { depositForOpening } from "@/lib/utils";
+import { parseMonetizationSettings, resolveDeposit } from "@/lib/pricing";
 import { paymentInstructions, fetchPayeeDetails } from "@/lib/payments";
 import { CheckoutClient } from "./CheckoutClient";
 
@@ -121,18 +121,38 @@ export default async function CheckoutEntry({
   // Compute authoritative amount.
   let amount = 0;
   switch (kind) {
-    case "deposit":
-      amount = depositForOpening(Number(a.opening_price));
+    case "deposit": {
+      const { data: depRow } = await supabase
+        .from("app_settings").select("value").eq("key", "deposit").maybeSingle();
+      const depCfg = parseMonetizationSettings(
+        new Map<string, unknown>([["deposit", depRow?.value]]),
+      ).deposit;
+      amount = resolveDeposit(depCfg, Number(a.opening_price)).amount;
       break;
+    }
     case "buy_now":
       amount =
         a.listing_type === "direct"
           ? Number(a.sale_price ?? 0)
           : Number(a.buy_now_price ?? 0);
       break;
-    case "final_payment":
-      amount = Number(a.winner_amount ?? 0);
+    case "final_payment": {
+      // Net the deposit already paid: the caution is "part of the purchase",
+      // so the final balance is the hammer price minus the winner's locked
+      // deposit. Without this the winner pays deposit + full price (double-pay).
+      const full = Number(a.winner_amount ?? 0);
+      const { data: depRows } = await supabase
+        .from("auction_deposits")
+        .select("amount")
+        .eq("auction_id", auctionId)
+        .eq("user_id", user.id)
+        .is("forfeited_at", null)
+        .order("amount", { ascending: false })
+        .limit(1);
+      const credit = Number(depRows?.[0]?.amount ?? 0);
+      amount = Math.max(0, Math.round((full - credit) * 100) / 100);
       break;
+    }
   }
   if (!amount || amount <= 0) notFound();
 
@@ -140,21 +160,24 @@ export default async function CheckoutEntry({
   const dbKind =
     kind === "deposit" ? "deposit_lock" : kind === "buy_now" ? "buy_now" : "final_payment";
 
-  const { data: existing } = await supabase
+  // Find the latest reusable payment. NOTE: use limit(1), not maybeSingle —
+  // maybeSingle THROWS when >1 row matches, which made `existing` null and
+  // spawned a fresh row on every visit (the runaway-duplicate bug).
+  const { data: existingRows } = await supabase
     .from("payments")
     .select("id, status")
     .eq("user_id", user.id)
     .eq("auction_id", auctionId)
     .eq("kind", dbKind)
     .in("status", ["pending", "pending_review"])
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(1);
 
   let paymentId: string;
-  if (existing) {
-    paymentId = existing.id as string;
+  if (existingRows && existingRows.length > 0) {
+    paymentId = existingRows[0].id as string;
   } else {
-    // Service-role insert so we don't depend on the user's RLS policy
-    // for `payments.insert`. The row is owned by the user via user_id.
+    // Service-role insert so we don't depend on the user's RLS policy.
     const admin = getServiceSupabase();
     if (!admin) notFound();
     const { data: created, error } = await admin
@@ -170,8 +193,27 @@ export default async function CheckoutEntry({
       })
       .select("id")
       .single();
-    if (error || !created) notFound();
-    paymentId = created.id as string;
+    if (created) {
+      paymentId = created.id as string;
+    } else {
+      // A concurrent request (or the unique index in migration 0041) beat
+      // us — re-fetch the row it created instead of failing.
+      const { data: race } = await admin
+        .from("payments")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("auction_id", auctionId)
+        .eq("kind", dbKind)
+        .in("status", ["pending", "pending_review"])
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (!race || race.length === 0) {
+        notFound();
+        return null as never;
+      }
+      paymentId = race[0].id as string;
+      void error;
+    }
   }
 
   const heroPhoto = a.property.photos?.sort(

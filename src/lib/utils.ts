@@ -35,12 +35,3 @@ export function minBidIncrement(currentBid: number): number {
   if (currentBid < 1_000_000) return 10_000;
   return 25_000;
 }
-
-/**
- * Required participation deposit per the Tunisian auction rules baked
- * into the plan: 10% of the opening price, locked before a bidder can
- * place their first bid.
- */
-export function depositForOpening(openingPrice: number): number {
-  return Math.round(openingPrice * 0.1);
-}

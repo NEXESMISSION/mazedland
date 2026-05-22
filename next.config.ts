@@ -57,9 +57,17 @@ const nextConfig: NextConfig = {
       "frame-ancestors 'none'",
       // Embedded property-location maps come from openstreetmap.org's
       // /export/embed.html viewer (we don't bundle Leaflet ourselves).
-      "frame-src 'self' https://www.openstreetmap.org",
+      // Supabase storage signed URLs are also framed: the in-app
+      // document viewer (titre foncier etc.) embeds them via iframe so
+      // PDFs/images open inside the page instead of in a new tab. The
+      // URLs are short-lived (60 s TTL) and RLS-gated, so allowing the
+      // origin in frame-src doesn't widen the attack surface.
+      "frame-src 'self' https://www.openstreetmap.org https://*.supabase.co",
       // PWA: allow the service worker, the manifest, and child workers.
-      "worker-src 'self'",
+      // `blob:` is required by heic2any, which converts iPhone HEIC receipts
+      // in a Web Worker spawned from a blob URL — without it the worker is
+      // blocked and the receipt upload hangs forever on "Envoi".
+      "worker-src 'self' blob:",
       "manifest-src 'self'",
     ].join("; ");
 

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -22,7 +23,9 @@ import {
   Tag,
   Loader2,
   SlidersHorizontal,
+  Search,
   X,
+  Clock,
 } from "lucide-react";
 import type { ExploreFilter } from "./ExploreFeed";
 import type { PropertyType } from "@/lib/types";
@@ -76,11 +79,18 @@ function activeCount(f: ExtraFilters) {
 
 const GRID_PAGE_SIZE = 12;
 
-function buildQuery(filter: ExploreFilter, extra: ExtraFilters, page: number) {
+function buildQuery(
+  filter: ExploreFilter,
+  extra: ExtraFilters,
+  page: number,
+  search: string,
+) {
   const p = new URLSearchParams();
   p.set("filter", filter);
   p.set("limit", String(GRID_PAGE_SIZE));
   p.set("page", String(page));
+  const term = search.trim();
+  if (term) p.set("q", term);
   if (extra.types.length > 0) p.set("types", extra.types.join(","));
   if (extra.gov) p.set("gov", extra.gov);
   if (extra.minPrice !== null) p.set("min_price", String(extra.minPrice));
@@ -123,6 +133,7 @@ export function ExploreGrid({
   const locale = useLocale();
   const [filter, setFilter] = useState<ExploreFilter>(initialFilter);
   const [extra, setExtra] = useState<ExtraFilters>(initialExtra ?? EMPTY_FILTERS);
+  const [search, setSearch] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
   const [items, setItems] = useState<AuctionWithProperty[]>(initialItems);
   const [page, setPage] = useState<number>(initialPage);
@@ -144,11 +155,12 @@ export function ExploreGrid({
       nextPage: number,
       nextFilter: ExploreFilter = filter,
       nextExtra: ExtraFilters = extra,
+      nextSearch: string = search,
     ) => {
       const token = ++requestToken.current;
       setLoading(true);
       try {
-        const qs = buildQuery(nextFilter, nextExtra, nextPage);
+        const qs = buildQuery(nextFilter, nextExtra, nextPage, nextSearch);
         const res = await fetch(`/api/explore?${qs}`, { cache: "no-store" });
         if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
         const data = (await res.json()) as {
@@ -172,8 +184,24 @@ export function ExploreGrid({
         if (requestToken.current === token) setLoading(false);
       }
     },
-    [extra, filter],
+    [extra, filter, search],
   );
+
+  // Debounced free-text search. Skips the initial mount so the SSR page
+  // isn't immediately refetched; thereafter each keystroke (settled for
+  // 350ms) reloads page 1 with the current filters preserved.
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    const handle = setTimeout(() => {
+      void goToPage(1, filter, extra, search);
+    }, 350);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   const applyFilter = useCallback(
     async (next: ExploreFilter) => {
@@ -209,7 +237,34 @@ export function ExploreGrid({
           toggle moved to the page-title row so the filter rail isn't
           fighting the toggle for horizontal real estate on mobile. */}
       <div className="sticky top-[calc(var(--batta-topbar-h)+var(--batta-safe-top))] z-30 bg-background/95 backdrop-blur-md">
-        <div className="hide-scrollbar flex items-center gap-1.5 overflow-x-auto px-4 pt-3 pb-3">
+        {/* Free-text search — title / ville / adresse. */}
+        <div className="px-4 pt-3">
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-muted"
+              strokeWidth={2.2}
+            />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher par titre, ville, adresse…"
+              aria-label="Rechercher une annonce"
+              className="h-11 w-full rounded-full border border-border bg-white ps-10 pe-10 text-[13.5px] text-foreground placeholder:text-[var(--foreground-subtle)] transition focus:border-[var(--gold)] focus:outline-none focus:ring-2 focus:ring-[var(--gold-faint)]"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                aria-label="Effacer la recherche"
+                className="absolute end-2.5 top-1/2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-foreground"
+              >
+                <X className="size-4" strokeWidth={2.2} />
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="hide-scrollbar flex items-center gap-1.5 overflow-x-auto px-4 pt-2.5 pb-3">
           <GridPill
             active={filter === "all"}
             onClick={() => applyFilter("all")}
@@ -272,7 +327,7 @@ export function ExploreGrid({
         </div>
 
         {items.length === 0 && !loading ? (
-          <GridEmptyState filter={filter} />
+          <GridEmptyState filter={filter} search={search} />
         ) : (
           <div className="mt-5 grid grid-cols-2 gap-3 pb-6 lg:grid-cols-4 lg:gap-5">
             {items.map((a, i) => (
@@ -369,6 +424,12 @@ function GridCard({
   );
   const isDirect = auction.listing_type === "direct";
   const isLive = auction.status === "live" || auction.status === "extending";
+  // Scheduled (pre-live with a future starts_at) → show a countdown
+  // pill instead of just the type label, so the seller's time range
+  // surfaces immediately in the grid.
+  const startsAtMs = auction.starts_at ? new Date(auction.starts_at).getTime() : null;
+  const isScheduled =
+    !isDirect && !isLive && startsAtMs !== null && startsAtMs > Date.now();
   const price = isDirect
     ? (auction.sale_price ?? auction.opening_price)
     : (auction.current_price ?? auction.opening_price);
@@ -422,6 +483,14 @@ function GridCard({
                 <LiveTimer
                   endsAt={auction.ends_at}
                   className="batta-tabular text-[10.5px] font-bold text-foreground"
+                />
+              </span>
+            ) : isScheduled ? (
+              <span className="batta-gold-fill inline-flex h-7 items-center gap-1 rounded-full px-2.5 shadow-[var(--shadow-gold)]">
+                <Clock className="size-3" strokeWidth={2.5} />
+                <LiveTimer
+                  endsAt={auction.starts_at as string}
+                  className="batta-tabular text-[10.5px] font-bold"
                 />
               </span>
             ) : (
@@ -692,9 +761,17 @@ function FilterPanel({
   );
 }
 
-function GridEmptyState({ filter }: { filter: ExploreFilter }) {
-  const label =
-    filter === "auction"
+function GridEmptyState({
+  filter,
+  search,
+}: {
+  filter: ExploreFilter;
+  search?: string;
+}) {
+  const term = search?.trim();
+  const label = term
+    ? `Aucun résultat pour « ${term} ».`
+    : filter === "auction"
       ? "Aucune enchère active pour le moment."
       : filter === "direct"
         ? "Aucune offre directe pour le moment."

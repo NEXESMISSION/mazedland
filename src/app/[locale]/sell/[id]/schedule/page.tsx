@@ -36,7 +36,7 @@ export default async function ScheduleAuctionPage({
     return (
       <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 lg:max-w-[var(--max-w-content)]">
         <header>
-          <span className="batta-eyebrow">Consignment · pending</span>
+          <span className="batta-eyebrow">En attente de validation</span>
           <h1
             className={`mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight ${
               isRTL ? "font-arabic" : ""
@@ -73,7 +73,7 @@ export default async function ScheduleAuctionPage({
     return (
       <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 lg:max-w-[var(--max-w-content)]">
         <header>
-          <span className="batta-eyebrow">Already running</span>
+          <span className="batta-eyebrow">Déjà en ligne</span>
           <h1
             className={`mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight ${
               isRTL ? "font-arabic" : ""
@@ -102,7 +102,7 @@ export default async function ScheduleAuctionPage({
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 lg:max-w-[var(--max-w-content)]">
       <header>
-        <span className="batta-eyebrow">Open the auction</span>
+        <span className="batta-eyebrow">Mise en vente · enchère</span>
         <h1
           className={`mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight ${
             isRTL ? "font-arabic" : ""

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
-import { Home, Search, Plus, Heart, User } from "lucide-react";
+import { Home, Search, Plus, LayoutGrid, User } from "lucide-react";
 
 /**
  * Bottom tab bar — full-width, flush-bottom, clean white surface.
@@ -19,8 +19,8 @@ import { Home, Search, Plus, Heart, User } from "lucide-react";
  */
 
 type Tab = {
-  href: "/" | "/properties" | "/sell" | "/watchlist" | "/account";
-  labelKey: "home" | "browse" | "sell" | "watchlist" | "account";
+  href: "/" | "/properties" | "/sell" | "/account/activity" | "/account";
+  labelKey: "home" | "browse" | "sell" | "activity" | "account";
   Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   match: (p: string) => boolean;
   /** Renders the floating navy FAB instead of a regular cell. */
@@ -52,10 +52,13 @@ const TABS: Tab[] = [
     isCenter: true,
   },
   {
-    href: "/watchlist",
-    labelKey: "watchlist",
-    Icon: Heart,
-    match: (p) => p === "/watchlist" || p.startsWith("/watchlist/"),
+    href: "/account/activity",
+    labelKey: "activity",
+    Icon: LayoutGrid,
+    match: (p) =>
+      p === "/account/activity" ||
+      p === "/watchlist" ||
+      p.startsWith("/watchlist/"),
   },
   {
     href: "/account",
@@ -63,7 +66,7 @@ const TABS: Tab[] = [
     Icon: User,
     match: (p) =>
       p === "/account" ||
-      p.startsWith("/account/") ||
+      (p.startsWith("/account/") && p !== "/account/activity") ||
       p === "/login" ||
       p === "/signup" ||
       p.startsWith("/kyc") ||
@@ -120,7 +123,7 @@ export function BottomTabBar() {
             className={`relative flex h-full min-w-0 flex-col items-center justify-center gap-1 px-1 transition-colors ${
               active
                 ? "text-[var(--gold)]"
-                : "text-[var(--foreground-subtle)] hover:text-[var(--foreground)]"
+                : "text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
             }`}
             aria-label={t(tab.labelKey)}
             aria-current={active ? "page" : undefined}

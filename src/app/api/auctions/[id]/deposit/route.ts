@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
-import { depositForOpening } from "@/lib/utils";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { parseMonetizationSettings, resolveDeposit } from "@/lib/pricing";
 
 /**
- * Lock the 10% participation deposit for an auction.
+ * Lock the participation deposit for an auction (amount resolved from the
+ * admin's monetization settings — free / fixed / percent).
  *
  * Manual receipt flow: this endpoint creates a `payments` row with
  * status='pending' (no provider chosen yet) and returns its id. The
@@ -62,21 +64,43 @@ export async function POST(
     return NextResponse.json({ ok: true, alreadyLocked: true });
   }
 
-  const amount = depositForOpening(Number(auction.opening_price));
+  // Resolve the deposit from admin settings: free / fixed / percent, plus
+  // the global "free until" window.
+  const { data: depRow } = await supabase
+    .from("app_settings").select("value").eq("key", "deposit").maybeSingle();
+  const depCfg = parseMonetizationSettings(
+    new Map<string, unknown>([["deposit", depRow?.value]]),
+  ).deposit;
+  const { required, amount } = resolveDeposit(depCfg, Number(auction.opening_price));
+
+  // Free entry — register a zero-amount participation row (place_bid only
+  // checks a deposit row exists) and skip payment entirely.
+  if (!required) {
+    const admin = getServiceSupabase();
+    if (!admin) return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
+    const { error: insErr } = await admin
+      .from("auction_deposits")
+      .insert({ auction_id: auctionId, user_id: user.id, amount: 0 });
+    if (insErr && !/duplicate|unique/i.test(insErr.message)) {
+      return NextResponse.json({ error: insErr.message }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, free: true });
+  }
 
   // Look for a pending payment we already created for this same auction
   // + user so we don't duplicate rows if the buyer hits /pay twice.
-  const { data: pending } = await supabase
+  const { data: pendingRows } = await supabase
     .from("payments")
     .select("id")
     .eq("user_id", user.id)
     .eq("auction_id", auctionId)
     .eq("kind", "deposit_lock")
-    .eq("status", "pending")
-    .maybeSingle();
+    .in("status", ["pending", "pending_review"])
+    .order("created_at", { ascending: false })
+    .limit(1);
 
-  if (pending) {
-    return NextResponse.json({ ok: true, paymentId: pending.id, amount });
+  if (pendingRows && pendingRows.length > 0) {
+    return NextResponse.json({ ok: true, paymentId: pendingRows[0].id, amount });
   }
 
   const { data: payment, error: payErr } = await supabase
@@ -93,6 +117,23 @@ export async function POST(
     .select("id")
     .single();
   if (payErr || !payment) {
+    // Lost a concurrent create race: the partial unique index
+    // (payments_one_active_auction) rejected our duplicate. Re-fetch the
+    // winning request's row and return it instead of a raw 500.
+    if (payErr && /duplicate|unique/i.test(payErr.message)) {
+      const { data: raceRows } = await supabase
+        .from("payments")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("auction_id", auctionId)
+        .eq("kind", "deposit_lock")
+        .in("status", ["pending", "pending_review"])
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (raceRows?.[0]) {
+        return NextResponse.json({ ok: true, paymentId: raceRows[0].id, amount });
+      }
+    }
     return NextResponse.json(
       { error: payErr?.message ?? "payment_insert_failed" },
       { status: 500 },

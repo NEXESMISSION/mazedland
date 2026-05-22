@@ -38,6 +38,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
+import { resolveNotificationLink } from "@/lib/notifications/target";
 
 type NotificationRow = {
   id: string;
@@ -251,38 +252,25 @@ export function NotificationBell() {
   // with whatever the server still had, which masked the symptom
   // ("item came back after I deleted it") of a silent zero-row DELETE.
   async function deleteOne(id: string) {
-    console.log("[bell] deleteOne start  id=", id);
     const snapshot = { items, unread };
     const wasUnread = items.find((n) => n.id === id && !n.read_at);
-    console.log("[bell] deleteOne wasUnread=", !!wasUnread, " snapshotCount=", snapshot.items.length);
     setItems((arr) => arr.filter((n) => n.id !== id));
     if (wasUnread) setUnread((n) => Math.max(0, n - 1));
     try {
-      console.log("[bell] deleteOne fetch POST /api/notifications  body=", { ids: [id] });
       const res = await fetch("/api/notifications", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: [id] }),
       });
       const payload = await res.json().catch(() => ({}));
-      console.log("[bell] deleteOne response  status=", res.status, " body=", payload);
-      if (!res.ok) {
-        console.warn("[bell] deleteOne !ok → rolling back");
-        throw new Error("delete_failed");
-      }
+      if (!res.ok) throw new Error("delete_failed");
       const deletedCount = (payload as { deletedCount?: number }).deletedCount;
       if (typeof deletedCount === "number" && deletedCount === 0) {
-        console.warn(
-          "[bell] deleteOne deletedCount=0 → server matched nothing. Rolling back.",
-        );
         setItems(snapshot.items);
         setUnread(snapshot.unread);
         toast("Suppression refusée par le serveur.", "error");
-      } else {
-        console.log("[bell] deleteOne success  deletedCount=", deletedCount);
       }
-    } catch (err) {
-      console.error("[bell] deleteOne error", err);
+    } catch {
       setItems(snapshot.items);
       setUnread(snapshot.unread);
       toast("Échec de la suppression. Vérifiez la connexion.", "error");
@@ -290,51 +278,31 @@ export function NotificationBell() {
   }
 
   async function deleteAll() {
-    console.log("[bell] deleteAll INVOKED  itemsLen=", items.length, " unread=", unread);
-    if (items.length === 0) {
-      console.warn("[bell] deleteAll  bailed — 0 visible items");
-      return;
-    }
+    if (items.length === 0) return;
     const snapshot = { items, unread };
-    console.log("[bell] deleteAll  snapshotIds=", snapshot.items.map((i) => i.id.slice(0, 8)));
     setItems([]);
     setUnread(0);
     setConfirmingDeleteAll(false);
     try {
-      console.log("[bell] deleteAll  fetch POST /api/notifications  body=", { all: true });
       const res = await fetch("/api/notifications", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ all: true }),
       });
       const payload = await res.json().catch(() => ({}));
-      console.log("[bell] deleteAll response  status=", res.status, " body=", payload);
-      if (!res.ok) {
-        console.warn("[bell] deleteAll !ok → rolling back");
-        throw new Error("delete_failed");
-      }
+      if (!res.ok) throw new Error("delete_failed");
       const deletedCount = (payload as { deletedCount?: number }).deletedCount;
       if (typeof deletedCount === "number" && deletedCount === 0) {
-        console.warn(
-          "[bell] deleteAll deletedCount=0 — possible causes:",
-          "\n  • notifications already gone (deleted in another tab / session)",
-          "\n  • RLS rejected (auth.uid() ≠ user_id on every row)",
-          "\n  • session cookie expired between GET and DELETE",
-        );
         setItems(snapshot.items);
         setUnread(snapshot.unread);
         toast("Suppression refusée par le serveur.", "error");
       } else if (typeof deletedCount === "number") {
-        console.log("[bell] deleteAll success  deletedCount=", deletedCount);
         toast(
           `${deletedCount} notification${deletedCount > 1 ? "s" : ""} supprimée${deletedCount > 1 ? "s" : ""}.`,
           "success",
         );
-      } else {
-        console.warn("[bell] deleteAll  deletedCount missing from response");
       }
-    } catch (err) {
-      console.error("[bell] deleteAll error", err);
+    } catch {
       setItems(snapshot.items);
       setUnread(snapshot.unread);
       toast("Échec de la suppression. Vérifiez la connexion.", "error");
@@ -551,6 +519,7 @@ function NotificationRow({
   const unread = !item.read_at;
   const { Icon, tone } = iconForKind(item.kind);
   const isUrgent = unread && URGENT_KINDS.has(item.kind);
+  const href = resolveNotificationLink(item.kind, item.link);
 
   const [dragPx, setDragPx] = useState(0);
   const [snapped, setSnapped] = useState(false);
@@ -693,9 +662,9 @@ function NotificationRow({
         }}
         className="relative bg-[var(--surface)]"
       >
-        {item.link ? (
+        {href ? (
           <Link
-            href={item.link as never}
+            href={href as never}
             onClick={() => {
               onRead();
               onClose();

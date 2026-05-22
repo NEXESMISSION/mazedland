@@ -63,19 +63,13 @@ export function ExploreView({
     }
   };
 
-  const toggle = <ViewToggle value={view} onChange={onChange} />;
-
   if (view === "reels") {
     return (
       <ExploreFeed
         initialItems={initialItems}
-        initialFilter={initialFilter}
-        initialPage={initialPage}
-        initialTotalPages={initialTotalPages}
-        initialTotalCount={initialTotalCount}
         loggedIn={loggedIn}
         savedAuctionIds={savedAuctionIds}
-        viewToggle={toggle}
+        viewToggle={<ViewToggle value={view} onChange={onChange} dark />}
       />
     );
   }
@@ -89,7 +83,7 @@ export function ExploreView({
       initialTotalCount={initialTotalCount}
       loggedIn={loggedIn}
       savedAuctionIds={savedAuctionIds}
-      viewToggle={toggle}
+      viewToggle={<ViewToggle value={view} onChange={onChange} />}
       initialExtra={initialExtra}
     />
   );
@@ -100,22 +94,28 @@ export function ExploreView({
 function ViewToggle({
   value,
   onChange,
+  dark = false,
 }: {
   value: ViewMode;
   onChange: (next: ViewMode) => void;
+  dark?: boolean;
 }) {
   return (
     <div
       role="tablist"
       aria-label="Mode d'affichage"
-      className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-[var(--border)] bg-white p-0.5 shadow-sm"
+      className={`inline-flex shrink-0 items-center gap-0.5 rounded-full border p-0.5 ${
+        dark
+          ? "border-white/15 bg-black/40 backdrop-blur-md"
+          : "border-[var(--border)] bg-white shadow-sm"
+      }`}
     >
       <ToggleButton
         active={value === "grid"}
         onClick={() => onChange("grid")}
         label="Grille"
         ariaLabel="Vue grille"
-        dark={false}
+        dark={dark}
       >
         <LayoutGrid className="size-4" strokeWidth={2.2} />
       </ToggleButton>
@@ -124,7 +124,7 @@ function ViewToggle({
         onClick={() => onChange("reels")}
         label="Reels"
         ariaLabel="Vue Reels (TikTok)"
-        dark={false}
+        dark={dark}
       >
         <Film className="size-4" strokeWidth={2.2} />
       </ToggleButton>

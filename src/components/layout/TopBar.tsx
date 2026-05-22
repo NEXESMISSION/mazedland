@@ -7,7 +7,7 @@ import { BackButton } from "./BackButton";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
-const ROOT_TAB_PATHS = new Set(["/", "/properties", "/watchlist", "/account"]);
+const ROOT_TAB_PATHS = new Set(["/", "/properties", "/account/activity", "/account"]);
 
 // Map the first path segment to the i18n key under shell.pageTitles.
 // Anything not in here falls back to the brand mark.

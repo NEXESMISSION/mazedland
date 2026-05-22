@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 
 /**
- * Tiny live-ticking countdown. Updates every second; shows seconds
- * always so the urgency is visible at a glance.
+ * Tiny live-ticking countdown. Updates every second; output is scaled
+ * to the range that matters at a glance, so a 3-day auction doesn't
+ * scream "3d 23h 56m 06s" with a jittering seconds field nobody is
+ * going to act on:
  *
- *   2d 14h 32m 15s   (days present)
- *   2h 12m 45s       (hours present, no days)
- *   12m 45s          (under one hour)
- *   45s              (under one minute)
+ *   3d 23h           (>= 24 h remaining — minutes/seconds are noise)
+ *   23h 56m          ( 1 h to 24 h     — seconds are noise)
+ *   56m 06s          ( 1 m to 1 h      — seconds matter, urgency)
+ *   06s              ( <  1 m          — every tick counts)
  *   —                ended
  *
  * The server renders an initial value computed at request time and the
@@ -81,8 +83,12 @@ function formatRemaining(secs: number): string {
   const h = Math.floor((secs % 86_400) / 3_600);
   const m = Math.floor((secs % 3_600) / 60);
   const s = secs % 60;
-  if (d > 0) return `${d}d ${h}h ${pad(m)}m ${pad(s)}s`;
-  if (h > 0) return `${h}h ${pad(m)}m ${pad(s)}s`;
+  // Show only the two highest meaningful units when the deadline is
+  // hours/days away — seconds tick in the pill add visual noise but
+  // no information at that range. Drop to minute + second precision
+  // only when we're inside the urgent window.
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${pad(m)}m`;
   if (m > 0) return `${m}m ${pad(s)}s`;
-  return `${s}s`;
+  return `${pad(s)}s`;
 }

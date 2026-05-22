@@ -23,15 +23,30 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const kind = body.kind as PaymentKind;
-  const amount = Number(body.amount);
-  const ALLOWED_KINDS: PaymentKind[] = [
-    "inspection_fee",
-    "commission",
-    "subscription",
-    "deposit_release",
-  ];
-  if (!kind || !ALLOWED_KINDS.includes(kind) || !amount || amount <= 0) {
+  // Only inspection fees are user-initiated through this endpoint; the other
+  // kinds (commission/subscription/deposit_release) are platform/admin-driven
+  // and must never be created from a client-supplied amount.
+  if (kind !== "inspection_fee") {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  }
+
+  // Derive the amount server-side from the inspection the user owns — never
+  // trust the body amount (it was forgeable).
+  const inspectionId = typeof body.inspection_id === "string" ? body.inspection_id : null;
+  if (!inspectionId) {
+    return NextResponse.json({ error: "inspection_required" }, { status: 400 });
+  }
+  const { data: inspection } = await supabase
+    .from("inspections")
+    .select("id, requested_by, fee_amount")
+    .eq("id", inspectionId)
+    .single();
+  if (!inspection || inspection.requested_by !== user.id) {
+    return NextResponse.json({ error: "not_owner" }, { status: 403 });
+  }
+  const amount = Number(inspection.fee_amount);
+  if (!amount || amount <= 0) {
+    return NextResponse.json({ error: "invalid_fee" }, { status: 400 });
   }
 
   const { data: payment, error: insertErr } = await supabase
@@ -42,7 +57,7 @@ export async function POST(req: NextRequest) {
       provider: "bank_transfer",
       amount,
       status: "pending",
-      inspection_id: body.inspection_id ?? null,
+      inspection_id: inspectionId,
       metadata: { initiated_at: new Date().toISOString() },
     })
     .select("id")

@@ -43,6 +43,23 @@ type HammeredRow = {
 };
 
 /**
+ * Race a promise against a deadline. The home page fans out several
+ * round-trips to a remote Supabase; if one of them hangs (pooler hiccup,
+ * network blip) the whole server render would stall and the route's
+ * loading.tsx Suspense fallback would spin forever — the "stuck loading"
+ * users hit intermittently. A timeout turns a hang into a fast fallback:
+ * the page renders its brand hero + browse rails instead of freezing.
+ */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error("home_data_timeout")), ms),
+    ),
+  ]);
+}
+
+/**
  * Landing page — black + gold dark mode, design language ported from
  * the mazed-auto home feed. Every section is grouped under a
  * `SectionDivider` (gradient hairline → icon chip → eyebrow → bold
@@ -60,6 +77,10 @@ export default async function LandingPage() {
   // own their own queries — cheap, parallelizable, fail-soft.
   let trending: AuctionWithProperty[] = [];
   let recent: AuctionWithProperty[] = [];
+  // "Offres directes" rail — fixed-price (listing_type='direct') listings,
+  // surfaced on their own so buyers can browse buy-now stock apart from the
+  // bidding lots.
+  let offers: AuctionWithProperty[] = [];
   let hammered: HammeredRow[] = [];
   // "Nouveautés" rail — newest listings (by auction created_at), distinct
   // from trending which sorts by ends_at + paid placement. Renders as the
@@ -71,6 +92,7 @@ export default async function LandingPage() {
   let liveCount = 0;
 
   try {
+    await withTimeout((async () => {
     const supabase = await getServerSupabase();
     const [liveRes, hammeredRes, nouveautesRes, userRes] = await Promise.all([
       supabase
@@ -153,7 +175,12 @@ export default async function LandingPage() {
     // rail and the grid OVERLAP so neither section renders empty.
     // A dev DB with 9 rows used to leave the grid showing 1 lonely
     // card; now it shows all 9 even though the rail covers the first 8.
-    trending = rows.slice(0, 8);
+    // Split bidding lots from fixed-price offers so each gets its own rail.
+    const auctionRows = rows.filter((r) => r.listing_type !== "direct");
+    offers = rows.filter((r) => r.listing_type === "direct").slice(0, 10);
+    // Trending shows enchères (auctions). "More to explore" stays mixed so
+    // a small catalogue never renders an empty grid.
+    trending = (auctionRows.length > 0 ? auctionRows : rows).slice(0, 8);
     recent = rows.length >= 12 ? rows.slice(8) : rows;
     hammered = (hammeredRes.data ?? []) as unknown as HammeredRow[];
     nouveautes = (nouveautesRes.data ?? []) as unknown as AuctionWithProperty[];
@@ -170,8 +197,10 @@ export default async function LandingPage() {
         .in("auction_id", ids);
       savedIds = new Set((saves ?? []).map((s) => s.auction_id as string));
     }
+    })(), 7000);
   } catch {
-    // env missing → skeletons / placeholder content takes over below.
+    // env missing, query error, or timeout → the brand hero + browse
+    // rails below still render so the page is never a frozen spinner.
   }
 
   return (
@@ -246,6 +275,37 @@ export default async function LandingPage() {
           </TrendingRail>
         )}
       </section>
+
+      {/* ─── "Offres directes" rail — fixed-price (buy-now) listings, kept
+          separate from the bidding lots so buyers can browse them on their
+          own. Only shown when there's direct stock. */}
+      {offers.length > 0 && (
+        <section className="mt-7">
+          <RailHeader
+            eyebrow="Achat immédiat"
+            title="Offres directes"
+            countLabel={offers.length}
+            ctaHref="/properties"
+            ChevronEnd={ChevronEnd}
+            isRTL={isRTL}
+            seeAllLabel={t("home.seeAll")}
+            flush
+          />
+          <TrendingRail>
+            {offers.map((a, i) => (
+              <div key={a.id} className="w-[230px] shrink-0 snap-start">
+                <PropertyCard
+                  auction={a}
+                  saved={savedIds.has(a.id)}
+                  loggedIn={loggedIn}
+                  priority={i < 3}
+                />
+              </div>
+            ))}
+            <div className="w-1 shrink-0" />
+          </TrendingRail>
+        </section>
+      )}
 
       {/* ─── "Nouveautés" rail — sibling of the trending rail above,
           sorted by created_at desc instead of ends_at + paid placement.
@@ -588,19 +648,21 @@ function buildHeroSlides(
     });
   }
 
-  // Always finish with a brand slide so the carousel pitches Batta
-  // itself before looping back to the first listing. Uses the BATTA
-  // logo asset on its black background — on-brand, no external
-  // dependency, no random-image surprises.
-  void liveCount;
+  // Brand-pitch slide closes the carousel. Marked `kind: "brand"` so
+  // SlideCard renders the dedicated luxe composition (navy gradient,
+  // gold concentric arcs, live-count hero stat) instead of treating
+  // it as another photo overlay. `imageUrl` is null because the slide
+  // paints its own CSS background.
   slides.push({
     id: "brand-pitch",
-    imageUrl: "/logo.png",
-    eyebrow: labels.brandEyebrow,
+    imageUrl: null,
+    eyebrow: "",
     title: labels.brandTitle,
     subtitle: labels.brandSlogan,
     href: "/properties",
     ctaLabel: labels.browseCta,
+    kind: "brand",
+    liveCount,
   });
 
   return slides;

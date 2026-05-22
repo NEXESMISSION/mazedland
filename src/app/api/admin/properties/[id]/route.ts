@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { parseRejection } from "@/lib/rejection";
 
 export async function PATCH(
   req: NextRequest,
@@ -20,16 +21,16 @@ export async function PATCH(
   if (profile?.role !== "admin") return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
-  const status = body.status as "ready" | "rejected" | undefined;
+  const status = body.status as "ready" | "rejected" | "pending_review" | undefined;
   const rejection_reason = body.rejection_reason ?? null;
-  if (status !== "ready" && status !== "rejected") {
+  if (status !== "ready" && status !== "rejected" && status !== "pending_review") {
     return NextResponse.json({ error: "bad_status" }, { status: 400 });
   }
 
   // Fetch the property owner + title before update so we can notify after.
   const { data: prop } = await supabase
     .from("properties")
-    .select("id, owner_id, title")
+    .select("id, owner_id, title, listing_type")
     .eq("id", id)
     .single();
 
@@ -50,23 +51,68 @@ export async function PATCH(
     if (admin) {
       const titleClause = prop.title ? `« ${prop.title} »` : "votre annonce";
       if (status === "ready") {
+        // Auction listings still need scheduling → drop the seller straight
+        // on the schedule form; direct sales are already live → dashboard.
+        const approvedLink =
+          prop.listing_type === "direct" ? "/sell" : `/sell/${id}/schedule`;
         await admin.rpc("enqueue_notification", {
           p_user_id: prop.owner_id,
           p_kind: "listing_approved",
           p_title: "Annonce approuvée",
           p_body: `${titleClause} a été validé par l'équipe et est désormais visible.`,
-          p_link: `/properties/${id}`,
+          p_link: approvedLink,
         });
-      } else {
+      } else if (status === "pending_review") {
+        // Restoration (undo of a refusal). No notification — the seller
+        // already got the original rejection ping; restoring quietly puts
+        // the listing back in the queue. If we ever want to surface it,
+        // pick a less alarming title than "Annonce refusée".
+      } else if (status === "rejected") {
         const reason = (rejection_reason ?? "").toString().trim();
+
+        // Auto-fail any pending listing-fee receipts for this property —
+        // otherwise the admin queue keeps a stale receipt for a rejected
+        // listing, and the seller can't easily re-submit because the
+        // existing payment row blocks a fresh one. Marking them failed
+        // forces a clean restart: when the seller re-submits the
+        // corrected listing they upload a new receipt against a new
+        // payment row.
+        const { data: pendingPays } = await admin
+          .from("payments")
+          .select("id, user_id")
+          .eq("property_id", id)
+          .in("status", ["pending", "pending_review"]);
+
+        const failNote = reason
+          ? `Annonce refusée — motif : ${reason}. Soumettez à nouveau votre annonce corrigée pour générer un nouveau paiement.`
+          : "Annonce refusée par l'équipe. Soumettez à nouveau votre annonce pour générer un nouveau paiement.";
+
+        if (pendingPays && pendingPays.length > 0) {
+          await admin
+            .from("payments")
+            .update({
+              status: "failed",
+              admin_notes: failNote,
+              reviewer_id: user.id,
+              reviewed_at: new Date().toISOString(),
+            })
+            .in("id", pendingPays.map((p) => p.id));
+        }
+
+        // Notification deep link carries every category so the edit
+        // form ring-highlights ALL flagged sections (not just one).
+        const parsed = parseRejection(reason);
+        const editLink = parsed.tagged && parsed.categories.length > 0
+          ? `/sell/${id}/edit?focus=${parsed.categories.join(",")}`
+          : `/sell/${id}/edit`;
         await admin.rpc("enqueue_notification", {
           p_user_id: prop.owner_id,
           p_kind: "listing_rejected",
           p_title: "Annonce refusée",
           p_body: reason
-            ? `Motif : ${reason}. Vous pouvez corriger votre annonce et la soumettre à nouveau.`
+            ? `Motif : ${parsed.message || reason}. Vous pouvez corriger votre annonce et la soumettre à nouveau.`
             : `${titleClause} a été refusé par l'équipe. Consultez votre tableau de bord pour les détails.`,
-          p_link: "/sell",
+          p_link: editLink,
         });
       }
     }

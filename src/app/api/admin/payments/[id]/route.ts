@@ -83,13 +83,19 @@ export async function PATCH(
   // transaction. The buyer-side notification for accept/reject is
   // enqueued inside the RPC, so we return early.
   if (payment.kind === "listing_fee") {
+    // The accept/reject RPCs guard themselves with `is_admin()`, which
+    // reads auth.uid() / auth.jwt() from the caller's session. Service-
+    // role has no JWT user, so calling via `admin` always fails the
+    // guard. Use the authed user client instead — we already verified
+    // above that this user has role='admin' on profiles, and is_admin()
+    // also returns true when app_metadata.role='admin' on the JWT.
     if (verdict === "captured") {
       const sanitized: Record<string, number> = {};
       for (const k of ["home_featured", "top_listed", "banner"]) {
         const v = Number(durations?.[k] ?? 0);
         sanitized[k] = Number.isFinite(v) && v > 0 ? Math.min(365, Math.floor(v)) : 0;
       }
-      const { error } = await admin.rpc("accept_listing_payment", {
+      const { error } = await supabase.rpc("accept_listing_payment", {
         p_payment_id: paymentId,
         p_durations: sanitized,
       });
@@ -98,7 +104,7 @@ export async function PATCH(
       }
       return NextResponse.json({ ok: true });
     } else {
-      const { error } = await admin.rpc("reject_listing_payment", {
+      const { error } = await supabase.rpc("reject_listing_payment", {
         p_payment_id: paymentId,
         p_reason: notes,
       });
@@ -139,9 +145,11 @@ export async function PATCH(
   };
   const what = KIND_LABELS[payment.kind] ?? "votre paiement";
 
+  // Auction-tied payment → the lot; otherwise it's a listing fee paid by
+  // the seller → their dashboard (the listing is now live).
   const link = payment.auction_id
     ? `/auctions/${payment.auction_id}`
-    : "/account/payments";
+    : "/sell";
 
   if (verdict === "captured") {
     await admin.rpc("enqueue_notification", {

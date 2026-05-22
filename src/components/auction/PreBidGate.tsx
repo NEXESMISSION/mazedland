@@ -21,12 +21,6 @@ export interface PriceContext {
   label: string;
   /** The amount the user is being asked to commit (in TND). */
   amount: number;
-  /** How the amount was computed, e.g. "10% du prix d'ouverture". */
-  relation: string;
-  /** Underlying reference figure, e.g. "Prix d'ouverture". */
-  baseLabel: string;
-  /** Numeric reference, e.g. 290_000. */
-  baseAmount: number;
 }
 
 interface Props {
@@ -126,79 +120,67 @@ export function PreBidGate({
           </div>
         </div>
 
-        {/* GATE CARD — white background, light-theme palette. The icon
-            disc adopts the per-tone treatment (gold gradient for the
-            deposit gate, amber for owner-warning, neutral for muted). */}
+        {/* GATE CARD — title, the amount up front (deposit gate), the
+            reassurances as scannable chips, then the CTA. No wall of text. */}
         <div
           className={`rounded-2xl border-2 ${palette.ring} bg-white p-5 shadow-sm`}
         >
-          <div className="flex items-start gap-3">
+          <div className="flex items-center gap-3">
             <div
-              className={`h-12 w-12 rounded-full ${palette.iconBg} flex items-center justify-center shrink-0`}
+              className={`h-11 w-11 rounded-full ${palette.iconBg} flex items-center justify-center shrink-0`}
             >
               {icon}
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-[15px] font-extrabold leading-tight text-foreground">
-                {title}
-              </h3>
-              <p className="mt-1.5 text-[12.5px] leading-relaxed text-[var(--foreground-muted)]">
-                {body}
-              </p>
-            </div>
+            <h3 className="text-[16px] font-extrabold leading-tight text-foreground">
+              {title}
+            </h3>
           </div>
 
-          {/* PRICE MATH — only when caller passes priceContext (the
-              deposit gate). Makes the "why 29 000?" question obvious:
-              shows the big number, then the relation + reference price
-              just below so the two figures don't look interchangeable. */}
-          {priceContext && (
-            <div className="mt-4 rounded-xl bg-[var(--gold-faint)] p-3.5 ring-1 ring-[var(--gold-soft)]">
+          {/* Deposit gate → lead with the amount. Other gates → one short line. */}
+          {priceContext ? (
+            <div className="mt-4 rounded-xl bg-[var(--gold-faint)] p-4 text-center ring-1 ring-[var(--gold-soft)]">
               <div className="text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-[var(--gold)]">
                 {priceContext.label}
               </div>
-              <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="batta-tabular gradient-gold-text text-[28px] font-extrabold leading-none">
+              <div dir="ltr" className="mt-1 flex items-baseline justify-center gap-1.5">
+                <span className="batta-tabular gradient-gold-text text-[32px] font-extrabold leading-none">
                   {formatTND(priceContext.amount, locale)}
                 </span>
-                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--foreground-muted)]">
+                <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--foreground-muted)]">
                   TND
                 </span>
               </div>
-              <div className="mt-1.5 text-[11px] text-[var(--foreground-muted)]">
-                <span className="font-semibold text-foreground">
-                  {priceContext.relation}
-                </span>
-                {" — "}
-                {priceContext.baseLabel}{" "}
-                <span className="batta-tabular font-bold text-foreground">
-                  {formatTND(priceContext.baseAmount, locale)} TND
-                </span>
-              </div>
             </div>
+          ) : (
+            <p className="mt-3 text-[12.5px] leading-relaxed text-[var(--foreground-muted)]">
+              {body}
+            </p>
           )}
 
           {bullets && bullets.length > 0 && (
-            <ul className="mt-4 space-y-1.5">
+            <div className="mt-3 flex flex-wrap gap-1.5">
               {bullets.map((b, i) => (
-                <li
+                <span
                   key={i}
-                  className="flex items-start gap-2 text-[12.5px] leading-relaxed text-foreground"
+                  className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-2)] px-2.5 py-1 text-[11px] font-semibold text-foreground ring-1 ring-[var(--border)]"
                 >
-                  <CheckCircle2
-                    className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5"
-                    strokeWidth={2.4}
-                  />
-                  <span>{b}</span>
-                </li>
+                  <CheckCircle2 className="size-3 shrink-0 text-emerald-500" strokeWidth={2.6} />
+                  {b}
+                </span>
               ))}
-            </ul>
+            </div>
           )}
 
           <Button onClick={onCta} size="md" fullWidth className="mt-5">
             {ctaIcon}
             {ctaLabel}
           </Button>
+
+          {priceContext && (
+            <p className="mt-2.5 text-center text-[10.5px] leading-relaxed text-[var(--foreground-subtle)]">
+              Remboursable · validée après vérification de votre reçu.
+            </p>
+          )}
         </div>
       </div>
 
@@ -315,7 +297,7 @@ export function PreBidGate({
               className={cn(
                 "group inline-flex items-center justify-center gap-2 w-full h-14 rounded-full font-extrabold text-[15px] transition-transform hover:scale-[1.01] active:scale-[0.99]",
                 tone === "gold"
-                  ? "bg-[var(--gold)] text-black shadow-[var(--shadow-gold)]"
+                  ? "bg-[var(--gold)] text-white shadow-[var(--shadow-gold)]"
                   : tone === "warning"
                     ? "bg-amber-400 text-black shadow-[0_8px_24px_-4px_rgba(245,158,11,0.5)]"
                     : "bg-foreground text-background",
@@ -335,7 +317,7 @@ export function PreBidGate({
                 <span className="text-[var(--border-strong)]">·</span>
                 <span className="inline-flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5 text-[var(--gold)]" />
-                  Remboursement sous 24 h
+                  Caution remboursable
                 </span>
               </div>
             )}

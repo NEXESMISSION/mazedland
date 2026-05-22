@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import {
   Check,
@@ -17,6 +18,7 @@ import {
   Megaphone,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { ImageLightbox } from "@/components/ui/ImageLightbox";
 
 const DURATION_OPTIONS = [7, 30, 90] as const;
 type PromoKey = "home_featured" | "top_listed" | "banner";
@@ -54,8 +56,6 @@ export function PaymentsQueueList({
   const router = useRouter();
   const { toast } = useToast();
   const [busy, setBusy] = useState<string | null>(null);
-  const [rejecting, setRejecting] = useState<PaymentReviewItem | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
   const [acceptingListing, setAcceptingListing] =
     useState<PaymentReviewItem | null>(null);
   const [durations, setDurations] = useState<Record<PromoKey, number>>({
@@ -93,15 +93,8 @@ export function PaymentsQueueList({
       router.refresh();
     } finally {
       setBusy(null);
-      setRejecting(null);
-      setRejectReason("");
       setAcceptingListing(null);
     }
-  }
-
-  function openReject(item: PaymentReviewItem) {
-    setRejecting(item);
-    setRejectReason("");
   }
 
   function openAcceptListing(item: PaymentReviewItem) {
@@ -173,10 +166,10 @@ export function PaymentsQueueList({
             {item.propertyTitle && (
               <a
                 href={
-                  item.auctionId
-                    ? `/auctions/${item.auctionId}`
-                    : item.propertyId
-                      ? `/admin/properties#${item.propertyId}`
+                  item.propertyId
+                    ? `/admin/properties/${item.propertyId}`
+                    : item.auctionId
+                      ? `/auctions/${item.auctionId}`
                       : "#"
                 }
                 target="_blank"
@@ -247,15 +240,13 @@ export function PaymentsQueueList({
                   )}
                   Valider
                 </button>
-                <button
-                  type="button"
-                  disabled={busy === item.id}
-                  onClick={() => openReject(item)}
+                <Link
+                  href={`/admin/payments/${item.id}/reject`}
                   className="flex-1 inline-flex h-10 items-center justify-center gap-1.5 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] text-foreground font-semibold text-[13px] hover:border-red-300 hover:text-red-700"
                 >
                   <X className="h-4 w-4" strokeWidth={2.5} />
                   Refuser
-                </button>
+                </Link>
               </div>
             ) : (
               <div className="mt-3 text-[11px] text-[var(--foreground-muted)]">
@@ -373,63 +364,6 @@ export function PaymentsQueueList({
         </div>
       )}
 
-      {/* Reject modal */}
-      {rejecting && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
-          onClick={() => !busy && setRejecting(null)}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl bg-[var(--surface)] p-5 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-[16px] font-bold text-foreground">
-              Motif du refus
-            </h3>
-            <p className="mt-1 text-[12px] text-[var(--foreground-muted)] leading-relaxed">
-              L&apos;acheteur reçoit une notification avec ce message et peut
-              téléverser un nouveau reçu.
-            </p>
-            <textarea
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Reçu illisible — reprenez une photo nette avec la référence visible."
-              rows={4}
-              maxLength={500}
-              autoFocus
-              className="mt-3 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-2)]/40 p-2.5 text-[13px] font-medium text-foreground placeholder:text-[var(--foreground-muted)] focus:border-[var(--gold)] focus:outline-none focus:ring-1 focus:ring-[var(--gold)]/40"
-            />
-            <div className="mt-1 text-[10px] text-[var(--foreground-muted)] text-end">
-              {rejectReason.length} / 500
-            </div>
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                disabled={busy === rejecting.id}
-                onClick={() => setRejecting(null)}
-                className="flex-1 h-10 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] text-foreground font-semibold text-[13px]"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                disabled={
-                  busy === rejecting.id || rejectReason.trim().length < 5
-                }
-                onClick={() => decide(rejecting, "failed", rejectReason.trim())}
-                className="flex-1 h-10 rounded-[var(--radius)] bg-red-600 text-white font-bold text-[13px] hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-1.5"
-              >
-                {busy === rejecting.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <X className="h-4 w-4" strokeWidth={2.5} />
-                )}
-                Refuser et notifier
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
@@ -516,11 +450,10 @@ function ReceiptPreview({ url, path }: { url: string; path: string }) {
     );
   }
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      className="block relative aspect-video w-full max-w-md overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-2)] hover:ring-2 hover:ring-[var(--gold-soft)]"
+    <ImageLightbox
+      src={url}
+      alt="Reçu"
+      triggerClassName="relative block aspect-video w-full max-w-md overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-2)] hover:ring-2 hover:ring-[var(--gold-soft)]"
     >
       <Image
         src={url}
@@ -530,7 +463,7 @@ function ReceiptPreview({ url, path }: { url: string; path: string }) {
         className="object-contain"
         unoptimized
       />
-    </a>
+    </ImageLightbox>
   );
 }
 

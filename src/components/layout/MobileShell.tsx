@@ -5,6 +5,7 @@ import { TopBar } from "./TopBar";
 import { BottomTabBar } from "./BottomTabBar";
 import { ScrollToTop } from "./ScrollToTop";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
+import { KYCNudgeModal } from "@/components/kyc/KYCNudgeModal";
 
 /**
  * Mobile-app shell — top bar, scrollable main, bottom tab bar.
@@ -55,6 +56,7 @@ export function MobileShell({ children }: { children: React.ReactNode }) {
         <main className="batta-shell-main">{children}</main>
       </PullToRefresh>
       <BottomTabBar />
+      <KYCNudgeModal />
     </>
   );
 }

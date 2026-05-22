@@ -3,8 +3,9 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { SellForm, type SellFormPricing } from "@/components/sell/SellForm";
-import { PayoutRequestTrigger } from "@/components/sell/PayoutRequestModal";
+import { parseMonetizationSettings } from "@/lib/pricing";
 import { CancelAuctionButton } from "@/components/sell/CancelAuctionButton";
+import { PayoutRequestTrigger } from "@/components/sell/PayoutRequestModal";
 import { formatTND } from "@/lib/utils";
 import {
   Plus,
@@ -14,11 +15,13 @@ import {
   ChevronLeft,
   Wallet,
   Eye,
-  Building2,
-  CheckCircle2,
-  Hourglass,
   XCircle,
+  AlertTriangle,
+  Pencil,
+  Receipt,
+  ArrowRight,
 } from "lucide-react";
+import { parseRejection } from "@/lib/rejection";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -129,17 +132,11 @@ export default async function SellLandingPage({
   if (showForm) {
     return (
       <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 lg:max-w-[var(--max-w-content)]">
-        <header>
-          <span className="batta-eyebrow">Consign · new lot</span>
-          <h1
-            className={`mt-1.5 text-[26px] font-extrabold leading-tight tracking-tight ${
-              isRTL ? "font-arabic" : ""
-            }`}
-          >
-            {t("sell.title")}
-          </h1>
-          <p className="mt-1.5 text-[12.5px] text-muted">{t("sell.subtitle")}</p>
-        </header>
+        <NewListingHeader
+          title={t("sell.title")}
+          subtitle={t("sell.subtitle")}
+          isRTL={isRTL}
+        />
         <div className="mt-5">
           <SellForm pricing={pricing} />
         </div>
@@ -148,7 +145,7 @@ export default async function SellLandingPage({
   }
 
   // ─── Pull every piece of dashboard data in parallel ───────────────────
-  const [listingsRes, balanceRes, payoutsRes] = await Promise.all([
+  const [listingsRes, balanceRes, payoutsRes, failedPaymentsRes] = await Promise.all([
     supabase
       .from("properties")
       .select("id, title, type, governorate, status, rejection_reason, created_at")
@@ -162,6 +159,19 @@ export default async function SellLandingPage({
       .eq("seller_id", user!.id)
       .order("created_at", { ascending: false })
       .limit(10),
+    // Receipts the admin refused (or that the system auto-failed because
+    // the underlying property was rejected). Surfaced in the "Action
+    // requise" block so the seller has one place to see what's blocking
+    // their listing from going live.
+    supabase
+      .from("payments")
+      .select(
+        "id, kind, amount, admin_notes, reviewed_at, property_id, auction_id, property:properties(id, title)",
+      )
+      .eq("user_id", user!.id)
+      .eq("status", "failed")
+      .order("reviewed_at", { ascending: false })
+      .limit(20),
   ]);
 
   const listings = (listingsRes.data ?? []) as ListingRow[];
@@ -175,22 +185,27 @@ export default async function SellLandingPage({
     commission_rate: 0.05,
   }) as BalanceShape;
   const payouts = (payoutsRes.data ?? []) as PayoutRow[];
+  type FailedPaymentRow = {
+    id: string;
+    kind: string;
+    amount: number;
+    admin_notes: string | null;
+    reviewed_at: string | null;
+    property_id: string | null;
+    auction_id: string | null;
+    property: { id: string; title: string } | { id: string; title: string }[] | null;
+  };
+  const failedPayments = (failedPaymentsRes.data ?? []) as FailedPaymentRow[];
 
   // First-time experience: no listings → straight to the new-lot form.
   if (listings.length === 0) {
     return (
       <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 lg:max-w-[var(--max-w-content)]">
-        <header>
-          <span className="batta-eyebrow">Consign · new lot</span>
-          <h1
-            className={`mt-1.5 text-[26px] font-extrabold leading-tight tracking-tight ${
-              isRTL ? "font-arabic" : ""
-            }`}
-          >
-            {t("sell.title")}
-          </h1>
-          <p className="mt-1.5 text-[12.5px] text-muted">{t("sell.subtitle")}</p>
-        </header>
+        <NewListingHeader
+          title={t("sell.title")}
+          subtitle={t("sell.subtitle")}
+          isRTL={isRTL}
+        />
         <div className="mt-5">
           <SellForm pricing={pricing} />
         </div>
@@ -257,97 +272,185 @@ export default async function SellLandingPage({
 
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-10 lg:max-w-[var(--max-w-content)]">
-      <header className="flex items-end justify-between gap-3">
-        <div className="min-w-0">
-          <span className="batta-eyebrow">Tableau du vendeur</span>
-          <h1
-            className={`mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight ${
-              isRTL ? "font-arabic" : ""
-            }`}
-          >
-            {t("sell.myListings")}
-          </h1>
-        </div>
+      <header className="flex items-center justify-between gap-3">
+        <h1
+          className={`text-[24px] lg:text-[28px] font-extrabold leading-tight tracking-tight ${
+            isRTL ? "font-arabic" : ""
+          }`}
+        >
+          Tableau du vendeur
+        </h1>
         <Link
           href="/sell?new=1"
-          className="batta-btn-luxe tap-target shrink-0 px-4 py-2.5 text-[12px]"
+          className="batta-gradient-gold tap-target inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-[12.5px] font-bold text-white shadow-[var(--shadow-gold)] ring-1 ring-black/5 transition active:scale-[0.97]"
         >
-          <Plus className="size-3.5" strokeWidth={2.5} />
+          <Plus className="size-4" strokeWidth={2.6} />
           {t("sell.addNew")}
         </Link>
       </header>
 
-      {/* ─── Stat cards row ─── */}
-      <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
-        <StatCard
-          icon={<Building2 className="size-4" />}
-          label="Annonces"
-          value={String(listings.length)}
-        />
-        <StatCard
-          icon={<Gavel className="size-4" />}
-          label="Enchères en cours"
-          value={String(liveCount)}
-          highlight={liveCount > 0}
-        />
-        <StatCard
-          icon={<CheckCircle2 className="size-4" />}
-          label="Adjugées"
-          value={String(soldCount)}
-        />
-        <StatCard
-          icon={<Wallet className="size-4" />}
-          label="Solde disponible"
-          value={formatTND(balance.available, locale)}
-          highlight={balance.available > 0}
-        />
+      {/* ─── Earnings — slim summary, action-first. The big TND figure
+          no longer dominates an empty dashboard; the withdraw action sits
+          right next to the balance it acts on. ─── */}
+      <section className="mt-5 rounded-2xl bg-surface p-4 ring-1 ring-border sm:p-5">
+        <div className="flex items-stretch gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="batta-eyebrow flex items-center gap-1.5">
+              <Wallet className="size-3" strokeWidth={2.4} />
+              Solde disponible
+            </div>
+            <div dir="ltr" className="batta-tabular mt-1.5 flex items-baseline gap-1">
+              <span className="gradient-gold-text text-[28px] font-black leading-none">
+                {formatTND(balance.available, locale)}
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                {t("common.tnd")}
+              </span>
+            </div>
+          </div>
+          <div aria-hidden className="w-px self-stretch bg-border" />
+          <div className="min-w-0 shrink-0 text-end">
+            <div className="batta-eyebrow">En attente</div>
+            <div dir="ltr" className="batta-tabular mt-1.5 text-[18px] font-extrabold leading-none text-foreground/75">
+              {formatTND(balance.pending_payout, locale)}
+            </div>
+          </div>
+        </div>
+        <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-border pt-3">
+          <p className="text-[11px] leading-snug text-muted">
+            Commission Batta {Math.round(balance.commission_rate * 100)}% déjà déduite.
+          </p>
+          {balance.available > 0 && (
+            <PayoutRequestTrigger available={balance.available} locale={locale} />
+          )}
+        </div>
+      </section>
+
+      {/* ─── Stats — three tiles. ─── */}
+      <div className="mt-3 grid grid-cols-3 gap-2.5">
+        <Stat label="Annonces" value={listings.length} />
+        <Stat label="En cours" value={liveCount} highlight={liveCount > 0} />
+        <Stat label="Adjugées" value={soldCount} />
       </div>
 
-      {/* ─── Earnings panel ─── */}
-      <section className="mt-6 rounded-2xl border border-[var(--gold)]/20 bg-gradient-to-br from-[var(--surface)] to-[#1a1408] p-5 lg:p-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <div>
-            <span className="batta-eyebrow inline-flex items-center gap-2">
-              <Wallet className="size-3.5 text-[var(--gold)]" />
-              Revenus
-            </span>
-            <div className="batta-tabular gradient-gold-text mt-1.5 text-[36px] lg:text-[40px] font-extrabold leading-none">
-              {formatTND(balance.available, locale)}
-            </div>
-            <p className="mt-1.5 text-[11px] text-[var(--foreground-muted)]">
-              Disponible au retrait — commission Batta de {Math.round(balance.commission_rate * 100)}% déjà déduite.
-            </p>
-          </div>
-          <PayoutRequestTrigger
-            available={balance.available}
-            locale={locale}
-          />
-        </div>
-
-        <div className="mt-5 grid grid-cols-3 gap-2 lg:gap-4">
-          <MiniMetric
-            label="Brut cumulé"
-            value={formatTND(balance.lifetime_gross, locale)}
-          />
-          <MiniMetric
-            label="Commission Batta"
-            value={formatTND(balance.lifetime_commission, locale)}
-            tone="muted"
-          />
-          <MiniMetric
-            label="Déjà payé"
-            value={formatTND(balance.paid_out, locale)}
-            tone="muted"
-          />
-        </div>
-
-        {balance.pending_payout > 0 && (
-          <p className="mt-3 text-[11px] text-[var(--foreground-muted)] inline-flex items-center gap-1.5">
-            <Hourglass className="size-3 text-[var(--gold)]" />
-            {formatTND(balance.pending_payout, locale)} en cours de traitement.
-          </p>
-        )}
-      </section>
+      {/* ─── Action requise — only rendered when something is blocking
+              a listing. Surfaces both kinds of blockers in one place so
+              the seller doesn't have to dig through notifications:
+                · property rejected → "Corriger l'annonce" → /sell/<id>/edit
+                · receipt rejected  → "Renvoyer le reçu"   → checkout
+              Each row shows the category badge + the cleaned motif. ─── */}
+      {(() => {
+        const rejectedListings = listings.filter(
+          (l) => l.status === "rejected" && l.rejection_reason,
+        );
+        // De-dupe: if a property was rejected, we auto-failed its receipt
+        // with a "annonce refusée" note — don't show both rows for the
+        // same listing. Keep the property card (more actionable: fix the
+        // listing first; a new receipt is generated on resubmit).
+        const rejectedListingIds = new Set(rejectedListings.map((l) => l.id));
+        const receiptIssues = failedPayments.filter(
+          (p) => p.kind === "listing_fee" && !(p.property_id && rejectedListingIds.has(p.property_id)),
+        );
+        const totalActions = rejectedListings.length + receiptIssues.length;
+        if (totalActions === 0) return null;
+        return (
+          <section className="mt-6">
+            <h2 className="batta-eyebrow flex items-center gap-2 text-[var(--danger)]">
+              <AlertTriangle className="size-3.5" strokeWidth={2.5} />
+              Action requise · {totalActions}
+            </h2>
+            <ul className="mt-3 space-y-2.5">
+              {rejectedListings.map((p) => {
+                const r = parseRejection(p.rejection_reason);
+                const editHref = r.tagged && r.categories.length > 0
+                  ? `/sell/${p.id}/edit?focus=${r.categories.join(",")}`
+                  : `/sell/${p.id}/edit`;
+                return (
+                  <li
+                    key={p.id}
+                    className="rounded-2xl bg-[var(--danger)]/5 p-4 ring-1 ring-[var(--danger)]/20"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[var(--danger)]/15 text-[var(--danger)] ring-1 ring-[var(--danger)]/25">
+                        <Pencil className="size-4" strokeWidth={2.2} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="rounded-full bg-[var(--danger)]/15 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[var(--danger)]">
+                            À corriger · {r.label}
+                          </span>
+                          <span className="text-[10.5px] text-muted">
+                            {p.governorate} · {p.type}
+                          </span>
+                        </div>
+                        <h3
+                          className={`mt-1 line-clamp-1 text-[14px] font-bold ${isRTL ? "font-arabic" : ""}`}
+                        >
+                          {p.title}
+                        </h3>
+                        {r.message && (
+                          <p className="mt-1.5 text-[12px] leading-snug text-foreground/85">
+                            {r.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <Link
+                      href={editHref as `/sell/${string}/edit`}
+                      className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-[var(--radius)] bg-[var(--danger)] px-4 py-2.5 text-[12.5px] font-bold text-white transition hover:bg-red-700"
+                    >
+                      Corriger {r.tagged
+                        ? r.categories.length > 1
+                          ? `· ${r.categories.length} sections`
+                          : `· ${r.label.toLowerCase()}`
+                        : "l'annonce"}
+                      <ArrowRight className="size-3.5" strokeWidth={2.5} />
+                    </Link>
+                  </li>
+                );
+              })}
+              {receiptIssues.map((p) => {
+                const r = parseRejection(p.admin_notes);
+                const prop = Array.isArray(p.property) ? p.property[0] : p.property;
+                return (
+                  <li
+                    key={p.id}
+                    className="rounded-2xl bg-[var(--danger)]/5 p-4 ring-1 ring-[var(--danger)]/20"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[var(--danger)]/15 text-[var(--danger)] ring-1 ring-[var(--danger)]/25">
+                        <Receipt className="size-4" strokeWidth={2.2} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <span className="rounded-full bg-[var(--danger)]/15 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[var(--danger)]">
+                          Reçu refusé · {formatTND(Number(p.amount), locale)} TND
+                        </span>
+                        {prop && (
+                          <h3 className="mt-1 line-clamp-1 text-[14px] font-bold">
+                            {prop.title}
+                          </h3>
+                        )}
+                        {r.message && (
+                          <p className="mt-1.5 text-[12px] leading-snug text-foreground/85">
+                            {r.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <Link
+                      href={`/payment/checkout?payment=${p.id}` as `/payment/checkout?payment=${string}`}
+                      className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-[var(--radius)] bg-[var(--danger)] px-4 py-2.5 text-[12.5px] font-bold text-white transition hover:bg-red-700"
+                    >
+                      Renvoyer le reçu
+                      <ArrowRight className="size-3.5" strokeWidth={2.5} />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })()}
 
       {/* ─── Listings ─── */}
       <section className="mt-6">
@@ -364,15 +467,23 @@ export default async function SellLandingPage({
             const watches = auction ? (watchCount.get(auction.id) ?? 0) : 0;
             const price =
               auction?.current_price ?? auction?.opening_price ?? null;
+            // Tap the row to see the listing: its live auction if it has
+            // one, otherwise the editable detail of what was submitted.
+            const detailHref = auction
+              ? (`/auctions/${auction.id}` as `/auctions/${string}`)
+              : (`/sell/${p.id}/edit` as `/sell/${string}/edit`);
             return (
               <li
                 key={p.id}
                 className="rounded-xl bg-surface p-4 ring-1 ring-border transition-all hover:ring-gold-soft/40"
               >
-                <div className="flex items-start justify-between gap-3">
+                <Link
+                  href={detailHref}
+                  className="group flex items-start justify-between gap-3"
+                >
                   <div className="min-w-0 flex-1">
                     <h3
-                      className={`truncate text-[15px] font-bold leading-tight text-foreground ${
+                      className={`truncate text-[15px] font-bold leading-tight text-foreground transition-colors group-hover:text-[var(--gold)] ${
                         isRTL ? "font-arabic" : ""
                       }`}
                     >
@@ -381,14 +492,25 @@ export default async function SellLandingPage({
                     <div className="mt-1 truncate text-[10.5px] uppercase tracking-[0.14em] text-muted">
                       {p.governorate} · {p.type}
                     </div>
-                    {status === "rejected" && p.rejection_reason && (
-                      <div className="batta-tone-bad mt-2 rounded-md px-2 py-1 text-[10.5px]">
-                        {p.rejection_reason}
-                      </div>
-                    )}
+                    {status === "rejected" && p.rejection_reason && (() => {
+                      const r = parseRejection(p.rejection_reason);
+                      return (
+                        <div className="batta-tone-bad mt-2 rounded-md px-2 py-1 text-[10.5px]">
+                          {r.tagged && (
+                            <span className="me-1 font-extrabold uppercase tracking-[0.12em]">
+                              {r.label} ·
+                            </span>
+                          )}
+                          {r.message}
+                        </div>
+                      );
+                    })()}
                   </div>
-                  <StatusPill status={status} t={t} />
-                </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <StatusPill status={status} t={t} />
+                    <ChevronEnd className="size-4 text-muted transition-colors group-hover:text-[var(--gold)]" />
+                  </div>
+                </Link>
 
                 {/* Auction metrics row — only when there's an auction tied
                     to the listing. */}
@@ -425,14 +547,20 @@ export default async function SellLandingPage({
                     {t("sell.scheduleCta")}
                   </Link>
                 )}
-                {status === "rejected" && (
-                  <Link
-                    href={`/sell/${p.id}/edit` as `/sell/${string}/edit`}
-                    className="batta-btn-ghost-gold tap-target mt-3 w-full px-4 py-2.5 text-[12px]"
-                  >
-                    {t("sell.editCta")}
-                  </Link>
-                )}
+                {status === "rejected" && (() => {
+                  const r = parseRejection(p.rejection_reason);
+                  const href = r.tagged && r.categories.length > 0
+                    ? `/sell/${p.id}/edit?focus=${r.categories.join(",")}`
+                    : `/sell/${p.id}/edit`;
+                  return (
+                    <Link
+                      href={href as `/sell/${string}/edit`}
+                      className="batta-btn-ghost-gold tap-target mt-3 w-full px-4 py-2.5 text-[12px]"
+                    >
+                      {t("sell.editCta")}
+                    </Link>
+                  );
+                })()}
                 {auction && (
                   <Link
                     href={`/auctions/${auction.id}` as `/auctions/${string}`}
@@ -465,7 +593,7 @@ export default async function SellLandingPage({
 
       {/* ─── Payouts history ─── */}
       {payouts.length > 0 && (
-        <section className="mt-8">
+        <section id="payouts" className="mt-8 scroll-mt-20">
           <h2 className="batta-eyebrow flex items-center gap-2">
             <span aria-hidden className="batta-gold-rule-short" />
             Historique des retraits
@@ -523,70 +651,60 @@ export default async function SellLandingPage({
   );
 }
 
-function StatCard({
-  icon,
+function Stat({
   label,
   value,
   highlight,
 }: {
-  icon: React.ReactNode;
   label: string;
-  value: string;
+  value: number;
   highlight?: boolean;
 }) {
   return (
-    <div
-      className={`rounded-xl p-3.5 ring-1 ${
-        highlight
-          ? "bg-[var(--gold-faint)] ring-[var(--gold)]/30"
-          : "bg-surface ring-border"
-      }`}
-    >
+    <div className="rounded-xl bg-surface px-2 py-3 text-center ring-1 ring-border">
       <div
-        className={`text-[10px] font-extrabold uppercase tracking-[0.16em] inline-flex items-center gap-1.5 ${
-          highlight ? "text-[var(--gold)]" : "text-[var(--foreground-muted)]"
-        }`}
-      >
-        {icon}
-        {label}
-      </div>
-      <div
-        className={`batta-tabular mt-1.5 text-[20px] lg:text-[22px] font-extrabold leading-none ${
+        className={`batta-tabular text-[24px] font-extrabold leading-none ${
           highlight ? "gradient-gold-text" : "text-foreground"
         }`}
       >
         {value}
       </div>
+      <div className="mt-1 text-[9.5px] font-bold uppercase tracking-[0.14em] text-[var(--foreground-muted)]">
+        {label}
+      </div>
     </div>
   );
 }
 
-function MiniMetric({
-  label,
-  value,
-  tone = "default",
+// Shared header for the new-listing form (both the empty-state and the
+// explicit `?new=1` entry point). Replaces the old English eyebrow.
+function NewListingHeader({
+  title,
+  subtitle,
+  isRTL,
 }: {
-  label: string;
-  value: string;
-  tone?: "default" | "muted";
+  title: string;
+  subtitle: string;
+  isRTL: boolean;
 }) {
   return (
-    <div>
-      <div className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[var(--foreground-subtle)]">
-        {label}
-      </div>
-      <div
-        className={`batta-tabular mt-0.5 text-[13px] lg:text-[15px] font-bold ${
-          tone === "muted"
-            ? "text-[var(--foreground-muted)]"
-            : "text-foreground"
+    <header>
+      <span className="batta-eyebrow flex items-center gap-2">
+        <span aria-hidden className="batta-gold-rule-short" />
+        Nouvelle annonce
+      </span>
+      <h1
+        className={`mt-2 text-[26px] font-extrabold leading-tight tracking-tight ${
+          isRTL ? "font-arabic" : ""
         }`}
       >
-        {value}
-      </div>
-    </div>
+        {title}
+      </h1>
+      <p className="mt-1.5 text-[12.5px] text-muted">{subtitle}</p>
+    </header>
   );
 }
+
 
 function StatusPill({
   status,
@@ -621,23 +739,20 @@ async function fetchSellPricing(
     .from("app_settings")
     .select("key, value")
     .in("key", [
-      "listing_fee_tnd",
-      "listing_fee_offer_tnd",
-      "promo_home_featured_tnd",
-      "promo_top_listed_tnd",
-      "promo_banner_tnd",
+      "fee_listing_auction",
+      "fee_listing_direct",
+      "promo_home",
+      "promo_top",
+      "promo_banner",
     ]);
-  const m = new Map<string, number>();
-  for (const r of data ?? []) {
-    const v = (r as { value: unknown }).value;
-    const n = typeof v === "number" ? v : Number(v);
-    m.set((r as { key: string }).key, Number.isFinite(n) ? n : 0);
-  }
+  const m = new Map<string, unknown>();
+  for (const r of data ?? []) m.set((r as { key: string }).key, (r as { value: unknown }).value);
+  const mon = parseMonetizationSettings(m);
   return {
-    listing_fee_tnd: m.get("listing_fee_tnd") ?? 20,
-    listing_fee_offer_tnd: m.get("listing_fee_offer_tnd") ?? 15,
-    promo_home_featured_tnd: m.get("promo_home_featured_tnd") ?? 15,
-    promo_top_listed_tnd: m.get("promo_top_listed_tnd") ?? 10,
-    promo_banner_tnd: m.get("promo_banner_tnd") ?? 30,
+    feeAuction: mon.feeListingAuction,
+    feeDirect: mon.feeListingDirect,
+    promoHome: mon.promoHome,
+    promoTop: mon.promoTop,
+    promoBanner: mon.promoBanner,
   };
 }

@@ -70,12 +70,17 @@ interface BaseProps {
 //  - Documents / IDs / credentials → WebP. AVIF's block transform is
 //    rougher on small text and the admin review queue needs the CIN
 //    digits and credential names to stay crisp.
+//
+// KYC sizing rationale: a Tunisian CIN is 85×54 mm. 1600 px on the
+// long edge gives ~19 px/mm — well above the 12 px/mm threshold OCR
+// engines and human reviewers need for the printed digits to read
+// cleanly. Going larger (the old 2000 px) just shipped padding bytes.
 const PRESETS: Record<string, CompressOptions> = {
   properties: { maxEdge: 1600, quality: 0.62, format: "auto" },
-  kyc: { maxEdge: 2000, quality: 0.86, format: "webp" },
-  "property-documents": { maxEdge: 2000, quality: 0.86, format: "webp" },
-  "inspector-credentials": { maxEdge: 2000, quality: 0.86, format: "webp" },
-  "inspection-reports": { maxEdge: 2000, quality: 0.86, format: "webp" },
+  kyc: { maxEdge: 1600, quality: 0.82, format: "webp" },
+  "property-documents": { maxEdge: 1800, quality: 0.84, format: "webp" },
+  "inspector-credentials": { maxEdge: 1600, quality: 0.82, format: "webp" },
+  "inspection-reports": { maxEdge: 1800, quality: 0.84, format: "webp" },
   default: { maxEdge: 1600, quality: 0.62, format: "auto" },
 };
 

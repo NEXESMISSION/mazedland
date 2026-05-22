@@ -125,14 +125,17 @@ export function AuctionEndModal({ auction, userId, locale }: Props) {
             <div className="relative h-20 w-20 mx-auto">
               <div className="absolute inset-0 rounded-full bg-[var(--gold-faint)] animate-ping" />
               <div className="relative h-20 w-20 rounded-full bg-[var(--gold)] flex items-center justify-center shadow-[var(--shadow-gold)]">
-                <Trophy className="h-10 w-10 text-black" />
+                <Trophy className="h-10 w-10 text-white" />
               </div>
             </div>
           ),
           title: "Adjugé · vous avez gagné",
           body: `Votre offre gagnante : ${formatTND(outcome.finalPrice, locale)}. Prochaine étape : signature de l'acte chez le notaire dans les délais légaux.`,
           primary: (
-            <Link href="/account/wins" className="block">
+            <Link
+              href={{ pathname: "/account/activity", query: { tab: "gagnees" } }}
+              className="block"
+            >
               <Button size="md" fullWidth>
                 <Trophy className="h-4 w-4" />
                 Mes acquisitions
@@ -149,8 +152,8 @@ export function AuctionEndModal({ auction, userId, locale }: Props) {
           ),
           title: "Cette enchère est terminée",
           body: outcome.winningPrice
-            ? `L'offre gagnante était de ${formatTND(outcome.winningPrice, locale)}. Votre caution sera remboursée sous 24 heures.`
-            : "Votre caution sera remboursée sous 24 heures. Bonne chance pour la prochaine.",
+            ? `L'offre gagnante était de ${formatTND(outcome.winningPrice, locale)}. Votre caution vous sera remboursée après la clôture.`
+            : "Votre caution vous sera remboursée après la clôture. Bonne chance pour la prochaine.",
           primary: (
             <Link href="/properties" className="block">
               <Button size="md" fullWidth>

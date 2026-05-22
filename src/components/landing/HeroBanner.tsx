@@ -20,6 +20,11 @@ export type HeroSlide = {
   href: string;
   /** CTA text on the corner badge (defaults to "View"). */
   ctaLabel?: string;
+  /** "brand" → dedicated welcome layout (big live-count stat, gold rule,
+   *  centered CTA). Anything else uses the standard photo-overlay slide. */
+  kind?: "brand";
+  /** Live auction count, surfaced as the hero stat on a brand slide. */
+  liveCount?: number;
 };
 
 /**
@@ -237,58 +242,43 @@ function SlideCard({
   priority: boolean;
   active: boolean;
 }) {
+  // The brand slide gets a dedicated layout — see BrandSlide below.
+  // Photo slides keep the original photo + bottom-text composition.
+  if (slide.kind === "brand") {
+    return (
+      <BrandSlide slide={slide} isRTL={isRTL} active={active} />
+    );
+  }
+  return <PhotoSlide slide={slide} isRTL={isRTL} priority={priority} active={active} />;
+}
+
+function PhotoSlide({
+  slide,
+  isRTL,
+  priority,
+  active,
+}: {
+  slide: HeroSlide;
+  isRTL: boolean;
+  priority: boolean;
+  active: boolean;
+}) {
   const [imageBroken, setImageBroken] = useState(false);
   const showImage = !!slide.imageUrl && !imageBroken;
 
   return (
     <Link
       href={slide.href as `/${string}`}
-      // Inactive slides are hidden from screen readers + keyboard tab
-      // order so the carousel doesn't expose every slide as a tap stop.
       aria-hidden={!active}
       tabIndex={active ? 0 : -1}
       className="group relative block aspect-[16/11] w-full shrink-0 overflow-hidden bg-surface-2"
       style={{ minWidth: "100%" }}
       draggable={false}
     >
-      {/* Brand-gradient backdrop — painted under the photo so a slow
-          image load or a broken URL never leaves the slide blank.
-          Navy → deep navy gradient on a white page reads as a
-          sophisticated "we're loading the photo" placeholder. */}
       {showImage ? (
         <div className="absolute inset-0 bg-gradient-to-br from-[var(--gold-deep)] via-[var(--gold)] to-[var(--gold-deep)]" />
       ) : (
-        <div className="batta-surface-navy-luxe absolute inset-0">
-          {/* Radial gold glow + decorative concentric arcs centred on
-              the slide. Pure CSS, no asset request — sits in for the
-              missing photograph and lets the slide land as a designed
-              composition. */}
-          <div
-            aria-hidden
-            className="absolute inset-0 opacity-90"
-            style={{
-              background:
-                "radial-gradient(60% 80% at 50% 35%, rgba(30, 58, 138, 0.10) 0%, rgba(30, 58, 138, 0.05) 35%, transparent 70%)",
-            }}
-          />
-          <div
-            aria-hidden
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 50% 38%, transparent 70px, rgba(30, 58, 138, 0.10) 71px, transparent 72px), radial-gradient(circle at 50% 38%, transparent 110px, rgba(30, 58, 138, 0.06) 111px, transparent 112px)",
-            }}
-          />
-          {/* Gold monogram seal — the missing-photo affordance. */}
-          <div
-            aria-hidden
-            className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2"
-          >
-            <div className="batta-monogram-filled flex h-14 w-14 items-center justify-center text-[20px] font-extrabold">
-              B
-            </div>
-          </div>
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-br from-[var(--gold-deep)] via-[var(--gold)] to-[var(--gold-deep)]" />
       )}
 
       {showImage && (
@@ -306,18 +296,8 @@ function SlideCard({
         />
       )}
 
-      {/* Dark gradient overlay so the text always reads. Lighter when
-          there's no photo behind it — the brand composition already
-          provides contrast on its own. */}
-      <div
-        className={`absolute inset-0 ${
-          showImage
-            ? "bg-gradient-to-t from-black/80 via-black/35 to-black/15"
-            : "bg-gradient-to-t from-black/55 via-transparent to-transparent"
-        }`}
-      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/15" />
 
-      {/* Text overlay */}
       <div
         className={`absolute inset-0 z-[1] flex flex-col justify-end p-5 ${
           isRTL ? "items-end text-right" : "items-start text-left"
@@ -343,10 +323,161 @@ function SlideCard({
         )}
       </div>
 
-      {/* CTA badge */}
       <span className="batta-gold-fill absolute top-3 z-[1] inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)] ltr:right-3 rtl:left-3">
         {slide.ctaLabel ?? "View"}
       </span>
+    </Link>
+  );
+}
+
+/**
+ * Brand-pitch slide. Replaces the "logo as background + same caption
+ * layout as photo slides" treatment with a dedicated luxe composition:
+ *
+ *   • Deep navy gradient with a gold radial bloom + concentric arcs.
+ *   • The live auction count as the hero typographic figure when there
+ *     is one — the only number on a homepage that says "real market".
+ *   • Pretty headline split: marketing line in white, "Tunisia" word
+ *     pulled out in gradient gold so the eye lands somewhere.
+ *   • Single centered gold CTA pill instead of a disconnected corner
+ *     badge — the slide reads as one composition.
+ */
+function BrandSlide({
+  slide,
+  isRTL,
+  active,
+}: {
+  slide: HeroSlide;
+  isRTL: boolean;
+  active: boolean;
+}) {
+  const hasLiveCount = (slide.liveCount ?? 0) > 0;
+  return (
+    <Link
+      href={slide.href as `/${string}`}
+      aria-hidden={!active}
+      tabIndex={active ? 0 : -1}
+      className="group relative block aspect-[16/11] w-full shrink-0 overflow-hidden bg-[#0a1530]"
+      style={{ minWidth: "100%" }}
+      draggable={false}
+    >
+      {/* Deep navy base with a warm gold bloom up top — sets the luxe
+          stage without an external image. */}
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(70% 60% at 50% 20%, rgba(212, 175, 55, 0.22) 0%, rgba(30, 58, 138, 0.0) 60%), linear-gradient(180deg, #0d1b3d 0%, #08122a 100%)",
+        }}
+      />
+      {/* Concentric gold arcs behind the headline — pure CSS, no asset. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-70"
+        style={{
+          backgroundImage: [
+            "radial-gradient(circle at 50% 32%, transparent 96px, rgba(212,175,55,0.18) 97px, transparent 99px)",
+            "radial-gradient(circle at 50% 32%, transparent 138px, rgba(212,175,55,0.12) 139px, transparent 141px)",
+            "radial-gradient(circle at 50% 32%, transparent 188px, rgba(212,175,55,0.07) 189px, transparent 191px)",
+          ].join(", "),
+        }}
+      />
+      {/* Gold hairline along the bottom — finishing accent. */}
+      <span
+        aria-hidden
+        className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-transparent via-[#d4af37] to-transparent"
+      />
+
+      {/* Three-row vertical layout: eyebrow up top, hero stat + headline
+          dead-centered, CTA pinned to the bottom with safe space above
+          the pagination dots. Using justify-between (with a flex-1
+          centered middle) gives consistent rhythm whether or not
+          `hasLiveCount` is true. */}
+      <div
+        className={`absolute inset-0 z-[1] flex flex-col items-center px-5 pt-4 pb-9 text-center ${
+          isRTL ? "font-arabic" : ""
+        }`}
+      >
+        {/* Top — eyebrow. */}
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/35 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm">
+          {hasLiveCount && (
+            <span
+              aria-hidden
+              className="size-1.5 rounded-full bg-red-500 pulse-gold"
+              style={{ boxShadow: "0 0 8px rgba(239,68,68,0.6)" }}
+            />
+          )}
+          {hasLiveCount ? "En direct" : "Batta · Tunisie"}
+        </span>
+
+        {/* Middle — stretches to fill, centers its content vertically. */}
+        <div className="flex flex-1 flex-col items-center justify-center">
+          {/* Hero stat: big number stacked over its tiny label, so the
+              count owns the optical center instead of having a small
+              word floating next to it on the baseline. */}
+          {hasLiveCount && (
+            <div className="flex flex-col items-center leading-none">
+              <span
+                className="batta-tabular text-[56px] font-black leading-[0.95] tracking-tight md:text-[64px]"
+                style={{
+                  background:
+                    "linear-gradient(180deg, #f7e4a3 0%, #d4af37 55%, #b08a1f 100%)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  color: "transparent",
+                  textShadow: "0 4px 24px rgba(212,175,55,0.25)",
+                }}
+              >
+                {slide.liveCount}
+              </span>
+              <span className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.32em] text-white/65">
+                Enchères
+              </span>
+            </div>
+          )}
+
+          {/* Headline — gold for the last word so the eye lands. */}
+          <h2 className="mt-3 max-w-[18ch] text-balance text-[20px] font-extrabold leading-[1.1] tracking-tight text-white md:text-[24px]">
+            La maison des enchères{" "}
+            <span
+              style={{
+                background:
+                  "linear-gradient(180deg, #f7e4a3 0%, #d4af37 60%, #b08a1f 100%)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+              }}
+            >
+              tunisiennes
+            </span>
+          </h2>
+
+          {/* Trust line — three values with gold dot separators. */}
+          <div className="mt-2 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">
+            Transparence
+            <span aria-hidden className="size-1 rounded-full bg-[#d4af37]" />
+            Rapidité
+            <span aria-hidden className="size-1 rounded-full bg-[#d4af37]" />
+            Confiance
+          </div>
+        </div>
+
+        {/* Bottom — CTA. The pb-9 on the parent leaves ~28 px of clear
+            space below this pill so the carousel's pagination dots
+            (positioned at bottom-3 inside the track) no longer overlap
+            the button. */}
+        <span
+          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full px-6 text-[11.5px] font-extrabold uppercase tracking-[0.16em] text-[#0a1530] shadow-[0_12px_28px_-8px_rgba(212,175,55,0.65)] ring-1 ring-black/10 transition group-hover:scale-[1.03]"
+          style={{
+            background:
+              "linear-gradient(180deg, #f7e4a3 0%, #d4af37 55%, #a8841e 100%)",
+          }}
+        >
+          {slide.ctaLabel ?? "Explorer"}
+          <span aria-hidden className="text-[14px] leading-none">→</span>
+        </span>
+      </div>
     </Link>
   );
 }

@@ -7,13 +7,14 @@ import { Clock } from "lucide-react";
 import { LiveTimer } from "./LiveTimer";
 
 /**
- * Auto-scrolling marquee of live / soon-ending auctions. CSS-only loop
- * (see .batta-marquee in globals.css) — the track holds the items twice
- * so the wrap-around is seamless at the seam.
+ * Auto-scrolling marquee of LIVE auctions. CSS-only loop (see
+ * .batta-marquee in globals.css) — the track holds the items twice so
+ * the wrap-around is seamless at the seam.
  *
- * Fail-soft: if Supabase is empty / unconfigured we render a curated set
- * of placeholder strings so the landing always shows movement and the
- * "this thing is alive" cue survives a fresh clone.
+ * Strictly real data: if Supabase returns zero live rows we render
+ * nothing. A fake placeholder ticker reads as "look how alive we are"
+ * but is misleading when the catalogue is actually empty — better to
+ * stay silent than to lie on the homepage.
  */
 export async function LiveTicker() {
   const t = await getTranslations();
@@ -47,9 +48,10 @@ export async function LiveTicker() {
     items = [];
   }
 
-  if (items.length === 0) {
-    items = PLACEHOLDERS;
-  }
+  // Empty catalogue → render nothing. The home page's other rails
+  // already absorb the "we're loading" state; an empty ticker doesn't
+  // need a stand-in.
+  if (items.length === 0) return null;
 
   // The CSS marquee translates 0 → -50% of the track, which only loops
   // seamlessly when ONE copy (= half the track) is at least the
@@ -118,72 +120,27 @@ function TickerCell({
   locale: string;
   ariaHidden?: boolean;
 }) {
-  const Inner = (
-    <li
-      className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-batta-surface-2 px-3 py-1 text-xs ring-1 ring-batta-gold/25 ltr:me-3 rtl:ms-3"
-      aria-hidden={ariaHidden}
-    >
-      <span className="batta-pulse-dot inline-flex size-1.5 rounded-full bg-red-500 text-red-500/40" />
-      <span className="font-semibold text-batta-cream">{item.title}</span>
-      <span className="text-batta-muted">·</span>
-      <span className="text-batta-cream/70">{item.governorate}</span>
-      <span className="text-batta-muted">·</span>
-      <span className="batta-gold-text batta-tabular font-bold">{formatTND(item.price, locale)}</span>
-      <span className="text-batta-muted">·</span>
-      <span className="inline-flex items-center gap-0.5 text-batta-cream/70">
-        <Clock className="size-3" strokeWidth={1.75} />{" "}
-        <LiveTimer endsAt={item.endsAt} className="font-semibold" />
-      </span>
-    </li>
-  );
-
-  // Real items link to their auction; placeholders link to /properties so
-  // the click is never a dead end.
-  if (item.id.startsWith("placeholder-")) {
-    return (
-      <Link href="/properties" className="contents">
-        {Inner}
-      </Link>
-    );
-  }
   return (
-    <Link href={`/auctions/${item.id}` as `/auctions/${string}`} className="contents">
-      {Inner}
+    <Link
+      href={`/auctions/${item.id}` as `/auctions/${string}`}
+      className="contents"
+    >
+      <li
+        className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-batta-surface-2 px-3 py-1 text-xs ring-1 ring-batta-gold/25 ltr:me-3 rtl:ms-3"
+        aria-hidden={ariaHidden}
+      >
+        <span className="batta-pulse-dot inline-flex size-1.5 rounded-full bg-red-500 text-red-500/40" />
+        <span className="font-semibold text-batta-cream">{item.title}</span>
+        <span className="text-batta-muted">·</span>
+        <span className="text-batta-cream/70">{item.governorate}</span>
+        <span className="text-batta-muted">·</span>
+        <span className="batta-gold-text batta-tabular font-bold">{formatTND(item.price, locale)}</span>
+        <span className="text-batta-muted">·</span>
+        <span className="inline-flex items-center gap-0.5 text-batta-cream/70">
+          <Clock className="size-3" strokeWidth={1.75} />{" "}
+          <LiveTimer endsAt={item.endsAt} className="font-semibold" />
+        </span>
+      </li>
     </Link>
   );
-}
-
-
-// Curated placeholder set used when no real auctions exist — keeps the
-// landing alive on the very first dev boot and gives marketing a
-// realistic preview of the ticker.
-const PLACEHOLDERS: TickerItem[] = [
-  {
-    id: "placeholder-1", title: "Villa Sidi Bou Said", governorate: "Tunis",
-    price: 850_000, endsAt: isoIn(2, 14), live: true,
-  },
-  {
-    id: "placeholder-2", title: "Appartement S+3 La Marsa", governorate: "Tunis",
-    price: 420_000, endsAt: isoIn(0, 8), live: true,
-  },
-  {
-    id: "placeholder-3", title: "Terrain agricole", governorate: "Nabeul",
-    price: 95_000, endsAt: isoIn(1, 6), live: true,
-  },
-  {
-    id: "placeholder-4", title: "Local commercial Avenue", governorate: "Sousse",
-    price: 320_000, endsAt: isoIn(3, 2), live: true,
-  },
-  {
-    id: "placeholder-5", title: "Maison de campagne", governorate: "Bizerte",
-    price: 180_000, endsAt: isoIn(0, 12), live: true,
-  },
-  {
-    id: "placeholder-6", title: "Duplex centre-ville", governorate: "Sfax",
-    price: 520_000, endsAt: isoIn(4, 0), live: true,
-  },
-];
-
-function isoIn(days: number, hours: number): string {
-  return new Date(Date.now() + days * 86_400_000 + hours * 3_600_000).toISOString();
 }

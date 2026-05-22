@@ -6,6 +6,10 @@ import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { stripLocalePrefix } from "@/i18n/routing";
+import { PhoneInput } from "./PhoneInput";
+import { normalizeE164 } from "@/lib/tunisia";
+
+type Mode = "email" | "phone";
 
 /**
  * Honor a `?next=/some/path` query param so users coming from a "Sign in
@@ -47,7 +51,10 @@ export function LoginForm() {
   const safeNext = safeNextPath(rawNext);
   const next = safeNext === "/" ? "/" : stripLocalePrefix(safeNext);
 
+  const [mode, setMode] = useState<Mode>("email");
   const [email, setEmail] = useState("");
+  const [dialCode, setDialCode] = useState("+216");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -56,8 +63,45 @@ export function LoginForm() {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
+      // Resolve the email we'll sign in with. In email mode it's typed
+      // directly; in phone mode we POST to /api/auth/email-by-phone
+      // (service-role lookup) which returns the auth.users email for
+      // that phone — or null if none, in which case we surface the same
+      // "invalid credentials" wording Supabase would.
+      let signInEmail = email.trim();
+      if (mode === "phone") {
+        const phone = normalizeE164(dialCode, phoneNumber);
+        if (!phone) {
+          setError(
+            dialCode === "+216"
+              ? "Numéro invalide — 8 chiffres après l'indicatif (+216)."
+              : "Numéro invalide — vérifiez l'indicatif et le numéro.",
+          );
+          return;
+        }
+        try {
+          const res = await fetch("/api/auth/email-by-phone", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone }),
+          });
+          const data = (await res.json()) as { email: string | null };
+          if (!data.email) {
+            setError("Identifiants invalides.");
+            return;
+          }
+          signInEmail = data.email;
+        } catch {
+          setError("Connexion impossible — réessayez.");
+          return;
+        }
+      }
+
       const supabase = getBrowserSupabase();
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({
+        email: signInEmail,
+        password,
+      });
       if (error) {
         setError(error.message);
         return;
@@ -76,9 +120,52 @@ export function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Field label="Email" type="email" value={email} onChange={setEmail} required />
-      <Field label="Password" type="password" value={password} onChange={setPassword} required />
-      <div className="flex justify-end -mt-1">
+      {/* Mode toggle — two-pill segmented control. State is local; the
+          form keeps both email and phone inputs mounted (each in their
+          own conditional) so switching back doesn't wipe what was
+          typed. */}
+      <div
+        role="tablist"
+        aria-label="Méthode de connexion"
+        className="grid grid-cols-2 gap-1 rounded-full bg-batta-surface-2 p-1 ring-1 ring-batta-gold/20"
+      >
+        <ModeTab active={mode === "email"} onClick={() => setMode("email")}>
+          Email
+        </ModeTab>
+        <ModeTab active={mode === "phone"} onClick={() => setMode("phone")}>
+          Téléphone
+        </ModeTab>
+      </div>
+
+      {mode === "email" ? (
+        <Field
+          label="Email"
+          type="email"
+          value={email}
+          onChange={setEmail}
+          required
+        />
+      ) : (
+        <label className="block">
+          <span className="batta-eyebrow text-[10px]">Téléphone</span>
+          <PhoneInput
+            dialCode={dialCode}
+            onDialCodeChange={setDialCode}
+            number={phoneNumber}
+            onNumberChange={setPhoneNumber}
+            required
+          />
+        </label>
+      )}
+
+      <Field
+        label="Mot de passe"
+        type="password"
+        value={password}
+        onChange={setPassword}
+        required
+      />
+      <div className="-mt-1 flex justify-end">
         <Link
           href="/forgot-password"
           className="text-[11.5px] font-semibold text-batta-cream/75 hover:text-gold-bright"
@@ -95,6 +182,32 @@ export function LoginForm() {
         {isPending ? t("common.loading") : t("nav.login")}
       </button>
     </form>
+  );
+}
+
+function ModeTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={
+        active
+          ? "rounded-full bg-batta-gold px-3 py-1.5 text-[12px] font-extrabold text-white shadow-[var(--shadow-gold)]"
+          : "rounded-full px-3 py-1.5 text-[12px] font-semibold text-batta-cream/70 transition hover:text-batta-cream"
+      }
+    >
+      {children}
+    </button>
   );
 }
 

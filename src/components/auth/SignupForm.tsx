@@ -6,57 +6,66 @@ import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { MailCheck } from "lucide-react";
+import { PhoneInput } from "./PhoneInput";
+import { TUNISIAN_GOVERNORATES, normalizeE164 } from "@/lib/tunisia";
 
 // Signup is intentionally identity-only. Role elevation (agency, bank,
 // bailiff, inspector, admin) happens via dedicated admin-reviewed flows
 // after signup — never client-supplied. The DB's _on_auth_user_created
 // trigger ignores any client-set role and pins new profiles to
 // 'individual' regardless.
+//
+// Required fields (audit: we lost too many KYC-eligible users to optional
+// phone + no ville on signup):
+//   - full name
+//   - email + password
+//   - dial code + phone (split fields → composed to E.164 on submit)
+//   - ville / gouvernorat (24-item native select)
+//
+// All four metadata keys (full_name, phone, governorate, language) are
+// passed via `options.data` and picked up by `_on_auth_user_created`
+// (migration 0045) when the auth.users row is inserted.
 export function SignupForm() {
   const t = useTranslations();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [dialCode, setDialCode] = useState("+216");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [governorate, setGovernorate] = useState("");
   const [error, setError] = useState<string | null>(null);
-  // When the project requires email confirmation, we land here on success
-  // instead of bouncing to /login (audit #7) so the user actually knows
-  // a confirmation email is on the way.
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    // Phone is optional, but if present we want a sane Tunisia format
-    // so a downstream SMS provider doesn't bounce. Accept the local
-    // 8-digit form (12345678) or the E.164 form (+21612345678); we
-    // normalize to E.164 before sending.
-    let normalizedPhone: string | null = null;
-    if (phone.trim()) {
-      const digits = phone.replace(/[^\d+]/g, "");
-      if (/^\+216\d{8}$/.test(digits)) {
-        normalizedPhone = digits;
-      } else if (/^00216\d{8}$/.test(digits)) {
-        normalizedPhone = `+${digits.slice(2)}`;
-      } else if (/^\d{8}$/.test(digits)) {
-        normalizedPhone = `+216${digits}`;
-      } else {
-        setError(
-          "Numéro de téléphone invalide — utilisez 12345678 ou +21612345678.",
-        );
-        return;
-      }
+    const normalizedPhone = normalizeE164(dialCode, phoneNumber);
+    if (!normalizedPhone) {
+      setError(
+        dialCode === "+216"
+          ? "Numéro de téléphone invalide — 8 chiffres après l'indicatif (+216)."
+          : "Numéro de téléphone invalide — vérifiez l'indicatif et le numéro.",
+      );
+      return;
+    }
+    if (!governorate) {
+      setError("Sélectionnez votre gouvernorat.");
+      return;
     }
     startTransition(async () => {
       const supabase = getBrowserSupabase();
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        // Only stash the safe display fields. The trigger reads these
-        // and ignores any other key (including a hypothetical `role`).
-        options: { data: { full_name: fullName, phone: normalizedPhone } },
+        options: {
+          data: {
+            full_name: fullName,
+            phone: normalizedPhone,
+            governorate,
+          },
+        },
       });
       if (error) {
         setError(error.message);
@@ -85,17 +94,41 @@ export function SignupForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Field label="Full name" value={fullName} onChange={setFullName} required />
+      <Field label="Nom complet" value={fullName} onChange={setFullName} required />
       <Field label="Email" type="email" value={email} onChange={setEmail} required />
+
+      <label className="block">
+        <span className="batta-eyebrow text-[10px]">Téléphone</span>
+        <PhoneInput
+          dialCode={dialCode}
+          onDialCodeChange={setDialCode}
+          number={phoneNumber}
+          onNumberChange={setPhoneNumber}
+          required
+        />
+      </label>
+
+      <label className="block">
+        <span className="batta-eyebrow text-[10px]">Gouvernorat</span>
+        <select
+          value={governorate}
+          onChange={(e) => setGovernorate(e.target.value)}
+          required
+          className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+        >
+          <option value="" disabled className="bg-batta-surface-2">
+            Choisir votre gouvernorat…
+          </option>
+          {TUNISIAN_GOVERNORATES.map((g) => (
+            <option key={g} value={g} className="bg-batta-surface-2">
+              {g}
+            </option>
+          ))}
+        </select>
+      </label>
+
       <Field
-        label="Téléphone (optionnel)"
-        type="tel"
-        value={phone}
-        onChange={setPhone}
-        placeholder="12345678"
-      />
-      <Field
-        label="Password (min 8)"
+        label="Mot de passe (min 8)"
         type="password"
         value={password}
         onChange={setPassword}
@@ -113,8 +146,8 @@ export function SignupForm() {
         {isPending ? t("common.loading") : t("nav.signup")}
       </button>
       <p className="text-center text-[11px] text-batta-muted">
-        Need a partner / inspector account? Sign up here first, then apply from{" "}
-        <span className="text-batta-cream">Account</span>.
+        Compte partenaire (agence, expert, banque) ? Créez un compte ici puis
+        candidatez depuis <span className="text-batta-cream">Compte</span>.
       </p>
     </form>
   );

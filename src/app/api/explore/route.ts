@@ -58,6 +58,10 @@ export const GET = withRouteLogger(async (req: NextRequest) => {
     .filter((s): s is PropertyType => (VALID_TYPES as string[]).includes(s));
 
   const gov = sp.get("gov")?.trim() || null;
+  // Free-text search across the listing's title / location. Stripped of the
+  // characters that have meaning inside a PostgREST or() filter so a stray
+  // comma or paren can't break the query.
+  const term = (sp.get("q") ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
   const minPrice = numOrNull(sp.get("min_price"));
   const maxPrice = numOrNull(sp.get("max_price"));
   const minArea = numOrNull(sp.get("min_area"));
@@ -95,6 +99,14 @@ export const GET = withRouteLogger(async (req: NextRequest) => {
 
   if (types.length > 0) q = q.in("property.type", types);
   if (gov) q = q.eq("property.governorate", gov);
+  // Match the term against title OR governorate OR address on the embedded
+  // property (referencedTable scopes the or() to the joined resource).
+  if (term) {
+    q = q.or(
+      `title.ilike.*${term}*,governorate.ilike.*${term}*,address.ilike.*${term}*`,
+      { referencedTable: "property" },
+    );
+  }
   if (minArea !== null) q = q.gte("property.area_sqm", minArea);
   if (minRooms !== null) q = q.gte("property.rooms", minRooms);
 

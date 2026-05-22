@@ -132,7 +132,7 @@ export function DirectSalePanel({
               </div>
             </div>
             <Link
-              href="/account/wins"
+              href={{ pathname: "/account/activity", query: { tab: "gagnees" } }}
               className="shrink-0 text-[12px] font-semibold text-[var(--gold)] hover:underline"
             >
               Mes acquisitions →

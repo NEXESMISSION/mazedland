@@ -1,16 +1,38 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import type { AuctionType } from "@/lib/types";
-import { CheckCircle2, Gavel, EyeOff, TrendingDown } from "lucide-react";
+import { CheckCircle2, Check, Gavel, EyeOff, TrendingDown } from "lucide-react";
 
-const FORMATS: { value: AuctionType; Icon: React.ComponentType<{ className?: string }> }[] = [
-  { value: "english", Icon: Gavel },
-  { value: "sealed", Icon: EyeOff },
-  { value: "dutch", Icon: TrendingDown },
+// Each format carries a plain-French one-liner so the seller actually
+// understands what they're choosing — that was the confusing part.
+const FORMATS: {
+  value: AuctionType;
+  Icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  desc: string;
+}[] = [
+  {
+    value: "english",
+    Icon: Gavel,
+    label: "Anglaise",
+    desc: "Le prix monte à chaque offre. La plus haute l'emporte à la clôture.",
+  },
+  {
+    value: "sealed",
+    Icon: EyeOff,
+    label: "Cachetée",
+    desc: "Offres secrètes, révélées à la fin. La plus élevée gagne.",
+  },
+  {
+    value: "dutch",
+    Icon: TrendingDown,
+    label: "Dégressive",
+    desc: "Le prix baisse avec le temps. Le premier à accepter remporte le lot.",
+  },
 ];
 
 function defaultStart() {
@@ -49,6 +71,17 @@ export function ScheduleForm({ propertyId }: { propertyId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Human-readable window length, shown under the date pickers so a typo
+  // (wrong month → 6-month auction) is obvious before submitting.
+  const durationLabel = useMemo(() => {
+    const ms = new Date(endsAt).getTime() - new Date(startsAt).getTime();
+    if (!Number.isFinite(ms) || ms <= 0) return null;
+    const days = Math.floor(ms / 86_400_000);
+    const hours = Math.round((ms % 86_400_000) / 3_600_000);
+    if (days > 0) return `${days} jour${days > 1 ? "s" : ""}${hours ? ` ${hours} h` : ""}`;
+    return `${hours} h`;
+  }, [startsAt, endsAt]);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -179,60 +212,104 @@ export function ScheduleForm({ propertyId }: { propertyId: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-5 space-y-4">
-      {/* Format picker — segmented, full width */}
-      <div>
-        <span className="text-xs font-semibold text-batta-ink/80">{t("schedule.format")}</span>
-        <div className="mt-2 grid grid-cols-3 gap-2">
-          {FORMATS.map(({ value, Icon }) => {
+    <form onSubmit={onSubmit} className="space-y-6">
+      {/* ── 1. Format ── */}
+      <section>
+        <SectionTitle n={1} title="Format de l'enchère" />
+        <div className="mt-3 space-y-2">
+          {FORMATS.map(({ value, Icon, label, desc }) => {
             const active = type === value;
             return (
               <button
                 key={value}
                 type="button"
                 onClick={() => setType(value)}
-                className={`tap-target flex flex-col items-center gap-1 rounded-xl border px-2 py-3 text-[11px] font-bold uppercase tracking-[0.12em] transition ${
+                className={`tap-target flex w-full items-start gap-3 rounded-2xl border p-3.5 text-start transition ${
                   active
-                    ? "border-gold-deep bg-gold-faint text-gold-bright shadow-[0_0_12px_var(--gold-glow)]"
-                    : "border-border bg-surface text-muted hover:border-gold/40"
+                    ? "border-[var(--gold)] bg-[var(--gold-faint)] ring-1 ring-[var(--gold)]"
+                    : "border-[var(--border)] bg-surface hover:border-[var(--gold)]/40"
                 }`}
               >
-                <Icon className="size-4" />
-                {t(`schedule.${value}`)}
+                <span
+                  className={`inline-flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                    active
+                      ? "bg-[var(--gold)] text-white"
+                      : "bg-surface-2 text-[var(--gold)] ring-1 ring-border"
+                  }`}
+                >
+                  <Icon className="size-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-[14px] font-bold text-foreground">{label}</span>
+                    {active && <Check className="size-4 text-[var(--gold)]" strokeWidth={3} />}
+                  </span>
+                  <span className="mt-0.5 block text-[12px] leading-snug text-muted">
+                    {desc}
+                  </span>
+                </span>
               </button>
             );
           })}
         </div>
-      </div>
+      </section>
 
-      <Field label={t("schedule.openingPrice")} type="number" value={openingPrice} onChange={setOpeningPrice} required />
+      {/* ── 2. Prix ── */}
+      <section>
+        <SectionTitle n={2} title="Prix" />
+        <div className="mt-3 space-y-3">
+          <Field
+            label={t("schedule.openingPrice")}
+            type="number"
+            value={openingPrice}
+            onChange={setOpeningPrice}
+            required
+            suffix="TND"
+            hint="Le point de départ des enchères."
+          />
 
-      {type !== "dutch" && (
-        <>
-          <Field label={t("schedule.reservePrice")} type="number" value={reservePrice} onChange={setReservePrice} hint={t("schedule.reserveHint")} />
-        </>
-      )}
+          {type !== "dutch" && (
+            <Field
+              label={t("schedule.reservePrice")}
+              type="number"
+              value={reservePrice}
+              onChange={setReservePrice}
+              suffix="TND"
+              hint={t("schedule.reserveHint")}
+            />
+          )}
 
-      {type === "dutch" && (
-        <div className="grid grid-cols-2 gap-3">
-          <Field label={t("schedule.dutchStart")} type="number" value={dutchStart} onChange={setDutchStart} />
-          <Field label={t("schedule.dutchFloor")} type="number" value={dutchFloor} onChange={setDutchFloor} />
-          <Field label={t("schedule.dutchDecrement")} type="number" value={dutchDecrement} onChange={setDutchDecrement} />
-          <Field label={t("schedule.dutchTick")} type="number" value={dutchTick} onChange={setDutchTick} />
+          {type === "dutch" && (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Prix de départ" type="number" value={dutchStart} onChange={setDutchStart} suffix="TND" hint="Le plus haut." />
+              <Field label="Prix plancher" type="number" value={dutchFloor} onChange={setDutchFloor} suffix="TND" hint="Le plus bas accepté." />
+              <Field label="Baisse / palier" type="number" value={dutchDecrement} onChange={setDutchDecrement} suffix="TND" />
+              <Field label="Intervalle" type="number" value={dutchTick} onChange={setDutchTick} suffix="sec" />
+            </div>
+          )}
         </div>
-      )}
+      </section>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label={t("schedule.startsAt")} type="datetime-local" value={startsAt} onChange={setStartsAt} required />
-        <Field label={t("schedule.endsAt")} type="datetime-local" value={endsAt} onChange={setEndsAt} required />
-      </div>
+      {/* ── 3. Période ── */}
+      <section>
+        <SectionTitle n={3} title="Période" />
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <Field label={t("schedule.startsAt")} type="datetime-local" value={startsAt} onChange={setStartsAt} required />
+          <Field label={t("schedule.endsAt")} type="datetime-local" value={endsAt} onChange={setEndsAt} required />
+        </div>
+        {durationLabel && (
+          <p className="mt-2 text-[11.5px] text-muted">
+            Durée : <span className="font-bold text-foreground">{durationLabel}</span>
+          </p>
+        )}
+      </section>
 
       {error && <p className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>}
 
       <button
         type="submit"
         disabled={isPending}
-        className="batta-btn-luxe tap-target sticky bottom-[calc(var(--batta-bottombar-h)+var(--batta-safe-bottom)+12px)] z-20 mt-4 w-full px-5 py-3.5 text-[13.5px] disabled:opacity-50"
+        className="batta-btn-luxe tap-target sticky bottom-[calc(var(--batta-bottombar-h)+var(--batta-safe-bottom)+12px)] z-20 w-full px-5 py-3.5 text-[13.5px] disabled:opacity-50"
       >
         {isPending ? t("schedule.submitting") : t("schedule.submit")}
       </button>
@@ -240,8 +317,19 @@ export function ScheduleForm({ propertyId }: { propertyId: string }) {
   );
 }
 
+function SectionTitle({ n, title }: { n: number; title: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--gold)] text-[10px] font-extrabold text-white">
+        {n}
+      </span>
+      <span className="text-[13px] font-bold text-foreground">{title}</span>
+    </div>
+  );
+}
+
 function Field({
-  label, type = "text", value, onChange, required, hint,
+  label, type = "text", value, onChange, required, hint, suffix,
 }: {
   label: string;
   type?: string;
@@ -249,19 +337,30 @@ function Field({
   onChange: (v: string) => void;
   required?: boolean;
   hint?: string;
+  suffix?: string;
 }) {
   return (
     <label className="block">
       <span className="batta-eyebrow text-[10px]">
         {label}{required && <span className="text-danger"> *</span>}
       </span>
-      <input
-        type={type}
-        value={value}
-        required={required}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full rounded-xl border border-gold/25 bg-surface-2 px-3 py-2.5 text-sm text-foreground focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold/40"
-      />
+      <div className="relative mt-1.5">
+        <input
+          type={type}
+          value={value}
+          required={required}
+          inputMode={type === "number" ? "numeric" : undefined}
+          onChange={(e) => onChange(e.target.value)}
+          className={`w-full rounded-xl border border-gold/25 bg-surface-2 px-3 py-2.5 text-sm text-foreground focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold/40 ${
+            suffix ? "pe-12" : ""
+          }`}
+        />
+        {suffix && (
+          <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+            {suffix}
+          </span>
+        )}
+      </div>
       {hint && <span className="mt-0.5 block text-[10px] text-muted">{hint}</span>}
     </label>
   );

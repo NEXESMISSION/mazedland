@@ -41,6 +41,8 @@ const BID_ERROR_LABELS: Record<string, string> = {
   below_min_increment: "Votre offre est inférieure à l'incrément minimum.",
   dutch_price_drifted: "Le prix a baissé entre-temps — réessayez.",
   invalid_amount: "Montant invalide.",
+  already_highest: "Vous êtes déjà le meilleur enchérisseur.",
+  sealed_one_bid: "Vous avez déjà soumis une offre pour cette enchère.",
   auth: "Vous devez vous reconnecter pour enchérir.",
 };
 
@@ -72,8 +74,13 @@ interface Props {
   userId: string | null;
   kycVerified: boolean;
   hasActiveDeposit: boolean;
+  /** Caution receipt uploaded, waiting on admin validation (no captured
+   *  deposit yet). Shows a "we're checking it" gate instead of pay-again. */
+  depositUnderReview?: boolean;
   isOwner: boolean;
   depositAmount: number;
+  /** Admin setting: false when entry is free (free mode or free window). */
+  depositRequired?: boolean;
   totalBids: number;
   locale: string;
 }
@@ -89,38 +96,44 @@ export function BidComposer({
   userId,
   kycVerified,
   hasActiveDeposit,
+  depositUnderReview = false,
   isOwner,
   depositAmount,
+  depositRequired = true,
   totalBids,
   locale,
 }: Props) {
   const router = useRouter();
+  const [joiningFree, setJoiningFree] = useState(false);
+
+  // Free entry: register a zero participation row, then refresh so the
+  // composer shows. No payment, no checkout redirect.
+  async function joinFree() {
+    if (joiningFree) return;
+    setJoiningFree(true);
+    try {
+      const res = await fetch(`/api/auctions/${auction.id}/deposit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        setJoiningFree(false);
+        return;
+      }
+      router.refresh();
+    } catch {
+      setJoiningFree(false);
+    }
+  }
   const isLive = auction.status === "live" || auction.status === "extending";
   const isScheduled = auction.status === "scheduled";
 
-  // ─── Gate 0a: auction hasn't started yet → "opens in <countdown>" card.
-  //     Previously this fell through to EndedBanner ("Cette enchère est
-  //     terminée"), which is obviously wrong for a scheduled lot — the
-  //     auction detail page sends users here from a CTA shown for every
-  //     biddable state including `scheduled`, so we have to handle it.
-  if (isScheduled) {
-    return (
-      <PreBidGate
-        tone="muted"
-        icon={<Clock className="h-7 w-7" />}
-        title="L'enchère n'a pas encore commencé"
-        body={`Elle ouvre ${formatStartsIn(auction.starts_at)}. Activez la cloche sur la page de l'annonce pour être prévenu(e) au démarrage.`}
-        ctaLabel="Retour à l'annonce"
-        onCta={() => router.push(`/auctions/${auction.id}` as never)}
-        auction={auction}
-        totalBids={totalBids}
-        locale={locale}
-      />
-    );
-  }
-
-  // ─── Gate 0b: auction not live → ended banner (winner or generic) ─────
-  if (!isLive) {
+  // ─── Gate 0: truly ENDED (not scheduled) → winner / ended banner ──────
+  //     Scheduled auctions deliberately fall THROUGH the gates below so the
+  //     user can reserve their place (pay the deposit / register) before
+  //     the auction opens — the deposit endpoint already permits the
+  //     scheduled state. They simply can't place a bid until it goes live.
+  if (!isLive && !isScheduled) {
     const userWon =
       auction.winner_user_id != null && auction.winner_user_id === userId;
     return userWon ? (
@@ -186,13 +199,54 @@ export function BidComposer({
 
   // ─── Gate 4: no active deposit ────────────────────────────────────────
   if (!hasActiveDeposit) {
+    // Receipt already uploaded → don't ask them to pay again. Show a calm
+    // "we're checking it" state with a link to track the payment.
+    if (depositUnderReview) {
+      return (
+        <PreBidGate
+          tone="warning"
+          icon={<Clock className="h-7 w-7" />}
+          title="Caution en cours de validation"
+          body="Nous avons bien reçu votre reçu. Vous pourrez enchérir dès qu'un administrateur l'a validé — vous serez notifié(e)."
+          ctaLabel="Suivre mon paiement"
+          onCta={() => router.push("/account/payments")}
+          auction={auction}
+          totalBids={totalBids}
+          locale={locale}
+          bullets={["Reçu reçu", "Vérification en cours", "Notification dès validation"]}
+        />
+      );
+    }
+    // Free entry (admin set deposit to free, or the free window is open):
+    // one tap registers participation — no payment, no checkout.
+    if (!depositRequired) {
+      return (
+        <PreBidGate
+          tone="gold"
+          icon={<Wallet className="h-7 w-7" />}
+          title="Participation gratuite"
+          body="Aucune caution requise — rejoignez l'enchère en un clic."
+          ctaLabel={joiningFree ? "Inscription…" : "Participer gratuitement"}
+          ctaIcon={<Wallet className="h-4 w-4" />}
+          onCta={joinFree}
+          auction={auction}
+          totalBids={totalBids}
+          locale={locale}
+          bullets={["Gratuit", "Place réservée", "Enchère immédiate"]}
+        />
+      );
+    }
     return (
       <PreBidGate
         tone="gold"
         icon={<Wallet className="h-7 w-7" />}
-        title="Verrouillez la caution pour rejoindre l'enchère"
-        body="Une caution remboursable réserve votre place dans l'enchère et se débloque instantanément après paiement."
-        ctaLabel={`Payer la caution`}
+        title="Réservez votre place"
+        body={
+          isScheduled
+            ? `L'enchère ouvre ${formatStartsIn(auction.starts_at)}.`
+            : "Une caution remboursable, déduite du prix final si vous gagnez."
+        }
+        ctaLabel={isScheduled ? "Réserver ma place" : "Payer la caution"}
         ctaIcon={<Wallet className="h-4 w-4" />}
         onCta={() =>
           router.push(
@@ -202,26 +256,34 @@ export function BidComposer({
         auction={auction}
         totalBids={totalBids}
         locale={locale}
-        // Math card — makes the "Why 29 000?" relationship explicit
-        // so the user doesn't confuse the deposit (10% slice) with
-        // the price they'd ultimately be bidding on.
         priceContext={{
           label: "Caution requise",
           amount: depositAmount,
-          relation: "10 % du prix d'ouverture",
-          baseLabel: "Prix d'ouverture",
-          baseAmount: auction.opening_price,
         }}
-        bullets={[
-          "Réservée à votre seul compte — elle bloque votre place dans l'enchère.",
-          "Remboursée sous 24 heures si vous ne remportez pas le lot.",
-          "Déduite du prix final si vous gagnez — pas de double paiement.",
-        ]}
+        bullets={["Remboursable", "Bloque votre place", "Déduite si vous gagnez"]}
       />
     );
   }
 
-  // All gates passed → type-specific composer
+  // Registered but the auction hasn't opened yet → "you're in, opens in X".
+  // (Gates above let a scheduled-auction user pay the deposit early.)
+  if (isScheduled) {
+    return (
+      <PreBidGate
+        tone="gold"
+        icon={<Clock className="h-7 w-7" />}
+        title="Vous êtes inscrit(e) ✓"
+        body={`Votre place est réservée. L'enchère ouvre ${formatStartsIn(auction.starts_at)} — vous pourrez enchérir dès le démarrage.`}
+        ctaLabel="Voir l'annonce"
+        onCta={() => router.push(`/auctions/${auction.id}` as never)}
+        auction={auction}
+        totalBids={totalBids}
+        locale={locale}
+      />
+    );
+  }
+
+  // All gates passed + live → type-specific composer
   return (
     <ActiveComposer
       auction={auction}
@@ -245,7 +307,7 @@ function WinnerBanner({
 }) {
   return (
     <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/10 px-6 py-5 text-center">
-      <div className="mx-auto mb-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gold)] text-black shadow-[var(--shadow-gold)]">
+      <div className="mx-auto mb-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gold)] text-white shadow-[var(--shadow-gold)]">
         <Trophy className="h-5 w-5" />
       </div>
       <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--gold)]">
@@ -308,6 +370,7 @@ function ActiveComposer({
   const isDutch = auction.type === "dutch";
   const isSealed = auction.type === "sealed";
   const isEnglish = auction.type === "english";
+  const typeLabel = isEnglish ? "Anglaise" : isSealed ? "Cachetée" : "Hollandaise";
 
   // Live current price — for Dutch this ticks down every 10s; for
   // English/sealed it tracks the server's current_price.
@@ -328,6 +391,25 @@ function ActiveComposer({
   function setAmount(v: number) {
     setAmountStr(String(Math.max(0, Math.floor(v))));
   }
+
+  // Presence heartbeat — lets the server skip the "outbid" push for someone
+  // who's actively watching this auction (they already see the price move).
+  useEffect(() => {
+    if (!userId) return;
+    const supabase = getBrowserSupabase();
+    const ping = () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      void supabase
+        .from("auction_presence")
+        .upsert(
+          { user_id: userId, auction_id: auction.id, seen_at: new Date().toISOString() },
+          { onConflict: "user_id,auction_id" },
+        );
+    };
+    ping();
+    const id = setInterval(ping, 25000);
+    return () => clearInterval(id);
+  }, [userId, auction.id]);
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [showRules, setShowRules] = useState(false);
@@ -569,7 +651,7 @@ function ActiveComposer({
       : `Enchérir à ${formatTND(amount, locale)}`;
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="space-y-3 lg:space-y-5">
       {/* Status strip — live pulse + countdown + Rules link */}
       <div className="flex items-center gap-2 text-[11px] lg:text-[12px] text-[var(--foreground-muted)] flex-wrap">
         <span className="inline-flex items-center gap-1.5">
@@ -619,8 +701,6 @@ function ActiveComposer({
           )}
         </div>
       </div>
-
-      <div className="h-px bg-[var(--border)]" />
 
       {/* Type-specific input section */}
       {isDutch ? (
@@ -716,8 +796,8 @@ function ActiveComposer({
               </span>
             </Row>
             <Row label="Type">
-              <span className="font-bold ms-3 uppercase tracking-wider">
-                {auction.type}
+              <span className="font-bold ms-3">
+                {typeLabel}
               </span>
             </Row>
             <Row label="Restant">
@@ -751,7 +831,7 @@ function ActiveComposer({
       >
         <ul className="space-y-3 text-sm text-[var(--foreground-muted)] leading-relaxed">
           <li>
-            • <strong className="text-foreground">Caution :</strong> 10% du prix d'ouverture, verrouillée par enchère, remboursée sous 24 h si vous ne gagnez pas.
+            • <strong className="text-foreground">Caution :</strong> montant remboursable verrouillé par enchère, restitué après la clôture si vous ne gagnez pas.
           </li>
           {isEnglish && (
             <li>
@@ -886,9 +966,9 @@ function AmountInput({
             onClick={() => onSetAmount(Math.max(minBid, amount - increment))}
             disabled={amount <= minBid}
             aria-label="Réduire"
-            className="px-3 lg:px-5 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+            className="px-4 lg:px-6 bg-[var(--surface-2)] text-[var(--gold)] border-e border-[var(--border-strong)] hover:bg-[var(--gold-faint)] active:bg-[var(--gold-soft)]/40 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
           >
-            <Minus className="h-4 w-4 lg:h-5 lg:w-5" />
+            <Minus className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={2.75} />
           </button>
         )}
         <input
@@ -909,9 +989,9 @@ function AmountInput({
           <button
             onClick={() => onSetAmount(Math.max(minBid, amount) + increment)}
             aria-label="Incrément"
-            className="px-3 lg:px-5 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] flex items-center justify-center"
+            className="px-4 lg:px-6 bg-[var(--surface-2)] text-[var(--gold)] border-s border-[var(--border-strong)] hover:bg-[var(--gold-faint)] active:bg-[var(--gold-soft)]/40 flex items-center justify-center transition-colors"
           >
-            <Plus className="h-4 w-4 lg:h-5 lg:w-5" />
+            <Plus className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={2.75} />
           </button>
         )}
       </div>
@@ -923,10 +1003,10 @@ function AmountInput({
               key={p.key}
               onClick={() => onSetAmount(p.amount)}
               className={cn(
-                "h-7 lg:h-9 px-2.5 lg:px-4 rounded-full text-[11px] lg:text-[12px] font-bold batta-tabular transition-colors",
+                "h-8 lg:h-9 px-3 lg:px-4 rounded-full text-[11px] lg:text-[12px] font-bold batta-tabular transition-colors",
                 amount === p.amount
-                  ? "bg-[var(--gold)] text-black"
-                  : "bg-[var(--surface-2)] border border-[var(--border)] text-[var(--foreground-muted)] hover:border-[var(--gold)]/50 hover:text-foreground",
+                  ? "bg-[var(--gold)] text-white shadow-[var(--shadow-gold)]"
+                  : "bg-white border border-[var(--border-strong)] text-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]",
               )}
             >
               {p.label}

@@ -8,8 +8,8 @@
   "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
-  "lang": "ar",
-  "dir": "rtl",
+  "lang": "fr",
+  "dir": "ltr",
   "categories": ["finance", "business", "shopping"],
   "icons": [
     {
@@ -45,9 +45,9 @@
       "icons": [{ "src": "/logo-square.png", "sizes": "any", "type": "image/png" }]
     },
     {
-      "name": "My watchlist",
-      "short_name": "Watchlist",
-      "url": "/watchlist",
+      "name": "My activity",
+      "short_name": "Activity",
+      "url": "/account/activity",
       "icons": [{ "src": "/logo-square.png", "sizes": "any", "type": "image/png" }]
     }
   ]

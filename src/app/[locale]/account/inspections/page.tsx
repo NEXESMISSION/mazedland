@@ -24,11 +24,11 @@ export default async function MyInspectionsPage({
     .from("inspections")
     .select(`
       id, kind, status, scheduled_at, fee_amount, report_pdf_path, created_at,
+      inspector_id,
       property:properties (
         id, title, governorate,
         photos:property_photos (id, storage_path, sort_order)
-      ),
-      inspector:profiles!inspections_inspector_id_fkey (full_name)
+      )
     `)
     .eq("requested_by", user!.id)
     .order("created_at", { ascending: false });
@@ -40,14 +40,31 @@ export default async function MyInspectionsPage({
     scheduled_at: string | null;
     fee_amount: number;
     report_pdf_path: string | null;
+    inspector_id: string | null;
     property: {
       id: string;
       title: string;
       governorate: string;
       photos: { id: string; storage_path: string; sort_order: number }[];
     } | null;
-    inspector: { full_name: string | null } | null;
   }>;
+
+  // Inspector names live in profiles (the inspector FK targets `inspectors`,
+  // whose id == the profile id) — resolve them in one batched lookup rather
+  // than a PostgREST embed, which can't follow that two-hop relationship.
+  const inspectorIds = Array.from(
+    new Set(inspections.map((i) => i.inspector_id).filter(Boolean) as string[]),
+  );
+  const inspectorNames = new Map<string, string>();
+  if (inspectorIds.length > 0) {
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", inspectorIds);
+    for (const p of profs ?? []) {
+      if (p.full_name) inspectorNames.set(p.id as string, p.full_name as string);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 lg:max-w-[var(--max-w-content)]">
@@ -113,9 +130,9 @@ export default async function MyInspectionsPage({
                         {formatTND(ins.fee_amount, dateLocale)} TND
                       </span>
                     </div>
-                    {ins.inspector?.full_name && (
+                    {ins.inspector_id && inspectorNames.get(ins.inspector_id) && (
                       <div className="mt-1 truncate text-[10px] text-muted">
-                        {ins.inspector.full_name}
+                        {inspectorNames.get(ins.inspector_id)}
                       </div>
                     )}
                     {ins.scheduled_at && (

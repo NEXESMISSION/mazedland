@@ -9,12 +9,10 @@ import {
   ChevronLeft,
   LogOut,
   Building2,
-  Trophy,
-  Heart,
+  LayoutGrid,
   LayoutDashboard,
   Briefcase,
   UserCog,
-  Gavel,
   ArrowRight,
 } from "lucide-react";
 
@@ -158,23 +156,13 @@ export default async function AccountPage() {
           ChevronEnd={ChevronEnd} isRTL={isRTL} />
         <Divider />
         <Row href="/sell" Icon={Building2}
-          title="My listings"
-          body="Manage properties you've posted for auction."
+          title="Tableau du vendeur"
+          body="Vos annonces, revenus et retraits."
           ChevronEnd={ChevronEnd} isRTL={isRTL} />
         <Divider />
-        <Row href="/account/bids" Icon={Gavel}
-          title="My bids"
-          body="Auctions you're participating in."
-          ChevronEnd={ChevronEnd} isRTL={isRTL} />
-        <Divider />
-        <Row href="/account/wins" Icon={Trophy}
-          title="My wins"
-          body="Auctions you've won and what to do next."
-          ChevronEnd={ChevronEnd} isRTL={isRTL} />
-        <Divider />
-        <Row href="/watchlist" Icon={Heart}
-          title="Watchlist"
-          body="Saved auctions you're tracking."
+        <Row href="/account/activity" Icon={LayoutGrid}
+          title="Mes activités"
+          body="Enchères en cours, acquisitions, participations et favoris."
           ChevronEnd={ChevronEnd} isRTL={isRTL} />
         <Divider />
         <Row href="/account/inspections" Icon={ClipboardCheck}
@@ -182,7 +170,7 @@ export default async function AccountPage() {
           body={t("sections.inspectionsBody")}
           ChevronEnd={ChevronEnd} isRTL={isRTL} />
         <Divider />
-        <Row href="/payment/mock" Icon={Wallet}
+        <Row href="/account/payments" Icon={Wallet}
           title={t("sections.payments")}
           body={t("sections.paymentsBody")}
           ChevronEnd={ChevronEnd} isRTL={isRTL} />

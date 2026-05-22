@@ -45,6 +45,24 @@ export default function KYCStatusPage() {
     };
   }, [loaded, status]);
 
+  // After the user submits KYC, this page's job is to acknowledge the
+  // submission — not to be a sticky dead-end. Hold the confirmation on
+  // screen for ~2 s so they see the spinner + "Vérification en cours"
+  // copy, then bounce them home. The verdict reaches them via email
+  // anyway, and /kyc/status is reachable from Account if they want to
+  // re-check manually.
+  //
+  // `replace` (not push) so the back button doesn't return them to the
+  // status screen — the flow ends here.
+  useEffect(() => {
+    if (!loaded) return;
+    if (status !== "submitted") return;
+    const id = setTimeout(() => {
+      router.replace("/");
+    }, 2000);
+    return () => clearTimeout(id);
+  }, [loaded, status, router]);
+
   async function manualRefresh() {
     setRefreshing(true);
     try {

@@ -27,6 +27,7 @@
       "browse": "Explorer",
       "sell": "Vendre",
       "watchlist": "Favoris",
+      "activity": "Activité",
       "account": "Compte"
     },
     "pageTitles": {
@@ -133,6 +134,7 @@
     "reservePrice": "Prix de réserve",
     "depositRequired": "Garantie requise",
     "endsIn": "Se termine dans",
+    "startsIn": "Démarre dans",
     "bidNow": "Enchérir",
     "minIncrement": "Pas minimum",
     "totalBids": "Enchères",
@@ -358,7 +360,7 @@
     "title": "Mettez votre bien en vente",
     "subtitle": "Notre équipe juridique examine chaque annonce sous 48 heures.",
     "myListings": "Mes annonces",
-    "addNew": "+ Ajouter un bien",
+    "addNew": "Ajouter un bien",
     "form": {
       "titleLabel": "Titre de l'annonce",
       "titlePh": "Ex. : S+2 lumineux, El Manzah 6",

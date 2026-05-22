@@ -50,6 +50,10 @@ export type Property = {
   bathrooms: number | null;
   floor: number | null;
   year_built: number | null;
+  // Per-type characteristics keyed by AttributeKind.field_key. Mirrors the
+  // five legacy columns above for the canonical keys; also holds the
+  // type-specific extras (has_elevator, title_type, water_source, …).
+  attributes: Record<string, string | number | boolean>;
   governorate: string;
   address: string | null;
   lat: number | null;
@@ -58,6 +62,24 @@ export type Property = {
   rejection_reason: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type AttributeDataType = "number" | "text" | "boolean" | "select";
+
+export type AttributeOption = { value: string; label: string };
+
+// Admin-controlled catalog row: defines one characteristic field for a
+// property type. Editable from /admin/characteristics.
+export type AttributeKind = {
+  id: string;
+  property_type: PropertyType;
+  field_key: string;
+  label: string;
+  data_type: AttributeDataType;
+  options: AttributeOption[] | null;
+  unit: string | null;
+  required: boolean;
+  sort_order: number;
 };
 
 export type PropertyPhoto = {

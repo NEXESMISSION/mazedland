@@ -1,9 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { depositForOpening } from "@/lib/utils";
+import { parseMonetizationSettings, resolveDeposit } from "@/lib/pricing";
 import { BidComposer } from "@/components/auction/BidComposer";
 import { AuctionEndModal } from "@/components/auction/AuctionEndModal";
+import { LiveTimer } from "@/components/landing/LiveTimer";
 import { BidHistoryRealtime } from "./BidHistoryRealtime";
 import type { AuctionWithProperty, Bid } from "@/lib/types";
 
@@ -76,8 +77,12 @@ export default async function BidPage({
   // synchronously so the right gate renders without a client-side flash.
   let kycVerified = false;
   let hasActiveDeposit = false;
+  // Receipt uploaded, waiting on an admin to validate the caution. While
+  // true (and there's no captured deposit yet) the gate shows a "we're
+  // checking it" state instead of asking the buyer to pay again.
+  let depositUnderReview = false;
   if (userId) {
-    const [profileRes, depositRes] = await Promise.all([
+    const [profileRes, depositRes, pendRes] = await Promise.all([
       supabase.from("profiles").select("kyc_status").eq("id", userId).single(),
       supabase
         .from("auction_deposits")
@@ -87,12 +92,34 @@ export default async function BidPage({
         .is("released_at", null)
         .is("forfeited_at", null)
         .maybeSingle(),
+      supabase
+        .from("payments")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("auction_id", id)
+        .eq("kind", "deposit_lock")
+        .eq("status", "pending_review")
+        .limit(1),
     ]);
     kycVerified = profileRes.data?.kyc_status === "verified";
     hasActiveDeposit = !!depositRes.data;
+    depositUnderReview = (pendRes.data?.length ?? 0) > 0;
   }
   const isOwner = userId !== null && userId === auction.property.owner_id;
-  const depositAmount = depositForOpening(auction.opening_price);
+  // Owners can't bid on their own listing — bounce them to the detail
+  // page instead of rendering the "vous publiez cette enchère" gate.
+  // Same native-redirect rationale as the direct-sale bounce above.
+  if (isOwner) {
+    redirect(`/${locale}/auctions/${id}`);
+  }
+  const { data: depRow } = await supabase
+    .from("app_settings").select("value").eq("key", "deposit").maybeSingle();
+  const depCfg = parseMonetizationSettings(
+    new Map<string, unknown>([["deposit", depRow?.value]]),
+  ).deposit;
+  const { required: depositRequired, amount: depositAmount } = resolveDeposit(
+    depCfg, auction.opening_price,
+  );
   const isLive = auction.status === "live" || auction.status === "extending";
   const isSealedLive = isLive && auction.type === "sealed";
 
@@ -114,7 +141,9 @@ export default async function BidPage({
       <AuctionEndModal auction={auction} userId={userId} locale={locale} />
 
       {/* Inline page title — sits at the top of the content so the user
-          knows they're in the bid flow. */}
+          knows they're in the bid flow. The countdown chip is sticky to
+          the page header so a bidder always sees how much time is left
+          while scrolling the composer + history. */}
       <header className="max-w-[var(--max-w)] mx-auto px-4 pt-4 lg:max-w-[var(--max-w-wide)] lg:px-8 lg:pt-6">
         <div className="text-[10px] uppercase tracking-[0.22em] font-extrabold text-[var(--gold)]">
           {t("auction.placeBid")}
@@ -127,6 +156,34 @@ export default async function BidPage({
             Lot · {String(auction.id).replace(/-/g, "").slice(-4).toUpperCase()}
           </span>
         </div>
+        {(() => {
+          const startsAtMs = auction.starts_at
+            ? new Date(auction.starts_at).getTime()
+            : null;
+          const showStart =
+            !isLive && startsAtMs !== null && startsAtMs > Date.now();
+          const endsAtMs = new Date(auction.ends_at).getTime();
+          const isEnded =
+            !isLive && (!showStart || endsAtMs <= Date.now()) &&
+            auction.status !== "scheduled";
+          if (isEnded) return null;
+          return (
+            <div className="mt-3">
+              <span className="inline-flex items-center gap-2 rounded-full bg-foreground/[0.04] px-3 py-1 text-foreground/85 ring-1 ring-foreground/10">
+                <span
+                  aria-hidden
+                  className={`size-1.5 rounded-full ${
+                    isLive ? "batta-pulse-dot bg-red-500" : "bg-gold"
+                  }`}
+                />
+                <LiveTimer
+                  endsAt={showStart ? (auction.starts_at as string) : auction.ends_at}
+                  className="batta-tabular text-[13px] font-bold !text-foreground"
+                />
+              </span>
+            </div>
+          );
+        })()}
       </header>
 
       <main className="max-w-[var(--max-w)] mx-auto px-4 pt-4 pb-10 lg:max-w-[var(--max-w-wide)] lg:px-8 lg:pt-6 lg:pb-16">
@@ -141,8 +198,10 @@ export default async function BidPage({
                   userId={userId}
                   kycVerified={kycVerified}
                   hasActiveDeposit={hasActiveDeposit}
+                  depositUnderReview={depositUnderReview}
                   isOwner={isOwner}
                   depositAmount={depositAmount}
+                  depositRequired={depositRequired}
                   totalBids={totalBids}
                   locale={locale}
                 />
@@ -169,8 +228,10 @@ export default async function BidPage({
               userId={userId}
               kycVerified={kycVerified}
               hasActiveDeposit={hasActiveDeposit}
+              depositUnderReview={depositUnderReview}
               isOwner={isOwner}
               depositAmount={depositAmount}
+              depositRequired={depositRequired}
               totalBids={totalBids}
               locale={locale}
             />

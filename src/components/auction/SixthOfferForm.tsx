@@ -24,10 +24,10 @@ type Props = {
  * at least 1/6 (≈16.67%) above the winning bid. The original winner
  * keeps the right to match.
  *
- * Submitting goes straight through the public.sixth_offers table; RLS
- * lets any KYC+deposited user insert (the SQL policy is
- * `with check (auth.uid() = bidder_id)`). The state-machine cron
- * promotes the highest sixth offer when sixth_offer_deadline passes.
+ * Submitting calls the place_sixth_offer RPC, which enforces KYC + active
+ * deposit + the 1/6 minimum + the deadline server-side (direct INSERT on
+ * sixth_offers is revoked). The state-machine cron promotes the highest
+ * sixth offer when sixth_offer_deadline passes.
  */
 export function SixthOfferForm({
   auctionId, winningAmount, deadline,
@@ -54,10 +54,11 @@ export function SixthOfferForm({
       const supabase = getBrowserSupabase();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setError("auth"); return; }
-      const { error } = await supabase.from("sixth_offers").insert({
-        auction_id: auctionId,
-        bidder_id: user.id,
-        amount,
+      // Server-side RPC enforces KYC + active deposit + 1/6 + deadline.
+      // Direct INSERT on sixth_offers is revoked, so this is the only path.
+      const { error } = await supabase.rpc("place_sixth_offer", {
+        p_auction_id: auctionId,
+        p_amount: amount,
       });
       if (error) {
         setError(error.message);

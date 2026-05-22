@@ -71,7 +71,7 @@ export async function PATCH(
         p_kind: "kyc_rejected",
         p_title: "Vérification d'identité refusée",
         p_body: `Motif : ${notes}. Vous pouvez relancer la vérification depuis votre page KYC.`,
-        p_link: "/kyc/status",
+        p_link: "/kyc",
       });
     }
   }

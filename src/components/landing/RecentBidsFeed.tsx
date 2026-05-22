@@ -11,8 +11,8 @@ import { Gavel, Lock } from "lucide-react";
  * masked (RLS keeps them server-side too) so the feed never leaks the
  * high-water mark.
  *
- * Placeholder activity kicks in when the DB is empty so the landing
- * feels live on a fresh boot.
+ * Strictly real data: no placeholder bids. If the DB has no activity
+ * yet, the section renders nothing rather than faking momentum.
  */
 export async function RecentBidsFeed() {
   const locale = await getLocale();
@@ -55,7 +55,9 @@ export async function RecentBidsFeed() {
     items = [];
   }
 
-  if (items.length === 0) items = PLACEHOLDERS;
+  // No real activity → render nothing. A fake feed of seeded bids
+  // misrepresents marketplace health on the landing page.
+  if (items.length === 0) return null;
 
   return (
     <section className="px-4">
@@ -100,13 +102,9 @@ function BidRow({
   locale: string;
   ariaHidden?: boolean;
 }) {
-  const isPlaceholder = item.auctionId.startsWith("placeholder-");
-  const href = isPlaceholder
-    ? ("/properties" as const)
-    : (`/auctions/${item.auctionId}` as `/auctions/${string}`);
   return (
     <Link
-      href={href}
+      href={`/auctions/${item.auctionId}` as `/auctions/${string}`}
       className="flex h-11 shrink-0 items-center gap-3 px-3 transition active:bg-batta-cream/5"
       aria-hidden={ariaHidden}
     >
@@ -151,39 +149,3 @@ function timeAgo(iso: string): string {
   return `${d}d ago`;
 }
 
-const PLACEHOLDERS: BidActivity[] = [
-  {
-    id: "p1", auctionId: "placeholder-1", title: "Villa Sidi Bou Said",
-    governorate: "Tunis", amount: 850_000, sealed: false,
-    bidderInitial: "M", placedAt: agoIso(45),
-  },
-  {
-    id: "p2", auctionId: "placeholder-2", title: "Appartement S+3 La Marsa",
-    governorate: "Tunis", amount: 425_000, sealed: false,
-    bidderInitial: "A", placedAt: agoIso(120),
-  },
-  {
-    id: "p3", auctionId: "placeholder-3", title: "Terrain agricole",
-    governorate: "Nabeul", amount: 0, sealed: true,
-    bidderInitial: "S", placedAt: agoIso(240),
-  },
-  {
-    id: "p4", auctionId: "placeholder-4", title: "Local commercial",
-    governorate: "Sousse", amount: 320_000, sealed: false,
-    bidderInitial: "K", placedAt: agoIso(360),
-  },
-  {
-    id: "p5", auctionId: "placeholder-5", title: "Maison de campagne",
-    governorate: "Bizerte", amount: 180_000, sealed: false,
-    bidderInitial: "Y", placedAt: agoIso(540),
-  },
-  {
-    id: "p6", auctionId: "placeholder-6", title: "Duplex centre-ville",
-    governorate: "Sfax", amount: 525_000, sealed: false,
-    bidderInitial: "H", placedAt: agoIso(720),
-  },
-];
-
-function agoIso(seconds: number): string {
-  return new Date(Date.now() - seconds * 1000).toISOString();
-}
