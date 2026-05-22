@@ -99,7 +99,19 @@ export function AuctionCalendarMenu({
       ? `Ouverture des enchères: ${title}`
       : `Enchère: ${title}`;
     const location = governorate;
-    const url = `${window.location.origin}/fr/auctions/${auctionId}`;
+    // Calendar events outlive the browser tab. `window.location.origin`
+    // bakes the literal dev host (http://localhost:3000) into the event
+    // body, so when the user taps the link days later from their phone
+    // calendar they hit a dead localhost URL. Use the canonical
+    // NEXT_PUBLIC_SITE_URL so the link points at the production domain
+    // (or whatever public URL the app is deployed under) — that URL
+    // matches the PWA manifest's "/" scope, so Android opens the
+    // installed Batta PWA directly instead of bouncing through a browser
+    // tab. Fallback to window.location.origin keeps dev tinkering sane.
+    const origin =
+      (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "") ||
+      window.location.origin;
+    const url = `${origin}/fr/auctions/${auctionId}`;
     const details = [
       isScheduled
         ? `Les enchères ouvrent pour: ${title}`
