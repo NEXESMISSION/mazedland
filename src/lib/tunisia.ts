@@ -90,10 +90,54 @@ export function normalizeE164(
   if (!digits) return null;
   if (dialCode === "+216") {
     if (digits.length !== 8) return null;
-  } else if (digits.length < 6) {
+  } else if (digits.length < 6 || digits.length > 15) {
     return null;
   }
   return `${dialCode}${digits}`;
+}
+
+/**
+ * Phone validator that returns a specific French reason on failure,
+ * for surfacing in the signup/login forms. Mirrors normalizeE164's
+ * rules but says "what's wrong" instead of just null.
+ *
+ *   "+216" → exactly 8 digits required ("vous en avez N")
+ *   other  → 6–15 digits required (E.164 spec)
+ *
+ * Used by the forms before normalizeE164. The forms still call
+ * normalizeE164 after validatePhone succeeds, so a downstream change
+ * to either function doesn't break the other.
+ */
+export function validatePhone(
+  dialCode: string,
+  rawNumber: string,
+): { ok: true } | { ok: false; reason: string } {
+  const digits = rawNumber.replace(/\D/g, "").replace(/^0+/, "");
+  if (!digits) {
+    return { ok: false, reason: "Tapez votre numéro de téléphone." };
+  }
+  if (dialCode === "+216") {
+    if (digits.length !== 8) {
+      return {
+        ok: false,
+        reason: `Un numéro tunisien doit faire 8 chiffres — vous en avez tapé ${digits.length}.`,
+      };
+    }
+    return { ok: true };
+  }
+  if (digits.length < 6) {
+    return {
+      ok: false,
+      reason: `Numéro trop court — il faut au moins 6 chiffres après l'indicatif ${dialCode}.`,
+    };
+  }
+  if (digits.length > 15) {
+    return {
+      ok: false,
+      reason: `Numéro trop long — maximum 15 chiffres après l'indicatif.`,
+    };
+  }
+  return { ok: true };
 }
 
 /**

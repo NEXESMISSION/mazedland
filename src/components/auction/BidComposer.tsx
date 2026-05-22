@@ -73,6 +73,14 @@ interface Props {
   auction: AuctionWithProperty;
   userId: string | null;
   kycVerified: boolean;
+  /** Raw kyc_status from profiles. When provided, the KYC gate branches
+   *  on "submitted" (waiting on admin) and "rejected" (must redo) instead
+   *  of bucketing everything under "Vérifiez votre identité" — that wording
+   *  told a user who had ALREADY submitted to start over, which is
+   *  exactly the confusion the user flagged.
+   *  Optional for backward compat with old callers that only pass the
+   *  boolean. */
+  kycStatus?: string | null;
   hasActiveDeposit: boolean;
   /** Caution receipt uploaded, waiting on admin validation (no captured
    *  deposit yet). Shows a "we're checking it" gate instead of pay-again. */
@@ -82,6 +90,11 @@ interface Props {
   /** Admin setting: false when entry is free (free mode or free window). */
   depositRequired?: boolean;
   totalBids: number;
+  /** Id of the current top bidder, if any. When this equals `userId`,
+   *  the composer drops the minimum-increment floor: the user is just
+   *  raising their own lead, so any amount > current_price is valid.
+   *  Mirrors the same self-raise allowance in the DB place_bid RPC. */
+  currentTopBidderId?: string | null;
   locale: string;
 }
 
@@ -95,12 +108,14 @@ export function BidComposer({
   auction,
   userId,
   kycVerified,
+  kycStatus = null,
   hasActiveDeposit,
   depositUnderReview = false,
   isOwner,
   depositAmount,
   depositRequired = true,
   totalBids,
+  currentTopBidderId = null,
   locale,
 }: Props) {
   const router = useRouter();
@@ -180,7 +195,46 @@ export function BidComposer({
   }
 
   // ─── Gate 3: KYC not verified ─────────────────────────────────────────
+  // Branch on the raw kyc_status so a user who's ALREADY submitted their
+  // dossier doesn't get told to start over — that was the source of the
+  // "I sent verification and you're still asking me to verify" confusion.
+  //   submitted/pending  → calm "we're reviewing it" gate, no CTA to redo
+  //   rejected           → explain it was refused, CTA to redo
+  //   anything else      → original "Vérifiez votre identité"
   if (!kycVerified) {
+    const status = kycStatus ?? "";
+    if (status === "submitted" || status === "pending") {
+      return (
+        <PreBidGate
+          tone="muted"
+          icon={<Clock className="h-7 w-7" />}
+          title="Vérification en cours"
+          body="Votre dossier est en cours d'examen — généralement sous 24 à 48 h ouvrées. Vous pourrez enchérir dès que notre équipe valide votre identité; un email vous préviendra."
+          ctaLabel="Voir le statut"
+          ctaIcon={<Eye className="h-4 w-4" />}
+          onCta={() => router.push("/kyc/status")}
+          auction={auction}
+          totalBids={totalBids}
+          locale={locale}
+        />
+      );
+    }
+    if (status === "rejected") {
+      return (
+        <PreBidGate
+          tone="warning"
+          icon={<ShieldCheck className="h-7 w-7" />}
+          title="Vérification refusée"
+          body="Vos documents n'ont pas pu être validés. Reprenez la vérification avec des photos plus nettes et lisibles."
+          ctaLabel="Reprendre la vérification"
+          ctaIcon={<ShieldCheck className="h-4 w-4" />}
+          onCta={() => router.push("/kyc/start")}
+          auction={auction}
+          totalBids={totalBids}
+          locale={locale}
+        />
+      );
+    }
     return (
       <PreBidGate
         tone="warning"
@@ -289,6 +343,7 @@ export function BidComposer({
       auction={auction}
       userId={userId}
       totalBids={totalBids}
+      currentTopBidderId={currentTopBidderId}
       locale={locale}
     />
   );
@@ -356,11 +411,13 @@ function ActiveComposer({
   auction,
   userId,
   totalBids,
+  currentTopBidderId,
   locale,
 }: {
   auction: AuctionWithProperty;
   userId: string;
   totalBids: number;
+  currentTopBidderId: string | null;
   locale: string;
 }) {
   const { toast } = useToast();
@@ -377,7 +434,16 @@ function ActiveComposer({
   const [currentPrice, setCurrentPrice] = useState<number>(
     auction.current_price ?? auction.opening_price,
   );
-  const minNext = nextMinBid(auction, currentPrice);
+  // Self-raise: when the user is already the current top bidder there
+  // is no increment to clear — any amount above the current price is
+  // a valid raise. nextMinBid() applies the increment ladder; for the
+  // self-raise case we collapse the floor to "current price + 1 TND"
+  // so the input never hard-blocks the lead bidder.
+  const isCurrentTop =
+    !!userId && !!currentTopBidderId && userId === currentTopBidderId;
+  const minNext = isCurrentTop
+    ? currentPrice + 1
+    : nextMinBid(auction, currentPrice);
   const inc = minBidIncrement(currentPrice);
 
   // English/sealed amount input. Sealed uses opening_price as the floor;
@@ -495,6 +561,68 @@ function ActiveComposer({
     return () => {
       if (flashTimer) clearTimeout(flashTimer);
       supabase.removeChannel(channel);
+    };
+  }, [auction.id, isDutch, router]);
+
+  // Polling fallback — reconciles current_price + status every ~4 s
+  // regardless of whether Supabase Realtime delivered an event. Without
+  // this, two clients sometimes diverged: bidder A would see 30 500 as
+  // the high while bidder B's screen showed 40 500. Realtime over a
+  // flaky mobile connection drops UPDATE events silently; polling makes
+  // missed events recoverable within one tick.
+  //
+  // Pauses while the tab is hidden so we don't spam the DB for users
+  // who tabbed away. Skipped for Dutch — its price is driven by the
+  // local ticker, not the bids stream.
+  useEffect(() => {
+    if (isDutch) return;
+    const supabase = getBrowserSupabase();
+    let cancelled = false;
+
+    async function pollOnce() {
+      if (cancelled) return;
+      if (typeof document !== "undefined" && document.hidden) return;
+      try {
+        const { data, error } = await supabase
+          .from("auctions")
+          .select("current_price, status")
+          .eq("id", auction.id)
+          .maybeSingle();
+        if (error || !data || cancelled) return;
+        // Use a functional set so we read the latest local value and
+        // skip the update when nothing actually changed — avoids a
+        // pointless re-render on every poll.
+        if (data.current_price != null) {
+          setCurrentPrice((prev) => {
+            const next = Number(data.current_price);
+            return next === prev ? prev : next;
+          });
+        }
+        const s = data.status as string;
+        if (
+          s === "ended_sold" ||
+          s === "ended_unsold" ||
+          s === "awarded" ||
+          s === "cancelled" ||
+          s === "sixth_offer_window"
+        ) {
+          router.refresh();
+        }
+      } catch {
+        /* transient network blip — try again on the next tick */
+      }
+    }
+
+    pollOnce();
+    const id = setInterval(pollOnce, 4000);
+    function onVis() {
+      if (!document.hidden) pollOnce();
+    }
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, [auction.id, isDutch, router]);
 

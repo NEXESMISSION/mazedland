@@ -9,6 +9,7 @@ import { AuctionCalendarMenu } from "@/components/auction/AuctionCalendarMenu";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
 import { SixthOfferForm } from "@/components/auction/SixthOfferForm";
 import { HeroCarousel } from "@/components/auction/HeroCarousel";
+import { AuctionPresencePing } from "@/components/auction/AuctionPresencePing";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
 import { Link } from "@/i18n/navigation";
@@ -195,6 +196,14 @@ export default async function AuctionDetail({
         showFloatingBidCta ? "pb-48" : "pb-8"
       }`}
     >
+      {/* Suppress "you've been outbid" notifications while the user
+          has this page open. The DB place_bid RPC skips the push when
+          the bidder has pinged auction_presence in the last 45s; that
+          ping previously fired only from the bid page, so anyone
+          sitting on the detail page still got spammed with outbid
+          notifications they could already see live. */}
+      <AuctionPresencePing auctionId={auction.id} userId={userId} />
+
       {/* ─── PHOTO GALLERY — full-bleed cinematic hero with auto-rotate ─── */}
       <HeroCarousel photos={photos} alt={property.title}>
         {/* Top row — just LIVE/status on the left, bid count on the
@@ -577,27 +586,33 @@ export default async function AuctionDetail({
           }}
         >
           <div className="mx-auto max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)]">
-            <div className="rounded-2xl border border-[var(--border)] bg-white/95 p-2.5 shadow-[0_14px_36px_-12px_rgba(15,23,42,0.35)] backdrop-blur-xl">
-              {depositUnderReview && !hasActiveDeposit ? (
-                // Receipt already sent — don't prompt to pay again. Calm
-                // "we're checking it" pill that links to the payment status.
-                <Link
-                  href="/account/payments"
-                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-amber-300 bg-amber-50 text-[13.5px] font-bold text-amber-700 transition-all active:scale-[0.99]"
-                >
-                  <Clock className="h-4 w-4" strokeWidth={2.5} />
-                  Caution en cours de validation
-                </Link>
-              ) : (
-                <Link
-                  href={`/auctions/${auction.id}/bid` as never}
-                  className="batta-gradient-gold inline-flex h-12 w-full items-center justify-center gap-2 rounded-full text-[14px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] ring-1 ring-black/5 transition-all active:scale-[0.99]"
-                >
-                  <Gavel className="h-4 w-4" strokeWidth={2.5} />
-                  {isLive ? t("auction.placeBid") : "Réserver ma place"}
-                </Link>
-              )}
-              {hasBuyNow && !isOwner && (
+            {/* No wrapping white card any more — the gold button carries
+                its own gradient + shadow, and a translucent backdrop
+                under it felt like an extra surface fighting the page.
+                The optional buy-now link below gets its own small dark
+                glass pill so the text stays readable when it floats
+                over arbitrary listing photography. */}
+            {depositUnderReview && !hasActiveDeposit ? (
+              // Receipt already sent — don't prompt to pay again. Calm
+              // "we're checking it" pill that links to the payment status.
+              <Link
+                href="/account/payments"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-amber-300 bg-amber-50 text-[13.5px] font-bold text-amber-700 shadow-[0_12px_28px_-10px_rgba(0,0,0,0.4)] transition-all active:scale-[0.99]"
+              >
+                <Clock className="h-4 w-4" strokeWidth={2.5} />
+                Caution en cours de validation
+              </Link>
+            ) : (
+              <Link
+                href={`/auctions/${auction.id}/bid` as never}
+                className="batta-gradient-gold inline-flex h-12 w-full items-center justify-center gap-2 rounded-full text-[14px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] ring-1 ring-black/5 transition-all active:scale-[0.99]"
+              >
+                <Gavel className="h-4 w-4" strokeWidth={2.5} />
+                {isLive ? t("auction.placeBid") : "Réserver ma place"}
+              </Link>
+            )}
+            {hasBuyNow && !isOwner && (
+              <div className="mt-2 flex justify-center">
                 <Link
                   // Buy-now jumps straight to the unified checkout (it
                   // does not require a deposit, so routing through the
@@ -605,15 +620,15 @@ export default async function AuctionDetail({
                   // buy-now flow). Login/KYC checks happen on the
                   // checkout page itself.
                   href={`/payment/checkout?type=buy_now&auction=${auction.id}` as never}
-                  className="mt-1.5 block py-1 text-center text-[12px] text-[var(--foreground-muted)] hover:text-[var(--gold)]"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-[11.5px] text-white/85 ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70 hover:text-white"
                 >
                   {t("auction.buyNowFor")}{" "}
-                  <span className="font-bold text-foreground">
+                  <span className="font-bold text-white">
                     {formatTND(Number(auction.buy_now_price), locale)}
                   </span>
                 </Link>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -7,7 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { MailCheck } from "lucide-react";
 import { PhoneInput } from "./PhoneInput";
-import { TUNISIAN_GOVERNORATES, normalizeE164 } from "@/lib/tunisia";
+import { TUNISIAN_GOVERNORATES, normalizeE164, validatePhone } from "@/lib/tunisia";
 
 // Signup is intentionally identity-only. Role elevation (agency, bank,
 // bailiff, inspector, admin) happens via dedicated admin-reviewed flows
@@ -41,17 +41,21 @@ export function SignupForm() {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const check = validatePhone(dialCode, phoneNumber);
+    if (!check.ok) {
+      setError(check.reason);
+      return;
+    }
     const normalizedPhone = normalizeE164(dialCode, phoneNumber);
     if (!normalizedPhone) {
-      setError(
-        dialCode === "+216"
-          ? "Numéro de téléphone invalide — 8 chiffres après l'indicatif (+216)."
-          : "Numéro de téléphone invalide — vérifiez l'indicatif et le numéro.",
-      );
+      // normalizeE164 only returns null on degenerate input that
+      // validatePhone already caught. Defensive fallback so a future
+      // schema change in one helper can't ship a confusing form error.
+      setError("Numéro invalide.");
       return;
     }
     if (!governorate) {
-      setError("Sélectionnez votre gouvernorat.");
+      setError("Sélectionnez votre gouvernorat pour continuer.");
       return;
     }
     startTransition(async () => {

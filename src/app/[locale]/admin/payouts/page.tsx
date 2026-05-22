@@ -139,7 +139,7 @@ export default async function AdminPayoutsPage({
             : "Aucun retrait dans cette vue."}
         </div>
       ) : (
-        <ul className="mt-5 space-y-3">
+        <ul className="mt-5 space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
           {rows.map((p) => (
             <li
               key={p.id}

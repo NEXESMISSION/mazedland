@@ -69,6 +69,59 @@ export function BidHistoryRealtime({
     };
   }, [auctionId]);
 
+  // Polling fallback — reconciles the top-8 leaderboard every ~4 s,
+  // even when Supabase Realtime drops INSERT events (mobile networks
+  // drop them silently when the WS reconnects). Without this, two
+  // clients could each see *themselves* as the leader because their
+  // local bid was the only one their realtime channel ever received.
+  //
+  // Order matches the bid page's SSR query: placed_at DESC LIMIT 8.
+  // Pauses while the tab is hidden so backgrounded tabs don't poll.
+  useEffect(() => {
+    const supabase = getBrowserSupabase();
+    let cancelled = false;
+
+    async function pollOnce() {
+      if (cancelled) return;
+      if (typeof document !== "undefined" && document.hidden) return;
+      try {
+        const { data, error } = await supabase
+          .from("bids")
+          .select("*")
+          .eq("auction_id", auctionId)
+          .order("placed_at", { ascending: false })
+          .limit(8);
+        if (error || !data || cancelled) return;
+        const next = data as unknown as Bid[];
+        setBids((prev) => {
+          // Skip the state update when the ids + order didn't change —
+          // saves re-rendering the whole list every 4 s of quiet.
+          if (
+            prev.length === next.length &&
+            prev.every((b, i) => b.id === next[i].id)
+          ) {
+            return prev;
+          }
+          return next;
+        });
+      } catch {
+        /* transient — next tick will reconcile */
+      }
+    }
+
+    pollOnce();
+    const id = setInterval(pollOnce, 4000);
+    function onVis() {
+      if (!document.hidden) pollOnce();
+    }
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [auctionId]);
+
   // Clear the "fresh" highlight ~3s after the latest bid arrives.
   useEffect(() => {
     if (!recentId) return;

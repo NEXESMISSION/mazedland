@@ -138,11 +138,11 @@ export default async function AdminPropertyReview({
         <ArrowLeft className="size-3.5" /> File des annonces
       </Link>
 
-      {/* Header */}
+      {/* Header — full-width above the 2-col body. */}
       <div className="mt-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <span className="batta-eyebrow">Revue d&apos;annonce</span>
-          <h1 className="mt-1 text-[22px] font-extrabold leading-tight tracking-tight">
+          <h1 className="mt-1 text-[22px] font-extrabold leading-tight tracking-tight lg:text-[26px]">
             {prop.title as string}
           </h1>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted">
@@ -166,23 +166,34 @@ export default async function AdminPropertyReview({
         </div>
       )}
 
-      {/* Decision bar */}
-      <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-surface p-4 ring-1 ring-border">
-        <p className="text-[12px] text-muted">
-          {status === "pending_review"
-            ? "Vérifiez photos, documents et reçu, puis décidez."
-            : "Cette annonce a déjà été traitée."}
-        </p>
-        <ApprovePropertyButtons
-          id={id}
-          status={status}
-          acceptPaymentId={acceptPaymentId}
-          promoDurations={promoDurations}
-        />
-      </div>
+      {/* Two-column body on lg+: photos/content on the left, a sticky
+          decision + payment + owner sidebar on the right. Mobile keeps
+          the stack in roughly the same vertical order (decision bar
+          near the top so it's reachable without scrolling). */}
+      <div className="mt-4 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-5">
+
+        {/* ─── MAIN COLUMN ─── */}
+        <div className="space-y-4">
+
+          {/* Decision bar — repeated on mobile so it's the first action
+              card; on desktop the sticky sidebar carries it instead, so
+              this version becomes lg:hidden to avoid duplication. */}
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-surface p-4 ring-1 ring-border lg:hidden">
+            <p className="text-[12px] text-muted">
+              {status === "pending_review"
+                ? "Vérifiez photos, documents et reçu, puis décidez."
+                : "Cette annonce a déjà été traitée."}
+            </p>
+            <ApprovePropertyButtons
+              id={id}
+              status={status}
+              acceptPaymentId={acceptPaymentId}
+              promoDurations={promoDurations}
+            />
+          </div>
 
       {/* Photos */}
-      <Card title={`Photos · ${photos.length}`}>
+      <Card title={`Photos · ${photos.length}`} className="mt-0">
         {photos.length === 0 ? (
           <Empty icon={<ImageOff className="size-5" />} text="Aucune photo." />
         ) : (
@@ -212,8 +223,8 @@ export default async function AdminPropertyReview({
       </Card>
 
       {/* Characteristics */}
-      <Card title="Caractéristiques">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <Card title="Caractéristiques" className="mt-0">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           <Spec label="Type" value={KIND_TO_FR[type] ?? type} />
           {specs.map((s) => (
             <Spec key={s.label} label={s.label} value={s.value} />
@@ -230,7 +241,7 @@ export default async function AdminPropertyReview({
       </Card>
 
       {/* Documents */}
-      <Card title={`Documents légaux · ${documents.length}`}>
+      <Card title={`Documents légaux · ${documents.length}`} className="mt-0">
         {documents.length === 0 ? (
           <Empty icon={<FileText className="size-5" />} text="Aucun document fourni." />
         ) : (
@@ -259,8 +270,34 @@ export default async function AdminPropertyReview({
         )}
       </Card>
 
+        {/* End of main column — sidebar starts after this. */}
+        </div>
+
+        {/* ─── SIDEBAR (lg+) ─── */}
+        <aside className="mt-4 space-y-4 lg:mt-0 lg:sticky lg:top-6">
+
+          {/* Desktop decision bar (mobile version is at the top of the
+              main column, lg:hidden there). */}
+          <div className="hidden rounded-2xl bg-surface p-4 ring-1 ring-border lg:block">
+            <h2 className="batta-eyebrow mb-2 flex items-center gap-2">
+              <span aria-hidden className="batta-gold-rule-short" />
+              Décision
+            </h2>
+            <p className="mb-3 text-[12px] text-muted">
+              {status === "pending_review"
+                ? "Vérifiez photos, documents et reçu, puis décidez."
+                : "Cette annonce a déjà été traitée."}
+            </p>
+            <ApprovePropertyButtons
+              id={id}
+              status={status}
+              acceptPaymentId={acceptPaymentId}
+              promoDurations={promoDurations}
+            />
+          </div>
+
       {/* Payment + receipt */}
-      <Card title="Paiement · frais d'annonce">
+      <Card title="Paiement · frais d'annonce" className="mt-0">
         {!payRow ? (
           <Empty icon={<Wallet className="size-5" />} text="Aucun paiement initié." />
         ) : (
@@ -338,7 +375,7 @@ export default async function AdminPropertyReview({
       </Card>
 
       {/* Owner */}
-      <Card title="Vendeur">
+      <Card title="Vendeur" className="mt-0">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[13px]">
           <span className="inline-flex items-center gap-1.5 text-foreground">
             <User className="size-3.5 text-gold" />
@@ -355,13 +392,24 @@ export default async function AdminPropertyReview({
           )}
         </div>
       </Card>
+        </aside>
+      </div>
     </div>
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({
+  title, children, className,
+}: {
+  title: string;
+  children: React.ReactNode;
+  /** Optional override — defaults to a `mt-4` separator, but the
+   *  desktop 2-col layout passes `mt-0` since the column uses
+   *  `space-y-4` for vertical rhythm. */
+  className?: string;
+}) {
   return (
-    <section className="mt-4 rounded-2xl bg-surface p-4 ring-1 ring-border">
+    <section className={`rounded-2xl bg-surface p-4 ring-1 ring-border ${className ?? "mt-4"}`}>
       <h2 className="batta-eyebrow mb-3 flex items-center gap-2">
         <span aria-hidden className="batta-gold-rule-short" />
         {title}

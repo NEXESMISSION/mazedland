@@ -7,7 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { stripLocalePrefix } from "@/i18n/routing";
 import { PhoneInput } from "./PhoneInput";
-import { normalizeE164 } from "@/lib/tunisia";
+import { normalizeE164, validatePhone } from "@/lib/tunisia";
 
 type Mode = "email" | "phone";
 
@@ -70,13 +70,14 @@ export function LoginForm() {
       // "invalid credentials" wording Supabase would.
       let signInEmail = email.trim();
       if (mode === "phone") {
+        const check = validatePhone(dialCode, phoneNumber);
+        if (!check.ok) {
+          setError(check.reason);
+          return;
+        }
         const phone = normalizeE164(dialCode, phoneNumber);
         if (!phone) {
-          setError(
-            dialCode === "+216"
-              ? "Numéro invalide — 8 chiffres après l'indicatif (+216)."
-              : "Numéro invalide — vérifiez l'indicatif et le numéro.",
-          );
+          setError("Numéro invalide.");
           return;
         }
         try {
@@ -87,12 +88,19 @@ export function LoginForm() {
           });
           const data = (await res.json()) as { email: string | null };
           if (!data.email) {
-            setError("Identifiants invalides.");
+            // Specific wording so the user knows the phone is the
+            // problem (not the password), without leaking "user
+            // exists" via different messages.
+            setError(
+              `Aucun compte n'est associé au numéro ${phone}. Vérifiez le numéro ou créez un compte.`,
+            );
             return;
           }
           signInEmail = data.email;
         } catch {
-          setError("Connexion impossible — réessayez.");
+          setError(
+            "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
+          );
           return;
         }
       }

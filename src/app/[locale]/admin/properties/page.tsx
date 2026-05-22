@@ -238,7 +238,144 @@ export default async function AdminProperties({
         })}
       </nav>
 
-      <div className="space-y-3">
+      {/* ─── Desktop table — lg+ only. Mobile keeps the card list
+              below. The table fits owner / location / price /
+              payment / status on a single row so the admin gets the
+              whole queue at a glance instead of scrolling card by
+              card. */}
+      <div className="hidden overflow-hidden rounded-2xl bg-surface ring-1 ring-border lg:block">
+        <table className="w-full text-[12.5px]">
+          <thead className="bg-surface-2 text-[10px] uppercase tracking-[0.14em] text-muted">
+            <tr>
+              <th className="px-3 py-2.5 text-start font-extrabold">Annonce</th>
+              <th className="px-3 py-2.5 text-start font-extrabold">Vendeur</th>
+              <th className="px-3 py-2.5 text-start font-extrabold">Localisation</th>
+              <th className="px-3 py-2.5 text-start font-extrabold">Type</th>
+              <th className="px-3 py-2.5 text-end font-extrabold">Mise / prix</th>
+              <th className="px-3 py-2.5 text-start font-extrabold">Reçu</th>
+              <th className="px-3 py-2.5 text-start font-extrabold">Statut</th>
+              <th className="px-3 py-2.5 text-end font-extrabold">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {rows.map((p) => {
+              const photos = (p.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
+              const cover = photos[0];
+              const docCount = (p.documents ?? []).length;
+              const ownerName = Array.isArray(p.owner) ? p.owner[0]?.full_name : p.owner?.full_name;
+              const pay = payByProp.get(p.id);
+              const isDirect = p.listing_type === "direct";
+              const detailHref = `/admin/properties/${p.id}` as `/admin/properties/${string}`;
+              return (
+                <tr key={`row-${p.id}`} className="transition hover:bg-surface-2/60">
+                  <td className="px-3 py-2.5">
+                    <Link href={detailHref} className="flex items-center gap-2.5">
+                      <div className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-surface-2">
+                        {cover ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={propertyPhotoUrl(cover.storage_path)} alt="" className="size-full object-cover" />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-muted">
+                            <ImageOff className="size-4" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="line-clamp-1 font-bold text-foreground group-hover:text-gold-bright">
+                          {p.title}
+                        </div>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-[10.5px] text-muted">
+                          <Calendar className="size-2.5" />
+                          {new Date(p.created_at).toLocaleDateString("fr-FR")}
+                          <span aria-hidden className="opacity-40">·</span>
+                          <FileText className="size-2.5" />
+                          {docCount} doc{docCount > 1 ? "s" : ""}
+                        </div>
+                      </div>
+                    </Link>
+                  </td>
+                  <td className="px-3 py-2.5 text-foreground/85">
+                    {ownerName ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <User className="size-3 text-gold" />
+                        <span className="line-clamp-1 max-w-[14ch]">{ownerName}</span>
+                      </span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5 text-foreground/85">
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="size-3 text-muted" />
+                      {p.governorate}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gold-faint px-2 py-0.5 text-[10px] font-bold text-gold-bright ring-1 ring-gold/25">
+                      {isDirect ? <Tag className="size-2.5" /> : <Gavel className="size-2.5" />}
+                      {isDirect ? "Direct" : "Enchère"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5 text-end">
+                    {isDirect && p.sale_price != null ? (
+                      <span className="batta-tabular font-bold text-foreground">
+                        {formatTND(Number(p.sale_price), "fr")}{" "}
+                        <span className="text-[10px] font-bold uppercase text-muted">TND</span>
+                      </span>
+                    ) : p.area_sqm != null ? (
+                      <span className="batta-tabular text-foreground/85">
+                        {p.area_sqm} m²
+                      </span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {pay ? (
+                      <span className="flex flex-col gap-0.5">
+                        <span className="batta-tabular text-[11px] font-bold text-foreground">
+                          {formatTND(pay.amount, "fr")} TND
+                        </span>
+                        <span
+                          className={`inline-flex w-fit rounded-full px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.1em] ${
+                            PAY[pay.status]?.tone ?? "bg-surface-2 text-muted ring-1 ring-border"
+                          }`}
+                        >
+                          {PAY[pay.status]?.label ?? pay.status}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <StatusPill status={p.status} />
+                    {p.rejection_reason && p.status === "rejected" && (
+                      <div className="mt-1 line-clamp-1 max-w-[18ch] text-[10px] text-[var(--danger)]">
+                        {p.rejection_reason}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5 text-end">
+                    <div className="flex justify-end">
+                      <ApprovePropertyButtons id={p.id} status={p.status} />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={8} className="px-6 py-10 text-center text-[13px] text-muted">
+                  No properties submitted yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="space-y-3 lg:hidden">
         {rows.map((p) => {
           const photos = (p.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
           const cover = photos[0];

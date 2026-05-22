@@ -116,7 +116,10 @@ export function PaymentsQueueList({
 
   return (
     <>
-      <div className="space-y-3">
+      {/* Mobile: vertical card stack. Desktop: 2-up grid so the admin
+          sees more receipts at a glance without scrolling card-by-
+          card. Above 1400px we go to 3-up. */}
+      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 xl:grid-cols-3">
         {items.map((item) => (
           <article
             key={item.id}
