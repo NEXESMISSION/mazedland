@@ -100,39 +100,65 @@ export function ExploreFeed({
   const seenRef = useRef<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const load = useCallback(async (opts: { reset?: boolean } = {}) => {
-    setLoading(true);
-    if (opts.reset) {
-      seenRef.current = new Set();
-      writeSeen(seenRef.current);
-    }
-    try {
-      const res = await fetch(`/api/explore/feed?limit=${FEED_LIMIT}`);
-      const data = res.ok
-        ? ((await res.json()) as {
-            items: AuctionWithProperty[];
-            savedAuctionIds?: string[];
-          })
-        : { items: [], savedAuctionIds: [] };
-      if (data.savedAuctionIds) setSaved(new Set(data.savedAuctionIds));
-      const unseen = (data.items ?? []).filter((a) => !seenRef.current.has(a.id));
-      setItems(shuffleSmart(unseen));
-      containerRef.current?.scrollTo({ top: 0 });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const load = useCallback(
+    async (opts: { reset?: boolean; silent?: boolean } = {}) => {
+      // `silent` keeps the spinner from flashing AND keeps the user's
+      // scroll position when we're just topping up the feed in the
+      // background — the previous behaviour reset to top mid-scroll
+      // and replaced the visible card under the user's finger, which
+      // read as a glitch.
+      if (!opts.silent) setLoading(true);
+      if (opts.reset) {
+        seenRef.current = new Set();
+        writeSeen(seenRef.current);
+      }
+      try {
+        const res = await fetch(`/api/explore/feed?limit=${FEED_LIMIT}`);
+        const data = res.ok
+          ? ((await res.json()) as {
+              items: AuctionWithProperty[];
+              savedAuctionIds?: string[];
+            })
+          : { items: [], savedAuctionIds: [] };
+        if (data.savedAuctionIds) setSaved(new Set(data.savedAuctionIds));
+        const unseen = (data.items ?? []).filter((a) => !seenRef.current.has(a.id));
+        if (opts.silent) {
+          // Background refresh: only ADD new items (preserve order +
+          // scroll position). Drop the shuffle here; the original
+          // shuffle already happened on first paint.
+          setItems((cur) => {
+            const known = new Set(cur.map((a) => a.id));
+            const fresh = unseen.filter((a) => !known.has(a.id));
+            return fresh.length > 0 ? [...cur, ...fresh] : cur;
+          });
+        } else {
+          setItems(shuffleSmart(unseen));
+          containerRef.current?.scrollTo({ top: 0 });
+        }
+      } finally {
+        if (!opts.silent) setLoading(false);
+      }
+    },
+    [],
+  );
 
-  // First paint: show the server slice (minus already-seen) instantly, then
-  // refresh from the full feed in the background.
+  // First paint: show the server slice (minus already-seen) instantly.
+  // Background-refresh AFTER paint so we pick up any auctions the
+  // user hasn't seen yet, but stay silent — no spinner, no scroll
+  // reset, no card reshuffle under the user.
   useEffect(() => {
     seenRef.current = readSeen();
     const initialUnseen = initialItems.filter((a) => !seenRef.current.has(a.id));
     if (initialUnseen.length > 0) {
       setItems(shuffleSmart(initialUnseen));
       setLoading(false);
+      // Quiet top-up — only appends genuinely new items.
+      void load({ silent: true });
+    } else {
+      // Server had nothing for us (or all seen) — show the spinner
+      // while we fetch from scratch.
+      void load();
     }
-    void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -342,11 +368,14 @@ function FeedCard({
         )}
       </div>
 
-      {/* Right action rail — glass icons, sitting above the bottom
-          text overlay. Position lifted from bottom-36 → bottom-44 so
-          the share button no longer hugs the title line on phones
-          with narrower aspect ratios. */}
-      <div className="absolute end-3 bottom-44 z-20 flex flex-col items-center gap-3">
+      {/* Right action rail — anchored to the bottom of the photo so
+          it groups visually with the title + meta + price block
+          rather than floating mid-image. Was bottom-44 (mid-right,
+          which read as disconnected on the sky-heavy shot in the
+          audit screenshot); now sits at bottom-32 next to the title
+          baseline, with a touch more contrast so the icons survive
+          on bright photos. */}
+      <div className="absolute end-3 bottom-32 z-20 flex flex-col items-center gap-2.5">
         <WatchlistButton
           auctionId={auction.id}
           initialSaved={saved}
@@ -357,7 +386,7 @@ function FeedCard({
           type="button"
           onClick={onShare}
           aria-label="Partager"
-          className="inline-flex size-11 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white backdrop-blur-md transition active:scale-90 hover:bg-black/65"
+          className="inline-flex size-11 items-center justify-center rounded-full border border-white/30 bg-black/55 text-white shadow-[0_8px_24px_-10px_rgba(0,0,0,0.6)] backdrop-blur-md transition active:scale-90 hover:bg-black/75"
         >
           <Share2 className="size-[19px]" strokeWidth={2.2} />
         </button>
