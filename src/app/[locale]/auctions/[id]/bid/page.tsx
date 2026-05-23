@@ -48,9 +48,11 @@ export default async function BidPage({
     // Seed the history list — RLS hides sealed-bid amounts from non-self
     // rows during live phase, but rows still come through so the count
     // strip can show "X autres offres révélées à la clôture".
+    // Join profiles for `full_name` so the history can show "Ahmed B."
+    // instead of the truncated UUID slice "ec0043…" the audit flagged.
     supabase
       .from("bids")
-      .select("*")
+      .select("*, bidder:profiles!bids_bidder_id_fkey(full_name)")
       .eq("auction_id", id)
       .order("placed_at", { ascending: false })
       .limit(8),

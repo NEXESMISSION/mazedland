@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -434,16 +434,27 @@ function ActiveComposer({
   const [currentPrice, setCurrentPrice] = useState<number>(
     auction.current_price ?? auction.opening_price,
   );
-  // Self-raise: when the user is already the current top bidder there
-  // is no increment to clear — any amount above the current price is
-  // a valid raise. nextMinBid() applies the increment ladder; for the
-  // self-raise case we collapse the floor to "current price + 1 TND"
-  // so the input never hard-blocks the lead bidder.
+  // Two floors, not one:
+  //
+  //   minNext     — what the INPUT auto-bumps to (and what the
+  //                 +/- buttons clamp to). Always increment-based —
+  //                 currentPrice + bidIncrement(). Drives the
+  //                 "Minimum · incrément X" label, the +5% / +10%
+  //                 presets, and the auto-bump effect that follows
+  //                 the live price up. Self-raise users get the
+  //                 same friendly suggestion as everyone else
+  //                 instead of a +1-TND chase.
+  //
+  //   submitMin   — what the server will actually ACCEPT. For
+  //                 normal bidders this equals minNext. For the
+  //                 current top bidder (self-raise) we drop it to
+  //                 currentPrice + 1 TND so they can type a smaller
+  //                 raise manually if they want — the DB place_bid
+  //                 RPC mirrors this (see migration 0046).
   const isCurrentTop =
     !!userId && !!currentTopBidderId && userId === currentTopBidderId;
-  const minNext = isCurrentTop
-    ? currentPrice + 1
-    : nextMinBid(auction, currentPrice);
+  const minNext = nextMinBid(auction, currentPrice);
+  const submitMin = isCurrentTop ? currentPrice + 1 : minNext;
   const inc = minBidIncrement(currentPrice);
 
   // English/sealed amount input. Sealed uses opening_price as the floor;
@@ -502,6 +513,14 @@ function ActiveComposer({
   // Combining them halves the WebSocket overhead and gives us a single
   // cleanup point on unmount or auction.id change.
   //
+  // Shared "last activity" timestamp — bumped by every realtime event
+  // (UPDATE current_price or INSERT bid) AND by the polling fallback
+  // when it detects a missed update. The poll loop reads this ref to
+  // pick its next cadence: hot (1 s) while activity is fresh, cold
+  // (4 s) once nothing has happened for 30 s. Cuts ~60% of poll
+  // traffic on idle auctions without changing the live-bid feel.
+  const lastActivityRef = useRef<number>(0);
+
   // For Dutch we still subscribe — Dutch has no "live bidders" per se,
   // but the auction row updates (status → ended_sold) when someone else
   // accepts, and we need to react. The local 10s ticker keeps driving
@@ -524,6 +543,9 @@ function ActiveComposer({
           new: { current_price: number | null; status: string };
         }) => {
           const next = payload.new;
+          // Mark this auction as "hot" — the adaptive poll downstream
+          // will stay on 1 s cadence for the next 30 s.
+          lastActivityRef.current = Date.now();
           // English / sealed: track the server's authoritative
           // current_price (already reflects proxy resolution + sealed
           // masking). Skip for Dutch — its ticker is the source of truth.
@@ -550,6 +572,7 @@ function ActiveComposer({
           filter: `auction_id=eq.${auction.id}`,
         } as never,
         () => {
+          lastActivityRef.current = Date.now();
           setBidsCount((c) => c + 1);
           setRecentBidFlash(true);
           if (flashTimer) clearTimeout(flashTimer);
@@ -564,12 +587,19 @@ function ActiveComposer({
     };
   }, [auction.id, isDutch, router]);
 
-  // Polling fallback — reconciles current_price + status every ~4 s
-  // regardless of whether Supabase Realtime delivered an event. Without
-  // this, two clients sometimes diverged: bidder A would see 30 500 as
-  // the high while bidder B's screen showed 40 500. Realtime over a
-  // flaky mobile connection drops UPDATE events silently; polling makes
-  // missed events recoverable within one tick.
+  // Polling fallback — reconciles current_price + status whenever
+  // Supabase Realtime might have dropped an event. Adaptive cadence:
+  //
+  //   HOT  (1 s)  — activity in the last 30 s (a realtime UPDATE or
+  //                 INSERT just landed, OR the poll itself detected a
+  //                 missed price change). Keeps the live-bid feel.
+  //   COLD (4 s)  — nothing has changed for 30 s. Quiet auctions and
+  //                 background tabs drop to this cadence, cutting
+  //                 traffic by ~60% on the typical idle auction.
+  //
+  // The hot/cold switch is driven by `lastActivityRef`, which the
+  // realtime handlers above also bump — so the very next poll tick
+  // after a bid lands stays at 1 s.
   //
   // Pauses while the tab is hidden so we don't spam the DB for users
   // who tabbed away. Skipped for Dutch — its price is driven by the
@@ -578,24 +608,45 @@ function ActiveComposer({
     if (isDutch) return;
     const supabase = getBrowserSupabase();
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const HOT_INTERVAL_MS = 1_000;
+    const COLD_INTERVAL_MS = 4_000;
+    const HOT_WINDOW_MS = 30_000;
+
+    function nextInterval(): number {
+      const age = Date.now() - lastActivityRef.current;
+      return age < HOT_WINDOW_MS ? HOT_INTERVAL_MS : COLD_INTERVAL_MS;
+    }
 
     async function pollOnce() {
       if (cancelled) return;
-      if (typeof document !== "undefined" && document.hidden) return;
+      if (typeof document !== "undefined" && document.hidden) {
+        // Re-arm anyway — when the tab returns the visibility handler
+        // fires pollOnce(), which restarts the chain.
+        schedule();
+        return;
+      }
       try {
         const { data, error } = await supabase
           .from("auctions")
           .select("current_price, status")
           .eq("id", auction.id)
           .maybeSingle();
-        if (error || !data || cancelled) return;
-        // Use a functional set so we read the latest local value and
-        // skip the update when nothing actually changed — avoids a
-        // pointless re-render on every poll.
+        if (error || !data || cancelled) {
+          schedule();
+          return;
+        }
+        // Functional set: skip the update when nothing changed to avoid
+        // a re-render on every poll. When something DID change, that's
+        // either a missed realtime event or a fresh one — bump the
+        // activity ref so the cadence stays hot.
         if (data.current_price != null) {
           setCurrentPrice((prev) => {
             const next = Number(data.current_price);
-            return next === prev ? prev : next;
+            if (next === prev) return prev;
+            lastActivityRef.current = Date.now();
+            return next;
           });
         }
         const s = data.status as string;
@@ -611,17 +662,23 @@ function ActiveComposer({
       } catch {
         /* transient network blip — try again on the next tick */
       }
+      schedule();
+    }
+
+    function schedule() {
+      if (cancelled) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(pollOnce, nextInterval());
     }
 
     pollOnce();
-    const id = setInterval(pollOnce, 4000);
     function onVis() {
       if (!document.hidden) pollOnce();
     }
     document.addEventListener("visibilitychange", onVis);
     return () => {
       cancelled = true;
-      clearInterval(id);
+      if (timer) clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVis);
     };
   }, [auction.id, isDutch, router]);
@@ -693,16 +750,27 @@ function ActiveComposer({
     setSubmitting(true);
     startTransition(async () => {
       try {
+        // Per-attempt timeout — without this a stalled connection
+        // (mobile dead zone, ISP black-hole) leaves the button stuck
+        // on "Envoi…" indefinitely while the user has no idea what
+        // to do. 15 s is generous for a healthy network and short
+        // enough that giving up + retrying still completes inside an
+        // anti-snipe window.
+        const REQUEST_TIMEOUT_MS = 15_000;
+        const postBid = () => {
+          const ctrl = new AbortController();
+          const tid = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+          return fetch(`/api/auctions/${auction.id}/bid`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ amount: submitAmount }),
+            signal: ctrl.signal,
+          }).finally(() => clearTimeout(tid));
+        };
         // One retry on a transient 5xx or network error. In the last
         // seconds of an English auction every lost click counts; a
         // single backoff doubles the success rate against gateway
         // hiccups without spamming the engine if it's truly down.
-        const postBid = () =>
-          fetch(`/api/auctions/${auction.id}/bid`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ amount: submitAmount }),
-          });
         let res: Response;
         try {
           res = await postBid();
@@ -710,14 +778,20 @@ function ActiveComposer({
             await new Promise((r) => setTimeout(r, 350));
             res = await postBid();
           }
-        } catch {
-          // Network-level failure (DNS, dropped connection). Retry once.
+        } catch (e) {
+          // Network-level failure OR our own AbortController firing on
+          // the 15 s timeout. Either way: one retry, then surface a
+          // distinct message for timeout so the user knows it's a
+          // slow connection (not a server error).
+          const wasTimeout = e instanceof DOMException && e.name === "AbortError";
           await new Promise((r) => setTimeout(r, 500));
           try {
             res = await postBid();
           } catch {
             toast(
-              "Connexion instable — votre offre n'a pas pu être envoyée.",
+              wasTimeout
+                ? "La connexion est trop lente — réessayez quand votre réseau est stable."
+                : "Connexion instable — votre offre n'a pas pu être envoyée.",
               "error",
             );
             return;

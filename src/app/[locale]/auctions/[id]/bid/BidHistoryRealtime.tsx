@@ -1,16 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Trophy, TrendingUp, Lock, Eye } from "lucide-react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { formatTND } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { Bid } from "@/lib/types";
 
+/**
+ * `Bid` from the server may carry an embedded `bidder` profile when the
+ * query joined on profiles. The shape is whatever Supabase's join
+ * returns — single object for a `to-one` FK, or null if the profile is
+ * missing.
+ */
+type EnrichedBid = Bid & {
+  bidder?: { full_name: string | null } | null;
+};
+
 interface Props {
   auctionId: string;
   /** SSR seed — avoids a "..." flash. Newest first. */
-  initialBids: Bid[];
+  initialBids: EnrichedBid[];
   /** Total bid count incl. sealed rows hidden by RLS. */
   totalBids: number;
   /** Current user — bids by this id render as "Vous". */
@@ -18,6 +28,23 @@ interface Props {
   /** Mask non-self bid amounts during live phase (sealed-bid only). */
   isSealedLive: boolean;
   locale: string;
+}
+
+/**
+ * Privacy-respectful display name. "Ahmed Ben Salem" → "Ahmed B.";
+ * a single name passes through unchanged; missing name → a stable
+ * "Enchérisseur" placeholder. Beats showing the raw UUID slice
+ * ("ec0043…") on every row, which leaks ids and reads as a bug.
+ */
+function maskName(full: string | null | undefined): string {
+  const s = (full ?? "").trim();
+  if (!s) return "Enchérisseur";
+  const parts = s.split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  const first = parts[0];
+  const last = parts[parts.length - 1];
+  const initial = last.charAt(0);
+  return `${first} ${initial}.`;
 }
 
 /**
@@ -38,8 +65,30 @@ export function BidHistoryRealtime({
   isSealedLive,
   locale,
 }: Props) {
-  const [bids, setBids] = useState<Bid[]>(initialBids);
+  const [bids, setBids] = useState<EnrichedBid[]>(initialBids);
   const [recentId, setRecentId] = useState<string | null>(null);
+
+  // Cache of bidder_id → display name. Seeded from the SSR bids' joined
+  // profile, kept hot by the poll, and queried-on-demand when a
+  // realtime INSERT arrives for a bidder we haven't seen yet. Avoids
+  // re-fetching the same profile every tick.
+  const nameCacheRef = useRef<Map<string, string>>(
+    new Map(
+      initialBids
+        .filter((b) => b.bidder?.full_name)
+        .map((b) => [b.bidder_id, b.bidder!.full_name as string]),
+    ),
+  );
+  // Bump this counter when the cache grows, so the rendered list
+  // re-renders with the freshly resolved names (Map mutations alone
+  // don't trigger React).
+  const [nameVersion, setNameVersion] = useState(0);
+
+  // Shared activity timestamp — bumped by the realtime INSERT handler
+  // AND by the poll when it spots a new bid id. The adaptive poll
+  // downstream reads this to switch between HOT (1 s) and COLD (4 s)
+  // cadence so quiet auctions don't pay the bidding-feel price.
+  const lastActivityRef = useRef<number>(0);
 
   // Subscribe to INSERT events on bids for this auction. Dedup by id so
   // an optimistic local insert + the realtime echo don't double-render.
@@ -56,11 +105,37 @@ export function BidHistoryRealtime({
           filter: `auction_id=eq.${auctionId}`,
         } as never,
         (payload: { new: Bid }) => {
+          lastActivityRef.current = Date.now();
+          const incoming = payload.new;
           setBids((prev) => {
-            if (prev.some((b) => b.id === payload.new.id)) return prev;
-            return [payload.new, ...prev].slice(0, 8);
+            if (prev.some((b) => b.id === incoming.id)) return prev;
+            // Realtime INSERT payloads don't carry the joined profile,
+            // so we attach the cached name (if known); the on-demand
+            // fetch below fills it in for a brand-new bidder.
+            const cachedName = nameCacheRef.current.get(incoming.bidder_id);
+            const enriched: EnrichedBid = cachedName
+              ? { ...incoming, bidder: { full_name: cachedName } }
+              : { ...incoming, bidder: null };
+            return [enriched, ...prev].slice(0, 8);
           });
-          setRecentId(payload.new.id);
+          setRecentId(incoming.id);
+
+          // First time we've seen this bidder? Look up their profile
+          // once and cache the name — every subsequent bid from them
+          // (this session) resolves instantly.
+          if (!nameCacheRef.current.has(incoming.bidder_id)) {
+            void supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("id", incoming.bidder_id)
+              .maybeSingle()
+              .then((res: { data: { full_name: string | null } | null }) => {
+                const name = res.data?.full_name ?? null;
+                if (!name) return;
+                nameCacheRef.current.set(incoming.bidder_id, name);
+                setNameVersion((v) => v + 1);
+              });
+          }
         },
       )
       .subscribe();
@@ -69,55 +144,95 @@ export function BidHistoryRealtime({
     };
   }, [auctionId]);
 
-  // Polling fallback — reconciles the top-8 leaderboard every ~4 s,
-  // even when Supabase Realtime drops INSERT events (mobile networks
-  // drop them silently when the WS reconnects). Without this, two
-  // clients could each see *themselves* as the leader because their
-  // local bid was the only one their realtime channel ever received.
+  // Polling fallback — reconciles the top-8 leaderboard whenever
+  // Supabase Realtime might have dropped INSERT events. Adaptive
+  // cadence mirrors BidComposer:
   //
-  // Order matches the bid page's SSR query: placed_at DESC LIMIT 8.
-  // Pauses while the tab is hidden so backgrounded tabs don't poll.
+  //   HOT  (1 s)  — bid landed in the last 30 s, OR the poll itself
+  //                 detected a new row id (means realtime missed it).
+  //   COLD (4 s)  — quiet for 30 s. Idle auctions drop here.
+  //
+  // Without this poll, two clients could each see *themselves* as the
+  // leader because their local bid was the only one their realtime
+  // channel ever received. Order matches the bid page's SSR query:
+  // placed_at DESC LIMIT 8. Pauses while the tab is hidden.
   useEffect(() => {
     const supabase = getBrowserSupabase();
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const HOT_INTERVAL_MS = 1_000;
+    const COLD_INTERVAL_MS = 4_000;
+    const HOT_WINDOW_MS = 30_000;
+
+    function nextInterval(): number {
+      const age = Date.now() - lastActivityRef.current;
+      return age < HOT_WINDOW_MS ? HOT_INTERVAL_MS : COLD_INTERVAL_MS;
+    }
 
     async function pollOnce() {
       if (cancelled) return;
-      if (typeof document !== "undefined" && document.hidden) return;
+      if (typeof document !== "undefined" && document.hidden) {
+        schedule();
+        return;
+      }
       try {
         const { data, error } = await supabase
           .from("bids")
-          .select("*")
+          .select("*, bidder:profiles!bids_bidder_id_fkey(full_name)")
           .eq("auction_id", auctionId)
           .order("placed_at", { ascending: false })
           .limit(8);
-        if (error || !data || cancelled) return;
-        const next = data as unknown as Bid[];
+        if (error || !data || cancelled) {
+          schedule();
+          return;
+        }
+        const next = data as unknown as EnrichedBid[];
+        // Refresh the name cache from whatever the poll just brought
+        // back — keeps "Ahmed B." correct even if the user changed
+        // their profile name mid-auction.
+        let cacheGrew = false;
+        for (const b of next) {
+          const n = b.bidder?.full_name;
+          if (n && nameCacheRef.current.get(b.bidder_id) !== n) {
+            nameCacheRef.current.set(b.bidder_id, n);
+            cacheGrew = true;
+          }
+        }
+        if (cacheGrew) setNameVersion((v) => v + 1);
         setBids((prev) => {
-          // Skip the state update when the ids + order didn't change —
-          // saves re-rendering the whole list every 4 s of quiet.
           if (
             prev.length === next.length &&
             prev.every((b, i) => b.id === next[i].id)
           ) {
             return prev;
           }
+          // List changed — realtime may have missed an INSERT, or our
+          // optimistic state is stale. Either way, bump activity so
+          // the cadence stays hot for the next 30 s.
+          lastActivityRef.current = Date.now();
           return next;
         });
       } catch {
         /* transient — next tick will reconcile */
       }
+      schedule();
+    }
+
+    function schedule() {
+      if (cancelled) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(pollOnce, nextInterval());
     }
 
     pollOnce();
-    const id = setInterval(pollOnce, 4000);
     function onVis() {
       if (!document.hidden) pollOnce();
     }
     document.addEventListener("visibilitychange", onVis);
     return () => {
       cancelled = true;
-      clearInterval(id);
+      if (timer) clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVis);
     };
   }, [auctionId]);
@@ -200,8 +315,16 @@ export function BidHistoryRealtime({
                       {isMine ? (
                         <span className="text-[var(--gold)]">Vous</span>
                       ) : (
-                        <span className="font-mono text-[11px] lg:text-[12px] text-[var(--foreground-muted)]">
-                          {b.bidder_id.slice(0, 6)}…
+                        <span className="text-[11px] lg:text-[12px] text-[var(--foreground-muted)]">
+                          {/* Read from cache first (covers realtime
+                              inserts that haven't been re-polled yet),
+                              fall back to the joined profile, finally
+                              "Enchérisseur" if nothing's available. */}
+                          {maskName(
+                            nameCacheRef.current.get(b.bidder_id)
+                              ?? b.bidder?.full_name
+                              ?? null,
+                          )}
                         </span>
                       )}
                       {b.is_proxy && (
@@ -215,7 +338,15 @@ export function BidHistoryRealtime({
                         </span>
                       )}
                     </div>
-                    <div className="text-[10px] lg:text-[11px] text-[var(--foreground-subtle)] batta-tabular">
+                    <div
+                      className="text-[10px] lg:text-[11px] text-[var(--foreground-subtle)] batta-tabular"
+                      // Server renders this at request time, client hydrates
+                      // ~1 s later — `formatRelativeTime` reads `Date.now()`
+                      // so the strings drift ("7 min" vs "8 min") and React
+                      // throws #418. Live-clock components are the canonical
+                      // case for suppressHydrationWarning.
+                      suppressHydrationWarning
+                    >
                       {formatRelativeTime(b.placed_at)}
                     </div>
                   </div>
