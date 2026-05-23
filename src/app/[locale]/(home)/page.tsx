@@ -197,10 +197,13 @@ export default async function LandingPage() {
         .in("auction_id", ids);
       savedIds = new Set((saves ?? []).map((s) => s.auction_id as string));
     }
-    })(), 7000);
+    })(), 2500);
   } catch {
     // env missing, query error, or timeout → the brand hero + browse
     // rails below still render so the page is never a frozen spinner.
+    // 2.5s ceiling: longer than that and users have already bounced —
+    // better to paint the fallback hero immediately and let the client
+    // streams (LiveTicker, RecentBidsFeed) backfill the rails.
   }
 
   return (
