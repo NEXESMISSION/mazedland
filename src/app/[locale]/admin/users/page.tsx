@@ -6,7 +6,7 @@ export default async function AdminUsers() {
   const { data: subs } = await supabase
     .from("kyc_submissions")
     .select(`
-      id, status, submitted_at, reviewer_notes,
+      id, status, submitted_at, rejection_reason,
       user:profiles!inner (id, full_name, phone, role, kyc_status)
     `)
     .order("submitted_at", { ascending: false })

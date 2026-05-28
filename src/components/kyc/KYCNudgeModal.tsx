@@ -9,7 +9,7 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
 
 const DISMISS_KEY = "batta:kyc-nudge-dismissed";
 
-type KycStatus = "none" | "submitted" | "verified" | "rejected" | null;
+type KycStatus = "none" | "submitted" | "pending" | "verified" | "rejected" | null;
 
 /**
  * Soft-gate that nudges signed-in users whose KYC isn't verified to
@@ -55,13 +55,13 @@ export function KYCNudgeModal() {
       if (s === "rejected") {
         const { data: sub } = await sb
           .from("kyc_submissions")
-          .select("reviewer_notes")
+          .select("rejection_reason")
           .eq("user_id", user.id)
           .order("submitted_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (!cancelled && sub?.reviewer_notes) {
-          setRejectionReason(sub.reviewer_notes);
+        if (!cancelled && sub?.rejection_reason) {
+          setRejectionReason(sub.rejection_reason);
         }
       }
       if (!cancelled) {

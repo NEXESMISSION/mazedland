@@ -1,77 +1,42 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
-import { CheckCircle2, ShieldCheck, Clock, RefreshCw } from "lucide-react";
+import { Link, redirect } from "@/i18n/navigation";
+import { CheckCircle2, ShieldCheck, Clock } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
 import { Button } from "@/components/ui/Button";
-import { useAuth } from "@/lib/auth";
-import { getBrowserSupabase } from "@/lib/supabase/client";
+import { getServerSupabase } from "@/lib/supabase/server";
+import { StatusPoller } from "./StatusPoller";
 
-export default function KYCStatusPage() {
-  const { user, loaded } = useAuth();
-  const router = useRouter();
-  const [refreshing, setRefreshing] = useState(false);
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-  // Default to "submitted" while the user object is hydrating — the user
-  // just submitted, so showing them the waiting screen is the right
-  // optimistic guess.
-  const status = loaded ? user?.kycStatus ?? "submitted" : "submitted";
+type Locale = "ar" | "fr" | "en";
+type KycStatus = "none" | "submitted" | "pending" | "verified" | "rejected";
 
-  // Force-refresh the session on mount and periodically so an admin
-  // approval lands without needing a sign-out + sign-in. The kyc_status
-  // lives in `profiles`, which the auth hook re-reads on auth state
-  // change — refreshing the session is the cheapest trigger.
-  useEffect(() => {
-    if (!loaded) return;
-    if (status === "verified") return;
-    const supabase = getBrowserSupabase();
-    let cancelled = false;
+export default async function KYCStatusPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect({ href: "/login", locale: locale as Locale });
+  }
 
-    async function refresh() {
-      if (cancelled) return;
-      try {
-        await supabase.auth.refreshSession();
-      } catch {
-        // ignore
-      }
-    }
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("kyc_status, role")
+    .eq("id", user.id)
+    .single();
 
-    refresh();
-    const id = setInterval(refresh, 15_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [loaded, status]);
+  const status = (profile?.kyc_status as KycStatus | undefined) ?? "none";
+  const role = (profile?.role as string | undefined) ?? "individual";
 
-  // After the user submits KYC, this page's job is to acknowledge the
-  // submission — not to be a sticky dead-end. Hold the confirmation on
-  // screen for ~2 s so they see the spinner + "Vérification en cours"
-  // copy, then bounce them home. The verdict reaches them via email
-  // anyway, and /kyc/status is reachable from Account if they want to
-  // re-check manually.
-  //
-  // `replace` (not push) so the back button doesn't return them to the
-  // status screen — the flow ends here.
-  useEffect(() => {
-    if (!loaded) return;
-    if (status !== "submitted") return;
-    const id = setTimeout(() => {
-      router.replace("/");
-    }, 2000);
-    return () => clearTimeout(id);
-  }, [loaded, status, router]);
-
-  async function manualRefresh() {
-    setRefreshing(true);
-    try {
-      const supabase = getBrowserSupabase();
-      await supabase.auth.refreshSession();
-      router.refresh();
-    } finally {
-      setRefreshing(false);
-    }
+  // No prior submission — bounce into the wizard intro. Avoids the
+  // dead-end "you have no status" screen and matches what the user
+  // expects from the account-page CTA.
+  if (status === "none") {
+    redirect({ href: "/kyc/start", locale: locale as Locale });
   }
 
   if (status === "rejected") {
@@ -103,10 +68,6 @@ export default function KYCStatusPage() {
   }
 
   if (status === "verified") {
-    // Role-aware CTA. Anyone verified can bid; some roles (agency, bank,
-    // bailiff) also publish listings. Default to the buyer-style CTA
-    // since every verified account can bid.
-    const role = user?.role ?? "individual";
     const isPartner = role === "agency" || role === "bank" || role === "bailiff";
     return (
       <KYCShell current={3}>
@@ -170,13 +131,13 @@ export default function KYCStatusPage() {
     );
   }
 
-  // submitted / pending — what every user sees right after submitting.
+  // submitted / pending — the waiting screen with a soft poller that
+  // picks up an admin verdict without a manual refresh.
   return (
     <KYCShell current={3}>
+      <StatusPoller />
       <div className="space-y-6 py-8 text-center">
         <div className="relative mx-auto h-28 w-28">
-          {/* Soft outer halo for depth — same recipe as the favorites
-              empty state, scaled to a single icon. */}
           <div
             aria-hidden
             className="absolute inset-0 rounded-full"
@@ -185,8 +146,6 @@ export default function KYCStatusPage() {
                 "radial-gradient(circle, rgba(30,58,138,0.28), transparent 70%)",
             }}
           />
-          {/* Gradient disc + slow conic spin ring → "review in progress"
-              feels alive without spamming a hard spinner. */}
           <div className="relative h-full w-full rounded-full batta-gradient-gold shadow-[var(--shadow-gold)] flex items-center justify-center">
             <span className="absolute inset-[-6px] rounded-full border-2 border-[var(--gold-soft)]/40 border-t-[var(--gold)] animate-spin [animation-duration:2.4s]" />
             <Clock className="relative h-12 w-12 text-white" strokeWidth={2} />
@@ -223,23 +182,12 @@ export default function KYCStatusPage() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Button
-            size="lg"
-            fullWidth
-            onClick={manualRefresh}
-            disabled={refreshing}
+        <div className="pt-2 text-center">
+          <Link
+            href="/kyc/start"
+            className="text-sm font-semibold text-[var(--gold)] underline-offset-4 hover:underline"
           >
-            <RefreshCw
-              className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-            />
-            {refreshing ? "Actualisation…" : "Re-vérifier mon statut"}
-          </Button>
-          <Link href="/properties">
-            <Button size="lg" variant="secondary" fullWidth>Parcourir les enchères</Button>
-          </Link>
-          <Link href="/">
-            <Button size="lg" variant="ghost" fullWidth>Retour à l&apos;accueil</Button>
+            Renvoyer à nouveau
           </Link>
         </div>
       </div>

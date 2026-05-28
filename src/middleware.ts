@@ -67,12 +67,40 @@ export async function middleware(req: NextRequest) {
     },
   });
 
+  let authUserId: string | null = null;
   try {
-    // Refresh the token if needed. We don't care about the user object
-    // here — the side effect of cookie writes via setAll is the point.
-    await supabase.auth.getUser();
+    // Refresh the token if needed. We also keep the user id so the KYC
+    // gate below doesn't have to round-trip to getUser() again.
+    const { data } = await supabase.auth.getUser();
+    authUserId = data.user?.id ?? null;
   } catch (err) {
     mwLog.warn(`session refresh failed: ${err instanceof Error ? err.message : err}`);
+  }
+
+  // KYC entry-page gate. Verified/in-flight users hitting any step of
+  // the wizard get bounced to /kyc/status server-side so they never see
+  // the start screen flash. Match `/<locale>/kyc/(start|id-front|id-back|
+  // selfie|processing)` — we leave /kyc/status itself alone so the
+  // verified UI can render there.
+  const kycMatch = pathname.match(
+    /^\/(fr|ar|en)\/kyc\/(start|id-front|id-back|selfie|processing)\/?$/,
+  );
+  if (kycMatch && authUserId) {
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("kyc_status")
+        .eq("id", authUserId)
+        .single();
+      const s = profile?.kyc_status;
+      if (s === "verified" || s === "submitted" || s === "pending") {
+        const target = new URL(`/${kycMatch[1]}/kyc/status`, req.url);
+        mwLog.info(`kyc-gate ${pathname} → ${target.pathname} (status=${s})`);
+        return NextResponse.redirect(target, 307);
+      }
+    } catch (err) {
+      mwLog.warn(`kyc-gate lookup failed: ${err instanceof Error ? err.message : err}`);
+    }
   }
 
   mwLog.debug(`${req.method} ${pathname}`, { ms: Math.round(performance.now() - t0) });

@@ -1,13 +1,13 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 import {
   ShieldCheck,
   ClipboardCheck,
   Wallet,
   ChevronRight,
   ChevronLeft,
-  LogOut,
   Building2,
   LayoutGrid,
   LayoutDashboard,
@@ -150,7 +150,15 @@ export default async function AccountPage() {
 
       {/* Primary action group. */}
       <section className="mt-5 overflow-hidden rounded-xl bg-surface ring-1 ring-border">
-        <Row href="/kyc" Icon={ShieldCheck}
+        <Row
+          href={
+            kycStatus === "verified" ||
+            kycStatus === "submitted" ||
+            kycStatus === "pending"
+              ? "/kyc/status"
+              : "/kyc/start"
+          }
+          Icon={ShieldCheck}
           title={t("sections.kyc")}
           body={kycStatus === "verified" ? "Verified" : t("sections.kycBody")}
           ChevronEnd={ChevronEnd} isRTL={isRTL} />
@@ -204,18 +212,11 @@ export default async function AccountPage() {
         )}
       </section>
 
-      {/* Sign out — POSTs to a route handler that clears the cookie and
-          bounces back to the landing page. Plain form submit keeps it
-          working without JS too. */}
-      <form action="/api/auth/signout" method="POST" className="mt-5">
-        <button
-          type="submit"
-          className="batta-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px]"
-        >
-          <LogOut className="size-4" strokeWidth={2} />
-          Sign out
-        </button>
-      </form>
+      {/* Sign out — client button so we can wipe the in-browser KYC
+          draft alongside the cookie clear. */}
+      <div className="mt-5">
+        <SignOutButton label="Sign out" />
+      </div>
     </div>
   );
 }

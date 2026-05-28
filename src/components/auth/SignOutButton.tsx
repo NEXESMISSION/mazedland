@@ -20,6 +20,15 @@ export function SignOutButton({ label }: { label: string }) {
 
   function onClick() {
     start(async () => {
+      // Drop any in-flight KYC draft (storage paths to the previous
+      // user's CIN photos) before the cookie clear, so the next sign-in
+      // on this browser starts the wizard from scratch.
+      try {
+        sessionStorage.removeItem("batta_kyc_draft");
+      } catch {
+        /* sessionStorage unavailable — nothing to clean. */
+      }
+
       const supabase = getBrowserSupabase();
       await Promise.all([
         supabase.auth.signOut(),
