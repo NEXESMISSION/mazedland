@@ -540,7 +540,7 @@ function ActiveComposer({
           filter: `id=eq.${auction.id}`,
         } as never,
         (payload: {
-          new: { current_price: number | null; status: string };
+          new: { current_price: number | null; status: string; ends_at: string | null };
         }) => {
           const next = payload.new;
           // Mark this auction as "hot" — the adaptive poll downstream
@@ -552,12 +552,18 @@ function ActiveComposer({
           if (!isDutch && next.current_price != null) {
             setCurrentPrice(Number(next.current_price));
           }
+          // Anti-snipe extension OR terminal status: pull the latest
+          // server render so the Countdown gets the new ends_at and the
+          // page shape (ended banner, etc.) matches reality without a
+          // manual refresh.
           if (
+            (next.ends_at && next.ends_at !== auction.ends_at) ||
             next.status === "ended_sold" ||
             next.status === "ended_unsold" ||
             next.status === "awarded" ||
             next.status === "cancelled" ||
-            next.status === "sixth_offer_window"
+            next.status === "sixth_offer_window" ||
+            next.status === "extending"
           ) {
             router.refresh();
           }
@@ -630,7 +636,7 @@ function ActiveComposer({
       try {
         const { data, error } = await supabase
           .from("auctions")
-          .select("current_price, status")
+          .select("current_price, status, ends_at")
           .eq("id", auction.id)
           .maybeSingle();
         if (error || !data || cancelled) {
@@ -650,12 +656,16 @@ function ActiveComposer({
           });
         }
         const s = data.status as string;
+        const endsAtChanged =
+          data.ends_at != null && data.ends_at !== auction.ends_at;
         if (
+          endsAtChanged ||
           s === "ended_sold" ||
           s === "ended_unsold" ||
           s === "awarded" ||
           s === "cancelled" ||
-          s === "sixth_offer_window"
+          s === "sixth_offer_window" ||
+          s === "extending"
         ) {
           router.refresh();
         }

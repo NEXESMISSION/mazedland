@@ -26,7 +26,7 @@ export default async function KYCStatusPage({
   const { data: profile } = await supabase
     .from("profiles")
     .select("kyc_status, role")
-    .eq("id", user.id)
+    .eq("id", user!.id)
     .single();
 
   const status = (profile?.kyc_status as KycStatus | undefined) ?? "none";

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { AlertTriangle, RotateCcw, Home } from "lucide-react";
+import { AlertTriangle, RotateCcw, Home, WifiOff } from "lucide-react";
 
 /**
  * Locale-root error boundary. Without this, a render error anywhere
@@ -31,6 +31,23 @@ export default function LocaleError({
   const params = useParams<{ locale?: string }>();
   const locale = typeof params?.locale === "string" ? params.locale : "fr";
 
+  // Tag the boundary cause. A network-flavored failure deserves a
+  // friendlier surface (and auto-retry on reconnect) — a real bug in
+  // a server / client component still gets the generic "something went
+  // wrong" screen because retrying won't help on its own.
+  const msg = (error?.message ?? "").toLowerCase();
+  const isNetwork =
+    (typeof navigator !== "undefined" && navigator.onLine === false) ||
+    msg.includes("failed to fetch") ||
+    msg.includes("networkerror") ||
+    msg.includes("load failed") ||
+    msg.includes("network request failed") ||
+    msg.includes("connection") ||
+    msg.includes("econnreset") ||
+    msg.includes("etimedout");
+
+  const [retrying, setRetrying] = useState(false);
+
   useEffect(() => {
     // Best-effort visibility for whoever is watching the console —
     // in prod this is the only signal we get unless Sentry is wired.
@@ -38,21 +55,51 @@ export default function LocaleError({
     console.error("[boundary] segment error", {
       message: error?.message,
       digest: error?.digest,
+      isNetwork,
       stack: error?.stack?.split("\n").slice(0, 4),
     });
-  }, [error]);
+  }, [error, isNetwork]);
+
+  // Auto-recover network-flavored failures the moment the browser
+  // tells us we're back online. The NetworkStatus banner shows the
+  // "Connexion rétablie" confirmation; this boundary silently re-runs
+  // its segment so the user lands back where they were.
+  useEffect(() => {
+    if (!isNetwork) return;
+    function onOnline() {
+      setRetrying(true);
+      // Tiny delay so the user sees the spinner state — and so DNS /
+      // routing has a beat to settle before the segment re-fetches.
+      setTimeout(() => reset(), 350);
+    }
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [isNetwork, reset]);
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-9rem)] max-w-md flex-col items-center justify-center px-6 text-center">
-      <div className="size-14 rounded-full bg-red-500/15 ring-1 ring-red-500/30 text-red-300 flex items-center justify-center">
-        <AlertTriangle className="size-7" strokeWidth={1.8} />
+      <div
+        className={`size-14 rounded-full flex items-center justify-center ring-1 ${
+          isNetwork
+            ? "bg-amber-500/15 ring-amber-500/30 text-amber-300"
+            : "bg-red-500/15 ring-red-500/30 text-red-300"
+        }`}
+      >
+        {isNetwork ? (
+          <WifiOff className="size-7" strokeWidth={1.8} />
+        ) : (
+          <AlertTriangle className="size-7" strokeWidth={1.8} />
+        )}
       </div>
       <h1 className="mt-5 text-[22px] font-extrabold leading-tight tracking-tight">
-        Quelque chose s&apos;est mal passé
+        {isNetwork
+          ? "Connexion interrompue"
+          : "Quelque chose s'est mal passé"}
       </h1>
       <p className="mt-2 text-[13px] leading-relaxed text-[var(--foreground-muted)]">
-        Une erreur inattendue a interrompu la page. Vous pouvez réessayer ;
-        si le problème persiste, signalez-le à l&apos;équipe.
+        {isNetwork
+          ? "Votre appareil semble hors ligne. La page se rechargera automatiquement dès que la connexion revient."
+          : "Une erreur inattendue a interrompu la page. Vous pouvez réessayer ; si le problème persiste, signalez-le à l'équipe."}
       </p>
       {error?.digest && (
         <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--foreground-subtle)]">
@@ -62,11 +109,15 @@ export default function LocaleError({
       <div className="mt-6 grid w-full grid-cols-2 gap-2">
         <button
           type="button"
-          onClick={reset}
-          className="tap-target inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-[var(--gold)] text-white text-[13px] font-bold shadow-[var(--shadow-gold)] hover:bg-[var(--gold-bright)] active:scale-[0.98] transition-all"
+          onClick={() => {
+            setRetrying(true);
+            reset();
+          }}
+          disabled={retrying}
+          className="tap-target inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-[var(--gold)] text-white text-[13px] font-bold shadow-[var(--shadow-gold)] hover:bg-[var(--gold-bright)] active:scale-[0.98] transition-all disabled:opacity-60"
         >
-          <RotateCcw className="size-4" strokeWidth={2.2} />
-          Réessayer
+          <RotateCcw className={`size-4 ${retrying ? "animate-spin" : ""}`} strokeWidth={2.2} />
+          {retrying ? "Reconnexion…" : "Réessayer"}
         </button>
         <a
           href={`/${locale}`}
