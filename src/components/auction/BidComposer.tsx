@@ -154,7 +154,11 @@ export function BidComposer({
     return userWon ? (
       <WinnerBanner amount={auction.winner_amount} locale={locale} />
     ) : (
-      <EndedBanner auctionId={auction.id} />
+      <EndedBanner
+        auctionId={auction.id}
+        winnerAmount={auction.winner_amount}
+        locale={locale}
+      />
     );
   }
 
@@ -360,45 +364,135 @@ function WinnerBanner({
   amount: number | null;
   locale: string;
 }) {
+  const router = useRouter();
   return (
-    <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/10 px-6 py-5 text-center">
-      <div className="mx-auto mb-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gold)] text-white shadow-[var(--shadow-gold)]">
-        <Trophy className="h-5 w-5" />
+    <div className="relative overflow-hidden rounded-2xl border border-[var(--gold)]/40 bg-gradient-to-b from-[var(--gold)]/15 via-[var(--gold)]/5 to-transparent px-6 py-8 text-center">
+      {/* Soft sparkle field behind the trophy — pure CSS, no deps,
+          auto-runs once on mount via the keyframes in globals.css. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 batta-celebrate-burst"
+      />
+
+      <div className="relative mx-auto h-20 w-20">
+        {/* Double-ping halo. The outer ring uses a slow ping with a
+            delay so the two waves stagger and read as ambient pulse,
+            not a frantic strobe. */}
+        <span
+          aria-hidden
+          className="absolute inset-0 rounded-full bg-[var(--gold)]/30 animate-ping"
+        />
+        <span
+          aria-hidden
+          className="absolute inset-2 rounded-full bg-[var(--gold)]/25 animate-ping [animation-delay:600ms]"
+        />
+        <div className="relative h-20 w-20 rounded-full bg-[var(--gold)] flex items-center justify-center shadow-[0_0_60px_rgba(212,175,55,0.55)] batta-celebrate-pop">
+          <Trophy className="h-10 w-10 text-white" strokeWidth={2.2} />
+        </div>
       </div>
-      <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--gold)]">
-        Adjugé · vous avez gagné
+
+      <div className="relative mt-5 text-[10px] font-extrabold uppercase tracking-[0.22em] text-[var(--gold)]">
+        Bravo · vous êtes adjudicataire
       </div>
-      <div className="batta-tabular mt-1 text-2xl font-extrabold gradient-gold-text">
+      <div className="batta-tabular relative mt-2 text-[34px] font-extrabold leading-none gradient-gold-text">
         {amount != null ? formatTND(amount, locale) : "—"}
       </div>
-      <div className="mt-1.5 text-xs text-[var(--foreground-muted)]">
-        Prochaine étape : signature de l'acte chez le notaire.
+      <p className="relative mt-3 text-xs text-[var(--foreground-muted)] leading-relaxed max-w-[280px] mx-auto">
+        Prochaine étape : signature de l&apos;acte chez le notaire dans les
+        délais légaux. Vous recevrez les instructions de paiement par email.
+      </p>
+
+      <div className="relative mt-5 space-y-2">
+        <Button
+          size="md"
+          fullWidth
+          onClick={() =>
+            router.push(
+              { pathname: "/account/activity", query: { tab: "gagnees" } } as never,
+            )
+          }
+        >
+          <Trophy className="h-4 w-4" />
+          Voir mes acquisitions
+        </Button>
+        <Button
+          size="md"
+          fullWidth
+          variant="ghost"
+          onClick={() => router.push("/account/payments" as never)}
+        >
+          Suivre le paiement
+        </Button>
       </div>
     </div>
   );
 }
 
-function EndedBanner({ auctionId }: { auctionId: string }) {
+function EndedBanner({
+  auctionId,
+  winnerAmount,
+  locale,
+}: {
+  auctionId: string;
+  winnerAmount: number | null;
+  locale: string;
+}) {
   const router = useRouter();
   return (
-    <div className="space-y-4 py-6 text-center">
-      <div className="mx-auto h-12 w-12 rounded-full bg-red-500/15 ring-1 ring-red-500/30 text-red-300 flex items-center justify-center">
-        <Lock className="h-5 w-5" />
+    <div className="space-y-5 py-6 text-center">
+      <div className="mx-auto h-14 w-14 rounded-full bg-[var(--surface-2)] ring-1 ring-[var(--border)] text-[var(--foreground-muted)] flex items-center justify-center">
+        <Lock className="h-6 w-6" strokeWidth={1.8} />
       </div>
       <div>
-        <div className="text-base font-extrabold">Cette enchère est terminée</div>
-        <p className="mt-1.5 text-xs text-[var(--foreground-muted)] leading-relaxed max-w-xs mx-auto">
-          Les offres ne sont plus acceptées. Consultez les détails pour voir le résultat.
+        <div className="text-lg font-extrabold">Enchère terminée</div>
+        <p className="mt-2 text-xs text-[var(--foreground-muted)] leading-relaxed max-w-xs mx-auto">
+          Les offres ne sont plus acceptées sur ce lot.
         </p>
       </div>
-      <Button
-        size="md"
-        fullWidth
-        variant="secondary"
-        onClick={() => router.push(`/auctions/${auctionId}` as never)}
-      >
-        Voir le résultat
-      </Button>
+
+      {winnerAmount != null && (
+        <div className="mx-auto max-w-[280px] rounded-xl bg-[var(--surface)] border border-[var(--border)] px-4 py-3 text-start">
+          <div className="batta-eyebrow text-[9px]">Offre gagnante</div>
+          <div className="batta-tabular mt-0.5 text-[18px] font-extrabold text-foreground">
+            {formatTND(winnerAmount, locale)}
+          </div>
+        </div>
+      )}
+
+      <div className="mx-auto max-w-[280px] flex items-start gap-2 rounded-xl bg-[var(--gold-faint)] border border-[var(--gold-soft)]/30 px-3.5 py-2.5 text-start">
+        <Wallet className="size-4 shrink-0 text-[var(--gold)] mt-0.5" strokeWidth={2} />
+        <div className="text-[11px] leading-snug text-[var(--foreground-muted)]">
+          Votre caution sera remboursée sous 7 jours ouvrés sur votre méthode
+          de paiement initiale.
+        </div>
+      </div>
+
+      <div className="space-y-2 max-w-[280px] mx-auto">
+        <Button
+          size="md"
+          fullWidth
+          onClick={() => router.push("/properties" as never)}
+        >
+          Voir d&apos;autres enchères
+        </Button>
+        <Button
+          size="md"
+          fullWidth
+          variant="ghost"
+          onClick={() =>
+            router.push(
+              { pathname: "/account/activity", query: { tab: "terminees" } } as never,
+            )
+          }
+        >
+          Mes activités
+        </Button>
+      </div>
+
+      {/* Hidden a11y label so screen readers know the auction id for
+          this banner — visible UI no longer surfaces it because the
+          auctionId-as-button-CTA wasn't useful. */}
+      <span className="sr-only">Enchère {auctionId}</span>
     </div>
   );
 }

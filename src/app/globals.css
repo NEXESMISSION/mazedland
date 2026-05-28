@@ -620,6 +620,56 @@ html, body { overscroll-behavior-y: contain; }
   50%      { box-shadow: 0 0 0 8px transparent; }
 }
 
+/* Winner celebration — bounce the trophy in, then have a sparse
+   ring of small dots fan out around it once. Auto-stops after one
+   pass so the page settles instead of throbbing forever (the user
+   called this out: animations that "stay on the whole page"). */
+@keyframes batta-celebrate-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  55%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.batta-celebrate-pop {
+  animation: batta-celebrate-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes batta-celebrate-dot {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(0); opacity: 1; }
+  60%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(1); opacity: 0; }
+}
+.batta-celebrate-burst {
+  /* No background — just hosts the absolutely-positioned dots below. */
+}
+.batta-celebrate-burst::before,
+.batta-celebrate-burst::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, var(--gold) 0 2px, transparent 3px),
+    radial-gradient(circle, var(--gold) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle, var(--gold-soft, var(--gold)) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle, var(--gold) 0 1px, transparent 2px),
+    radial-gradient(circle, var(--gold-soft, var(--gold)) 0 1px, transparent 2px),
+    radial-gradient(circle, var(--gold) 0 2px, transparent 3px);
+  background-repeat: no-repeat;
+  background-position:
+    18% 22%, 80% 18%, 12% 70%, 88% 60%, 30% 88%, 70% 82%;
+  opacity: 0;
+  animation: batta-celebrate-fade 1.2s ease-out 0.1s both;
+}
+.batta-celebrate-burst::after {
+  background-position:
+    8% 40%, 92% 38%, 22% 12%, 78% 88%, 50% 8%, 50% 92%;
+  animation-delay: 0.35s;
+}
+@keyframes batta-celebrate-fade {
+  0%   { opacity: 0; transform: scale(0.8); }
+  40%  { opacity: 0.95; }
+  100% { opacity: 0; transform: scale(1.15); }
+}
+
 /* Splash-screen — pure-white wordmark filter and a thin progress
    sliver that sweeps left → right under the logo. Cleaner than
    bouncing dots and on-brand with the linear/stripe loader pattern. */
@@ -708,6 +758,20 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
 
 .pulse-gold {
   animation: pulse-gold 2s ease-in-out infinite;
+}
+
+/* One-shot gold ring + soft glow for a row a notification points at —
+   FocusRowHighlight stamps this class on mount and removes it after the
+   keyframe finishes. Kept short so the row settles back into the list
+   instead of competing with other UI for attention. */
+@keyframes batta-focus-ring-pulse {
+  0%   { box-shadow: 0 0 0 0 var(--gold-glow), 0 0 0 0 rgba(212,175,55,0); }
+  35%  { box-shadow: 0 0 0 4px var(--gold-glow), 0 0 0 10px rgba(212,175,55,0.18); }
+  100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; }
+}
+.batta-focus-ring {
+  animation: batta-focus-ring-pulse 2.4s ease-out;
+  border-radius: var(--radius);
 }
 
 /* Skeleton — gentle pulse on the surface-2 tone. */

@@ -76,8 +76,15 @@ export function AuctionEndModal({ auction, userId, locale }: Props) {
       } else if (
         auction.status === "sixth_offer_window" &&
         auction.winner_amount &&
-        auction.sixth_offer_deadline
+        auction.sixth_offer_deadline &&
+        auction.winner_user_id === userId
       ) {
+        // Only the provisional winner sees the 1/6 popup — they need to
+        // know their hammer is conditional for 8 days. Other bidders
+        // already lost; surfacing the surenchère form to them was
+        // confusing (the user called this out). If they care, the form
+        // is still reachable from the detail page in the conditions
+        // we explicitly allow there.
         setOutcome({
           kind: "sixth_offer_window",
           winningPrice: Number(auction.winner_amount),
@@ -122,15 +129,29 @@ export function AuctionEndModal({ auction, userId, locale }: Props) {
       case "winner":
         return {
           icon: (
-            <div className="relative h-20 w-20 mx-auto">
-              <div className="absolute inset-0 rounded-full bg-[var(--gold-faint)] animate-ping" />
-              <div className="relative h-20 w-20 rounded-full bg-[var(--gold)] flex items-center justify-center shadow-[var(--shadow-gold)]">
-                <Trophy className="h-10 w-10 text-white" />
+            <div className="relative h-24 w-24 mx-auto">
+              {/* Celebratory burst — sparkle dots driven by globals.css.
+                  Auto-fades after ~1.2s so the modal settles instead of
+                  pulsing forever. */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -inset-6 batta-celebrate-burst"
+              />
+              <span
+                aria-hidden
+                className="absolute inset-0 rounded-full bg-[var(--gold)]/30 animate-ping"
+              />
+              <span
+                aria-hidden
+                className="absolute inset-2 rounded-full bg-[var(--gold)]/25 animate-ping [animation-delay:600ms]"
+              />
+              <div className="relative h-24 w-24 rounded-full bg-[var(--gold)] flex items-center justify-center shadow-[0_0_60px_rgba(212,175,55,0.55)] batta-celebrate-pop">
+                <Trophy className="h-12 w-12 text-white" strokeWidth={2.2} />
               </div>
             </div>
           ),
-          title: "Adjugé · vous avez gagné",
-          body: `Votre offre gagnante : ${formatTND(outcome.finalPrice, locale)}. Prochaine étape : signature de l'acte chez le notaire dans les délais légaux.`,
+          title: "Bravo · vous êtes adjudicataire",
+          body: `Offre gagnante : ${formatTND(outcome.finalPrice, locale)}. Prochaine étape : signature de l'acte chez le notaire dans les délais légaux. Vous recevrez les instructions de paiement par email.`,
           primary: (
             <Link
               href={{ pathname: "/account/activity", query: { tab: "gagnees" } }}
@@ -138,7 +159,7 @@ export function AuctionEndModal({ auction, userId, locale }: Props) {
             >
               <Button size="md" fullWidth>
                 <Trophy className="h-4 w-4" />
-                Mes acquisitions
+                Voir mes acquisitions
               </Button>
             </Link>
           ),

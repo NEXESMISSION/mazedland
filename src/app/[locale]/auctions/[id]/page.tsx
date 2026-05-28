@@ -10,6 +10,7 @@ import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
 import { SixthOfferForm } from "@/components/auction/SixthOfferForm";
 import { HeroCarousel } from "@/components/auction/HeroCarousel";
 import { AuctionPresencePing } from "@/components/auction/AuctionPresencePing";
+import { SellerAuctionBanner } from "@/components/auction/SellerAuctionBanner";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
 import { Link } from "@/i18n/navigation";
@@ -157,6 +158,40 @@ export default async function AuctionDetail({
   }
   const isOwner = userId !== null && userId === property.owner_id;
 
+  // Seller-fork data — fetched only when the viewer owns this listing. Tells
+  // us what to surface in the "Tableau du vendeur" banner: how much the
+  // winning buyer has actually paid, and how many active bidders are
+  // sitting on deposits (proxy for "real interest"). Cheap pair of queries
+  // gated on isOwner so non-owners pay nothing.
+  let sellerFinalPayment: { id: string; status: string; amount: number } | null = null;
+  let sellerActiveDeposits = 0;
+  if (isOwner) {
+    const [finalPayRes, depCountRes] = await Promise.all([
+      supabase
+        .from("payments")
+        .select("id, status, amount")
+        .eq("auction_id", id)
+        .in("kind", ["final_payment", "buy_now"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("auction_deposits")
+        .select("id", { count: "exact", head: true })
+        .eq("auction_id", id)
+        .is("released_at", null)
+        .is("forfeited_at", null),
+    ]);
+    if (finalPayRes.data) {
+      sellerFinalPayment = {
+        id: finalPayRes.data.id as string,
+        status: finalPayRes.data.status as string,
+        amount: Number(finalPayRes.data.amount),
+      };
+    }
+    sellerActiveDeposits = depCountRes.count ?? 0;
+  }
+
   let myInspection: { id: string; status: string } | null = null;
   if (userId) {
     const { data: ins } = await supabase
@@ -257,6 +292,33 @@ export default async function AuctionDetail({
 
       {/* (Thumbnails now live inside HeroCarousel — clickable, in sync with
           the slider — so there's no separate static rail here.) */}
+
+      {/* ─── SELLER BANNER ───
+              Replaces buyer-centric framing when the viewer owns this
+              listing. Sellers land here from seller_received_bid /
+              auction_sold_seller / auction_finalized_seller notifications,
+              and previously saw the same "place your bid" UI a bidder
+              would — confusing, because they can't bid. This banner
+              surfaces what matters to them instead: current bid + depth,
+              status (live / sold / unsold), buyer payment state when
+              sold, and direct links to manage the listing and follow
+              payouts. */}
+      {isOwner && (
+        <SellerAuctionBanner
+          auctionId={auction.id}
+          propertyId={property.id}
+          status={auction.status}
+          startsAt={auction.starts_at ?? null}
+          endsAt={auction.ends_at}
+          currentPrice={currentPrice}
+          winnerAmount={auction.winner_amount != null ? Number(auction.winner_amount) : null}
+          totalBids={totalBids}
+          activeDeposits={sellerActiveDeposits}
+          finalPayment={sellerFinalPayment}
+          locale={locale}
+          tCommonTnd={t("common.tnd")}
+        />
+      )}
 
       {/* ─── DIRECT-SALE PANEL — replaces the auction price card + bid CTA
               when the listing is a fixed-price direct sale ─── */}
@@ -397,11 +459,19 @@ export default async function AuctionDetail({
         </section>
       )}
 
-      {/* ─── SIXTH-OFFER WINDOW (Tunisian-law 1/6 rule) ─── */}
+      {/* ─── SIXTH-OFFER WINDOW (Tunisian-law 1/6 rule) ───
+            Only surface the surenchère form to the provisional winner.
+            Tunisian law lets any qualified bidder submit a 1/6 offer,
+            but the product owner wants losers off this surface — they
+            see "you lost, browse other auctions" instead of a form
+            they're unlikely to act on. The DB endpoint still accepts
+            any qualified bidder, so power users can still POST. */}
       {auction.status === "sixth_offer_window"
         && auction.winner_amount
         && auction.sixth_offer_deadline
-        && !isOwner && (
+        && !isOwner
+        && userId !== null
+        && auction.winner_user_id === userId && (
         <SixthOfferForm
           auctionId={auction.id}
           winningAmount={Number(auction.winner_amount)}
