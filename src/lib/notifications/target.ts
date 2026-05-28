@@ -64,6 +64,7 @@ type FallbackRoute =
   | "/sell#payouts"
   | "/inspector"
   | "/kyc"
+  | "/kyc/status"
   | "/admin/properties"
   | "/admin/payments"
   | "/admin/payouts"
@@ -112,9 +113,10 @@ const KIND_FALLBACK: Record<NotificationKind, FallbackRoute> = {
   listing_rejected: "/sell",
   listing_payment_rejected: "/sell",
   listing_expired: "/sell",
-  // Identity
-  kyc_verified: "/properties",
-  kyc_rejected: "/kyc",
+  // Identity — kyc_verified/rejected land on the status page (shows verdict +
+  // next step); welcome routes new users into the start of the KYC flow.
+  kyc_verified: "/kyc/status",
+  kyc_rejected: "/kyc/status",
   welcome: "/kyc",
   // Payouts → seller dashboard payouts section
   payout_processing: "/sell#payouts",
@@ -154,9 +156,22 @@ function lastSegment(path: string): string | null {
  * (with or without ?query) is left intact — only the non-existent
  * /properties/<id> detail route is rewritten.
  */
+const KYC_SUBROUTES = new Set([
+  "/kyc/start",
+  "/kyc/status",
+  "/kyc/processing",
+  "/kyc/selfie",
+  "/kyc/id-front",
+  "/kyc/id-back",
+]);
+
 export function normalizeLink(link: string): string {
   if (link === "/account/payouts") return "/sell#payouts";
-  if (link.startsWith("/kyc/")) return "/kyc";
+  // Real /kyc/<step> routes pass through; anything else (e.g. /kyc/<uuid>)
+  // collapses to the entry page.
+  if (link.startsWith("/kyc/")) {
+    return KYC_SUBROUTES.has(link.split(/[?#]/)[0]) ? link : "/kyc";
+  }
   if (link.startsWith("/properties/")) return "/sell";
   // /inspections/<id> has no public route — handled per-kind in resolve;
   // this is the catch-all for any that slip through to the explicit-link tier.

@@ -51,10 +51,11 @@ export async function PATCH(
     if (admin) {
       const titleClause = prop.title ? `« ${prop.title} »` : "votre annonce";
       if (status === "ready") {
-        // Auction listings still need scheduling → drop the seller straight
-        // on the schedule form; direct sales are already live → dashboard.
+        // Auction listings still need scheduling → drop the seller on the
+        // schedule form; direct sales are already live → straight to that
+        // listing's detail page so the seller sees it published.
         const approvedLink =
-          prop.listing_type === "direct" ? "/sell" : `/sell/${id}/schedule`;
+          prop.listing_type === "direct" ? `/sell/${id}` : `/sell/${id}/schedule`;
         await admin.rpc("enqueue_notification", {
           p_user_id: prop.owner_id,
           p_kind: "listing_approved",

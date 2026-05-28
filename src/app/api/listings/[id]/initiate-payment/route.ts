@@ -92,7 +92,7 @@ export async function POST(
       p_kind: "listing_submitted",
       p_title: "Annonce soumise",
       p_body: "Votre annonce est en cours de validation par l'équipe. Vous serez notifié(e) dès qu'elle est publiée.",
-      p_link: "/sell",
+      p_link: `/sell/${propertyId}`,
     });
     return NextResponse.json({ free: true });
   }
