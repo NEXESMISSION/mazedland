@@ -30,6 +30,7 @@ export default async function ExplorePage({
     filter?: string;
     types?: string;
     gov?: string;
+    q?: string;
     min_price?: string;
     max_price?: string;
     min_area?: string;
@@ -46,6 +47,9 @@ export default async function ExplorePage({
     .map((s) => s.trim().toLowerCase())
     .filter((s): s is PropertyType => (VALID_TYPES as string[]).includes(s));
   const gov = sp.gov?.trim() || null;
+  // Free-text keyword (from the home hero search). Sanitised exactly like
+  // /api/explore so a stray comma/paren can't break the PostgREST or().
+  const term = (sp.q ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
   const minPrice = numOrNull(sp.min_price);
   const maxPrice = numOrNull(sp.max_price);
   const minArea = numOrNull(sp.min_area);
@@ -84,6 +88,12 @@ export default async function ExplorePage({
 
     if (types.length > 0) q = q.in("property.type", types);
     if (gov) q = q.eq("property.governorate", gov);
+    if (term) {
+      q = q.or(
+        `title.ilike.*${term}*,governorate.ilike.*${term}*,address.ilike.*${term}*`,
+        { referencedTable: "property" },
+      );
+    }
     if (minArea !== null) q = q.gte("property.area_sqm", minArea);
     if (minRooms !== null) q = q.gte("property.rooms", minRooms);
     if (minPrice !== null) {
@@ -131,6 +141,7 @@ export default async function ExplorePage({
       initialTotalCount={totalCount}
       loggedIn={loggedIn}
       savedAuctionIds={savedAuctionIds}
+      initialSearch={term}
       initialExtra={{
         types,
         gov,

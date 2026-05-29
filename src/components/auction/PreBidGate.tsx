@@ -73,8 +73,8 @@ export function PreBidGate({
   // readable on every gate.
   const palette = {
     muted: {
-      ring: "border-[var(--border)]",
-      iconBg: "bg-[var(--surface-2)] text-[var(--foreground-muted)]",
+      ring: "border-[var(--gold-soft)]",
+      iconBg: "bg-gold-faint text-gold ring-1 ring-gold/20",
     },
     warning: {
       ring: "border-amber-300",
@@ -258,8 +258,8 @@ export function PreBidGate({
         {/* Gate card — desktop. Same light theme as mobile; the soft
             gold radial bloom on the gold-tone variant keeps the
             consigned-piece feel without going dark on us. */}
-        <div className={`relative overflow-hidden rounded-[28px] border ${palette.ring} bg-white p-9 xl:p-10 shadow-sm`}>
-          {tone === "gold" && (
+        <div className={`relative overflow-hidden rounded-[28px] border ${palette.ring} bg-white p-9 xl:p-10 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)]`}>
+          {tone !== "warning" && (
             <div
               aria-hidden
               className="pointer-events-none absolute -top-20 -end-20 h-56 w-56 rounded-full bg-[var(--gold)] blur-3xl opacity-20"
@@ -281,11 +281,11 @@ export function PreBidGate({
             {bullets && bullets.length > 0 && (
               <ul className="space-y-3">
                 {bullets.map((b, i) => (
-                  <li key={i} className="flex items-start gap-3 rounded-xl bg-black/20 ring-1 ring-white/5 p-3.5">
-                    <span className="h-7 w-7 rounded-full bg-[var(--gold)]/20 ring-1 ring-[var(--gold)]/40 text-[var(--gold)] flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="h-4 w-4" />
+                  <li key={i} className="flex items-center gap-3 rounded-xl bg-[var(--surface-2)] ring-1 ring-border p-3.5">
+                    <span className="h-7 w-7 rounded-full bg-gold-faint ring-1 ring-gold/30 text-gold flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="h-4 w-4" strokeWidth={2.4} />
                     </span>
-                    <span className="text-[14px] text-foreground/90 leading-snug">{b}</span>
+                    <span className="text-[14px] font-semibold text-foreground/90 leading-snug">{b}</span>
                   </li>
                 ))}
               </ul>
@@ -296,11 +296,9 @@ export function PreBidGate({
               onClick={onCta}
               className={cn(
                 "group inline-flex items-center justify-center gap-2 w-full h-14 rounded-full font-extrabold text-[15px] transition-transform hover:scale-[1.01] active:scale-[0.99]",
-                tone === "gold"
-                  ? "bg-[var(--gold)] text-white shadow-[var(--shadow-gold)]"
-                  : tone === "warning"
-                    ? "bg-amber-400 text-black shadow-[0_8px_24px_-4px_rgba(245,158,11,0.5)]"
-                    : "bg-foreground text-background",
+                tone === "warning"
+                  ? "bg-amber-400 text-black shadow-[0_8px_24px_-4px_rgba(245,158,11,0.5)]"
+                  : "batta-gradient-gold text-white shadow-[var(--shadow-gold)]",
               )}
             >
               {ctaIcon}
@@ -308,7 +306,7 @@ export function PreBidGate({
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </button>
 
-            {tone === "gold" && (
+            {tone !== "warning" && (
               <div className="flex items-center justify-center gap-4 text-[11px] text-[var(--foreground-subtle)] pt-1">
                 <span className="inline-flex items-center gap-1.5">
                   <ShieldCheck className="h-3.5 w-3.5 text-[var(--gold)]" />

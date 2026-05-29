@@ -224,7 +224,14 @@ export default async function BidPage({
           knows they're in the bid flow. The countdown chip is sticky to
           the page header so a bidder always sees how much time is left
           while scrolling the composer + history. */}
-      <header className="max-w-[var(--max-w)] mx-auto px-4 pt-4 lg:max-w-[var(--max-w-wide)] lg:px-8 lg:pt-6">
+      <header
+        className={`max-w-[var(--max-w)] mx-auto px-4 pt-4 lg:max-w-[var(--max-w-wide)] lg:px-8 lg:pt-6 ${
+          // Gate states (login/KYC/deposit) render their own hero with the
+          // title + countdown, so this header would be a third copy on
+          // desktop — hide it there. Bidders (composer) still need it.
+          userIsBidder ? "" : "lg:hidden"
+        }`}
+      >
         <div className="text-[10px] uppercase tracking-[0.22em] font-extrabold text-[var(--gold)]">
           {t("auction.placeBid")}
         </div>

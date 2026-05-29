@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
 import {
   Building2,
@@ -16,6 +17,7 @@ import {
 import { useToast } from "@/components/ui/Toast";
 import { formatTND, cn } from "@/lib/utils";
 import { getBrowserSupabase } from "@/lib/supabase/client";
+import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { compressImage } from "@/lib/imageCompress";
 import type { ProviderInstructions } from "@/lib/payments";
 import type { PaymentProvider } from "@/lib/payments/types";
@@ -369,9 +371,24 @@ export function CheckoutClient({
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="mx-auto max-w-md space-y-4 px-4 py-6">
+      <main className="mx-auto max-w-md px-4 py-6 lg:max-w-5xl lg:py-12">
+        <div className="lg:grid lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start lg:gap-8">
+        {/* LEFT (desktop) / TOP (mobile) — order summary */}
+        <div className="space-y-4 lg:sticky lg:top-[calc(var(--desktop-nav-h)+1.5rem)]">
         {/* ── HERO: what you're paying + how much ── */}
         <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 text-center">
+          {auction?.heroPhotoPath && (
+            <div className="relative mb-4 hidden aspect-[16/10] overflow-hidden rounded-xl bg-[var(--surface-2)] lg:block">
+              <Image
+                src={propertyPhotoUrl(auction.heroPhotoPath)}
+                alt=""
+                fill
+                sizes="360px"
+                unoptimized={isStaticSeedPath(propertyPhotoUrl(auction.heroPhotoPath))}
+                className="object-cover"
+              />
+            </div>
+          )}
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--gold)]">
             {meta.label}
           </div>
@@ -397,7 +414,10 @@ export function CheckoutClient({
             <span>Reçu précédent refusé — vérifiez les coordonnées et renvoyez un nouveau justificatif.</span>
           </div>
         )}
+        </div>
 
+        {/* RIGHT (desktop) / BELOW (mobile) — payment steps */}
+        <div className="mt-4 space-y-4 lg:mt-0">
         {/* ── STEP 1: choose method (big toggles) ── */}
         <Step n={1} title="Choisissez le mode de paiement" />
         <div className="grid grid-cols-2 gap-2.5">
@@ -556,6 +576,8 @@ export function CheckoutClient({
             {cancelling ? "Annulation…" : "Annuler ce paiement"}
           </button>
         )}
+        </div>
+        </div>
       </main>
     </div>
   );

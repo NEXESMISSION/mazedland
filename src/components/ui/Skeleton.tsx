@@ -99,26 +99,81 @@ export function AuthFormSkeleton({
  */
 export function SkeletonDetailPage() {
   return (
-    <div className="mx-auto max-w-xl pb-6">
-      <div className="batta-skeleton aspect-[4/3] rounded-none" />
-      <div className="space-y-3 px-4 pt-4">
-        <SkeletonBar height="h-5" width="w-3/4" />
-        <SkeletonBar height="h-3" width="w-1/2" />
-      </div>
-      <div className="mx-4 mt-4 rounded-2xl batta-surface-navy p-5">
-        <SkeletonBar height="h-3" width="w-1/3" />
-        <div className="mt-2">
-          <SkeletonBar height="h-8" width="w-2/3" />
+    <>
+      {/* MOBILE / tablet (< lg) — single column, matches the mobile tree. */}
+      <div className="mx-auto max-w-xl pb-6 lg:hidden">
+        <div className="batta-skeleton aspect-[4/3] rounded-none" />
+        <div className="space-y-3 px-4 pt-4">
+          <SkeletonBar height="h-5" width="w-3/4" />
+          <SkeletonBar height="h-3" width="w-1/2" />
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <SkeletonBar height="h-12" />
-          <SkeletonBar height="h-12" />
+        <div className="mx-4 mt-4 rounded-2xl batta-surface-navy p-5">
+          <SkeletonBar height="h-3" width="w-1/3" />
+          <div className="mt-2">
+            <SkeletonBar height="h-8" width="w-2/3" />
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <SkeletonBar height="h-12" />
+            <SkeletonBar height="h-12" />
+          </div>
+        </div>
+        <div className="batta-frame mx-4 mt-3 p-4">
+          <SkeletonBar height="h-10" />
         </div>
       </div>
-      <div className="batta-frame mx-4 mt-3 p-4">
-        <SkeletonBar height="h-10" />
+
+      {/* DESKTOP (lg+) — two-column, mirrors AuctionDesktop: breadcrumb +
+          title, gallery + specs on the left, sticky price/bid panel right. */}
+      <div className="hidden lg:block mx-auto max-w-[var(--max-w-wide)] px-8 pb-16">
+        <div className="pt-6">
+          <SkeletonBar height="h-3" width="w-56" />
+          <div className="mt-4">
+            <SkeletonBar height="h-7" width="w-24 rounded-full" />
+          </div>
+          <div className="mt-3">
+            <SkeletonBar height="h-9" width="w-2/3" />
+          </div>
+          <div className="mt-2">
+            <SkeletonBar height="h-3.5" width="w-1/3" />
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-12 gap-8">
+          {/* Left — gallery + specs */}
+          <div className="col-span-8">
+            <div className="batta-skeleton-luxe aspect-[16/10] rounded-2xl" />
+            <div className="mt-7 grid grid-cols-4 gap-2.5">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <SkeletonBar key={i} height="h-16" width="w-full rounded-xl" />
+              ))}
+            </div>
+            <div className="batta-frame mt-6 space-y-2.5 p-6">
+              <SkeletonBar height="h-3" width="w-24" />
+              <SkeletonBar height="h-3" width="w-full" />
+              <SkeletonBar height="h-3" width="w-11/12" />
+              <SkeletonBar height="h-3" width="w-4/5" />
+            </div>
+          </div>
+
+          {/* Right — sticky price/bid panel */}
+          <div className="col-span-4">
+            <div className="rounded-2xl batta-surface-navy p-6">
+              <SkeletonBar height="h-3" width="w-1/3" />
+              <div className="mt-3">
+                <SkeletonBar height="h-9" width="w-2/3" />
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-2">
+                <SkeletonBar height="h-14" width="w-full rounded-xl" />
+                <SkeletonBar height="h-14" width="w-full rounded-xl" />
+              </div>
+              <div className="mt-5">
+                <SkeletonBar height="h-12" width="w-full rounded-full" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

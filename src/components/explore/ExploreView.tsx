@@ -30,6 +30,7 @@ export function ExploreView({
   loggedIn,
   savedAuctionIds,
   initialExtra,
+  initialSearch,
 }: {
   initialItems: AuctionWithProperty[];
   initialFilter: ExploreFilter;
@@ -39,6 +40,7 @@ export function ExploreView({
   loggedIn: boolean;
   savedAuctionIds: string[];
   initialExtra?: ExtraFilters;
+  initialSearch?: string;
 }) {
   // Default to grid on first render (server + first paint) to avoid a
   // layout flicker on hydration. The effect below upgrades to "reels"
@@ -85,6 +87,7 @@ export function ExploreView({
       savedAuctionIds={savedAuctionIds}
       viewToggle={<ViewToggle value={view} onChange={onChange} />}
       initialExtra={initialExtra}
+      initialSearch={initialSearch}
     />
   );
 }

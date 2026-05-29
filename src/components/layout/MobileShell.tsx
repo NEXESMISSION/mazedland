@@ -2,6 +2,7 @@
 
 import { usePathname } from "@/i18n/navigation";
 import { TopBar } from "./TopBar";
+import { DesktopNav } from "./DesktopNav";
 import { BottomTabBar } from "./BottomTabBar";
 import { ScrollToTop } from "./ScrollToTop";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
@@ -52,6 +53,7 @@ export function MobileShell({ children }: { children: React.ReactNode }) {
     <>
       <ScrollToTop />
       <TopBar />
+      <DesktopNav />
       <PullToRefresh>
         <main className="batta-shell-main">{children}</main>
       </PullToRefresh>

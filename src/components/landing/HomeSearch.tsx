@@ -28,7 +28,15 @@ const TYPE_KEYS = ["apartment", "villa", "house", "land", "commercial", "office"
  * Submits via `router.push` so the next-intl locale prefix is added
  * automatically and the navigation stays inside the SPA cache.
  */
-export function HomeSearch({ isRTL: _isRTL }: { isRTL: boolean }) {
+export function HomeSearch({
+  isRTL: _isRTL,
+  layout = "stacked",
+}: {
+  isRTL: boolean;
+  /** "stacked" — the original mobile two-row card (default, untouched).
+   *  "bar" — a single horizontal row for the desktop hero. */
+  layout?: "stacked" | "bar";
+}) {
   void _isRTL;
   const router = useRouter();
   const t = useTranslations();
@@ -49,6 +57,74 @@ export function HomeSearch({ isRTL: _isRTL }: { isRTL: boolean }) {
     if (type) params.set("types", type);
     const qs = params.toString();
     router.push((qs ? `/properties?${qs}` : "/properties") as `/properties`);
+  }
+
+  // Desktop hero variant — one horizontal row: keyword | governorate |
+  // type | submit, divided by hairlines, no outer section padding so the
+  // caller controls width + centering.
+  if (layout === "bar") {
+    return (
+      <form
+        onSubmit={submit}
+        className="flex items-stretch gap-2 rounded-2xl bg-surface p-2 text-start ring-1 ring-border shadow-[0_14px_40px_-18px_rgba(15,23,42,0.25)]"
+      >
+        {/* Keyword absorbs the free space; the two selects size to their
+            own (sometimes long) labels via shrink-0 so nothing clips. */}
+        <div className="relative flex min-w-0 flex-1 items-center">
+          <Search
+            className="pointer-events-none absolute size-4 text-muted ltr:left-4 rtl:right-4"
+            strokeWidth={2}
+          />
+          <input
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t("search.placeholder")}
+            className="w-full rounded-xl bg-transparent py-3.5 text-[14px] text-foreground placeholder:text-muted focus:outline-none ltr:pl-11 ltr:pr-3 rtl:pl-3 rtl:pr-11"
+          />
+        </div>
+        <div className="my-1.5 w-px shrink-0 bg-border" />
+        <div className="relative flex shrink-0 items-center">
+          <MapPin
+            className="pointer-events-none absolute size-4 text-gold ltr:left-3.5 rtl:right-3.5"
+            strokeWidth={2}
+            aria-hidden
+          />
+          <select
+            value={gov}
+            onChange={(e) => setGov(e.target.value)}
+            aria-label={t("search.governorate")}
+            className="cursor-pointer appearance-none bg-transparent py-3.5 text-[13px] font-bold text-foreground focus:outline-none ltr:pl-10 ltr:pr-4 rtl:pl-4 rtl:pr-10"
+          >
+            <option value="">{t("search.allWilayas")}</option>
+            {GOVERNORATES.map((g) => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+          </select>
+        </div>
+        <div className="my-1.5 w-px shrink-0 bg-border" />
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          aria-label={t("search.type")}
+          className="shrink-0 cursor-pointer appearance-none bg-transparent px-4 py-3.5 text-[13px] font-bold text-foreground focus:outline-none"
+        >
+          <option value="">{t("search.allTypes")}</option>
+          {TYPE_KEYS.map((k) => (
+            <option key={k} value={k}>
+              {t(`property.types.${k}`)}
+            </option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          className="batta-gold-fill inline-flex shrink-0 items-center gap-2 rounded-xl px-7 text-[13px] font-extrabold shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition active:scale-[0.98]"
+        >
+          <Search className="size-4" strokeWidth={2.5} />
+          {t("search.submit")}
+        </button>
+      </form>
+    );
   }
 
   return (

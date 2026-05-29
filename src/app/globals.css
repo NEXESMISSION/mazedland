@@ -71,6 +71,10 @@
   /* Mobile-app shell. Unchanged — pure layout math. */
   --topbar-h: 56px;
   --bottombar-h: 80px;
+  /* Desktop (lg+) horizontal nav height. The mobile TopBar +
+     BottomTabBar are hidden at lg and this nav takes over; the shell's
+     top padding switches to this value in the lg media query below. */
+  --desktop-nav-h: 72px;
   --max-w: 480px;
   --max-w-content: 720px;
   --max-w-app: 960px;
@@ -235,6 +239,16 @@ button, a {
   min-height: 100dvh;
   padding-top: calc(var(--batta-topbar-h) + var(--batta-safe-top));
   padding-bottom: calc(var(--batta-bottombar-total) + var(--batta-safe-bottom));
+}
+/* Desktop shell: the mobile TopBar + BottomTabBar are hidden at lg and
+   the DesktopNav (fixed, --desktop-nav-h tall) takes over. Clear the
+   nav at the top; drop the bottom-tab-bar reservation since there's no
+   bottom bar on desktop. Mobile values above are left untouched. */
+@media (min-width: 1024px) {
+  .batta-shell-main {
+    padding-top: var(--desktop-nav-h);
+    padding-bottom: 0;
+  }
 }
 
 .hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
@@ -788,6 +802,27 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
   animation: pulse-gold 2s ease-in-out infinite;
 }
 
+/* Slow cinematic zoom for featured-banner imagery (desktop hero). */
+@keyframes batta-kenburns {
+  from { transform: scale(1.05); }
+  to   { transform: scale(1.16); }
+}
+.batta-kenburns {
+  animation: batta-kenburns 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* Soft drifting glow behind the desktop hero — pure CSS, no image. */
+@keyframes batta-glow-drift {
+  0%   { transform: translate3d(-4%, -2%, 0) scale(1);    opacity: 0.65; }
+  50%  { transform: translate3d(4%, 3%, 0)  scale(1.08); opacity: 0.95; }
+  100% { transform: translate3d(-4%, -2%, 0) scale(1);    opacity: 0.65; }
+}
+.batta-hero-glow {
+  animation: batta-glow-drift 14s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
 /* One-shot gold ring + soft glow for a row a notification points at —
    FocusRowHighlight stamps this class on mount and removes it after the
    keyframe finishes. Kept short so the row settles back into the list
@@ -824,6 +859,8 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
   .batta-pulse-dot::after,
   .batta-fade-up,
   .batta-conic-spin,
+  .batta-kenburns,
+  .batta-hero-glow,
   .pulse-gold,
   .batta-splash-bar,
   .skeleton,

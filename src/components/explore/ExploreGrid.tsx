@@ -117,6 +117,7 @@ export function ExploreGrid({
   savedAuctionIds,
   viewToggle,
   initialExtra,
+  initialSearch,
 }: {
   initialItems: AuctionWithProperty[];
   initialFilter: ExploreFilter;
@@ -128,12 +129,15 @@ export function ExploreGrid({
   /** Slot for the Grid/Reels toggle, rendered in the page-title row. */
   viewToggle?: React.ReactNode;
   initialExtra?: ExtraFilters;
+  /** Keyword carried in from the home search — seeds the search box so
+   *  the SSR-filtered first page stays in sync with what the user typed. */
+  initialSearch?: string;
 }) {
   const t = useTranslations();
   const locale = useLocale();
   const [filter, setFilter] = useState<ExploreFilter>(initialFilter);
   const [extra, setExtra] = useState<ExtraFilters>(initialExtra ?? EMPTY_FILTERS);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch ?? "");
   const [panelOpen, setPanelOpen] = useState(false);
   const [items, setItems] = useState<AuctionWithProperty[]>(initialItems);
   const [page, setPage] = useState<number>(initialPage);

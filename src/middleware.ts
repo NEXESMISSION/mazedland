@@ -77,6 +77,34 @@ export async function middleware(req: NextRequest) {
     mwLog.warn(`session refresh failed: ${err instanceof Error ? err.message : err}`);
   }
 
+  // Auth-page gate. A signed-in user has no reason to see the sign-in /
+  // sign-up surfaces — bounce them to the home shell. `reset-password`
+  // is deliberately excluded: Supabase's recovery link establishes a
+  // temporary session, so the user IS "logged in" while legitimately
+  // setting a new password there, and gating it would break recovery.
+  const authPageMatch = pathname.match(
+    /^\/(fr|ar|en)\/(login|signup|forgot-password)\/?$/,
+  );
+  if (authPageMatch && authUserId) {
+    const target = new URL(`/${authPageMatch[1]}`, req.url);
+    mwLog.info(`auth-gate ${pathname} → ${target.pathname}`);
+    return NextResponse.redirect(target, 307);
+  }
+
+  // Private-area gate. Every /account page needs a session — an anonymous
+  // visitor (e.g. tapping the account icon while signed out) is sent
+  // straight to login with a `next` param so they return here afterwards.
+  const accountMatch = pathname.match(/^\/(fr|ar|en)\/account(?:\/.*)?$/);
+  if (accountMatch && !authUserId) {
+    const next = `${pathname}${search}`;
+    const target = new URL(
+      `/${accountMatch[1]}/login?next=${encodeURIComponent(next)}`,
+      req.url,
+    );
+    mwLog.info(`account-gate ${pathname} → ${target.pathname}`);
+    return NextResponse.redirect(target, 307);
+  }
+
   // KYC entry-page gate. Verified/in-flight users hitting any step of
   // the wizard get bounced to /kyc/status server-side so they never see
   // the start screen flash. Match `/<locale>/kyc/(start|id-front|id-back|

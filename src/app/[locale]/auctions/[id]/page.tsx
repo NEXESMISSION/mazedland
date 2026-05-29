@@ -11,6 +11,7 @@ import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
 import { HeroCarousel } from "@/components/auction/HeroCarousel";
 import { AuctionPresencePing } from "@/components/auction/AuctionPresencePing";
 import { SellerAuctionBanner } from "@/components/auction/SellerAuctionBanner";
+import { AuctionDesktop } from "@/components/auction/AuctionDesktop";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
 import { Link } from "@/i18n/navigation";
@@ -244,11 +245,7 @@ export default async function AuctionDetail({
   const showFloatingBidCta = !isDirect && !isEnded && !isOwner;
 
   return (
-    <div
-      className={`mx-auto max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)] ${
-        showFloatingBidCta ? "pb-48" : "pb-8"
-      }`}
-    >
+    <>
       {/* Suppress "you've been outbid" notifications while the user
           has this page open. The DB place_bid RPC skips the push when
           the bidder has pinged auction_presence in the last 45s; that
@@ -256,6 +253,38 @@ export default async function AuctionDetail({
           sitting on the detail page still got spammed with outbid
           notifications they could already see live. */}
       <AuctionPresencePing auctionId={auction.id} userId={userId} />
+
+      {/* ─── DESKTOP (lg+) — clean two-column layout in its own file so
+              the mobile tree below is never touched. ─── */}
+      <AuctionDesktop
+        auction={auction}
+        totalBids={totalBids}
+        currentPrice={currentPrice}
+        depositRequired={depositRequired}
+        deposit={deposit}
+        isLive={isLive}
+        isDirect={isDirect}
+        hasBuyNow={hasBuyNow}
+        isEnded={isEnded}
+        isOwner={isOwner}
+        kycVerified={kycVerified}
+        hasActiveDeposit={hasActiveDeposit}
+        depositUnderReview={depositUnderReview}
+        userId={userId}
+        documents={documents}
+        attrKinds={attrKinds}
+        attrs={attrs}
+        myInspection={myInspection}
+        sellerFinalPayment={sellerFinalPayment}
+        sellerActiveDeposits={sellerActiveDeposits}
+      />
+
+      {/* ─── MOBILE / tablet (default, hidden on lg+) ─── */}
+      <div
+        className={`lg:hidden mx-auto max-w-[var(--max-w)] ${
+          showFloatingBidCta ? "pb-48" : "pb-8"
+        }`}
+      >
 
       {/* ─── PHOTO GALLERY — full-bleed cinematic hero with auto-rotate ─── */}
       <HeroCarousel photos={photos} alt={property.title}>
@@ -731,7 +760,8 @@ export default async function AuctionDetail({
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 

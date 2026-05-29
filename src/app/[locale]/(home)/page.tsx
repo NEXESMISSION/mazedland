@@ -7,6 +7,7 @@ import { RecentBidsFeed } from "@/components/landing/RecentBidsFeed";
 import { CoverageStrip } from "@/components/landing/CoverageStrip";
 import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
+import { HomeDesktop } from "@/components/landing/HomeDesktop";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
@@ -323,26 +324,34 @@ export default async function LandingPage() {
     // streams (LiveTicker, RecentBidsFeed) backfill the rails.
   }
 
+  // Built once, shared by the mobile HeroBanner and the desktop tree
+  // (which now reuses the same auto-sliding carousel).
+  const heroSlides = buildHeroSlides(trending, locale, liveCount, {
+    liveWord: t("home.heroLive"),
+    tnd: t("common.tnd"),
+    bidCta: t("home.heroBidCta"),
+    browseCta: t("home.heroBrowseCta"),
+    brandTitle: t("home.heroBrandTitle"),
+    brandSlogan: t("brand.slogan"),
+    brandEyebrow: t("home.heroBrandEyebrow", { count: liveCount }),
+  });
+
   return (
-    <div className="mx-auto max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)]">
+    <>
+    {/* ════════════════════════════════════════════════════════════════
+        MOBILE / TABLET TREE (< lg) — preserved verbatim. The inner
+        `hidden lg:*` blocks never paint here (parent is lg:hidden, and
+        they're already hidden below lg), so mobile is byte-for-byte
+        untouched. Desktop gets its own dedicated tree below.
+        ════════════════════════════════════════════════════════════════ */}
+    <div className="lg:hidden mx-auto max-w-[var(--max-w)]">
       {/* ───── HERO BANNER ─────
           Auto-advancing image carousel sourced from the top trending
           auctions. Each slide is a full-bleed property photo with the
           listing's headline + price overlaid; tap goes straight to the
           auction. Fallback brand slides kick in when the DB has nothing
           live so the carousel never renders empty. */}
-      <HeroBanner
-        slides={buildHeroSlides(trending, locale, liveCount, {
-          liveWord: t("home.heroLive"),
-          tnd: t("common.tnd"),
-          bidCta: t("home.heroBidCta"),
-          browseCta: t("home.heroBrowseCta"),
-          brandTitle: t("home.heroBrandTitle"),
-          brandSlogan: t("brand.slogan"),
-          brandEyebrow: t("home.heroBrandEyebrow", { count: liveCount }),
-        })}
-        isRTL={isRTL}
-      />
+      <HeroBanner slides={heroSlides} isRTL={isRTL} />
 
       {/* ─── DESKTOP STAT STRIP ───────────────────────────────────────
               Hidden on mobile (the bottom tab bar + LiveTicker already
@@ -982,6 +991,23 @@ export default async function LandingPage() {
         </div>
       </section>
     </div>
+
+
+    <HomeDesktop
+      heroSlides={heroSlides}
+      trending={trending}
+      offers={offers}
+      nouveautes={nouveautes}
+      recent={recent}
+      hammered={hammered}
+      savedIds={savedIds}
+      loggedIn={loggedIn}
+      liveCount={liveCount}
+      scheduledCount={scheduledCount}
+      soldThisMonthCount={soldThisMonthCount}
+      coverageGovs={coverageGovs}
+    />
+    </>
   );
 }
 

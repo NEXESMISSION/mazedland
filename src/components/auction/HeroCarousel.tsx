@@ -12,8 +12,9 @@ type Photo = {
   storage_path: string;
 };
 
-// Auto-advance cadence.
-const AUTO_INTERVAL_MS = 1500;
+// Auto-advance cadence — a calm gallery pace (the old 1.5s read as a
+// frantic flicker). 4.5s gives each photo time to register.
+const AUTO_INTERVAL_MS = 4500;
 // Pause auto-advance for this long after a manual prev/next/swipe/thumb tap.
 const USER_NAV_PAUSE_MS = 6000;
 // Swipe distance (px) that counts as a slide gesture.
