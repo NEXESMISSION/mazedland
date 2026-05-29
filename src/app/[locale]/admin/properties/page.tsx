@@ -538,6 +538,13 @@ export default async function AdminProperties({
   );
 }
 
+const STATUS_FR: Record<string, string> = {
+  ready: "Validée",
+  pending_review: "À vérifier",
+  rejected: "Rejetée",
+  draft: "Brouillon",
+  sold: "Vendue",
+};
 function StatusPill({ status }: { status: string }) {
   const tone =
     status === "ready" ? "batta-tone-ok"
@@ -546,7 +553,7 @@ function StatusPill({ status }: { status: string }) {
     : "bg-surface-2 text-muted ring-1 ring-border";
   return (
     <span className={`shrink-0 rounded-full px-2.5 py-1 text-[9.5px] font-extrabold uppercase tracking-[0.14em] ${tone}`}>
-      {status}
+      {STATUS_FR[status] ?? status}
     </span>
   );
 }

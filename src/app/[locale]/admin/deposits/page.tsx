@@ -1,6 +1,7 @@
 import { getServerSupabase } from "@/lib/supabase/server";
 import { DepositsClient, type DepositRow, type PrepareRow } from "./DepositsClient";
 import { AdminPager } from "@/components/admin/AdminPager";
+import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -31,26 +32,42 @@ const SELECT = `
     property:properties ( title, governorate )
   )
 `;
+// Inner-joined variant — lets us filter the to-refund queue server-side by
+// property title (the embed must be !inner for the filter to drop parent rows).
+const SELECT_INNER = `
+  id, amount, refunded_at, refund_ref, created_at, user_id, payment_id,
+  auction:auctions!auction_deposits_auction_id_fkey!inner (
+    id, status, winner_user_id,
+    property:properties!inner ( title, governorate )
+  )
+`;
 
 export default async function AdminDepositsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ q?: string; range?: string; page?: string }>;
 }) {
-  const { page: pageParam } = await searchParams;
+  const { q: qParam, range: rangeParam, page: pageParam } = await searchParams;
   const supabase = await getServerSupabase();
+  const q = (qParam ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
+  const sinceDays = rangeParam === "1" || rangeParam === "7" || rangeParam === "30" ? Number(rangeParam) : null;
   const page = Math.max(1, Number(pageParam) || 1);
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
   // ─── 1. TO-REFUND — the only unbounded queue: server-paginated + counted
-  //     (was a flat .limit(300) that silently dropped rows past the cap). ───
-  const { data: refundRows, count } = await supabase
+  //     (was a flat .limit(300) that silently dropped rows past the cap).
+  //     Search now runs server-side over the WHOLE queue (was a client
+  //     filter that only saw the loaded page slice). ───
+  let refundQuery = supabase
     .from("auction_deposits")
-    .select(SELECT, { count: "exact" })
+    .select(q ? SELECT_INNER : SELECT, { count: "exact" })
     .not("released_at", "is", null)
     .is("refunded_at", null)
-    .is("forfeited_at", null)
+    .is("forfeited_at", null);
+  if (q) refundQuery = refundQuery.ilike("auction.property.title", `%${q}%`);
+  if (sinceDays) refundQuery = refundQuery.gte("created_at", new Date(Date.now() - sinceDays * 86_400_000).toISOString());
+  const { data: refundRows, count } = await refundQuery
     .order("created_at", { ascending: false })
     .range(from, to);
   const toRefundRaw = (refundRows ?? []) as unknown as RawDeposit[];
@@ -146,6 +163,8 @@ export default async function AdminDepositsPage({
         <span className="batta-tabular font-semibold text-foreground">{total}</span>{" "}
         caution{total > 1 ? "s" : ""} à rembourser.
       </p>
+
+      <AdminQueryBar total={total} placeholder="Bien (titre)…" />
 
       <DepositsClient
         toPrepare={toPrepare}

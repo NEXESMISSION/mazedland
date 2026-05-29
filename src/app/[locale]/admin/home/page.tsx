@@ -1,6 +1,7 @@
 import { getServerSupabase } from "@/lib/supabase/server";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { HomeControlClient, type HomeRow } from "./HomeControlClient";
+import { Search } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -17,18 +18,24 @@ type Raw = {
   photos: { storage_path: string; sort_order: number }[];
 };
 
-export default async function AdminHomePage() {
+export default async function AdminHomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q: qParam } = await searchParams;
+  const q = (qParam ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
   const supabase = await getServerSupabase();
-  const { data } = await supabase
+  let pq = supabase
     .from("properties")
     .select(`
       id, title, governorate,
       promo_home_featured, promo_top_listed, promo_banner, promo_expires_at, promo_manual,
       photos:property_photos ( storage_path, sort_order )
     `)
-    .eq("status", "ready")
-    .order("created_at", { ascending: false })
-    .limit(150);
+    .eq("status", "ready");
+  if (q) pq = pq.or(`title.ilike.%${q}%,governorate.ilike.%${q}%`);
+  const { data } = await pq.order("created_at", { ascending: false }).limit(150);
 
   const now = Date.now();
   const rows: HomeRow[] = ((data ?? []) as unknown as Raw[]).map((p) => {
@@ -70,6 +77,26 @@ export default async function AdminHomePage() {
         bannière). « Payé » = via une option achetée, « Manuel » = ajouté ici.
         Vous pouvez mettre n&apos;importe quelle annonce publiée en vedette.
       </p>
+
+      {/* Server search — find any published listing by title or governorate
+          (the list is capped at 150, so search is the way to reach the rest). */}
+      <form method="get" role="search" className="mt-4 flex items-center gap-2">
+        <div className="relative max-w-sm flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" strokeWidth={2} />
+          <input
+            type="search"
+            name="q"
+            defaultValue={q}
+            placeholder="Rechercher une annonce (titre ou ville)…"
+            className="h-9 w-full rounded-lg border border-border bg-surface pl-8 pr-3 text-[12px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
+          />
+        </div>
+        {q && (
+          <span className="batta-tabular text-[12px] text-muted">
+            {rows.length} résultat{rows.length > 1 ? "s" : ""}
+          </span>
+        )}
+      </form>
 
       <HomeControlClient rows={rows} />
     </div>

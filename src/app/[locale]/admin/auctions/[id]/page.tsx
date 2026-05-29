@@ -15,6 +15,12 @@ const KIND_LABEL: Record<string, string> = {
   listing_fee: "Frais de création", deposit_lock: "Caution", buy_now: "Achat immédiat",
   final_payment: "Paiement final", commission: "Commission", deposit_release: "Remboursement",
 };
+const AUCTION_STATUS_FR: Record<string, string> = {
+  scheduled: "Programmée", live: "En direct", running: "En direct",
+  ended_sold: "Vendue", awarded: "Adjugée", ended_unsold: "Invendue",
+  ended: "Terminée", cancelled: "Annulée", draft: "Brouillon",
+  pending_payment: "Paiement en attente", completed: "Clôturée",
+};
 const fmt = (n: number) => `${formatTND(n, "fr")} TND`;
 
 /**
@@ -122,7 +128,7 @@ export default async function AdminAuctionView({
         <span className="batta-gold-fill inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider">
           <Gavel className="size-3" strokeWidth={2.5} /> {a.listing_type === "direct" ? "Offre directe" : "Enchère"}
         </span>
-        <span className="rounded-full bg-surface-2 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-muted ring-1 ring-border">{a.status}</span>
+        <span className="rounded-full bg-surface-2 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-muted ring-1 ring-border">{AUCTION_STATUS_FR[a.status] ?? a.status}</span>
       </div>
       <h1 className="mt-2 text-[24px] font-extrabold leading-tight tracking-tight">{propTitle}</h1>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">

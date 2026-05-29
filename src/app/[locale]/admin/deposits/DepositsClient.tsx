@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { formatTND } from "@/lib/utils";
 import {
-  Gavel, MapPin, CheckCircle2, FileText, Search, X, ChevronRight, CircleDollarSign,
+  Gavel, MapPin, CheckCircle2, FileText, ChevronRight, CircleDollarSign,
 } from "lucide-react";
 
 export type DepositRow = {
@@ -43,27 +43,19 @@ export function DepositsClient({
   toRefund: DepositRow[];
   refunded: DepositRow[];
 }) {
-  const [q, setQ] = useState("");
-  const [gov, setGov] = useState("all");
-
-  const govs = useMemo(
-    () => Array.from(new Set(toRefund.map((d) => d.governorate).filter(Boolean))).sort(),
-    [toRefund],
-  );
-
+  // Search/date filtering now happens server-side (URL ?q / ?range) so it
+  // spans the whole queue, not just this page slice. Here we only group the
+  // already-filtered slice into one box per auction.
   const boxes = useMemo<Box[]>(() => {
-    const term = q.trim().toLowerCase();
     const map = new Map<string, Box>();
     for (const d of toRefund) {
-      if (gov !== "all" && d.governorate !== gov) continue;
-      if (term && !d.title.toLowerCase().includes(term) && !d.bidder.toLowerCase().includes(term)) continue;
       const key = d.auctionId ?? d.id;
       const b = map.get(key) ?? { auctionId: d.auctionId, title: d.title, gov: d.governorate, count: 0, total: 0 };
       b.count += 1; b.total += d.amount;
       map.set(key, b);
     }
     return Array.from(map.values()).sort((a, b) => b.count - a.count);
-  }, [toRefund, q, gov]);
+  }, [toRefund]);
 
   return (
     <div className="mt-5 space-y-6">
@@ -110,27 +102,8 @@ export function DepositsClient({
           <Empty text="Rien à rembourser pour le moment." />
         ) : (
           <>
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" strokeWidth={2} />
-                <input
-                  type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Bien ou acheteur…"
-                  className="h-9 w-56 rounded-lg border border-border bg-surface pl-8 pr-3 text-[12px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
-                />
-              </div>
-              {govs.length > 1 && (
-                <select value={gov} onChange={(e) => setGov(e.target.value)} aria-label="Gouvernorat"
-                  className="h-9 rounded-lg border border-border bg-surface px-2.5 text-[12px] font-semibold text-foreground focus:border-gold focus:outline-none">
-                  <option value="all">Tous les gouvernorats</option>
-                  {govs.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
-              )}
-              {(q || gov !== "all") && (
-                <button type="button" onClick={() => { setQ(""); setGov("all"); }} className="inline-flex h-9 items-center gap-1 rounded-lg px-2.5 text-[12px] font-semibold text-muted hover:bg-surface-2 hover:text-foreground">
-                  <X className="size-3.5" /> Réinitialiser
-                </button>
-              )}
-              <span className="batta-tabular ms-auto text-[12px] text-muted">{boxes.length} enchère{boxes.length > 1 ? "s" : ""}</span>
+            <div className="mb-3 flex items-center">
+              <span className="batta-tabular ms-auto text-[12px] text-muted">{boxes.length} enchère{boxes.length > 1 ? "s" : ""} sur cette page</span>
             </div>
 
             {boxes.length === 0 ? (

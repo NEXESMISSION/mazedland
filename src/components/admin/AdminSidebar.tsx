@@ -3,7 +3,7 @@
 import { Link, usePathname } from "@/i18n/navigation";
 import {
   Building2, Banknote, Wallet, Receipt, UserCheck, Users,
-  ShieldCheck, AlertTriangle, Settings2, LayoutTemplate, FileText,
+  ShieldCheck, Settings2, LayoutTemplate, FileText,
   Sparkles, Bell, MessageSquare, Inbox, Home as HomeIcon,
   LayoutDashboard, ExternalLink, type LucideIcon,
 } from "lucide-react";
@@ -38,7 +38,6 @@ const GROUPS: Group[] = [
       { label: "KYC", href: "/admin/kyc-queue", Icon: UserCheck },
       { label: "Utilisateurs", href: "/admin/users", Icon: Users },
       { label: "Inspecteurs", href: "/admin/inspectors", Icon: ShieldCheck },
-      { label: "Fraude", href: "/admin/fraud", Icon: AlertTriangle },
     ],
   },
   {

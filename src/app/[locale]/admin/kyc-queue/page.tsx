@@ -1,6 +1,8 @@
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { KycQueueList, type KycSubmissionView } from "./KycQueueList";
+import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
+import { AdminPager } from "@/components/admin/AdminPager";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,31 +25,43 @@ type StatusTab = (typeof STATUS_TABS)[number]["value"];
  * Replaces the previous flat /admin/users KYC list with a focused
  * queue + photo preview + approve / reject CTAs per submission.
  */
+const PAGE_SIZE = 24;
+
 export default async function KYCQueuePage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; range?: string; page?: string }>;
 }) {
-  const { status: statusParam } = await searchParams;
+  const { status: statusParam, q: qParam, range: rangeParam, page: pageParam } = await searchParams;
   const supabase = await getServerSupabase();
 
   const status: StatusTab = STATUS_TABS.some((s) => s.value === statusParam)
     ? (statusParam as StatusTab)
     : "submitted";
+  const q = (qParam ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
+  const sinceDays = rangeParam === "1" || rangeParam === "7" || rangeParam === "30" ? Number(rangeParam) : null;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
 
   let query = supabase
     .from("kyc_submissions")
     .select(
       "id, user_id, full_name, id_front_url, id_back_url, selfie_video_url, selfie_image_url, status, rejection_reason, submitted_at, reviewed_at",
+      { count: "exact" },
     );
   if (status !== "all") {
     query = query.eq("status", status);
   }
+  if (q) query = query.ilike("full_name", `%${q}%`);
+  if (sinceDays) query = query.gte("submitted_at", new Date(Date.now() - sinceDays * 86_400_000).toISOString());
   // Pending sorts oldest-first (FIFO work queue); the archive sorts
   // newest-first (most recent decisions on top).
-  query = query.order("submitted_at", { ascending: status === "submitted" });
+  query = query.order("submitted_at", { ascending: status === "submitted" }).range(from, to);
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const rows = (data ?? []) as Array<{
     id: string;
     user_id: string;
@@ -109,7 +123,7 @@ export default async function KYCQueuePage({
 
   return (
     <div>
-      <span className="batta-eyebrow">Identity desk</span>
+      <span className="batta-eyebrow">Personnes · KYC</span>
       <div className="mt-1.5 flex items-end justify-between gap-3">
         <h2 className="text-[22px] font-extrabold leading-tight tracking-tight">
           File KYC
@@ -121,7 +135,7 @@ export default async function KYCQueuePage({
               : "bg-surface-2 text-muted ring-1 ring-border"
           }`}
         >
-          {items.length}
+          {total}
         </span>
       </div>
       <p className="mt-1 text-[12px] text-muted">
@@ -153,6 +167,8 @@ export default async function KYCQueuePage({
         })}
       </div>
 
+      <AdminQueryBar total={total} placeholder="Nom du demandeur…" />
+
       {error && (
         <div className="mt-4 rounded-[var(--radius-md)] bg-red-500/10 border border-red-500/30 p-4 text-sm text-red-300">
           {error.message}
@@ -170,6 +186,8 @@ export default async function KYCQueuePage({
           <KycQueueList items={items} view={status} />
         </div>
       )}
+
+      <AdminPager page={page} totalPages={totalPages} />
     </div>
   );
 }
