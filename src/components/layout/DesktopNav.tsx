@@ -58,7 +58,7 @@ export function DesktopNav() {
   }
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40 hidden h-[var(--desktop-nav-h)] items-center border-b border-border/70 bg-white/80 backdrop-blur-2xl lg:flex">
+    <header className="fixed inset-x-0 top-0 z-40 hidden h-[var(--desktop-nav-h)] items-center border-b border-border bg-white lg:flex">
       <div className="mx-auto flex h-full w-full max-w-[var(--max-w-wide)] items-center gap-6 px-8">
         {/* ── Left zone: brand + primary links ── */}
         <div className="flex shrink-0 items-center gap-7">

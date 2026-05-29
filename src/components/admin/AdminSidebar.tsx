@@ -1,129 +1,75 @@
 "use client";
 
 import { Link, usePathname } from "@/i18n/navigation";
-import { useSearchParams } from "next/navigation";
 import {
-  Building2, Gavel, Wallet, Users, SlidersHorizontal,
-  Home as HomeIcon, FileText, ListChecks, Bell, Inbox,
-  ShieldCheck, Hammer, Banknote, Receipt, UserCheck,
-  AlertTriangle, Settings2, LayoutTemplate, Sparkles,
-  MessageSquare,
-  LogOut, ExternalLink, type LucideIcon,
+  Building2, Banknote, Wallet, Receipt, UserCheck, Users,
+  ShieldCheck, AlertTriangle, Settings2, LayoutTemplate, FileText,
+  Sparkles, Bell, MessageSquare, Inbox, Home as HomeIcon,
+  ExternalLink, type LucideIcon,
 } from "lucide-react";
 
 /**
- * Desktop-only admin sidebar — the same IA AdminTabs surfaces on
- * mobile, just expanded into a persistent tree instead of two rows
- * of horizontal chips. Hidden on `< lg` because the mobile shell
- * already renders AdminTabs above the content.
- *
- * Width is 260px to match the new wide layout — narrow enough that
- * the main canvas keeps comfortable line lengths on 13-inch laptops
- * and wide enough that hub labels never truncate.
+ * Admin console navigation — the single source of nav for /admin (the
+ * consumer chrome is suppressed for admin routes). One clean link per
+ * destination under four plain section labels; in-page tabs handle
+ * sub-views (e.g. property status), so the rail itself stays minimal.
  */
-type SubItem = {
-  label: string;
-  href: string;
-  Icon: LucideIcon;
-  /** Honour ?status= when the same path serves multiple views. */
-  matchStatus?: string | null;
-};
-
-type Group = {
-  key: string;
-  label: string;
-  Icon: LucideIcon;
-  items: SubItem[];
-};
+type Item = { label: string; href: string; Icon: LucideIcon };
+type Group = { label: string; items: Item[] };
 
 const GROUPS: Group[] = [
   {
-    key: "annonces",
-    label: "Annonces",
-    Icon: Building2,
+    label: "Ventes",
     items: [
-      { label: "À valider",  href: "/admin/properties?status=pending_review", Icon: ListChecks, matchStatus: "pending_review" },
-      { label: "En ligne",   href: "/admin/properties?status=ready",          Icon: ShieldCheck, matchStatus: "ready" },
-      { label: "Vendues",    href: "/admin/properties?status=sold",           Icon: Hammer,      matchStatus: "sold" },
-      { label: "Refusées",   href: "/admin/properties?status=rejected",       Icon: AlertTriangle, matchStatus: "rejected" },
-      { label: "Toutes",     href: "/admin/properties",                       Icon: FileText,    matchStatus: null },
+      { label: "Annonces", href: "/admin/properties", Icon: Building2 },
+      { label: "Cautions", href: "/admin/deposits", Icon: Banknote },
     ],
   },
   {
-    key: "encheres",
-    label: "Enchères",
-    Icon: Gavel,
+    label: "Argent",
     items: [
-      { label: "Cautions & remboursements", href: "/admin/deposits", Icon: Banknote },
+      { label: "Retraits", href: "/admin/payouts", Icon: Wallet },
+      { label: "Reçus", href: "/admin/payments", Icon: Receipt },
     ],
   },
   {
-    key: "finances",
-    label: "Finances",
-    Icon: Wallet,
-    items: [
-      { label: "Retraits", href: "/admin/payouts",  Icon: Banknote },
-      { label: "Reçus",    href: "/admin/payments", Icon: Receipt },
-    ],
-  },
-  {
-    key: "personnes",
     label: "Personnes",
-    Icon: Users,
     items: [
-      { label: "KYC",          href: "/admin/kyc-queue",  Icon: UserCheck },
-      { label: "Utilisateurs", href: "/admin/users",      Icon: Users },
-      { label: "Inspecteurs",  href: "/admin/inspectors", Icon: ShieldCheck },
-      { label: "Fraude",       href: "/admin/fraud",      Icon: AlertTriangle },
+      { label: "KYC", href: "/admin/kyc-queue", Icon: UserCheck },
+      { label: "Utilisateurs", href: "/admin/users", Icon: Users },
+      { label: "Inspecteurs", href: "/admin/inspectors", Icon: ShieldCheck },
+      { label: "Fraude", href: "/admin/fraud", Icon: AlertTriangle },
     ],
   },
   {
-    key: "reglages",
-    label: "Réglages",
-    Icon: SlidersHorizontal,
+    label: "Système",
     items: [
-      { label: "Tarifs & caution",  href: "/admin/settings",        Icon: Settings2 },
-      { label: "Accueil (vedette)", href: "/admin/home",            Icon: LayoutTemplate },
-      { label: "Documents",         href: "/admin/legal-docs",      Icon: FileText },
-      { label: "Caractéristiques",  href: "/admin/characteristics", Icon: Sparkles },
-      { label: "Diffusions",        href: "/admin/notifications",   Icon: Bell },
-      { label: "Popups",            href: "/admin/popups",          Icon: MessageSquare },
-      { label: "Liste d'attente",   href: "/admin/waitlist",        Icon: Inbox },
+      { label: "Réglages", href: "/admin/settings", Icon: Settings2 },
+      { label: "Accueil", href: "/admin/home", Icon: LayoutTemplate },
+      { label: "Documents", href: "/admin/legal-docs", Icon: FileText },
+      { label: "Caractéristiques", href: "/admin/characteristics", Icon: Sparkles },
+      { label: "Diffusions", href: "/admin/notifications", Icon: Bell },
+      { label: "Popups", href: "/admin/popups", Icon: MessageSquare },
+      { label: "Liste d'attente", href: "/admin/waitlist", Icon: Inbox },
     ],
   },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const search = useSearchParams();
-  const status = search.get("status");
-
-  function isActive(item: SubItem): boolean {
-    const [path, query] = item.href.split("?");
-    if (pathname !== path && !pathname.startsWith(path + "/")) return false;
-    // Properties + status filter live on the same path — the active one
-    // is the matchStatus that equals the current ?status.
-    if (path === "/admin/properties") {
-      const want = query ? new URLSearchParams(query).get("status") : null;
-      return (want ?? null) === (status ?? null);
-    }
-    return !query || pathname === path;
-  }
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <aside
-      // `lg:hidden` would invert the mobile/desktop. We want it shown
-      // ONLY on lg+: the mobile shell already paints AdminTabs.
-      className="hidden lg:flex lg:sticky lg:top-0 lg:h-screen lg:w-[260px] lg:shrink-0 lg:flex-col lg:border-e lg:border-border lg:bg-surface"
-    >
-      <header className="flex items-center gap-2 border-b border-border px-5 py-5">
-        <Link href="/admin" className="flex items-center gap-2">
+    <aside className="sticky top-0 flex h-screen w-[248px] shrink-0 flex-col border-e border-border bg-surface">
+      <header className="flex items-center border-b border-border px-5 py-5">
+        <Link href="/admin" className="flex items-center gap-2.5">
           <span className="batta-gradient-gold grid size-9 place-items-center rounded-xl text-white shadow-[var(--shadow-gold)]">
             <HomeIcon className="size-4" strokeWidth={2.2} />
           </span>
           <span className="flex flex-col leading-tight">
             <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-muted">
-              Batta · Admin
+              Batta
             </span>
             <span className="gradient-gold-text text-[15px] font-extrabold">Console</span>
           </span>
@@ -132,27 +78,27 @@ export function AdminSidebar() {
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         {GROUPS.map((group, gi) => (
-          <div key={group.key} className={gi > 0 ? "mt-5" : ""}>
-            <div className="flex items-center gap-2 px-2 pb-1.5">
-              <group.Icon className="size-3.5 text-[var(--gold)]" strokeWidth={2.2} />
-              <span className="batta-eyebrow text-[10px]">{group.label}</span>
+          <div key={group.label} className={gi > 0 ? "mt-6" : ""}>
+            <div className="px-2.5 pb-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted">
+              {group.label}
             </div>
             <ul className="space-y-0.5">
               {group.items.map((item) => {
-                const active = isActive(item);
+                const active = isActive(item.href);
                 return (
                   <li key={item.href}>
                     <Link
                       href={item.href as "/admin/properties"}
-                      className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12.5px] font-semibold transition ${
+                      aria-current={active ? "page" : undefined}
+                      className={`flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition ${
                         active
-                          ? "bg-[var(--gold)] text-white shadow-sm"
-                          : "text-foreground/80 hover:bg-surface-2 hover:text-foreground"
+                          ? "bg-[var(--gold)] text-white"
+                          : "text-foreground/75 hover:bg-surface-2 hover:text-foreground"
                       }`}
                     >
                       <item.Icon
-                        className={`size-3.5 shrink-0 ${active ? "text-white" : "text-muted"}`}
-                        strokeWidth={2.2}
+                        className={`size-4 shrink-0 ${active ? "text-white" : "text-muted"}`}
+                        strokeWidth={2}
                       />
                       <span className="truncate">{item.label}</span>
                     </Link>
@@ -167,13 +113,10 @@ export function AdminSidebar() {
       <footer className="border-t border-border px-3 py-3">
         <Link
           href="/"
-          className="flex items-center justify-between gap-2 rounded-lg bg-surface-2 px-3 py-2 text-[12px] font-bold text-foreground/85 hover:bg-[var(--surface-3,#1a1a1a)]"
+          className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[12.5px] font-semibold text-muted transition hover:bg-surface-2 hover:text-foreground"
         >
-          <span className="inline-flex items-center gap-2">
-            <ExternalLink className="size-3.5" strokeWidth={2.2} />
-            Sortir de l'admin
-          </span>
-          <LogOut className="size-3.5 text-muted" strokeWidth={2.2} />
+          <ExternalLink className="size-4 shrink-0" strokeWidth={2} />
+          Quitter l&apos;admin
         </Link>
       </footer>
     </aside>

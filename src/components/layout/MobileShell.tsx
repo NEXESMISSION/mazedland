@@ -25,6 +25,11 @@ import { KYCNudgeModal } from "@/components/kyc/KYCNudgeModal";
  */
 function isFlowRoute(pathname: string): boolean {
   return (
+    // The admin console is its own self-contained desktop shell (its own
+    // sidebar nav) — it must NOT also carry the consumer TopBar /
+    // DesktopNav / BottomTabBar, or the two navigations stack and the
+    // page reads as cluttered.
+    pathname.startsWith("/admin") ||
     pathname.startsWith("/kyc") ||
     pathname.startsWith("/payment") ||
     pathname === "/login" ||
