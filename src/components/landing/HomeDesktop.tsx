@@ -60,11 +60,11 @@ const PROPERTY_TYPES: { key: string }[] = [
   { key: "office" },
 ];
 
-const PRICE_BUCKETS: { key: string; labelEn: string }[] = [
-  { key: "under-100k", labelEn: "Under 100k TND" },
-  { key: "100k-500k",  labelEn: "100k – 500k" },
-  { key: "500k-1m",    labelEn: "500k – 1M" },
-  { key: "1m-plus",    labelEn: "1M+ TND" },
+const PRICE_BUCKETS: { key: string; label: string }[] = [
+  { key: "under-100k", label: "Moins de 100k" },
+  { key: "100k-500k",  label: "100k – 500k" },
+  { key: "500k-1m",    label: "500k – 1M" },
+  { key: "1m-plus",    label: "1M+ TND" },
 ];
 
 const TRUST_PILLARS: {
@@ -319,7 +319,7 @@ export async function HomeDesktop({
               href={`/properties?price=${b.key}` as `/properties`}
               className="group flex items-center justify-between rounded-2xl bg-surface px-5 py-3.5 ring-1 ring-border transition hover:bg-gold-faint hover:ring-gold-soft/50"
             >
-              <span className="text-[13px] font-bold text-foreground">{b.labelEn}</span>
+              <span className="text-[13px] font-bold text-foreground">{b.label}</span>
               <ArrowUpRight
                 className="size-4 text-muted transition group-hover:text-gold-bright"
                 strokeWidth={2.2}

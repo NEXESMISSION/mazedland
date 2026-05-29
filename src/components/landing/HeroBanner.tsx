@@ -324,7 +324,7 @@ function PhotoSlide({
       </div>
 
       <span className="batta-gold-fill absolute top-3 z-[1] inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)] ltr:right-3 rtl:left-3">
-        {slide.ctaLabel ?? "View"}
+        {slide.ctaLabel ?? "Voir"}
       </span>
     </Link>
   );

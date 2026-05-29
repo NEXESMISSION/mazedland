@@ -4,14 +4,11 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { normalizeSearchQuery } from "@/lib/search";
+import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
 import { Search, MapPin } from "lucide-react";
 
-const GOVERNORATES = [
-  "Tunis", "Ariana", "Ben Arous", "Manouba",
-  "Sousse", "Monastir", "Mahdia", "Nabeul",
-  "Sfax", "Bizerte", "Gabès", "Médenine",
-  "Kairouan", "Béja", "Jendouba", "Kef",
-];
+// Canonical 24-wilaya list (previously a truncated 16 here).
+const GOVERNORATES = TUNISIAN_GOVERNORATES;
 
 // Type keys are stable; labels come from `property.types.<key>` so each
 // locale (ar/fr/en) gets its own translation through the same i18n file.

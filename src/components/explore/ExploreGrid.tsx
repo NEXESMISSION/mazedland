@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import type { ExploreFilter } from "./ExploreFeed";
 import type { PropertyType } from "@/lib/types";
+import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
 
 const PROPERTY_TYPES: { key: PropertyType; label: string }[] = [
   { key: "apartment", label: "Appartement" },
@@ -41,12 +42,9 @@ const PROPERTY_TYPES: { key: PropertyType; label: string }[] = [
   { key: "farm", label: "Ferme" },
 ];
 
-const GOVERNORATES = [
-  "Tunis", "Ariana", "Ben Arous", "Manouba",
-  "Sousse", "Monastir", "Mahdia", "Nabeul",
-  "Sfax", "Bizerte", "Gabès", "Médenine",
-  "Kairouan", "Béja", "Jendouba", "Kef",
-];
+// Canonical 24-wilaya list (was a truncated 16 here, so users in 8
+// governorates could never filter to their region).
+const GOVERNORATES = TUNISIAN_GOVERNORATES;
 
 export type ExtraFilters = {
   types: PropertyType[];
@@ -731,38 +729,6 @@ function FilterPanel({
             placeholder="Max"
             value={draft.maxPrice ?? ""}
             onChange={(e) => setNum("maxPrice")(e.target.value)}
-            className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-[13px] tabular-nums"
-          />
-        </div>
-      </div>
-
-      {/* Area + rooms */}
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <div>
-          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
-            Surface min (m²)
-          </label>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            placeholder="ex. 80"
-            value={draft.minArea ?? ""}
-            onChange={(e) => setNum("minArea")(e.target.value)}
-            className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-[13px] tabular-nums"
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
-            Pièces min
-          </label>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            placeholder="ex. 3"
-            value={draft.minRooms ?? ""}
-            onChange={(e) => setNum("minRooms")(e.target.value)}
             className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-[13px] tabular-nums"
           />
         </div>

@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Link, usePathname } from "@/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { normalizeSearchQuery } from "@/lib/search";
 import { Search, User, Plus } from "lucide-react";
 
 /**
@@ -42,8 +44,18 @@ function isActive(pathname: string, href: string): boolean {
 
 export function DesktopNav() {
   const t = useTranslations("shell.tabs");
-  const tn = useTranslations("nav");
+  const ts = useTranslations("search");
   const pathname = usePathname();
+  const router = useRouter();
+  const [q, setQ] = useState("");
+
+  function submitSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const clean = normalizeSearchQuery(q);
+    router.push(
+      (clean ? `/properties?q=${encodeURIComponent(clean)}` : "/properties") as `/properties`,
+    );
+  }
 
   return (
     <header className="fixed inset-x-0 top-0 z-40 hidden h-[var(--desktop-nav-h)] items-center border-b border-border/70 bg-white/80 backdrop-blur-2xl lg:flex">
@@ -83,16 +95,23 @@ export function DesktopNav() {
           </nav>
         </div>
 
-        {/* ── Center zone: always-visible search, lands on /properties ── */}
-        <div className="flex flex-1 justify-center">
-          <Link
-            href="/properties"
-            className="group flex w-full max-w-md items-center gap-2.5 rounded-full border border-border bg-surface-2 px-4 py-2.5 text-[13px] text-muted transition-colors hover:border-gold-soft/70 hover:bg-surface"
-          >
-            <Search className="size-4 shrink-0 transition-colors group-hover:text-gold" strokeWidth={2} />
-            <span className="truncate">{tn("properties")}</span>
-          </Link>
-        </div>
+        {/* ── Center zone: real search — submits to the explore surface ── */}
+        <form onSubmit={submitSearch} className="flex flex-1 justify-center" role="search">
+          <div className="relative flex w-full max-w-md items-center">
+            <Search
+              className="pointer-events-none absolute size-4 text-muted ltr:left-4 rtl:right-4"
+              strokeWidth={2}
+            />
+            <input
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={ts("placeholder")}
+              aria-label={ts("placeholder")}
+              className="h-11 w-full rounded-full border border-border bg-surface-2 text-[13px] text-foreground placeholder:text-muted transition-colors focus:border-gold-soft/70 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-gold-faint ltr:pl-11 ltr:pr-4 rtl:pl-4 rtl:pr-11"
+            />
+          </div>
+        </form>
 
         {/* ── Right zone: notifications, account, sell CTA ── */}
         <div className="flex shrink-0 items-center gap-2">

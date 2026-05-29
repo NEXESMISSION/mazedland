@@ -654,7 +654,7 @@ export default async function LandingPage() {
                   isRTL ? "font-arabic" : ""
                 }`}
               >
-                {isRTL ? pt.labelAr : pt.labelEn}
+                {t(`property.types.${pt.key}`)}
               </span>
             </Link>
           ))}
@@ -1213,10 +1213,10 @@ const PRICE_BUCKETS: {
   labelEn: string;
   labelAr: string;
 }[] = [
-  { key: "under-100k",  labelEn: "Under 100k TND", labelAr: "أقل من 100 ألف" },
-  { key: "100k-500k",   labelEn: "100k – 500k",    labelAr: "100 – 500 ألف" },
-  { key: "500k-1m",     labelEn: "500k – 1M",      labelAr: "500 ألف – 1 مليون" },
-  { key: "1m-plus",     labelEn: "1M+ TND",        labelAr: "أكثر من مليون" },
+  { key: "under-100k",  labelEn: "Moins de 100k", labelAr: "أقل من 100 ألف" },
+  { key: "100k-500k",   labelEn: "100k – 500k",   labelAr: "100 – 500 ألف" },
+  { key: "500k-1m",     labelEn: "500k – 1M",     labelAr: "500 ألف – 1 مليون" },
+  { key: "1m-plus",     labelEn: "1M+ TND",       labelAr: "أكثر من مليون" },
 ];
 
 // HOW_IT_WORKS + TRUST_PILLARS used to live here at the bottom of

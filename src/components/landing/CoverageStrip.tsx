@@ -56,9 +56,9 @@ export async function CoverageStrip() {
     <section className="px-4">
       <header className="mb-3 flex items-baseline justify-between gap-3">
         <h2 className="text-[15px] font-bold leading-tight text-foreground">
-          Across Tunisia
+          Partout en Tunisie
         </h2>
-        <span className="text-[11px] text-muted">{ALL_GOVERNORATES.length} wilayas</span>
+        <span className="text-[11px] text-muted">{ALL_GOVERNORATES.length} gouvernorats</span>
       </header>
 
       <ul className="flex flex-wrap gap-1.5">
@@ -93,7 +93,7 @@ export async function CoverageStrip() {
               href="/properties"
               className="inline-flex items-center gap-1 rounded-full border border-batta-gold/15 bg-batta-surface/40 px-2.5 py-1 text-[11px] font-semibold text-batta-muted"
             >
-              +{remaining} more
+              +{remaining} autres
             </Link>
           </li>
         )}
