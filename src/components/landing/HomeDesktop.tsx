@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { LiveTicker } from "@/components/landing/LiveTicker";
@@ -7,8 +6,6 @@ import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeSearch } from "@/components/landing/HomeSearch";
 import { PropertyCard } from "@/components/property/PropertyCard";
-import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
-import { formatTND } from "@/lib/utils";
 import type { AuctionWithProperty } from "@/lib/types";
 import {
   ArrowUpRight,
@@ -16,7 +13,6 @@ import {
   ChevronLeft,
   Building2,
   Gavel,
-  MapPin,
   ShieldCheck,
   ClipboardCheck,
   Scale,
@@ -89,7 +85,6 @@ export async function HomeDesktop({
   offers,
   nouveautes,
   recent,
-  hammered,
   savedIds,
   loggedIn,
   liveCount,
@@ -347,33 +342,6 @@ export async function HomeDesktop({
         </section>
       )}
 
-      {/* RECENTLY HAMMERED — auto-sliding carousel of real sold prices */}
-      {hammered.length > 0 && (
-        <section className="mt-14">
-          <div className="flex items-baseline justify-between px-4">
-            <h3 className="inline-flex items-center gap-2 text-[19px] font-extrabold leading-tight tracking-tight">
-              <Gavel className="size-4 text-gold" strokeWidth={2.5} />
-              {t("home.recentlyHammered")}
-            </h3>
-            <span className="text-[12px] text-muted">{t("home.realPrices")}</span>
-          </div>
-          <TrendingRail arrows>
-            {hammered.map((h) => (
-              <div key={h.id} className="w-[260px] shrink-0 snap-start">
-                <HammeredCard
-                  row={h}
-                  locale={locale}
-                  isRTL={isRTL}
-                  soldLabel={t("home.soldChip")}
-                  tnd={t("common.tnd")}
-                />
-              </div>
-            ))}
-            <div className="w-1 shrink-0" />
-          </TrendingRail>
-        </section>
-      )}
-
       {/* ─── POURQUOI BATTA — one consolidated trust + CTA band ───
               Replaces the old how-it-works / trust / activity / closing
               stack: a single navy value panel + the four trust pillars. */}
@@ -521,69 +489,5 @@ function CardSlider({
       ))}
       <div className="w-1 shrink-0" />
     </TrendingRail>
-  );
-}
-
-function HammeredCard({
-  row,
-  locale,
-  isRTL,
-  soldLabel,
-  tnd,
-}: {
-  row: HammeredRow;
-  locale: string;
-  isRTL: boolean;
-  soldLabel: string;
-  tnd: string;
-}) {
-  const photo = row.property.photos
-    ?.slice()
-    .sort((a, b) => a.sort_order - b.sort_order)[0];
-  const price = Number(row.winner_amount ?? 0);
-  return (
-    <Link
-      href={`/auctions/${row.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl bg-surface-2 transition active:scale-[0.98] hover:bg-surface"
-    >
-      <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
-        {photo ? (
-          (() => {
-            const src = propertyPhotoUrl(photo.storage_path);
-            return (
-              <Image
-                src={src}
-                alt=""
-                fill
-                sizes="260px"
-                unoptimized={isStaticSeedPath(src)}
-                className="object-cover transition duration-500 group-hover:scale-105"
-              />
-            );
-          })()
-        ) : (
-          <div className="flex h-full items-center justify-center text-3xl text-foreground/15">🏛️</div>
-        )}
-        <span className="batta-gold-fill absolute top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.14em] ltr:left-2 rtl:right-2">
-          <Gavel className="size-2.5" strokeWidth={2.5} />
-          {soldLabel}
-        </span>
-      </div>
-      <div className="p-3">
-        <div className="batta-tabular gradient-gold-text text-[18px] font-extrabold leading-none">
-          {formatTND(price, locale)}
-          <span className="ms-1 text-[9px] font-bold uppercase tracking-[0.14em] text-muted">
-            {tnd}
-          </span>
-        </div>
-        <div className={`mt-1.5 line-clamp-1 text-[12px] font-bold text-foreground ${isRTL ? "font-arabic" : ""}`}>
-          {row.property.title}
-        </div>
-        <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted">
-          <MapPin className="size-2.5" strokeWidth={2} />
-          <span className="truncate">{row.property.governorate}</span>
-        </div>
-      </div>
-    </Link>
   );
 }
