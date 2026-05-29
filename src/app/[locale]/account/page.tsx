@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -118,106 +119,130 @@ export default async function AccountPage() {
   }
 
   // Signed-in surface.
+  const kycHref =
+    kycStatus === "verified" || kycStatus === "submitted" || kycStatus === "pending"
+      ? "/kyc/status"
+      : "/kyc/start";
+
+  const primaryActions: ActionItem[] = [
+    {
+      href: kycHref,
+      Icon: ShieldCheck,
+      title: t("sections.kyc"),
+      body: kycStatus === "verified" ? "Identité vérifiée" : t("sections.kycBody"),
+    },
+    { href: "/sell", Icon: Building2, title: "Tableau du vendeur", body: "Vos annonces, revenus et retraits." },
+    { href: "/account/activity", Icon: LayoutGrid, title: "Mes activités", body: "Enchères, acquisitions, participations et favoris." },
+    { href: "/account/inspections", Icon: ClipboardCheck, title: t("sections.inspections"), body: t("sections.inspectionsBody") },
+    { href: "/account/payments", Icon: Wallet, title: t("sections.payments"), body: t("sections.paymentsBody") },
+  ];
+
+  const roleActions: ActionItem[] = [];
+  if (role === "admin") {
+    roleActions.push({ href: "/admin", Icon: LayoutDashboard, title: "Console admin", body: "Validez les annonces, le KYC et les inspecteurs." });
+  } else if (role === "bank" || role === "agency" || role === "bailiff") {
+    roleActions.push({ href: "/partners/dashboard", Icon: Briefcase, title: "Espace partenaire", body: "Gérez votre portefeuille banque / agence." });
+  } else if (role === "inspector") {
+    roleActions.push({ href: "/inspector", Icon: ClipboardCheck, title: "Espace inspecteur", body: "Les inspections qui vous sont assignées." });
+  } else {
+    roleActions.push({ href: "/inspectors/apply", Icon: UserCog, title: "Devenir inspecteur", body: "Rejoignez le réseau d'inspection terrain." });
+  }
+
+  const identity = (
+    <section className="batta-surface-navy-luxe relative overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25">
+      <div className="flex items-start gap-3">
+        <span className="batta-monogram batta-monogram-filled size-12 shrink-0 text-[20px] font-extrabold">
+          {(fullName ?? userEmail ?? "?").charAt(0).toUpperCase()}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div
+            className={`truncate text-[16px] font-extrabold leading-tight text-foreground ${
+              isRTL ? "font-arabic" : ""
+            }`}
+          >
+            {fullName ?? userEmail ?? ""}
+          </div>
+          {fullName && userEmail && (
+            <div className="mt-0.5 truncate text-[11px] text-muted">{userEmail}</div>
+          )}
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <KycPill status={kycStatus} />
+            {role !== "individual" && <span className="batta-pill-gold">{role}</span>}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+
   return (
-    <div className="mx-auto max-w-[var(--max-w)] px-4 py-6 lg:max-w-[var(--max-w-content)]">
-      {/* Identity card — gold-rimmed navy luxe surface with the user's
-          initial, name, email, and KYC pill. */}
-      <section className="batta-surface-navy-luxe relative overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25">
-        <div className="flex items-start gap-3">
-          <span className="batta-monogram batta-monogram-filled size-12 shrink-0 text-[20px] font-extrabold">
-            {(fullName ?? userEmail ?? "?").charAt(0).toUpperCase()}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div
-              className={`truncate text-[16px] font-extrabold leading-tight text-foreground ${
-                isRTL ? "font-arabic" : ""
-              }`}
-            >
-              {fullName ?? userEmail ?? ""}
+    <>
+      {/* ── MOBILE / tablet (< lg) — single column, unchanged ── */}
+      <div className="lg:hidden mx-auto max-w-[var(--max-w)] px-4 py-6">
+        {identity}
+        <section className="mt-5 overflow-hidden rounded-xl bg-surface ring-1 ring-border">
+          {primaryActions.map((a, i) => (
+            <Fragment key={a.href}>
+              <Row {...a} ChevronEnd={ChevronEnd} isRTL={isRTL} />
+              {i < primaryActions.length - 1 && <Divider />}
+            </Fragment>
+          ))}
+        </section>
+        <section className="mt-4 overflow-hidden rounded-xl bg-surface ring-1 ring-border">
+          {roleActions.map((a) => (
+            <Row key={a.href} {...a} ChevronEnd={ChevronEnd} isRTL={isRTL} />
+          ))}
+        </section>
+        <div className="mt-5">
+          <SignOutButton label="Se déconnecter" />
+        </div>
+      </div>
+
+      {/* ── DESKTOP (lg+) — sticky identity rail + action tile grid ── */}
+      <div className="hidden lg:block mx-auto max-w-[var(--max-w-wide)] px-8 py-10">
+        <div className="grid grid-cols-12 items-start gap-8">
+          <div className="col-span-4 sticky top-[calc(var(--desktop-nav-h)+1.5rem)]">
+            {identity}
+            <div className="mt-4">
+              <SignOutButton label="Se déconnecter" />
             </div>
-            {fullName && userEmail && (
-              <div className="mt-0.5 truncate text-[11px] text-muted">{userEmail}</div>
-            )}
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <KycPill status={kycStatus} />
-              {role !== "individual" && (
-                <span className="batta-pill-gold">{role}</span>
-              )}
+          </div>
+          <div className="col-span-8">
+            <div className="grid grid-cols-2 gap-3">
+              {[...primaryActions, ...roleActions].map((a) => (
+                <ActionTile key={a.href} {...a} isRTL={isRTL} />
+              ))}
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Primary action group. */}
-      <section className="mt-5 overflow-hidden rounded-xl bg-surface ring-1 ring-border">
-        <Row
-          href={
-            kycStatus === "verified" ||
-            kycStatus === "submitted" ||
-            kycStatus === "pending"
-              ? "/kyc/status"
-              : "/kyc/start"
-          }
-          Icon={ShieldCheck}
-          title={t("sections.kyc")}
-          body={kycStatus === "verified" ? "Verified" : t("sections.kycBody")}
-          ChevronEnd={ChevronEnd} isRTL={isRTL} />
-        <Divider />
-        <Row href="/sell" Icon={Building2}
-          title="Tableau du vendeur"
-          body="Vos annonces, revenus et retraits."
-          ChevronEnd={ChevronEnd} isRTL={isRTL} />
-        <Divider />
-        <Row href="/account/activity" Icon={LayoutGrid}
-          title="Mes activités"
-          body="Enchères en cours, acquisitions, participations et favoris."
-          ChevronEnd={ChevronEnd} isRTL={isRTL} />
-        <Divider />
-        <Row href="/account/inspections" Icon={ClipboardCheck}
-          title={t("sections.inspections")}
-          body={t("sections.inspectionsBody")}
-          ChevronEnd={ChevronEnd} isRTL={isRTL} />
-        <Divider />
-        <Row href="/account/payments" Icon={Wallet}
-          title={t("sections.payments")}
-          body={t("sections.paymentsBody")}
-          ChevronEnd={ChevronEnd} isRTL={isRTL} />
-      </section>
-
-      {/* Role-specific shortcuts. */}
-      <section className="mt-4 overflow-hidden rounded-xl bg-surface ring-1 ring-border">
-        {role === "admin" && (
-          <Row href="/admin" Icon={LayoutDashboard}
-            title="Admin console"
-            body="Approve listings, KYC, inspectors."
-            ChevronEnd={ChevronEnd} isRTL={isRTL} />
-        )}
-        {(role === "bank" || role === "agency" || role === "bailiff") && (
-          <Row href="/partners/dashboard" Icon={Briefcase}
-            title="Partner dashboard"
-            body="Manage your bank/agency portfolio."
-            ChevronEnd={ChevronEnd} isRTL={isRTL} />
-        )}
-        {role === "inspector" && (
-          <Row href="/inspector" Icon={ClipboardCheck}
-            title="Inspector dashboard"
-            body="Inspections assigned to you."
-            ChevronEnd={ChevronEnd} isRTL={isRTL} />
-        )}
-        {role === "individual" && (
-          <Row href="/inspectors/apply" Icon={UserCog}
-            title="Apply as inspector"
-            body="Join the on-site inspection network."
-            ChevronEnd={ChevronEnd} isRTL={isRTL} />
-        )}
-      </section>
-
-      {/* Sign out — client button so we can wipe the in-browser KYC
-          draft alongside the cookie clear. */}
-      <div className="mt-5">
-        <SignOutButton label="Sign out" />
       </div>
-    </div>
+    </>
+  );
+}
+
+type ActionItem = {
+  href: string;
+  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  title: string;
+  body: string;
+};
+
+/** Desktop action card — icon badge over title + body, lifts on hover. */
+function ActionTile({ href, Icon, title, body, isRTL }: ActionItem & { isRTL: boolean }) {
+  return (
+    <Link
+      href={href as `/${string}`}
+      className="group flex flex-col gap-3 rounded-2xl bg-surface p-5 ring-1 ring-border transition hover:-translate-y-0.5 hover:ring-gold-soft/50"
+    >
+      <span className="inline-flex size-11 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/20 transition group-hover:bg-gold group-hover:text-white">
+        <Icon className="size-5" strokeWidth={2} />
+      </span>
+      <div>
+        <div className={`text-[14.5px] font-bold leading-tight text-foreground ${isRTL ? "font-arabic" : ""}`}>
+          {title}
+        </div>
+        <div className="mt-1 text-[12px] leading-snug text-muted">{body}</div>
+      </div>
+    </Link>
   );
 }
 
@@ -228,11 +253,11 @@ function KycPill({ status }: { status: string }) {
     : status === "rejected" ? "batta-tone-bad"
     : "bg-surface-2 text-muted border border-border";
   const label =
-    status === "verified" ? "KYC verified"
-    : status === "submitted" ? "KYC under review"
-    : status === "pending" ? "KYC pending"
-    : status === "rejected" ? "KYC rejected"
-    : "KYC required";
+    status === "verified" ? "Identité vérifiée"
+    : status === "submitted" ? "En cours de vérification"
+    : status === "pending" ? "Vérification en attente"
+    : status === "rejected" ? "Vérification refusée"
+    : "Vérification requise";
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.14em] ${tone}`}>
       {label}

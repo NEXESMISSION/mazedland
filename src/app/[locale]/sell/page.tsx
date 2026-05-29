@@ -20,6 +20,9 @@ import {
   Pencil,
   Receipt,
   ArrowRight,
+  ShieldCheck,
+  Clock,
+  Images,
 } from "lucide-react";
 import { parseRejection } from "@/lib/rejection";
 
@@ -131,16 +134,12 @@ export default async function SellLandingPage({
   // partner dashboard and "+ New listing" button deep-link here).
   if (showForm) {
     return (
-      <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 lg:max-w-[var(--max-w-content)]">
-        <NewListingHeader
-          title={t("sell.title")}
-          subtitle={t("sell.subtitle")}
-          isRTL={isRTL}
-        />
-        <div className="mt-5">
-          <SellForm pricing={pricing} />
-        </div>
-      </div>
+      <NewListingView
+        pricing={pricing}
+        title={t("sell.title")}
+        subtitle={t("sell.subtitle")}
+        isRTL={isRTL}
+      />
     );
   }
 
@@ -200,16 +199,12 @@ export default async function SellLandingPage({
   // First-time experience: no listings → straight to the new-lot form.
   if (listings.length === 0) {
     return (
-      <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 lg:max-w-[var(--max-w-content)]">
-        <NewListingHeader
-          title={t("sell.title")}
-          subtitle={t("sell.subtitle")}
-          isRTL={isRTL}
-        />
-        <div className="mt-5">
-          <SellForm pricing={pricing} />
-        </div>
-      </div>
+      <NewListingView
+        pricing={pricing}
+        title={t("sell.title")}
+        subtitle={t("sell.subtitle")}
+        isRTL={isRTL}
+      />
     );
   }
 
@@ -702,6 +697,90 @@ function NewListingHeader({
       </h1>
       <p className="mt-1.5 text-[12.5px] text-muted">{subtitle}</p>
     </header>
+  );
+}
+
+/**
+ * New-listing surface.
+ *   - Mobile (< lg): the original single column — header on top, form below.
+ *   - Desktop (lg+): a two-column workspace — a sticky value/guide rail on
+ *     the left (why-sell + what-to-prepare + trust), the multi-step form in
+ *     a clean card on the right. The form (with its own stepper) is rendered
+ *     once and reflowed responsively, so mobile is untouched.
+ */
+function NewListingView({
+  pricing,
+  title,
+  subtitle,
+  isRTL,
+}: {
+  pricing: SellFormPricing;
+  title: string;
+  subtitle: string;
+  isRTL: boolean;
+}) {
+  const VALUE = [
+    { Icon: ShieldCheck, title: "Acheteurs vérifiés", body: "Identité et caution validées avant chaque enchère." },
+    { Icon: Wallet, title: "Paiement sécurisé", body: "Les fonds passent par un séquestre régulé." },
+    { Icon: Clock, title: "En ligne sous 24 h", body: "Votre annonce est vérifiée puis publiée rapidement." },
+  ];
+  return (
+    <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-10 lg:max-w-[var(--max-w-wide)] lg:px-8 lg:py-10">
+      <div className="lg:grid lg:grid-cols-12 lg:gap-10 lg:items-start">
+        {/* Guide — mobile header (< lg) / sticky value rail (lg+) */}
+        <div className="lg:col-span-4 lg:sticky lg:top-[calc(var(--desktop-nav-h)+1.5rem)]">
+          <div className="lg:hidden">
+            <NewListingHeader title={title} subtitle={subtitle} isRTL={isRTL} />
+          </div>
+
+          <div className="hidden lg:block">
+            <span className="batta-eyebrow flex items-center gap-2">
+              <span aria-hidden className="batta-gold-rule-short" />
+              Nouvelle annonce
+            </span>
+            <h1
+              className={`mt-3 text-[30px] font-extrabold leading-[1.1] tracking-tight ${
+                isRTL ? "font-arabic" : ""
+              }`}
+            >
+              {title}
+            </h1>
+            <p className="mt-2.5 text-[14px] leading-relaxed text-muted">{subtitle}</p>
+
+            <ul className="mt-7 space-y-3">
+              {VALUE.map((v) => (
+                <li
+                  key={v.title}
+                  className="flex items-start gap-3.5 rounded-2xl bg-surface p-4 ring-1 ring-border"
+                >
+                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/15">
+                    <v.Icon className="size-5" strokeWidth={2} />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[13.5px] font-bold leading-tight text-foreground">
+                      {v.title}
+                    </div>
+                    <div className="mt-0.5 text-[12px] leading-snug text-muted">{v.body}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-5 flex items-center gap-1.5 rounded-2xl bg-gold-faint px-4 py-3 text-[12px] font-semibold text-foreground ring-1 ring-gold/15">
+              <Images className="size-4 shrink-0 text-gold" strokeWidth={2} />
+              À préparer : photos, détails du bien et prix de départ.
+            </div>
+          </div>
+        </div>
+
+        {/* Form — single column on mobile, framed card on desktop */}
+        <div className="mt-5 lg:mt-0 lg:col-span-8">
+          <div className="lg:rounded-3xl lg:bg-surface lg:p-8 lg:ring-1 lg:ring-border lg:shadow-[0_24px_60px_-36px_rgba(15,23,42,0.4)] lg:[&>form]:!mt-0">
+            <SellForm pricing={pricing} />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
