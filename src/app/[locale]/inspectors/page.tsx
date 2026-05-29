@@ -37,7 +37,7 @@ export default async function InspectorsIndex() {
           <div className="relative p-6">
             <span className="batta-eyebrow inline-flex items-center gap-2">
               <span className="size-1.5 rounded-full bg-gold pulse-gold" />
-              Accredited · 24+ wilayas
+              Agréés · 24 gouvernorats
             </span>
             <h1
               className={`mt-3 text-[28px] font-extrabold leading-tight tracking-tight ${
@@ -64,18 +64,18 @@ export default async function InspectorsIndex() {
       <section className="mt-7 px-4">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <span className="batta-eyebrow">The roster</span>
+            <span className="batta-eyebrow">Le réseau</span>
             <h2
               className={`mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight ${
                 isRTL ? "font-arabic" : ""
               }`}
             >
-              Accredited inspectors
+              Inspecteurs agréés
             </h2>
           </div>
           {inspectors && inspectors.length > 0 && (
             <span className="batta-pill-gold mb-1">
-              {inspectors.length} active
+              {inspectors.length} actifs
             </span>
           )}
         </div>
@@ -86,10 +86,10 @@ export default async function InspectorsIndex() {
               ✦
             </span>
             <p className="text-[17px] font-bold text-foreground">
-              First cohort being onboarded
+              Première promotion en cours d&apos;intégration
             </p>
             <p className="mt-2 text-[12px] text-muted">
-              Tunis, Sousse, Sfax — first three governorates live before Q3.
+              Tunis, Sousse, Sfax — les premiers gouvernorats bientôt en ligne.
             </p>
           </div>
         ) : (
@@ -125,7 +125,7 @@ export default async function InspectorsIndex() {
                           isRTL ? "font-arabic" : ""
                         }`}
                       >
-                        {profile.full_name ?? "Inspector"}
+                        {profile.full_name ?? "Inspecteur"}
                       </div>
                       <div className="mt-0.5 truncate text-[10px] uppercase tracking-[0.14em] text-muted">
                         {(i.speciality as string).replace(/_/g, " ")}
@@ -170,12 +170,12 @@ export default async function InspectorsIndex() {
           className="batta-frame tap-target flex items-center justify-between gap-3 p-5 transition active:scale-[0.99] hover:ring-gold-soft/40"
         >
           <div className="min-w-0">
-            <span className="batta-eyebrow">Apply</span>
+            <span className="batta-eyebrow">Candidature</span>
             <div className={`mt-1 text-[18px] font-bold leading-tight text-foreground ${isRTL ? "font-arabic" : ""}`}>
-              Join the inspector network
+              Rejoignez le réseau d&apos;inspecteurs
             </div>
             <div className="mt-0.5 text-[11.5px] text-muted">
-              8 new accreditations per quarter · {locale.toUpperCase()} accepted
+              8 nouvelles accréditations par trimestre.
             </div>
           </div>
           <span className="batta-gold-fill inline-flex size-10 shrink-0 items-center justify-center rounded-full ring-1 ring-black/10 shadow-[var(--shadow-gold)]">

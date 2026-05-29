@@ -60,11 +60,11 @@ const PROPERTY_TYPES: { key: string }[] = [
   { key: "office" },
 ];
 
-const PRICE_BUCKETS: { key: string; label: string }[] = [
-  { key: "under-100k", label: "Moins de 100k" },
-  { key: "100k-500k",  label: "100k – 500k" },
-  { key: "500k-1m",    label: "500k – 1M" },
-  { key: "1m-plus",    label: "1M+ TND" },
+const PRICE_BUCKETS: { key: string; label: string; query: string }[] = [
+  { key: "under-100k", label: "Moins de 100k", query: "max_price=100000" },
+  { key: "100k-500k",  label: "100k – 500k",   query: "min_price=100000&max_price=500000" },
+  { key: "500k-1m",    label: "500k – 1M",     query: "min_price=500000&max_price=1000000" },
+  { key: "1m-plus",    label: "1M+ TND",       query: "min_price=1000000" },
 ];
 
 const TRUST_PILLARS: {
@@ -316,7 +316,7 @@ export async function HomeDesktop({
           {PRICE_BUCKETS.map((b) => (
             <Link
               key={b.key}
-              href={`/properties?price=${b.key}` as `/properties`}
+              href={`/properties?${b.query}` as `/properties`}
               className="group flex items-center justify-between rounded-2xl bg-surface px-5 py-3.5 ring-1 ring-border transition hover:bg-gold-faint hover:ring-gold-soft/50"
             >
               <span className="text-[13px] font-bold text-foreground">{b.label}</span>

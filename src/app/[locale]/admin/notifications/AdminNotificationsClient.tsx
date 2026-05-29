@@ -764,19 +764,13 @@ function QueueTab() {
   }
 
   async function deleteOne(id: string) {
-    console.groupCollapsed(`[admin-queue] deleteOne(${id.slice(0, 8)}…)`);
     setBusy(true);
     setError(null);
     try {
-      console.log("DELETE /api/admin/notifications/" + id);
       const res = await fetch(`/api/admin/notifications/${id}`, {
         method: "DELETE",
       });
-      console.log("response status:", res.status, res.statusText);
-      const payload = await res.json().catch(() => ({}));
-      console.log("response body:", payload);
       if (!res.ok) {
-        console.warn("server returned !ok");
         setError("Échec de la suppression");
         return;
       }
@@ -787,43 +781,29 @@ function QueueTab() {
         next.delete(id);
         return next;
       });
-      console.log("✓ removed locally");
     } finally {
       setBusy(false);
-      console.groupEnd();
     }
   }
 
   async function deleteSelected() {
     if (selected.size === 0) return;
-    console.groupCollapsed(`[admin-queue] deleteSelected (${selected.size})`);
     setBusy(true);
     setError(null);
     setConfirmingSelection(false);
     const ids = [...selected];
     try {
-      console.log("POST /api/admin/notifications/bulk-delete  body:", { ids });
       const res = await fetch("/api/admin/notifications/bulk-delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids }),
       });
-      console.log("response status:", res.status, res.statusText);
       const payload = await res.json().catch(() => ({}));
-      console.log("response body:", payload);
       if (!res.ok) {
-        console.warn("server returned !ok");
         setError("Échec de la suppression");
         return;
       }
       const { deletedCount } = payload as { deletedCount?: number };
-      console.log("deletedCount:", deletedCount);
-      if (deletedCount === 0) {
-        console.warn(
-          "deletedCount=0 → RLS rejected or rows already gone. The selection ids:",
-          ids,
-        );
-      }
       setSelected(new Set());
       await refresh();
       setError(
@@ -833,40 +813,26 @@ function QueueTab() {
       );
     } finally {
       setBusy(false);
-      console.groupEnd();
     }
   }
 
   async function deleteFiltered() {
     if (!hasActiveFilters) return;
-    console.groupCollapsed("[admin-queue] deleteFiltered");
-    console.log("active filters:", filters);
     setBusy(true);
     setError(null);
     setConfirmingFiltered(false);
     try {
-      console.log("POST /api/admin/notifications/bulk-delete  body:", { filters });
       const res = await fetch("/api/admin/notifications/bulk-delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filters }),
       });
-      console.log("response status:", res.status, res.statusText);
       const payload = await res.json().catch(() => ({}));
-      console.log("response body:", payload);
       if (!res.ok) {
-        console.warn("server returned !ok");
         setError("Échec de la suppression");
         return;
       }
       const { deletedCount } = payload as { deletedCount?: number };
-      console.log("deletedCount:", deletedCount);
-      if (deletedCount === 0) {
-        console.warn(
-          "deletedCount=0 → the WHERE clause matched nothing. " +
-            "Check the filters above vs. what's actually in the queue.",
-        );
-      }
       setSelected(new Set());
       await refresh();
       setError(
@@ -876,7 +842,6 @@ function QueueTab() {
       );
     } finally {
       setBusy(false);
-      console.groupEnd();
     }
   }
 

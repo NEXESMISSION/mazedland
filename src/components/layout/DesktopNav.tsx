@@ -74,7 +74,7 @@ export function DesktopNav() {
             />
           </Link>
 
-          <nav className="flex items-center gap-1" aria-label="Primary">
+          <nav className="flex items-center gap-1" aria-label="Navigation principale">
             {LINKS.map((l) => {
               const active = isActive(pathname, l.href);
               return (

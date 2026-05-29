@@ -353,55 +353,6 @@ export default async function LandingPage() {
           live so the carousel never renders empty. */}
       <HeroBanner slides={heroSlides} isRTL={isRTL} />
 
-      {/* ─── DESKTOP STAT STRIP ───────────────────────────────────────
-              Hidden on mobile (the bottom tab bar + LiveTicker already
-              carry the "we're alive" signal in a smaller footprint).
-              On lg+ we have room for a chunky 4-tile band that sets the
-              tone: this is a real marketplace with real numbers, not a
-              brochure site.
-
-              Inlined (instead of factored into a <StatTile /> component)
-              because Turbopack-RSC's dev chunker has been wedging on
-              fresh component refs at the top of this file (cached SSR
-              chunk keeps the old reference graph). Four hand-written
-              tiles compile fresh on every edit. */}
-      <section className="hidden lg:block mt-6 px-6">
-        <div className="grid grid-cols-4 gap-4">
-          {[
-            { value: liveCount,          label: "Enchères en cours",     tone: "live"  as const },
-            { value: scheduledCount,     label: "Programmées",           tone: "info"  as const },
-            { value: soldThisMonthCount, label: "Vendus ce mois-ci",     tone: "ok"    as const },
-            { value: coverageGovs,       label: "Gouvernorats couverts", tone: "brand" as const },
-          ].map(({ value, label, tone }) => {
-            const dot =
-              tone === "live"
-                ? "bg-[var(--accent)] shadow-[0_0_12px_rgba(220,38,38,0.5)]"
-                : tone === "ok"
-                  ? "bg-[var(--success)]"
-                  : tone === "brand"
-                    ? "bg-[var(--gold)]"
-                    : "bg-[var(--gold-bright)]";
-            return (
-              <div
-                key={label}
-                className="relative overflow-hidden rounded-2xl bg-surface px-5 py-4 ring-1 ring-border transition hover:ring-gold-soft/60"
-              >
-                <span
-                  aria-hidden
-                  className={`absolute left-4 top-4 size-1.5 rounded-full ${dot} ${tone === "live" ? "batta-pulse-dot text-[var(--accent)]/40" : ""}`}
-                />
-                <div className="batta-tabular mt-3 text-[36px] font-extrabold leading-none tracking-tight text-foreground">
-                  {value.toLocaleString("fr-FR")}
-                </div>
-                <div className="mt-2 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-muted">
-                  {label}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
       {/* LIVE TICKER */}
       <section className="mt-5">
         <LiveTicker />
@@ -645,7 +596,7 @@ export default async function LandingPage() {
           {PROPERTY_TYPES.map((pt) => (
             <Link
               key={pt.key}
-              href={`/properties?type=${pt.key}` as `/properties`}
+              href={`/properties?types=${pt.key}` as `/properties`}
               className="tap-target inline-flex shrink-0 snap-start items-center gap-2 rounded-full bg-surface-2 px-4 py-2.5 transition active:scale-[0.97] hover:bg-surface"
             >
               <pt.Icon className="size-4 text-gold" strokeWidth={2} />
@@ -669,64 +620,12 @@ export default async function LandingPage() {
           {PRICE_BUCKETS.map((b) => (
             <Link
               key={b.key}
-              href={`/properties?price=${b.key}` as `/properties`}
+              href={`/properties?${b.query}` as `/properties`}
               className="tap-target inline-flex shrink-0 snap-start items-center justify-center whitespace-nowrap rounded-full bg-surface-2 px-4 py-2.5 text-[12px] font-bold leading-none text-foreground transition active:scale-[0.97] hover:bg-surface"
             >
               {isRTL ? b.labelAr : b.labelEn}
             </Link>
           ))}
-        </div>
-      </section>
-
-      {/* Desktop: a single "Parcourir" panel — type tiles on the left
-          (2-col grid of large icon + label squares), price buckets on
-          the right (4-row list). Both headings sit at the same height
-          so the eye reads it as one Browse section split by intent
-          ("what kind of property?" vs "what budget?"). Hidden on
-          mobile — the two pill rails above already cover this. */}
-      <section className="hidden mt-10 px-6 lg:block">
-        <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-7">
-            <h3 className="text-[15px] font-bold leading-tight">
-              {t("home.browseByType")}
-            </h3>
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              {PROPERTY_TYPES.map((pt) => (
-                <Link
-                  key={pt.key}
-                  href={`/properties?type=${pt.key}` as `/properties`}
-                  className="group flex items-center gap-3 rounded-2xl bg-surface px-4 py-4 ring-1 ring-border transition hover:ring-gold-soft/50 hover:bg-gold-faint"
-                >
-                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/20 transition group-hover:bg-gold group-hover:text-white">
-                    <pt.Icon className="size-4" strokeWidth={2} />
-                  </span>
-                  <span className="text-[13px] font-bold text-foreground">
-                    {pt.labelEn}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className="col-span-5">
-            <h3 className="text-[15px] font-bold leading-tight">
-              {t("home.browseByPrice")}
-            </h3>
-            <div className="mt-4 flex flex-col gap-2">
-              {PRICE_BUCKETS.map((b) => (
-                <Link
-                  key={b.key}
-                  href={`/properties?price=${b.key}` as `/properties`}
-                  className="group flex items-center justify-between rounded-2xl bg-surface px-5 py-3.5 ring-1 ring-border transition hover:ring-gold-soft/50 hover:bg-gold-faint"
-                >
-                  <span className="text-[13px] font-bold text-foreground">
-                    {b.labelEn}
-                  </span>
-                  <ArrowUpRight className="size-4 text-muted transition group-hover:text-gold-bright" strokeWidth={2.2} />
-                </Link>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
@@ -1212,11 +1111,13 @@ const PRICE_BUCKETS: {
   key: string;
   labelEn: string;
   labelAr: string;
+  /** Maps to the params /properties actually reads (min_price/max_price). */
+  query: string;
 }[] = [
-  { key: "under-100k",  labelEn: "Moins de 100k", labelAr: "أقل من 100 ألف" },
-  { key: "100k-500k",   labelEn: "100k – 500k",   labelAr: "100 – 500 ألف" },
-  { key: "500k-1m",     labelEn: "500k – 1M",     labelAr: "500 ألف – 1 مليون" },
-  { key: "1m-plus",     labelEn: "1M+ TND",       labelAr: "أكثر من مليون" },
+  { key: "under-100k",  labelEn: "Moins de 100k", labelAr: "أقل من 100 ألف",   query: "max_price=100000" },
+  { key: "100k-500k",   labelEn: "100k – 500k",   labelAr: "100 – 500 ألف",    query: "min_price=100000&max_price=500000" },
+  { key: "500k-1m",     labelEn: "500k – 1M",     labelAr: "500 ألف – 1 مليون", query: "min_price=500000&max_price=1000000" },
+  { key: "1m-plus",     labelEn: "1M+ TND",       labelAr: "أكثر من مليون",     query: "min_price=1000000" },
 ];
 
 // HOW_IT_WORKS + TRUST_PILLARS used to live here at the bottom of
