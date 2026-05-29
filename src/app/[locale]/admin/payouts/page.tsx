@@ -1,8 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { formatTND } from "@/lib/utils";
-import { PayoutRowActions } from "./PayoutRowActions";
+import { PayoutsList } from "./PayoutsList";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
 
@@ -17,13 +16,6 @@ const STATUS_TABS = [
   { value: "all",        label: "Tous"         },
 ] as const;
 type StatusTab = (typeof STATUS_TABS)[number]["value"];
-
-const STATUS_TONE: Record<string, string> = {
-  requested:  "batta-tone-warn",
-  processing: "batta-tone-warn",
-  paid:       "batta-tone-ok",
-  rejected:   "batta-tone-bad",
-};
 
 /**
  * Admin payout queue. Lists withdrawal requests across all sellers,
@@ -112,7 +104,7 @@ export default async function AdminPayoutsPage({
               : "bg-surface-2 text-muted ring-1 ring-border"
           }`}
         >
-          {rows.length}
+          {total}
         </span>
       </div>
       <p className="mt-1 text-[12px] text-muted">
@@ -159,72 +151,7 @@ export default async function AdminPayoutsPage({
             : "Aucun retrait dans cette vue."}
         </div>
       ) : (
-        <ul className="mt-5 space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
-          {rows.map((p) => (
-            <li
-              key={p.id}
-              className="rounded-xl bg-surface p-4 ring-1 ring-border"
-            >
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="min-w-0 flex-1">
-                  <div className="text-[14px] font-bold text-foreground truncate">
-                    {p.seller?.full_name ?? "Vendeur"}
-                  </div>
-                  <div className="mt-0.5 text-[10px] font-mono text-gold">
-                    {p.seller_id.slice(0, 8)}…
-                  </div>
-                  <div className="mt-1 text-[11px] text-muted">
-                    Demandé le{" "}
-                    {new Date(p.created_at).toLocaleString("fr-FR", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
-                    {p.processed_at && (
-                      <>
-                        {" · Traité le "}
-                        {new Date(p.processed_at).toLocaleString("fr-FR", {
-                          dateStyle: "medium",
-                        })}
-                      </>
-                    )}
-                  </div>
-                  {p.iban && (
-                    <div className="mt-1 text-[11px] text-muted font-mono">
-                      IBAN {p.iban}
-                    </div>
-                  )}
-                  {p.seller?.phone && (
-                    <div className="mt-1 text-[11px] text-muted">
-                      Tél {p.seller.phone}
-                    </div>
-                  )}
-                  {p.reviewer_notes && (
-                    <div className="batta-tone-bad mt-2 rounded-md px-2 py-1 text-[10.5px]">
-                      <span className="font-bold uppercase tracking-wider">Motif :</span>{" "}
-                      {p.reviewer_notes}
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  <div className="batta-tabular text-[18px] font-extrabold gradient-gold-text">
-                    {formatTND(Number(p.amount), locale)}
-                  </div>
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-[9.5px] font-extrabold uppercase tracking-[0.14em] ${
-                      STATUS_TONE[p.status] ?? "bg-surface-2 text-muted ring-1 ring-border"
-                    }`}
-                  >
-                    {STATUS_TABS.find((t) => t.value === p.status)?.label ?? p.status}
-                  </span>
-                </div>
-              </div>
-              <div aria-hidden className="batta-hairline mt-3" />
-              <div className="mt-3 flex justify-end">
-                <PayoutRowActions id={p.id} status={p.status} />
-              </div>
-            </li>
-          ))}
-        </ul>
+        <PayoutsList rows={rows} status={status} locale={locale} />
       )}
 
       <AdminPager page={page} totalPages={totalPages} />
