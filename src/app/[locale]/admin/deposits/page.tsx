@@ -73,6 +73,7 @@ export default async function AdminDepositsPage() {
     amount: Number(d.amount),
     bidder: names.get(d.user_id) ?? "Acheteur",
     auctionId: d.auction?.id ?? null,
+    status: d.auction?.status ?? "",
     title: d.auction?.property?.title ?? "—",
     governorate: d.auction?.property?.governorate ?? "",
     refundRef: d.refund_ref,
