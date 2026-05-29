@@ -149,6 +149,13 @@ export function NotificationBell() {
     const supabase = getBrowserSupabase();
     let cancelled = false;
     let channel: ReturnType<typeof supabase.channel> | null = null;
+    // Unique per mount. React strict-mode double-invokes effects (and a
+    // fast unmount/remount can too); reusing a fixed channel name returns
+    // the previous, still-subscribed channel from supabase's registry, and
+    // calling `.on()` on it throws "cannot add postgres_changes callbacks
+    // after subscribe()". A fresh name each mount sidesteps that race while
+    // the cleanup below still removes whichever channel this run created.
+    const channelKey = `notifications-bell-${Math.random().toString(36).slice(2, 10)}`;
 
     // Inline debounce — kept inside the effect so it shares its
     // lifecycle and can't outlive the subscription it serves. 250ms
@@ -167,7 +174,7 @@ export function NotificationBell() {
       const { data: { user } } = await supabase.auth.getUser();
       if (cancelled || !user) return;
       channel = supabase
-        .channel(`notifications-bell-${user.id}`)
+        .channel(channelKey)
         .on(
           "postgres_changes",
           {
