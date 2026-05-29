@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -64,6 +64,29 @@ export function PaymentsQueueList({
     banner: 30,
   });
 
+  // Group receipts BY AUCTION (fallback: by property, then "Sans annonce")
+  // so each lot's payments are managed together instead of one flat list.
+  const groups = useMemo(() => {
+    const map = new Map<
+      string,
+      { key: string; title: string; gov: string; total: number; items: PaymentReviewItem[] }
+    >();
+    for (const it of items) {
+      const key = it.auctionId ?? it.propertyId ?? "autres";
+      const g = map.get(key) ?? {
+        key,
+        title: it.propertyTitle ?? "Sans annonce",
+        gov: it.propertyGovernorate ?? "",
+        total: 0,
+        items: [],
+      };
+      g.items.push(it);
+      g.total += it.amount;
+      map.set(key, g);
+    }
+    return Array.from(map.values()).sort((a, b) => b.items.length - a.items.length);
+  }, [items]);
+
   async function decide(
     item: PaymentReviewItem,
     verdict: "captured" | "failed",
@@ -119,12 +142,26 @@ export function PaymentsQueueList({
       {/* Mobile: vertical card stack. Desktop: 2-up grid so the admin
           sees more receipts at a glance without scrolling card-by-
           card. Above 1400px we go to 3-up. */}
-      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 xl:grid-cols-3">
-        {items.map((item) => (
-          <article
-            key={item.id}
-            className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]"
-          >
+      <div className="space-y-6">
+        {groups.map((g) => (
+          <section key={g.key}>
+            <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-2">
+              <div className="inline-flex min-w-0 items-center gap-1.5 text-[13.5px] font-bold text-foreground">
+                <Building2 className="size-3.5 shrink-0 text-[var(--gold)]" strokeWidth={2.2} />
+                <span className="truncate">{g.title}</span>
+                {g.gov && <span className="text-[11px] font-normal text-[var(--foreground-muted)]">· {g.gov}</span>}
+              </div>
+              <div className="batta-tabular text-[11px] text-[var(--foreground-muted)]">
+                {g.items.length} reçu{g.items.length > 1 ? "s" : ""} ·{" "}
+                {g.total.toLocaleString("fr-FR")} TND
+              </div>
+            </div>
+            <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 xl:grid-cols-3">
+              {g.items.map((item) => (
+                <article
+                  key={item.id}
+                  className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]"
+                >
             {/* Header — buyer + amount */}
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
@@ -277,7 +314,10 @@ export function PaymentsQueueList({
                 )}
               </div>
             )}
-          </article>
+                </article>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
 

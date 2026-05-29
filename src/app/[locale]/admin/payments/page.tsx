@@ -59,6 +59,9 @@ export default async function AdminPaymentsPage({
   } else {
     query = query.in("status", ["pending_review", "captured", "failed"]);
   }
+  // Entry payments only — the listing-fee receipt (paid to CREATE an
+  // auction) is reviewed on "Création d'enchères", not here.
+  query = query.in("kind", ["deposit_lock", "buy_now", "final_payment"]);
   query = query.order(
     status === "pending_review" ? "receipt_uploaded_at" : "reviewed_at",
     { ascending: status === "pending_review" },
@@ -134,10 +137,10 @@ export default async function AdminPaymentsPage({
 
   return (
     <div>
-      <span className="batta-eyebrow">Receipts desk</span>
+      <span className="batta-eyebrow">Enchères · Paiements</span>
       <div className="mt-1.5 flex items-end justify-between gap-3">
         <h2 className="text-[22px] font-extrabold leading-tight tracking-tight">
-          File de paiements
+          Paiements — caution, achat, solde
         </h2>
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] ${

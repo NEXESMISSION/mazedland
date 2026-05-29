@@ -19,17 +19,17 @@ type Group = { label: string; items: Item[] };
 
 const GROUPS: Group[] = [
   {
-    label: "Ventes",
+    label: "Enchères",
     items: [
-      { label: "Annonces", href: "/admin/properties", Icon: Building2 },
-      { label: "Cautions", href: "/admin/deposits", Icon: Banknote },
+      { label: "Création d'enchères", href: "/admin/properties", Icon: Building2 },
+      { label: "Paiements", href: "/admin/payments", Icon: Receipt },
+      { label: "Remboursements", href: "/admin/deposits", Icon: Banknote },
     ],
   },
   {
     label: "Argent",
     items: [
-      { label: "Retraits", href: "/admin/payouts", Icon: Wallet },
-      { label: "Reçus", href: "/admin/payments", Icon: Receipt },
+      { label: "Paiements vendeurs", href: "/admin/payouts", Icon: Wallet },
     ],
   },
   {

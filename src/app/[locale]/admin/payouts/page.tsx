@@ -82,10 +82,10 @@ export default async function AdminPayoutsPage({
 
   return (
     <div>
-      <span className="batta-eyebrow">Treasury desk</span>
+      <span className="batta-eyebrow">Argent · Vendeurs</span>
       <div className="mt-1.5 flex items-end justify-between gap-3">
         <h2 className="text-[22px] font-extrabold leading-tight tracking-tight">
-          Retraits vendeurs
+          Paiements vendeurs
         </h2>
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] ${

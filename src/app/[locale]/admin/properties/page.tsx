@@ -135,7 +135,7 @@ export default async function AdminProperties({
   // the admin starts here and sees everything that needs a decision. Only
   // the non-property queues (the property queue itself is right below).
   const [recRes, kycRes, payoutRes, inspRes] = await Promise.all([
-    supabase.from("payments").select("*", { count: "exact", head: true }).eq("status", "pending_review"),
+    supabase.from("payments").select("*", { count: "exact", head: true }).eq("status", "pending_review").in("kind", ["deposit_lock", "buy_now", "final_payment"]),
     supabase.from("kyc_submissions").select("*", { count: "exact", head: true }).eq("status", "submitted"),
     supabase.from("seller_payouts").select("*", { count: "exact", head: true }).in("status", ["requested", "processing"]),
     supabase.from("inspectors").select("*", { count: "exact", head: true }).eq("approved", false),
@@ -149,10 +149,10 @@ export default async function AdminProperties({
 
   return (
     <div>
-      <span className="batta-eyebrow">Consignment queue</span>
+      <span className="batta-eyebrow">Enchères · Création</span>
       <div className="mt-1.5 flex items-end justify-between gap-3">
         <h2 className="text-[22px] font-extrabold leading-tight tracking-tight">
-          Properties
+          Création d&apos;enchères
         </h2>
         {pendingCount > 0 && (
           <span className="shrink-0 rounded-full batta-tone-warn px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em]">
