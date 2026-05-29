@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { handleClaim } from "@/lib/admin/claim";
 
 /**
  * Admin endpoint to advance a payout through its lifecycle.
@@ -36,6 +37,11 @@ export async function PATCH(
   }
 
   const body = await req.json().catch(() => ({}));
+
+  // Claim / release (assigned-to-me) — returns early when handled.
+  const claimResp = await handleClaim(supabase, "seller_payouts", id, user.id, body.action);
+  if (claimResp) return claimResp;
+
   const status = body.status as "processing" | "paid" | "rejected" | undefined;
   const notes = typeof body.notes === "string" ? body.notes.slice(0, 500) : null;
   if (!status || !["processing", "paid", "rejected"].includes(status)) {

@@ -30,16 +30,19 @@ const PAGE_SIZE = 24;
 export default async function KYCQueuePage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string; range?: string; page?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; range?: string; page?: string; mine?: string }>;
 }) {
-  const { status: statusParam, q: qParam, range: rangeParam, page: pageParam } = await searchParams;
+  const { status: statusParam, q: qParam, range: rangeParam, page: pageParam, mine: mineParam } = await searchParams;
   const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  const meId = user?.id ?? null;
 
   const status: StatusTab = STATUS_TABS.some((s) => s.value === statusParam)
     ? (statusParam as StatusTab)
     : "submitted";
   const q = (qParam ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
   const sinceDays = rangeParam === "1" || rangeParam === "7" || rangeParam === "30" ? Number(rangeParam) : null;
+  const mine = mineParam === "1" && !!meId;
   const page = Math.max(1, Number(pageParam) || 1);
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
@@ -47,12 +50,13 @@ export default async function KYCQueuePage({
   let query = supabase
     .from("kyc_submissions")
     .select(
-      "id, user_id, full_name, id_front_url, id_back_url, selfie_video_url, selfie_image_url, status, rejection_reason, submitted_at, reviewed_at",
+      "id, user_id, full_name, id_front_url, id_back_url, selfie_video_url, selfie_image_url, status, rejection_reason, submitted_at, reviewed_at, claimed_by, claimed_at, claimer:profiles!kyc_submissions_claimed_by_fkey ( full_name )",
       { count: "exact" },
     );
   if (status !== "all") {
     query = query.eq("status", status);
   }
+  if (mine && meId) query = query.eq("claimed_by", meId);
   if (q) query = query.ilike("full_name", `%${q}%`);
   if (sinceDays) query = query.gte("submitted_at", new Date(Date.now() - sinceDays * 86_400_000).toISOString());
   // Pending sorts oldest-first (FIFO work queue); the archive sorts
@@ -74,6 +78,9 @@ export default async function KYCQueuePage({
     rejection_reason: string | null;
     submitted_at: string;
     reviewed_at: string | null;
+    claimed_by: string | null;
+    claimed_at: string | null;
+    claimer: { full_name: string | null } | { full_name: string | null }[] | null;
   }>;
 
   // Sign every storage path so the client can render the private kyc
@@ -105,6 +112,7 @@ export default async function KYCQueuePage({
         }
         return signed.signedUrl;
       };
+      const claimer = Array.isArray(row.claimer) ? row.claimer[0] : row.claimer;
       return {
         id: row.id,
         user_id: row.user_id,
@@ -117,6 +125,8 @@ export default async function KYCQueuePage({
         id_back_url: await sign(row.id_back_url),
         selfie_video_url: await sign(row.selfie_video_url),
         selfie_image_url: await sign(row.selfie_image_url),
+        claimed_by: row.claimed_by,
+        claimed_by_name: claimer?.full_name ?? null,
       };
     }),
   );
@@ -167,6 +177,21 @@ export default async function KYCQueuePage({
         })}
       </div>
 
+      {/* "Assigned to me" filter — coordinate when several admins share
+          the queue. Only meaningful on the actionable (submitted) view. */}
+      {status === "submitted" && meId && (
+        <div className="mt-2">
+          <Link
+            href={(mine ? "/admin/kyc-queue" : "/admin/kyc-queue?mine=1") as "/admin/kyc-queue"}
+            className={`inline-flex h-7 items-center rounded-full px-3 text-[11px] font-bold transition-colors ${
+              mine ? "bg-gold-faint text-gold ring-1 ring-gold/30" : "text-muted hover:text-foreground"
+            }`}
+          >
+            Mes réservations
+          </Link>
+        </div>
+      )}
+
       <AdminQueryBar total={total} placeholder="Nom du demandeur…" />
 
       {error && (
@@ -183,7 +208,7 @@ export default async function KYCQueuePage({
         </div>
       ) : (
         <div className="mt-5">
-          <KycQueueList items={items} view={status} />
+          <KycQueueList items={items} view={status} meId={meId} />
         </div>
       )}
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { handleClaim } from "@/lib/admin/claim";
 
 export async function PATCH(
   req: NextRequest,
@@ -20,6 +21,11 @@ export async function PATCH(
   if (profile?.role !== "admin") return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const body = await req.json();
+
+  // Claim / release (assigned-to-me) — returns early when handled.
+  const claimResp = await handleClaim(supabase, "kyc_submissions", id, user.id, body.action);
+  if (claimResp) return claimResp;
+
   const verdict: "verified" | "rejected" = body.verdict;
   const notes: string = (body.notes ?? "").trim().slice(0, 500);
   const subjectId: string = body.user_id;

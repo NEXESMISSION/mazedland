@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X, ImageIcon, ExternalLink, Loader2, CheckSquare, Square } from "lucide-react";
+import { Check, X, ImageIcon, ExternalLink, Loader2, CheckSquare, Square, Lock, LockOpen } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 
@@ -21,6 +21,8 @@ export interface KycSubmissionView {
   id_back_url: string | null;
   selfie_video_url: string | null;
   selfie_image_url: string | null;
+  claimed_by: string | null;
+  claimed_by_name: string | null;
 }
 
 const VIDEO_EXT_RE = /\.(mp4|webm|mov|m4v|ogv|ogg)(\?|#|$)/i;
@@ -31,15 +33,18 @@ function isVideoUrl(url: string): boolean {
 export function KycQueueList({
   items: initialItems,
   view,
+  meId,
 }: {
   items: KycSubmissionView[];
   view: string;
+  meId: string | null;
 }) {
   const { toast } = useToast();
   const [items, setItems] = useState(initialItems);
   // Tracks which submission is currently being approved/rejected so we
   // can disable both buttons without locking the whole list.
   const [busy, setBusy] = useState<string | null>(null);
+  const [claimBusy, setClaimBusy] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<KycSubmissionView | null>(null);
   const [rejectReason, setRejectReason] = useState(DEFAULT_REJECT_REASON);
 
@@ -130,6 +135,40 @@ export function KycQueueList({
         (fail > 0 ? ` · ${fail} échec${fail > 1 ? "s" : ""}` : "."),
       fail > 0 ? "warning" : decision === "verified" ? "success" : "warning",
     );
+  }
+
+  async function claim(item: KycSubmissionView, action: "claim" | "release") {
+    if (claimBusy || bulkBusy) return;
+    setClaimBusy(item.id);
+    try {
+      const res = await fetch(`/api/admin/kyc/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(
+          res.status === 409 ? "Déjà réservé par un autre admin." : "Erreur lors de la réservation.",
+          "error",
+        );
+        // Reflect the current holder so the UI stops offering "Réserver".
+        if (res.status === 409 && json?.claimed_by) {
+          setItems((arr) => arr.map((i) => (i.id === item.id ? { ...i, claimed_by: json.claimed_by } : i)));
+        }
+        return;
+      }
+      setItems((arr) =>
+        arr.map((i) =>
+          i.id === item.id
+            ? { ...i, claimed_by: action === "claim" ? meId : null, claimed_by_name: null }
+            : i,
+        ),
+      );
+      toast(action === "claim" ? "Soumission réservée." : "Réservation libérée.", "success");
+    } finally {
+      setClaimBusy(null);
+    }
   }
 
   function toggle(id: string) {
@@ -234,7 +273,41 @@ export function KycQueueList({
               {actionable && (
                 <>
                   <div aria-hidden className="batta-hairline mt-4" />
-                  <div className="mt-3 flex justify-end gap-2">
+                  <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                    {/* Claim control — coordination marker so two admins
+                        don't review the same submission. */}
+                    {(() => {
+                      const mineClaim = !!item.claimed_by && item.claimed_by === meId;
+                      const otherClaim = !!item.claimed_by && item.claimed_by !== meId;
+                      const cb = claimBusy === item.id;
+                      if (otherClaim) {
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => claim(item, "claim")}
+                            disabled={cb || bulkBusy}
+                            title="Réservé par un autre admin — cliquez pour reprendre (si abandonné)"
+                            className="me-auto inline-flex items-center gap-1 rounded-full batta-tone-warn px-2.5 py-1 text-[10px] font-bold disabled:opacity-50"
+                          >
+                            {cb ? <Loader2 className="size-3 animate-spin" /> : <Lock className="size-3" />}
+                            Réservé · {item.claimed_by_name ?? "autre admin"}
+                          </button>
+                        );
+                      }
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => claim(item, mineClaim ? "release" : "claim")}
+                          disabled={cb || bulkBusy}
+                          className={`me-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition disabled:opacity-50 ${
+                            mineClaim ? "batta-tone-ok" : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground"
+                          }`}
+                        >
+                          {cb ? <Loader2 className="size-3 animate-spin" /> : mineClaim ? <LockOpen className="size-3" /> : <Lock className="size-3" />}
+                          {mineClaim ? "Réservé par vous · libérer" : "Réserver"}
+                        </button>
+                      );
+                    })()}
                     <Button
                       size="sm"
                       variant="danger"

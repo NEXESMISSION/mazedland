@@ -30,12 +30,14 @@ const PAGE_SIZE = 24;
 export default async function AdminPayoutsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string; range?: string; page?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; range?: string; page?: string; mine?: string }>;
 }) {
-  const { status: statusParam, q: qParam, range: rangeParam, page: pageParam } =
+  const { status: statusParam, q: qParam, range: rangeParam, page: pageParam, mine: mineParam } =
     await searchParams;
   const locale = await getLocale();
   const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  const meId = user?.id ?? null;
 
   const status: StatusTab = STATUS_TABS.some((s) => s.value === statusParam)
     ? (statusParam as StatusTab)
@@ -43,6 +45,7 @@ export default async function AdminPayoutsPage({
   const q = (qParam ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
   const sinceDays = rangeParam === "1" || rangeParam === "7" || rangeParam === "30"
     ? Number(rangeParam) : null;
+  const mine = mineParam === "1" && !!meId;
   const page = Math.max(1, Number(pageParam) || 1);
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
@@ -50,12 +53,13 @@ export default async function AdminPayoutsPage({
   let query = supabase
     .from("seller_payouts")
     .select(
-      `id, seller_id, amount, status, iban, payment_method, reviewer_notes, processed_at, created_at, seller:profiles!seller_payouts_seller_id_fkey${q ? "!inner" : ""} (id, full_name, phone)`,
+      `id, seller_id, amount, status, iban, payment_method, reviewer_notes, processed_at, created_at, claimed_by, claimed_at, seller:profiles!seller_payouts_seller_id_fkey${q ? "!inner" : ""} (id, full_name, phone), claimer:profiles!seller_payouts_claimed_by_fkey (full_name)`,
       { count: "exact" },
     );
   if (status !== "all") {
     query = query.eq("status", status);
   }
+  if (mine && meId) query = query.eq("claimed_by", meId);
   if (q) query = query.ilike("seller.full_name", `%${q}%`);
   if (sinceDays) {
     query = query.gte("created_at", new Date(Date.now() - sinceDays * 86_400_000).toISOString());
@@ -80,15 +84,31 @@ export default async function AdminPayoutsPage({
     reviewer_notes: string | null;
     processed_at: string | null;
     created_at: string;
+    claimed_by: string | null;
+    claimed_at: string | null;
     seller:
       | { id: string; full_name: string | null; phone: string | null }
       | { id: string; full_name: string | null; phone: string | null }[]
       | null;
+    claimer: { full_name: string | null } | { full_name: string | null }[] | null;
   };
-  const rows = ((data ?? []) as unknown as RawRow[]).map((r) => ({
-    ...r,
-    seller: Array.isArray(r.seller) ? (r.seller[0] ?? null) : r.seller,
-  }));
+  const rows = ((data ?? []) as unknown as RawRow[]).map((r) => {
+    const claimer = Array.isArray(r.claimer) ? r.claimer[0] : r.claimer;
+    return {
+      id: r.id,
+      seller_id: r.seller_id,
+      amount: r.amount,
+      status: r.status,
+      iban: r.iban,
+      payment_method: r.payment_method,
+      reviewer_notes: r.reviewer_notes,
+      processed_at: r.processed_at,
+      created_at: r.created_at,
+      seller: Array.isArray(r.seller) ? (r.seller[0] ?? null) : r.seller,
+      claimed_by: r.claimed_by,
+      claimed_by_name: claimer?.full_name ?? null,
+    };
+  });
 
   return (
     <div>
@@ -136,6 +156,21 @@ export default async function AdminPayoutsPage({
         })}
       </div>
 
+      {(status === "requested" || status === "processing") && meId && (
+        <div className="mt-2">
+          <Link
+            href={(mine
+              ? `/admin/payouts${status === "requested" ? "" : `?status=${status}`}`
+              : `/admin/payouts?${status === "requested" ? "" : `status=${status}&`}mine=1`) as `/admin/payouts`}
+            className={`inline-flex h-7 items-center rounded-full px-3 text-[11px] font-bold transition-colors ${
+              mine ? "bg-gold-faint text-gold ring-1 ring-gold/30" : "text-muted hover:text-foreground"
+            }`}
+          >
+            Mes réservations
+          </Link>
+        </div>
+      )}
+
       <AdminQueryBar total={total} placeholder="Vendeur (nom)…" />
 
       {error && (
@@ -151,7 +186,7 @@ export default async function AdminPayoutsPage({
             : "Aucun retrait dans cette vue."}
         </div>
       ) : (
-        <PayoutsList rows={rows} status={status} locale={locale} />
+        <PayoutsList rows={rows} status={status} locale={locale} meId={meId} />
       )}
 
       <AdminPager page={page} totalPages={totalPages} />

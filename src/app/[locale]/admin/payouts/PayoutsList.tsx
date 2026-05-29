@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X, Send, Loader2, CheckSquare, Square } from "lucide-react";
+import { Check, X, Send, Loader2, CheckSquare, Square, Lock, LockOpen } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { formatTND } from "@/lib/utils";
@@ -19,6 +19,8 @@ export type PayoutRow = {
   processed_at: string | null;
   created_at: string;
   seller: { id: string; full_name: string | null; phone: string | null } | null;
+  claimed_by: string | null;
+  claimed_by_name: string | null;
 };
 
 const STATUS_TONE: Record<string, string> = {
@@ -48,10 +50,12 @@ export function PayoutsList({
   rows,
   status,
   locale,
+  meId,
 }: {
   rows: PayoutRow[];
   status: string;
   locale: string;
+  meId: string | null;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -59,10 +63,32 @@ export function PayoutsList({
   const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState(DEFAULT_REJECT);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [claimBusy, setClaimBusy] = useState<string | null>(null);
   const busy = progress !== null;
 
   // Only the work-queue tabs are actionable in bulk.
   const actionable = status === "requested" || status === "processing";
+
+  async function claim(p: PayoutRow, action: "claim" | "release") {
+    if (claimBusy || busy) return;
+    setClaimBusy(p.id);
+    try {
+      const res = await fetch(`/api/admin/payouts/${p.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) {
+        toast(res.status === 409 ? "Déjà réservé par un autre admin." : "Erreur lors de la réservation.", "error");
+        router.refresh();
+        return;
+      }
+      toast(action === "claim" ? "Retrait réservé." : "Réservation libérée.", "success");
+      router.refresh();
+    } finally {
+      setClaimBusy(null);
+    }
+  }
 
   function toggle(id: string) {
     setSelected((s) => {
@@ -190,7 +216,39 @@ export function PayoutsList({
                 </div>
               </div>
               <div aria-hidden className="batta-hairline mt-3" />
-              <div className="mt-3 flex justify-end">
+              <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                {actionable && (() => {
+                  const mineClaim = !!p.claimed_by && p.claimed_by === meId;
+                  const otherClaim = !!p.claimed_by && p.claimed_by !== meId;
+                  const cb = claimBusy === p.id;
+                  if (otherClaim) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => claim(p, "claim")}
+                        disabled={cb || busy}
+                        title="Réservé par un autre admin — cliquez pour reprendre (si abandonné)"
+                        className="me-auto inline-flex items-center gap-1 rounded-full batta-tone-warn px-2.5 py-1 text-[10px] font-bold disabled:opacity-50"
+                      >
+                        {cb ? <Loader2 className="size-3 animate-spin" /> : <Lock className="size-3" />}
+                        Réservé · {p.claimed_by_name ?? "autre admin"}
+                      </button>
+                    );
+                  }
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => claim(p, mineClaim ? "release" : "claim")}
+                      disabled={cb || busy}
+                      className={`me-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition disabled:opacity-50 ${
+                        mineClaim ? "batta-tone-ok" : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground"
+                      }`}
+                    >
+                      {cb ? <Loader2 className="size-3 animate-spin" /> : mineClaim ? <LockOpen className="size-3" /> : <Lock className="size-3" />}
+                      {mineClaim ? "Réservé par vous · libérer" : "Réserver"}
+                    </button>
+                  );
+                })()}
                 <PayoutRowActions id={p.id} status={p.status} />
               </div>
             </li>
