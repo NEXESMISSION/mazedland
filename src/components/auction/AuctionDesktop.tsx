@@ -333,7 +333,7 @@ export async function AuctionDesktop(props: {
                 />
               </div>
             ) : (
-              <div className="batta-surface-navy-luxe relative overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25">
+              <div className="relative overflow-hidden rounded-2xl bg-surface p-6 ring-1 ring-border shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="batta-eyebrow inline-flex items-center gap-2">
                     {isLive && <span className="size-1.5 rounded-full bg-gold pulse-gold" />}
@@ -378,7 +378,7 @@ export async function AuctionDesktop(props: {
                   </div>
                 ) : (
                   <div className="mt-5 grid grid-cols-2 gap-2">
-                    <div className="rounded-xl bg-surface-2 px-3.5 py-3 ring-1 ring-gold/15">
+                    <div className="rounded-xl bg-surface-2 px-3.5 py-3 ring-1 ring-border">
                       {(() => {
                         const startsAt = auction.starts_at;
                         const startsAtMs = startsAt ? new Date(startsAt).getTime() : null;
@@ -396,7 +396,7 @@ export async function AuctionDesktop(props: {
                         );
                       })()}
                     </div>
-                    <div className="rounded-xl bg-surface-2 px-3.5 py-3 ring-1 ring-gold/15">
+                    <div className="rounded-xl bg-surface-2 px-3.5 py-3 ring-1 ring-border">
                       <div className="batta-eyebrow text-[9px]">{t("auction.depositRequired")}</div>
                       <div className="batta-tabular mt-1 text-[15px] font-bold text-foreground">
                         {depositRequired ? `${formatTND(deposit, locale)} ${t("common.tnd")}` : "Gratuit"}
