@@ -1,8 +1,9 @@
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { PaymentsQueueList, type PaymentReviewItem } from "./PaymentsQueueList";
+import { formatTND } from "@/lib/utils";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
+import { Gavel, MapPin, Receipt, ChevronRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,167 +15,71 @@ const STATUS_TABS = [
   { value: "all", label: "Tous" },
 ] as const;
 type StatusTab = (typeof STATUS_TABS)[number]["value"];
-
-const KIND_LABELS: Record<string, string> = {
-  deposit_lock: "Caution",
-  buy_now: "Achat",
-  final_payment: "Paiement final",
-  commission: "Commission",
-  inspection_fee: "Inspection",
-  subscription: "Abonnement",
-  deposit_release: "Remboursement",
-  listing_fee: "Annonce + options",
-};
+const ENTRY_KINDS = ["deposit_lock", "buy_now", "final_payment"];
+const PAGE_SIZE = 24; // auction boxes per page
+const fmt = (n: number) => `${formatTND(n, "fr")} TND`;
 
 /**
- * Admin payments review queue. Lists `payments` filtered by status,
- * with signed URLs for each receipt so the admin can render them.
- *
- * Receipts live in the private `receipts` bucket; we mint 60-min
- * signed URLs server-side so the admin sees the proof inline without
- * exposing storage paths to the browser.
+ * Paiements — entry receipts (caution / achat / solde) grouped into one
+ * clickable BOX per auction. Clicking a box opens /admin/auctions/[id]
+ * where the receipts are reviewed. The list itself stays light: no
+ * per-receipt rows, no receipt-signing — just the per-lot summary.
  */
-const PAGE_SIZE = 24;
-
 export default async function AdminPaymentsPage({
   searchParams,
 }: {
   searchParams: Promise<{ status?: string; q?: string; range?: string; page?: string }>;
 }) {
-  const { status: statusParam, q: qParam, range: rangeParam, page: pageParam } =
-    await searchParams;
-  const supabase = await getServerSupabase();
+  const { status: statusParam, q: qParam, range: rangeParam, page: pageParam } = await searchParams;
+  const sb = await getServerSupabase();
 
-  const status: StatusTab = STATUS_TABS.some((s) => s.value === statusParam)
-    ? (statusParam as StatusTab)
-    : "pending_review";
-  const q = (qParam ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
-  const sinceDays = rangeParam === "1" || rangeParam === "7" || rangeParam === "30"
-    ? Number(rangeParam) : null;
+  const status: StatusTab = STATUS_TABS.some((s) => s.value === statusParam) ? (statusParam as StatusTab) : "pending_review";
+  const q = (qParam ?? "").trim().toLowerCase().slice(0, 60);
+  const sinceDays = rangeParam === "1" || rangeParam === "7" || rangeParam === "30" ? Number(rangeParam) : null;
   const page = Math.max(1, Number(pageParam) || 1);
-  const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
-  const dateCol = status === "pending_review" ? "receipt_uploaded_at" : "reviewed_at";
 
-  let query = supabase
+  let query = sb
     .from("payments")
-    .select(
-      `id, user_id, kind, provider, amount, status, receipt_url,
-       receipt_uploaded_at, admin_notes, reviewed_at, auction_id, property_id, metadata,
-       buyer:profiles!payments_user_id_fkey${q ? "!inner" : ""} (full_name, phone),
-       auction:auctions (id, property:properties (title, governorate)),
-       property:properties!payments_property_id_fkey (id, title, governorate)`,
-      { count: "exact" },
-    );
+    .select(`auction_id, amount, receipt_uploaded_at, auction:auctions!inner ( id, status, property:properties ( title, governorate ) )`)
+    .in("kind", ENTRY_KINDS)
+    .not("auction_id", "is", null);
+  if (status !== "all") query = query.eq("status", status);
+  else query = query.in("status", ["pending_review", "captured", "failed"]);
+  if (sinceDays) query = query.gte("receipt_uploaded_at", new Date(Date.now() - sinceDays * 86_400_000).toISOString());
+  query = query.order("receipt_uploaded_at", { ascending: status === "pending_review" }).limit(5000);
 
-  if (status !== "all") {
-    query = query.eq("status", status);
-  } else {
-    query = query.in("status", ["pending_review", "captured", "failed"]);
-  }
-  // Entry payments only — the listing-fee receipt (paid to CREATE an
-  // auction) is reviewed on "Création d'enchères", not here.
-  query = query.in("kind", ["deposit_lock", "buy_now", "final_payment"]);
-  if (q) query = query.ilike("buyer.full_name", `%${q}%`);
-  if (sinceDays) {
-    query = query.gte(dateCol, new Date(Date.now() - sinceDays * 86_400_000).toISOString());
-  }
-  query = query
-    .order(dateCol, { ascending: status === "pending_review" })
-    .range(from, to);
-
-  const { data, error, count } = await query;
-  const total = count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
-  type Row = {
-    id: string;
-    user_id: string;
-    kind: string;
-    provider: string;
-    amount: number;
-    status: string;
-    receipt_url: string | null;
-    receipt_uploaded_at: string | null;
-    admin_notes: string | null;
-    reviewed_at: string | null;
-    auction_id: string | null;
-    property_id: string | null;
-    metadata: Record<string, unknown> | null;
-    buyer: { full_name: string | null; phone: string | null } | null;
-    auction: {
-      id: string;
-      property: { title: string; governorate: string } | null;
-    } | null;
-    property: { id: string; title: string; governorate: string } | null;
-  };
+  const { data, error } = await query;
+  type Row = { auction_id: string; amount: number; receipt_uploaded_at: string | null; auction: { id: string; status: string; property: { title: string; governorate: string } | null } | null };
   const rows = (data ?? []) as unknown as Row[];
 
-  const items: PaymentReviewItem[] = await Promise.all(
-    rows.map(async (row) => {
-      let receiptSignedUrl: string | null = null;
-      if (row.receipt_url) {
-        const { data: signed } = await supabase.storage
-          .from("receipts")
-          .createSignedUrl(row.receipt_url, 3600);
-        receiptSignedUrl = signed?.signedUrl ?? null;
-      }
-      const promosObj = (row.metadata as { promos?: Record<string, boolean> } | null)?.promos ?? null;
-      const promos = promosObj
-        ? {
-            homeFeatured: !!promosObj.home_featured,
-            topListed: !!promosObj.top_listed,
-            banner: !!promosObj.banner,
-          }
-        : null;
-      return {
-        id: row.id,
-        userId: row.user_id,
-        buyerName: row.buyer?.full_name ?? null,
-        buyerPhone: row.buyer?.phone ?? null,
-        kind: row.kind,
-        kindLabel: KIND_LABELS[row.kind] ?? row.kind,
-        provider: row.provider,
-        amount: Number(row.amount),
-        status: row.status,
-        receiptUrl: receiptSignedUrl,
-        receiptPath: row.receipt_url,
-        receiptUploadedAt: row.receipt_uploaded_at,
-        adminNotes: row.admin_notes,
-        reviewedAt: row.reviewed_at,
-        auctionId: row.auction_id,
-        propertyId: row.property_id ?? row.property?.id ?? null,
-        propertyTitle:
-          row.auction?.property?.title ?? row.property?.title ?? null,
-        propertyGovernorate:
-          row.auction?.property?.governorate ?? row.property?.governorate ?? null,
-        promos,
-      };
-    }),
-  );
+  // Group by auction → one box.
+  const map = new Map<string, { auctionId: string; title: string; gov: string; status: string; count: number; total: number; oldest: string | null }>();
+  for (const r of rows) {
+    const key = r.auction_id;
+    const g = map.get(key) ?? {
+      auctionId: key, title: r.auction?.property?.title ?? "—", gov: r.auction?.property?.governorate ?? "",
+      status: r.auction?.status ?? "", count: 0, total: 0, oldest: null,
+    };
+    g.count += 1; g.total += Number(r.amount);
+    if (r.receipt_uploaded_at && (!g.oldest || r.receipt_uploaded_at < g.oldest)) g.oldest = r.receipt_uploaded_at;
+    map.set(key, g);
+  }
+  let boxes = Array.from(map.values());
+  if (q) boxes = boxes.filter((b) => b.title.toLowerCase().includes(q) || b.gov.toLowerCase().includes(q));
+  boxes.sort((a, b) => b.count - a.count);
+
+  const total = boxes.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const slice = boxes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div>
       <span className="batta-eyebrow">Enchères · Paiements</span>
-      <div className="mt-1.5 flex items-end justify-between gap-3">
-        <h2 className="text-[22px] font-extrabold leading-tight tracking-tight">
-          Paiements — caution, achat, solde
-        </h2>
-        <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] ${
-            status === "pending_review"
-              ? "batta-tone-warn"
-              : "bg-surface-2 text-muted ring-1 ring-border"
-          }`}
-        >
-          {items.length}
-        </span>
-      </div>
+      <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
+        Paiements — caution, achat, solde
+      </h2>
       <p className="mt-1 text-[12px] text-muted">
-        Vérifiez chaque reçu (virement bancaire ou D17). Validez pour
-        déclencher les effets en aval (caution, clôture d&apos;enchère).
-        Refusez avec un motif clair — l&apos;acheteur reçoit une
-        notification.
+        Une carte par enchère. Cliquez pour vérifier ses reçus.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-1.5">
@@ -183,15 +88,9 @@ export default async function AdminPaymentsPage({
           return (
             <Link
               key={tab.value}
-              href={
-                (tab.value === "pending_review"
-                  ? "/admin/payments"
-                  : `/admin/payments?status=${tab.value}`) as `/admin/payments`
-              }
-              className={`px-3 h-8 inline-flex items-center rounded-full text-xs font-bold border transition-colors ${
-                active
-                  ? "bg-[var(--gold)] text-white border-[var(--gold)]"
-                  : "bg-[var(--surface)] text-[var(--foreground-muted)] border-[var(--border)] hover:border-[var(--gold-soft)]"
+              href={(tab.value === "pending_review" ? "/admin/payments" : `/admin/payments?status=${tab.value}`) as "/admin/payments"}
+              className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-bold transition-colors ${
+                active ? "border-[var(--gold)] bg-[var(--gold)] text-white" : "border-border bg-surface text-muted hover:border-gold-soft"
               }`}
             >
               {tab.label}
@@ -200,26 +99,43 @@ export default async function AdminPaymentsPage({
         })}
       </div>
 
-      <AdminQueryBar total={total} placeholder="Acheteur (nom)…" />
+      <AdminQueryBar total={total} placeholder="Bien ou ville…" />
 
-      {error && (
-        <div className="mt-4 rounded-[var(--radius-md)] bg-red-500/10 border border-red-500/30 p-4 text-sm text-red-300">
-          {error.message}
-        </div>
-      )}
+      {error && <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error.message}</div>}
 
-      {items.length === 0 ? (
+      {slice.length === 0 ? (
         <div className="batta-frame-gold relative mt-5 px-6 py-10 text-center text-[13px] text-muted">
-          {status === "pending_review"
-            ? "Aucun reçu en attente."
-            : "Aucun paiement dans cette vue."}
+          Aucun paiement dans cette vue.
         </div>
       ) : (
-        <div className="mt-5">
-          <PaymentsQueueList items={items} view={status} />
-          <AdminPager page={page} totalPages={totalPages} />
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {slice.map((b) => (
+            <Link
+              key={b.auctionId}
+              href={`/admin/auctions/${b.auctionId}`}
+              className="group flex items-center gap-3 rounded-2xl bg-surface p-4 ring-1 ring-border transition hover:-translate-y-0.5 hover:ring-gold-soft/60 hover:shadow-[0_12px_30px_-14px_rgba(30,58,138,0.35)]"
+            >
+              <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gold-faint text-gold">
+                <Receipt className="size-5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 text-[13.5px] font-bold text-foreground">
+                  <Gavel className="size-3.5 shrink-0 text-gold" strokeWidth={2.2} />
+                  <span className="truncate">{b.title}</span>
+                </div>
+                <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted">
+                  <MapPin className="size-3" /> {b.gov}
+                  <span aria-hidden className="opacity-40">·</span>
+                  <span className="batta-tabular">{b.count} reçu{b.count > 1 ? "s" : ""} · {fmt(b.total)}</span>
+                </div>
+              </div>
+              <ChevronRight className="size-4 shrink-0 text-muted transition group-hover:text-gold" />
+            </Link>
+          ))}
         </div>
       )}
+
+      <AdminPager page={page} totalPages={totalPages} />
     </div>
   );
 }
