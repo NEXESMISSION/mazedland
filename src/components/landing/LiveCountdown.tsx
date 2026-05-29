@@ -30,6 +30,7 @@ export function LiveCountdown({
   if (remaining <= 0) {
     return (
       <span
+        suppressHydrationWarning
         className={`inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 font-bold text-red-600 ${
           compact ? "text-[10px]" : "text-xs"
         }`}
@@ -46,8 +47,16 @@ export function LiveCountdown({
       ? `${h}h ${m}m`
       : `${m}m ${String(s).padStart(2, "0")}s`;
 
+  // suppressHydrationWarning: this is a clock — the seconds digit will
+  // virtually always differ between SSR render and client first paint
+  // (network + parse time alone is enough to tick a second). React
+  // would otherwise log a hydration warning + discard the entire
+  // subtree and re-render, which on a page with many countdowns
+  // (e.g. the ending-soon slider) shows as a paint flash. The text
+  // self-corrects on the first interval tick anyway.
   return (
     <span
+      suppressHydrationWarning
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold tabular-nums ${
         urgent
           ? "bg-red-500 text-white"

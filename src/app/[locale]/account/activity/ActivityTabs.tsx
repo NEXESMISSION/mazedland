@@ -159,7 +159,7 @@ function ActionBanner({ items, locale }: { items: ActivityItem[]; locale: string
       </div>
       <ul className="divide-y divide-amber-500/15">
         {items.map((item) => (
-          <li key={item.auctionId}>
+          <li key={item.auctionId} id={`act-${item.auctionId}`}>
             <Link
               href={rowHref(item) as "/payment/checkout"}
               className="flex items-center gap-2.5 px-3.5 py-2.5 transition hover:bg-amber-500/10"
@@ -376,7 +376,7 @@ export function ActivityTabs({
       ) : (
         <ul className="mt-4 space-y-2.5 pb-6">
           {items.map((item) => (
-            <li key={item.auctionId}>
+            <li key={item.auctionId} id={`act-${item.auctionId}`}>
               <Row item={item} locale={locale} />
             </li>
           ))}

@@ -1,10 +1,16 @@
+import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { parseMonetizationSettings, resolveDeposit } from "@/lib/pricing";
 import { BidComposer } from "@/components/auction/BidComposer";
 import { AuctionEndModal } from "@/components/auction/AuctionEndModal";
+import { SixthOfferForm } from "@/components/auction/SixthOfferForm";
 import { LiveTimer } from "@/components/landing/LiveTimer";
+import { Link } from "@/i18n/navigation";
+import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { formatTND } from "@/lib/utils";
+import { MapPin } from "lucide-react";
 import { BidHistoryRealtime } from "./BidHistoryRealtime";
 import type { AuctionWithProperty, Bid } from "@/lib/types";
 
@@ -158,6 +164,62 @@ export default async function BidPage({
       {/* Pops once when a bidder lands on a freshly-ended auction. */}
       <AuctionEndModal auction={auction} userId={userId} locale={locale} />
 
+      {/* ─── PROPERTY CONTEXT STRIP ───
+              Compact thumbnail + title + governorate row, deep-linking back
+              to the detail page. The bid page is a focused workspace — the
+              composer alone gave the bidder no visual anchor of which
+              property they were committing to. Tapping the strip returns
+              to the full detail page in one move; the row also doubles as
+              the "back to listing" affordance for users who entered via a
+              direct notification link rather than the floating CTA. */}
+      <section className="max-w-[var(--max-w)] mx-auto px-4 pt-3 lg:max-w-[var(--max-w-wide)] lg:px-8 lg:pt-6">
+        <Link
+          href={`/auctions/${auction.id}` as never}
+          className="flex items-center gap-3 rounded-2xl bg-surface p-2 ring-1 ring-border transition active:scale-[0.995]"
+        >
+          {(() => {
+            const cover = (auction.property.photos ?? [])
+              .slice()
+              .sort((a, b) => a.sort_order - b.sort_order)[0];
+            return cover ? (
+              <Image
+                src={propertyPhotoUrl(cover.storage_path, { transform: { width: 160 } })}
+                alt=""
+                width={56}
+                height={56}
+                className="size-14 shrink-0 rounded-xl object-cover ring-1 ring-border"
+              />
+            ) : (
+              <div className="size-14 shrink-0 rounded-xl bg-surface-2 ring-1 ring-border" />
+            );
+          })()}
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[13.5px] font-bold text-foreground">
+              {auction.property.title}
+            </div>
+            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted">
+              <MapPin className="size-3" strokeWidth={2} />
+              <span className="truncate">{auction.property.governorate}</span>
+              <span aria-hidden className="opacity-40">·</span>
+              <span className="batta-tabular font-mono text-[10px] uppercase tracking-[0.1em]">
+                Lot {String(auction.id).replace(/-/g, "").slice(-4).toUpperCase()}
+              </span>
+            </div>
+          </div>
+          <span className="batta-tabular shrink-0 text-right">
+            <span className="block text-[9px] uppercase tracking-[0.16em] text-muted">
+              {isLive ? t("auction.currentBid") : "Mise à prix"}
+            </span>
+            <span className="batta-gold-text mt-0.5 block text-[14px] font-extrabold">
+              {formatTND(
+                auction.current_price ?? auction.opening_price,
+                locale,
+              )}
+            </span>
+          </span>
+        </Link>
+      </section>
+
       {/* Inline page title — sits at the top of the content so the user
           knows they're in the bid flow. The countdown chip is sticky to
           the page header so a bidder always sees how much time is left
@@ -170,9 +232,6 @@ export default async function BidPage({
           <h1 className="text-[20px] lg:text-[26px] font-extrabold leading-tight tracking-tight truncate">
             {auction.property.title}
           </h1>
-          <span className="font-mono text-[11px] text-[var(--foreground-subtle)] tracking-[0.1em] batta-tabular shrink-0 hidden lg:inline">
-            Lot · {String(auction.id).replace(/-/g, "").slice(-4).toUpperCase()}
-          </span>
         </div>
         {(() => {
           const startsAtMs = auction.starts_at
@@ -205,6 +264,32 @@ export default async function BidPage({
       </header>
 
       <main className="max-w-[var(--max-w)] mx-auto px-4 pt-4 pb-10 lg:max-w-[var(--max-w-wide)] lg:px-8 lg:pt-6 lg:pb-16">
+        {/* ─── SIXTH-OFFER FORM (Tunisian-law 1/6 surenchère) ───
+                Moved here from the detail page. The bid page is the
+                bidding workspace, so the surenchère — which IS a bid
+                placement — belongs alongside the composer rather than
+                buried between the property specs and documents. Same
+                winner-only audience as before; the DB place_sixth_offer
+                RPC still gates server-side. The negative top margin
+                pulls it into the same rhythm as the composer card. */}
+        {auction.status === "sixth_offer_window"
+          && auction.winner_amount
+          && auction.sixth_offer_deadline
+          && !isOwner
+          && userId !== null
+          && auction.winner_user_id === userId && (
+          <div className="mb-6 -mx-4 lg:mx-0">
+            <SixthOfferForm
+              auctionId={auction.id}
+              winningAmount={Number(auction.winner_amount)}
+              deadline={auction.sixth_offer_deadline}
+              loggedIn={userId !== null}
+              kycVerified={kycVerified}
+              hasActiveDeposit={hasActiveDeposit}
+            />
+          </div>
+        )}
+
         {userIsBidder ? (
           // ── BIDDER layout — composer + history side-by-side on desktop,
           //    stacked on mobile (composer first so it stays in thumb reach).

@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getLocale } from "next-intl/server";
 import { formatTND } from "@/lib/utils";
 import { Wallet, FileText, ArrowRight, ChevronRight } from "lucide-react";
+import { FocusRowHighlight } from "@/components/ui/FocusRowHighlight";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -75,6 +76,7 @@ export default async function MyPaymentsPage({
 
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-16 lg:max-w-[var(--max-w-content)]">
+      <FocusRowHighlight idPrefix="pay-" />
       <span className="batta-eyebrow">Historique</span>
       <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">
         Mes paiements
@@ -106,6 +108,7 @@ export default async function MyPaymentsPage({
             return (
               <li
                 key={p.id}
+                id={`pay-${p.id}`}
                 className="overflow-hidden rounded-xl bg-surface ring-1 ring-border"
               >
                 <div className="flex items-start justify-between gap-3 p-4">

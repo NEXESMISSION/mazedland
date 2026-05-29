@@ -7,6 +7,7 @@ import {
   Home as HomeIcon, FileText, ListChecks, Bell, Inbox,
   ShieldCheck, Hammer, Banknote, Receipt, UserCheck,
   AlertTriangle, Settings2, LayoutTemplate, Sparkles,
+  MessageSquare,
   LogOut, ExternalLink, type LucideIcon,
 } from "lucide-react";
 
@@ -86,6 +87,7 @@ const GROUPS: Group[] = [
       { label: "Documents",         href: "/admin/legal-docs",      Icon: FileText },
       { label: "Caractéristiques",  href: "/admin/characteristics", Icon: Sparkles },
       { label: "Diffusions",        href: "/admin/notifications",   Icon: Bell },
+      { label: "Popups",            href: "/admin/popups",          Icon: MessageSquare },
       { label: "Liste d'attente",   href: "/admin/waitlist",        Icon: Inbox },
     ],
   },

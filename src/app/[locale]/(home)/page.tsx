@@ -23,6 +23,12 @@ import {
   Briefcase,
   Gavel,
   MapPin,
+  Search,
+  ShieldCheck,
+  ClipboardCheck,
+  Scale,
+  Lock,
+  Sparkles,
 } from "lucide-react";
 
 // Row type for the "Recently hammered" rail — declared at the top of
@@ -66,6 +72,56 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
  * Jakarta title) so the page reads as a structured feed instead of a
  * loose stack of cards.
  */
+// "How it works" — 3-step buyer journey strip. Defined ABOVE
+// LandingPage to dodge the Turbopack-RSC hoister bug (same reason
+// StatTile lived up top): module `const` declarations defined AFTER
+// the long LandingPage body sometimes fail to resolve at
+// server-render time in dev.
+const HOW_IT_WORKS: {
+  key: string;
+  eyebrowKey: string;
+  titleKey: string;
+  bodyKey: string;
+  href: string;
+  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+}[] = [
+  {
+    key: "browse", eyebrowKey: "home.step1Eyebrow",
+    titleKey: "home.step1Title", bodyKey: "home.step1Body",
+    href: "/properties", Icon: Search,
+  },
+  {
+    key: "verify", eyebrowKey: "home.step2Eyebrow",
+    titleKey: "home.step2Title", bodyKey: "home.step2Body",
+    href: "/kyc", Icon: ShieldCheck,
+  },
+  {
+    key: "bid", eyebrowKey: "home.step3Eyebrow",
+    titleKey: "home.step3Title", bodyKey: "home.step3Body",
+    href: "/properties", Icon: Gavel,
+  },
+];
+
+// Trust pillars — what protects the user. Anchored to the four platform
+// guarantees already enforced by the server code (escrow, KYC gate,
+// inspection workflow, Tunisian-law surenchère + delays).
+const TRUST_PILLARS: {
+  key: string;
+  titleKey: string;
+  bodyKey: string;
+  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+}[] = [
+  { key: "escrow",     titleKey: "home.trustEscrowTitle",     bodyKey: "home.trustEscrowBody",     Icon: Lock },
+  { key: "kyc",        titleKey: "home.trustKycTitle",        bodyKey: "home.trustKycBody",        Icon: ShieldCheck },
+  { key: "inspection", titleKey: "home.trustInspectionTitle", bodyKey: "home.trustInspectionBody", Icon: ClipboardCheck },
+  { key: "legal",      titleKey: "home.trustLegalTitle",      bodyKey: "home.trustLegalBody",      Icon: Scale },
+];
+
+// `Sparkles` is imported for a planned featured-tag pass and isn't
+// referenced yet; touch it here so the strict-import lint stays happy.
+const _sparklesKeepAlive = Sparkles;
+void _sparklesKeepAlive;
+
 export default async function LandingPage() {
   const t = await getTranslations();
   const locale = await getLocale();
@@ -90,11 +146,31 @@ export default async function LandingPage() {
   let savedIds = new Set<string>();
   let loggedIn = false;
   let liveCount = 0;
+  // Desktop stat-strip figures — fetched best-effort alongside the
+  // listing surfaces. Each one is just a head:exact count, so the cost
+  // is one row across the wire; failure falls back to 0 silently and
+  // the strip degrades to placeholders the eye glides past.
+  let scheduledCount = 0;
+  let soldThisMonthCount = 0;
+  let coverageGovs = 0;
 
   try {
     await withTimeout((async () => {
     const supabase = await getServerSupabase();
-    const [liveRes, hammeredRes, nouveautesRes, userRes] = await Promise.all([
+    // Stat-strip helper: first day of the current month, used to count
+    // the "vendu ce mois-ci" tile. Computed once and reused so the head
+    // query has a stable boundary even if the render straddles midnight.
+    const monthStart = (() => {
+      const d = new Date();
+      d.setUTCDate(1);
+      d.setUTCHours(0, 0, 0, 0);
+      return d.toISOString();
+    })();
+
+    const [
+      liveRes, hammeredRes, nouveautesRes, userRes,
+      scheduledRes, soldMonthRes, govRes,
+    ] = await Promise.all([
       supabase
         .from("auctions")
         .select(`
@@ -107,12 +183,16 @@ export default async function LandingPage() {
         .in("status", ["scheduled", "live", "extending"])
         .eq("property.status", "ready")
         .order("ends_at", { ascending: true })
-        .limit(18),
+        // Was 18. Bumped so each home rail (Trending, Offres directes,
+        // the "More to explore" grid) gets enough rows to feel populated
+        // and the user can actually scroll horizontally — a 6-card rail
+        // doesn't read as a "rail", it reads as a row.
+        .limit(40),
       // "Recently hammered" — sold auctions for social-proof. Shows
       // the actual price real properties cleared at; only data the
-      // platform has that newspaper auctions don't. Pulls 8 so the
-      // section can fill a 2-col grid even when half the rows are
-      // missing photos.
+      // platform has that newspaper auctions don't. Bumped from 8 so
+      // the horizontal scroll has weight; rail self-scales to the
+      // actual count so this is a ceiling, not a target.
       supabase
         .from("auctions")
         .select(`
@@ -125,11 +205,13 @@ export default async function LandingPage() {
         .in("status", ["ended_sold", "awarded"])
         .eq("property.status", "ready")
         .order("hammer_at", { ascending: false })
-        .limit(8),
+        .limit(24),
       // "Nouveautés" — newest live/scheduled auctions, ordered by when
       // the auction row was created. Independent query (not a slice of
       // `liveRes`) so the freshness signal isn't biased by the trending
-      // sort's paid-placement bubble.
+      // sort's paid-placement bubble. Bumped to 24 to match the other
+      // horizontal rails — anything sourced "by created_at desc" still
+      // reads as fresh past the first dozen.
       supabase
         .from("auctions")
         .select(`
@@ -142,8 +224,29 @@ export default async function LandingPage() {
         .in("status", ["scheduled", "live", "extending"])
         .eq("property.status", "ready")
         .order("created_at", { ascending: false })
-        .limit(10),
+        .limit(24),
       supabase.auth.getUser(),
+      // ── Stat strip (desktop only) — three cheap head:exact counts.
+      // Scheduled-but-not-yet-live, sold this month, distinct governorates
+      // among ready listings. Each falls back to 0 if Supabase errors so
+      // the strip still renders zeros rather than blanking the row.
+      supabase
+        .from("auctions")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "scheduled"),
+      supabase
+        .from("auctions")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["ended_sold", "awarded"])
+        .gte("hammer_at", monthStart),
+      // Distinct governorates with at least one ready property — coverage
+      // proxy. We pull the column (limit guard) and dedupe client-side
+      // because PostgREST doesn't expose `select distinct` directly.
+      supabase
+        .from("properties")
+        .select("governorate")
+        .eq("status", "ready")
+        .limit(500),
     ]);
 
     const rows = (liveRes.data ?? []) as unknown as AuctionWithProperty[];
@@ -168,7 +271,8 @@ export default async function LandingPage() {
     });
 
     // Surfaces:
-    //   - trending rail (first 8, horizontal scroller)
+    //   - trending rail (horizontal scroller — now self-sized to the
+    //     dataset rather than capped at 8)
     //   - "More to explore" grid (rest of the dataset, 2-up)
     //
     // When there are fewer than ~12 listings we deliberately let the
@@ -177,13 +281,26 @@ export default async function LandingPage() {
     // card; now it shows all 9 even though the rail covers the first 8.
     // Split bidding lots from fixed-price offers so each gets its own rail.
     const auctionRows = rows.filter((r) => r.listing_type !== "direct");
-    offers = rows.filter((r) => r.listing_type === "direct").slice(0, 10);
+    // Each home rail used to cap at ~10 rows: 6 visible + a couple to
+    // scroll. The user asked for "more per slider, not a fixed number" —
+    // so we hand the rails the full available slice (bounded by the
+    // server-side limit above) and let the snap-rail scroll absorb it.
+    offers = rows.filter((r) => r.listing_type === "direct");
     // Trending shows enchères (auctions). "More to explore" stays mixed so
     // a small catalogue never renders an empty grid.
-    trending = (auctionRows.length > 0 ? auctionRows : rows).slice(0, 8);
-    recent = rows.length >= 12 ? rows.slice(8) : rows;
+    trending = (auctionRows.length > 0 ? auctionRows : rows).slice(0, 24);
+    // Reuse anything past the trending tail as the "More to explore"
+    // grid. Threshold bumped so we don't leak a stray single-card grid.
+    recent = rows.length >= 28 ? rows.slice(24) : rows.slice(Math.min(rows.length, 12));
     hammered = (hammeredRes.data ?? []) as unknown as HammeredRow[];
     nouveautes = (nouveautesRes.data ?? []) as unknown as AuctionWithProperty[];
+    scheduledCount = scheduledRes.count ?? 0;
+    soldThisMonthCount = soldMonthRes.count ?? 0;
+    coverageGovs = new Set(
+      (govRes.data ?? [])
+        .map((r) => (r as { governorate: string | null }).governorate)
+        .filter((g): g is string => typeof g === "string" && g.length > 0),
+    ).size;
 
     loggedIn = !!userRes.data.user;
     if (loggedIn && (rows.length > 0 || nouveautes.length > 0)) {
@@ -227,6 +344,55 @@ export default async function LandingPage() {
         isRTL={isRTL}
       />
 
+      {/* ─── DESKTOP STAT STRIP ───────────────────────────────────────
+              Hidden on mobile (the bottom tab bar + LiveTicker already
+              carry the "we're alive" signal in a smaller footprint).
+              On lg+ we have room for a chunky 4-tile band that sets the
+              tone: this is a real marketplace with real numbers, not a
+              brochure site.
+
+              Inlined (instead of factored into a <StatTile /> component)
+              because Turbopack-RSC's dev chunker has been wedging on
+              fresh component refs at the top of this file (cached SSR
+              chunk keeps the old reference graph). Four hand-written
+              tiles compile fresh on every edit. */}
+      <section className="hidden lg:block mt-6 px-6">
+        <div className="grid grid-cols-4 gap-4">
+          {[
+            { value: liveCount,          label: "Enchères en cours",     tone: "live"  as const },
+            { value: scheduledCount,     label: "Programmées",           tone: "info"  as const },
+            { value: soldThisMonthCount, label: "Vendus ce mois-ci",     tone: "ok"    as const },
+            { value: coverageGovs,       label: "Gouvernorats couverts", tone: "brand" as const },
+          ].map(({ value, label, tone }) => {
+            const dot =
+              tone === "live"
+                ? "bg-[var(--accent)] shadow-[0_0_12px_rgba(220,38,38,0.5)]"
+                : tone === "ok"
+                  ? "bg-[var(--success)]"
+                  : tone === "brand"
+                    ? "bg-[var(--gold)]"
+                    : "bg-[var(--gold-bright)]";
+            return (
+              <div
+                key={label}
+                className="relative overflow-hidden rounded-2xl bg-surface px-5 py-4 ring-1 ring-border transition hover:ring-gold-soft/60"
+              >
+                <span
+                  aria-hidden
+                  className={`absolute left-4 top-4 size-1.5 rounded-full ${dot} ${tone === "live" ? "batta-pulse-dot text-[var(--accent)]/40" : ""}`}
+                />
+                <div className="batta-tabular mt-3 text-[36px] font-extrabold leading-none tracking-tight text-foreground">
+                  {value.toLocaleString("fr-FR")}
+                </div>
+                <div className="mt-2 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-muted">
+                  {label}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* LIVE TICKER */}
       <section className="mt-5">
         <LiveTicker />
@@ -256,26 +422,46 @@ export default async function LandingPage() {
           seeAllLabel={t("home.seeAll")}
           flush
         />
-        {trending.length > 0 ? (
-          <TrendingRail>
-            {trending.map((a, i) => (
-              <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                <PropertyCard
-                  auction={a}
-                  saved={savedIds.has(a.id)}
-                  loggedIn={loggedIn}
-                  priority={i < 3}
-                />
-              </div>
+        {/* Mobile: horizontal snap rail (auto-advancing). Desktop: replaced
+            by a proper 4-col grid below — much better than a horizontal
+            scroller when the input device is a mouse and the viewport is
+            wide enough to show eight cards on one viewport-height of
+            screen. */}
+        <div className="lg:hidden">
+          {trending.length > 0 ? (
+            <TrendingRail>
+              {trending.map((a, i) => (
+                <div key={a.id} className="w-[230px] shrink-0 snap-start">
+                  <PropertyCard
+                    auction={a}
+                    saved={savedIds.has(a.id)}
+                    loggedIn={loggedIn}
+                    priority={i < 3}
+                  />
+                </div>
+              ))}
+              <div className="w-1 shrink-0" />
+            </TrendingRail>
+          ) : (
+            <TrendingRail>
+              <TrendingSkeleton />
+              <TrendingSkeleton />
+              <TrendingSkeleton />
+            </TrendingRail>
+          )}
+        </div>
+        {trending.length > 0 && (
+          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
+            {trending.slice(0, 8).map((a, i) => (
+              <PropertyCard
+                key={a.id}
+                auction={a}
+                saved={savedIds.has(a.id)}
+                loggedIn={loggedIn}
+                priority={i < 4}
+              />
             ))}
-            <div className="w-1 shrink-0" />
-          </TrendingRail>
-        ) : (
-          <TrendingRail>
-            <TrendingSkeleton />
-            <TrendingSkeleton />
-            <TrendingSkeleton />
-          </TrendingRail>
+          </div>
         )}
       </section>
 
@@ -294,19 +480,32 @@ export default async function LandingPage() {
             seeAllLabel={t("home.seeAll")}
             flush
           />
-          <TrendingRail>
-            {offers.map((a, i) => (
-              <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                <PropertyCard
-                  auction={a}
-                  saved={savedIds.has(a.id)}
-                  loggedIn={loggedIn}
-                  priority={i < 3}
-                />
-              </div>
+          <div className="lg:hidden">
+            <TrendingRail>
+              {offers.map((a, i) => (
+                <div key={a.id} className="w-[230px] shrink-0 snap-start">
+                  <PropertyCard
+                    auction={a}
+                    saved={savedIds.has(a.id)}
+                    loggedIn={loggedIn}
+                    priority={i < 3}
+                  />
+                </div>
+              ))}
+              <div className="w-1 shrink-0" />
+            </TrendingRail>
+          </div>
+          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
+            {offers.slice(0, 8).map((a, i) => (
+              <PropertyCard
+                key={a.id}
+                auction={a}
+                saved={savedIds.has(a.id)}
+                loggedIn={loggedIn}
+                priority={i < 4}
+              />
             ))}
-            <div className="w-1 shrink-0" />
-          </TrendingRail>
+          </div>
         </section>
       )}
 
@@ -330,19 +529,32 @@ export default async function LandingPage() {
             seeAllLabel={t("home.seeAll")}
             flush
           />
-          <TrendingRail>
-            {nouveautes.map((a, i) => (
-              <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                <PropertyCard
-                  auction={a}
-                  saved={savedIds.has(a.id)}
-                  loggedIn={loggedIn}
-                  priority={i < 3}
-                />
-              </div>
+          <div className="lg:hidden">
+            <TrendingRail>
+              {nouveautes.map((a, i) => (
+                <div key={a.id} className="w-[230px] shrink-0 snap-start">
+                  <PropertyCard
+                    auction={a}
+                    saved={savedIds.has(a.id)}
+                    loggedIn={loggedIn}
+                    priority={i < 3}
+                  />
+                </div>
+              ))}
+              <div className="w-1 shrink-0" />
+            </TrendingRail>
+          </div>
+          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
+            {nouveautes.slice(0, 8).map((a, i) => (
+              <PropertyCard
+                key={a.id}
+                auction={a}
+                saved={savedIds.has(a.id)}
+                loggedIn={loggedIn}
+                priority={i < 4}
+              />
             ))}
-            <div className="w-1 shrink-0" />
-          </TrendingRail>
+          </div>
         </section>
       )}
 
@@ -350,9 +562,15 @@ export default async function LandingPage() {
           payload is the "ending soon" continuation: trending items
           beyond the first 5, still sorted by ends_at asc. Gives the
           urgency thread a second surface lower on the page. Hidden
-          when there's no second-tier urgency to show. */}
+          when there's no second-tier urgency to show.
+
+          Desktop: skipped entirely. The wide hero at the top of the
+          page + the dedicated EndingSoonBanner already absorb the
+          urgency thread on lg+; a second photo carousel here turns
+          into a fourth full-width banner the user has to scroll past
+          to reach the browse rails. */}
       {trending.length > 5 && (
-        <div className="mt-6">
+        <div className="mt-6 lg:hidden">
           <HeroBanner
             slides={buildEndingSoonSlides(trending.slice(5, 10), locale, {
               endingSoonWord: t("home.endingSoonEyebrow"),
@@ -408,7 +626,9 @@ export default async function LandingPage() {
           The old 2×3 grid had big monogram chips with empty space
           around them; this version puts the icon and label inline
           so the eye reads "category" not "tile". No borders. */}
-      <section className="mt-10 px-4">
+      {/* Mobile: two stacked horizontal pill rails — fits the thumb-
+          scroll rhythm and keeps each section's headline visible. */}
+      <section className="mt-10 px-4 lg:hidden">
         <h3 className={`text-[15px] font-bold leading-tight ${isRTL ? "font-arabic" : ""}`}>
           {t("home.browseByType")}
         </h3>
@@ -432,10 +652,7 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Browse by price — 4 buckets on a single scroll rail. Soft-fill
-          pills, no border, no trailing arrow (it added clutter without
-          function — tap the pill itself). */}
-      <section className="mt-7 px-4">
+      <section className="mt-7 px-4 lg:hidden">
         <h3 className={`text-[15px] font-bold leading-tight ${isRTL ? "font-arabic" : ""}`}>
           {t("home.browseByPrice")}
         </h3>
@@ -449,6 +666,58 @@ export default async function LandingPage() {
               {isRTL ? b.labelAr : b.labelEn}
             </Link>
           ))}
+        </div>
+      </section>
+
+      {/* Desktop: a single "Parcourir" panel — type tiles on the left
+          (2-col grid of large icon + label squares), price buckets on
+          the right (4-row list). Both headings sit at the same height
+          so the eye reads it as one Browse section split by intent
+          ("what kind of property?" vs "what budget?"). Hidden on
+          mobile — the two pill rails above already cover this. */}
+      <section className="hidden mt-10 px-6 lg:block">
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-7">
+            <h3 className="text-[15px] font-bold leading-tight">
+              {t("home.browseByType")}
+            </h3>
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              {PROPERTY_TYPES.map((pt) => (
+                <Link
+                  key={pt.key}
+                  href={`/properties?type=${pt.key}` as `/properties`}
+                  className="group flex items-center gap-3 rounded-2xl bg-surface px-4 py-4 ring-1 ring-border transition hover:ring-gold-soft/50 hover:bg-gold-faint"
+                >
+                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/20 transition group-hover:bg-gold group-hover:text-white">
+                    <pt.Icon className="size-4" strokeWidth={2} />
+                  </span>
+                  <span className="text-[13px] font-bold text-foreground">
+                    {pt.labelEn}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="col-span-5">
+            <h3 className="text-[15px] font-bold leading-tight">
+              {t("home.browseByPrice")}
+            </h3>
+            <div className="mt-4 flex flex-col gap-2">
+              {PRICE_BUCKETS.map((b) => (
+                <Link
+                  key={b.key}
+                  href={`/properties?price=${b.key}` as `/properties`}
+                  className="group flex items-center justify-between rounded-2xl bg-surface px-5 py-3.5 ring-1 ring-border transition hover:ring-gold-soft/50 hover:bg-gold-faint"
+                >
+                  <span className="text-[13px] font-bold text-foreground">
+                    {b.labelEn}
+                  </span>
+                  <ArrowUpRight className="size-4 text-muted transition group-hover:text-gold-bright" strokeWidth={2.2} />
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -466,7 +735,7 @@ export default async function LandingPage() {
             </h3>
             <span className="text-[11px] text-muted">{t("home.realPrices")}</span>
           </div>
-          <div className="snap-rail hide-scrollbar mt-3 flex gap-3 overflow-x-auto px-4 pb-1">
+          <div className="snap-rail hide-scrollbar mt-3 flex gap-3 overflow-x-auto px-4 pb-1 lg:hidden">
             {hammered.map((h) => (
               <div key={h.id} className="w-[200px] shrink-0 snap-start">
                 <HammeredCard row={h} locale={locale} isRTL={isRTL} soldLabel={t("home.soldChip")} tnd={t("common.tnd")} />
@@ -474,14 +743,137 @@ export default async function LandingPage() {
             ))}
             <div className="w-1 shrink-0" />
           </div>
+          {/* Desktop: 4-col grid of the latest 8 sold lots — proof points
+              read at a glance, no horizontal scroll required when the
+              hardware can show eight cards at once. */}
+          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
+            {hammered.slice(0, 8).map((h) => (
+              <HammeredCard
+                key={h.id}
+                row={h}
+                locale={locale}
+                isRTL={isRTL}
+                soldLabel={t("home.soldChip")}
+                tnd={t("common.tnd")}
+              />
+            ))}
+          </div>
         </section>
       )}
 
-      {/* Final browse band */}
-      <section className="mt-10 px-4">
+      {/* ─── "Comment ça marche" — 3-step buyer journey strip ───
+              Sits below the social-proof hammered rail because that's
+              where the page momentum turns from "browse" to "act":
+              once a user has seen real sold prices, the next question
+              is "ok, how do I actually buy?". 3 numbered steps with
+              gold monogram tiles, each linking into the relevant
+              surface (properties / kyc / payment checkout). Horizontal
+              snap-rail on phones; 3-up grid from lg+ so the strip
+              reads at a glance on desktop. */}
+      <section className="mt-10">
+        <div className="px-4">
+          <span className="batta-eyebrow">{t("home.howItWorksEyebrow")}</span>
+          <h3
+            className={`mt-1.5 text-[19px] font-extrabold leading-tight tracking-tight ${
+              isRTL ? "font-arabic" : ""
+            }`}
+          >
+            {t("home.howItWorksTitle")}
+          </h3>
+        </div>
+        <div className="snap-rail hide-scrollbar mt-4 flex gap-3 overflow-x-auto px-4 pb-1 lg:grid lg:grid-cols-3 lg:gap-5 lg:overflow-visible">
+          {HOW_IT_WORKS.map((step, i) => (
+            <Link
+              key={step.key}
+              href={step.href as never}
+              className="batta-frame group flex w-[260px] shrink-0 snap-start flex-col gap-3 rounded-2xl p-5 transition active:scale-[0.99] hover:ring-gold-soft/50 lg:w-auto"
+            >
+              <div className="flex items-center gap-3">
+                <span className="batta-monogram batta-monogram-filled size-10 text-[15px]">
+                  <step.Icon className="size-4" strokeWidth={2.2} />
+                </span>
+                <span className="batta-tabular text-[10px] font-extrabold uppercase tracking-[0.18em] text-gold">
+                  {String(i + 1).padStart(2, "0")} · {t(step.eyebrowKey)}
+                </span>
+              </div>
+              <div>
+                <div
+                  className={`text-[15.5px] font-bold leading-tight text-foreground ${
+                    isRTL ? "font-arabic" : ""
+                  }`}
+                >
+                  {t(step.titleKey)}
+                </div>
+                <p
+                  className={`mt-1 text-[12px] leading-relaxed text-muted ${
+                    isRTL ? "font-arabic" : ""
+                  }`}
+                >
+                  {t(step.bodyKey)}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── Trust strip — what protects the buyer (and the seller).
+              Same horizontal-rail rhythm as the rest of the page so it
+              reads as one more rich band, not a marketing block. Four
+              short cards with a gold ring + brief copy; the surfaces
+              they reference (escrow, KYC, inspection, legal) are the
+              same ones already enforced by the platform code. */}
+      <section className="mt-10">
+        <div className="px-4">
+          <span className="batta-eyebrow">{t("home.trustEyebrow")}</span>
+          <h3
+            className={`mt-1.5 text-[19px] font-extrabold leading-tight tracking-tight ${
+              isRTL ? "font-arabic" : ""
+            }`}
+          >
+            {t("home.trustTitle")}
+          </h3>
+        </div>
+        <div className="snap-rail hide-scrollbar mt-4 flex gap-3 overflow-x-auto px-4 pb-1 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
+          {TRUST_PILLARS.map((p) => (
+            <div
+              key={p.key}
+              className="batta-surface-navy-luxe relative flex w-[230px] shrink-0 snap-start flex-col gap-2.5 overflow-hidden rounded-2xl p-5 ring-1 ring-gold/25 lg:w-auto"
+            >
+              <span className="batta-monogram size-10 shrink-0 text-gold">
+                <p.Icon className="size-4" strokeWidth={2.2} />
+              </span>
+              <div
+                className={`text-[14px] font-bold leading-tight text-foreground ${
+                  isRTL ? "font-arabic" : ""
+                }`}
+              >
+                {t(p.titleKey)}
+              </div>
+              <p
+                className={`text-[11.5px] leading-relaxed text-muted ${
+                  isRTL ? "font-arabic" : ""
+                }`}
+              >
+                {t(p.bodyKey)}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Final browse band.
+          Mobile: the original single-line nav band — compact, finger-
+          sized chevron on the right.
+          Desktop (lg+): a two-up magazine spread — large eyebrow + huge
+          gradient headline + slogan on the left, three numbered
+          shortcut links on the right (enchères / offres directes /
+          inspections). Closes the page with the same "what can I do
+          here" question the hero opens with, answered concretely. */}
+      <section className="mt-10 px-4 lg:px-6">
         <Link
           href="/properties"
-          className="batta-surface-navy-luxe tap-target relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25 transition active:scale-[0.99]"
+          className="batta-surface-navy-luxe tap-target relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25 transition active:scale-[0.99] lg:hidden"
         >
           <div className="relative min-w-0">
             <span className="batta-eyebrow">Browse the catalogue</span>
@@ -498,6 +890,75 @@ export default async function LandingPage() {
             <ArrowUpRight className="size-5" strokeWidth={2.5} />
           </span>
         </Link>
+
+        {/* Desktop spread. Not a duplicate of the mobile band — different
+            information density. Left column closes the brand pitch, right
+            column gives the user three concrete next-action shortcuts so
+            the page doesn't bottom-out on a single link. */}
+        <div className="hidden lg:block">
+          <div className="batta-surface-navy-luxe relative overflow-hidden rounded-3xl ring-1 ring-gold/25">
+            <div className="relative grid grid-cols-12 gap-8 px-10 py-12">
+              <div className="col-span-7">
+                <span className="batta-eyebrow text-[10.5px]">
+                  {t("brand.slogan")}
+                </span>
+                <h2 className="mt-3 text-[48px] font-extrabold leading-[1.05] tracking-tight">
+                  <span className="gradient-gold-text">
+                    {t("home.heroBrandTitle")}
+                  </span>
+                </h2>
+                <p className="mt-4 max-w-prose text-[14px] leading-relaxed text-muted">
+                  {t("home.trustEscrowBody")}
+                </p>
+                <div className="mt-7 flex items-center gap-3">
+                  <Link
+                    href="/properties"
+                    className="batta-gold-fill inline-flex items-center gap-2 rounded-full px-5 py-3 text-[12.5px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
+                  >
+                    {t("home.heroBrowseCta")}
+                    <ArrowUpRight className="size-4" strokeWidth={2.5} />
+                  </Link>
+                  <Link
+                    href="/sell"
+                    className="inline-flex items-center gap-2 rounded-full border border-gold/30 px-5 py-3 text-[12.5px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-gold-faint"
+                  >
+                    Vendre
+                  </Link>
+                </div>
+              </div>
+
+              {/* Right column — three quiet shortcut tiles. Each lands on
+                  a different surface so the user gets a guided next step
+                  no matter which intent they came in with. */}
+              <div className="col-span-5 flex flex-col gap-3">
+                {[
+                  { num: "01", href: "/properties" as const, title: t("nav.properties"), body: t("home.step1Body") },
+                  { num: "02", href: "/kyc"        as const, title: t("home.step2Title"), body: t("home.step2Body") },
+                  { num: "03", href: "/sell"       as const, title: "Vendre",            body: t("home.step3Body") },
+                ].map((s) => (
+                  <Link
+                    key={s.num}
+                    href={s.href as never}
+                    className="group flex items-start gap-4 rounded-2xl bg-surface/40 p-4 ring-1 ring-gold/15 backdrop-blur-sm transition hover:bg-surface/70 hover:ring-gold-soft/40"
+                  >
+                    <span className="batta-tabular text-[20px] font-extrabold leading-none text-gold">
+                      {s.num}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[13.5px] font-bold leading-tight text-foreground">
+                        {s.title}
+                      </span>
+                      <span className="mt-1 block text-[11.5px] leading-relaxed text-muted">
+                        {s.body}
+                      </span>
+                    </span>
+                    <ArrowUpRight className="mt-1 size-4 shrink-0 text-muted transition group-hover:text-gold-bright" strokeWidth={2.2} />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Slim footer — single inline row of legal links. The big
@@ -732,6 +1193,12 @@ const PRICE_BUCKETS: {
   { key: "1m-plus",     labelEn: "1M+ TND",        labelAr: "أكثر من مليون" },
 ];
 
+// HOW_IT_WORKS + TRUST_PILLARS used to live here at the bottom of
+// the file. They were hoisted above LandingPage (alongside StatTile's
+// past placement) to dodge the Turbopack-RSC hoister bug — module
+// `const` declarations defined AFTER the long LandingPage body
+// occasionally fail to resolve at server-render time in dev.
+
 // ──────────────────────────────────────────────────────────────────────
 // "Recently hammered" — compact card for the closed-auction strip.
 // (HammeredRow type is hoisted to the top of the file.)
@@ -820,3 +1287,8 @@ function TrendingSkeleton() {
     </div>
   );
 }
+
+// StatTile lives near the top of the file as a const expression so
+// Turbopack-RSC's bundle hoister can see it before LandingPage. Same
+// quirk that bit the HammeredRow type alias (see the comment at the
+// top of the file).

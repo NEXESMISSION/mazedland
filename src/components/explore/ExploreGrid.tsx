@@ -146,6 +146,28 @@ export function ExploreGrid({
   const requestToken = useRef(0);
   const topAnchorRef = useRef<HTMLDivElement | null>(null);
 
+  // Scroll to the very top of the viewport on first mount. Next.js
+  // sometimes restores the scroll position from the prior page
+  // (browser back-forward cache, or arriving via in-app SPA nav), and
+  // the catalogue index reads as broken when it opens already
+  // scrolled past the sticky filter. Smooth so it doesn't feel like
+  // a hard jump if the user briefly sees the prior position.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    // disable browser scroll restoration for this route so a
+    // back-nav from a property detail also lands at the top
+    if ("scrollRestoration" in window.history) {
+      try {
+        window.history.scrollRestoration = "manual";
+      } catch {
+        /* some embedded webviews block this — ignore */
+      }
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Only on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Loads one page and replaces the visible items. Each user action
   // (filter switch, extra-filter apply, page click) routes through this
   // single fetch path so the loading state, cancellation token, and
@@ -174,12 +196,14 @@ export function ExploreGrid({
         setPage(data.page);
         setTotalPages(data.totalPages);
         setTotalCount(data.totalCount);
-        // Scroll the listings into view rather than jumping to the very
-        // top — the sticky filter bar should stay visible.
-        topAnchorRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
+        // Scroll all the way to the top of the document, smoothly. The
+        // previous version did scrollIntoView() on a mid-page anchor
+        // which 1) left the sticky filter band overlapping the new
+        // results and 2) animated to ~150px instead of 0, so the page
+        // felt like it teleported. Going to absolute 0 with smooth
+        // behavior matches the "page change → fresh top" expectation
+        // the user flagged.
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } finally {
         if (requestToken.current === token) setLoading(false);
       }

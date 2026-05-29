@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { redirect } from "@/i18n/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { AuctionWithProperty } from "@/lib/types";
@@ -7,7 +8,6 @@ import { parseMonetizationSettings, resolveDeposit } from "@/lib/pricing";
 import { Countdown } from "@/components/auction/Countdown";
 import { AuctionCalendarMenu } from "@/components/auction/AuctionCalendarMenu";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
-import { SixthOfferForm } from "@/components/auction/SixthOfferForm";
 import { HeroCarousel } from "@/components/auction/HeroCarousel";
 import { AuctionPresencePing } from "@/components/auction/AuctionPresencePing";
 import { SellerAuctionBanner } from "@/components/auction/SellerAuctionBanner";
@@ -17,6 +17,7 @@ import { Link } from "@/i18n/navigation";
 import {
   MapPin, Ruler, BedDouble, Bath, Building2, Calendar,
   ShieldCheck, ClipboardCheck, FileText, Lock, Gavel, Download, Clock,
+  Hourglass,
 } from "lucide-react";
 
 /**
@@ -59,7 +60,24 @@ export default async function AuctionDetail({
       .eq("auction_id", id),
   ]);
 
-  if (auctionRes.error || !auctionRes.data) notFound();
+  if (auctionRes.error || !auctionRes.data) {
+    // An auction the user was watching / bidding on can disappear (admin
+    // cancel + scrub, hard-delete from /admin/properties). Old bell rows
+    // baked `/auctions/<id>` into their link, so without this recovery
+    // a tapped notification dead-ends on a 404 with no way back to the
+    // user's other activity. Authenticated users land on their activity
+    // hub (with ?focus= so the old row, if still there, gets ringed);
+    // anonymous viewers get the regular 404 since the recovery target
+    // requires a session.
+    const user = userRes.data.user;
+    if (user) {
+      redirect({
+        href: `/account/activity?focus=${encodeURIComponent(id)}`,
+        locale: locale as "ar" | "fr" | "en",
+      });
+    }
+    notFound();
+  }
 
   const auction = auctionRes.data as unknown as AuctionWithProperty;
   const totalBids = bidCountRes.count ?? 0;
@@ -460,26 +478,37 @@ export default async function AuctionDetail({
       )}
 
       {/* ─── SIXTH-OFFER WINDOW (Tunisian-law 1/6 rule) ───
-            Only surface the surenchère form to the provisional winner.
-            Tunisian law lets any qualified bidder submit a 1/6 offer,
-            but the product owner wants losers off this surface — they
-            see "you lost, browse other auctions" instead of a form
-            they're unlikely to act on. The DB endpoint still accepts
-            any qualified bidder, so power users can still POST. */}
+            Quiet pointer for the provisional winner. The action — the
+            actual form — now lives on /auctions/[id]/bid where every
+            other bidding action lives, so the detail page stays a
+            "browse and understand" surface. Visible only to the
+            provisional winner (same audience the form had). */}
       {auction.status === "sixth_offer_window"
         && auction.winner_amount
         && auction.sixth_offer_deadline
         && !isOwner
         && userId !== null
         && auction.winner_user_id === userId && (
-        <SixthOfferForm
-          auctionId={auction.id}
-          winningAmount={Number(auction.winner_amount)}
-          deadline={auction.sixth_offer_deadline}
-          loggedIn={userId !== null}
-          kycVerified={kycVerified}
-          hasActiveDeposit={hasActiveDeposit}
-        />
+        <section className="mx-4 mt-3">
+          <Link
+            href={`/auctions/${auction.id}/bid` as never}
+            className="batta-frame-gold flex items-center gap-3 rounded-2xl p-4 transition active:scale-[0.99]"
+          >
+            <span className="batta-monogram size-10 shrink-0">
+              <Hourglass className="size-4" strokeWidth={2.2} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="batta-eyebrow">Surenchère légale ouverte</div>
+              <div className="mt-0.5 text-[14px] font-bold text-foreground">
+                Déposez votre offre du sixième
+              </div>
+              <div className="mt-0.5 text-[11px] text-muted">
+                Avant {new Date(auction.sixth_offer_deadline).toLocaleString(locale)}
+              </div>
+            </div>
+            <span className="batta-gold-text text-[18px]">→</span>
+          </Link>
+        </section>
       )}
 
       {/* ─── SPECIFICATIONS ─── */}

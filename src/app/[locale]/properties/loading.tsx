@@ -1,45 +1,58 @@
 /**
- * /properties loading skeleton — mirrors the sticky search head, the
- * type chip rail and the editorial 2/4-col grid so swapping in the
- * real page doesn't reflow anything under the user's eye.
+ * /properties loading skeleton — mirrors `<ExploreGrid />`'s real layout
+ * so the swap from skeleton to live content is invisible (no chip-rail
+ * vs. pill-row mismatch, no missing title row, no extra "select" element
+ * that doesn't exist in the real header).
  *
- * Next.js uses this file as the Suspense fallback automatically: any
- * client-side navigation into /properties paints this within ~16 ms
- * (server is unblocked, no DB roundtrip yet) and streams the real grid
- * in on top once `page.tsx` resolves.
+ * Layout being mirrored (top → bottom):
+ *   1) Search input (rounded-full, full width)
+ *   2) Filter pill row: 3 chips + Filters button + (right-pushed) gold rule
+ *   3) Gold hairline under the sticky header
+ *   4) Page title block + view toggle on the right
+ *   5) 2-col (mobile) / 4-col (desktop) card grid
  */
 export default function Loading() {
   return (
     <div className="mx-auto max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)]">
-      {/* Sticky search head — mirrors the real layout's input + select + filter button. */}
+      {/* Sticky header band — mirrors the real layout's full-width search
+          input (NO fake select beside it — the real header has none),
+          then a row of 3 pill chips + a Filters button. */}
       <div className="px-4 pt-3">
-        <div className="flex items-center gap-2">
-          <div className="batta-skeleton h-10 flex-1 rounded-full" />
-          <div className="batta-skeleton h-10 w-24 rounded-full" />
-          <div className="batta-skeleton size-10 rounded-full" />
-        </div>
-        {/* Type chip rail */}
-        <div className="hide-scrollbar mt-3 flex gap-1.5 overflow-x-auto pb-1">
-          {Array.from({ length: 7 }).map((_, i) => (
+        <div className="batta-skeleton h-11 w-full rounded-full" />
+        <div className="hide-scrollbar mt-2.5 flex gap-1.5 overflow-x-auto pb-3">
+          {[80, 110, 90, 86].map((w, i) => (
             <div
               key={i}
-              className="batta-skeleton h-7 shrink-0 rounded-full"
-              style={{ width: 60 + ((i * 13) % 45) }}
+              className="batta-skeleton h-9 shrink-0 rounded-full"
+              style={{ width: w }}
             />
           ))}
         </div>
       </div>
+      <div aria-hidden className="batta-gold-rule" />
 
-      {/* Result count line */}
-      <div className="px-4 pt-3">
-        <div className="batta-skeleton h-3 w-32" />
-      </div>
+      {/* Page title row — eyebrow + title + count line on the left, the
+          Grid/Reels toggle on the right. Same vertical rhythm as the
+          real ExploreGrid title block so swapping in the live content
+          doesn't shift anything under the user's eye. */}
+      <div className="px-4 pt-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-2">
+            <div className="batta-skeleton h-2.5 w-24 rounded" />
+            <div className="batta-skeleton h-7 w-44 rounded" />
+            <div className="batta-skeleton h-3 w-40 rounded" />
+          </div>
+          <div className="shrink-0 pt-1">
+            <div className="batta-skeleton h-9 w-20 rounded-full" />
+          </div>
+        </div>
 
-      {/* Card grid — same gap + breakpoints as the live page. */}
-      <div className="mt-4 grid grid-cols-2 gap-3 px-4 pb-6 lg:grid-cols-4 lg:gap-5">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <CardSkeleton key={i} />
-        ))}
+        {/* Card grid — same gap + breakpoints as the live page. */}
+        <div className="mt-5 grid grid-cols-2 gap-3 pb-10 lg:grid-cols-4 lg:gap-5">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -47,7 +60,7 @@ export default function Loading() {
 
 /**
  * Photo block + 2 title lines + price row — same vertical rhythm as
- * `<PropertyCard>` so card-to-card swap is invisible.
+ * `<GridCard>` so card-to-card swap is invisible.
  */
 function CardSkeleton() {
   return (

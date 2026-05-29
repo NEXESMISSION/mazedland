@@ -406,6 +406,34 @@ html, body { overscroll-behavior-y: contain; }
   border-radius: var(--radius-lg);
   color: var(--foreground);
 }
+/* Form-field base — used by every admin form (settings, popups, etc.).
+   Matches the visual rhythm of FilterPanel / SettingsForm inputs so
+   form pages share the same control surface. */
+.batta-input {
+  width: 100%;
+  display: block;
+  padding: 0.625rem 0.875rem;
+  font-size: 13px;
+  line-height: 1.4;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--foreground);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.batta-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-faint);
+}
+.batta-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+textarea.batta-input {
+  resize: vertical;
+  min-height: 80px;
+}
 /* `-gold` variant: the same white card with a subtle navy-tinted
    border so it reads as a "branded" empty-state slot. No inset
    pseudo-border (the old double-border was overdesigned). */

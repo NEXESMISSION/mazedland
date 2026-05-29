@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { Building2, ChevronRight, ChevronLeft } from "lucide-react";
 import { ActivityTabs, type ActivityItem } from "./ActivityTabs";
+import { FocusRowHighlight } from "@/components/ui/FocusRowHighlight";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -186,6 +187,7 @@ export default async function ActivityPage({
 
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-16 lg:max-w-[var(--max-w-content)]">
+      <FocusRowHighlight idPrefix="act-" />
       <span className="batta-eyebrow">Côté acheteur</span>
       <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">
         Mes achats

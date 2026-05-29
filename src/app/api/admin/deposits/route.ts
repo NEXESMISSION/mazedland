@@ -86,13 +86,18 @@ export async function POST(req: NextRequest) {
     // Reflect the refund on the corresponding deposit-lock payment so the
     // user's /account/payments shows "Remboursé" instead of "Payé". Free
     // entries have no payment row → this simply matches nothing.
-    await admin
+    // We .select("id") so we can pin the bell notification's focus to
+    // exactly that row on the user's history page.
+    const { data: refunded } = await admin
       .from("payments")
       .update({ status: "refunded" })
       .eq("user_id", dep.user_id)
       .eq("auction_id", dep.auction_id)
       .eq("kind", "deposit_lock")
-      .in("status", ["captured", "authorized"]);
+      .in("status", ["captured", "authorized"])
+      .select("id")
+      .limit(1);
+    const focusId = refunded?.[0]?.id as string | undefined;
 
     await admin.rpc("enqueue_notification", {
       p_user_id: dep.user_id,
@@ -100,6 +105,7 @@ export async function POST(req: NextRequest) {
       p_title: "Caution remboursée",
       p_body: `Votre caution de ${Number(dep.amount).toFixed(0)} TND a été remboursée${ref ? ` (réf. ${ref})` : ""}.`,
       p_link: "/account/payments",
+      p_payload: focusId ? { focus: focusId } : {},
     });
     return NextResponse.json({ ok: true });
   }

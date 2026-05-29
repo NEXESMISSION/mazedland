@@ -76,7 +76,8 @@ const GROUPS: Group[] = [
     Icon: SlidersHorizontal,
     members: [
       "/admin/settings", "/admin/home", "/admin/legal-docs",
-      "/admin/characteristics", "/admin/notifications", "/admin/waitlist",
+      "/admin/characteristics", "/admin/notifications",
+      "/admin/popups", "/admin/waitlist",
     ],
     home: "/admin/settings",
     tabs: [
@@ -85,6 +86,7 @@ const GROUPS: Group[] = [
       { label: "Documents", href: "/admin/legal-docs" },
       { label: "Caractéristiques", href: "/admin/characteristics" },
       { label: "Diffusions", href: "/admin/notifications" },
+      { label: "Popups", href: "/admin/popups" },
       { label: "Liste d'attente", href: "/admin/waitlist" },
     ],
   },

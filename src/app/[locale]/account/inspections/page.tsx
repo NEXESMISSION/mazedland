@@ -4,6 +4,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { formatTND } from "@/lib/utils";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { ClipboardCheck, Calendar, MapPin, FileText } from "lucide-react";
+import { FocusRowHighlight } from "@/components/ui/FocusRowHighlight";
 
 /**
  * Buyer-side inspections — surfaces the report download once an
@@ -68,6 +69,7 @@ export default async function MyInspectionsPage({
 
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 lg:max-w-[var(--max-w-content)]">
+      <FocusRowHighlight idPrefix="ins-" />
       <span className="batta-eyebrow">Pre-bid reports</span>
       <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">
         {t("account.myInspections")}
@@ -101,6 +103,7 @@ export default async function MyInspectionsPage({
             return (
               <li
                 key={ins.id}
+                id={`ins-${ins.id}`}
                 className="overflow-hidden rounded-xl bg-surface ring-1 ring-border transition-all hover:ring-gold-soft/40"
               >
                 <div className="flex gap-3 p-3">

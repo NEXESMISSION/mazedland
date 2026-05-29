@@ -34,6 +34,16 @@ import {
   Timer,
   TimerReset,
   CircleAlert,
+  // Added: distinct glyphs for the 6 kinds previously falling through to
+  // the generic Bell icon — broadcasts (announcement / promo / maintenance
+  // / system_alert) and entity-tied lifecycle events (auction_cancelled,
+  // deposit_refunded). A bell that visually distinguishes "your auction
+  // was cancelled" from "your deposit was refunded" is the whole point.
+  Tag,
+  Wrench,
+  ShieldAlert,
+  Ban,
+  RefreshCcw,
 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
@@ -46,6 +56,9 @@ type NotificationRow = {
   title: string;
   body: string | null;
   link: string | null;
+  /** Optional structured context from the creator — e.g. { focus: <row_id> }
+   *  for list-page deep links, or sender-supplied broadcast metadata. */
+  payload: Record<string, unknown> | null;
   read_at: string | null;
   created_at: string;
 };
@@ -65,12 +78,21 @@ const URGENT_KINDS = new Set<string>([
   "outbid",
   "sixth_offer_outbid",
   "auction_ending_soon",
+  "auction_cancelled",
+  // Symmetric with due_tomorrow / overdue — the soon→tomorrow→overdue
+  // arc is the user's only warning before they lose their winning bid.
+  "final_payment_due_soon",
   "final_payment_due_tomorrow",
   "final_payment_overdue",
   "final_payment_overdue_seller",
   "kyc_rejected",
   "listing_rejected",
   "listing_payment_rejected",
+  // Financial-loss kinds the user has to react to — without the urgent
+  // pill the row just sits in the list and the user misses why their
+  // payout never landed or their payment was refused.
+  "payment_rejected",
+  "payout_rejected",
 ]);
 
 export function NotificationBell() {
@@ -150,6 +172,32 @@ export function NotificationBell() {
           "postgres_changes",
           {
             event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => scheduleRefresh(),
+        )
+        // UPDATE → catches mark-as-read from another tab (the badge
+        // here would otherwise stay stale until the next 60s poll) and
+        // DELETE → catches a row removed elsewhere (admin bulk-delete,
+        // self-clear from another device). We share the same debounce
+        // so a burst of events still only triggers one /api/notifications
+        // round-trip.
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "notifications",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => scheduleRefresh(),
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
             schema: "public",
             table: "notifications",
             filter: `user_id=eq.${user.id}`,
@@ -519,7 +567,7 @@ function NotificationRow({
   const unread = !item.read_at;
   const { Icon, tone } = iconForKind(item.kind);
   const isUrgent = unread && URGENT_KINDS.has(item.kind);
-  const href = resolveNotificationLink(item.kind, item.link);
+  const href = resolveNotificationLink(item.kind, item.link, item.payload);
 
   const [dragPx, setDragPx] = useState(0);
   const [snapped, setSnapped] = useState(false);
@@ -780,6 +828,30 @@ function iconForKind(kind: string): {
     case "admin_inspector_pending":
     case "admin_final_payment_overdue":
       return { Icon: Inbox, tone: "bg-[var(--gold-faint)] text-[var(--gold)]" };
+    // Broadcasts (admin-sent to many) — distinct tones so the row at a
+    // glance reads as "info / deal / planned downtime / alert" without
+    // having to read the title.
+    case "announcement":
+      return { Icon: Megaphone, tone: "bg-sky-50 text-sky-700" };
+    case "promo":
+      return { Icon: Tag, tone: "bg-emerald-50 text-emerald-700" };
+    case "maintenance":
+      return { Icon: Wrench, tone: "bg-amber-50 text-amber-700" };
+    case "system_alert":
+      return { Icon: ShieldAlert, tone: "bg-red-50 text-red-700" };
+    // Lifecycle events with a strong neutral signal — used to fall
+    // through to the generic Bell, indistinguishable from broadcasts.
+    case "auction_cancelled":
+      return { Icon: Ban, tone: "bg-red-50 text-red-700" };
+    case "deposit_refunded":
+      return { Icon: RefreshCcw, tone: "bg-emerald-50 text-emerald-700" };
+    // Gentle reminder kinds (migration 0051) — share the same amber
+    // "soft nudge" tone so they don't feel as alarming as auction-
+    // ending or payment-overdue but still stand out from passive info.
+    case "kyc_pending_reminder":
+      return { Icon: Hourglass, tone: "bg-amber-50 text-amber-700" };
+    case "listing_unscheduled_reminder":
+      return { Icon: CalendarClock, tone: "bg-amber-50 text-amber-700" };
     default:
       return { Icon: Bell, tone: "bg-[var(--gold-faint)] text-[var(--gold)]" };
   }

@@ -32,8 +32,9 @@ export const NOTIFICATION_KINDS = [
   // Listings (seller)
   "listing_submitted", "listing_published", "listing_approved",
   "listing_rejected", "listing_payment_rejected", "listing_expired",
+  "listing_unscheduled_reminder",
   // Identity
-  "kyc_verified", "kyc_rejected", "welcome",
+  "kyc_verified", "kyc_rejected", "kyc_pending_reminder", "welcome",
   // Payouts (seller)
   "payout_processing", "payout_paid", "payout_rejected",
   // Inspections
@@ -113,10 +114,17 @@ const KIND_FALLBACK: Record<NotificationKind, FallbackRoute> = {
   listing_rejected: "/sell",
   listing_payment_rejected: "/sell",
   listing_expired: "/sell",
+  // The reminder bakes /sell/<id>/schedule into its link (see migration
+  // 0051); fallback is the seller dashboard in case the link is missing.
+  listing_unscheduled_reminder: "/sell",
   // Identity — kyc_verified/rejected land on the status page (shows verdict +
   // next step); welcome routes new users into the start of the KYC flow.
   kyc_verified: "/kyc/status",
   kyc_rejected: "/kyc/status",
+  // Pending reminder sits on the status page too — it polls + shows
+  // "still being reviewed", so the user lands on the right reassuring
+  // surface without going back through the wizard.
+  kyc_pending_reminder: "/kyc/status",
   welcome: "/kyc",
   // Payouts → seller dashboard payouts section
   payout_processing: "/sell#payouts",
@@ -199,7 +207,9 @@ const FALLBACK_SUPPORTS_FOCUS: Record<NotificationKind, boolean> = {
   payment_receipt_received: true, deposit_refunded: true,
   listing_submitted: false, listing_published: false, listing_approved: false,
   listing_rejected: false, listing_payment_rejected: false, listing_expired: false,
-  kyc_verified: false, kyc_rejected: false, welcome: false,
+  listing_unscheduled_reminder: false,
+  kyc_verified: false, kyc_rejected: false, kyc_pending_reminder: false,
+  welcome: false,
   payout_processing: false, payout_paid: false, payout_rejected: false,
   inspection_requested: false, inspection_assigned: false,
   inspection_scheduled: false, inspection_completed: false,

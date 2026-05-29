@@ -7,6 +7,7 @@ import { MobileShell } from "@/components/layout/MobileShell";
 import { SplashScreen } from "@/components/layout/SplashScreen";
 import { NetworkStatus } from "@/components/layout/NetworkStatus";
 import { ToastProvider } from "@/components/ui/Toast";
+import { PopupManager } from "@/components/popups/PopupManager";
 import type { Metadata } from "next";
 
 export function generateStaticParams() {
@@ -55,6 +56,11 @@ export default async function LocaleLayout({
         <NetworkStatus />
         <SplashScreen />
         <MobileShell>{children}</MobileShell>
+        {/* Site-wide admin-managed popup surface. Self-skips admin
+            routes so previews don't compete with live broadcasts.
+            See src/components/popups/PopupManager.tsx for the
+            match/dismiss/event lifecycle. */}
+        <PopupManager />
       </ToastProvider>
     </NextIntlClientProvider>
   );
