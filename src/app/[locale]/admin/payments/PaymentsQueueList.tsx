@@ -146,11 +146,22 @@ export function PaymentsQueueList({
         {groups.map((g) => (
           <section key={g.key}>
             <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-2">
-              <div className="inline-flex min-w-0 items-center gap-1.5 text-[13.5px] font-bold text-foreground">
-                <Building2 className="size-3.5 shrink-0 text-[var(--gold)]" strokeWidth={2.2} />
-                <span className="truncate">{g.title}</span>
-                {g.gov && <span className="text-[11px] font-normal text-[var(--foreground-muted)]">· {g.gov}</span>}
-              </div>
+              {g.key !== "autres" ? (
+                <Link
+                  href={`/admin/auctions/${g.key}`}
+                  className="group/h inline-flex min-w-0 items-center gap-1.5 text-[13.5px] font-bold text-foreground hover:text-[var(--gold)]"
+                >
+                  <Building2 className="size-3.5 shrink-0 text-[var(--gold)]" strokeWidth={2.2} />
+                  <span className="truncate">{g.title}</span>
+                  {g.gov && <span className="text-[11px] font-normal text-[var(--foreground-muted)]">· {g.gov}</span>}
+                  <ExternalLink className="size-3 shrink-0 opacity-0 transition group-hover/h:opacity-100" />
+                </Link>
+              ) : (
+                <div className="inline-flex min-w-0 items-center gap-1.5 text-[13.5px] font-bold text-foreground">
+                  <Building2 className="size-3.5 shrink-0 text-[var(--gold)]" strokeWidth={2.2} />
+                  <span className="truncate">{g.title}</span>
+                </div>
+              )}
               <div className="batta-tabular text-[11px] text-[var(--foreground-muted)]">
                 {g.items.length} reçu{g.items.length > 1 ? "s" : ""} ·{" "}
                 {g.total.toLocaleString("fr-FR")} TND

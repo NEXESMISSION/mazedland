@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
@@ -7,7 +8,7 @@ import { formatTND } from "@/lib/utils";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import {
   Loader2, Check, CircleDollarSign, Gavel, ShieldX, FileText, CheckCircle2,
-  Search, MapPin, X,
+  Search, MapPin, X, ExternalLink,
 } from "lucide-react";
 
 export type DepositRow = {
@@ -286,10 +287,21 @@ export function DepositsClient({
                     {/* Auction header */}
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-2/50 px-4 py-3">
                       <div className="min-w-0">
-                        <div className="inline-flex items-center gap-1.5 text-[13.5px] font-bold text-foreground">
-                          <Gavel className="size-3.5 shrink-0 text-gold" strokeWidth={2.2} />
-                          <span className="truncate">{g.title}</span>
-                        </div>
+                        {g.auctionId ? (
+                          <Link
+                            href={`/admin/auctions/${g.auctionId}`}
+                            className="group/h inline-flex items-center gap-1.5 text-[13.5px] font-bold text-foreground hover:text-gold"
+                          >
+                            <Gavel className="size-3.5 shrink-0 text-gold" strokeWidth={2.2} />
+                            <span className="truncate">{g.title}</span>
+                            <ExternalLink className="size-3 shrink-0 opacity-0 transition group-hover/h:opacity-100" />
+                          </Link>
+                        ) : (
+                          <div className="inline-flex items-center gap-1.5 text-[13.5px] font-bold text-foreground">
+                            <Gavel className="size-3.5 shrink-0 text-gold" strokeWidth={2.2} />
+                            <span className="truncate">{g.title}</span>
+                          </div>
+                        )}
                         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted">
                           {g.governorate && (
                             <span className="inline-flex items-center gap-1">
