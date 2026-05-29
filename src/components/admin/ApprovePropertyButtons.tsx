@@ -103,14 +103,14 @@ export function ApprovePropertyButtons({
         className="inline-flex items-center gap-1 rounded-md bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-50"
       >
         {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" strokeWidth={2.5} />}
-        Approve
+        Approuver
       </button>
       <Link
         href={`/admin/properties/${id}/reject` as `/admin/properties/${string}`}
         className="inline-flex items-center gap-1 rounded-md bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/30"
       >
         <X className="size-3.5" strokeWidth={2.5} />
-        Reject
+        Rejeter
       </Link>
     </div>
   );
