@@ -8,6 +8,8 @@ import {
   ReceiptText, ShieldCheck, ClipboardCheck, CheckCircle2,
 } from "lucide-react";
 import { ApprovePropertyButtons } from "@/components/admin/ApprovePropertyButtons";
+import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
+import { AdminPager } from "@/components/admin/AdminPager";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -51,10 +53,16 @@ type Row = {
 export default async function AdminProperties({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; range?: string; page?: string }>;
 }) {
   const supabase = await getServerSupabase();
-  const { status: statusRaw } = await searchParams;
+  const { status: statusRaw, q: qParam, range: rangeParam, page: pageParam } = await searchParams;
+  const q = (qParam ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
+  const sinceDays = rangeParam === "1" || rangeParam === "7" || rangeParam === "30" ? Number(rangeParam) : null;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const PAGE_SIZE = 24;
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
 
   // Default to the only view that's truly actionable. The old "no
   // filter → all statuses" behaviour produced a wall of "—" rows
@@ -72,9 +80,14 @@ export default async function AdminProperties({
       photos:property_photos (storage_path, sort_order),
       documents:property_documents (id),
       owner:profiles!properties_owner_id_fkey (full_name)
-    `)
+    `, { count: "exact" })
     .order("created_at", { ascending: false })
-    .limit(100);
+    .range(from, to);
+
+  if (q) query = query.or(`title.ilike.%${q}%,governorate.ilike.%${q}%`);
+  if (sinceDays) {
+    query = query.gte("created_at", new Date(Date.now() - sinceDays * 86_400_000).toISOString());
+  }
 
   if (status === "pending_review" || status === "ready" || status === "rejected") {
     query = query.eq("status", status);
@@ -104,8 +117,10 @@ export default async function AdminProperties({
     ready: readyC.count ?? 0,
   };
 
-  const { data } = await query;
+  const { data, count } = await query;
   const rows = (data ?? []) as unknown as Row[];
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   // Latest listing-fee payment per property → receipt/payment status inline.
   const ids = rows.map((r) => r.id);
@@ -238,6 +253,9 @@ export default async function AdminProperties({
         })}
       </nav>
 
+      <AdminQueryBar total={total} placeholder="Titre ou ville…" />
+      <div className="mt-4" />
+
       {/* ─── Desktop table — lg+ only. Mobile keeps the card list
               below. The table fits owner / location / price /
               payment / status on a single row so the admin gets the
@@ -367,7 +385,7 @@ export default async function AdminProperties({
             {rows.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-6 py-10 text-center text-[13px] text-muted">
-                  No properties submitted yet.
+                  Aucune annonce dans cette vue.
                 </td>
               </tr>
             )}
@@ -510,10 +528,12 @@ export default async function AdminProperties({
 
         {rows.length === 0 && (
           <div className="batta-frame-gold relative px-6 py-10 text-center text-[13px] text-muted">
-            No properties submitted yet.
+            Aucune annonce dans cette vue.
           </div>
         )}
       </div>
+
+      <AdminPager page={page} totalPages={totalPages} />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { PaymentsQueueList, type PaymentReviewItem } from "./PaymentsQueueList";
+import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
+import { AdminPager } from "@/components/admin/AdminPager";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -32,26 +34,37 @@ const KIND_LABELS: Record<string, string> = {
  * signed URLs server-side so the admin sees the proof inline without
  * exposing storage paths to the browser.
  */
+const PAGE_SIZE = 24;
+
 export default async function AdminPaymentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; range?: string; page?: string }>;
 }) {
-  const { status: statusParam } = await searchParams;
+  const { status: statusParam, q: qParam, range: rangeParam, page: pageParam } =
+    await searchParams;
   const supabase = await getServerSupabase();
 
   const status: StatusTab = STATUS_TABS.some((s) => s.value === statusParam)
     ? (statusParam as StatusTab)
     : "pending_review";
+  const q = (qParam ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
+  const sinceDays = rangeParam === "1" || rangeParam === "7" || rangeParam === "30"
+    ? Number(rangeParam) : null;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+  const dateCol = status === "pending_review" ? "receipt_uploaded_at" : "reviewed_at";
 
   let query = supabase
     .from("payments")
     .select(
       `id, user_id, kind, provider, amount, status, receipt_url,
        receipt_uploaded_at, admin_notes, reviewed_at, auction_id, property_id, metadata,
-       buyer:profiles!payments_user_id_fkey (full_name, phone),
+       buyer:profiles!payments_user_id_fkey${q ? "!inner" : ""} (full_name, phone),
        auction:auctions (id, property:properties (title, governorate)),
        property:properties!payments_property_id_fkey (id, title, governorate)`,
+      { count: "exact" },
     );
 
   if (status !== "all") {
@@ -62,12 +75,17 @@ export default async function AdminPaymentsPage({
   // Entry payments only — the listing-fee receipt (paid to CREATE an
   // auction) is reviewed on "Création d'enchères", not here.
   query = query.in("kind", ["deposit_lock", "buy_now", "final_payment"]);
-  query = query.order(
-    status === "pending_review" ? "receipt_uploaded_at" : "reviewed_at",
-    { ascending: status === "pending_review" },
-  );
+  if (q) query = query.ilike("buyer.full_name", `%${q}%`);
+  if (sinceDays) {
+    query = query.gte(dateCol, new Date(Date.now() - sinceDays * 86_400_000).toISOString());
+  }
+  query = query
+    .order(dateCol, { ascending: status === "pending_review" })
+    .range(from, to);
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   type Row = {
     id: string;
@@ -182,6 +200,8 @@ export default async function AdminPaymentsPage({
         })}
       </div>
 
+      <AdminQueryBar total={total} placeholder="Acheteur (nom)…" />
+
       {error && (
         <div className="mt-4 rounded-[var(--radius-md)] bg-red-500/10 border border-red-500/30 p-4 text-sm text-red-300">
           {error.message}
@@ -197,6 +217,7 @@ export default async function AdminPaymentsPage({
       ) : (
         <div className="mt-5">
           <PaymentsQueueList items={items} view={status} />
+          <AdminPager page={page} totalPages={totalPages} />
         </div>
       )}
     </div>

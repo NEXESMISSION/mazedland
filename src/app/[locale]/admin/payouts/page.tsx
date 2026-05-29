@@ -3,6 +3,8 @@ import { getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { formatTND } from "@/lib/utils";
 import { PayoutRowActions } from "./PayoutRowActions";
+import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
+import { AdminPager } from "@/components/admin/AdminPager";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -31,31 +33,47 @@ const STATUS_TONE: Record<string, string> = {
  * The seller_payouts RLS lets admins read every row; the join to
  * profiles uses the same RLS path (admins can read all profiles).
  */
+const PAGE_SIZE = 24;
+
 export default async function AdminPayoutsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; range?: string; page?: string }>;
 }) {
-  const { status: statusParam } = await searchParams;
+  const { status: statusParam, q: qParam, range: rangeParam, page: pageParam } =
+    await searchParams;
   const locale = await getLocale();
   const supabase = await getServerSupabase();
 
   const status: StatusTab = STATUS_TABS.some((s) => s.value === statusParam)
     ? (statusParam as StatusTab)
     : "requested";
+  const q = (qParam ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
+  const sinceDays = rangeParam === "1" || rangeParam === "7" || rangeParam === "30"
+    ? Number(rangeParam) : null;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
 
   let query = supabase
     .from("seller_payouts")
     .select(
-      "id, seller_id, amount, status, iban, payment_method, reviewer_notes, processed_at, created_at, seller:profiles!seller_payouts_seller_id_fkey (id, full_name, phone)",
+      `id, seller_id, amount, status, iban, payment_method, reviewer_notes, processed_at, created_at, seller:profiles!seller_payouts_seller_id_fkey${q ? "!inner" : ""} (id, full_name, phone)`,
+      { count: "exact" },
     );
   if (status !== "all") {
     query = query.eq("status", status);
   }
+  if (q) query = query.ilike("seller.full_name", `%${q}%`);
+  if (sinceDays) {
+    query = query.gte("created_at", new Date(Date.now() - sinceDays * 86_400_000).toISOString());
+  }
   // Requested oldest-first (FIFO work queue); history newest-first.
-  query = query.order("created_at", { ascending: status === "requested" });
+  query = query.order("created_at", { ascending: status === "requested" }).range(from, to);
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   // PostgREST returns embedded relations as arrays (Supabase types it
   // that way even for many-to-one FKs). We map it down to a single
   // object so the JSX below can use `p.seller?.full_name` without
@@ -125,6 +143,8 @@ export default async function AdminPayoutsPage({
           );
         })}
       </div>
+
+      <AdminQueryBar total={total} placeholder="Vendeur (nom)…" />
 
       {error && (
         <div className="mt-4 rounded-[var(--radius-md)] bg-red-500/10 border border-red-500/30 p-4 text-sm text-red-300">
@@ -206,6 +226,8 @@ export default async function AdminPayoutsPage({
           ))}
         </ul>
       )}
+
+      <AdminPager page={page} totalPages={totalPages} />
     </div>
   );
 }

@@ -1,17 +1,17 @@
 import { getServerSupabase } from "@/lib/supabase/server";
 import { DepositsClient, type DepositRow, type PrepareRow } from "./DepositsClient";
+import { AdminPager } from "@/components/admin/AdminPager";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const ENDED = ["ended_sold", "ended_unsold", "awarded", "cancelled"];
+const PAGE_SIZE = 120;
 
 type RawDeposit = {
   id: string;
   amount: number;
-  released_at: string | null;
   refunded_at: string | null;
-  forfeited_at: string | null;
   refund_ref: string | null;
   created_at: string;
   user_id: string;
@@ -24,24 +24,52 @@ type RawDeposit = {
   } | null;
 };
 
-export default async function AdminDepositsPage() {
+const SELECT = `
+  id, amount, refunded_at, refund_ref, created_at, user_id, payment_id,
+  auction:auctions!auction_deposits_auction_id_fkey (
+    id, status, winner_user_id,
+    property:properties ( title, governorate )
+  )
+`;
+
+export default async function AdminDepositsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
   const supabase = await getServerSupabase();
+  const page = Math.max(1, Number(pageParam) || 1);
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
 
-  const { data } = await supabase
+  // ─── 1. TO-REFUND — the only unbounded queue: server-paginated + counted
+  //     (was a flat .limit(300) that silently dropped rows past the cap). ───
+  const { data: refundRows, count } = await supabase
     .from("auction_deposits")
-    .select(`
-      id, amount, released_at, refunded_at, forfeited_at, refund_ref, created_at, user_id, payment_id,
-      auction:auctions!auction_deposits_auction_id_fkey (
-        id, status, winner_user_id,
-        property:properties ( title, governorate )
-      )
-    `)
+    .select(SELECT, { count: "exact" })
+    .not("released_at", "is", null)
+    .is("refunded_at", null)
+    .is("forfeited_at", null)
     .order("created_at", { ascending: false })
-    .limit(300);
-  const deposits = (data ?? []) as unknown as RawDeposit[];
+    .range(from, to);
+  const toRefundRaw = (refundRows ?? []) as unknown as RawDeposit[];
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  // Bidder names (batched — avoid FK-embed pitfalls).
-  const userIds = Array.from(new Set(deposits.map((d) => d.user_id)));
+  // ─── 2. recent refunds (bounded) ───
+  const { data: refundedRows } = await supabase
+    .from("auction_deposits")
+    .select(SELECT)
+    .not("refunded_at", "is", null)
+    .order("refunded_at", { ascending: false })
+    .limit(20);
+  const refundedRaw = (refundedRows ?? []) as unknown as RawDeposit[];
+
+  // ─── 3. bidder names for both sets (batched) ───
+  const userIds = Array.from(
+    new Set([...toRefundRaw, ...refundedRaw].map((d) => d.user_id)),
+  );
   const names = new Map<string, string>();
   if (userIds.length > 0) {
     const { data: profs } = await supabase
@@ -49,10 +77,7 @@ export default async function AdminDepositsPage() {
     for (const p of profs ?? []) if (p.full_name) names.set(p.id as string, p.full_name as string);
   }
 
-  // Signed receipts for the to-refund queue (proof the bidder paid).
-  const toRefundRaw = deposits.filter(
-    (d) => d.released_at && !d.refunded_at && !d.forfeited_at,
-  );
+  // ─── 4. signed receipts for the current to-refund page slice ───
   const receiptByPayment = new Map<string, string>();
   const payIds = toRefundRaw.map((d) => d.payment_id).filter(Boolean) as string[];
   if (payIds.length > 0) {
@@ -82,25 +107,27 @@ export default async function AdminDepositsPage() {
   });
 
   const toRefund = toRefundRaw.map(toRow);
-  const refunded = deposits
-    .filter((d) => d.refunded_at)
-    .slice(0, 30)
-    .map(toRow);
+  const refunded = refundedRaw.map(toRow);
 
-  // Auctions that ended but still have locked non-winner deposits → need a
-  // "prepare refunds" pass. Group locked deposits by auction.
+  // ─── 5. auctions that ended but still hold locked non-winner deposits
+  //     → "prepare refunds" pass. Bounded scan, grouped by auction. ───
+  const { data: lockedRows } = await supabase
+    .from("auction_deposits")
+    .select(`auction_id, user_id, auction:auctions!auction_deposits_auction_id_fkey ( id, status, winner_user_id, property:properties ( title ) )`)
+    .is("released_at", null)
+    .is("refunded_at", null)
+    .is("forfeited_at", null)
+    .limit(1000);
   const prepareMap = new Map<string, PrepareRow>();
-  for (const d of deposits) {
+  for (const d of (lockedRows ?? []) as unknown as Array<{
+    user_id: string;
+    auction: { id: string; status: string; winner_user_id: string | null; property: { title: string } | null } | null;
+  }>) {
     const a = d.auction;
     if (!a || !ENDED.includes(a.status)) continue;
-    const locked = !d.released_at && !d.refunded_at && !d.forfeited_at;
-    const isWinner = a.winner_user_id && d.user_id === a.winner_user_id;
-    if (!locked || isWinner) continue;
+    if (a.winner_user_id && d.user_id === a.winner_user_id) continue;
     const cur = prepareMap.get(a.id) ?? {
-      auctionId: a.id,
-      title: a.property?.title ?? "—",
-      status: a.status,
-      lockedCount: 0,
+      auctionId: a.id, title: a.property?.title ?? "—", status: a.status, lockedCount: 0,
     };
     cur.lockedCount += 1;
     prepareMap.set(a.id, cur);
@@ -111,11 +138,13 @@ export default async function AdminDepositsPage() {
     <div>
       <span className="batta-eyebrow">Cautions &amp; remboursements</span>
       <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
-        Cautions
+        Remboursements
       </h2>
       <p className="mt-1 text-[12px] text-muted">
         Après une enchère : préparez les remboursements, puis marquez chaque
-        caution remboursée une fois le virement effectué.
+        caution remboursée une fois le virement effectué.{" "}
+        <span className="batta-tabular font-semibold text-foreground">{total}</span>{" "}
+        caution{total > 1 ? "s" : ""} à rembourser.
       </p>
 
       <DepositsClient
@@ -123,6 +152,8 @@ export default async function AdminDepositsPage() {
         toRefund={toRefund}
         refunded={refunded}
       />
+
+      <AdminPager page={page} totalPages={totalPages} />
     </div>
   );
 }
