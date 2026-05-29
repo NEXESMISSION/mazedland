@@ -15,6 +15,7 @@ import {
   Briefcase,
   UserCog,
   ArrowRight,
+  ArrowUpRight,
 } from "lucide-react";
 
 /**
@@ -197,22 +198,34 @@ export default async function AccountPage() {
         </div>
       </div>
 
-      {/* ── DESKTOP (lg+) — sticky identity rail + action tile grid ── */}
-      <div className="hidden lg:block mx-auto max-w-[var(--max-w-wide)] px-8 py-10">
-        <div className="grid grid-cols-12 items-start gap-8">
-          <div className="col-span-4 sticky top-[calc(var(--desktop-nav-h)+1.5rem)]">
-            {identity}
-            <div className="mt-4">
-              <SignOutButton label="Se déconnecter" />
+      {/* ── DESKTOP (lg+) — white profile banner + 3-col action grid ── */}
+      <div className="hidden lg:block mx-auto max-w-6xl px-8 py-10">
+        <section className="flex items-center gap-6 rounded-3xl bg-surface p-8 ring-1 ring-border">
+          <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-[var(--gold)] text-[24px] font-extrabold text-white">
+            {(fullName ?? userEmail ?? "?").charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className={`text-[24px] font-extrabold tracking-tight ${isRTL ? "font-arabic" : ""}`}>
+                {fullName ?? userEmail ?? ""}
+              </h1>
+              <KycPill status={kycStatus} />
+              {role !== "individual" && <span className="batta-pill-gold">{role}</span>}
             </div>
+            {fullName && userEmail && (
+              <p className="mt-1 text-[13.5px] text-muted">{userEmail}</p>
+            )}
           </div>
-          <div className="col-span-8">
-            <div className="grid grid-cols-2 gap-3">
-              {[...primaryActions, ...roleActions].map((a) => (
-                <ActionTile key={a.href} {...a} isRTL={isRTL} />
-              ))}
-            </div>
+          <div className="shrink-0">
+            <SignOutButton label="Se déconnecter" />
           </div>
+        </section>
+
+        <p className="batta-eyebrow mb-4 mt-8">Gérer mon compte</p>
+        <div className="grid grid-cols-3 gap-4">
+          {[...primaryActions, ...roleActions].map((a) => (
+            <ActionTile key={a.href} {...a} isRTL={isRTL} />
+          ))}
         </div>
       </div>
     </>
@@ -226,22 +239,24 @@ type ActionItem = {
   body: string;
 };
 
-/** Desktop action card — icon badge over title + body, lifts on hover. */
+/** Desktop action card — matches the mockup: blue icon badge, title +
+ *  corner arrow, description; lifts with a soft blue shadow on hover. */
 function ActionTile({ href, Icon, title, body, isRTL }: ActionItem & { isRTL: boolean }) {
   return (
     <Link
       href={href as `/${string}`}
-      className="group flex flex-col gap-3 rounded-2xl bg-surface p-5 ring-1 ring-border transition hover:-translate-y-0.5 hover:ring-gold-soft/50"
+      className="group rounded-2xl bg-surface p-6 ring-1 ring-border transition hover:-translate-y-0.5 hover:ring-gold-soft/60 hover:shadow-[0_12px_30px_-14px_rgba(30,58,138,0.35)]"
     >
-      <span className="inline-flex size-11 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/20 transition group-hover:bg-gold group-hover:text-white">
+      <span className="mb-5 inline-flex size-11 items-center justify-center rounded-2xl bg-gold-faint text-gold">
         <Icon className="size-5" strokeWidth={2} />
       </span>
-      <div>
-        <div className={`text-[14.5px] font-bold leading-tight text-foreground ${isRTL ? "font-arabic" : ""}`}>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className={`text-[17px] font-bold leading-tight text-foreground ${isRTL ? "font-arabic" : ""}`}>
           {title}
-        </div>
-        <div className="mt-1 text-[12px] leading-snug text-muted">{body}</div>
+        </h3>
+        <ArrowUpRight className="size-4 shrink-0 text-muted transition group-hover:text-gold" strokeWidth={2} />
       </div>
+      <p className="mt-1 text-[13px] leading-snug text-muted">{body}</p>
     </Link>
   );
 }
