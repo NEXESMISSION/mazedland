@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { cleanDurationDays } from "@/lib/pricing";
 
 const TEXT_KEYS = [
   "payee_name",
@@ -57,11 +58,15 @@ export async function PUT(req: NextRequest) {
 
   // ── Promo add-ons ────────────────────────────────────────────────────
   for (const key of ["promo_home", "promo_top", "promo_banner"]) {
-    const v = body[key] as { enabled?: unknown; value?: unknown } | undefined;
+    const v = body[key] as { enabled?: unknown; value?: unknown; duration_days?: unknown } | undefined;
     if (!v || typeof v !== "object") continue;
     rows.push({
       key,
-      value: { enabled: v.enabled === true, value: cleanValue("fixed", v.value) },
+      value: {
+        enabled: v.enabled === true,
+        value: cleanValue("fixed", v.value),
+        duration_days: cleanDurationDays(v.duration_days),
+      },
       updated_by: user.id,
     });
   }

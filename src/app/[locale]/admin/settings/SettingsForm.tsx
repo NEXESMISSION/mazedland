@@ -10,9 +10,9 @@ type ListingMode = "free" | "fixed" | "percent";
 export type SettingsValues = {
   feeListingAuction: { mode: "free" | "fixed"; value: number };
   feeListingDirect: { mode: ListingMode; value: number };
-  promoHome: { enabled: boolean; value: number };
-  promoTop: { enabled: boolean; value: number };
-  promoBanner: { enabled: boolean; value: number };
+  promoHome: { enabled: boolean; value: number; duration_days: number };
+  promoTop: { enabled: boolean; value: number; duration_days: number };
+  promoBanner: { enabled: boolean; value: number; duration_days: number };
   deposit: { mode: ListingMode; value: number; free_until: string };
   payee_name: string;
   payee_bank: string;
@@ -94,7 +94,7 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
       {/* ── Promo add-ons ── */}
       <Section
         title="Options payantes"
-        hint="Mises en avant proposées au vendeur. Désactivez pour les masquer."
+        hint="Mises en avant proposées au vendeur : prix et durée (en jours) une fois l'annonce validée. Désactivez pour masquer une option."
       >
         <PromoRow label="Mise en avant (accueil)" cfg={v.promoHome} onChange={(c) => patch("promoHome", c)} />
         <PromoRow label="Top de la recherche" cfg={v.promoTop} onChange={(c) => patch("promoTop", c)} />
@@ -230,11 +230,11 @@ function PromoRow({
   label, cfg, onChange,
 }: {
   label: string;
-  cfg: { enabled: boolean; value: number };
-  onChange: (c: { enabled: boolean; value: number }) => void;
+  cfg: { enabled: boolean; value: number; duration_days: number };
+  onChange: (c: { enabled: boolean; value: number; duration_days: number }) => void;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-batta-gold/20 bg-batta-surface-2 p-3">
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-batta-gold/20 bg-batta-surface-2 p-3">
       <label className="inline-flex cursor-pointer items-center gap-2">
         <input
           type="checkbox"
@@ -244,17 +244,36 @@ function PromoRow({
         />
         <span className="text-[12px] font-semibold text-batta-cream">{label}</span>
       </label>
-      <div className="ms-auto flex items-stretch overflow-hidden rounded-lg border border-batta-gold/25 bg-batta-surface focus-within:border-batta-gold">
-        <input
-          type="number"
-          step="0.01"
-          min={0}
-          disabled={!cfg.enabled}
-          value={Number.isFinite(cfg.value) ? cfg.value : 0}
-          onChange={(e) => onChange({ ...cfg, value: Number(e.target.value) || 0 })}
-          className="batta-tabular w-24 bg-transparent px-3 py-2 text-sm text-batta-cream focus:outline-none disabled:opacity-40"
-        />
-        <span className="inline-flex items-center px-2.5 text-[11px] font-bold text-[var(--foreground-muted)]">TND</span>
+      <div className="ms-auto flex items-center gap-2">
+        {/* Price */}
+        <div className="flex items-stretch overflow-hidden rounded-lg border border-batta-gold/25 bg-batta-surface focus-within:border-batta-gold">
+          <input
+            type="number"
+            step="0.01"
+            min={0}
+            disabled={!cfg.enabled}
+            value={Number.isFinite(cfg.value) ? cfg.value : 0}
+            onChange={(e) => onChange({ ...cfg, value: Number(e.target.value) || 0 })}
+            className="batta-tabular w-20 bg-transparent px-3 py-2 text-sm text-batta-cream focus:outline-none disabled:opacity-40"
+            aria-label={`${label} — prix`}
+          />
+          <span className="inline-flex items-center px-2.5 text-[11px] font-bold text-[var(--foreground-muted)]">TND</span>
+        </div>
+        {/* Active duration in days */}
+        <div className="flex items-stretch overflow-hidden rounded-lg border border-batta-gold/25 bg-batta-surface focus-within:border-batta-gold">
+          <input
+            type="number"
+            step="1"
+            min={1}
+            max={365}
+            disabled={!cfg.enabled}
+            value={Number.isFinite(cfg.duration_days) ? cfg.duration_days : 30}
+            onChange={(e) => onChange({ ...cfg, duration_days: Math.max(1, Math.min(365, Math.floor(Number(e.target.value) || 0))) })}
+            className="batta-tabular w-16 bg-transparent px-3 py-2 text-sm text-batta-cream focus:outline-none disabled:opacity-40"
+            aria-label={`${label} — durée en jours`}
+          />
+          <span className="inline-flex items-center px-2.5 text-[11px] font-bold text-[var(--foreground-muted)]">jours</span>
+        </div>
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import {
 import { ApprovePropertyButtons } from "@/components/admin/ApprovePropertyButtons";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
+import { parseMonetizationSettings, resolvePromoDurations, type PromoKey } from "@/lib/pricing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -122,13 +123,21 @@ export default async function AdminProperties({
   const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  // Latest listing-fee payment per property → receipt/payment status inline.
+  // Latest listing-fee payment per property → receipt/payment status inline,
+  // plus the payment id + bought promos so approving a PAID listing straight
+  // from the list still captures the receipt and grants the right options.
   const ids = rows.map((r) => r.id);
-  const payByProp = new Map<string, { status: string; amount: number; receipt_url: string | null }>();
+  const payByProp = new Map<string, {
+    id: string;
+    status: string;
+    amount: number;
+    receipt_url: string | null;
+    promos: Partial<Record<PromoKey, boolean>> | null;
+  }>();
   if (ids.length > 0) {
     const { data: pays } = await supabase
       .from("payments")
-      .select("property_id, status, amount, receipt_url, created_at")
+      .select("id, property_id, status, amount, receipt_url, metadata, created_at")
       .in("property_id", ids)
       .eq("kind", "listing_fee")
       .order("created_at", { ascending: false });
@@ -136,13 +145,25 @@ export default async function AdminProperties({
       const pid = p.property_id as string;
       if (!payByProp.has(pid)) {
         payByProp.set(pid, {
+          id: p.id as string,
           status: p.status as string,
           amount: Number(p.amount),
           receipt_url: (p.receipt_url as string | null) ?? null,
+          promos: (p.metadata as { promos?: Partial<Record<PromoKey, boolean>> } | null)?.promos ?? null,
         });
       }
     }
   }
+
+  // Admin-configured promo durations (per option) — applied when a paid
+  // listing is approved so the seller gets exactly what they bought.
+  const { data: promoSettingRows } = await supabase
+    .from("app_settings")
+    .select("key, value")
+    .in("key", ["promo_home", "promo_top", "promo_banner"]);
+  const monMap = new Map<string, unknown>();
+  for (const r of promoSettingRows ?? []) monMap.set(r.key as string, r.value);
+  const mon = parseMonetizationSettings(monMap);
 
   const pendingCount = rows.filter((r) => r.status === "pending_review").length;
 
@@ -376,7 +397,12 @@ export default async function AdminProperties({
                   </td>
                   <td className="px-3 py-2.5 text-end">
                     <div className="flex justify-end">
-                      <ApprovePropertyButtons id={p.id} status={p.status} />
+                      <ApprovePropertyButtons
+                        id={p.id}
+                        status={p.status}
+                        acceptPaymentId={pay?.status === "pending_review" ? pay.id : undefined}
+                        promoDurations={pay?.promos ? resolvePromoDurations(pay.promos, mon) : undefined}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -520,7 +546,12 @@ export default async function AdminProperties({
                 >
                   Examiner en détail →
                 </Link>
-                <ApprovePropertyButtons id={p.id} status={p.status} />
+                <ApprovePropertyButtons
+                        id={p.id}
+                        status={p.status}
+                        acceptPaymentId={pay?.status === "pending_review" ? pay.id : undefined}
+                        promoDurations={pay?.promos ? resolvePromoDurations(pay.promos, mon) : undefined}
+                      />
               </div>
             </div>
           );

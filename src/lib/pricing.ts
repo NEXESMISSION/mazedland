@@ -10,8 +10,14 @@
 export type FeeMode = "free" | "fixed" | "percent";
 
 export type ListingFeeConfig = { mode: FeeMode; value: number };
-export type PromoConfig = { enabled: boolean; value: number };
+/** A paid promo add-on: whether it's offered, its price, and how many days
+ *  it stays active once a paid listing is approved. */
+export type PromoConfig = { enabled: boolean; value: number; duration_days: number };
 export type DepositConfig = { mode: FeeMode; value: number; free_until: string | null };
+
+/** The three promo slots, keyed the way payments.metadata.promos + the
+ *  accept_listing_payment RPC expect them. */
+export type PromoKey = "home_featured" | "top_listed" | "banner";
 
 export type MonetizationSettings = {
   feeListingAuction: ListingFeeConfig;
@@ -25,11 +31,18 @@ export type MonetizationSettings = {
 export const DEFAULT_MONETIZATION: MonetizationSettings = {
   feeListingAuction: { mode: "fixed", value: 20 },
   feeListingDirect: { mode: "fixed", value: 15 },
-  promoHome: { enabled: true, value: 15 },
-  promoTop: { enabled: true, value: 10 },
-  promoBanner: { enabled: true, value: 30 },
+  promoHome: { enabled: true, value: 15, duration_days: 30 },
+  promoTop: { enabled: true, value: 10, duration_days: 30 },
+  promoBanner: { enabled: true, value: 30, duration_days: 30 },
   deposit: { mode: "percent", value: 10, free_until: null },
 };
+
+/** Clamp a promo duration to a sane 1–365 day window (defaulting when unset). */
+export function cleanDurationDays(raw: unknown, fallback = 30): number {
+  const n = Math.floor(num(raw, fallback));
+  if (!Number.isFinite(n) || n < 1) return fallback;
+  return Math.min(365, n);
+}
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const num = (v: unknown, fallback = 0) => {
@@ -48,6 +61,7 @@ function promoCfg(raw: unknown, def: PromoConfig): PromoConfig {
   return {
     enabled: typeof o.enabled === "boolean" ? o.enabled : def.enabled,
     value: num(o.value, def.value),
+    duration_days: cleanDurationDays(o.duration_days, def.duration_days),
   };
 }
 function depositCfg(raw: unknown, def: DepositConfig): DepositConfig {
@@ -103,6 +117,25 @@ export function resolveDeposit(
   if (cfg.mode === "free" || freeWindow) return { required: false, amount: 0 };
   if (cfg.mode === "fixed") return { required: true, amount: round2(Math.max(0, cfg.value)) };
   return { required: true, amount: round2((openingPrice * cfg.value) / 100) };
+}
+
+/**
+ * Translate the promos a seller actually paid for (payments.metadata.promos)
+ * into the per-promo day durations the accept_listing_payment RPC applies.
+ * A promo only gets a duration when the seller bought it — so a seller always
+ * gets exactly what they paid for, for the admin-configured number of days,
+ * and never anything they didn't buy.
+ */
+export function resolvePromoDurations(
+  promos: Partial<Record<PromoKey, boolean>> | null | undefined,
+  mon: MonetizationSettings,
+): Record<PromoKey, number> {
+  const p = promos ?? {};
+  return {
+    home_featured: p.home_featured ? mon.promoHome.duration_days : 0,
+    top_listed: p.top_listed ? mon.promoTop.duration_days : 0,
+    banner: p.banner ? mon.promoBanner.duration_days : 0,
+  };
 }
 
 /** A short human label for a fee config, e.g. "Gratuit", "20 TND", "10%". */

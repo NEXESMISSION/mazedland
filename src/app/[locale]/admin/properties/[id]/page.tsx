@@ -6,6 +6,7 @@ import { formatTND } from "@/lib/utils";
 import { ApprovePropertyButtons } from "@/components/admin/ApprovePropertyButtons";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
+import { parseMonetizationSettings, resolvePromoDurations, type PromoKey } from "@/lib/pricing";
 import type { PropertyType } from "@/lib/types";
 import {
   ArrowLeft, MapPin, FileText, Download, ImageOff, Wallet,
@@ -111,7 +112,18 @@ export default async function AdminPropertyReview({
       .createSignedUrl(payRow.receipt_url as string, 3600);
     receiptUrl = signed?.signedUrl ?? null;
   }
-  const promos = (payRow?.metadata as { promos?: Record<string, boolean> } | null)?.promos ?? null;
+  const promos = (payRow?.metadata as { promos?: Partial<Record<PromoKey, boolean>> } | null)?.promos ?? null;
+
+  // Promo durations are admin-configured per option (/admin/settings), not
+  // hardcoded — so the seller gets exactly the options they paid for, each
+  // for the number of days the admin set.
+  const { data: promoSettingRows } = await supabase
+    .from("app_settings")
+    .select("key, value")
+    .in("key", ["promo_home", "promo_top", "promo_banner"]);
+  const monMap = new Map<string, unknown>();
+  for (const r of promoSettingRows ?? []) monMap.set(r.key as string, r.value);
+  const mon = parseMonetizationSettings(monMap);
 
   // If a listing-fee receipt is awaiting validation, "Valider" should accept
   // the payment (capture + publish + apply the promos the seller bought),
@@ -119,13 +131,7 @@ export default async function AdminPropertyReview({
   // receipt) fall back to a plain property approval.
   const acceptPaymentId =
     payRow && (payRow.status as string) === "pending_review" ? (payRow.id as string) : undefined;
-  const promoDurations = promos
-    ? {
-        home_featured: promos.home_featured ? 30 : 0,
-        top_listed: promos.top_listed ? 30 : 0,
-        banner: promos.banner ? 30 : 0,
-      }
-    : undefined;
+  const promoDurations = promos ? resolvePromoDurations(promos, mon) : undefined;
 
   const status = prop.status as string;
 
