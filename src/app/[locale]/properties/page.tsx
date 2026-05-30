@@ -1,7 +1,7 @@
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { AuctionWithProperty, PropertyType } from "@/lib/types";
 import { ExploreView } from "@/components/explore/ExploreView";
-import type { ExploreFilter } from "@/components/explore/ExploreFeed";
+import type { ExploreFilter } from "@/components/explore/types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
