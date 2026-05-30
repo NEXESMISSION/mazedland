@@ -74,7 +74,19 @@ export function ClientLogger() {
         return res;
       } catch (err) {
         const ms = Math.round(performance.now() - t0);
-        l.error(`${method} ${short} failed`, { ms, err: err instanceof Error ? err.message : String(err) });
+        const msg = err instanceof Error ? err.message : String(err);
+        // Aborted requests (navigation, Turbopack HMR) and transient
+        // "Failed to fetch" network blips are expected and self-recover —
+        // every caller that polls (BidComposer, pollers) retries on the
+        // next tick. Log them at debug so they don't masquerade as real
+        // errors; surface only genuine failures as error.
+        const transient =
+          (err instanceof DOMException && err.name === "AbortError") ||
+          /abort/i.test(msg) ||
+          /failed to fetch|networkerror|load failed/i.test(msg);
+        const line = `${method} ${short} failed`;
+        if (transient) l.debug(line, { ms, err: msg });
+        else l.error(line, { ms, err: msg });
         throw err;
       }
     };
