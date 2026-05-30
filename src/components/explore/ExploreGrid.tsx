@@ -618,12 +618,16 @@ function FilterPanel({
   onApply,
   onReset,
   onClose,
+  variant = "inline",
 }: {
   initial: ExtraFilters;
   onApply: (next: ExtraFilters) => void;
   onReset: () => void;
   onClose: () => void;
+  /** "inline" = mobile toggle panel; "sidebar" = always-visible desktop card. */
+  variant?: "inline" | "sidebar";
 }) {
+  const sidebar = variant === "sidebar";
   // Local draft state — the user can pick freely, only `onApply` commits.
   const [draft, setDraft] = useState<ExtraFilters>(initial);
 
@@ -647,7 +651,13 @@ function FilterPanel({
   };
 
   return (
-    <div className="border-b border-border bg-white px-4 py-4 lg:px-6">
+    <div className={sidebar ? "rounded-2xl border border-border bg-white p-4" : "border-b border-border bg-white px-4 py-4 lg:px-6"}>
+      {sidebar && (
+        <div className="mb-3 flex items-center gap-2">
+          <SlidersHorizontal className="size-4 text-[var(--gold)]" strokeWidth={2.2} />
+          <span className="text-[13px] font-bold text-foreground">Filtres</span>
+        </div>
+      )}
       {/* Type chips + inline close — no separate header, saves a row */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap gap-1.5">
