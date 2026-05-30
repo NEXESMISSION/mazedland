@@ -95,15 +95,15 @@ export function CautionActions({ auctionId, deposits }: { auctionId: string; dep
                         toast("Caution remboursée.", "success"); setRefundingId(null); setRef(""); start(() => router.refresh());
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 px-3 py-2 text-[12px] font-bold text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 text-[12.5px] font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
                   >
                     {busy === `ref-${d.id}` ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" strokeWidth={2.5} />} Confirmer
                   </button>
-                  <button type="button" onClick={() => { setRefundingId(null); setRef(""); }} className="rounded-lg px-2.5 py-2 text-[12px] font-semibold text-muted hover:text-foreground">Annuler</button>
+                  <button type="button" onClick={() => { setRefundingId(null); setRef(""); }} className="inline-flex h-9 items-center rounded-lg px-3 text-[12.5px] font-semibold text-muted transition hover:bg-surface-2 hover:text-foreground">Annuler</button>
                 </div>
               ) : (
                 <div className="mt-3 flex items-center gap-2">
-                  <button type="button" onClick={() => { setRefundingId(d.id); setRef(""); }} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 px-3 py-2 text-[12px] font-bold text-emerald-300 hover:bg-emerald-500/30">
+                  <button type="button" onClick={() => { setRefundingId(d.id); setRef(""); }} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 text-[12.5px] font-bold text-white shadow-sm transition hover:bg-emerald-700">
                     <CircleDollarSign className="size-3.5" /> Marquer remboursée
                   </button>
                   <button type="button" disabled={busy === `forf-${d.id}`}
@@ -112,7 +112,7 @@ export function CautionActions({ auctionId, deposits }: { auctionId: string; dep
                         toast("Caution confisquée.", "warning"); start(() => router.refresh());
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-50">
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-50 px-3.5 text-[12.5px] font-bold text-red-600 ring-1 ring-red-200 transition hover:bg-red-100 disabled:opacity-50">
                     <ShieldX className="size-3.5" /> Confisquer
                   </button>
                 </div>
