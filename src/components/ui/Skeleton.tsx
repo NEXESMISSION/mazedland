@@ -122,55 +122,79 @@ export function SkeletonDetailPage() {
         </div>
       </div>
 
-      {/* DESKTOP (lg+) — two-column, mirrors AuctionDesktop: breadcrumb +
-          title, gallery + specs on the left, sticky price/bid panel right. */}
-      <div className="hidden lg:block mx-auto max-w-[var(--max-w-wide)] px-8 pb-16">
+      {/* DESKTOP (lg+) — e-commerce product layout, mirrors AuctionDesktop:
+          breadcrumb, then gallery (left) + buy box (right), then full-width
+          specs / description / inspection+docs below. */}
+      <div className="hidden lg:block mx-auto w-full max-w-[1180px] px-6 pb-24">
+        {/* Breadcrumb */}
         <div className="pt-6">
-          <SkeletonBar height="h-3" width="w-56" />
-          <div className="mt-4">
-            <SkeletonBar height="h-7" width="w-24 rounded-full" />
-          </div>
-          <div className="mt-3">
-            <SkeletonBar height="h-9" width="w-2/3" />
-          </div>
-          <div className="mt-2">
-            <SkeletonBar height="h-3.5" width="w-1/3" />
-          </div>
+          <SkeletonBar height="h-3" width="w-64" />
         </div>
 
-        <div className="mt-6 grid grid-cols-12 gap-8">
-          {/* Left — gallery + specs */}
-          <div className="col-span-8">
-            <div className="batta-skeleton-luxe aspect-[16/10] rounded-2xl" />
-            <div className="mt-7 grid grid-cols-4 gap-2.5">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <SkeletonBar key={i} height="h-16" width="w-full rounded-xl" />
-              ))}
-            </div>
-            <div className="batta-frame mt-6 space-y-2.5 p-6">
-              <SkeletonBar height="h-3" width="w-24" />
-              <SkeletonBar height="h-3" width="w-full" />
-              <SkeletonBar height="h-3" width="w-11/12" />
-              <SkeletonBar height="h-3" width="w-4/5" />
-            </div>
+        {/* Product row: gallery + buy box */}
+        <div className="mt-5 grid grid-cols-12 items-start gap-8">
+          {/* Left — gallery */}
+          <div className="col-span-7">
+            <div className="batta-skeleton-luxe aspect-[4/3] rounded-2xl" />
           </div>
 
-          {/* Right — sticky price/bid panel */}
-          <div className="col-span-4">
-            <div className="rounded-2xl batta-surface-navy p-6">
+          {/* Right — buy box (identity + price card) */}
+          <div className="col-span-5 space-y-4">
+            <div className="space-y-3">
+              <SkeletonBar height="h-7" width="w-28 rounded-full" />
+              <SkeletonBar height="h-8" width="w-11/12" />
+              <SkeletonBar height="h-3.5" width="w-2/3" />
+              <div className="flex gap-2 pt-1">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <SkeletonBar key={i} height="h-7" width="w-20 rounded-full" />
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl bg-surface p-6 ring-1 ring-border">
               <SkeletonBar height="h-3" width="w-1/3" />
-              <div className="mt-3">
-                <SkeletonBar height="h-9" width="w-2/3" />
+              <div className="mt-2">
+                <SkeletonBar height="h-10" width="w-2/3" />
               </div>
               <div className="mt-5 grid grid-cols-2 gap-2">
-                <SkeletonBar height="h-14" width="w-full rounded-xl" />
-                <SkeletonBar height="h-14" width="w-full rounded-xl" />
+                <SkeletonBar height="h-16" width="w-full rounded-xl" />
+                <SkeletonBar height="h-16" width="w-full rounded-xl" />
               </div>
               <div className="mt-5">
                 <SkeletonBar height="h-12" width="w-full rounded-full" />
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Full-width specifications */}
+        <div className="batta-frame mt-10 p-6">
+          <SkeletonBar height="h-3" width="w-32" />
+          <div className="mt-4 grid grid-cols-4 gap-2.5">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonBar key={i} height="h-14" width="w-full rounded-xl" />
+            ))}
+          </div>
+        </div>
+
+        {/* Full-width description */}
+        <div className="batta-frame mt-6 space-y-2.5 p-6">
+          <SkeletonBar height="h-3" width="w-24" />
+          <SkeletonBar height="h-3" width="w-full" />
+          <SkeletonBar height="h-3" width="w-11/12" />
+          <SkeletonBar height="h-3" width="w-4/5" />
+        </div>
+
+        {/* Inspection + documents, 2-col */}
+        <div className="mt-6 grid grid-cols-2 gap-6">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-surface p-6 ring-1 ring-border">
+              <SkeletonBar height="h-3" width="w-1/3" />
+              <div className="mt-3 space-y-2">
+                <SkeletonBar height="h-3" width="w-full" />
+                <SkeletonBar height="h-3" width="w-2/3" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </>
@@ -710,6 +734,67 @@ export function PaymentCheckoutSkeleton() {
           <div className="batta-skeleton-luxe h-12 w-full rounded-2xl" />
         </div>
       </section>
+      <span className="sr-only">Chargement…</span>
+    </div>
+  );
+}
+
+/**
+ * Account hub skeleton. Mobile = identity card + stacked rows; desktop
+ * (lg+) = a wide identity banner + a 3-column action-tile grid, mirroring
+ * account/page.tsx so the shape doesn't jump when the real page swaps in.
+ */
+export function AccountSkeleton() {
+  return (
+    <div role="status" aria-live="polite">
+      {/* MOBILE / tablet */}
+      <div className="lg:hidden mx-auto max-w-[var(--max-w)] px-4 py-6">
+        <section className="batta-surface-navy-luxe rounded-2xl p-6 ring-1 ring-gold/25">
+          <div className="flex items-center gap-3">
+            <div className="batta-skeleton size-14 shrink-0 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <SkeletonBar height="h-4" width="w-1/2" />
+              <SkeletonBar height="h-3" width="w-1/3" />
+            </div>
+          </div>
+        </section>
+        <section className="mt-5 space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 rounded-2xl bg-surface p-4 ring-1 ring-border">
+              <div className="batta-skeleton size-10 shrink-0 rounded-xl" />
+              <div className="flex-1 space-y-1.5">
+                <SkeletonBar height="h-3.5" width="w-2/3" />
+                <SkeletonBar height="h-2.5" width="w-1/2" />
+              </div>
+            </div>
+          ))}
+        </section>
+      </div>
+
+      {/* DESKTOP */}
+      <div className="hidden lg:block mx-auto max-w-6xl px-8 py-8">
+        <section className="batta-surface-navy-luxe flex items-center justify-between gap-4 rounded-3xl p-7 ring-1 ring-gold/25">
+          <div className="flex items-center gap-4">
+            <div className="batta-skeleton size-16 shrink-0 rounded-full" />
+            <div className="space-y-2">
+              <SkeletonBar height="h-5" width="w-48" />
+              <SkeletonBar height="h-3" width="w-32" />
+            </div>
+          </div>
+          <div className="batta-skeleton h-10 w-32 rounded-full" />
+        </section>
+        <div className="mt-6 grid grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-surface p-5 ring-1 ring-border">
+              <div className="batta-skeleton size-11 rounded-2xl" />
+              <div className="mt-4 space-y-2">
+                <SkeletonBar height="h-4" width="w-1/2" />
+                <SkeletonBar height="h-3" width="w-3/4" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
       <span className="sr-only">Chargement…</span>
     </div>
   );

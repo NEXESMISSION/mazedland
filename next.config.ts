@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
     // Long-cache optimized variants on the CDN. They're keyed by
     // (source URL + width + quality + format) so this is safe.
     minimumCacheTTL: 60 * 60 * 24 * 30,
+    // Property cards render small (≤ ~300px wide); cap the generated variants
+    // so the optimizer stops emitting oversized 2048/3840 images for thumbnails
+    // (fewer + smaller transforms = faster loads, lower bandwidth).
+    deviceSizes: [360, 640, 828, 1080, 1280, 1920],
+    imageSizes: [120, 200, 280, 384],
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co" },
       { protocol: "https", hostname: "images.unsplash.com" },
