@@ -54,41 +54,60 @@ export function AuthFormSkeleton({
   /** Renders the secondary "Pas encore de compte ?" footer band. */
   withFooter?: boolean;
 }) {
-  return (
-    <div className="mx-auto flex min-h-[calc(100dvh-9rem)] max-w-[var(--max-w)] flex-col items-center justify-center px-6">
-      <div className="relative w-full max-w-sm">
-        <div className="relative overflow-hidden rounded-3xl bg-surface ring-1 ring-border shadow-[var(--shadow-md)]">
-          <div aria-hidden className="batta-gradient-gold h-[2px] w-full" />
-          <div className="p-7 sm:p-8">
-            <div className="flex flex-col items-center text-center">
-              <div className="batta-skeleton size-20 rounded-2xl" />
-              <div className="mt-5 w-2/3">
-                <SkeletonBar height="h-6" width="w-full" />
-              </div>
-              <div className="mt-2 w-3/4">
-                <SkeletonBar height="h-3" width="w-full" />
-              </div>
+  // The form card is identical on both breakpoints — render once.
+  const card = (
+    <div className="relative w-full max-w-sm">
+      <div className="relative overflow-hidden rounded-3xl bg-surface ring-1 ring-border shadow-[var(--shadow-md)]">
+        <div aria-hidden className="batta-gradient-gold h-[2px] w-full" />
+        <div className="p-7 sm:p-8">
+          <div className="flex flex-col items-center text-center">
+            <div className="batta-skeleton size-20 rounded-2xl" />
+            <div className="mt-5 w-2/3">
+              <SkeletonBar height="h-6" width="w-full" />
             </div>
-            <div className="mt-7 space-y-4">
-              {Array.from({ length: fields }).map((_, i) => (
-                <div key={i} className="space-y-1.5">
-                  <SkeletonBar height="h-2.5" width="w-1/4" />
-                  <SkeletonBar height="h-11" width="w-full" />
-                </div>
-              ))}
-              <SkeletonBar height="h-11" width="w-full" />
+            <div className="mt-2 w-3/4">
+              <SkeletonBar height="h-3" width="w-full" />
             </div>
           </div>
-          {withFooter && (
-            <div className="border-t border-border bg-surface-2 px-7 py-4 text-center sm:px-8">
-              <div className="mx-auto w-2/3">
-                <SkeletonBar height="h-3" width="w-full" />
+          <div className="mt-7 space-y-4">
+            {Array.from({ length: fields }).map((_, i) => (
+              <div key={i} className="space-y-1.5">
+                <SkeletonBar height="h-2.5" width="w-1/4" />
+                <SkeletonBar height="h-11" width="w-full" />
               </div>
-            </div>
-          )}
+            ))}
+            <SkeletonBar height="h-11" width="w-full" />
+          </div>
         </div>
+        {withFooter && (
+          <div className="border-t border-border bg-surface-2 px-7 py-4 text-center sm:px-8">
+            <div className="mx-auto w-2/3">
+              <SkeletonBar height="h-3" width="w-full" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* MOBILE / tablet (< lg) — centered card, mirrors the real page. */}
+      <div className="lg:hidden mx-auto flex min-h-[calc(100dvh-9rem)] max-w-[var(--max-w)] flex-col items-center justify-center px-6">
+        {card}
+      </div>
+
+      {/* DESKTOP (lg+) — split screen: hero panel + form card, so login /
+          signup don't tear into a different shape while loading. */}
+      <div className="hidden h-[100dvh] overflow-hidden lg:grid lg:grid-cols-[1.05fr_0.95fr]">
+        {/* Hero side — solid navy block (the real AuthHeroPanel photo). */}
+        <div className="batta-surface-navy-luxe h-full w-full" />
+        {/* Form side */}
+        <div className="flex h-[100dvh] items-center justify-center bg-surface-2 px-8 py-10">
+          <div className="w-full max-w-md">{card}</div>
+        </div>
+      </div>
+    </>
   );
 }
 
