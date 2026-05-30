@@ -27,7 +27,7 @@ import {
   X,
   Clock,
 } from "lucide-react";
-import type { ExploreFilter } from "./ExploreFeed";
+import type { ExploreFilter } from "./types";
 import type { PropertyType } from "@/lib/types";
 import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
 
