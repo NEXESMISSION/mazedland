@@ -1,33 +1,18 @@
 /**
- * Locale-root loading fallback — fires whenever a route segment doesn't
- * ship its own loading.tsx. Neutral skeleton layout (header + card grid)
- * that works for any page, no brand-specific imagery while waiting.
+ * Locale-root loading fallback — fires only for route segments that don't
+ * ship their own loading.tsx. Deliberately NEUTRAL (a centered brand spinner,
+ * not a property-card grid) so it never flashes the shape of the wrong page
+ * during navigation. Routes with a meaningful skeleton (home, properties,
+ * auction detail, account, auth) define their own loading.tsx.
  */
 export default function LocaleLoading() {
   return (
     <div
       role="status"
       aria-live="polite"
-      className="mx-auto max-w-[var(--max-w)] px-4 pt-5 lg:max-w-[var(--max-w-wide)]"
+      className="flex min-h-[60vh] w-full items-center justify-center px-6"
     >
-      <div className="flex items-end justify-between gap-3">
-        <div className="space-y-2">
-          <div className="skeleton h-2 w-20" />
-          <div className="skeleton h-6 w-40" />
-        </div>
-        <div className="skeleton h-5 w-16" />
-      </div>
-      <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="block">
-            <div className="skeleton aspect-[4/5] rounded-2xl" />
-            <div className="space-y-2 px-1 pt-3">
-              <div className="skeleton h-3.5 w-3/4" />
-              <div className="skeleton h-3 w-1/2" />
-            </div>
-          </div>
-        ))}
-      </div>
+      <span className="inline-flex size-10 animate-spin rounded-full border-[3px] border-[var(--border)] border-t-[var(--gold)]" />
       <span className="sr-only">Chargement…</span>
     </div>
   );

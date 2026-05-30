@@ -68,7 +68,7 @@ export default async function PartnersLanding() {
             title="Real-estate agencies"
             body="Three subscription tiers from 99 to 799 TND/month. Verified-agency badge. Featured listings each month."
             cta="See plans"
-            ctaHref="/partners/agency"
+            ctaHref="/contact?segment=agency"
             isRTL={isRTL}
             perks={[
               "Up to unlimited listings",
@@ -83,7 +83,7 @@ export default async function PartnersLanding() {
             title="Court bailiffs"
             body="Digitise judicial auctions. Reach 3–5 × more bidders than newspaper notices, while staying inside the legal framework."
             cta="Apply for accreditation"
-            ctaHref="/partners/contact?segment=bailiff"
+            ctaHref="/contact?segment=bailiff"
             isRTL={isRTL}
             perks={[
               "Free first three auctions",

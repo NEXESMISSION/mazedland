@@ -148,34 +148,37 @@ export function SignupForm() {
         minLength={8}
       />
       {/* Terms + privacy consent — required. The documents open in a modal
-          so the user can read them without leaving signup. */}
-      <label className="flex items-start gap-2.5 text-[12px] leading-relaxed text-batta-cream/80">
+          so the user can read them without leaving signup. The legal links
+          are NOT wrapped in the <label> (a label would steal their clicks and
+          toggle the checkbox instead of opening the modal). */}
+      <div className="flex items-start gap-2.5 text-[12px] leading-relaxed text-batta-cream/80">
         <input
+          id="signup-accept"
           type="checkbox"
           checked={accepted}
           onChange={(e) => setAccepted(e.target.checked)}
           className="mt-0.5 size-4 shrink-0 accent-[var(--gold)]"
         />
         <span>
-          J&apos;accepte les{" "}
+          <label htmlFor="signup-accept" className="cursor-pointer">J&apos;accepte les</label>{" "}
           <button
             type="button"
-            onClick={() => setLegalModal("terms")}
+            onClick={(e) => { e.preventDefault(); setLegalModal("terms"); }}
             className="font-bold text-batta-cream underline transition hover:text-gold-bright"
           >
             conditions d&apos;utilisation
           </button>{" "}
-          et la{" "}
+          <label htmlFor="signup-accept" className="cursor-pointer">et la</label>{" "}
           <button
             type="button"
-            onClick={() => setLegalModal("privacy")}
+            onClick={(e) => { e.preventDefault(); setLegalModal("privacy"); }}
             className="font-bold text-batta-cream underline transition hover:text-gold-bright"
           >
             politique de confidentialité
           </button>
           .
         </span>
-      </label>
+      </div>
 
       {error && (
         <p className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
