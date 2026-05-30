@@ -648,26 +648,8 @@ function FilterPanel({
 
   return (
     <div className="border-b border-border bg-white px-4 py-4 lg:px-6">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="batta-eyebrow inline-flex items-center gap-2">
-          <SlidersHorizontal className="size-3.5" strokeWidth={2.4} />
-          Filtres
-        </h2>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Fermer les filtres"
-          className="inline-flex size-8 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-foreground"
-        >
-          <X className="size-4" strokeWidth={2.2} />
-        </button>
-      </div>
-
-      {/* Type chips */}
-      <div className="mt-4">
-        <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
-          Type de bien
-        </div>
+      {/* Type chips + inline close — no separate header, saves a row */}
+      <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap gap-1.5">
           {PROPERTY_TYPES.map((p) => {
             const active = draft.types.includes(p.key);
@@ -688,16 +670,22 @@ function FilterPanel({
             );
           })}
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fermer les filtres"
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-foreground"
+        >
+          <X className="size-4" strokeWidth={2.2} />
+        </button>
       </div>
 
-      {/* Governorate select */}
-      <div className="mt-4">
-        <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
-          Gouvernorat
-        </label>
+      {/* Gouvernorat + prix on one compact row */}
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
         <select
           value={draft.gov ?? ""}
           onChange={(e) => setGov(e.target.value || null)}
+          aria-label="Gouvernorat"
           className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-[13px]"
         >
           <option value="">Tous les gouvernorats</option>
@@ -705,33 +693,24 @@ function FilterPanel({
             <option key={g} value={g}>{g}</option>
           ))}
         </select>
-      </div>
-
-      {/* Price range */}
-      <div className="mt-4">
-        <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
-          Prix (TND)
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            placeholder="Min"
-            value={draft.minPrice ?? ""}
-            onChange={(e) => setNum("minPrice")(e.target.value)}
-            className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-[13px] tabular-nums"
-          />
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            placeholder="Max"
-            value={draft.maxPrice ?? ""}
-            onChange={(e) => setNum("maxPrice")(e.target.value)}
-            className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-[13px] tabular-nums"
-          />
-        </div>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          placeholder="Prix min (TND)"
+          value={draft.minPrice ?? ""}
+          onChange={(e) => setNum("minPrice")(e.target.value)}
+          className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-[13px] tabular-nums"
+        />
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          placeholder="Prix max (TND)"
+          value={draft.maxPrice ?? ""}
+          onChange={(e) => setNum("maxPrice")(e.target.value)}
+          className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-[13px] tabular-nums"
+        />
       </div>
 
       {/* Apply / Reset */}
@@ -739,8 +718,9 @@ function FilterPanel({
         <button
           type="button"
           onClick={onReset}
-          className="flex-1 rounded-full border border-border bg-white px-4 py-2.5 text-[12.5px] font-bold text-muted transition hover:border-[var(--gold-soft)] hover:text-foreground"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-red-200 bg-white px-4 py-2.5 text-[12.5px] font-bold text-red-600 transition hover:bg-red-50"
         >
+          <X className="size-3.5" strokeWidth={2.6} />
           Réinitialiser
         </button>
         <button
