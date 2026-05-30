@@ -5,7 +5,7 @@ import {
   Building2, Banknote, Wallet, Receipt, UserCheck, Users,
   ShieldCheck, Settings2, LayoutTemplate, FileText,
   Sparkles, Bell, MessageSquare, Inbox, Home as HomeIcon,
-  LayoutDashboard, ExternalLink, type LucideIcon,
+  LayoutDashboard, ExternalLink, HandCoins, type LucideIcon,
 } from "lucide-react";
 
 /**
@@ -30,6 +30,7 @@ const GROUPS: Group[] = [
     label: "Argent",
     items: [
       { label: "Paiements vendeurs", href: "/admin/payouts", Icon: Wallet },
+      { label: "Paiement manuel", href: "/admin/manual-payment", Icon: HandCoins },
     ],
   },
   {

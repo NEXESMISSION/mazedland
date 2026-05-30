@@ -16,6 +16,7 @@ import {
   Star,
   ArrowUpToLine,
   Megaphone,
+  HandCoins,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
@@ -199,15 +200,11 @@ export function PaymentsQueueList({
                 </div>
                 <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--foreground-muted)]">
                   {item.provider === "d17" ? (
-                    <>
-                      <Smartphone className="h-3 w-3" />
-                      D17
-                    </>
+                    <><Smartphone className="h-3 w-3" /> D17</>
+                  ) : item.provider === "manual" ? (
+                    <><HandCoins className="h-3 w-3" /> Manuel</>
                   ) : (
-                    <>
-                      <Building2 className="h-3 w-3" />
-                      Virement
-                    </>
+                    <><Building2 className="h-3 w-3" /> Virement</>
                   )}
                 </div>
               </div>
