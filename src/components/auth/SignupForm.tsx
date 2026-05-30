@@ -8,6 +8,8 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
 import { MailCheck } from "lucide-react";
 import { PhoneInput } from "./PhoneInput";
 import { TUNISIAN_GOVERNORATES, normalizeE164, validatePhone } from "@/lib/tunisia";
+import { Modal } from "@/components/ui/Modal";
+import { TermsContent, PrivacyContent } from "@/components/legal/LegalContent";
 
 // Signup is intentionally identity-only. Role elevation (agency, bank,
 // bailiff, inspector, admin) happens via dedicated admin-reviewed flows
@@ -34,6 +36,8 @@ export function SignupForm() {
   const [dialCode, setDialCode] = useState("+216");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [governorate, setGovernorate] = useState("");
+  const [accepted, setAccepted] = useState(false);
+  const [legalModal, setLegalModal] = useState<null | "terms" | "privacy">(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -56,6 +60,10 @@ export function SignupForm() {
     }
     if (!governorate) {
       setError("Sélectionnez votre gouvernorat pour continuer.");
+      return;
+    }
+    if (!accepted) {
+      setError("Veuillez accepter les conditions d'utilisation et la politique de confidentialité.");
       return;
     }
     startTransition(async () => {
@@ -139,16 +147,55 @@ export function SignupForm() {
         required
         minLength={8}
       />
+      {/* Terms + privacy consent — required. The documents open in a modal
+          so the user can read them without leaving signup. */}
+      <label className="flex items-start gap-2.5 text-[12px] leading-relaxed text-batta-cream/80">
+        <input
+          type="checkbox"
+          checked={accepted}
+          onChange={(e) => setAccepted(e.target.checked)}
+          className="mt-0.5 size-4 shrink-0 accent-[var(--gold)]"
+        />
+        <span>
+          J&apos;accepte les{" "}
+          <button
+            type="button"
+            onClick={() => setLegalModal("terms")}
+            className="font-bold text-batta-cream underline transition hover:text-gold-bright"
+          >
+            conditions d&apos;utilisation
+          </button>{" "}
+          et la{" "}
+          <button
+            type="button"
+            onClick={() => setLegalModal("privacy")}
+            className="font-bold text-batta-cream underline transition hover:text-gold-bright"
+          >
+            politique de confidentialité
+          </button>
+          .
+        </span>
+      </label>
+
       {error && (
         <p className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
       )}
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || !accepted}
         className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
         {isPending ? t("common.loading") : t("nav.signup")}
       </button>
+
+      <Modal
+        open={legalModal !== null}
+        onClose={() => setLegalModal(null)}
+        size="lg"
+        title={legalModal === "privacy" ? "Politique de confidentialité" : "Conditions d'utilisation"}
+      >
+        {legalModal === "privacy" ? <PrivacyContent /> : <TermsContent />}
+      </Modal>
       <p className="text-center text-[11px] text-batta-muted">
         Compte partenaire (agence, expert, banque) ? Créez un compte ici puis
         candidatez depuis <span className="text-batta-cream">Compte</span>.

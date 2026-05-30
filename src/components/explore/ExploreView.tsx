@@ -1,48 +1,22 @@
-"use client";
-
-import { useState } from "react";
-import { ExploreGrid } from "./ExploreGrid";
+import type { AuctionWithProperty } from "@/lib/types";
+import { ExploreGrid, type ExtraFilters } from "./ExploreGrid";
 import type { ExploreFilter } from "./types";
 
 /**
- * Client wrapper for the explore surface. Previously toggled between a grid
- * and a TikTok-style "reels" feed; the reel view was removed, so this now
- * always renders the grid.
+ * Wrapper for the explore surface. Previously toggled between a grid and a
+ * TikTok-style "reels" feed; the reel view was removed, so this now always
+ * renders the grid. Kept as a thin pass-through so the page import is stable.
  */
-export function ExploreView({
-  initialItems,
-  initialFilter,
-  initialPage,
-  initialTotalPages,
-  initialTotalCount,
-  loggedIn,
-  savedAuctionIds,
-  initialExtra,
-  initialSearch,
-}: {
-  initialItems: ExploreItem[];
+export function ExploreView(props: {
+  initialItems: AuctionWithProperty[];
   initialFilter: ExploreFilter;
-  initialPage: number;
-  initialTotalPages: number;
-  initialTotalCount: number;
+  initialPage?: number;
+  initialTotalPages?: number;
+  initialTotalCount?: number;
   loggedIn: boolean;
   savedAuctionIds: string[];
-  initialExtra: ExtraFilters;
-  initialSearch: string;
+  initialExtra?: ExtraFilters;
+  initialSearch?: string;
 }) {
-  const [items] = useState(initialItems);
-
-  return (
-    <ExploreGrid
-      initialItems={items}
-      initialFilter={initialFilter}
-      initialPage={initialPage}
-      initialTotalPages={initialTotalPages}
-      initialTotalCount={initialTotalCount}
-      loggedIn={loggedIn}
-      savedAuctionIds={savedAuctionIds}
-      initialExtra={initialExtra}
-      initialSearch={initialSearch}
-    />
-  );
+  return <ExploreGrid {...props} />;
 }

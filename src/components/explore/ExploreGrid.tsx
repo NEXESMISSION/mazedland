@@ -311,29 +311,45 @@ export function ExploreGrid({
             icon={<Tag className="size-3.5" strokeWidth={2.5} />}
             label="Offres"
           />
-          <FilterButton
-            count={activeCount(extra)}
-            onClick={() => setPanelOpen((v) => !v)}
-            active={panelOpen}
-          />
+          {/* Advanced-filters toggle — mobile only; desktop uses the sidebar. */}
+          <span className="lg:hidden">
+            <FilterButton
+              count={activeCount(extra)}
+              onClick={() => setPanelOpen((v) => !v)}
+              active={panelOpen}
+            />
+          </span>
         </div>
         <div aria-hidden className="batta-gold-rule" />
       </div>
 
+      {/* Mobile inline filter panel (toggled). Desktop uses the sidebar below. */}
       {panelOpen && (
-        <FilterPanel
-          initial={extra}
-          onApply={applyExtraFilters}
-          onReset={resetExtraFilters}
-          onClose={() => setPanelOpen(false)}
-        />
+        <div className="lg:hidden">
+          <FilterPanel
+            initial={extra}
+            onApply={applyExtraFilters}
+            onReset={resetExtraFilters}
+            onClose={() => setPanelOpen(false)}
+          />
+        </div>
       )}
 
-      <div ref={topAnchorRef} className="px-4 pt-5">
-        {/* Page title + view toggle on the right — keeps the filter
-            rail clean and gives the toggle a permanent home that won't
-            crowd the pills on narrow screens. */}
-        <div className="flex items-start justify-between gap-3">
+      {/* Body — desktop: filters sidebar (left) + results; mobile: just results. */}
+      <div className="lg:flex lg:items-start lg:gap-6 lg:px-4">
+        <aside className="hidden shrink-0 lg:block lg:w-64 lg:pt-5">
+          <div className="sticky top-[calc(var(--desktop-nav-h)+1rem)]">
+            <FilterPanel
+              variant="sidebar"
+              initial={extra}
+              onApply={applyExtraFilters}
+              onReset={resetExtraFilters}
+              onClose={() => setPanelOpen(false)}
+            />
+          </div>
+        </aside>
+
+        <div ref={topAnchorRef} className="min-w-0 px-4 pt-5 lg:flex-1 lg:px-0">
           <div className="min-w-0">
             <span className="batta-eyebrow">The catalogue</span>
             <h1 className="mt-1.5 text-[26px] font-extrabold leading-tight tracking-tight">
@@ -349,46 +365,43 @@ export function ExploreGrid({
               )}
             </p>
           </div>
-          {viewToggle && <div className="shrink-0 pt-1">{viewToggle}</div>}
-        </div>
 
-        {items.length === 0 && !loading ? (
-          <GridEmptyState filter={filter} search={search} />
-        ) : (
-          <div className="mt-5 grid grid-cols-2 gap-3 pb-6 lg:grid-cols-4 lg:gap-5">
-            {items.map((a, i) => (
-              <GridCard
-                key={a.id}
-                auction={a}
-                saved={savedSet.has(a.id)}
-                loggedIn={loggedIn}
-                priority={i < 4}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                t={t as any}
-                locale={locale}
+          {items.length === 0 && !loading ? (
+            <GridEmptyState filter={filter} search={search} />
+          ) : (
+            <div className="mt-5 grid grid-cols-2 gap-3 pb-6 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4">
+              {items.map((a, i) => (
+                <GridCard
+                  key={a.id}
+                  auction={a}
+                  saved={savedSet.has(a.id)}
+                  loggedIn={loggedIn}
+                  priority={i < 4}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  t={t as any}
+                  locale={locale}
+                />
+              ))}
+            </div>
+          )}
+
+          {loading && (
+            <div className="flex h-16 items-center justify-center text-muted">
+              <Loader2 className="size-5 animate-spin" />
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="pb-10 pt-2">
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                disabled={loading}
+                onPageChange={(p) => void goToPage(p)}
               />
-            ))}
-          </div>
-        )}
-
-        {loading && (
-          <div className="flex h-16 items-center justify-center text-muted">
-            <Loader2 className="size-5 animate-spin" />
-          </div>
-        )}
-
-        {/* Numbered pagination — primary navigation now. Sits below the
-            grid; one click per page jump. */}
-        {totalPages > 1 && (
-          <div className="pb-10 pt-2">
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              disabled={loading}
-              onPageChange={(p) => void goToPage(p)}
-            />
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -680,18 +693,20 @@ function FilterPanel({
             );
           })}
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Fermer les filtres"
-          className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-foreground"
-        >
-          <X className="size-4" strokeWidth={2.2} />
-        </button>
+        {!sidebar && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fermer les filtres"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-foreground"
+          >
+            <X className="size-4" strokeWidth={2.2} />
+          </button>
+        )}
       </div>
 
-      {/* Gouvernorat + prix on one compact row */}
-      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+      {/* Gouvernorat + prix — one row inline, stacked in the narrow sidebar */}
+      <div className={`mt-3 grid grid-cols-1 gap-2 ${sidebar ? "" : "sm:grid-cols-3"}`}>
         <select
           value={draft.gov ?? ""}
           onChange={(e) => setGov(e.target.value || null)}
