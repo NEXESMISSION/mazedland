@@ -5,8 +5,9 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { AccountMenu } from "./AccountMenu";
 import { normalizeSearchQuery } from "@/lib/search";
-import { Search, User, Plus } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 
 /**
  * Desktop (lg+) horizontal navigation. Replaces the mobile TopBar +
@@ -116,17 +117,7 @@ export function DesktopNav() {
         {/* ── Right zone: notifications, account, sell CTA ── */}
         <div className="flex shrink-0 items-center gap-2">
           <NotificationBell />
-          <Link
-            href="/account"
-            aria-label={t("account")}
-            className={`inline-flex size-10 items-center justify-center rounded-full border transition-colors ${
-              isActive(pathname, "/account")
-                ? "border-gold-soft bg-gold-faint text-gold"
-                : "border-border text-muted hover:border-gold-soft/60 hover:text-foreground"
-            }`}
-          >
-            <User className="size-5" strokeWidth={2} />
-          </Link>
+          <AccountMenu />
           <Link
             href="/sell"
             className="batta-gold-fill inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[13px] font-bold shadow-[var(--shadow-gold)] transition active:scale-[0.98]"
