@@ -709,30 +709,40 @@ export function BidPageSkeleton() {
 }
 
 /**
- * Payment checkout skeleton. Cover image + amount block + provider
- * selector + instructions card + upload form.
+ * Payment checkout skeleton — mirrors CheckoutClient's real centered
+ * `max-w-md` column (compact lot card → provider tabs → payee-details card →
+ * receipt upload box) so the loading→content swap doesn't jump on desktop.
  */
 export function PaymentCheckoutSkeleton() {
   return (
     <div
       role="status"
       aria-live="polite"
-      className="mx-auto max-w-[var(--max-w)] pb-8"
+      className="mx-auto max-w-md px-4 py-6 lg:py-12"
     >
-      <div className="batta-skeleton-luxe aspect-[4/3] w-full" />
-      <div className="px-4 pt-4">
-        <SkeletonBar height="h-2.5" width="w-32" />
-        <div className="mt-2">
-          <SkeletonBar height="h-8" width="w-2/3" />
+      {/* Lot summary card */}
+      <div className="overflow-hidden rounded-2xl bg-surface ring-1 ring-border">
+        <div className="flex gap-3 p-3">
+          <div className="batta-skeleton-luxe size-16 shrink-0 rounded-xl" />
+          <div className="flex-1 space-y-2 pt-1">
+            <SkeletonBar height="h-3.5" width="w-3/4" />
+            <SkeletonBar height="h-2.5" width="w-1/3" />
+          </div>
+        </div>
+        <div className="flex items-center justify-between border-t border-border px-4 py-3">
+          <SkeletonBar height="h-3" width="w-20" />
+          <SkeletonBar height="h-5" width="w-24" />
         </div>
       </div>
-      <div className="mt-5 px-4">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="batta-skeleton h-14 rounded-2xl" />
-          <div className="batta-skeleton-luxe h-14 rounded-2xl" />
-        </div>
+
+      {/* Provider tabs */}
+      <div className="mt-4 grid grid-cols-2 gap-2.5">
+        <div className="batta-skeleton-luxe h-14 rounded-2xl" />
+        <div className="batta-skeleton h-14 rounded-2xl" />
       </div>
-      <section className="mx-4 mt-5 rounded-2xl bg-surface p-4 ring-1 ring-border">
+
+      {/* Payee details card */}
+      <section className="mt-4 rounded-2xl bg-surface p-4 ring-1 ring-border">
         <SkeletonBar height="h-3" width="w-1/3" />
         <div className="mt-3 space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -740,17 +750,19 @@ export function PaymentCheckoutSkeleton() {
               key={i}
               className="flex items-center justify-between border-b border-border py-2 last:border-b-0"
             >
-              <SkeletonBar height="h-3" width="w-1/3" />
               <SkeletonBar height="h-3" width="w-1/4" />
+              <SkeletonBar height="h-3" width="w-1/3" />
             </div>
           ))}
         </div>
       </section>
-      <section className="mx-4 mt-5">
-        <SkeletonBar height="h-4" width="w-1/3" />
-        <div className="batta-skeleton-luxe mt-3 aspect-[4/3] w-full rounded-2xl" />
+
+      {/* Receipt upload */}
+      <section className="mt-4">
+        <SkeletonBar height="h-3" width="w-1/3" />
+        <div className="batta-skeleton-luxe mt-3 h-36 w-full rounded-2xl" />
         <div className="mt-3">
-          <div className="batta-skeleton-luxe h-12 w-full rounded-2xl" />
+          <div className="batta-skeleton-luxe h-12 w-full rounded-full" />
         </div>
       </section>
       <span className="sr-only">Chargement…</span>

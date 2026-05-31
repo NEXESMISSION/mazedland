@@ -90,9 +90,9 @@ export default async function PaymentSuccess({
   const isCaptured = payment.status === "captured";
 
   return (
-    <div className="mx-auto max-w-md px-4 py-10">
+    <div className="mx-auto flex min-h-[calc(100dvh-var(--desktop-nav-h))] w-full max-w-md flex-col items-center justify-center px-4 py-10">
       <SuccessAutoRedirect to={safeReturn} delayMs={1800} enabled={isCaptured} />
-      <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-7 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]">
+      <div className="w-full rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-7 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]">
         {/* Big tick */}
         <div className="relative mx-auto h-16 w-16">
           {isCaptured && (
@@ -199,8 +199,8 @@ function SuccessShell({
   id?: string;
 }) {
   return (
-    <div className="mx-auto max-w-md px-4 py-10">
-      <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-7 text-center">
+    <div className="mx-auto flex min-h-[calc(100dvh-var(--desktop-nav-h))] w-full max-w-md flex-col items-center justify-center px-4 py-10">
+      <div className="w-full rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-7 text-center">
         <div className="mx-auto h-14 w-14 rounded-full bg-[var(--gold-faint)] flex items-center justify-center">
           <CheckCircle2 className="h-7 w-7 text-[var(--gold)]" />
         </div>
