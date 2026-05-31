@@ -10,6 +10,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: import.meta.dirname,
   },
+  // Don't fail the production build on ESLint. The flat-config needs
+  // @eslint/eslintrc which isn't reliably present on CI, and a plugin
+  // load failure was breaking `next build` (deploy). Type-checking stays
+  // enforced below — that's what catches real errors; lint runs separately.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     // AVIF first, then WebP. AVIF is ~25–30 % smaller than WebP at the
     // same perceptual quality; next/image negotiates per request based
