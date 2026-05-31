@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
 import { log } from "./lib/log";
+import { logActivity } from "./lib/activity";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -68,11 +69,13 @@ export async function middleware(req: NextRequest) {
   });
 
   let authUserId: string | null = null;
+  let authUserEmail: string | null = null;
   try {
     // Refresh the token if needed. We also keep the user id so the KYC
     // gate below doesn't have to round-trip to getUser() again.
     const { data } = await supabase.auth.getUser();
     authUserId = data.user?.id ?? null;
+    authUserEmail = data.user?.email ?? null;
   } catch (err) {
     mwLog.warn(`session refresh failed: ${err instanceof Error ? err.message : err}`);
   }
@@ -129,6 +132,28 @@ export async function middleware(req: NextRequest) {
     } catch (err) {
       mwLog.warn(`kyc-gate lookup failed: ${err instanceof Error ? err.message : err}`);
     }
+  }
+
+  // Activity log — record the page view (who is on the site, what page).
+  // Fire-and-forget so navigation is never slowed. We log real page
+  // navigations only: GET requests that aren't router prefetches. Both
+  // authenticated and anonymous visits are captured (anonymous → null
+  // user). The matcher already excludes /api, _next and static assets.
+  const isPrefetch =
+    req.headers.get("next-router-prefetch") === "1" ||
+    req.headers.get("purpose") === "prefetch" ||
+    req.headers.get("x-purpose") === "prefetch";
+  if (req.method === "GET" && !isPrefetch) {
+    logActivity({
+      type: "page_view",
+      userId: authUserId,
+      userEmail: authUserEmail,
+      path: pathname,
+      method: req.method,
+      ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+      userAgent: req.headers.get("user-agent") ?? null,
+      referer: req.headers.get("referer") ?? null,
+    });
   }
 
   mwLog.debug(`${req.method} ${pathname}`, { ms: Math.round(performance.now() - t0) });

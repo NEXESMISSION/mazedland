@@ -5,7 +5,7 @@ import {
   Building2, Banknote, Wallet, Receipt, UserCheck, Users,
   ShieldCheck, Settings2, LayoutTemplate, FileText,
   Sparkles, Bell, MessageSquare, Inbox, Home as HomeIcon,
-  LayoutDashboard, ExternalLink, HandCoins, type LucideIcon,
+  LayoutDashboard, ExternalLink, HandCoins, Activity, type LucideIcon,
 } from "lucide-react";
 
 /**
@@ -51,6 +51,7 @@ const GROUPS: Group[] = [
       { label: "Diffusions", href: "/admin/notifications", Icon: Bell },
       { label: "Popups", href: "/admin/popups", Icon: MessageSquare },
       { label: "Liste d'attente", href: "/admin/waitlist", Icon: Inbox },
+      { label: "Journal d'activité", href: "/admin/activity", Icon: Activity },
     ],
   },
 ];

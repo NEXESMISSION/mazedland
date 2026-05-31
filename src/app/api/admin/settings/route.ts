@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { cleanDurationDays } from "@/lib/pricing";
+import { logAction } from "@/lib/activity";
 
 const TEXT_KEYS = [
   "payee_name",
@@ -110,5 +111,6 @@ export async function PUT(req: NextRequest) {
   const { error } = await admin.from("app_settings").upsert(rows, { onConflict: "key" });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  logAction(req, user, "settings.update", { keys: rows.map((r) => r.key) });
   return NextResponse.json({ ok: true, updated: rows.length });
 }

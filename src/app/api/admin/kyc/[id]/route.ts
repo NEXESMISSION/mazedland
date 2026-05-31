@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { handleClaim } from "@/lib/admin/claim";
+import { logAction } from "@/lib/activity";
 
 export async function PATCH(
   req: NextRequest,
@@ -82,5 +83,6 @@ export async function PATCH(
     }
   }
 
+  logAction(req, user, `kyc.${verdict}`, { submissionId: id, subjectId });
   return NextResponse.json({ ok: true });
 }

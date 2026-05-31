@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { handleClaim } from "@/lib/admin/claim";
+import { logAction } from "@/lib/activity";
 
 /**
  * Admin endpoint to advance a payout through its lifecycle.
@@ -128,5 +129,6 @@ export async function PATCH(
     }
   }
 
+  logAction(req, user, `payout.${status}`, { payoutId: id, amount: payout?.amount });
   return NextResponse.json({ ok: true });
 }

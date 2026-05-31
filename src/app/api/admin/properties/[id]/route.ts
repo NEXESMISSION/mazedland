@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { parseRejection } from "@/lib/rejection";
+import { logAction } from "@/lib/activity";
 
 export async function PATCH(
   req: NextRequest,
@@ -119,5 +120,6 @@ export async function PATCH(
     }
   }
 
+  logAction(req, user, `property.${status}`, { propertyId: id });
   return NextResponse.json({ ok: true });
 }

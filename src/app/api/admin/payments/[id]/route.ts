@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { logAction } from "@/lib/activity";
 
 /**
  * Admin receipt review.
@@ -77,6 +78,8 @@ export async function PATCH(
       { status: 409 },
     );
   }
+
+  logAction(req, user, `payment.${verdict}`, { paymentId, kind: payment.kind, amount: payment.amount });
 
   // ─── Listing-fee branch: delegate to the RPC which handles the
   // property promotion + flag/duration application + notification in one

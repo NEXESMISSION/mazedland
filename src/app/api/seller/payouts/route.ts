@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { isValidIban, normalizeIban } from "@/lib/iban";
+import { logAction } from "@/lib/activity";
 
 /**
  * Seller payout endpoint.
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+  logAction(req, user, "payout.request", { amount, hasIban: iban !== null });
   return NextResponse.json(data);
 }
 
