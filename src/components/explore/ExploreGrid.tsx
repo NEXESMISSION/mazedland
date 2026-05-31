@@ -124,8 +124,6 @@ export function ExploreGrid({
   initialTotalCount?: number;
   loggedIn: boolean;
   savedAuctionIds: string[];
-  /** Slot for the Grid/Reels toggle, rendered in the page-title row. */
-  viewToggle?: React.ReactNode;
   initialExtra?: ExtraFilters;
   /** Keyword carried in from the home search — seeds the search box so
    *  the SSR-filtered first page stays in sync with what the user typed. */
@@ -290,7 +288,9 @@ export function ExploreGrid({
             )}
           </div>
         </div>
-        <div className="hide-scrollbar flex items-center gap-1.5 overflow-x-auto px-4 pt-2.5 pb-3">
+        {/* Segment pills + advanced-filters toggle — MOBILE ONLY. On desktop
+            both the segments and the filters live in the left sidebar. */}
+        <div className="hide-scrollbar flex items-center gap-1.5 overflow-x-auto px-4 pt-2.5 pb-3 lg:hidden">
           <GridPill
             active={filter === "all"}
             onClick={() => applyFilter("all")}
@@ -311,16 +311,13 @@ export function ExploreGrid({
             icon={<Tag className="size-3.5" strokeWidth={2.5} />}
             label="Offres"
           />
-          {/* Advanced-filters toggle — mobile only; desktop uses the sidebar. */}
-          <span className="lg:hidden">
-            <FilterButton
-              count={activeCount(extra)}
-              onClick={() => setPanelOpen((v) => !v)}
-              active={panelOpen}
-            />
-          </span>
+          <FilterButton
+            count={activeCount(extra)}
+            onClick={() => setPanelOpen((v) => !v)}
+            active={panelOpen}
+          />
         </div>
-        <div aria-hidden className="batta-gold-rule" />
+        <div aria-hidden className="batta-gold-rule lg:hidden" />
       </div>
 
       {/* Mobile inline filter panel (toggled). Desktop uses the sidebar below. */}
@@ -345,6 +342,9 @@ export function ExploreGrid({
               onApply={applyExtraFilters}
               onReset={resetExtraFilters}
               onClose={() => setPanelOpen(false)}
+              segment={filter}
+              onSegment={applyFilter}
+              loading={loading}
             />
           </div>
         </aside>
@@ -626,12 +626,29 @@ function FilterButton({
   );
 }
 
+const SEGMENTS: { key: ExploreFilter; label: string }[] = [
+  { key: "all", label: "Tous" },
+  { key: "auction", label: "Enchères" },
+  { key: "direct", label: "Offres" },
+];
+
+function FilterLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--foreground-muted)]">
+      {children}
+    </div>
+  );
+}
+
 function FilterPanel({
   initial,
   onApply,
   onReset,
   onClose,
   variant = "inline",
+  segment,
+  onSegment,
+  loading = false,
 }: {
   initial: ExtraFilters;
   onApply: (next: ExtraFilters) => void;
@@ -639,6 +656,10 @@ function FilterPanel({
   onClose: () => void;
   /** "inline" = mobile toggle panel; "sidebar" = always-visible desktop card. */
   variant?: "inline" | "sidebar";
+  /** Tous/Enchères/Offres segment — only rendered when provided (desktop). */
+  segment?: ExploreFilter;
+  onSegment?: (f: ExploreFilter) => void;
+  loading?: boolean;
 }) {
   const sidebar = variant === "sidebar";
   // Local draft state — the user can pick freely, only `onApply` commits.
@@ -671,27 +692,56 @@ function FilterPanel({
           <span className="text-[13px] font-bold text-foreground">Filtres</span>
         </div>
       )}
-      {/* Type chips + inline close — no separate header, saves a row */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-wrap gap-1.5">
-          {PROPERTY_TYPES.map((p) => {
-            const active = draft.types.includes(p.key);
-            return (
+
+      {/* Type d'annonce — Tous / Enchères / Offres (desktop sidebar only). */}
+      {segment !== undefined && onSegment && (
+        <div className="mb-4">
+          <FilterLabel>Type d&apos;annonce</FilterLabel>
+          <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+            {SEGMENTS.map((s) => (
               <button
-                key={p.key}
+                key={s.key}
                 type="button"
-                onClick={() => toggleType(p.key)}
-                aria-pressed={active}
-                className={`rounded-full border px-3 py-1.5 text-[11.5px] font-semibold transition-colors ${
-                  active
+                disabled={loading}
+                onClick={() => onSegment(s.key)}
+                aria-pressed={segment === s.key}
+                className={`rounded-lg border px-2 py-1.5 text-[11.5px] font-bold transition-colors disabled:opacity-50 ${
+                  segment === s.key
                     ? "border-[var(--gold)] bg-[var(--gold)] text-white"
                     : "border-[var(--border)] bg-white text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
                 }`}
               >
-                {p.label}
+                {s.label}
               </button>
-            );
-          })}
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Type de bien — compact chips */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="w-full">
+          {sidebar && <FilterLabel>Type de bien</FilterLabel>}
+          <div className={`flex flex-wrap gap-1.5 ${sidebar ? "mt-1.5" : ""}`}>
+            {PROPERTY_TYPES.map((p) => {
+              const active = draft.types.includes(p.key);
+              return (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => toggleType(p.key)}
+                  aria-pressed={active}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    active
+                      ? "border-[var(--gold)] bg-[var(--gold)] text-white"
+                      : "border-[var(--border)] bg-white text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
         {!sidebar && (
           <button
