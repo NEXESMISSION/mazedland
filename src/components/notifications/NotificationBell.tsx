@@ -393,18 +393,21 @@ export function NotificationBell() {
       {open && mounted
         && createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 lg:items-start lg:justify-end lg:p-0"
             role="dialog"
             aria-modal="true"
             aria-label="Notifications"
           >
+            {/* Backdrop — dark sheet on mobile; on desktop it's invisible
+                (just a click-catcher) so the panel reads as a header dropdown,
+                not a modal over a dimmed page. */}
             <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-[batta-float-up_180ms_ease-out_both]"
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-[batta-float-up_180ms_ease-out_both] lg:bg-transparent lg:backdrop-blur-none lg:animate-none"
               onClick={() => setOpen(false)}
             />
 
             <div
-              className="relative w-full max-w-md max-h-[88vh] flex flex-col overflow-hidden rounded-3xl bg-[var(--surface)] shadow-[var(--shadow-lg)] ring-1 ring-[var(--border)] focus:outline-none animate-[batta-float-up_240ms_ease-out_both]"
+              className="relative flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-[var(--surface)] shadow-[var(--shadow-lg)] ring-1 ring-[var(--border)] focus:outline-none animate-[batta-float-up_240ms_ease-out_both] lg:absolute lg:end-6 lg:top-[calc(var(--desktop-nav-h)-0.25rem)] lg:max-h-[72vh] lg:w-[400px] lg:rounded-2xl"
             >
               {/* Header — restored gold accent (top stripe + tinted chip)
                   without the full-bleed gradient blob that was eating
