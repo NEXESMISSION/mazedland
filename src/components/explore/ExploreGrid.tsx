@@ -113,7 +113,6 @@ export function ExploreGrid({
   initialTotalCount,
   loggedIn,
   savedAuctionIds,
-  viewToggle,
   initialExtra,
   initialSearch,
 }: {
