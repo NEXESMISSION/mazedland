@@ -147,6 +147,26 @@ export default async function BidPage({
   const isLive = auction.status === "live" || auction.status === "extending";
   const isSealedLive = isLive && auction.type === "sealed";
 
+  // Skip the interstitial deposit gate. When the ONLY thing between a
+  // verified user and bidding is paying the caution, send them straight to
+  // checkout instead of a near-empty "Réservez votre place" screen. Every
+  // other state (not logged in → login gate, not KYC → KYC gate, receipt
+  // under review, free participation, already-deposited, ended) still
+  // renders its own screen below; this matches exactly the condition under
+  // which BidComposer would have shown the deposit-payment gate.
+  const isBiddableState = isLive || auction.status === "scheduled";
+  if (
+    userId !== null &&
+    !isOwner &&
+    kycVerified &&
+    depositRequired &&
+    !hasActiveDeposit &&
+    !depositUnderReview &&
+    isBiddableState
+  ) {
+    redirect(`/${locale}/payment/checkout?type=deposit&auction=${id}`);
+  }
+
   // The user is "in" the auction when they've cleared every gate. Only
   // then do we render the bid history alongside the composer — for a
   // user mid-gate, the history is a distraction from the "do this next"
