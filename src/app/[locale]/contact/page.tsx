@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Contact — Batta.tn",
 };
 
+// Pure static content — prerender at build and serve from the edge CDN.
+export const dynamic = "force-static";
+
 const ITEMS = [
   { Icon: Mail, label: "E-mail", value: "contact@batta.tn", href: "mailto:contact@batta.tn" },
   { Icon: Phone, label: "Téléphone", value: "+216 70 000 000", href: "tel:+21670000000" },

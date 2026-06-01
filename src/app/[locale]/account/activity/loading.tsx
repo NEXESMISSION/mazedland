@@ -16,6 +16,8 @@
  * visible reflow. This file drops the abstraction and inlines the
  * exact card structure ActivityTabs renders.
  */
+import { DesktopLoadingSpinner } from "@/components/ui/DesktopLoadingSpinner";
+
 export default function Loading() {
   return (
     <div
@@ -23,6 +25,7 @@ export default function Loading() {
       aria-live="polite"
       className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-16 lg:max-w-[var(--max-w-content)]"
     >
+      <DesktopLoadingSpinner />
       {/* Eyebrow + title + subtitle — same vertical rhythm as the page. */}
       <div className="batta-skeleton h-2.5 w-24 rounded" />
       <div className="mt-2 batta-skeleton h-7 w-32 rounded" />

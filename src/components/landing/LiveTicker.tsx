@@ -1,10 +1,54 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { unstable_cache } from "next/cache";
 import { Link } from "@/i18n/navigation";
 import { formatTND } from "@/lib/utils";
-import { getServerSupabase } from "@/lib/supabase/server";
-import type { AuctionWithProperty } from "@/lib/types";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { log } from "@/lib/log";
 import { Clock } from "lucide-react";
 import { LiveTimer } from "./LiveTimer";
+
+/**
+ * Live-ticker rows are SHARED across all visitors (public live auctions,
+ * no per-user scoping), so we cache the query for 45s with the cookieless
+ * service-role client instead of re-querying Supabase on every pageview.
+ * Same pattern as the home feed (see (home)/page.tsx getHomeFeed). Tagged
+ * "home-feed" so a single revalidateTag refreshes the whole home surface.
+ */
+const getLiveTickerItems = unstable_cache(
+  async (): Promise<TickerItem[]> => {
+    const sb = getServiceSupabase();
+    if (!sb) return [];
+    const end = log.scope("home:ticker").time("MISS query live(10)");
+    try {
+      const { data } = await sb
+        .from("auctions")
+        .select(`
+          id, current_price, opening_price, status, ends_at,
+          property:properties!inner (title, governorate, status)
+        `)
+        .in("status", ["live", "extending"])
+        .eq("property.status", "ready")
+        .order("ends_at", { ascending: true })
+        .limit(10);
+      end();
+      return (data ?? []).map((a) => {
+        const p = (a as unknown as { property: { title: string; governorate: string } }).property;
+        return {
+          id: a.id as string,
+          title: p.title,
+          governorate: p.governorate,
+          price: Number(a.current_price ?? a.opening_price),
+          endsAt: a.ends_at as string,
+          live: true,
+        };
+      });
+    } catch {
+      return [];
+    }
+  },
+  ["live-ticker"],
+  { revalidate: 45, tags: ["home-feed"] },
+);
 
 /**
  * Auto-scrolling marquee of LIVE auctions. CSS-only loop (see
@@ -20,33 +64,7 @@ export async function LiveTicker() {
   const t = await getTranslations();
   const locale = await getLocale();
 
-  let items: TickerItem[] = [];
-  try {
-    const supabase = await getServerSupabase();
-    const { data } = await supabase
-      .from("auctions")
-      .select(`
-        id, current_price, opening_price, status, ends_at,
-        property:properties!inner (title, governorate, status)
-      `)
-      .in("status", ["live", "extending"])
-      .eq("property.status", "ready")
-      .order("ends_at", { ascending: true })
-      .limit(10);
-    items = (data ?? []).map((a) => {
-      const p = (a as unknown as { property: { title: string; governorate: string } }).property;
-      return {
-        id: a.id as string,
-        title: p.title,
-        governorate: p.governorate,
-        price: Number(a.current_price ?? a.opening_price),
-        endsAt: a.ends_at as string,
-        live: true,
-      };
-    });
-  } catch {
-    items = [];
-  }
+  const items = await getLiveTickerItems();
 
   // Empty catalogue → render nothing. The home page's other rails
   // already absorb the "we're loading" state; an empty ticker doesn't

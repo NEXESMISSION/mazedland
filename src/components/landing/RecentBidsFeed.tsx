@@ -1,8 +1,62 @@
 import { getLocale } from "next-intl/server";
+import { unstable_cache } from "next/cache";
 import { Link } from "@/i18n/navigation";
 import { formatTND } from "@/lib/utils";
-import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { log } from "@/lib/log";
 import { Gavel, Lock } from "lucide-react";
+
+/**
+ * Recent-bid activity is the same for every visitor, so cache it for 30s
+ * (cookieless service-role client) rather than running the join on every
+ * pageview. Sealed amounts are still masked at render time below. Tagged
+ * "home-feed" so it refreshes alongside the rest of the home surface.
+ */
+const getRecentBids = unstable_cache(
+  async (): Promise<BidActivity[]> => {
+    const sb = getServiceSupabase();
+    if (!sb) return [];
+    const end = log.scope("home:bids").time("MISS query bids(15)");
+    try {
+      const { data } = await sb
+        .from("bids")
+        .select(`
+          id, amount, placed_at, bidder_id,
+          auction:auctions!inner (
+            id, type, status,
+            property:properties!inner (title, governorate, status)
+          )
+        `)
+        .order("placed_at", { ascending: false })
+        .limit(15);
+      end();
+      return (data ?? []).map((b) => {
+        const a = (b as unknown as {
+          auction: {
+            id: string;
+            type: "english" | "sealed" | "dutch";
+            status: string;
+            property: { title: string; governorate: string };
+          };
+        }).auction;
+        return {
+          id: b.id as string,
+          auctionId: a.id,
+          title: a.property.title,
+          governorate: a.property.governorate,
+          amount: Number(b.amount),
+          sealed: a.type === "sealed" && !a.status.startsWith("ended"),
+          bidderInitial: String(b.bidder_id).slice(0, 1).toUpperCase(),
+          placedAt: b.placed_at as string,
+        };
+      });
+    } catch {
+      return [];
+    }
+  },
+  ["recent-bids"],
+  { revalidate: 30, tags: ["home-feed"] },
+);
 
 /**
  * Vertical "live activity" feed — three rows tall, content scrolls
@@ -17,43 +71,7 @@ import { Gavel, Lock } from "lucide-react";
 export async function RecentBidsFeed() {
   const locale = await getLocale();
 
-  let items: BidActivity[] = [];
-  try {
-    const supabase = await getServerSupabase();
-    const { data } = await supabase
-      .from("bids")
-      .select(`
-        id, amount, placed_at, bidder_id,
-        auction:auctions!inner (
-          id, type, status,
-          property:properties!inner (title, governorate, status)
-        )
-      `)
-      .order("placed_at", { ascending: false })
-      .limit(15);
-    items = (data ?? []).map((b) => {
-      const a = (b as unknown as {
-        auction: {
-          id: string;
-          type: "english" | "sealed" | "dutch";
-          status: string;
-          property: { title: string; governorate: string };
-        };
-      }).auction;
-      return {
-        id: b.id as string,
-        auctionId: a.id,
-        title: a.property.title,
-        governorate: a.property.governorate,
-        amount: Number(b.amount),
-        sealed: a.type === "sealed" && !a.status.startsWith("ended"),
-        bidderInitial: String(b.bidder_id).slice(0, 1).toUpperCase(),
-        placedAt: b.placed_at as string,
-      };
-    });
-  } catch {
-    items = [];
-  }
+  const items = await getRecentBids();
 
   // No real activity → render nothing. A fake feed of seeded bids
   // misrepresents marketplace health on the landing page.

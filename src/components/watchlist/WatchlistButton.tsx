@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Heart } from "lucide-react";
+import {
+  ensureWatchlistHydrated,
+  getWatchlistState,
+  subscribeWatchlist,
+  setWatchlistLocal,
+} from "@/lib/watchlistStore";
 
 /**
  * Toggle watchlist membership for a single auction. Optimistic — flips
@@ -23,8 +29,19 @@ export function WatchlistButton({
 }) {
   const t = useTranslations("watchlistApi");
   const router = useRouter();
-  const [saved, setSaved] = useState(initialSaved);
   const [pending, startTransition] = useTransition();
+
+  // Subscribe to the shared client store. Before it hydrates we fall back to
+  // the server-rendered props (correct on dynamic pages; "logged out / not
+  // saved" on the static home page until the fetch lands a moment later).
+  const [store, setStore] = useState(() => getWatchlistState());
+  useEffect(() => {
+    ensureWatchlistHydrated();
+    return subscribeWatchlist(() => setStore(getWatchlistState()));
+  }, []);
+
+  const effectiveLoggedIn = store.hydrated ? store.loggedIn : loggedIn;
+  const saved = store.hydrated ? store.ids.has(auctionId) : initialSaved;
 
   function onClick(e: React.MouseEvent) {
     // Card-level <Link> wraps the heart; stop the click from triggering
@@ -32,7 +49,7 @@ export function WatchlistButton({
     e.preventDefault();
     e.stopPropagation();
 
-    if (!loggedIn) {
+    if (!effectiveLoggedIn) {
       // window.location.pathname includes the `/fr` locale prefix.
       // LoginForm's safeNextPath + stripLocalePrefix together strip
       // it back off before the post-login redirect, so we can pass
@@ -43,14 +60,16 @@ export function WatchlistButton({
     }
 
     const next = !saved;
-    setSaved(next);
+    // Optimistic: update the shared store so every heart for this auction
+    // (it can appear in several rails) flips together.
+    setWatchlistLocal(auctionId, next);
     startTransition(async () => {
       const res = await fetch(`/api/watchlist/${auctionId}`, {
         method: next ? "POST" : "DELETE",
       });
       if (!res.ok) {
         // Revert. Don't bother surfacing — the heart is fire-and-forget UX.
-        setSaved(!next);
+        setWatchlistLocal(auctionId, !next);
       }
     });
   }

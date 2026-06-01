@@ -227,7 +227,7 @@ export function PreBidGate({
             <h2 className="text-3xl xl:text-[34px] font-black text-white leading-[1.05] tracking-tight">
               {property.title}
             </h2>
-            <div className="mt-1.5 inline-flex items-center gap-1.5 text-base text-white/75 font-light">
+            <div className="mt-1.5 inline-flex items-center gap-1.5 text-base text-white/75 font-normal">
               <MapPin className="h-4 w-4" />
               <span>{property.governorate}</span>
             </div>

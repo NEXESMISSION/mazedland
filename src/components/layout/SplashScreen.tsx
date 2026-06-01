@@ -38,10 +38,11 @@ export function SplashScreen() {
       // ignore
     }
 
-    // Quick hold so the logo registers; the gradient + dots cover the
-    // perceived wait until React + the home page paint.
-    const fadeTimer = setTimeout(() => setFadeOut(true), 650);
-    const hideTimer = setTimeout(() => setVisible(false), 1050);
+    // Brief brand flash only — the pages behind are static/fast now, so a
+    // long splash just gets in the way. Start fading almost immediately and
+    // remove it ~350ms in.
+    const fadeTimer = setTimeout(() => setFadeOut(true), 150);
+    const hideTimer = setTimeout(() => setVisible(false), 350);
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(hideTimer);
@@ -56,7 +57,7 @@ export function SplashScreen() {
       className={cn(
         "fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden",
         "batta-gradient-gold",
-        "transition-opacity duration-[400ms] ease-out",
+        "transition-opacity duration-200 ease-out",
         fadeOut ? "opacity-0 pointer-events-none" : "opacity-100",
       )}
     >
@@ -70,7 +71,7 @@ export function SplashScreen() {
           filter (`brightness(0) invert(1)`) flips the dark wordmark
           to pure white so it reads directly on the gradient without
           any backing plate. */}
-      <picture className="relative animate-[batta-float-up_500ms_ease-out_both]">
+      <picture className="relative animate-[batta-float-up_220ms_ease-out_both]">
         <source srcSet="/logo.avif" type="image/avif" />
         <source srcSet="/logo.webp" type="image/webp" />
         <img

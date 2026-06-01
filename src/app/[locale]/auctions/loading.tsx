@@ -4,9 +4,12 @@
  * grid skeleton as /properties so the eye doesn't flicker between
  * shapes. Mirrors src/app/[locale]/properties/loading.tsx.
  */
+import { DesktopLoadingSpinner } from "@/components/ui/DesktopLoadingSpinner";
+
 export default function Loading() {
   return (
     <div className="mx-auto max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)]">
+      <DesktopLoadingSpinner />
       <div className="px-4 pt-3">
         <div className="flex items-center gap-2">
           <div className="batta-skeleton h-10 flex-1 rounded-full" />

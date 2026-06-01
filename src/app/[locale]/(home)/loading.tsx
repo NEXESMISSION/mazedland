@@ -8,6 +8,8 @@
  * still acts as the global fallback for any segment that doesn't
  * ship its own).
  */
+import { DesktopLoadingSpinner } from "@/components/ui/DesktopLoadingSpinner";
+
 export default function HomeLoading() {
   return (
     <div
@@ -15,6 +17,7 @@ export default function HomeLoading() {
       aria-live="polite"
       className="mx-auto max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)]"
     >
+      <DesktopLoadingSpinner />
       {/* Hero banner — full-bleed carousel slot */}
       <div className="px-4 pt-3 lg:hidden">
         <div className="batta-skeleton-luxe aspect-[16/10] w-full rounded-3xl" />

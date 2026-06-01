@@ -1,11 +1,24 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, Link } from "@/i18n/navigation";
 import { BackButton } from "./BackButton";
 import { LocaleSwitcher } from "./LocaleSwitcher";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
+
+// Lazy-loaded: the bell pulls in ~40 lucide icons, opens a realtime socket,
+// and fetches /api/notifications on mount — none of which is needed for first
+// paint. Deferring it (ssr:false) keeps it out of the initial bundle so every
+// page becomes interactive sooner. The placeholder reserves the 36px slot so
+// the bar doesn't shift when the bell hydrates in.
+const NotificationBell = dynamic(
+  () =>
+    import("@/components/notifications/NotificationBell").then(
+      (m) => m.NotificationBell,
+    ),
+  { ssr: false, loading: () => <span className="inline-block h-9 w-9" /> },
+);
 
 const ROOT_TAB_PATHS = new Set(["/", "/properties", "/account/activity", "/account"]);
 

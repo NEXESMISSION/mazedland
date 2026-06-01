@@ -26,13 +26,14 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const unreadOnly = url.searchParams.get("unread") === "1";
   const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? 20), 1), 50);
+  const offset = Math.max(Number(url.searchParams.get("offset") ?? 0), 0);
 
   let query = supabase
     .from("notifications")
     .select("id, kind, title, body, link, payload, read_at, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit - 1);
   if (unreadOnly) query = query.is("read_at", null);
 
   const [{ data }, countRes] = await Promise.all([
@@ -44,9 +45,12 @@ export async function GET(req: NextRequest) {
       .is("read_at", null),
   ]);
 
+  const items = data ?? [];
   return NextResponse.json({
-    items: data ?? [],
+    items,
     unreadCount: countRes.count ?? 0,
+    // The client uses this to decide whether to keep loading more on scroll.
+    hasMore: items.length === limit,
   });
 }
 

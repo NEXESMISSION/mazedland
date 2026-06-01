@@ -54,6 +54,22 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
+  // Prefetch requests (Next router prefetch on hover/viewport) only warm the
+  // client cache — they should NOT trigger the auth-token refresh, the gate
+  // redirects (a prefetch never follows them), or activity logging. The real
+  // navigation re-runs this middleware in full. Skipping here both speeds up
+  // prefetch and avoids many background prefetches racing on token refresh.
+  const isPrefetch =
+    req.headers.get("next-router-prefetch") === "1" ||
+    req.headers.get("purpose") === "prefetch" ||
+    req.headers.get("x-purpose") === "prefetch";
+  if (isPrefetch) {
+    mwLog.debug(`prefetch ${pathname} · auth skipped`, {
+      ms: Math.round(performance.now() - t0),
+    });
+    return res;
+  }
+
   const supabase = createServerClient(url, key, {
     cookies: {
       getAll() {
@@ -70,14 +86,20 @@ export async function middleware(req: NextRequest) {
 
   let authUserId: string | null = null;
   let authUserEmail: string | null = null;
+  const endAuth = mwLog.time(`auth.getUser ${pathname}`);
   try {
     // Refresh the token if needed. We also keep the user id so the KYC
     // gate below doesn't have to round-trip to getUser() again.
+    // NOTE: this is a NETWORK round-trip to Supabase auth on EVERY
+    // navigation — the timer above quantifies its cost so we can decide
+    // whether to cache/skip it for anonymous visitors.
     const { data } = await supabase.auth.getUser();
     authUserId = data.user?.id ?? null;
     authUserEmail = data.user?.email ?? null;
   } catch (err) {
     mwLog.warn(`session refresh failed: ${err instanceof Error ? err.message : err}`);
+  } finally {
+    endAuth();
   }
 
   // Auth-page gate. A signed-in user has no reason to see the sign-in /
@@ -139,11 +161,9 @@ export async function middleware(req: NextRequest) {
   // navigations only: GET requests that aren't router prefetches. Both
   // authenticated and anonymous visits are captured (anonymous → null
   // user). The matcher already excludes /api, _next and static assets.
-  const isPrefetch =
-    req.headers.get("next-router-prefetch") === "1" ||
-    req.headers.get("purpose") === "prefetch" ||
-    req.headers.get("x-purpose") === "prefetch";
-  if (req.method === "GET" && !isPrefetch) {
+  // Prefetch already returned early above, so any GET reaching here is a real
+  // navigation worth recording.
+  if (req.method === "GET") {
     logActivity({
       type: "page_view",
       userId: authUserId,

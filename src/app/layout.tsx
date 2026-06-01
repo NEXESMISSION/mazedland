@@ -10,8 +10,13 @@ import "./globals.css";
 // size from a 10px eyebrow to a 36px hero title.
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
-  subsets: ["latin", "latin-ext"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+  // French-only site: the "latin" subset already covers all French accents
+  // (é è ê à ç …, U+00xx). "latin-ext" only adds Eastern-European glyphs we
+  // never render, so dropping it ~halves the font payload on every page.
+  subsets: ["latin"],
+  // Weight 300 was used in exactly one spot (switched to 400); the rest of
+  // the UI lives in 400/500/600/700/800. Fewer weights = fewer font files.
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 

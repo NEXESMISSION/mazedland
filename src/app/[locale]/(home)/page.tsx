@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { getTranslations, getLocale } from "next-intl/server";
+import { Suspense } from "react";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { LiveTicker } from "@/components/landing/LiveTicker";
 import { TrendingRail } from "@/components/landing/TrendingRail";
@@ -11,7 +12,17 @@ import { HomeDesktop } from "@/components/landing/HomeDesktop";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
-import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { unstable_cache } from "next/cache";
+import { log } from "@/lib/log";
+import { PerfProbe } from "@/components/dev/PerfProbe";
+
+// Statically render + ISR-revalidate every 60s. The home page is the same
+// for everyone (public catalogue); per-user bits (saved hearts, login state)
+// are filled in client-side via the watchlist store after hydration. This
+// lets Vercel serve the page straight from the edge CDN — ~20ms TTFB and no
+// serverless cold start — instead of rendering ~200 cards on every request.
+export const revalidate = 60;
 import type { AuctionWithProperty } from "@/lib/types";
 import {
   ArrowUpRight,
@@ -123,11 +134,112 @@ const TRUST_PILLARS: {
 const _sparklesKeepAlive = Sparkles;
 void _sparklesKeepAlive;
 
-export default async function LandingPage() {
+// Trimmed column sets — the home cards + hero only read a handful of fields,
+// not the full `auctions.* / properties.*` rows. promo_banner /
+// promo_home_featured drive the paid-placement sort; the rest feed
+// PropertyCard + buildHeroSlides.
+const HOME_AUCTION_SELECT = `
+  id, status, type, listing_type, opening_price, current_price, ends_at, created_at,
+  property:properties!inner (
+    id, title, governorate, status, promo_banner, promo_home_featured,
+    photos:property_photos ( id, storage_path, sort_order )
+  )
+`;
+const HOME_HAMMERED_SELECT = `
+  id, winner_amount, hammer_at, type,
+  property:properties!inner (
+    title, governorate, status,
+    photos:property_photos ( id, storage_path, sort_order )
+  )
+`;
+
+type HomeFeed = {
+  live: { rows: unknown[]; count: number };
+  hammered: unknown[];
+  nouveautes: unknown[];
+  scheduledCount: number;
+  soldThisMonthCount: number;
+  govs: string[];
+};
+
+/**
+ * The heavy, SHARED home queries — same for every visitor, so we cache the
+ * result for 60s instead of re-running 6 round-trips on every pageview. Uses
+ * the cookieless service-role client (these are public status='ready' rows;
+ * no per-user scoping) because `unstable_cache` can't read request cookies.
+ * The per-user watchlist stays out of here and runs fresh per request.
+ */
+const getHomeFeed = unstable_cache(
+  async (monthStart: string): Promise<HomeFeed | null> => {
+    const sb = getServiceSupabase();
+    if (!sb) return null;
+    // We only reach here on a CACHE MISS (unstable_cache short-circuits hits
+    // before invoking this fn), so every line below is a real Supabase
+    // round-trip. Time each query individually to see which dominates.
+    const fperf = log.scope("home:feed");
+    const endTotal = fperf.time("MISS — ran 6 parallel queries");
+    const timed = <T,>(label: string, p: PromiseLike<T>): Promise<T> => {
+      const end = fperf.time(label);
+      return Promise.resolve(p).then((r) => {
+        end();
+        return r;
+      });
+    };
+    const [liveRes, hammeredRes, nouveautesRes, scheduledRes, soldMonthRes, govRes] =
+      await Promise.all([
+        timed("q1 live(18)", sb.from("auctions").select(HOME_AUCTION_SELECT, { count: "exact" })
+          .in("status", ["scheduled", "live", "extending"])
+          .eq("property.status", "ready")
+          .order("ends_at", { ascending: true })
+          .limit(18)),
+        timed("q2 hammered(14)", sb.from("auctions").select(HOME_HAMMERED_SELECT)
+          .in("status", ["ended_sold", "awarded"])
+          .eq("property.status", "ready")
+          .order("hammer_at", { ascending: false })
+          .limit(14)),
+        timed("q3 nouveautes(14)", sb.from("auctions").select(HOME_AUCTION_SELECT)
+          .in("status", ["scheduled", "live", "extending"])
+          .eq("property.status", "ready")
+          .order("created_at", { ascending: false })
+          .limit(14)),
+        timed("q4 scheduledCount", sb.from("auctions").select("id", { count: "exact", head: true })
+          .eq("status", "scheduled")),
+        timed("q5 soldThisMonth", sb.from("auctions").select("id", { count: "exact", head: true })
+          .in("status", ["ended_sold", "awarded"])
+          .gte("hammer_at", monthStart)),
+        timed("q6 govs(500)", sb.from("properties").select("governorate").eq("status", "ready").limit(500)),
+      ]);
+    endTotal();
+    return {
+      live: { rows: liveRes.data ?? [], count: liveRes.count ?? (liveRes.data?.length ?? 0) },
+      hammered: hammeredRes.data ?? [],
+      nouveautes: nouveautesRes.data ?? [],
+      scheduledCount: scheduledRes.count ?? 0,
+      soldThisMonthCount: soldMonthRes.count ?? 0,
+      govs: (govRes.data ?? [])
+        .map((r) => (r as { governorate: string | null }).governorate)
+        .filter((g): g is string => typeof g === "string" && g.length > 0),
+    };
+  },
+  ["home-feed"],
+  { revalidate: 60, tags: ["home-feed"] },
+);
+
+export default async function LandingPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  // Required for static rendering with next-intl — must run before any
+  // getTranslations/getLocale call, or next-intl falls back to dynamic.
+  const { locale } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations();
-  const locale = await getLocale();
   const isRTL = locale === "ar";
   const ChevronEnd = isRTL ? ChevronLeft : ChevronRight;
+  // Both device trees are rendered and CSS picks one (lg breakpoint). The
+  // page is static, so saved-hearts + login state stay false here and the
+  // client watchlist store fills them in after hydration.
 
   // One round-trip for the listing surfaces. The smaller widgets
   // (LiveTicker, RecentBidsFeed, CoverageStrip, EndingSoonBanner) each
@@ -144,8 +256,10 @@ export default async function LandingPage() {
   // same horizontal property-card scroller so it visually parallels "Les
   // plus suivis" but answers a different intent ("what's new").
   let nouveautes: AuctionWithProperty[] = [];
-  let savedIds = new Set<string>();
-  let loggedIn = false;
+  // Always empty / false at static render time — the client watchlist store
+  // (WatchlistButton) fills in the real saved set + login state post-hydration.
+  const savedIds = new Set<string>();
+  const loggedIn = false;
   let liveCount = 0;
   // Desktop stat-strip figures — fetched best-effort alongside the
   // listing surfaces. Each one is just a head:exact count, so the cost
@@ -155,12 +269,17 @@ export default async function LandingPage() {
   let soldThisMonthCount = 0;
   let coverageGovs = 0;
 
+  // Perf instrumentation — logs to the server terminal under scope `home`.
+  // `endData` measures the whole blocking data phase (everything that gates
+  // first paint). Individual round-trips are timed below so we can see which
+  // one dominates and whether getHomeFeed was a cache hit (~0ms) or a miss.
+  const perf = log.scope("home");
+  const endData = perf.time("data-phase total");
   try {
     await withTimeout((async () => {
-    const supabase = await getServerSupabase();
     // Stat-strip helper: first day of the current month, used to count
-    // the "vendu ce mois-ci" tile. Computed once and reused so the head
-    // query has a stable boundary even if the render straddles midnight.
+    // the "vendu ce mois-ci" tile. Bucketed to the day so the cache key
+    // is stable within a day (the count only needs day-granularity).
     const monthStart = (() => {
       const d = new Date();
       d.setUTCDate(1);
@@ -168,90 +287,16 @@ export default async function LandingPage() {
       return d.toISOString();
     })();
 
-    const [
-      liveRes, hammeredRes, nouveautesRes, userRes,
-      scheduledRes, soldMonthRes, govRes,
-    ] = await Promise.all([
-      supabase
-        .from("auctions")
-        .select(`
-          *,
-          property:properties!inner (
-            *,
-            photos:property_photos (id, storage_path, sort_order, caption)
-          )
-        `, { count: "exact" })
-        .in("status", ["scheduled", "live", "extending"])
-        .eq("property.status", "ready")
-        .order("ends_at", { ascending: true })
-        // Was 18. Bumped so each home rail (Trending, Offres directes,
-        // the "More to explore" grid) gets enough rows to feel populated
-        // and the user can actually scroll horizontally — a 6-card rail
-        // doesn't read as a "rail", it reads as a row.
-        .limit(40),
-      // "Recently hammered" — sold auctions for social-proof. Shows
-      // the actual price real properties cleared at; only data the
-      // platform has that newspaper auctions don't. Bumped from 8 so
-      // the horizontal scroll has weight; rail self-scales to the
-      // actual count so this is a ceiling, not a target.
-      supabase
-        .from("auctions")
-        .select(`
-          id, winner_amount, hammer_at, type,
-          property:properties!inner (
-            title, governorate, status,
-            photos:property_photos (id, storage_path, sort_order)
-          )
-        `)
-        .in("status", ["ended_sold", "awarded"])
-        .eq("property.status", "ready")
-        .order("hammer_at", { ascending: false })
-        .limit(24),
-      // "Nouveautés" — newest live/scheduled auctions, ordered by when
-      // the auction row was created. Independent query (not a slice of
-      // `liveRes`) so the freshness signal isn't biased by the trending
-      // sort's paid-placement bubble. Bumped to 24 to match the other
-      // horizontal rails — anything sourced "by created_at desc" still
-      // reads as fresh past the first dozen.
-      supabase
-        .from("auctions")
-        .select(`
-          *,
-          property:properties!inner (
-            *,
-            photos:property_photos (id, storage_path, sort_order, caption)
-          )
-        `)
-        .in("status", ["scheduled", "live", "extending"])
-        .eq("property.status", "ready")
-        .order("created_at", { ascending: false })
-        .limit(24),
-      supabase.auth.getUser(),
-      // ── Stat strip (desktop only) — three cheap head:exact counts.
-      // Scheduled-but-not-yet-live, sold this month, distinct governorates
-      // among ready listings. Each falls back to 0 if Supabase errors so
-      // the strip still renders zeros rather than blanking the row.
-      supabase
-        .from("auctions")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "scheduled"),
-      supabase
-        .from("auctions")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["ended_sold", "awarded"])
-        .gte("hammer_at", monthStart),
-      // Distinct governorates with at least one ready property — coverage
-      // proxy. We pull the column (limit guard) and dedupe client-side
-      // because PostgREST doesn't expose `select distinct` directly.
-      supabase
-        .from("properties")
-        .select("governorate")
-        .eq("status", "ready")
-        .limit(500),
-    ]);
+    // SHARED public data — cookieless service-role client, cached 60s. No
+    // per-user work happens here: the page is statically rendered, so saved
+    // hearts + login state are filled client-side after hydration. That's
+    // what lets this whole page be CDN-cached instead of rendered per request.
+    const endFeed = perf.time("getHomeFeed (hit≈0ms, miss=6 queries)");
+    const feed = await getHomeFeed(monthStart);
+    endFeed();
 
-    const rows = (liveRes.data ?? []) as unknown as AuctionWithProperty[];
-    liveCount = liveRes.count ?? rows.length;
+    const rows = (feed?.live.rows ?? []) as unknown as AuctionWithProperty[];
+    liveCount = feed?.live.count ?? rows.length;
 
     // Paid placements bubble to the top. promo_banner outranks
     // promo_home_featured so banner-paying sellers get the carousel
@@ -289,39 +334,34 @@ export default async function LandingPage() {
     offers = rows.filter((r) => r.listing_type === "direct");
     // Trending shows enchères (auctions). "More to explore" stays mixed so
     // a small catalogue never renders an empty grid.
-    trending = (auctionRows.length > 0 ? auctionRows : rows).slice(0, 24);
+    trending = (auctionRows.length > 0 ? auctionRows : rows).slice(0, 18);
     // Reuse anything past the trending tail as the "More to explore"
-    // grid. Threshold bumped so we don't leak a stray single-card grid.
-    recent = rows.length >= 28 ? rows.slice(24) : rows.slice(Math.min(rows.length, 12));
-    hammered = (hammeredRes.data ?? []) as unknown as HammeredRow[];
-    nouveautes = (nouveautesRes.data ?? []) as unknown as AuctionWithProperty[];
-    scheduledCount = scheduledRes.count ?? 0;
-    soldThisMonthCount = soldMonthRes.count ?? 0;
-    coverageGovs = new Set(
-      (govRes.data ?? [])
-        .map((r) => (r as { governorate: string | null }).governorate)
-        .filter((g): g is string => typeof g === "string" && g.length > 0),
-    ).size;
+    // grid. With the trimmed feed (≤18 rows) the rail covers most of it,
+    // so the grid shows the back half; fall back to the last few when the
+    // catalogue is small so the grid never renders a single lonely card.
+    recent = rows.length >= 16 ? rows.slice(12) : rows.slice(Math.min(rows.length, 8));
+    hammered = (feed?.hammered ?? []) as unknown as HammeredRow[];
+    nouveautes = (feed?.nouveautes ?? []) as unknown as AuctionWithProperty[];
+    scheduledCount = feed?.scheduledCount ?? 0;
+    soldThisMonthCount = feed?.soldThisMonthCount ?? 0;
+    coverageGovs = new Set(feed?.govs ?? []).size;
 
-    loggedIn = !!userRes.data.user;
-    if (loggedIn && (rows.length > 0 || nouveautes.length > 0)) {
-      const ids = Array.from(
-        new Set([...rows.map((r) => r.id), ...nouveautes.map((r) => r.id)]),
-      );
-      const { data: saves } = await supabase
-        .from("watchlist")
-        .select("auction_id")
-        .eq("user_id", userRes.data.user!.id)
-        .in("auction_id", ids);
-      savedIds = new Set((saves ?? []).map((s) => s.auction_id as string));
-    }
+    perf.debug("data ready", {
+      live: rows.length,
+      trending: trending.length,
+      nouv: nouveautes.length,
+      hammered: hammered.length,
+    });
     })(), 2500);
-  } catch {
+  } catch (err) {
     // env missing, query error, or timeout → the brand hero + browse
     // rails below still render so the page is never a frozen spinner.
     // 2.5s ceiling: longer than that and users have already bounced —
     // better to paint the fallback hero immediately and let the client
     // streams (LiveTicker, RecentBidsFeed) backfill the rails.
+    perf.warn("data-phase aborted (timeout or error)", err);
+  } finally {
+    endData();
   }
 
   // Built once, shared by the mobile HeroBanner and the desktop tree
@@ -338,11 +378,14 @@ export default async function LandingPage() {
 
   return (
     <>
+    {/* Client-side perf probe — logs nav/paint/LCP/long-task/resource
+        timings to the browser console (scope `perf`). Dev-only unless
+        NEXT_PUBLIC_PERF_PROBE=1. Renders nothing. */}
+    <PerfProbe tag="home" />
     {/* ════════════════════════════════════════════════════════════════
-        MOBILE / TABLET TREE (< lg) — preserved verbatim. The inner
-        `hidden lg:*` blocks never paint here (parent is lg:hidden, and
-        they're already hidden below lg), so mobile is byte-for-byte
-        untouched. Desktop gets its own dedicated tree below.
+        MOBILE / TABLET TREE (< lg) — CSS-gated with `lg:hidden`; the
+        desktop tree below is `hidden lg:block`. Both are rendered so the
+        page stays static (no server-side device detection); CSS picks one.
         ════════════════════════════════════════════════════════════════ */}
     <div className="lg:hidden mx-auto max-w-[var(--max-w)]">
       {/* ───── HERO BANNER ─────
@@ -353,13 +396,18 @@ export default async function LandingPage() {
           live so the carousel never renders empty. */}
       <HeroBanner slides={heroSlides} isRTL={isRTL} />
 
-      {/* LIVE TICKER */}
+      {/* LIVE TICKER — streamed in its own Suspense boundary so the page
+          shell + hero paint immediately instead of blocking on this query. */}
       <section className="mt-5">
-        <LiveTicker />
+        <Suspense fallback={<TickerSkeleton />}>
+          <LiveTicker />
+        </Suspense>
       </section>
 
       <div className="mt-4">
-        <EndingSoonBanner />
+        <Suspense fallback={null}>
+          <EndingSoonBanner />
+        </Suspense>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
@@ -546,12 +594,16 @@ export default async function LandingPage() {
           the trending rail. The vertical marquee says "this place is
           alive" without needing a label. */}
       <section className="mt-6 px-4">
-        <RecentBidsFeed />
+        <Suspense fallback={null}>
+          <RecentBidsFeed />
+        </Suspense>
       </section>
 
       {/* Compact coverage strip — only lit wilayas + a "+N more" pill. */}
       <section className="mt-7">
-        <CoverageStrip />
+        <Suspense fallback={null}>
+          <CoverageStrip />
+        </Suspense>
       </section>
 
       {/* More auctions — second batch on a 2-up grid. Replaces the
@@ -891,7 +943,6 @@ export default async function LandingPage() {
       </section>
     </div>
 
-
     <HomeDesktop
       heroSlides={heroSlides}
       trending={trending}
@@ -1213,6 +1264,12 @@ function TrendingSkeleton() {
       <CardSkeleton />
     </div>
   );
+}
+
+// Suspense fallback for the LiveTicker — a single thin tape row, matching
+// the ticker's own height so the swap doesn't shift layout.
+function TickerSkeleton() {
+  return <div className="mx-4 h-9 rounded-full bg-surface-2" />;
 }
 
 // StatTile lives near the top of the file as a const expression so

@@ -2,7 +2,13 @@
  * Two reusable skeleton primitives — a single bar and a property-card
  * placeholder. Pull-to-refresh + Next's loading.tsx use these so the
  * user always sees motion instead of a blank wait.
+ *
+ * Desktop note: every full-page skeleton below also renders a
+ * <DesktopLoadingSpinner/>, a fixed overlay shown only at lg+. So on
+ * desktop the user sees one clean centered circle instead of the skeleton
+ * shimmer; mobile keeps the detailed skeletons.
  */
+import { DesktopLoadingSpinner } from "./DesktopLoadingSpinner";
 
 export function SkeletonBar({
   className = "",
@@ -92,6 +98,7 @@ export function AuthFormSkeleton({
 
   return (
     <>
+      <DesktopLoadingSpinner />
       {/* MOBILE / tablet (< lg) — centered card, mirrors the real page. */}
       <div className="lg:hidden mx-auto flex min-h-[calc(100dvh-9rem)] max-w-[var(--max-w)] flex-col items-center justify-center px-6">
         {card}
@@ -119,6 +126,7 @@ export function AuthFormSkeleton({
 export function SkeletonDetailPage() {
   return (
     <>
+      <DesktopLoadingSpinner />
       {/* MOBILE / tablet (< lg) — single column, matches the mobile tree. */}
       <div className="mx-auto max-w-xl pb-6 lg:hidden">
         <div className="batta-skeleton aspect-[4/3] rounded-none" />
@@ -278,6 +286,7 @@ export function ListRowsSkeleton({
           </div>
         ))}
       </section>
+      <DesktopLoadingSpinner />
       <span className="sr-only">Chargement…</span>
     </div>
   );
@@ -389,6 +398,7 @@ export function AdminTableSkeleton({
           </div>
         ))}
       </div>
+      <DesktopLoadingSpinner />
       <span className="sr-only">Chargement…</span>
     </div>
   );
@@ -493,6 +503,7 @@ export function KycStepSkeleton({
           </div>
         </>
       )}
+      <DesktopLoadingSpinner />
       <span className="sr-only">Chargement…</span>
     </div>
   );
@@ -541,6 +552,7 @@ export function FormPageSkeleton({
         <div className="batta-skeleton h-11 w-24 rounded-2xl" />
         <div className="batta-skeleton-luxe h-11 w-32 rounded-2xl" />
       </div>
+      <DesktopLoadingSpinner />
       <span className="sr-only">Chargement…</span>
     </div>
   );
@@ -609,6 +621,7 @@ export function HeroWithGridSkeleton({
           ))}
         </div>
       </section>
+      <DesktopLoadingSpinner />
       <span className="sr-only">Chargement…</span>
     </div>
   );
@@ -645,6 +658,7 @@ export function CenteredStatusSkeleton() {
         <div className="batta-skeleton-luxe h-11 w-full rounded-2xl" />
         <div className="batta-skeleton h-11 w-full rounded-2xl" />
       </div>
+      <DesktopLoadingSpinner />
       <span className="sr-only">Chargement…</span>
     </div>
   );
@@ -703,6 +717,7 @@ export function BidPageSkeleton() {
           </div>
         </section>
       </div>
+      <DesktopLoadingSpinner />
       <span className="sr-only">Chargement…</span>
     </div>
   );
@@ -765,6 +780,7 @@ export function PaymentCheckoutSkeleton() {
           <div className="batta-skeleton-luxe h-12 w-full rounded-full" />
         </div>
       </section>
+      <DesktopLoadingSpinner />
       <span className="sr-only">Chargement…</span>
     </div>
   );
@@ -826,6 +842,7 @@ export function AccountSkeleton() {
           ))}
         </div>
       </div>
+      <DesktopLoadingSpinner />
       <span className="sr-only">Chargement…</span>
     </div>
   );

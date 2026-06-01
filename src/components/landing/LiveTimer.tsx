@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { subscribeTick } from "@/lib/sharedTick";
 
 /**
  * Tiny live-ticking countdown. Updates every second; output is scaled
@@ -39,11 +40,19 @@ export function LiveTimer({
     // Re-sync on prop change so a parent that swaps auctions doesn't
     // keep counting from the previous one.
     setRemaining(secondsUntil(endsAt));
-    const id = window.setInterval(() => {
-      setRemaining(secondsUntil(endsAt));
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [endsAt]);
+    // Subscribe to the ONE page-wide ticker instead of spinning up our own
+    // interval — on a card-heavy page that turns ~370 timers into 1. We also
+    // gate setState on the *visible output* (label + urgent + ended), not the
+    // raw seconds: a "3d 23h" card only changes once an hour, so React skips
+    // re-rendering it ~3599 ticks out of 3600. Only cards inside the final
+    // minute actually re-render every second.
+    return subscribeTick(() => {
+      setRemaining((prev) => {
+        const next = secondsUntil(endsAt);
+        return view(prev, urgentBelowSec) === view(next, urgentBelowSec) ? prev : next;
+      });
+    });
+  }, [endsAt, urgentBelowSec]);
 
   if (remaining <= 0)
     return (
@@ -72,6 +81,18 @@ export function LiveTimer({
 
 function secondsUntil(iso: string): number {
   return Math.max(0, Math.floor((new Date(iso).getTime() - Date.now()) / 1000));
+}
+
+/**
+ * The user-visible signature of a given remaining-seconds value: the label
+ * text plus the urgent flag plus the ended state. Two different second
+ * counts that render identically (e.g. anything from 3d 23h 00m to
+ * 3d 23h 59m → "3d 23h") share a signature, so the shared ticker can skip
+ * the re-render between them.
+ */
+function view(secs: number, urgentBelowSec: number): string {
+  if (secs <= 0) return "—";
+  return `${formatRemaining(secs)}|${secs < urgentBelowSec ? "u" : ""}`;
 }
 
 function pad(n: number) {

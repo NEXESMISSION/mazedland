@@ -1,5 +1,7 @@
 import { Link } from "@/i18n/navigation";
-import { getServerSupabase } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { log } from "@/lib/log";
 
 const ALL_GOVERNORATES = [
   "Tunis", "Ariana", "Ben Arous", "Manouba",
@@ -102,24 +104,39 @@ export async function CoverageStrip() {
   );
 }
 
-async function loadCounts(): Promise<Map<string, number>> {
-  try {
-    const supabase = await getServerSupabase();
-    const { data } = await supabase
-      .from("auctions")
-      .select(`status, property:properties!inner (governorate, status)`)
-      .in("status", ["live", "extending"])
-      .eq("property.status", "ready")
-      .limit(500);
-    const map = new Map<string, number>();
-    for (const row of (data ?? []) as unknown as Array<{
-      property: { governorate: string };
-    }>) {
-      const g = row.property.governorate;
-      map.set(g, (map.get(g) ?? 0) + 1);
+// Per-wilaya live counts are shared across all visitors, so cache for 60s
+// with the cookieless service-role client. unstable_cache can't serialize a
+// Map, so we cache an array of [governorate, count] pairs and rebuild the
+// Map at the call site. Tagged "home-feed" to refresh with the home surface.
+const loadCountPairs = unstable_cache(
+  async (): Promise<[string, number][]> => {
+    const sb = getServiceSupabase();
+    if (!sb) return [];
+    const end = log.scope("home:coverage").time("MISS query live-govs(500)");
+    try {
+      const { data } = await sb
+        .from("auctions")
+        .select(`status, property:properties!inner (governorate, status)`)
+        .in("status", ["live", "extending"])
+        .eq("property.status", "ready")
+        .limit(500);
+      end();
+      const map = new Map<string, number>();
+      for (const row of (data ?? []) as unknown as Array<{
+        property: { governorate: string };
+      }>) {
+        const g = row.property.governorate;
+        map.set(g, (map.get(g) ?? 0) + 1);
+      }
+      return [...map.entries()];
+    } catch {
+      return [];
     }
-    return map;
-  } catch {
-    return new Map();
-  }
+  },
+  ["coverage-counts"],
+  { revalidate: 60, tags: ["home-feed"] },
+);
+
+async function loadCounts(): Promise<Map<string, number>> {
+  return new Map(await loadCountPairs());
 }

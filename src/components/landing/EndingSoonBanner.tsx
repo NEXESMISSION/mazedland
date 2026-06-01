@@ -1,9 +1,55 @@
-import { getServerSupabase } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { log } from "@/lib/log";
 import { Link } from "@/i18n/navigation";
 import { Flame } from "lucide-react";
 import { LiveCountdown } from "./LiveCountdown";
 import { EndingSoonSlider } from "./EndingSoonSlider";
 import type { EndingSoonItem } from "./EndingSoonSlider";
+
+/**
+ * "Ending in the next hour" is shared across all visitors, so cache for 30s
+ * (cookieless service-role client). The time window moves, so we bucket
+ * `now` to the minute and pass it as the cache key — the result is stable
+ * within a minute and revalidates every 30s. Tagged "home-feed".
+ */
+const getEndingSoon = unstable_cache(
+  async (nowMinuteIso: string): Promise<EndingSoonItem[]> => {
+    const sb = getServiceSupabase();
+    if (!sb) return [];
+    const end = log.scope("home:endingsoon").time("MISS query ending(8)");
+    try {
+      const now = new Date(nowMinuteIso);
+      const inOneHour = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+      const { data } = await sb
+        .from("auctions")
+        .select(`
+          id, ends_at, status,
+          property:properties!inner (title, governorate, status)
+        `)
+        .in("status", ["live", "extending"])
+        .eq("property.status", "ready")
+        .gt("ends_at", now.toISOString())
+        .lt("ends_at", inOneHour)
+        .order("ends_at", { ascending: true })
+        .limit(8);
+      end();
+      return (data ?? []).map((row) => {
+        const p = (row as unknown as { property: { title: string; governorate: string } }).property;
+        return {
+          id: row.id as string,
+          title: p.title,
+          governorate: p.governorate,
+          endsAt: row.ends_at as string,
+        } satisfies EndingSoonItem;
+      });
+    } catch {
+      return [];
+    }
+  },
+  ["ending-soon"],
+  { revalidate: 30, tags: ["home-feed"] },
+);
 
 /**
  * Highest-urgency surface on the landing: the auctions closest to
@@ -17,34 +63,13 @@ import type { EndingSoonItem } from "./EndingSoonSlider";
  * close so the banner only appears when it has real signal.
  */
 export async function EndingSoonBanner() {
-  let items: EndingSoonItem[] = [];
-  try {
-    const supabase = await getServerSupabase();
-    const inOneHour = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    const { data } = await supabase
-      .from("auctions")
-      .select(`
-        id, ends_at, status,
-        property:properties!inner (title, governorate, status)
-      `)
-      .in("status", ["live", "extending"])
-      .eq("property.status", "ready")
-      .gt("ends_at", new Date().toISOString())
-      .lt("ends_at", inOneHour)
-      .order("ends_at", { ascending: true })
-      .limit(8);
-    items = (data ?? []).map((row) => {
-      const p = (row as unknown as { property: { title: string; governorate: string } }).property;
-      return {
-        id: row.id as string,
-        title: p.title,
-        governorate: p.governorate,
-        endsAt: row.ends_at as string,
-      } satisfies EndingSoonItem;
-    });
-  } catch {
-    // env missing — render nothing.
-  }
+  // Bucket `now` to the minute so the cache key is stable within a minute.
+  const nowMinuteIso = (() => {
+    const d = new Date();
+    d.setSeconds(0, 0);
+    return d.toISOString();
+  })();
+  const items = await getEndingSoon(nowMinuteIso);
 
   if (items.length === 0) return null;
 

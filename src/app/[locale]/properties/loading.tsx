@@ -11,9 +11,12 @@
  *   4) Page title block + view toggle on the right
  *   5) 2-col (mobile) / 4-col (desktop) card grid
  */
+import { DesktopLoadingSpinner } from "@/components/ui/DesktopLoadingSpinner";
+
 export default function Loading() {
   return (
     <div className="mx-auto max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)]">
+      <DesktopLoadingSpinner />
       {/* Sticky header band — mirrors the real layout's full-width search
           input (NO fake select beside it — the real header has none),
           then a row of 3 pill chips + a Filters button. */}

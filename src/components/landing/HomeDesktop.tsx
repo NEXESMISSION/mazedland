@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { LiveTicker } from "@/components/landing/LiveTicker";
@@ -90,6 +91,7 @@ export async function HomeDesktop({
   liveCount,
   soldThisMonthCount,
   coverageGovs,
+  alwaysVisible = false,
 }: {
   heroSlides: HeroSlide[];
   trending: AuctionWithProperty[];
@@ -103,6 +105,10 @@ export async function HomeDesktop({
   scheduledCount: number;
   soldThisMonthCount: number;
   coverageGovs: number;
+  /** When true the root drops its `hidden lg:block` gate and renders at
+   *  all widths — set by the home page when it has already decided (via
+   *  UA) to send only the desktop tree. */
+  alwaysVisible?: boolean;
 }) {
   const t = await getTranslations();
   const locale = await getLocale();
@@ -116,7 +122,7 @@ export async function HomeDesktop({
   ];
 
   return (
-    <div className="hidden lg:block mx-auto max-w-[var(--max-w-wide)] px-8 pb-24">
+    <div className={`${alwaysVisible ? "block" : "hidden lg:block"} mx-auto max-w-[var(--max-w-wide)] px-8 pb-24`}>
       {/* ─── SPLIT HERO — copy + search left, lot imagery right ─── */}
       <section className="pt-8">
         <div className="grid grid-cols-12 items-center gap-10">
@@ -204,9 +210,11 @@ export async function HomeDesktop({
         </div>
       </section>
 
-      {/* LIVE TICKER */}
+      {/* LIVE TICKER — streamed so it never blocks the desktop shell. */}
       <section className="mt-10">
-        <LiveTicker />
+        <Suspense fallback={<div className="h-9 rounded-full bg-surface-2" />}>
+          <LiveTicker />
+        </Suspense>
       </section>
 
       {/* TRENDING — auto-sliding carousel */}
@@ -261,7 +269,9 @@ export async function HomeDesktop({
 
       {/* ENDING SOON band */}
       <section className="mt-12">
-        <EndingSoonBanner />
+        <Suspense fallback={null}>
+          <EndingSoonBanner />
+        </Suspense>
       </section>
 
       {/* PARCOURIR — category tiles (one row) + price pills */}

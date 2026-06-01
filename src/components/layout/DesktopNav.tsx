@@ -1,13 +1,23 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { AccountMenu } from "./AccountMenu";
 import { normalizeSearchQuery } from "@/lib/search";
 import { Search, Plus } from "lucide-react";
+
+// Lazy-loaded — see TopBar for rationale (heavy icon set + realtime socket +
+// mount fetch, none needed for first paint). Reserves the 36px slot.
+const NotificationBell = dynamic(
+  () =>
+    import("@/components/notifications/NotificationBell").then(
+      (m) => m.NotificationBell,
+    ),
+  { ssr: false, loading: () => <span className="inline-block h-9 w-9" /> },
+);
 
 /**
  * Desktop (lg+) horizontal navigation. Replaces the mobile TopBar +
