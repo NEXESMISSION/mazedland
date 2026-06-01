@@ -1851,10 +1851,10 @@ function Section({
   return (
     <section
       id={id}
-      className={`rounded-2xl border bg-white p-4 shadow-sm transition-shadow sm:p-5 ${
+      className={`rounded-2xl border bg-white p-5 transition sm:p-6 ${
         highlight
-          ? "border-[var(--gold)] ring-2 ring-[var(--gold)]/40 shadow-[0_18px_50px_-16px_rgba(212,175,55,0.45)]"
-          : "border-[var(--border)]"
+          ? "border-[var(--gold)] ring-2 ring-[var(--gold)]/30"
+          : "border-black/[0.07]"
       }`}
     >
       <header className="mb-3.5">

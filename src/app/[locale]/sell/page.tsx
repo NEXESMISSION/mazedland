@@ -265,55 +265,49 @@ export default async function SellLandingPage({
   const ChevronEnd = isRTL ? ChevronLeft : ChevronRight;
 
   return (
-    <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-10 lg:max-w-[var(--max-w-content)]">
+    <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-12 lg:max-w-3xl lg:px-6 lg:pt-8">
       <header className="flex items-center justify-between gap-3">
-        <h1
-          className={`text-[24px] lg:text-[28px] font-extrabold leading-tight tracking-tight ${
-            isRTL ? "font-arabic" : ""
-          }`}
-        >
-          Tableau du vendeur
-        </h1>
+        <div>
+          <span className="batta-eyebrow">Espace vendeur</span>
+          <h1
+            className={`mt-1.5 text-[24px] lg:text-[30px] font-extrabold leading-tight tracking-tight ${
+              isRTL ? "font-arabic" : ""
+            }`}
+          >
+            Tableau du vendeur
+          </h1>
+        </div>
         <Link
           href="/sell?new=1"
-          className="batta-gradient-gold tap-target inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-[12.5px] font-bold text-white shadow-[var(--shadow-gold)] ring-1 ring-black/5 transition active:scale-[0.97]"
+          className="batta-gradient-gold tap-target inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-[12.5px] font-bold text-white shadow-[var(--shadow-gold)] transition active:scale-[0.97]"
         >
           <Plus className="size-4" strokeWidth={2.6} />
           {t("sell.addNew")}
         </Link>
       </header>
 
-      {/* ─── Earnings — slim summary, action-first. The big TND figure
-          no longer dominates an empty dashboard; the withdraw action sits
-          right next to the balance it acts on. ─── */}
-      <section className="mt-5 rounded-2xl bg-surface p-4 ring-1 ring-border sm:p-5">
-        <div className="flex items-stretch gap-4">
-          <div className="min-w-0 flex-1">
+      {/* ─── Earnings — the lead. Big available balance, the withdraw action
+          right beside it, pending + commission as a quiet subline. ─── */}
+      <section className="mt-6 rounded-2xl border border-black/[0.07] bg-white p-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
             <div className="batta-eyebrow flex items-center gap-1.5">
               <Wallet className="size-3" strokeWidth={2.4} />
               Solde disponible
             </div>
-            <div dir="ltr" className="batta-tabular mt-1.5 flex items-baseline gap-1">
-              <span className="gradient-gold-text text-[28px] font-black leading-none">
+            <div dir="ltr" className="batta-tabular mt-2 flex items-baseline gap-1.5">
+              <span className="gradient-gold-text text-[40px] font-extrabold leading-none">
                 {formatTND(balance.available, locale)}
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+              <span className="text-[12px] font-bold uppercase tracking-[0.14em] text-muted">
                 {t("common.tnd")}
               </span>
             </div>
+            <p className="mt-2 text-[11.5px] text-muted">
+              En attente : <span className="batta-tabular font-semibold text-foreground/70">{formatTND(balance.pending_payout, locale)} {t("common.tnd")}</span>
+              {" · "}Commission Batta {Math.round(balance.commission_rate * 100)}% déjà déduite.
+            </p>
           </div>
-          <div aria-hidden className="w-px self-stretch bg-border" />
-          <div className="min-w-0 shrink-0 text-end">
-            <div className="batta-eyebrow">En attente</div>
-            <div dir="ltr" className="batta-tabular mt-1.5 text-[18px] font-extrabold leading-none text-foreground/75">
-              {formatTND(balance.pending_payout, locale)}
-            </div>
-          </div>
-        </div>
-        <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-border pt-3">
-          <p className="text-[11px] leading-snug text-muted">
-            Commission Batta {Math.round(balance.commission_rate * 100)}% déjà déduite.
-          </p>
           {balance.available > 0 && (
             <PayoutRequestTrigger available={balance.available} locale={locale} />
           )}
@@ -321,7 +315,7 @@ export default async function SellLandingPage({
       </section>
 
       {/* ─── Stats — three tiles. ─── */}
-      <div className="mt-3 grid grid-cols-3 gap-2.5">
+      <div className="mt-4 grid grid-cols-3 gap-3">
         <Stat label="Annonces" value={listings.length} />
         <Stat label="En cours" value={liveCount} highlight={liveCount > 0} />
         <Stat label="Adjugées" value={soldCount} />
@@ -469,7 +463,7 @@ export default async function SellLandingPage({
             return (
               <li
                 key={p.id}
-                className="rounded-xl bg-surface p-4 ring-1 ring-border transition-all hover:ring-gold-soft/40"
+                className="rounded-2xl border border-black/[0.07] bg-white p-4 transition hover:border-gold/30"
               >
                 <Link
                   href={detailHref}
@@ -601,7 +595,7 @@ export default async function SellLandingPage({
               return (
                 <li
                   key={p.id}
-                  className="rounded-xl bg-surface p-3.5 ring-1 ring-border flex items-center justify-between gap-3"
+                  className="rounded-2xl border border-black/[0.07] bg-white p-3.5 flex items-center justify-between gap-3"
                 >
                   <div className="min-w-0">
                     <div className="batta-tabular text-[14px] font-bold text-foreground">
@@ -655,15 +649,15 @@ function Stat({
   highlight?: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-surface px-2 py-3 text-center ring-1 ring-border">
+    <div className="rounded-2xl border border-black/[0.07] bg-white px-2 py-4 text-center">
       <div
-        className={`batta-tabular text-[24px] font-extrabold leading-none ${
+        className={`batta-tabular text-[26px] font-extrabold leading-none ${
           highlight ? "gradient-gold-text" : "text-foreground"
         }`}
       >
         {value}
       </div>
-      <div className="mt-1 text-[9.5px] font-bold uppercase tracking-[0.14em] text-[var(--foreground-muted)]">
+      <div className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--foreground-muted)]">
         {label}
       </div>
     </div>
@@ -750,7 +744,7 @@ function NewListingView({
               {VALUE.map((v) => (
                 <li
                   key={v.title}
-                  className="flex items-start gap-3.5 rounded-2xl bg-surface p-4 ring-1 ring-border"
+                  className="flex items-start gap-3.5 rounded-2xl border border-black/[0.07] bg-white p-4"
                 >
                   <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/15">
                     <v.Icon className="size-5" strokeWidth={2} />
@@ -774,7 +768,7 @@ function NewListingView({
 
         {/* Form — single column on mobile, framed card on desktop */}
         <div className="mt-5 lg:mt-0 lg:col-span-8">
-          <div className="lg:rounded-3xl lg:bg-surface lg:p-8 lg:ring-1 lg:ring-border lg:shadow-[0_24px_60px_-36px_rgba(15,23,42,0.4)] lg:[&>form]:!mt-0">
+          <div className="lg:rounded-2xl lg:border lg:border-black/[0.07] lg:bg-white lg:p-8 lg:[&>form]:!mt-0">
             <SellForm pricing={pricing} />
           </div>
         </div>
