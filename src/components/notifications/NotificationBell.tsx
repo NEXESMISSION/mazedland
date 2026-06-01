@@ -8,7 +8,7 @@ import {
   X,
   Trash2,
   CheckCheck,
-  MoreHorizontal,
+  Loader2,
   ShieldCheck,
   ShieldX,
   CheckCircle2,
@@ -101,31 +101,67 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [confirmingDeleteAll, setConfirmingDeleteAll] = useState(false);
+  const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [, setTick] = useState(0);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const loadingMoreRef = useRef(false);
   const { toast } = useToast();
+
+  const PAGE_SIZE = 20;
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Refresh the head of the list. Re-fetches as many rows as are already
+  // shown (so a poll doesn't shrink an expanded list back to one page),
+  // capped at the API's max.
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch("/api/notifications?limit=20", { cache: "no-store" });
+      const want = Math.min(50, Math.max(PAGE_SIZE, items.length));
+      const res = await fetch(`/api/notifications?limit=${want}`, { cache: "no-store" });
       if (!res.ok) return;
       const data = (await res.json()) as {
         items: NotificationRow[];
         unreadCount: number;
+        hasMore?: boolean;
       };
       setItems(data.items);
       setUnread(data.unreadCount);
+      setHasMore(Boolean(data.hasMore));
       setLoaded(true);
     } catch {
       // Network error — silently skip; next poll will retry.
     }
-  }, []);
+  }, [items.length]);
+
+  // Append the next page when the user scrolls to the end of the list.
+  const loadMore = useCallback(async () => {
+    if (loadingMoreRef.current || !hasMore) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/notifications?limit=${PAGE_SIZE}&offset=${items.length}`,
+        { cache: "no-store" },
+      );
+      if (!res.ok) return;
+      const data = (await res.json()) as { items: NotificationRow[]; hasMore?: boolean };
+      setItems((prev) => {
+        const seen = new Set(prev.map((n) => n.id));
+        const fresh = data.items.filter((n) => !seen.has(n.id));
+        return [...prev, ...fresh];
+      });
+      setHasMore(Boolean(data.hasMore));
+    } catch {
+      // ignore — user can scroll again to retry
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [hasMore, items.length]);
 
   useEffect(() => {
     void refresh();
@@ -219,7 +255,6 @@ export function NotificationBell() {
         setItems([]);
         setUnread(0);
         setOpen(false);
-        setMenuOpen(false);
         setConfirmingDeleteAll(false);
       } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
         void refresh();
@@ -236,15 +271,19 @@ export function NotificationBell() {
 
   useEffect(() => {
     if (!open) {
-      setMenuOpen(false);
       setConfirmingDeleteAll(false);
+      setFilter("all");
       return;
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
+    // Only the mobile sheet locks body scroll. The desktop dropdown lets
+    // the page scroll behind it (it's a header dropdown, not a modal).
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      document.body.style.overflow = "hidden";
+    }
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
@@ -256,15 +295,6 @@ export function NotificationBell() {
     const id = window.setInterval(() => setTick((n) => n + 1), TICK_MS);
     return () => window.clearInterval(id);
   }, [open]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    function onDoc(e: MouseEvent) {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [menuOpen]);
 
   async function markAllRead() {
     if (unread === 0) return;
@@ -367,14 +397,19 @@ export function NotificationBell() {
   if (!loaded) return null;
 
   const BellIcon = unread > 0 ? BellDot : Bell;
+  const visibleItems = filter === "unread" ? items.filter((n) => !n.read_at) : items;
 
   return (
     <>
       <button
         type="button"
         aria-label="Notifications"
-        onClick={() => setOpen(true)}
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-[var(--surface-2)] transition-colors"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={`relative inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
+          open ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]"
+        }`}
       >
         <BellIcon
           className={`h-5 w-5 ${unread > 0 ? "text-[var(--gold)]" : "text-foreground"}`}
@@ -407,76 +442,34 @@ export function NotificationBell() {
             />
 
             <div
-              className="relative flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-[var(--surface)] shadow-[var(--shadow-lg)] ring-1 ring-[var(--border)] focus:outline-none animate-[batta-float-up_240ms_ease-out_both] lg:absolute lg:end-6 lg:top-[calc(var(--desktop-nav-h)-0.25rem)] lg:max-h-[72vh] lg:w-[400px] lg:rounded-2xl"
+              className="relative flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-[var(--surface)] shadow-[var(--shadow-lg)] ring-1 ring-[var(--border)] focus:outline-none animate-[batta-float-up_240ms_ease-out_both] lg:absolute lg:end-5 lg:top-[calc(var(--desktop-nav-h)-0.5rem)] lg:max-h-[min(640px,80vh)] lg:w-[480px] lg:max-w-[480px] lg:rounded-2xl lg:shadow-[0_24px_60px_-18px_rgba(15,23,42,0.32)] lg:ring-[var(--border)]"
             >
-              {/* Header — restored gold accent (top stripe + tinted chip)
-                  without the full-bleed gradient blob that was eating
-                  attention away from the list. */}
-              <div className="relative px-5 pt-5 pb-3">
-                <span
-                  aria-hidden
-                  className="absolute inset-x-0 top-0 h-[3px] batta-gradient-gold"
-                />
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl batta-gradient-gold shadow-[var(--shadow-gold)]">
-                    <Bell className="h-4 w-4 text-white" strokeWidth={2.2} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-[15px] font-extrabold tracking-tight text-foreground leading-tight">
-                      Notifications
-                    </h3>
-                    <p className="text-[11px] font-medium text-[var(--foreground-muted)] leading-tight mt-0.5">
-                      {unread > 0
-                        ? `${unread} non lue${unread > 1 ? "s" : ""}`
-                        : "Tout est à jour"}
-                    </p>
-                  </div>
+              {/* Caret pointing up at the bell — desktop only. */}
+              <span
+                aria-hidden
+                className="absolute -top-[7px] hidden size-3.5 rotate-45 rounded-tl-[3px] border-l border-t border-[var(--border)] bg-[var(--surface)] lg:block ltr:right-6 rtl:left-6"
+              />
+              {/* Header — title + inline unread count, "Supprimer tout", close. */}
+              <div className="flex items-center gap-3 px-5 pt-4 pb-3">
+                <h3 className="flex items-center gap-2 text-[16px] font-extrabold tracking-tight text-foreground leading-none">
+                  Notifications
+                  {unread > 0 && (
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-[11px] font-extrabold leading-none text-white batta-tabular">
+                      {unread > 99 ? "99+" : unread}
+                    </span>
+                  )}
+                </h3>
 
+                <div className="ms-auto flex items-center gap-1">
                   {items.length > 0 && (
-                    <div ref={menuRef} className="relative">
-                      <button
-                        type="button"
-                        aria-label="Actions"
-                        aria-haspopup="menu"
-                        aria-expanded={menuOpen}
-                        onClick={() => setMenuOpen((v) => !v)}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[var(--foreground-muted)] hover:bg-[var(--surface-2)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-                      >
-                        <MoreHorizontal className="h-5 w-5" strokeWidth={2} />
-                      </button>
-                      {menuOpen && (
-                        <div
-                          role="menu"
-                          className="absolute z-10 mt-1 w-56 origin-top rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-xl ltr:right-0 ltr:origin-top-right rtl:left-0 rtl:origin-top-left"
-                        >
-                          <button
-                            type="button"
-                            role="menuitem"
-                            disabled={unread === 0}
-                            onClick={() => {
-                              void markAllRead();
-                              setMenuOpen(false);
-                            }}
-                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-[13px] font-semibold text-foreground hover:bg-[var(--surface-2)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:bg-[var(--surface-2)] focus-visible:outline-none"
-                          >
-                            <CheckCheck className="h-4 w-4 text-[var(--gold)]" strokeWidth={2} />
-                            Tout marquer lu
-                          </button>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            onClick={() => {
-                              setConfirmingDeleteAll(true);
-                              setMenuOpen(false);
-                            }}
-                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-[13px] font-semibold text-foreground hover:bg-red-50 hover:text-red-700 focus-visible:bg-red-50 focus-visible:outline-none"
-                          >
-                            <Trash2 className="h-4 w-4" strokeWidth={2} />
-                            Supprimer tout
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDeleteAll(true)}
+                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-bold text-[var(--foreground-muted)] transition hover:bg-red-50 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" strokeWidth={2} />
+                      Supprimer tout
+                    </button>
                   )}
 
                   <button
@@ -489,6 +482,35 @@ export function NotificationBell() {
                   </button>
                 </div>
               </div>
+
+              {/* Filter tabs — Toutes / Non lues */}
+              {items.length > 0 && (
+                <div className="flex items-center gap-1.5 border-b border-[var(--border)] px-5 pb-2.5">
+                  {([["all", "Toutes"], ["unread", "Non lues"]] as const).map(([key, label]) => {
+                    const active = filter === key;
+                    const showCount = key === "unread" && unread > 0;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setFilter(key)}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-bold transition-colors ${
+                          active
+                            ? "bg-[var(--gold-faint)] text-[var(--gold)]"
+                            : "text-[var(--foreground-muted)] hover:bg-[var(--surface-2)] hover:text-foreground"
+                        }`}
+                      >
+                        {label}
+                        {showCount && (
+                          <span className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-extrabold leading-none ${active ? "bg-[var(--gold)] text-white" : "bg-[var(--surface-2)] text-[var(--foreground-muted)]"}`}>
+                            {unread > 99 ? "99+" : unread}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               {confirmingDeleteAll && (
                 <div className="mx-5 mb-3 flex items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[13px] text-red-900">
@@ -531,9 +553,31 @@ export function NotificationBell() {
                     Explorer les enchères
                   </Link>
                 </div>
+              ) : visibleItems.length === 0 ? (
+                <div className="flex flex-1 flex-col items-center justify-center px-8 py-14 text-center">
+                  <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50">
+                    <CheckCheck className="h-5 w-5 text-emerald-600" strokeWidth={2} />
+                  </div>
+                  <p className="text-[13.5px] font-bold text-foreground">Aucune non lue</p>
+                  <p className="mt-1 text-[12px] text-[var(--foreground-muted)]">
+                    Vous êtes à jour.
+                  </p>
+                </div>
               ) : (
-                <ul className="flex-1 divide-y divide-[var(--border)] overflow-y-auto">
-                  {items.map((n) => (
+                <ul
+                  className="flex-1 divide-y divide-[var(--border)] overflow-y-auto overscroll-contain"
+                  onScroll={(e) => {
+                    // Infinite scroll: load the next page when within ~120px
+                    // of the bottom. Only meaningful on the unfiltered list
+                    // (the "unread" filter is client-side over what's loaded).
+                    if (filter !== "all" || !hasMore || loadingMore) return;
+                    const el = e.currentTarget;
+                    if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) {
+                      void loadMore();
+                    }
+                  }}
+                >
+                  {visibleItems.map((n) => (
                     <NotificationRow
                       key={n.id}
                       item={n}
@@ -542,6 +586,21 @@ export function NotificationBell() {
                       onClose={() => setOpen(false)}
                     />
                   ))}
+                  {filter === "all" && hasMore && (
+                    <li className="flex items-center justify-center py-4 text-[var(--foreground-muted)]">
+                      {loadingMore ? (
+                        <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void loadMore()}
+                          className="text-[12px] font-bold text-[var(--gold)] hover:underline"
+                        >
+                          Afficher plus
+                        </button>
+                      )}
+                    </li>
+                  )}
                 </ul>
               )}
             </div>
@@ -552,16 +611,13 @@ export function NotificationBell() {
   );
 }
 
-const SWIPE_REVEAL_PX = 80;
-const SWIPE_THRESHOLD_PX = 40;
-
 /**
  * Single uniform row used for every notification, urgent or otherwise.
- * Urgency is conveyed by a small red "URGENT" pill next to the title
- * (only on unread items in URGENT_KINDS); read items hide the pill
- * because the user has already seen the urgency. Body text is always
- * visible (max 2 lines) so the user gets enough context to decide
- * whether to act, without expanding the row to a card.
+ * Urgency is conveyed by a small red "URGENT" pill next to the title.
+ * A small always-visible trash button sits on the side to delete the row —
+ * no swipe gesture, no full-bleed red tray. The row body (title + 2 lines +
+ * time) is the clickable link; the trash button is a separate sibling so the
+ * click doesn't navigate.
  */
 function NotificationRow({
   item,
@@ -579,65 +635,8 @@ function NotificationRow({
   const isUrgent = unread && URGENT_KINDS.has(item.kind);
   const href = resolveNotificationLink(item.kind, item.link, item.payload);
 
-  const [dragPx, setDragPx] = useState(0);
-  const [snapped, setSnapped] = useState(false);
-  const pointerStartX = useRef<number | null>(null);
-  const pointerId = useRef<number | null>(null);
-  const isRTL = typeof document !== "undefined"
-    && document.documentElement.getAttribute("dir") === "rtl";
-  const direction = isRTL ? 1 : -1;
-
-  function onPointerDown(e: React.PointerEvent) {
-    if (e.pointerType === "mouse") return; // swipe is mobile-only
-    pointerStartX.current = e.clientX;
-    pointerId.current = e.pointerId;
-    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-  }
-
-  function onPointerMove(e: React.PointerEvent) {
-    if (pointerStartX.current === null) return;
-    if (pointerId.current !== e.pointerId) return;
-    const raw = e.clientX - pointerStartX.current;
-    const reveal = raw * direction;
-    const clamped = Math.max(0, Math.min(SWIPE_REVEAL_PX, reveal));
-    setDragPx(clamped * direction);
-  }
-
-  function onPointerUp() {
-    pointerStartX.current = null;
-    pointerId.current = null;
-    if (Math.abs(dragPx) >= SWIPE_THRESHOLD_PX) {
-      setDragPx(SWIPE_REVEAL_PX * direction);
-      setSnapped(true);
-    } else {
-      setDragPx(0);
-      setSnapped(false);
-    }
-  }
-
-  function resetSwipe() {
-    setDragPx(0);
-    setSnapped(false);
-  }
-
-  function onClickCapture(e: React.MouseEvent) {
-    if (snapped) {
-      e.preventDefault();
-      e.stopPropagation();
-      resetSwipe();
-    }
-  }
-
-  const inner = (
-    <div className="group/row relative flex gap-3 px-5 py-3.5">
-      {/* Tiny gold dot — single signal for "unread". No stripe / bg /
-          pulsing. Stays out of the row flow. */}
-      <span
-        aria-hidden
-        className={`absolute start-2 top-5 inline-block h-1.5 w-1.5 rounded-full ${
-          unread ? "bg-[var(--gold)]" : "bg-transparent"
-        }`}
-      />
+  const body = (
+    <>
       <span
         className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tone} ${
           unread ? "" : "opacity-60"
@@ -645,101 +644,75 @@ function NotificationRow({
       >
         <Icon className="h-4 w-4" strokeWidth={2} />
       </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start gap-2">
-          <p
+      <span className="min-w-0 flex-1">
+        <span className="flex items-start gap-2">
+          {unread && (
+            <span aria-hidden className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--gold)]" />
+          )}
+          <span
             className={`text-[13px] leading-tight ${
-              unread
-                ? "font-extrabold text-foreground"
-                : "font-semibold text-[var(--foreground-muted)]"
+              unread ? "font-extrabold text-foreground" : "font-semibold text-[var(--foreground-muted)]"
             }`}
           >
             {item.title}
-          </p>
+          </span>
           {isUrgent && (
-            <span className="shrink-0 rounded-full bg-red-600 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-white leading-none mt-0.5">
+            <span className="mt-0.5 shrink-0 rounded-full bg-red-600 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-white leading-none">
               Urgent
             </span>
           )}
-        </div>
+        </span>
         {item.body && (
-          <p
-            className={`mt-1 text-[12px] leading-snug line-clamp-2 ${
+          <span
+            className={`mt-1 block text-[12px] leading-snug line-clamp-2 ${
               unread ? "text-foreground/80" : "text-[var(--foreground-muted)]"
             }`}
           >
             {item.body}
-          </p>
+          </span>
         )}
-        <p className="mt-1.5 text-[10px] font-medium text-[var(--foreground-muted)]">
+        <span className="mt-1.5 block text-[10px] font-medium text-[var(--foreground-muted)]">
           {timeAgo(item.created_at)}
-        </p>
-      </div>
-      {/* Hover-revealed × on desktop (44pt tap target). Hidden by
-          default so the row stays uncluttered; swipe handles mobile. */}
+        </span>
+      </span>
+    </>
+  );
+
+  return (
+    <li className="relative flex items-stretch bg-[var(--surface)] transition-colors hover:bg-[var(--surface-2)]">
+      {href ? (
+        <Link
+          href={href as never}
+          onClick={() => {
+            onRead();
+            onClose();
+          }}
+          className="flex min-w-0 flex-1 gap-3 py-3.5 ps-4 pe-1"
+        >
+          {body}
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={onRead}
+          className="flex min-w-0 flex-1 cursor-default gap-3 py-3.5 ps-4 pe-1 text-start"
+        >
+          {body}
+        </button>
+      )}
+      {/* Small always-visible delete button — no swipe, no big red box. */}
       <button
         type="button"
-        aria-label="Supprimer"
+        aria-label="Supprimer la notification"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           onDelete();
         }}
-        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--foreground-muted)] opacity-0 transition group-hover/row:opacity-100 focus-visible:opacity-100 hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+        className="my-2 me-2 inline-flex h-8 w-8 shrink-0 items-center justify-center self-start rounded-full text-[var(--foreground-subtle)] transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
       >
-        <X className="h-4 w-4" strokeWidth={2.4} />
+        <Trash2 className="h-4 w-4" strokeWidth={2} />
       </button>
-    </div>
-  );
-
-  return (
-    <li className="relative overflow-hidden">
-      {/* Swipe-reveal red tray underneath; pointer events let the user
-          also tap it once it's revealed. */}
-      <button
-        type="button"
-        aria-label="Supprimer"
-        onClick={() => {
-          resetSwipe();
-          onDelete();
-        }}
-        className="absolute inset-y-0 end-0 flex w-20 items-center justify-center bg-red-600 text-white"
-      >
-        <Trash2 className="h-5 w-5" strokeWidth={2.2} />
-      </button>
-      <div
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onClickCapture={onClickCapture}
-        style={{
-          transform: `translate3d(${dragPx}px, 0, 0)`,
-          transition: pointerStartX.current === null ? "transform 200ms ease-out" : "none",
-          touchAction: "pan-y",
-        }}
-        className="relative bg-[var(--surface)]"
-      >
-        {href ? (
-          <Link
-            href={href as never}
-            onClick={() => {
-              onRead();
-              onClose();
-            }}
-            className="block transition-colors hover:bg-[var(--surface-2)]"
-          >
-            {inner}
-          </Link>
-        ) : (
-          <div
-            onClick={onRead}
-            className="cursor-default hover:bg-[var(--surface-2)] transition-colors"
-          >
-            {inner}
-          </div>
-        )}
-      </div>
     </li>
   );
 }
