@@ -253,9 +253,11 @@ export function SellForm({
   const [docKindsLoading, setDocKindsLoading] = useState(true);
 
   // ─── Promo + flow state ──────────────────────────────────────────────
-  // New listings run a 3-step wizard (1 details · 2 media · 3 options);
-  // edit mode renders every section on a single page.
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  // New listings run a 2-step wizard:
+  //   1 · the property (type, info, characteristics, location)
+  //   2 · photos + legal docs + optional promos, then payment.
+  // Edit mode renders every section on a single page.
+  const [step, setStep] = useState<1 | 2>(1);
   const [promoHome, setPromoHome] = useState(false);
   const [promoTop, setPromoTop] = useState(false);
   const [promoBanner, setPromoBanner] = useState(false);
@@ -586,15 +588,9 @@ export function SellForm({
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    // step === 2 → on to options & payment.
+    // step === 2 → validate media, then submit (options live here too now).
     const err = validateStep2();
     if (err) { toast(err, "error"); return; }
-    setStep(3);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function onFinalSubmit(e: React.FormEvent) {
-    e.preventDefault();
     void doSubmit();
   }
 
@@ -891,110 +887,6 @@ export function SellForm({
     );
   }
 
-  // ─── Step 3: Options & payment ─────────────────────────────────────────
-  if (step === 3 && !isEdit) {
-    return (
-      <form onSubmit={onFinalSubmit} className="mt-5 space-y-4 lg:mt-0 lg:space-y-5">
-        <StepHeader current={3} />
-        <StationIntro index={3} title="Options & paiement" body={t("sell.promo.subtitle")} />
-
-        {pricing.promoHome.enabled && (
-          <PromoRow
-            icon={<Star className="size-4" />}
-            title={t("sell.promo.homeFeaturedTitle")}
-            body={t("sell.promo.homeFeaturedBody")}
-            price={pricing.promoHome.value}
-            checked={promoHome}
-            onChange={setPromoHome}
-          />
-        )}
-        {pricing.promoTop.enabled && (
-          <PromoRow
-            icon={<ArrowUpToLine className="size-4" />}
-            title={t("sell.promo.topListedTitle")}
-            body={t("sell.promo.topListedBody")}
-            price={pricing.promoTop.value}
-            checked={promoTop}
-            onChange={setPromoTop}
-          />
-        )}
-        {pricing.promoBanner.enabled && (
-          <PromoRow
-            icon={<Megaphone className="size-4" />}
-            title={t("sell.promo.bannerTitle")}
-            body={t("sell.promo.bannerBody")}
-            price={pricing.promoBanner.value}
-            checked={promoBanner}
-            onChange={setPromoBanner}
-          />
-        )}
-
-        {/* Totals */}
-        <div className="rounded-2xl border border-[var(--gold-soft)] bg-[var(--gold-faint)] p-4">
-          <div className="flex items-baseline justify-between text-[12.5px]">
-            <span className="text-[var(--foreground-muted)]">
-              {listingType === "direct"
-                ? "Frais — Offre directe"
-                : t("sell.promo.baseFee")}
-            </span>
-            <span className="batta-tabular font-semibold text-foreground">
-              {baseFee > 0 ? `${baseFee.toFixed(2)} TND` : "Gratuit"}
-            </span>
-          </div>
-          {homeFee > 0 && (
-            <PromoLine label={t("sell.promo.homeFeaturedShort")} price={homeFee} />
-          )}
-          {topFee > 0 && (
-            <PromoLine label={t("sell.promo.topListedShort")} price={topFee} />
-          )}
-          {bannerFee > 0 && (
-            <PromoLine label={t("sell.promo.bannerShort")} price={bannerFee} />
-          )}
-          <div className="mt-3 flex items-baseline justify-between border-t border-[var(--border)] pt-3">
-            <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--gold)]">
-              {t("sell.promo.total")}
-            </span>
-            <span className="batta-tabular gradient-gold-text text-[24px] font-extrabold leading-none">
-              {total.toFixed(2)}{" "}
-              <span className="text-[10px] font-bold uppercase text-[var(--foreground-muted)]">
-                TND
-              </span>
-            </span>
-          </div>
-        </div>
-
-        <div className="mt-6 flex gap-2 lg:mt-7 lg:justify-between lg:border-t lg:border-border lg:pt-6">
-          <button
-            type="button"
-            onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-            disabled={isPending}
-            className="tap-target inline-flex h-12 items-center justify-center gap-1.5 rounded-full border border-batta-gold/30 bg-batta-surface px-4 text-[13px] font-bold text-foreground disabled:opacity-50"
-          >
-            <ChevronLeft className="size-4" />
-            {t("sell.promo.back")}
-          </button>
-          <button
-            type="submit"
-            disabled={isPending}
-            className="batta-btn-luxe tap-target flex-1 px-5 py-3.5 text-[13.5px] disabled:opacity-50 lg:flex-none lg:min-w-[240px]"
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                {t("sell.promo.submitting")}
-              </>
-            ) : (
-              <>
-                {t("sell.promo.continueToPayment")}
-                <ChevronNext className="size-4" />
-              </>
-            )}
-          </button>
-        </div>
-      </form>
-    );
-  }
-
   // ─── Steps 1 & 2 (new mode) · or the single-page edit form ─────────────
   return (
     <form onSubmit={onFormSubmit} className="mt-5 space-y-4 lg:mt-0 lg:space-y-5">
@@ -1009,8 +901,8 @@ export function SellForm({
       {!isEdit && step === 2 && (
         <StationIntro
           index={2}
-          title="Photos & documents"
-          body="Des photos nettes et les pièces légales accélèrent la validation."
+          title="Photos, documents & options"
+          body="Ajoutez vos photos et pièces légales, choisissez vos options — puis le paiement."
         />
       )}
 
@@ -1337,6 +1229,85 @@ export function SellForm({
           </div>
         )}
       </Section>
+
+      {/* 7. OPTIONS & TOTAL — new-listing only. Folded into step 2 so the
+          whole "media + money" half of the wizard lives on one screen.
+          Promos are clearly optional; the base listing fee always shows. */}
+      {!isEdit && (
+        <Section
+          title="Mises en avant"
+          hint="Optionnel — boostez la visibilité de votre annonce. L'annonce reste publiable sans option."
+        >
+          {(pricing.promoHome.enabled || pricing.promoTop.enabled || pricing.promoBanner.enabled) && (
+            <div className="space-y-2.5">
+              {pricing.promoHome.enabled && (
+                <PromoRow
+                  icon={<Star className="size-4" />}
+                  title={t("sell.promo.homeFeaturedTitle")}
+                  body={t("sell.promo.homeFeaturedBody")}
+                  price={pricing.promoHome.value}
+                  checked={promoHome}
+                  onChange={setPromoHome}
+                />
+              )}
+              {pricing.promoTop.enabled && (
+                <PromoRow
+                  icon={<ArrowUpToLine className="size-4" />}
+                  title={t("sell.promo.topListedTitle")}
+                  body={t("sell.promo.topListedBody")}
+                  price={pricing.promoTop.value}
+                  checked={promoTop}
+                  onChange={setPromoTop}
+                />
+              )}
+              {pricing.promoBanner.enabled && (
+                <PromoRow
+                  icon={<Megaphone className="size-4" />}
+                  title={t("sell.promo.bannerTitle")}
+                  body={t("sell.promo.bannerBody")}
+                  price={pricing.promoBanner.value}
+                  checked={promoBanner}
+                  onChange={setPromoBanner}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Totals — base fee + any selected promos. */}
+          <div className="rounded-2xl border border-[var(--gold-soft)] bg-[var(--gold-faint)] p-4">
+            <div className="flex items-baseline justify-between text-[12.5px]">
+              <span className="text-[var(--foreground-muted)]">
+                {listingType === "direct"
+                  ? "Frais — Offre directe"
+                  : t("sell.promo.baseFee")}
+              </span>
+              <span className="batta-tabular font-semibold text-foreground">
+                {baseFee > 0 ? `${baseFee.toFixed(2)} TND` : "Gratuit"}
+              </span>
+            </div>
+            {homeFee > 0 && (
+              <PromoLine label={t("sell.promo.homeFeaturedShort")} price={homeFee} />
+            )}
+            {topFee > 0 && (
+              <PromoLine label={t("sell.promo.topListedShort")} price={topFee} />
+            )}
+            {bannerFee > 0 && (
+              <PromoLine label={t("sell.promo.bannerShort")} price={bannerFee} />
+            )}
+            <div className="mt-3 flex items-baseline justify-between border-t border-[var(--border)] pt-3">
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--gold)]">
+                {t("sell.promo.total")}
+              </span>
+              <span className="batta-tabular gradient-gold-text text-[24px] font-extrabold leading-none">
+                {total.toFixed(2)}{" "}
+                <span className="text-[10px] font-bold uppercase text-[var(--foreground-muted)]">
+                  TND
+                </span>
+              </span>
+            </div>
+          </div>
+        </Section>
+      )}
       </>
       )}
 
@@ -1362,7 +1333,7 @@ export function SellForm({
           disabled={isPending}
           className="batta-btn-luxe tap-target mt-6 w-full px-5 py-3.5 text-[13.5px] disabled:opacity-50 lg:mt-7"
         >
-          Continuer · Photos
+          Continuer · Photos &amp; options
           <ChevronNext className="size-4" />
         </button>
       ) : (
@@ -1381,8 +1352,17 @@ export function SellForm({
             disabled={isPending}
             className="batta-btn-luxe tap-target flex-1 px-5 py-3.5 text-[13.5px] disabled:opacity-50 lg:flex-none lg:min-w-[240px]"
           >
-            {t("sell.form.continueToPromos")}
-            <ChevronNext className="size-4" />
+            {isPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                {t("sell.promo.submitting")}
+              </>
+            ) : (
+              <>
+                {t("sell.promo.continueToPayment")}
+                <ChevronNext className="size-4" />
+              </>
+            )}
           </button>
         </div>
       )}
@@ -1390,9 +1370,9 @@ export function SellForm({
   );
 }
 
-const STEP_LABELS = ["Détails", "Photos", "Options"] as const;
+const STEP_LABELS = ["Détails", "Photos & options"] as const;
 
-function StepHeader({ current }: { current: 1 | 2 | 3 }) {
+function StepHeader({ current }: { current: 1 | 2 }) {
   return (
     <div
       role="list"
@@ -1400,7 +1380,7 @@ function StepHeader({ current }: { current: 1 | 2 | 3 }) {
       className="flex items-center gap-2"
     >
       {STEP_LABELS.map((label, i) => {
-        const n = (i + 1) as 1 | 2 | 3;
+        const n = (i + 1) as 1 | 2;
         const state = current === n ? "active" : current > n ? "done" : "pending";
         return (
           <Fragment key={label}>
@@ -1421,7 +1401,7 @@ function StepHeader({ current }: { current: 1 | 2 | 3 }) {
   );
 }
 
-// Per-step heading inside the wizard — an eyebrow ("Étape n sur 3"), a
+// Per-step heading inside the wizard — an eyebrow ("Étape n sur 2"), a
 // big title, and a one-line guide. Gives each station a clear identity.
 function StationIntro({
   index,
@@ -1436,7 +1416,7 @@ function StationIntro({
     <div>
       <span className="batta-eyebrow flex items-center gap-2">
         <span aria-hidden className="batta-gold-rule-short" />
-        Étape {index} sur 3
+        Étape {index} sur 2
       </span>
       <h2 className="mt-2 text-[19px] font-extrabold leading-tight text-foreground">
         {title}

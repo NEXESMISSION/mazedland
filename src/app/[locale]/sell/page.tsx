@@ -522,57 +522,58 @@ export default async function SellLandingPage({
                   </div>
                 )}
 
-                {(canSchedule || status === "rejected" || auction) && (
-                  <div aria-hidden className="batta-hairline mt-3" />
-                )}
-
-                {canSchedule && (
-                  <Link
-                    href={`/sell/${p.id}/schedule` as `/sell/${string}/schedule`}
-                    className="batta-btn-luxe tap-target mt-3 w-full px-4 py-2.5 text-[12px]"
-                  >
-                    <Gavel className="size-3.5" strokeWidth={2.5} />
-                    {t("sell.scheduleCta")}
-                  </Link>
-                )}
-                {status === "rejected" && (() => {
-                  const r = parseRejection(p.rejection_reason);
-                  const href = r.tagged && r.categories.length > 0
-                    ? `/sell/${p.id}/edit?focus=${r.categories.join(",")}`
-                    : `/sell/${p.id}/edit`;
+                {/* One clear action per card. The whole card row already
+                    links to the auction (or the editable detail), so we
+                    don't repeat a "view auction" button here — we only
+                    surface the action the listing actually needs next:
+                      · ready, no auction → schedule it (primary)
+                      · rejected          → fix it (ghost)
+                      · live, no bids yet → cancel (subtle)
+                    Cancel is gated on bids === 0; the API re-checks the
+                    count server-side, so this UI gate is cosmetic. */}
+                {(() => {
+                  const canCancel =
+                    !!auction &&
+                    ["scheduled", "live", "extending"].includes(auction.status) &&
+                    bids === 0;
+                  if (!canSchedule && status !== "rejected" && !canCancel) return null;
                   return (
-                    <Link
-                      href={href as `/sell/${string}/edit`}
-                      className="batta-btn-ghost-gold tap-target mt-3 w-full px-4 py-2.5 text-[12px]"
-                    >
-                      {t("sell.editCta")}
-                    </Link>
+                    <>
+                      <div aria-hidden className="batta-hairline mt-3" />
+                      {canSchedule && (
+                        <Link
+                          href={`/sell/${p.id}/schedule` as `/sell/${string}/schedule`}
+                          className="batta-btn-luxe tap-target mt-3 w-full px-4 py-2.5 text-[12px]"
+                        >
+                          <Gavel className="size-3.5" strokeWidth={2.5} />
+                          {t("sell.scheduleCta")}
+                        </Link>
+                      )}
+                      {status === "rejected" && (() => {
+                        const r = parseRejection(p.rejection_reason);
+                        const href = r.tagged && r.categories.length > 0
+                          ? `/sell/${p.id}/edit?focus=${r.categories.join(",")}`
+                          : `/sell/${p.id}/edit`;
+                        return (
+                          <Link
+                            href={href as `/sell/${string}/edit`}
+                            className="batta-btn-ghost-gold tap-target mt-3 w-full px-4 py-2.5 text-[12px]"
+                          >
+                            {t("sell.editCta")}
+                          </Link>
+                        );
+                      })()}
+                      {canCancel && (
+                        <div className="mt-2">
+                          <CancelAuctionButton
+                            auctionId={auction!.id}
+                            propertyTitle={p.title}
+                          />
+                        </div>
+                      )}
+                    </>
                   );
                 })()}
-                {auction && (
-                  <Link
-                    href={`/auctions/${auction.id}` as `/auctions/${string}`}
-                    className="tap-target mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-border bg-surface-2 py-2.5 text-[12px] font-semibold text-foreground hover:border-gold/40"
-                  >
-                    {t("schedule.viewAuction")}
-                    <ChevronEnd className="size-3.5" strokeWidth={2} />
-                  </Link>
-                )}
-                {/* Seller-initiated cancel — only offered while no bids
-                    have landed yet. The API double-checks the bid count
-                    (race window between page load and click), so this
-                    UI gate is cosmetic; the authoritative check is
-                    server-side. */}
-                {auction
-                  && ["scheduled", "live", "extending"].includes(auction.status)
-                  && bids === 0 && (
-                  <div className="mt-2">
-                    <CancelAuctionButton
-                      auctionId={auction.id}
-                      propertyTitle={p.title}
-                    />
-                  </div>
-                )}
               </li>
             );
           })}

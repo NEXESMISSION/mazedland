@@ -376,6 +376,17 @@ export default async function LandingPage({
     brandEyebrow: t("home.heroBrandEyebrow", { count: liveCount }),
   });
 
+  // Second "ending soon" hero carousel — built once, shown on mobile AND
+  // (now) desktop. Empty when there aren't enough trending lots to fill it.
+  const endingSoonSlides =
+    trending.length > 5
+      ? buildEndingSoonSlides(trending.slice(5, 10), locale, {
+          endingSoonWord: t("home.endingSoonEyebrow"),
+          tnd: t("common.tnd"),
+          bidCta: t("home.heroBidCta"),
+        })
+      : [];
+
   return (
     <>
     {/* Client-side perf probe — logs nav/paint/LCP/long-task/resource
@@ -577,16 +588,9 @@ export default async function LandingPage({
           urgency thread on lg+; a second photo carousel here turns
           into a fourth full-width banner the user has to scroll past
           to reach the browse rails. */}
-      {trending.length > 5 && (
+      {endingSoonSlides.length > 0 && (
         <div className="mt-6 lg:hidden">
-          <HeroBanner
-            slides={buildEndingSoonSlides(trending.slice(5, 10), locale, {
-              endingSoonWord: t("home.endingSoonEyebrow"),
-              tnd: t("common.tnd"),
-              bidCta: t("home.heroBidCta"),
-            })}
-            isRTL={isRTL}
-          />
+          <HeroBanner slides={endingSoonSlides} isRTL={isRTL} />
         </div>
       )}
 
@@ -944,7 +948,7 @@ export default async function LandingPage({
     </div>
 
     <HomeDesktop
-      heroSlides={heroSlides}
+      endingSoonSlides={endingSoonSlides}
       trending={trending}
       offers={offers}
       nouveautes={nouveautes}

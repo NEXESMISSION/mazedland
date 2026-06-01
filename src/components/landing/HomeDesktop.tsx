@@ -4,9 +4,12 @@ import { Link } from "@/i18n/navigation";
 import { LiveTicker } from "@/components/landing/LiveTicker";
 import { TrendingRail } from "@/components/landing/TrendingRail";
 import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
+import { HeroShowcase, type ShowcaseSlide } from "@/components/landing/HeroShowcase";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeSearch } from "@/components/landing/HomeSearch";
 import { PropertyCard } from "@/components/property/PropertyCard";
+import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { formatTND } from "@/lib/utils";
 import type { AuctionWithProperty } from "@/lib/types";
 import {
   ArrowUpRight,
@@ -81,7 +84,6 @@ const TRUST_PILLARS: {
 ];
 
 export async function HomeDesktop({
-  heroSlides,
   trending,
   offers,
   nouveautes,
@@ -91,9 +93,9 @@ export async function HomeDesktop({
   liveCount,
   soldThisMonthCount,
   coverageGovs,
+  endingSoonSlides = [],
   alwaysVisible = false,
 }: {
-  heroSlides: HeroSlide[];
   trending: AuctionWithProperty[];
   offers: AuctionWithProperty[];
   nouveautes: AuctionWithProperty[];
@@ -105,6 +107,9 @@ export async function HomeDesktop({
   scheduledCount: number;
   soldThisMonthCount: number;
   coverageGovs: number;
+  /** "Ending soon" hero carousel slides — the second hero that used to be
+   *  mobile-only. Empty array hides it. */
+  endingSoonSlides?: HeroSlide[];
   /** When true the root drops its `hidden lg:block` gate and renders at
    *  all widths — set by the home page when it has already decided (via
    *  UA) to send only the desktop tree. */
@@ -120,6 +125,31 @@ export async function HomeDesktop({
     { value: soldThisMonthCount, label: "Vendues ce mois-ci", sub: "Biens attribués", Icon: CheckCircle2, wrap: "bg-emerald-50 text-emerald-600", num: "text-emerald-600" },
     { value: coverageGovs,       label: "Gouvernorats",      sub: "Actif",            Icon: Building2,    wrap: "bg-violet-50 text-violet-600",   num: "text-violet-600" },
   ];
+
+  // Featured showcase — the top trending lots, rendered as a single
+  // auto-advancing lot card on the hero's right. Built from the rich
+  // auction rows (price / deadline) so the panel can show a structured
+  // info overlay + live countdown instead of a raw photo.
+  const showcaseSlides: ShowcaseSlide[] = trending
+    .slice(0, 5)
+    .map((a): ShowcaseSlide | null => {
+      const photo = a.property.photos
+        ?.slice()
+        .sort((p, q) => p.sort_order - q.sort_order)[0];
+      if (!photo) return null;
+      const price = a.current_price ?? a.opening_price;
+      return {
+        id: a.id,
+        imageUrl: propertyPhotoUrl(photo.storage_path),
+        href: `/auctions/${a.id}`,
+        governorate: a.property.governorate,
+        title: a.property.title,
+        priceLabel: formatTND(price, locale),
+        endsAt: a.ends_at ?? null,
+        isLive: a.status === "live" || a.status === "extending",
+      };
+    })
+    .filter((s): s is ShowcaseSlide => s !== null);
 
   return (
     <div className={`${alwaysVisible ? "block" : "hidden lg:block"} mx-auto max-w-[var(--max-w-wide)] px-8 pb-24`}>
@@ -178,11 +208,21 @@ export async function HomeDesktop({
             </div>
           </div>
 
-          {/* RIGHT — auto-sliding hero carousel (same engine as mobile).
-              The wrapper cancels HeroBanner's own mobile px-4/pt-4 so the
-              banner sits flush in the column; its inner rounded ring frames it. */}
-          <div className="col-span-6 [&>section]:!px-0 [&>section]:!pt-0">
-            <HeroBanner slides={heroSlides} isRTL={isRTL} />
+          {/* RIGHT — featured-lot showcase: a single auto-advancing lot
+              card with a structured info panel + live countdown, replacing
+              the raw photo carousel (which surfaced source-photo watermarks
+              and a colliding corner badge). */}
+          <div className="col-span-6">
+            <HeroShowcase
+              slides={showcaseSlides}
+              isRTL={isRTL}
+              brand={{
+                title: t("home.heroBrandTitle"),
+                slogan: t("brand.slogan"),
+                cta: t("home.heroBrowseCta"),
+                href: "/properties",
+              }}
+            />
           </div>
         </div>
 
@@ -264,6 +304,13 @@ export async function HomeDesktop({
             seeAllLabel={t("home.seeAll")}
           />
           <CardSlider items={nouveautes} savedIds={savedIds} loggedIn={loggedIn} />
+        </section>
+      )}
+
+      {/* SECOND HERO — "ending soon" carousel (was mobile-only). */}
+      {endingSoonSlides.length > 0 && (
+        <section className="mt-12">
+          <HeroBanner slides={endingSoonSlides} isRTL={isRTL} />
         </section>
       )}
 
