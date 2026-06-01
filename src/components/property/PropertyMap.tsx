@@ -29,7 +29,6 @@ export function PropertyMap({
   const span = 0.005;
   const bbox = [lng - span, lat - span, lng + span, lat + span].join(",");
   const embedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
-  const osmLink = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`;
   const geoLink = `geo:${lat},${lng}?q=${encodeURIComponent(address ?? `${lat},${lng}`)}`;
 
   return (
@@ -41,26 +40,19 @@ export function PropertyMap({
         className="aspect-[16/10] w-full border-0"
         referrerPolicy="no-referrer"
       />
-      <div className="flex items-center justify-between gap-3 border-t border-border bg-surface-2 px-3 py-2.5">
-        <span className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted">
-          <MapPin className="size-3 shrink-0 text-gold" strokeWidth={2} />
+      <div className="flex items-center gap-3 border-t border-black/[0.07] bg-white px-3.5 py-2.5">
+        <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[11.5px] text-muted">
+          <MapPin className="size-3.5 shrink-0 text-gold" strokeWidth={2} />
           <span className="truncate">
             {address ?? `${lat.toFixed(4)}, ${lng.toFixed(4)}`}
           </span>
         </span>
         <a
           href={geoLink}
-          className="batta-gold-fill tap-target inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)]"
+          className="tap-target inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--gold-faint)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--gold)] transition hover:bg-[var(--gold)] hover:text-white"
         >
-          <ExternalLink className="size-3" strokeWidth={2.5} />
-          Open
-        </a>
-        <a
-          href={osmLink}
-          target="_blank" rel="noopener noreferrer"
-          className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted hover:text-gold-bright"
-        >
-          OSM
+          <ExternalLink className="size-3" strokeWidth={2.4} />
+          Ouvrir le plan
         </a>
       </div>
     </section>

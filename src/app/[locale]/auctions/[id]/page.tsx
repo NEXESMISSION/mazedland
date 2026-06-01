@@ -249,6 +249,16 @@ export default async function AuctionDetail({
   // them, and showing the button just to gate it later is confusing.
   const showFloatingBidCta = !isDirect && !isEnded && !isOwner;
 
+  // CTA goes straight to checkout when the only remaining step is the
+  // caution — no hop through /bid. Other states still route to /bid.
+  const skipToDeposit =
+    userId !== null && !isOwner && kycVerified && depositRequired &&
+    !hasActiveDeposit && !depositUnderReview &&
+    (isLive || auction.status === "scheduled");
+  const bidHref = (skipToDeposit
+    ? `/payment/checkout?type=deposit&auction=${auction.id}`
+    : `/auctions/${auction.id}/bid`) as never;
+
   return (
     <>
       {/* Suppress "you've been outbid" notifications while the user
@@ -752,7 +762,7 @@ export default async function AuctionDetail({
               </Link>
             ) : (
               <Link
-                href={`/auctions/${auction.id}/bid` as never}
+                href={bidHref}
                 className="batta-gradient-gold inline-flex h-12 w-full items-center justify-center gap-2 rounded-full text-[14px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] ring-1 ring-black/5 transition-all active:scale-[0.99]"
               >
                 <Gavel className="h-4 w-4" strokeWidth={2.5} />

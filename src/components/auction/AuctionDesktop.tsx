@@ -75,6 +75,17 @@ export async function AuctionDesktop(props: {
   const startsAtMs = auction.starts_at ? new Date(auction.starts_at).getTime() : null;
   const showStart = !isLive && startsAtMs !== null && startsAtMs > Date.now();
 
+  // Route the primary CTA straight to checkout when the only remaining step
+  // is paying the caution — no hop through /bid (which would just redirect).
+  // Every other state still goes to /bid for its login/KYC/composer screen.
+  const skipToDeposit =
+    userId !== null && !isOwner && kycVerified && depositRequired &&
+    !hasActiveDeposit && !depositUnderReview &&
+    (isLive || auction.status === "scheduled");
+  const bidHref = (skipToDeposit
+    ? `/payment/checkout?type=deposit&auction=${auction.id}`
+    : `/auctions/${auction.id}/bid`) as never;
+
   const specs: { key: string; label: string; value: string }[] = [
     { key: "_type", label: t("property.type"), value: t(`property.types.${property.type}`) },
   ];
@@ -254,7 +265,7 @@ export async function AuctionDesktop(props: {
                         <Clock className="size-4" strokeWidth={2.5} /> Caution en cours de validation
                       </Link>
                     ) : (
-                      <Link href={`/auctions/${auction.id}/bid` as never} className="batta-gradient-gold inline-flex h-14 w-full items-center justify-center gap-2 rounded-full text-[14.5px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] transition active:scale-[0.99]">
+                      <Link href={bidHref} className="batta-gradient-gold inline-flex h-14 w-full items-center justify-center gap-2 rounded-full text-[14.5px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] transition active:scale-[0.99]">
                         <Gavel className="size-4" strokeWidth={2.5} /> {isLive ? t("auction.placeBid") : "Réserver ma place"}
                       </Link>
                     )}
