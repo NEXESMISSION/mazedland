@@ -13,7 +13,7 @@ import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocume
 import {
   MapPin, Ruler, BedDouble, Bath, Building2, Calendar, ChevronRight,
   ClipboardCheck, FileText, Lock, Gavel, Download, Clock, Hourglass,
-  ShieldCheck, Trophy,
+  ShieldCheck, Trophy, Wallet,
 } from "lucide-react";
 
 type AttrKind = {
@@ -24,18 +24,13 @@ type AttrKind = {
   unit: string | null;
 };
 
-// ── Sleek skin tokens — soft-gradient glass cards, hairline rings, big
-//    radii, soft drop shadows. Shared so every surface on the page reads as
-//    one fresh design language. ──
-const CARD =
-  "rounded-[26px] bg-white ring-1 ring-black/[0.06] shadow-[0_14px_44px_-30px_rgba(15,23,42,0.30)]";
-const SOFT_TILE =
-  "rounded-2xl bg-gradient-to-b from-white to-[var(--gold-faint)] ring-1 ring-[var(--gold)]/15";
+// Minimal skin — white surfaces, hairline borders, no heavy shadows.
+const CARD = "rounded-2xl border border-black/[0.07] bg-white";
 
 /**
- * Desktop (lg+) auction detail — sleek product-page skin.
- * Gallery + read-everything content on the left; a sticky, soft-gradient
- * purchase card on the right. All transaction logic preserved.
+ * Desktop (lg+) auction detail — minimal & clean, photos-first.
+ * Big gallery on the left, a calm sticky action card on the right, then
+ * generous full-width sections below. All transaction logic preserved.
  */
 export async function AuctionDesktop(props: {
   auction: AuctionWithProperty;
@@ -103,14 +98,12 @@ export async function AuctionDesktop(props: {
   if (attrs.bathrooms != null && attrs.bathrooms !== "") facts.push({ Icon: Bath, label: "SdB", value: String(attrs.bathrooms) });
 
   return (
-    <div className="hidden lg:block mx-auto w-full max-w-[1200px] px-6 pb-24">
+    <div className="hidden lg:block mx-auto w-full max-w-[1180px] px-6 pb-24">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 pt-6 text-[12px] text-muted" aria-label="Breadcrumb">
         <Link href="/" className="transition-colors hover:text-gold">Accueil</Link>
         <ChevronRight className="size-3 opacity-50" />
-        <Link href="/properties" className="transition-colors hover:text-gold">
-          {t("nav.properties")}
-        </Link>
+        <Link href="/properties" className="transition-colors hover:text-gold">{t("nav.properties")}</Link>
         <ChevronRight className="size-3 opacity-50" />
         <span className="truncate text-foreground/70">{property.title}</span>
       </nav>
@@ -134,227 +127,70 @@ export async function AuctionDesktop(props: {
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-12 items-start gap-8">
-        {/* ── LEFT — gallery + everything you read ── */}
-        <div className="col-span-7 min-w-0 space-y-7">
-          {/* Gallery */}
-          <div className="overflow-hidden rounded-[28px] bg-white ring-1 ring-black/[0.06] shadow-[0_30px_70px_-42px_rgba(15,23,42,0.45)]">
+      {/* Header — status · title · location, above the gallery */}
+      <div className="mt-5 flex items-start justify-between gap-6">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gold-faint)] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[var(--gold)]">
+              <Gavel className="size-3" strokeWidth={2.5} />
+              {t(`auction.types.${auction.type}`)}
+            </span>
+            {isLive && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                <span className="batta-pulse-dot size-1.5 rounded-full bg-white text-white/40" />
+                {t("auction.live")}
+              </span>
+            )}
+            {isEnded && (
+              <span className="inline-flex items-center rounded-full bg-surface-2 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted ring-1 ring-black/[0.06]">
+                {auction.status === "ended_unsold" ? "Invendu" : auction.status === "cancelled" ? "Annulée" : "Adjugé"}
+              </span>
+            )}
+          </div>
+          <h1 className={`mt-3 text-[30px] font-extrabold leading-[1.1] tracking-tight text-foreground ${isRTL ? "font-arabic" : ""}`}>
+            {property.title}
+          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-medium text-muted">
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin className="size-4 text-gold" strokeWidth={2} />
+              {property.governorate}
+            </span>
+            <span aria-hidden className="opacity-30">·</span>
+            <span className="batta-tabular font-mono text-[11px] uppercase tracking-[0.12em]">Lot {lotNo}</span>
+            {totalBids > 0 && !isDirect && (
+              <>
+                <span aria-hidden className="opacity-30">·</span>
+                <span className="batta-tabular">{totalBids} {t("auction.totalBids")}</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Hero row — big gallery (left) + sticky action card (right) */}
+      <div className="mt-5 grid grid-cols-12 items-start gap-8">
+        <div className="col-span-7 min-w-0">
+          <div className="overflow-hidden rounded-2xl border border-black/[0.07]">
             <HeroCarousel photos={photos} alt={property.title}>
               <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex items-start justify-between gap-2 px-4">
                 {isLive && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-[0_0_18px_rgba(239,68,68,0.55)]">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white">
                     <span className="batta-pulse-dot size-1.5 rounded-full bg-white text-white/40" />
                     {t("auction.live")}
                   </span>
                 )}
                 {totalBids > 0 && (
-                  <span className="batta-tabular pointer-events-auto ms-auto inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/55 px-3 py-1 text-[10px] font-bold text-white backdrop-blur-md">
+                  <span className="batta-tabular pointer-events-auto ms-auto inline-flex items-center gap-1 rounded-full bg-black/55 px-3 py-1 text-[10px] font-bold text-white backdrop-blur-md">
                     {totalBids} · {t("auction.totalBids")}
                   </span>
                 )}
               </div>
             </HeroCarousel>
           </div>
-
-          {/* Key facts strip — soft-gradient tiles */}
-          {facts.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {facts.map((f, i) => (
-                <div key={i} className={`${SOFT_TILE} p-4`}>
-                  <span className="inline-flex size-9 items-center justify-center rounded-xl bg-white text-gold ring-1 ring-[var(--gold)]/20">
-                    <f.Icon className="size-4" strokeWidth={2} />
-                  </span>
-                  <div className="batta-tabular mt-2.5 truncate text-[17px] font-extrabold leading-none text-foreground">
-                    {f.value}
-                  </div>
-                  <div className="mt-1 truncate text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted">
-                    {f.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Auction terms — caution + all the numbers, scannable */}
-          {!isDirect && (
-            <AuctionTerms
-              auction={auction}
-              currentPrice={currentPrice}
-              deposit={deposit}
-              depositRequired={depositRequired}
-              totalBids={totalBids}
-              isEnded={isEnded}
-              isLive={isLive}
-            />
-          )}
-
-          {/* Description */}
-          {property.description && (
-            <section className={`${CARD} p-6`}>
-              <h2 className="batta-eyebrow flex items-center gap-2">
-                <span aria-hidden className="batta-gold-rule-short" />
-                Description
-              </h2>
-              <p
-                className={`mt-3 whitespace-pre-line text-[14.5px] leading-relaxed text-foreground/85 ${
-                  isRTL ? "font-arabic" : ""
-                }`}
-              >
-                {property.description}
-              </p>
-            </section>
-          )}
-
-          {/* Specifications */}
-          <section className={`${CARD} p-6`}>
-            <h2 className="batta-eyebrow flex items-center gap-2">
-              <span aria-hidden className="batta-gold-rule-short" />
-              Caractéristiques
-            </h2>
-            <div className="mt-4 grid grid-cols-2 gap-2.5 xl:grid-cols-3">
-              {specs.map((s) => (
-                <Spec key={s.key} Icon={specIcon(s.key)} label={s.label} value={s.value} />
-              ))}
-            </div>
-          </section>
-
-          {/* Map */}
-          {property.lat != null && property.lng != null && (
-            <div className="overflow-hidden rounded-[26px] ring-1 ring-black/[0.06] shadow-[0_14px_44px_-30px_rgba(15,23,42,0.30)] [&>section]:!m-0 [&>section]:!rounded-[26px] [&>section]:!border-0 [&>section]:!ring-0 [&_iframe]:!aspect-[16/7]">
-              <PropertyMap
-                lat={Number(property.lat)}
-                lng={Number(property.lng)}
-                address={property.address ?? property.governorate}
-              />
-            </div>
-          )}
-
-          {/* Inspection + Documents */}
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:items-start">
-            {myInspection ? (
-              <section className="flex items-center gap-3 rounded-2xl bg-gradient-to-b from-white to-[var(--gold-faint)] p-5 ring-1 ring-[var(--gold)]/15">
-                <span className="batta-monogram batta-monogram-filled size-11 shrink-0">
-                  <ClipboardCheck className="size-4" strokeWidth={2.2} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="batta-eyebrow">Inspection</div>
-                  <div className="mt-0.5 text-[15px] font-bold text-foreground">
-                    {t("property.inspectionReport")}
-                  </div>
-                  <div className="mt-0.5 text-[11px] text-muted">Statut : {myInspection.status}</div>
-                </div>
-                <a
-                  href={`/api/inspector/report/${myInspection.id}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="batta-btn-luxe shrink-0 px-4 py-2 text-[12px]"
-                >
-                  Ouvrir
-                </a>
-              </section>
-            ) : (
-              <section className="flex items-center gap-3 rounded-2xl bg-gradient-to-b from-white to-[var(--gold-faint)] p-5 ring-1 ring-[var(--gold)]/15">
-                <span className="batta-monogram size-11 shrink-0">
-                  <ClipboardCheck className="size-4" strokeWidth={2.2} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="batta-eyebrow">Avant d&apos;enchérir</div>
-                  <div className="mt-0.5 text-[15px] font-bold text-foreground">
-                    {t("property.requestInspection")}
-                  </div>
-                  <div className="mt-0.5 text-[11px] text-muted">
-                    Rapport indépendant d&apos;un expert agréé.
-                  </div>
-                </div>
-                <Link
-                  href={`/inspectors/book?property=${property.id}` as `/inspectors/book`}
-                  className="batta-btn-luxe shrink-0 px-4 py-2 text-[12px]"
-                >
-                  Réserver
-                </Link>
-              </section>
-            )}
-
-            <section className={`${CARD} p-5`}>
-              <h3 className="flex items-center gap-2 text-[15px] font-bold text-foreground">
-                <FileText className="size-4 text-gold" strokeWidth={2} />
-                {t("property.documents")}
-              </h3>
-              <p className="mt-1.5 text-[11px] text-muted">
-                {isEnded
-                  ? "Accès réservé aux participants vérifiés."
-                  : t("auction.depositRequired_long")}
-              </p>
-              <ul className="mt-3 divide-y divide-black/[0.06]">
-                {documents.length === 0 && (
-                  <li className="py-3 text-[12px] text-muted">Aucun document pour le moment.</li>
-                )}
-                {documents.map((d) => {
-                  const canDownload = isOwner || (kycVerified && hasActiveDeposit);
-                  return (
-                    <li key={d.id} className="flex items-center justify-between gap-3 py-2.5">
-                      <span className="text-[13px] text-foreground/85">{d.kind}</span>
-                      {canDownload ? (
-                        <PropertyDocumentOpenButton
-                          docId={d.id}
-                          title={d.kind}
-                          className="batta-gold-fill inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-95"
-                        >
-                          <Download className="size-3" strokeWidth={2.5} />
-                          Ouvrir
-                        </PropertyDocumentOpenButton>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] text-muted">
-                          <Lock className="size-3" strokeWidth={2} /> KYC + deposit
-                        </span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          </div>
         </div>
 
-        {/* ── RIGHT — sticky title + soft-gradient purchase card ── */}
         <aside className="col-span-5">
           <div className="sticky flex flex-col gap-4" style={{ top: "calc(var(--desktop-nav-h) + 1rem)" }}>
-            {/* Title + meta */}
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="batta-gold-fill inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
-                  <Gavel className="size-3" strokeWidth={2.5} />
-                  {t(`auction.types.${auction.type}`)}
-                </span>
-                {isLive && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-[0_0_18px_rgba(239,68,68,0.45)]">
-                    <span className="batta-pulse-dot size-1.5 rounded-full bg-white text-white/40" />
-                    {t("auction.live")}
-                  </span>
-                )}
-                {isEnded && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted ring-1 ring-border">
-                    {auction.status === "ended_unsold" ? "Invendu" : auction.status === "cancelled" ? "Annulée" : "Adjugé"}
-                  </span>
-                )}
-              </div>
-              <h1
-                className={`mt-3 text-[30px] font-extrabold leading-[1.08] tracking-tight text-foreground ${
-                  isRTL ? "font-arabic" : ""
-                }`}
-              >
-                {property.title}
-              </h1>
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] font-semibold text-muted">
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="size-4 text-gold" strokeWidth={2} />
-                  {property.governorate}
-                </span>
-                <span aria-hidden className="opacity-30">·</span>
-                <span className="batta-tabular font-mono text-[11px] uppercase tracking-[0.12em]">Lot {lotNo}</span>
-              </div>
-            </div>
-
-            {/* Purchase card */}
             {isDirect ? (
               <div className="[&>*]:!mx-0 [&>*]:!mt-0">
                 <DirectSalePanel
@@ -366,60 +202,47 @@ export async function AuctionDesktop(props: {
                 />
               </div>
             ) : (
-              <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[var(--gold-faint)] to-white p-7 ring-1 ring-[var(--gold)]/25 shadow-[0_26px_64px_-38px_rgba(15,23,42,0.42)]">
+              <div className={`${CARD} p-6`}>
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="batta-eyebrow inline-flex items-center gap-2">
                     {isLive && <span className="size-1.5 rounded-full bg-gold pulse-gold" />}
-                    {isEnded ? "Résultat" : isLive ? t("auction.currentBid") : "Mise à prix"}
+                    {isEnded ? "Prix final" : isLive ? t("auction.currentBid") : "Mise à prix"}
                   </span>
-                  <div className="batta-tabular text-[10px] text-muted">
+                  <span className="batta-tabular text-[10px] text-muted">
                     dès {formatTND(auction.opening_price, locale)} {tnd}
-                  </div>
+                  </span>
                 </div>
-                <div
-                  className={`batta-tabular gradient-gold-text mt-2 text-[46px] font-extrabold leading-none tracking-tight ${
-                    isRTL ? "font-arabic" : ""
-                  }`}
-                >
-                  {formatTND(
-                    isEnded && auction.winner_amount ? Number(auction.winner_amount) : currentPrice,
-                    locale,
-                  )}
-                  <span className="ms-2 text-[14px] font-bold uppercase tracking-[0.16em] text-gold/80">{tnd}</span>
+                <div className={`batta-tabular gradient-gold-text mt-1.5 text-[42px] font-extrabold leading-none tracking-tight ${isRTL ? "font-arabic" : ""}`}>
+                  {formatTND(isEnded && auction.winner_amount ? Number(auction.winner_amount) : currentPrice, locale)}
+                  <span className="ms-2 text-[13px] font-bold uppercase tracking-[0.16em] text-gold/70">{tnd}</span>
                 </div>
 
                 {isEnded ? (
-                  <div
-                    className={`mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold ${
-                      auction.status === "ended_unsold"
-                        ? "bg-white text-muted ring-1 ring-black/[0.06]"
-                        : auction.status === "cancelled"
-                          ? "batta-tone-bad"
-                          : "batta-tone-ok"
-                    }`}
-                  >
+                  <div className={`mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold ${
+                    auction.status === "ended_unsold" ? "bg-surface-2 text-muted ring-1 ring-black/[0.06]"
+                      : auction.status === "cancelled" ? "batta-tone-bad" : "batta-tone-ok"
+                  }`}>
                     <Gavel className="size-4 shrink-0" strokeWidth={2.2} />
-                    {auction.status === "ended_unsold"
-                      ? "Invendu — prix de réserve non atteint"
-                      : auction.status === "cancelled"
-                        ? "Enchère annulée"
-                        : "Adjugé"}
+                    {auction.status === "ended_unsold" ? "Invendu — réserve non atteinte"
+                      : auction.status === "cancelled" ? "Enchère annulée" : "Adjugé"}
                   </div>
                 ) : (
-                  <div className="mt-5 grid grid-cols-2 gap-2.5">
-                    <div className="rounded-2xl bg-white/80 px-4 py-3.5 ring-1 ring-[var(--gold)]/15 backdrop-blur">
-                      <div className="batta-eyebrow text-[9px]">
-                        {showStart ? t("auction.startsIn") : t("auction.endsIn")}
-                      </div>
-                      <div className="batta-tabular mt-1 text-[16px] font-bold text-foreground">
-                        <Countdown endsAt={showStart ? (auction.starts_at as string) : auction.ends_at} />
-                      </div>
+                  <div className="mt-5 space-y-2">
+                    <div className="flex items-center justify-between rounded-xl bg-[var(--gold-faint)] px-3.5 py-3">
+                      <span className="inline-flex items-center gap-2 text-[12.5px] font-semibold text-foreground">
+                        <Wallet className="size-4 text-gold" strokeWidth={2} /> Caution requise
+                      </span>
+                      <span className="batta-tabular text-[14px] font-extrabold text-foreground">
+                        {depositRequired ? `${formatTND(deposit, locale)} ${tnd}` : "Gratuite"}
+                      </span>
                     </div>
-                    <div className="rounded-2xl bg-white/80 px-4 py-3.5 ring-1 ring-[var(--gold)]/15 backdrop-blur">
-                      <div className="batta-eyebrow text-[9px]">{t("auction.depositRequired")}</div>
-                      <div className="batta-tabular mt-1 text-[16px] font-bold text-foreground">
-                        {depositRequired ? `${formatTND(deposit, locale)} ${tnd}` : "Gratuit"}
-                      </div>
+                    <div className="flex items-center justify-between rounded-xl bg-surface-2 px-3.5 py-3 ring-1 ring-black/[0.05]">
+                      <span className="inline-flex items-center gap-2 text-[12.5px] text-muted">
+                        <Clock className="size-4" strokeWidth={2} /> {showStart ? t("auction.startsIn") : t("auction.endsIn")}
+                      </span>
+                      <span className="batta-tabular text-[14px] font-bold text-foreground">
+                        <Countdown endsAt={showStart ? (auction.starts_at as string) : auction.ends_at} />
+                      </span>
                     </div>
                   </div>
                 )}
@@ -427,50 +250,34 @@ export async function AuctionDesktop(props: {
                 {showBidCta && (
                   <div className="mt-5">
                     {depositUnderReview && !hasActiveDeposit ? (
-                      <Link
-                        href="/account/payments"
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-amber-300 bg-amber-50 py-3.5 text-[13.5px] font-bold text-amber-700 transition active:scale-[0.99]"
-                      >
-                        <Clock className="size-4" strokeWidth={2.5} />
-                        Caution en cours de validation
+                      <Link href="/account/payments" className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-amber-300 bg-amber-50 py-3.5 text-[13.5px] font-bold text-amber-700 transition active:scale-[0.99]">
+                        <Clock className="size-4" strokeWidth={2.5} /> Caution en cours de validation
                       </Link>
                     ) : (
-                      <Link
-                        href={`/auctions/${auction.id}/bid` as never}
-                        className="batta-gradient-gold inline-flex h-14 w-full items-center justify-center gap-2 rounded-full text-[14.5px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] ring-1 ring-black/5 transition active:scale-[0.99]"
-                      >
-                        <Gavel className="size-4" strokeWidth={2.5} />
-                        {isLive ? t("auction.placeBid") : "Réserver ma place"}
+                      <Link href={`/auctions/${auction.id}/bid` as never} className="batta-gradient-gold inline-flex h-14 w-full items-center justify-center gap-2 rounded-full text-[14.5px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] transition active:scale-[0.99]">
+                        <Gavel className="size-4" strokeWidth={2.5} /> {isLive ? t("auction.placeBid") : "Réserver ma place"}
                       </Link>
                     )}
                     {hasBuyNow && !isOwner && (
-                      <Link
-                        href={`/payment/checkout?type=buy_now&auction=${auction.id}` as never}
-                        className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-gold/30 bg-white/60 px-4 py-2.5 text-[12.5px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-white"
-                      >
+                      <Link href={`/payment/checkout?type=buy_now&auction=${auction.id}` as never} className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-black/[0.08] px-4 py-2.5 text-[12.5px] font-bold text-foreground transition hover:border-gold/40">
                         {t("auction.buyNowFor")}{" "}
-                        <span className="font-extrabold text-gold-bright">
-                          {formatTND(Number(auction.buy_now_price), locale)} {tnd}
-                        </span>
+                        <span className="font-extrabold text-gold-bright">{formatTND(Number(auction.buy_now_price), locale)} {tnd}</span>
                       </Link>
                     )}
                   </div>
                 )}
 
                 {!showBidCta && isWinner && (
-                  <Link
-                    href={{ pathname: "/account/activity", query: { tab: "gagnees" } }}
-                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-[12.5px] font-semibold text-[var(--gold)] ring-1 ring-[var(--gold-soft)] transition hover:underline"
-                  >
+                  <Link href={{ pathname: "/account/activity", query: { tab: "gagnees" } }} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--gold-faint)] px-4 py-2.5 text-[12.5px] font-semibold text-[var(--gold)] ring-1 ring-[var(--gold-soft)] transition hover:underline">
                     <Trophy className="size-4" strokeWidth={2.2} /> {t("auction.myWins")} →
                   </Link>
                 )}
 
                 {!isEnded && (
-                  <div className="mt-4 flex items-center justify-between gap-2 border-t border-[var(--gold)]/15 pt-3.5">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted">
+                  <div className="mt-4 flex items-center justify-between gap-2 border-t border-black/[0.06] pt-3.5">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted">
                       <ShieldCheck className="size-3.5 text-gold" strokeWidth={2} />
-                      {depositRequired ? "Caution remboursable" : "Sans caution"}
+                      {depositRequired ? "Caution remboursable · séquestre" : "Sans caution"}
                     </span>
                     <AuctionCalendarMenu
                       auctionId={auction.id}
@@ -485,31 +292,133 @@ export async function AuctionDesktop(props: {
               </div>
             )}
 
-            {auction.status === "sixth_offer_window"
-              && auction.winner_amount
-              && auction.sixth_offer_deadline
-              && !isOwner
-              && isWinner && (
-              <Link
-                href={`/auctions/${auction.id}/bid` as never}
-                className="batta-frame-gold flex items-center gap-3 rounded-2xl p-4 transition active:scale-[0.99]"
-              >
-                <span className="batta-monogram size-10 shrink-0">
-                  <Hourglass className="size-4" strokeWidth={2.2} />
-                </span>
+            {auction.status === "sixth_offer_window" && auction.winner_amount && auction.sixth_offer_deadline && !isOwner && isWinner && (
+              <Link href={`/auctions/${auction.id}/bid` as never} className="batta-frame-gold flex items-center gap-3 rounded-2xl p-4 transition active:scale-[0.99]">
+                <span className="batta-monogram size-10 shrink-0"><Hourglass className="size-4" strokeWidth={2.2} /></span>
                 <div className="min-w-0 flex-1">
                   <div className="batta-eyebrow">Surenchère légale ouverte</div>
-                  <div className="mt-0.5 text-[14px] font-bold text-foreground">
-                    Déposez votre offre du sixième
-                  </div>
-                  <div className="mt-0.5 text-[11px] text-muted">
-                    Avant {new Date(auction.sixth_offer_deadline).toLocaleString(locale)}
-                  </div>
+                  <div className="mt-0.5 text-[14px] font-bold text-foreground">Déposez votre offre du sixième</div>
+                  <div className="mt-0.5 text-[11px] text-muted">Avant {new Date(auction.sixth_offer_deadline).toLocaleString(locale)}</div>
                 </div>
                 <span className="batta-gold-text text-[18px]">→</span>
               </Link>
             )}
           </div>
+        </aside>
+      </div>
+
+      {/* ── Content sections — calm, full width ── */}
+      <div className="mt-10 grid grid-cols-12 items-start gap-8">
+        {/* Main */}
+        <div className="col-span-7 min-w-0 space-y-6">
+          {!isDirect && (
+            <AuctionTerms
+              auction={auction}
+              currentPrice={currentPrice}
+              deposit={deposit}
+              depositRequired={depositRequired}
+              totalBids={totalBids}
+              isEnded={isEnded}
+              isLive={isLive}
+            />
+          )}
+
+          {/* Caractéristiques */}
+          <section className={`${CARD} p-6`}>
+            <h2 className="batta-eyebrow flex items-center gap-2">
+              <span aria-hidden className="batta-gold-rule-short" />
+              Caractéristiques
+            </h2>
+            <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-px sm:grid-cols-3">
+              {specs.map((s) => (
+                <div key={s.key} className="flex items-center justify-between gap-3 border-b border-black/[0.05] py-2.5">
+                  <span className="inline-flex items-center gap-2 text-[12.5px] text-muted">
+                    <Spec_Icon Icon={specIcon(s.key)} /> {s.label}
+                  </span>
+                  <span className="batta-tabular text-[13px] font-bold text-foreground text-end">{s.value}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Description */}
+          {property.description && (
+            <section className={`${CARD} p-6`}>
+              <h2 className="batta-eyebrow flex items-center gap-2">
+                <span aria-hidden className="batta-gold-rule-short" />
+                Description
+              </h2>
+              <p className={`mt-3 whitespace-pre-line text-[14.5px] leading-relaxed text-foreground/85 ${isRTL ? "font-arabic" : ""}`}>
+                {property.description}
+              </p>
+            </section>
+          )}
+        </div>
+
+        {/* Side — trust + map */}
+        <aside className="col-span-5 space-y-5">
+          {/* Documents */}
+          <section className={`${CARD} p-6`}>
+            <h2 className="batta-eyebrow flex items-center gap-2">
+              <span aria-hidden className="batta-gold-rule-short" />
+              Documents
+            </h2>
+            <p className="mt-2 text-[11px] text-muted">
+              {isEnded ? "Accès réservé aux participants vérifiés." : t("auction.depositRequired_long")}
+            </p>
+            <ul className="mt-3 divide-y divide-black/[0.06]">
+              {documents.length === 0 && (
+                <li className="py-3 text-[12px] text-muted">Aucun document pour le moment.</li>
+              )}
+              {documents.map((d) => {
+                const canDownload = isOwner || (kycVerified && hasActiveDeposit);
+                return (
+                  <li key={d.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <span className="inline-flex items-center gap-2 text-[13px] text-foreground/85">
+                      <FileText className="size-4 text-gold" strokeWidth={1.9} /> {d.kind}
+                    </span>
+                    {canDownload ? (
+                      <PropertyDocumentOpenButton docId={d.id} title={d.kind} className="inline-flex items-center gap-1 rounded-full bg-[var(--gold-faint)] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[var(--gold)] transition active:scale-95">
+                        <Download className="size-3" strokeWidth={2.5} /> Ouvrir
+                      </PropertyDocumentOpenButton>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] text-muted">
+                        <Lock className="size-3" strokeWidth={2} /> KYC + caution
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+
+          {/* Inspection */}
+          {myInspection ? (
+            <section className={`${CARD} flex items-center gap-3 p-5`}>
+              <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gold-faint)] text-gold"><ClipboardCheck className="size-4" strokeWidth={2} /></span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-bold text-foreground">{t("property.inspectionReport")}</div>
+                <div className="mt-0.5 text-[11px] text-muted">Statut : {myInspection.status}</div>
+              </div>
+              <a href={`/api/inspector/report/${myInspection.id}`} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full bg-[var(--gold-faint)] px-4 py-2 text-[12px] font-bold text-[var(--gold)]">Ouvrir</a>
+            </section>
+          ) : (
+            <section className={`${CARD} flex items-center gap-3 p-5`}>
+              <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gold-faint)] text-gold"><ClipboardCheck className="size-4" strokeWidth={2} /></span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-bold text-foreground">{t("property.requestInspection")}</div>
+                <div className="mt-0.5 text-[11px] text-muted">Rapport indépendant d&apos;un expert agréé.</div>
+              </div>
+              <Link href={`/inspectors/book?property=${property.id}` as `/inspectors/book`} className="shrink-0 rounded-full bg-[var(--gold-faint)] px-4 py-2 text-[12px] font-bold text-[var(--gold)]">Réserver</Link>
+            </section>
+          )}
+
+          {/* Map */}
+          {property.lat != null && property.lng != null && (
+            <div className="overflow-hidden rounded-2xl border border-black/[0.07] [&>section]:!m-0 [&>section]:!rounded-2xl [&>section]:!border-0 [&>section]:!ring-0 [&_iframe]:!aspect-[4/3]">
+              <PropertyMap lat={Number(property.lat)} lng={Number(property.lng)} address={property.address ?? property.governorate} />
+            </div>
+          )}
         </aside>
       </div>
     </div>
@@ -536,26 +445,6 @@ function specIcon(
   }
 }
 
-function Spec({
-  Icon, label, value,
-}: {
-  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center gap-2 rounded-2xl bg-gradient-to-b from-white to-[var(--gold-faint)] p-3 ring-1 ring-[var(--gold)]/12">
-      <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-gold ring-1 ring-[var(--gold)]/20">
-        <Icon className="size-4" strokeWidth={2} />
-      </span>
-      <div className="min-w-0">
-        <div className="truncate text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted">
-          {label}
-        </div>
-        <div className="batta-tabular mt-0.5 truncate text-[15px] font-bold text-foreground">
-          {value}
-        </div>
-      </div>
-    </div>
-  );
+function Spec_Icon({ Icon }: { Icon: React.ComponentType<{ className?: string; strokeWidth?: number }> }) {
+  return <Icon className="size-4 text-gold/70" strokeWidth={1.9} />;
 }

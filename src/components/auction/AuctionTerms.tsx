@@ -70,14 +70,14 @@ export async function AuctionTerms({
   rows.push({ label: "Offres reçues", value: String(totalBids) });
 
   return (
-    <section className={`rounded-[26px] bg-white p-6 ring-1 ring-black/[0.06] shadow-[0_14px_44px_-30px_rgba(15,23,42,0.30)] ${className}`}>
+    <section className={`rounded-2xl border border-black/[0.07] bg-white p-6 ${className}`}>
       <h2 className="batta-eyebrow flex items-center gap-2">
         <span aria-hidden className="batta-gold-rule-short" />
         Détails de l&apos;enchère
       </h2>
 
       {/* Caution — the headline figure, kept prominent */}
-      <div className="mt-4 flex items-center gap-3 rounded-2xl bg-gradient-to-br from-[var(--gold-faint)] to-white p-4 ring-1 ring-[var(--gold)]/20">
+      <div className="mt-4 flex items-center gap-3 rounded-2xl bg-[var(--gold-faint)] p-4">
         <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white text-gold ring-1 ring-[var(--gold)]/25">
           <Wallet className="size-5" strokeWidth={2} />
         </span>
