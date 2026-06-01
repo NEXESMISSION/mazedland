@@ -39,7 +39,7 @@ export default async function AuctionDetail({
   const isRTL = locale === "ar";
   const supabase = await getServerSupabase();
 
-  const [auctionRes, userRes, bidCountRes] = await Promise.all([
+  const [auctionRes, userRes, bidCountRes, depRowRes] = await Promise.all([
     supabase
       .from("auctions")
       .select(`
@@ -59,6 +59,9 @@ export default async function AuctionDetail({
       .from("bids")
       .select("id", { count: "exact", head: true })
       .eq("auction_id", id),
+    // Deposit settings are global + independent of the auction row, so they
+    // ride in this first parallel wave instead of a later sequential await.
+    supabase.from("app_settings").select("value").eq("key", "deposit").maybeSingle(),
   ]);
 
   if (auctionRes.error || !auctionRes.data) {
@@ -90,23 +93,26 @@ export default async function AuctionDetail({
   // unauthenticated browsers see the count + types (social proof). The
   // actual PDF download still goes through /api/property/document/[id]
   // which goes through the protected `property_documents` RLS.
-  const { data: docsRows } = await supabase
-    .from("property_document_kinds")
-    .select("id, kind")
-    .eq("property_id", property.id);
-  const documents = (docsRows ?? []) as Array<{ id: string; kind: string }>;
-
-  // Per-type characteristics catalog → drives the Specifications tiles.
-  // The attributes JSONB is the source of truth; rows created before
-  // migration 0037 only have the legacy columns, so we backfill the
-  // canonical keys from those so old listings still show their specs.
-  const { data: attrKindRows } = await supabase
-    .from("property_attribute_kinds")
-    .select("field_key, label, data_type, options, unit, sort_order")
-    .eq("property_type", property.type)
-    .order("sort_order")
-    .order("label");
-  const attrKinds = (attrKindRows ?? []) as Array<{
+  // Property docs + per-type characteristics catalog are independent of each
+  // other (and of the user gates below) — fetch them in one parallel wave.
+  const [docsRes, attrKindRes] = await Promise.all([
+    supabase
+      .from("property_document_kinds")
+      .select("id, kind")
+      .eq("property_id", property.id),
+    // Per-type characteristics catalog → drives the Specifications tiles.
+    // The attributes JSONB is the source of truth; rows created before
+    // migration 0037 only have the legacy columns, so we backfill the
+    // canonical keys from those so old listings still show their specs.
+    supabase
+      .from("property_attribute_kinds")
+      .select("field_key, label, data_type, options, unit, sort_order")
+      .eq("property_type", property.type)
+      .order("sort_order")
+      .order("label"),
+  ]);
+  const documents = (docsRes.data ?? []) as Array<{ id: string; kind: string }>;
+  const attrKinds = (attrKindRes.data ?? []) as Array<{
     field_key: string;
     label: string;
     data_type: string;
@@ -130,10 +136,9 @@ export default async function AuctionDetail({
   const userId = userRes.data.user?.id ?? null;
   const currentPrice = auction.current_price ?? auction.opening_price;
   // Deposit is admin-configurable (free / fixed / percent + free window).
-  const { data: depRow } = await supabase
-    .from("app_settings").select("value").eq("key", "deposit").maybeSingle();
+  // Settings came back in the first parallel wave (depRowRes).
   const depCfg = parseMonetizationSettings(
-    new Map<string, unknown>([["deposit", depRow?.value]]),
+    new Map<string, unknown>([["deposit", depRowRes.data?.value]]),
   ).deposit;
   const { required: depositRequired, amount: deposit } = resolveDeposit(
     depCfg, auction.opening_price,
@@ -151,8 +156,9 @@ export default async function AuctionDetail({
   let kycVerified = false;
   let hasActiveDeposit = false;
   let depositUnderReview = false;
+  let myInspection: { id: string; status: string } | null = null;
   if (userId) {
-    const [profileRes, depositRes, pendRes] = await Promise.all([
+    const [profileRes, depositRes, pendRes, insRes] = await Promise.all([
       supabase.from("profiles").select("kyc_status").eq("id", userId).single(),
       supabase
         .from("auction_deposits")
@@ -170,10 +176,22 @@ export default async function AuctionDetail({
         .eq("kind", "deposit_lock")
         .eq("status", "pending_review")
         .limit(1),
+      // Viewer's own inspection on this property — folded into the same
+      // userId-gated wave instead of a separate round-trip below.
+      supabase
+        .from("inspections")
+        .select("id, status")
+        .eq("property_id", property.id)
+        .eq("requested_by", userId)
+        .in("status", ["submitted", "approved"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
     kycVerified = profileRes.data?.kyc_status === "verified";
     hasActiveDeposit = !!depositRes.data;
     depositUnderReview = (pendRes.data?.length ?? 0) > 0;
+    myInspection = (insRes.data as { id: string; status: string } | null) ?? null;
   }
   const isOwner = userId !== null && userId === property.owner_id;
 
@@ -209,20 +227,6 @@ export default async function AuctionDetail({
       };
     }
     sellerActiveDeposits = depCountRes.count ?? 0;
-  }
-
-  let myInspection: { id: string; status: string } | null = null;
-  if (userId) {
-    const { data: ins } = await supabase
-      .from("inspections")
-      .select("id, status")
-      .eq("property_id", property.id)
-      .eq("requested_by", userId)
-      .in("status", ["submitted", "approved"])
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    myInspection = ins ?? null;
   }
 
   // The "Placer une enchère" CTA detaches from the document flow and

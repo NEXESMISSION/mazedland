@@ -62,7 +62,8 @@ export default async function ExplorePage({
   let totalCount = 0;
   let totalPages = 1;
   let loggedIn = false;
-  let savedAuctionIds: string[] = [];
+  // Filled client-side by the watchlist store; kept empty server-side.
+  const savedAuctionIds: string[] = [];
 
   try {
     const supabase = await getServerSupabase();
@@ -115,16 +116,9 @@ export default async function ExplorePage({
     totalCount = rowsRes.count ?? items.length;
     totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
     loggedIn = !!userRes.data.user;
-
-    if (loggedIn && items.length > 0) {
-      const ids = items.map((a) => a.id);
-      const { data: saves } = await supabase
-        .from("watchlist")
-        .select("auction_id")
-        .eq("user_id", userRes.data.user!.id)
-        .in("auction_id", ids);
-      savedAuctionIds = (saves ?? []).map((s) => s.auction_id as string);
-    }
+    // Saved-heart state is filled in client-side by the shared watchlist
+    // store (WatchlistButton + WatchlistSync), so we skip the per-request
+    // watchlist round-trip — /properties renders in a single query wave.
   } catch (err) {
     console.warn(
       "[/properties] supabase unavailable:",
