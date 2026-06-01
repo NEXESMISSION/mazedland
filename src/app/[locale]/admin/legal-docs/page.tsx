@@ -1,6 +1,7 @@
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { PropertyType } from "@/lib/types";
 import { LegalDocsEditor, type LegalDocKindRow } from "./LegalDocsEditor";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -31,15 +32,17 @@ export default async function AdminLegalDocsPage() {
 
   return (
     <div>
-      <span className="batta-eyebrow">Documents légaux</span>
-      <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
-        Catalogue par type de bien
-      </h2>
-      <p className="mt-1 text-[12px] text-muted">
-        Définissez la liste des documents que chaque vendeur doit téléverser
-        selon le type de bien. Les documents marqués <b>requis</b> bloquent
-        l&apos;envoi du formulaire tant qu&apos;ils ne sont pas fournis.
-      </p>
+      <AdminPageHeader
+        eyebrow="Documents légaux"
+        title="Catalogue par type de bien"
+        description={
+          <>
+            Définissez la liste des documents que chaque vendeur doit téléverser
+            selon le type de bien. Les documents marqués <b>requis</b> bloquent
+            l&apos;envoi du formulaire tant qu&apos;ils ne sont pas fournis.
+          </>
+        }
+      />
 
       <div className="mt-5">
         <LegalDocsEditor initial={initial} />

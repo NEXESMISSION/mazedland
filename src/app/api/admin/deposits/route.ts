@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { logAction } from "@/lib/activity";
 
 /**
  * POST /api/admin/deposits — admin-only deposit lifecycle actions.
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
     if (auc.winner_user_id) q = q.neq("user_id", auc.winner_user_id as string);
     const { data: released, error } = await q.select("id");
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    logAction(req, user, "deposit.prepare", { auctionId, released: released?.length ?? 0 });
     return NextResponse.json({ ok: true, released: released?.length ?? 0 });
   }
 
@@ -107,6 +109,7 @@ export async function POST(req: NextRequest) {
       p_link: "/account/payments",
       p_payload: focusId ? { focus: focusId } : {},
     });
+    logAction(req, user, "deposit.refund", { depositId, amount: dep.amount, ref });
     return NextResponse.json({ ok: true });
   }
 
@@ -121,6 +124,7 @@ export async function POST(req: NextRequest) {
       .is("forfeited_at", null)
       .is("refunded_at", null);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    logAction(req, user, "deposit.forfeit", { depositId });
     return NextResponse.json({ ok: true });
   }
 

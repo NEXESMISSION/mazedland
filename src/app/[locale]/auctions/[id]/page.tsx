@@ -15,6 +15,7 @@ import { AuctionDesktop } from "@/components/auction/AuctionDesktop";
 import { AuctionTerms } from "@/components/auction/AuctionTerms";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
+import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { Link } from "@/i18n/navigation";
 import {
   MapPin, Ruler, BedDouble, Bath, Building2, Calendar,
@@ -319,11 +320,21 @@ export default async function AuctionDetail({
               </span>
             )}
           </div>
-          {totalBids > 0 && (
-            <span className="batta-tabular pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/55 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-md">
-              {totalBids} · {t("auction.totalBids")}
-            </span>
-          )}
+          <div className="pointer-events-auto flex items-center gap-2">
+            {totalBids > 0 && (
+              <span className="batta-tabular inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/55 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-md">
+                {totalBids} · {t("auction.totalBids")}
+              </span>
+            )}
+            {!isOwner && (
+              <WatchlistButton
+                auctionId={auction.id}
+                initialSaved={false}
+                loggedIn={userId !== null}
+                size="sm"
+              />
+            )}
+          </div>
         </div>
 
         {/* Bottom overlay — type pill + bold title + location · lot. */}

@@ -891,19 +891,9 @@ export function SellForm({
   return (
     <form onSubmit={onFormSubmit} className="mt-5 space-y-4 lg:mt-0 lg:space-y-5">
       {!isEdit && <StepHeader current={step} />}
-      {!isEdit && step === 1 && (
-        <StationIntro
-          index={1}
-          title="Votre bien"
-          body="Type de vente, informations, caractéristiques et emplacement."
-        />
-      )}
+      {!isEdit && step === 1 && <StationIntro index={1} title="Votre bien" />}
       {!isEdit && step === 2 && (
-        <StationIntro
-          index={2}
-          title="Photos, documents & options"
-          body="Ajoutez vos photos et pièces légales, choisissez vos options — puis le paiement."
-        />
+        <StationIntro index={2} title="Photos, documents & options" />
       )}
 
       {/* Focus-mode toggle. Shown only when (a) we're in edit mode,
@@ -938,7 +928,6 @@ export function SellForm({
         highlight={focusedSectionIds.has("section-price")}
         hidden={!isSectionVisible("section-price")}
         title="Type d'annonce"
-        hint="Choisissez le mode de mise en vente. Les frais d'annonce sont indiqués sur chaque option."
       >
         <div className="grid grid-cols-2 gap-2.5">
           <ListingTypeOption
@@ -992,7 +981,6 @@ export function SellForm({
         highlight={focusedSectionIds.has("section-info")}
         hidden={!isSectionVisible("section-info")}
         title="Informations principales"
-        hint="Le titre est la première chose que les acheteurs voient. Soyez précis."
       >
         <Field
           label={t("sell.form.titleLabel")}
@@ -1013,7 +1001,6 @@ export function SellForm({
       <Section
         hidden={!isSectionVisible(undefined)}
         title="Caractéristiques"
-        hint="Toutes ces informations apparaissent sur la fiche publique."
       >
         <Select
           label={t("sell.form.type")}
@@ -1233,12 +1220,19 @@ export function SellForm({
       {/* 7. OPTIONS & TOTAL — new-listing only. Folded into step 2 so the
           whole "media + money" half of the wizard lives on one screen.
           Promos are clearly optional; the base listing fee always shows. */}
-      {!isEdit && (
+      {!isEdit && (() => {
+        const anyPromo =
+          pricing.promoHome.enabled || pricing.promoTop.enabled || pricing.promoBanner.enabled;
+        return (
         <Section
-          title="Mises en avant"
-          hint="Optionnel — boostez la visibilité de votre annonce. L'annonce reste publiable sans option."
+          title={anyPromo ? "Mises en avant" : "Frais d'annonce"}
+          hint={
+            anyPromo
+              ? "Optionnel — boostez la visibilité de votre annonce. L'annonce reste publiable sans option."
+              : "Le montant à régler pour publier votre annonce."
+          }
         >
-          {(pricing.promoHome.enabled || pricing.promoTop.enabled || pricing.promoBanner.enabled) && (
+          {anyPromo && (
             <div className="space-y-2.5">
               {pricing.promoHome.enabled && (
                 <PromoRow
@@ -1307,7 +1301,8 @@ export function SellForm({
             </div>
           </div>
         </Section>
-      )}
+        );
+      })()}
       </>
       )}
 

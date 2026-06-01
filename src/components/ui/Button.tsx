@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
@@ -39,16 +40,76 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
+    VariantProps<typeof buttonVariants> {
+  /** Working state — shows a spinner, disables, and swaps to `pendingLabel`. */
+  pending?: boolean;
+  /** Label shown while `pending` (defaults to `children`). */
+  pendingLabel?: React.ReactNode;
+  /** Transient success — caller flips it true for ~1.5s (see useTransientDone).
+   *  Shows a check, tints success, and swaps to `doneLabel`. */
+  done?: boolean;
+  /** Label shown while `done` (defaults to `children`). */
+  doneLabel?: React.ReactNode;
+  /** Leading icon — hidden while pending/done (the spinner/check take its slot). */
+  icon?: React.ReactNode;
+  /** Why the button is disabled — surfaced as a tooltip + aria-label, and as
+   *  the visible label when `disabledLabel` is omitted but a reason is given
+   *  via `disabledLabel`. */
+  disabledReason?: string;
+  /** Optional visible label to show while disabled (e.g. "Complétez les champs"). */
+  disabledLabel?: React.ReactNode;
+}
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, fullWidth, ...props }, ref) => (
-    <button
-      ref={ref}
-      className={cn(buttonVariants({ variant, size, fullWidth, className }))}
-      {...props}
-    />
-  ),
+  (
+    {
+      className,
+      variant,
+      size,
+      fullWidth,
+      pending = false,
+      pendingLabel,
+      done = false,
+      doneLabel,
+      icon,
+      disabledReason,
+      disabledLabel,
+      disabled,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
+    const isDisabled = disabled || pending;
+    // Label + leading-glyph resolve by priority: done → pending → disabled → idle.
+    let glyph: React.ReactNode = icon ?? null;
+    let label: React.ReactNode = children;
+    if (done) {
+      glyph = <Check className="size-4" strokeWidth={2.5} />;
+      label = doneLabel ?? children;
+    } else if (pending) {
+      glyph = <Loader2 className="size-4 animate-spin" />;
+      label = pendingLabel ?? children;
+    } else if (disabled && disabledLabel != null) {
+      label = disabledLabel;
+    }
+    return (
+      <button
+        ref={ref}
+        disabled={isDisabled}
+        title={isDisabled && !pending ? disabledReason : undefined}
+        aria-label={isDisabled && !pending && disabledReason ? disabledReason : undefined}
+        className={cn(
+          buttonVariants({ variant, size, fullWidth, className }),
+          done && "!bg-[var(--success)] !text-white !shadow-none",
+        )}
+        {...props}
+      >
+        {glyph}
+        {label}
+      </button>
+    );
+  },
 );
 Button.displayName = "Button";
 

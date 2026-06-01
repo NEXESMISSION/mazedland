@@ -10,6 +10,8 @@ import {
 import { ApprovePropertyButtons } from "@/components/admin/ApprovePropertyButtons";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 import { parseMonetizationSettings, resolvePromoDurations, type PromoKey } from "@/lib/pricing";
 
 export const dynamic = "force-dynamic";
@@ -185,21 +187,16 @@ export default async function AdminProperties({
 
   return (
     <div>
-      <span className="batta-eyebrow">Enchères · Création</span>
-      <div className="mt-1.5 flex items-end justify-between gap-3">
-        <h2 className="text-[22px] font-extrabold leading-tight tracking-tight">
-          Création d&apos;enchères
-        </h2>
-        {pendingCount > 0 && (
-          <span className="shrink-0 rounded-full batta-tone-warn px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em]">
-            {pendingCount} à valider
-          </span>
-        )}
-      </div>
-      <p className="mt-1 text-[12px] text-muted">
-        Tout est ici : photos, prix, documents et reçu. Validez ou refusez sans
-        changer de page.
-      </p>
+      <AdminPageHeader
+        eyebrow="Enchères · Création"
+        title="Création d'enchères"
+        description="Tout est ici : photos, prix, documents et reçu. Validez ou refusez sans changer de page."
+        actions={
+          pendingCount > 0 ? (
+            <StatusBadge tone="warn">{pendingCount} à valider</StatusBadge>
+          ) : undefined
+        }
+      />
 
       {/* Cross-queue action summary (folded in from the old Overview). */}
       <section className="mt-5">

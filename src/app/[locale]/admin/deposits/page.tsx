@@ -1,7 +1,8 @@
 import { getServerSupabase } from "@/lib/supabase/server";
-import { DepositsClient, type DepositRow, type PrepareRow } from "./DepositsClient";
+import { DepositsClient, type DepositRow, type PrepareRow, type HeldRow } from "./DepositsClient";
 import { AdminPager } from "@/components/admin/AdminPager";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -130,18 +131,32 @@ export default async function AdminDepositsPage({
   //     → "prepare refunds" pass. Bounded scan, grouped by auction. ───
   const { data: lockedRows } = await supabase
     .from("auction_deposits")
-    .select(`auction_id, user_id, auction:auctions!auction_deposits_auction_id_fkey ( id, status, winner_user_id, property:properties ( title ) )`)
+    .select(`auction_id, user_id, auction:auctions!auction_deposits_auction_id_fkey ( id, status, winner_user_id, sixth_offer_deadline, property:properties ( title ) )`)
     .is("released_at", null)
     .is("refunded_at", null)
     .is("forfeited_at", null)
     .limit(1000);
   const prepareMap = new Map<string, PrepareRow>();
+  const heldMap = new Map<string, HeldRow>();
   for (const d of (lockedRows ?? []) as unknown as Array<{
     user_id: string;
-    auction: { id: string; status: string; winner_user_id: string | null; property: { title: string } | null } | null;
+    auction: { id: string; status: string; winner_user_id: string | null; sixth_offer_deadline: string | null; property: { title: string } | null } | null;
   }>) {
     const a = d.auction;
-    if (!a || !ENDED.includes(a.status)) continue;
+    if (!a) continue;
+    // Lots still inside the legal 1/6 surenchère window: cautions stay
+    // locked (a bidder may still surenchère) but we surface them so the
+    // admin can see they exist and when they'll free up — they become
+    // refundable automatically once the window closes (→ awarded).
+    if (a.status === "sixth_offer_window") {
+      const cur = heldMap.get(a.id) ?? {
+        auctionId: a.id, title: a.property?.title ?? "—", deadline: a.sixth_offer_deadline, lockedCount: 0,
+      };
+      cur.lockedCount += 1;
+      heldMap.set(a.id, cur);
+      continue;
+    }
+    if (!ENDED.includes(a.status)) continue;
     if (a.winner_user_id && d.user_id === a.winner_user_id) continue;
     const cur = prepareMap.get(a.id) ?? {
       auctionId: a.id, title: a.property?.title ?? "—", status: a.status, lockedCount: 0,
@@ -150,26 +165,31 @@ export default async function AdminDepositsPage({
     prepareMap.set(a.id, cur);
   }
   const toPrepare = Array.from(prepareMap.values());
+  const held = Array.from(heldMap.values());
 
   return (
     <div>
-      <span className="batta-eyebrow">Cautions &amp; remboursements</span>
-      <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
-        Remboursements
-      </h2>
-      <p className="mt-1 text-[12px] text-muted">
-        Après une enchère : préparez les remboursements, puis marquez chaque
-        caution remboursée une fois le virement effectué.{" "}
-        <span className="batta-tabular font-semibold text-foreground">{total}</span>{" "}
-        caution{total > 1 ? "s" : ""} à rembourser.
-      </p>
+      <AdminPageHeader
+        eyebrow="Cautions & remboursements"
+        title="Remboursements"
+        description={
+          <>
+            Après une enchère : préparez les remboursements, puis marquez chaque
+            caution remboursée une fois le virement effectué.{" "}
+            <span className="batta-tabular font-semibold text-foreground">{total}</span>{" "}
+            caution{total > 1 ? "s" : ""} à rembourser.
+          </>
+        }
+      />
 
       <AdminQueryBar total={total} placeholder="Bien (titre)…" />
 
       <DepositsClient
         toPrepare={toPrepare}
+        held={held}
         toRefund={toRefund}
         refunded={refunded}
+        filtering={Boolean(q || sinceDays)}
       />
 
       <AdminPager page={page} totalPages={totalPages} />

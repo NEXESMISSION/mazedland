@@ -2,27 +2,36 @@
 
 import { useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { useToast } from "@/components/ui/Toast";
+import { Check } from "lucide-react";
+import { AdminButton } from "@/components/admin/AdminButton";
 
 export function ApproveInspectorButton({ id }: { id: string }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [pending, start] = useTransition();
 
   function approve() {
     start(async () => {
       const res = await fetch(`/api/admin/inspectors/${id}/approve`, { method: "POST" });
-      if (!res.ok) { alert("Failed"); return; }
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        toast(j.detail ?? j.error ?? `Échec de l'approbation (${res.status}).`, "error");
+        return;
+      }
+      toast("Inspecteur approuvé.", "success");
       router.refresh();
     });
   }
 
   return (
-    <button
-      type="button"
-      disabled={pending}
+    <AdminButton
+      variant="success"
+      pending={pending}
       onClick={approve}
-      className="rounded-md bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-50"
+      icon={<Check className="size-3.5" strokeWidth={2.5} />}
     >
-      Approve
-    </button>
+      Approuver
+    </AdminButton>
   );
 }

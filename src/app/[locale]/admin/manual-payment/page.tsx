@@ -1,6 +1,7 @@
 import { getServerSupabase } from "@/lib/supabase/server";
 import { parseMonetizationSettings } from "@/lib/pricing";
 import { ManualPaymentForm } from "./ManualPaymentForm";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,15 +15,17 @@ export default async function AdminManualPaymentPage() {
 
   return (
     <div className="max-w-[640px]">
-      <span className="batta-eyebrow">Argent · Encaissement</span>
-      <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
-        Paiement manuel — espèces
-      </h2>
-      <p className="mt-1 text-[12px] text-muted">
-        Enregistrez un paiement reçu hors ligne (espèces, chèque, virement). Le
-        système le traite comme un paiement validé : la caution donne l&apos;entrée
-        à l&apos;enchère, l&apos;achat immédiat clôture la vente, etc.
-      </p>
+      <AdminPageHeader
+        eyebrow="Argent · Encaissement"
+        title="Paiement manuel — espèces"
+        description={
+          <>
+            Enregistrez un paiement reçu hors ligne (espèces, chèque, virement). Le
+            système le traite comme un paiement validé : la caution donne l&apos;entrée
+            à l&apos;enchère, l&apos;achat immédiat clôture la vente, etc.
+          </>
+        }
+      />
 
       <div className="mt-5">
         <ManualPaymentForm deposit={mon.deposit} />

@@ -189,7 +189,27 @@ export async function HomeDesktop({
               {t("brand.slogan")}
             </p>
 
-            <div className="mt-7 flex flex-wrap gap-x-7 gap-y-4">
+            {/* Primary action — the hero-left had no CTA of its own; the only
+                button lived inside the showcase card. */}
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link
+                href="/properties"
+                className="batta-gold-fill inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[13px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
+              >
+                Explorer les enchères
+                <ArrowUpRight className="size-4" strokeWidth={2.5} />
+              </Link>
+              <Link
+                href="/sell"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-6 py-3.5 text-[13px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-gold-faint"
+              >
+                Vendre un bien
+              </Link>
+            </div>
+
+            {/* Trust signals — separated by a hairline so they read as proof,
+                not part of the action row. */}
+            <div className="mt-8 flex flex-wrap gap-x-7 gap-y-4 border-t border-border pt-6">
               {[
                 { Icon: ShieldCheck, title: "100% sécurisé", sub: "Transactions vérifiées" },
                 { Icon: Zap,         title: "Rapidité",      sub: "Processus optimisés" },

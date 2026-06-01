@@ -77,14 +77,14 @@ export function AdminSidebar() {
         </Link>
       </header>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <nav className="flex-1 overflow-y-auto px-3 py-5">
         <Link
           href="/admin"
           aria-current={pathname === "/admin" ? "page" : undefined}
           className={`mb-4 flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition ${
             pathname === "/admin"
               ? "bg-[var(--gold)] text-white"
-              : "text-foreground/75 hover:bg-surface-2 hover:text-foreground"
+              : "text-muted hover:bg-surface-2 hover:text-foreground"
           }`}
         >
           <LayoutDashboard className={`size-4 shrink-0 ${pathname === "/admin" ? "text-white" : "text-muted"}`} strokeWidth={2} />
@@ -92,7 +92,7 @@ export function AdminSidebar() {
         </Link>
 
         {GROUPS.map((group, gi) => (
-          <div key={group.label} className={gi > 0 ? "mt-6" : ""}>
+          <div key={group.label} className={gi > 0 ? "mt-7" : ""}>
             <div className="px-2.5 pb-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted">
               {group.label}
             </div>
@@ -107,7 +107,7 @@ export function AdminSidebar() {
                       className={`flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition ${
                         active
                           ? "bg-[var(--gold)] text-white"
-                          : "text-foreground/75 hover:bg-surface-2 hover:text-foreground"
+                          : "text-muted hover:bg-surface-2 hover:text-foreground"
                       }`}
                     >
                       <item.Icon

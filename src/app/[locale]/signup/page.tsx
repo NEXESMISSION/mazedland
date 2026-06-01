@@ -46,9 +46,6 @@ export default async function SignupPage() {
                 >
                   <span className="gradient-gold-text">{t("nav.signup")}</span>
                 </h1>
-                <p className="mt-2 text-[12.5px] text-muted">
-                  Quelques secondes pour commencer à enchérir.
-                </p>
               </div>
 
               <div className="mt-7">
@@ -90,9 +87,6 @@ export default async function SignupPage() {
               >
                 <span className="gradient-gold-text">{t("nav.signup")}</span>
               </h1>
-              <p className="mt-2 max-w-xs text-[13.5px] leading-relaxed text-muted">
-                Rejoignez Batta en quelques secondes et commencez à enchérir en toute sécurité.
-              </p>
             </div>
 
             <div className="mt-8">

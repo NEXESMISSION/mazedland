@@ -2,16 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { Camera, Eye, Volume2, ArrowRight, ArrowLeft } from "lucide-react";
+import { Camera, Eye, ArrowRight, ArrowLeft } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { useAuth } from "@/lib/auth";
+import { getBrowserSupabase } from "@/lib/supabase/client";
 import { LivenessCheck } from "@/components/auction/LivenessCheck";
-import { updateKycDraft } from "@/lib/kycDraft";
+import { updateKycDraft, readKycDraft, clearKycDraft } from "@/lib/kycDraft";
 
 export default function KYCSelfiePage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user, update } = useAuth();
   // Bumped on retry so LivenessCheck remounts cleanly (camera + models
   // re-init from scratch instead of resuming from torn-down refs).
   const [attemptKey, setAttemptKey] = useState(0);
@@ -21,77 +24,96 @@ export default function KYCSelfiePage() {
   // `suspended` state and the per-step beeps never play.
   const [started, setStarted] = useState(false);
 
+  const POSES = [
+    { Icon: Eye, label: "Face" },
+    { Icon: ArrowRight, label: "Droite" },
+    { Icon: ArrowLeft, label: "Gauche" },
+  ];
+
   return (
     <KYCShell current={2} backHref="/kyc/id-back">
-      <div className="space-y-4">
-        <div className="text-center">
-          <h2 className="text-xl font-bold">Selfie avec mouvement de tête</h2>
-          <p className="text-sm text-[var(--foreground-muted)] mt-1">
-            Trois poses rapides — face, droite, gauche. Suivez les instructions à l&apos;écran.
-          </p>
-        </div>
-
-        {started ? (
-          <LivenessCheck
-            key={attemptKey}
-            onComplete={({ videoUrl, imageUrl }) => {
-              updateKycDraft({
-                selfieVideoUrl: videoUrl,
-                selfieImageUrl: imageUrl,
-              });
-              toast("Selfie validé", "success");
-              router.push("/kyc/processing");
-            }}
-            onCancel={() => {
-              setStarted(false);
-              setAttemptKey((k) => k + 1);
-            }}
-          />
-        ) : (
-          <div className="space-y-4">
-            <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-4 space-y-3">
-              <div className="flex items-center gap-2.5">
-                <span className="h-9 w-9 rounded-full bg-[var(--gold-faint)] text-[var(--gold)] flex items-center justify-center shrink-0">
-                  <Camera className="h-4 w-4" />
-                </span>
-                <div>
-                  <div className="font-bold text-sm">Préparez-vous</div>
-                  <div className="text-[11px] text-[var(--foreground-muted)] mt-0.5">
-                    Bon éclairage, visage centré, sans lunettes de soleil.
-                  </div>
-                </div>
-              </div>
-              <ul className="space-y-1.5 text-xs text-[var(--foreground-muted)] ms-1">
-                <li className="flex items-center gap-2">
-                  <Eye className="h-3.5 w-3.5 text-[var(--gold)] shrink-0" />
-                  Regardez droit devant
-                </li>
-                <li className="flex items-center gap-2">
-                  <ArrowRight className="h-3.5 w-3.5 text-[var(--gold)] shrink-0" />
-                  Puis tournez à droite
-                </li>
-                <li className="flex items-center gap-2">
-                  <ArrowLeft className="h-3.5 w-3.5 text-[var(--gold)] shrink-0" />
-                  Puis tournez à gauche
-                </li>
-                <li className="flex items-center gap-2">
-                  <Volume2 className="h-3.5 w-3.5 text-[var(--gold)] shrink-0" />
-                  Un bip confirme chaque pose
-                </li>
-              </ul>
-            </div>
-
-            <Button
-              size="lg"
-              fullWidth
-              onClick={() => setStarted(true)}
-            >
-              <Camera className="h-5 w-5" />
-              Commencer le selfie
-            </Button>
+      {started ? (
+        <LivenessCheck
+          key={attemptKey}
+          onComplete={async ({ videoUrl, imageUrl }) => {
+            // Submit the whole dossier right here and go straight to the
+            // status screen — no separate "processing" page in between.
+            updateKycDraft({ selfieVideoUrl: videoUrl, selfieImageUrl: imageUrl });
+            const draft = readKycDraft();
+            const supabase = getBrowserSupabase();
+            const { data: { user: liveUser } } = await supabase.auth.getUser();
+            if (!liveUser || !draft.idFrontUrl || !draft.idBackUrl || !draft.selfieVideoUrl) {
+              toast("Documents manquants. Reprenez la vérification.", "error");
+              router.replace("/kyc/start");
+              return;
+            }
+            const fullName =
+              user?.fullName ?? [user?.firstName, user?.lastName].filter(Boolean).join(" ");
+            const { error } = await supabase.from("kyc_submissions").upsert(
+              {
+                user_id: liveUser.id,
+                full_name: fullName || null,
+                id_front_url: draft.idFrontUrl,
+                id_back_url: draft.idBackUrl,
+                selfie_video_url: draft.selfieVideoUrl,
+                selfie_image_url: draft.selfieImageUrl ?? null,
+                status: "submitted" as const,
+                submitted_at: new Date().toISOString(),
+              },
+              { onConflict: "user_id" },
+            );
+            if (error) {
+              toast(error.message || "Échec de l'envoi du dossier.", "error");
+              return;
+            }
+            await update({ kycStatus: "submitted" });
+            clearKycDraft();
+            router.replace("/kyc/status");
+          }}
+          onCancel={() => {
+            setStarted(false);
+            setAttemptKey((k) => k + 1);
+          }}
+        />
+      ) : (
+        <div className="space-y-5">
+          <div className="text-center">
+            <h2 className="text-xl font-bold">Selfie de vérification</h2>
+            <p className="text-sm text-[var(--foreground-muted)] mt-1">
+              Suivez 3 poses simples à l&apos;écran.
+            </p>
           </div>
-        )}
-      </div>
+
+          {/* Three poses — at a glance, no paragraph. */}
+          <div className="grid grid-cols-3 gap-2.5">
+            {POSES.map((p, i) => (
+              <div
+                key={p.label}
+                className="flex flex-col items-center gap-2 rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] py-4"
+              >
+                <span className="relative h-10 w-10 rounded-full bg-[var(--gold-faint)] text-[var(--gold)] flex items-center justify-center">
+                  <p.Icon className="h-5 w-5" />
+                  <span className="absolute -top-1.5 -end-1.5 grid size-4 place-items-center rounded-full bg-[var(--gold)] text-[9px] font-extrabold text-white">
+                    {i + 1}
+                  </span>
+                </span>
+                <span className="text-[12px] font-bold">{p.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* One short tip line. */}
+          <p className="flex items-center justify-center gap-1.5 text-center text-[11.5px] text-[var(--foreground-muted)]">
+            <Camera className="h-3.5 w-3.5 shrink-0 text-[var(--gold)]" />
+            Bon éclairage, visage centré, sans lunettes.
+          </p>
+
+          <Button size="lg" fullWidth onClick={() => setStarted(true)}>
+            <Camera className="h-5 w-5" />
+            Commencer
+          </Button>
+        </div>
+      )}
     </KYCShell>
   );
 }

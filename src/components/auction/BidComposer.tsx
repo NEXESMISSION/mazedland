@@ -397,9 +397,9 @@ function WinnerBanner({
       <div className="batta-tabular relative mt-2 text-[34px] font-extrabold leading-none gradient-gold-text">
         {amount != null ? formatTND(amount, locale) : "—"}
       </div>
-      <p className="relative mt-3 text-xs text-[var(--foreground-muted)] leading-relaxed max-w-[280px] mx-auto">
-        Prochaine étape : signature de l&apos;acte chez le notaire dans les
-        délais légaux. Vous recevrez les instructions de paiement par email.
+      <p className="relative mt-3 text-xs text-[var(--foreground-muted)] leading-relaxed max-w-[260px] mx-auto">
+        Prochaine étape : signature chez le notaire. Vous recevrez les
+        instructions par email.
       </p>
 
       <div className="relative mt-5 space-y-2">

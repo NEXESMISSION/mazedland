@@ -112,7 +112,7 @@ export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
                     type="button"
                     disabled={busy === r.id}
                     onClick={() => apply(r.id, { home: false, top: false, banner: false })}
-                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-[var(--danger)] hover:bg-[var(--accent-faint)] disabled:opacity-50"
                   >
                     <X className="size-3.5" /> Retirer
                   </button>

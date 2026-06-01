@@ -17,6 +17,12 @@ const nextConfig: NextConfig = {
     // fall back to WebP. Our seed sources are WebP — the optimizer
     // decodes and re-encodes to AVIF on demand, caching the result.
     formats: ["image/avif", "image/webp"],
+    // Next 16 rejects any next/image `quality` not in this allowlist with a
+    // 400 (default permits only 75). The codebase thinks in q≈72 (see the
+    // upload presets + the seed-optimization script), so whitelist the values
+    // we actually use — otherwise a future `<Image quality={72}>` silently
+    // 400s and renders a broken image. 75 stays the default for bare <Image>.
+    qualities: [50, 60, 72, 75, 80, 86, 100],
     // Long-cache optimized variants on the CDN. They're keyed by
     // (source URL + width + quality + format) so this is safe.
     minimumCacheTTL: 60 * 60 * 24 * 30,

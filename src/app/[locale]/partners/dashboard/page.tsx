@@ -31,13 +31,13 @@ export default async function PartnerDashboard({
               <Briefcase className="size-5" strokeWidth={2.2} />
             </span>
             <p className="mt-4 text-[14px] text-muted">
-              This dashboard is for partner accounts.
+              Cet espace est réservé aux comptes partenaires.
             </p>
             <Link
               href="/partners"
               className="batta-btn-luxe tap-target mt-5 inline-flex w-full px-5 py-3 text-[13.5px]"
             >
-              See partner plans
+              Voir les offres partenaires
             </Link>
           </div>
         </div>

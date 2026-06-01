@@ -33,10 +33,10 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-[var(--surface-2)]">
+    <div className="flex min-h-screen bg-surface">
       <AdminSidebar />
       <main className="min-w-0 flex-1">
-        <div className="mx-auto max-w-[1600px] px-8 py-8">{children}</div>
+        <div className="mx-auto max-w-[1320px] px-10 py-10">{children}</div>
       </main>
     </div>
   );

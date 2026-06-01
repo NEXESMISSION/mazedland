@@ -54,7 +54,18 @@ function toLocalInput(d: Date) {
   return local.toISOString().slice(0, 16);
 }
 
-export function ScheduleForm({ propertyId }: { propertyId: string }) {
+export function ScheduleForm({
+  propertyId,
+  extendWindowSec,
+  extendBySec,
+}: {
+  propertyId: string;
+  /** Admin-configured anti-snipe values (seconds), baked onto the new
+   *  auction so the platform setting governs it. Omitted → DB column
+   *  defaults (300 / 600) apply. */
+  extendWindowSec?: number;
+  extendBySec?: number;
+}) {
   const t = useTranslations();
   const router = useRouter();
   const [type, setType] = useState<AuctionType>("english");
@@ -171,6 +182,8 @@ export function ScheduleForm({ propertyId }: { propertyId: string }) {
         status: liveNow ? "live" : "scheduled",
         current_price: opening,
       };
+      if (typeof extendWindowSec === "number") payload.extend_window_seconds = extendWindowSec;
+      if (typeof extendBySec === "number") payload.extend_by_seconds = extendBySec;
       if (type === "dutch") {
         const start = Number(dutchStart) || opening * 1.2;
         const floor = Number(dutchFloor) || opening;

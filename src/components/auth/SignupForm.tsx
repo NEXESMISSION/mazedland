@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
-import { MailCheck } from "lucide-react";
+import { MailCheck, Loader2 } from "lucide-react";
 import { PhoneInput } from "./PhoneInput";
 import { TUNISIAN_GOVERNORATES, normalizeE164, validatePhone } from "@/lib/tunisia";
 import { Modal } from "@/components/ui/Modal";
@@ -186,9 +186,14 @@ export function SignupForm() {
       <button
         type="submit"
         disabled={isPending || !accepted}
+        title={!accepted && !isPending ? "Acceptez les conditions d'utilisation" : undefined}
         className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
-        {isPending ? t("common.loading") : t("nav.signup")}
+        {isPending ? (
+          <><Loader2 className="inline size-4 animate-spin" /> Création du compte…</>
+        ) : (
+          t("nav.signup")
+        )}
       </button>
 
       <Modal

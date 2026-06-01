@@ -86,10 +86,10 @@ export default async function InspectorsIndex() {
               ✦
             </span>
             <p className="text-[17px] font-bold text-foreground">
-              Première promotion en cours d&apos;intégration
+              Réseau en cours de constitution
             </p>
             <p className="mt-2 text-[12px] text-muted">
-              Tunis, Sousse, Sfax — les premiers gouvernorats bientôt en ligne.
+              Tunis, Sousse, Sfax bientôt en ligne.
             </p>
           </div>
         ) : (

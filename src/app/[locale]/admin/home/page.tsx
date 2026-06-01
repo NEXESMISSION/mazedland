@@ -1,6 +1,7 @@
 import { getServerSupabase } from "@/lib/supabase/server";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { HomeControlClient, type HomeRow } from "./HomeControlClient";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Search } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -63,20 +64,24 @@ export default async function AdminHomePage({
 
   return (
     <div>
-      <span className="batta-eyebrow">Vitrine d&apos;accueil</span>
-      <div className="mt-1.5 flex items-end justify-between gap-3">
-        <h2 className="text-[22px] font-extrabold leading-tight tracking-tight">Accueil</h2>
-        {activeCount > 0 && (
-          <span className="shrink-0 rounded-full bg-gold-faint px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-gold-bright">
-            {activeCount} en vedette
-          </span>
-        )}
-      </div>
-      <p className="mt-1 text-[12px] text-muted">
-        Contrôlez les annonces mises en avant (accueil, top recherche,
-        bannière). « Payé » = via une option achetée, « Manuel » = ajouté ici.
-        Vous pouvez mettre n&apos;importe quelle annonce publiée en vedette.
-      </p>
+      <AdminPageHeader
+        eyebrow="Vitrine d'accueil"
+        title="Accueil"
+        description={
+          <>
+            Contrôlez les annonces mises en avant (accueil, top recherche,
+            bannière). « Payé » = via une option achetée, « Manuel » = ajouté ici.
+            Vous pouvez mettre n&apos;importe quelle annonce publiée en vedette.
+          </>
+        }
+        actions={
+          activeCount > 0 ? (
+            <span className="shrink-0 rounded-full bg-gold-faint px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-gold-bright">
+              {activeCount} en vedette
+            </span>
+          ) : undefined
+        }
+      />
 
       {/* Server search — find any published listing by title or governorate
           (the list is capped at 150, so search is the way to reach the rest). */}

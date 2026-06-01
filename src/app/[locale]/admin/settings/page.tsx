@@ -1,6 +1,7 @@
 import { getServerSupabase } from "@/lib/supabase/server";
-import { parseMonetizationSettings } from "@/lib/pricing";
+import { parseMonetizationSettings, parseAntiSnipe } from "@/lib/pricing";
 import { SettingsForm, type SettingsValues } from "./SettingsForm";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,6 +13,7 @@ const KEYS = [
   "promo_top",
   "promo_banner",
   "deposit",
+  "auction_antisnipe",
   "payee_name",
   "payee_bank",
   "payee_rib",
@@ -30,6 +32,7 @@ export default async function AdminSettingsPage() {
   for (const row of data ?? []) map.set(row.key as string, row.value);
 
   const mon = parseMonetizationSettings(map);
+  const antiSnipe = parseAntiSnipe(map.get("auction_antisnipe"));
 
   const initial: SettingsValues = {
     // Auctions are restricted to free/fixed (no price at posting time).
@@ -47,6 +50,7 @@ export default async function AdminSettingsPage() {
       // <input type=date> wants YYYY-MM-DD.
       free_until: mon.deposit.free_until ? mon.deposit.free_until.slice(0, 10) : "",
     },
+    antiSnipe: { window_min: antiSnipe.windowMin, extend_min: antiSnipe.extendMin },
     payee_name: strFrom(map.get("payee_name")),
     payee_bank: strFrom(map.get("payee_bank")),
     payee_rib: strFrom(map.get("payee_rib")),
@@ -56,15 +60,11 @@ export default async function AdminSettingsPage() {
 
   return (
     <div>
-      <span className="batta-eyebrow">Monétisation &amp; paiement</span>
-      <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
-        Réglages
-      </h2>
-      <p className="mt-1 text-[12px] text-muted">
-        Contrôlez ce que les vendeurs paient pour publier, les options, et la
-        caution pour enchérir — gratuit, montant fixe ou pourcentage. Modifiable
-        à tout moment.
-      </p>
+      <AdminPageHeader
+        eyebrow="Monétisation & paiement"
+        title="Réglages"
+        description="Contrôlez ce que les vendeurs paient pour publier, les options, et la caution pour enchérir — gratuit, montant fixe ou pourcentage. Modifiable à tout moment."
+      />
 
       <div className="mt-5">
         <SettingsForm initial={initial} />

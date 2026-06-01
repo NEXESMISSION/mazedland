@@ -6,6 +6,7 @@ import { Countdown } from "@/components/auction/Countdown";
 import { AuctionCalendarMenu } from "@/components/auction/AuctionCalendarMenu";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
 import { HeroCarousel } from "@/components/auction/HeroCarousel";
+import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { AuctionTerms } from "@/components/auction/AuctionTerms";
 import { SellerAuctionBanner } from "@/components/auction/SellerAuctionBanner";
 import { PropertyMap } from "@/components/property/PropertyMap";
@@ -190,11 +191,20 @@ export async function AuctionDesktop(props: {
                     {t("auction.live")}
                   </span>
                 )}
-                {totalBids > 0 && (
-                  <span className="batta-tabular pointer-events-auto ms-auto inline-flex items-center gap-1 rounded-full bg-black/55 px-3 py-1 text-[10px] font-bold text-white backdrop-blur-md">
-                    {totalBids} · {t("auction.totalBids")}
-                  </span>
-                )}
+                <div className="pointer-events-auto ms-auto flex items-center gap-2">
+                  {totalBids > 0 && (
+                    <span className="batta-tabular inline-flex items-center gap-1 rounded-full bg-black/55 px-3 py-1 text-[10px] font-bold text-white backdrop-blur-md">
+                      {totalBids} · {t("auction.totalBids")}
+                    </span>
+                  )}
+                  {!isOwner && (
+                    <WatchlistButton
+                      auctionId={auction.id}
+                      initialSaved={false}
+                      loggedIn={userId !== null}
+                    />
+                  )}
+                </div>
               </div>
             </HeroCarousel>
           </div>

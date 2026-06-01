@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
+import { Loader2 } from "lucide-react";
 import { stripLocalePrefix } from "@/i18n/routing";
 import { PhoneInput } from "./PhoneInput";
 import { normalizeE164, validatePhone } from "@/lib/tunisia";
@@ -187,7 +188,11 @@ export function LoginForm() {
         disabled={isPending}
         className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
-        {isPending ? t("common.loading") : t("nav.login")}
+        {isPending ? (
+          <><Loader2 className="inline size-4 animate-spin" /> Connexion…</>
+        ) : (
+          t("nav.login")
+        )}
       </button>
     </form>
   );

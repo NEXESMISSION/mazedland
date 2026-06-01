@@ -233,19 +233,21 @@ export function SkeletonDetailPage() {
  * eyebrow + title + optional tab pills + N stacked rows with a
  * thumbnail, two text lines, and a status chip on the right.
  *
- * `tabs` = 0 hides the tab strip (used by /payments, /inspections
- * which are single-list pages); `withThumb` = false drops the
- * 56-pixel cover image (used by payment-history rows that lead with
- * a kind badge instead of an image).
+ * `tabs` = 0 hides the tab strip (used by /inspections which is a
+ * single-list page); `withThumb` = false drops the 56-pixel cover
+ * image; `cards` > 0 renders a summary-card header strip above the
+ * tabs (used by /payments).
  */
 export function ListRowsSkeleton({
   rows = 5,
   tabs = 0,
   withThumb = true,
+  cards = 0,
 }: {
   rows?: number;
   tabs?: number;
   withThumb?: boolean;
+  cards?: number;
 }) {
   return (
     <div
@@ -258,6 +260,21 @@ export function ListRowsSkeleton({
         <SkeletonBar height="h-6" width="w-44" />
         <SkeletonBar height="h-3" width="w-3/5" />
       </div>
+      {cards > 0 && (
+        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: cards }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-surface p-4 ring-1 ring-border">
+              <div className="batta-skeleton size-9 rounded-xl" />
+              <div className="mt-3">
+                <SkeletonBar height="h-5" width="w-1/2" />
+              </div>
+              <div className="mt-1.5">
+                <SkeletonBar height="h-2.5" width="w-2/3" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       {tabs > 0 && (
         <div className="hide-scrollbar mt-4 flex gap-2 overflow-x-auto pb-1">
           {Array.from({ length: tabs }).map((_, i) => (

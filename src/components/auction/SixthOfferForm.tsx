@@ -70,15 +70,20 @@ export function SixthOfferForm({
 
   const header = (
     <div className="mb-3 flex items-start gap-3">
-      <span className="batta-monogram size-9 shrink-0 text-[14px]">
-        <Hourglass className="size-4" strokeWidth={1.75} />
+      <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/15">
+        <Hourglass className="size-4" strokeWidth={2} />
       </span>
-      <div>
-        <div className="batta-serif text-[15px] font-semibold text-batta-cream">
+      <div className="min-w-0">
+        <div className="text-[14px] font-bold text-foreground">
           {t("sixth.windowOpen")}
         </div>
-        <p className="mt-0.5 text-[11px] text-batta-cream/65">
-          {t("sixth.windowBody", { deadline: new Date(deadline).toLocaleString(locale) })}
+        <p className="mt-0.5 text-[11.5px] leading-snug text-muted">
+          {t("sixth.windowBody", {
+            deadline: new Date(deadline).toLocaleString(locale, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }),
+          })}
         </p>
       </div>
     </div>
@@ -112,16 +117,20 @@ export function SixthOfferForm({
       <div className="relative">
         {header}
 
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg bg-batta-surface-2 p-2.5 ring-1 ring-batta-gold/15">
-            <div className="batta-eyebrow text-[9px]">{t("sixth.currentWinning")}</div>
-            <div className="batta-tabular batta-serif mt-0.5 text-[14px] font-semibold text-batta-cream">
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-xl bg-surface-2 p-3 ring-1 ring-border">
+            <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+              {t("sixth.currentWinning")}
+            </div>
+            <div className="batta-tabular mt-1 text-[15px] font-extrabold text-foreground">
               {formatTND(winningAmount, locale)} {t("common.tnd")}
             </div>
           </div>
-          <div className="rounded-lg bg-batta-surface-2 p-2.5 ring-1 ring-batta-gold/15">
-            <div className="batta-eyebrow text-[9px]">{t("sixth.minOffer")}</div>
-            <div className="batta-gold-text batta-tabular batta-serif mt-0.5 text-[14px] font-semibold">
+          <div className="rounded-xl bg-gold-faint p-3 ring-1 ring-gold/20">
+            <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-gold">
+              {t("sixth.minOffer")}
+            </div>
+            <div className="batta-tabular mt-1 text-[15px] font-extrabold text-gold-bright">
               {formatTND(minOffer, locale)} {t("common.tnd")}
             </div>
           </div>
@@ -154,7 +163,7 @@ export function SixthOfferForm({
               min={minOffer}
               step={minBidIncrement(winningAmount)}
               onChange={(e) => setAmount(Number(e.target.value))}
-              className="w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-3 py-2.5 text-sm font-bold text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+              className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-bold text-foreground focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold/40"
               inputMode="numeric"
               dir="ltr"
             />

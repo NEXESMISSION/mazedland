@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { normalizeSearchQuery } from "@/lib/search";
 import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
 import { Search, MapPin } from "lucide-react";
+import { SelectMenu, type SelectOption } from "@/components/ui/SelectMenu";
 
 // Canonical 24-wilaya list (previously a truncated 16 here).
 const GOVERNORATES = TUNISIAN_GOVERNORATES;
@@ -40,6 +41,15 @@ export function HomeSearch({
   const [q, setQ] = useState("");
   const [gov, setGov] = useState("");
   const [type, setType] = useState("");
+
+  const govOptions: SelectOption[] = [
+    { value: "", label: t("search.allWilayas") },
+    ...GOVERNORATES.map((g) => ({ value: g, label: g })),
+  ];
+  const typeOptions: SelectOption[] = [
+    { value: "", label: t("search.allTypes") },
+    ...TYPE_KEYS.map((k) => ({ value: k, label: t(`property.types.${k}`) })),
+  ];
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,38 +91,23 @@ export function HomeSearch({
           />
         </div>
         <div className="my-1.5 w-px shrink-0 bg-border" />
-        <div className="relative flex shrink-0 items-center">
-          <MapPin
-            className="pointer-events-none absolute size-4 text-gold ltr:left-3.5 rtl:right-3.5"
-            strokeWidth={2}
-            aria-hidden
-          />
-          <select
-            value={gov}
-            onChange={(e) => setGov(e.target.value)}
-            aria-label={t("search.governorate")}
-            className="cursor-pointer appearance-none bg-transparent py-3.5 text-[13px] font-bold text-foreground focus:outline-none ltr:pl-10 ltr:pr-4 rtl:pl-4 rtl:pr-10"
-          >
-            <option value="">{t("search.allWilayas")}</option>
-            {GOVERNORATES.map((g) => (
-              <option key={g} value={g}>{g}</option>
-            ))}
-          </select>
-        </div>
+        <SelectMenu
+          value={gov}
+          onChange={setGov}
+          options={govOptions}
+          ariaLabel={t("search.governorate")}
+          icon={<MapPin className="size-4 shrink-0 text-gold" strokeWidth={2} aria-hidden />}
+          triggerClassName="flex w-44 shrink-0 cursor-pointer items-center gap-2 bg-transparent px-3.5 py-3.5 text-[13px] font-bold text-foreground focus:outline-none"
+        />
         <div className="my-1.5 w-px shrink-0 bg-border" />
-        <select
+        <SelectMenu
           value={type}
-          onChange={(e) => setType(e.target.value)}
-          aria-label={t("search.type")}
-          className="shrink-0 cursor-pointer appearance-none bg-transparent px-4 py-3.5 text-[13px] font-bold text-foreground focus:outline-none"
-        >
-          <option value="">{t("search.allTypes")}</option>
-          {TYPE_KEYS.map((k) => (
-            <option key={k} value={k}>
-              {t(`property.types.${k}`)}
-            </option>
-          ))}
-        </select>
+          onChange={setType}
+          options={typeOptions}
+          ariaLabel={t("search.type")}
+          align="end"
+          triggerClassName="flex w-36 shrink-0 cursor-pointer items-center gap-2 bg-transparent px-4 py-3.5 text-[13px] font-bold text-foreground focus:outline-none"
+        />
         <button
           type="submit"
           className="batta-gold-fill inline-flex shrink-0 items-center gap-2 rounded-xl px-7 text-[13px] font-extrabold shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition active:scale-[0.98]"
@@ -155,41 +150,29 @@ export function HomeSearch({
           </button>
         </div>
 
-        {/* Second row: two native selects styled as soft pills. Native
-            controls open the OS picker (full-screen sheet on iOS,
-            drop-down on Android) — best mobile UX with zero code. */}
+        {/* Second row: two soft-pill custom dropdowns (matching menus,
+            chevron affordance, gold-checked selection). */}
         <div className="mt-2 flex gap-2">
-          <div className="relative flex-1">
-            <MapPin
-              className="pointer-events-none absolute top-1/2 size-3.5 -translate-y-1/2 text-gold ltr:left-3 rtl:right-3"
-              strokeWidth={2}
-              aria-hidden
-            />
-            <select
+          <div className="flex-1">
+            <SelectMenu
               value={gov}
-              onChange={(e) => setGov(e.target.value)}
-              aria-label={t("search.governorate")}
-              className="tap-target w-full appearance-none rounded-full bg-surface-2 py-2.5 text-[12px] font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40 ltr:pl-8 ltr:pr-3 rtl:pl-3 rtl:pr-8"
-            >
-              <option value="">{t("search.allWilayas")}</option>
-              {GOVERNORATES.map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
+              onChange={setGov}
+              options={govOptions}
+              ariaLabel={t("search.governorate")}
+              icon={<MapPin className="size-3.5 shrink-0 text-gold" strokeWidth={2} aria-hidden />}
+              triggerClassName="tap-target flex w-full items-center gap-2 rounded-full bg-surface-2 px-3 py-2.5 text-[12px] font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40"
+            />
           </div>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            aria-label={t("search.type")}
-            className="tap-target flex-1 appearance-none rounded-full bg-surface-2 px-3 py-2.5 text-[12px] font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40"
-          >
-            <option value="">{t("search.allTypes")}</option>
-            {TYPE_KEYS.map((k) => (
-              <option key={k} value={k}>
-                {t(`property.types.${k}`)}
-              </option>
-            ))}
-          </select>
+          <div className="flex-1">
+            <SelectMenu
+              value={type}
+              onChange={setType}
+              options={typeOptions}
+              ariaLabel={t("search.type")}
+              align="end"
+              triggerClassName="tap-target flex w-full items-center gap-2 rounded-full bg-surface-2 px-3 py-2.5 text-[12px] font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40"
+            />
+          </div>
         </div>
       </form>
     </section>

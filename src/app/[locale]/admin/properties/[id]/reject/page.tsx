@@ -69,11 +69,11 @@ export default async function RejectPropertyPage({
       </Link>
 
       <header className="mt-3 flex items-start gap-3">
-        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-red-500/15 text-red-400 ring-1 ring-red-500/25">
+        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[var(--accent-faint)] text-[var(--danger)] ring-1 ring-[var(--accent-soft)]">
           <ShieldOff className="size-5" strokeWidth={2.2} />
         </span>
         <div className="min-w-0 flex-1">
-          <span className="batta-eyebrow text-[10px] text-red-400">Refuser une annonce</span>
+          <span className="batta-eyebrow text-[10px] text-[var(--accent-deep)]">Refuser une annonce</span>
           <h1 className="mt-1 text-[22px] font-extrabold leading-tight tracking-tight">
             Motif de refus
           </h1>

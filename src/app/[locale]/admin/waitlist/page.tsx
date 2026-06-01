@@ -1,6 +1,7 @@
 import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -32,16 +33,12 @@ export default async function AdminWaitlist({
 
   return (
     <div>
-      <span className="batta-eyebrow">Avant lancement</span>
-      <div className="mt-1.5 flex items-end justify-between gap-3">
-        <h2 className="text-[22px] font-extrabold leading-tight tracking-tight">
-          Liste d&apos;attente
-        </h2>
-        <span className="batta-pill-gold">{total} inscrit{total > 1 ? "s" : ""}</span>
-      </div>
-      <p className="mt-1 text-[12px] text-muted">
-        Inscriptions avant lancement. Recherchez par e-mail ou téléphone.
-      </p>
+      <AdminPageHeader
+        eyebrow="Avant lancement"
+        title="Liste d'attente"
+        description="Inscriptions avant lancement. Recherchez par e-mail ou téléphone."
+        actions={<span className="batta-pill-gold">{total} inscrit{total > 1 ? "s" : ""}</span>}
+      />
 
       <AdminQueryBar total={total} placeholder="E-mail ou téléphone…" />
 

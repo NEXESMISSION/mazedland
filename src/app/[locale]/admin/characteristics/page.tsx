@@ -1,6 +1,7 @@
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { PropertyType, AttributeKind } from "@/lib/types";
 import { CharacteristicsEditor } from "./CharacteristicsEditor";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -31,16 +32,18 @@ export default async function AdminCharacteristicsPage() {
 
   return (
     <div>
-      <span className="batta-eyebrow">Caractéristiques</span>
-      <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
-        Champs par type de bien
-      </h2>
-      <p className="mt-1 text-[12px] text-muted">
-        Définissez les caractéristiques que chaque vendeur renseigne selon le
-        type de bien (surface, pièces, type de titre, source d&apos;eau…). Les
-        champs marqués <b>requis</b> bloquent l&apos;envoi du formulaire. Ces
-        informations apparaissent sur la fiche publique du bien.
-      </p>
+      <AdminPageHeader
+        eyebrow="Caractéristiques"
+        title="Champs par type de bien"
+        description={
+          <>
+            Définissez les caractéristiques que chaque vendeur renseigne selon le
+            type de bien (surface, pièces, type de titre, source d&apos;eau…). Les
+            champs marqués <b>requis</b> bloquent l&apos;envoi du formulaire. Ces
+            informations apparaissent sur la fiche publique du bien.
+          </>
+        }
+      />
 
       <div className="mt-5">
         <CharacteristicsEditor initial={initial} />

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { logAction } from "@/lib/activity";
 
 /**
  * POST /api/admin/manual-payment — admin-only.
@@ -167,9 +168,10 @@ export async function POST(req: NextRequest) {
     p_kind: "payment_accepted",
     p_title: `${KIND_LABEL[kind]} a été enregistrée`,
     p_body: `Un paiement de ${amount.toFixed(2)} TND (${method === "cash" ? "espèces" : method}) a été enregistré par l'équipe Batta.`,
-    p_link: `/auctions/${auctionId}`,
+    p_link: kind === "deposit_lock" ? `/auctions/${auctionId}/bid` : `/auctions/${auctionId}`,
   });
 
+  logAction(req, user, "payment.manual", { kind, amount, payerId: userId, auctionId });
   return NextResponse.json({
     ok: true,
     paymentId: created.id,

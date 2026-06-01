@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { isStaticSeedPath } from "@/lib/imageUrl";
 import { LiveCountdown } from "@/components/landing/LiveCountdown";
-import { MapPin, ArrowUpRight } from "lucide-react";
+import { MapPin, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 export type ShowcaseSlide = {
   /** Auction id — used as the React key and to build the detail href. */
@@ -33,15 +33,16 @@ export type ShowcaseSlide = {
  * own watermarks + a colliding corner badge) with a single framed lot
  * card: cover photo under a strong bottom gradient, a glass info panel
  * with type/LIVE chips, a live countdown, the title, the price, and a
- * dedicated "Enchérir" action. Auto-advances every 5s, pauses on hover,
- * crossfades between lots, and falls back to a brand panel when the DB
- * has nothing live so the hero never renders empty.
+ * dedicated "Enchérir" action. Auto-advances every 3s (never pauses on
+ * hover), crossfades between lots, offers prev/next arrows + dots, and
+ * falls back to a brand panel when the DB has nothing live so the hero
+ * never renders empty.
  */
 export function HeroShowcase({
   slides,
   isRTL = false,
   brand,
-  intervalMs = 5000,
+  intervalMs = 3000,
 }: {
   slides: ShowcaseSlide[];
   isRTL?: boolean;
@@ -50,31 +51,27 @@ export function HeroShowcase({
   intervalMs?: number;
 }) {
   const [index, setIndex] = useState(0);
-  const [hovering, setHovering] = useState(false);
   const total = slides.length;
   const safeIndex = total > 0 ? index % total : 0;
 
-  // Auto-advance — paused on hover and when the user prefers reduced motion.
+  // Auto-advance — keeps running on hover (only reduced-motion stops it).
+  // Manual arrows/dots just reposition; they don't halt the rotation.
   useEffect(() => {
-    if (total <= 1 || hovering) return;
+    if (total <= 1) return;
     if (typeof window === "undefined") return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     const id = window.setInterval(() => {
       setIndex((i) => (i + 1) % total);
     }, intervalMs);
     return () => window.clearInterval(id);
-  }, [total, hovering, intervalMs]);
+  }, [total, intervalMs]);
 
   if (total === 0) {
     return <BrandPanel brand={brand} isRTL={isRTL} />;
   }
 
   return (
-    <div
-      className="group/showcase relative aspect-[4/3] w-full overflow-hidden rounded-3xl bg-surface-2 ring-1 ring-border shadow-[0_28px_60px_-26px_rgba(15,23,42,0.45)]"
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
-    >
+    <div className="group/showcase relative aspect-[4/3] w-full overflow-hidden rounded-3xl bg-surface-2 ring-1 ring-border shadow-[0_28px_60px_-26px_rgba(15,23,42,0.45)]">
       {slides.map((slide, i) => {
         const active = i === safeIndex;
         return (
@@ -92,6 +89,29 @@ export function HeroShowcase({
           </Link>
         );
       })}
+
+      {/* Prev / next arrows — let the visitor step back to a lot they
+          missed without waiting for it to come around again. */}
+      {total > 1 && (
+        <>
+          <button
+            type="button"
+            aria-label="Bien précédent"
+            onClick={() => setIndex((i) => (i - 1 + total) % total)}
+            className="absolute start-3 top-1/2 z-20 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70"
+          >
+            <ChevronLeft className="size-5" strokeWidth={2.5} />
+          </button>
+          <button
+            type="button"
+            aria-label="Bien suivant"
+            onClick={() => setIndex((i) => (i + 1) % total)}
+            className="absolute end-3 top-1/2 z-20 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70"
+          >
+            <ChevronRight className="size-5" strokeWidth={2.5} />
+          </button>
+        </>
+      )}
 
       {/* Dot indicators — sit above the photo, clear of the info panel. */}
       {total > 1 && (

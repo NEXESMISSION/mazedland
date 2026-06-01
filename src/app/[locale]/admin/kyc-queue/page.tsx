@@ -3,6 +3,8 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { KycQueueList, type KycSubmissionView } from "./KycQueueList";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -104,10 +106,14 @@ export default async function KYCQueuePage({
           .from("kyc")
           .createSignedUrl(path, 3600);
         if (error || !signed?.signedUrl) {
-          console.error("[kyc-queue] createSignedUrl failed", {
-            path,
-            message: error?.message,
-          });
+          // A single unsignable photo (old/missing object, or a path from
+          // a previous bucket layout) must NOT take down the whole queue.
+          // Use console.warn — console.error during a Server Component
+          // render trips Next's blocking dev error overlay, which hid the
+          // results behind a red screen. The tile degrades to "manquant".
+          console.warn(
+            `[kyc-queue] createSignedUrl failed for "${path}": ${error?.message ?? "no signed URL returned"}`,
+          );
           return null;
         }
         return signed.signedUrl;
@@ -133,28 +139,17 @@ export default async function KYCQueuePage({
 
   return (
     <div>
-      <span className="batta-eyebrow">Personnes · KYC</span>
-      <div className="mt-1.5 flex items-end justify-between gap-3">
-        <h2 className="text-[22px] font-extrabold leading-tight tracking-tight">
-          File KYC
-        </h2>
-        <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] ${
-            status === "submitted"
-              ? "batta-tone-warn"
-              : "bg-surface-2 text-muted ring-1 ring-border"
-          }`}
-        >
-          {total}
-        </span>
-      </div>
-      <p className="mt-1 text-[12px] text-muted">
-        Vérifiez l&apos;identité avant que l&apos;utilisateur ne puisse enchérir.
-        Les rejets envoient une notification à l&apos;utilisateur.
-      </p>
+      <AdminPageHeader
+        eyebrow="Personnes · KYC"
+        title="File KYC"
+        description="Vérifiez l'identité avant que l'utilisateur ne puisse enchérir. Les rejets envoient une notification à l'utilisateur."
+        actions={
+          <StatusBadge tone={status === "submitted" ? "warn" : "neutral"}>{total}</StatusBadge>
+        }
+      />
 
       {/* Status tabs — shareable + survives a refresh. */}
-      <div className="mt-4 flex flex-wrap gap-1.5">
+      <div className="mt-5 flex flex-wrap gap-1.5">
         {STATUS_TABS.map((tab) => {
           const active = tab.value === status;
           return (
@@ -167,7 +162,7 @@ export default async function KYCQueuePage({
               }
               className={`px-3 h-8 inline-flex items-center rounded-full text-xs font-bold border transition-colors ${
                 active
-                  ? "bg-[var(--gold)] text-black border-[var(--gold)]"
+                  ? "bg-[var(--gold)] text-white border-[var(--gold)]"
                   : "bg-[var(--surface)] text-[var(--foreground-muted)] border-[var(--border)] hover:border-[var(--gold-soft)]"
               }`}
             >
@@ -195,7 +190,7 @@ export default async function KYCQueuePage({
       <AdminQueryBar total={total} placeholder="Nom du demandeur…" />
 
       {error && (
-        <div className="mt-4 rounded-[var(--radius-md)] bg-red-500/10 border border-red-500/30 p-4 text-sm text-red-300">
+        <div className="mt-4 rounded-[var(--radius-md)] bg-[var(--accent-faint)] border border-[var(--accent-soft)] p-4 text-sm font-medium text-[var(--accent-deep)]">
           {error.message}
         </div>
       )}

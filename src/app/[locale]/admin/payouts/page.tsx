@@ -4,6 +4,8 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { PayoutsList } from "./PayoutsList";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -112,28 +114,17 @@ export default async function AdminPayoutsPage({
 
   return (
     <div>
-      <span className="batta-eyebrow">Argent · Vendeurs</span>
-      <div className="mt-1.5 flex items-end justify-between gap-3">
-        <h2 className="text-[22px] font-extrabold leading-tight tracking-tight">
-          Paiements vendeurs
-        </h2>
-        <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] ${
-            status === "requested"
-              ? "batta-tone-warn"
-              : "bg-surface-2 text-muted ring-1 ring-border"
-          }`}
-        >
-          {total}
-        </span>
-      </div>
-      <p className="mt-1 text-[12px] text-muted">
-        Approuver, traiter et confirmer les retraits demandés par les vendeurs.
-        Les montants déjà déduits de la commission Batta (5%).
-      </p>
+      <AdminPageHeader
+        eyebrow="Argent · Vendeurs"
+        title="Paiements vendeurs"
+        description="Approuver, traiter et confirmer les retraits demandés par les vendeurs. Les montants déjà déduits de la commission Batta (5%)."
+        actions={
+          <StatusBadge tone={status === "requested" ? "warn" : "neutral"}>{total}</StatusBadge>
+        }
+      />
 
       {/* Tabs */}
-      <div className="mt-4 flex flex-wrap gap-1.5">
+      <div className="mt-5 flex flex-wrap gap-1.5">
         {STATUS_TABS.map((tab) => {
           const active = tab.value === status;
           return (
@@ -146,7 +137,7 @@ export default async function AdminPayoutsPage({
               }
               className={`px-3 h-8 inline-flex items-center rounded-full text-xs font-bold border transition-colors ${
                 active
-                  ? "bg-[var(--gold)] text-black border-[var(--gold)]"
+                  ? "bg-[var(--gold)] text-white border-[var(--gold)]"
                   : "bg-[var(--surface)] text-[var(--foreground-muted)] border-[var(--border)] hover:border-[var(--gold-soft)]"
               }`}
             >
@@ -174,7 +165,7 @@ export default async function AdminPayoutsPage({
       <AdminQueryBar total={total} placeholder="Vendeur (nom)…" />
 
       {error && (
-        <div className="mt-4 rounded-[var(--radius-md)] bg-red-500/10 border border-red-500/30 p-4 text-sm text-red-300">
+        <div className="mt-4 rounded-[var(--radius-md)] bg-[var(--accent-faint)] border border-[var(--accent-soft)] p-4 text-sm font-medium text-[var(--accent-deep)]">
           {error.message}
         </div>
       )}

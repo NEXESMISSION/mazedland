@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { logAction } from "@/lib/activity";
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   if (!isSameOrigin(req)) {
@@ -50,5 +51,6 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     });
   }
 
+  logAction(req, user, "inspector.approved", { inspectorId: id });
   return NextResponse.json({ ok: true });
 }

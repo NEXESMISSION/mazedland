@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { logAction } from "@/lib/activity";
 
 /**
  * Bulk delete for the admin queue inspector. Accepts the same filter
@@ -86,5 +87,6 @@ export async function POST(req: NextRequest) {
   console.log(
     `[api/admin/notifications/bulk-delete] admin=${user.id.slice(0, 8)}  deletedCount=${deletedCount}`,
   );
+  logAction(req, user, "notification.bulk_delete", { deletedCount });
   return NextResponse.json({ ok: true, deletedCount });
 }

@@ -14,6 +14,7 @@ export type SettingsValues = {
   promoTop: { enabled: boolean; value: number; duration_days: number };
   promoBanner: { enabled: boolean; value: number; duration_days: number };
   deposit: { mode: ListingMode; value: number; free_until: string };
+  antiSnipe: { window_min: number; extend_min: number };
   payee_name: string;
   payee_bank: string;
   payee_rib: string;
@@ -43,6 +44,7 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
         promo_top: v.promoTop,
         promo_banner: v.promoBanner,
         deposit: { ...v.deposit, free_until: v.deposit.free_until || null },
+        auction_antisnipe: v.antiSnipe,
         payee_name: v.payee_name,
         payee_bank: v.payee_bank,
         payee_rib: v.payee_rib,
@@ -138,6 +140,31 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
             )}
           </span>
         </label>
+      </Section>
+
+      {/* ── Anti-sniping (auction time extension) ── */}
+      <Section
+        title="Prolongation d'enchère (anti-snipe)"
+        hint="Si une offre arrive juste avant la fin, le temps est prolongé pour laisser les autres réagir. S'applique aux enchères en cours et à venir."
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <MinutesField
+            label="Fenêtre de déclenchement"
+            sub="Offre dans les X dernières minutes → prolongation."
+            value={v.antiSnipe.window_min}
+            onChange={(n) => patch("antiSnipe", { ...v.antiSnipe, window_min: n })}
+          />
+          <MinutesField
+            label="Durée de prolongation"
+            sub="On ajoute X minutes à la fin."
+            value={v.antiSnipe.extend_min}
+            onChange={(n) => patch("antiSnipe", { ...v.antiSnipe, extend_min: n })}
+          />
+        </div>
+        <p className="text-[10.5px] text-[var(--foreground-muted)]">
+          Mettez les deux à 0 pour désactiver la prolongation (l&apos;enchère se
+          termine à l&apos;heure pile).
+        </p>
       </Section>
 
       {/* ── Payee ── */}
@@ -274,6 +301,37 @@ function PromoRow({
           />
           <span className="inline-flex items-center px-2.5 text-[11px] font-bold text-[var(--foreground-muted)]">jours</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function MinutesField({
+  label, sub, value, onChange,
+}: {
+  label: string;
+  sub?: string;
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-batta-gold/20 bg-batta-surface-2 p-3">
+      <div className="text-[12px] font-bold text-batta-cream">{label}</div>
+      {sub && <p className="mt-0.5 text-[10.5px] text-[var(--foreground-muted)]">{sub}</p>}
+      <div className="mt-2 flex items-stretch overflow-hidden rounded-lg border border-batta-gold/25 bg-batta-surface focus-within:border-batta-gold">
+        <input
+          type="number"
+          step="1"
+          min={0}
+          max={120}
+          value={Number.isFinite(value) ? value : 0}
+          onChange={(e) => onChange(Math.max(0, Math.min(120, Math.floor(Number(e.target.value) || 0))))}
+          className="batta-tabular flex-1 bg-transparent px-3 py-2 text-sm text-batta-cream focus:outline-none"
+          aria-label={label}
+        />
+        <span className="inline-flex items-center px-3 text-[11px] font-bold text-[var(--foreground-muted)]">
+          min
+        </span>
       </div>
     </div>
   );

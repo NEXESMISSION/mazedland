@@ -3,7 +3,9 @@
 import { useTransition } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
-import { Check, X, Loader2, RotateCcw } from "lucide-react";
+import { Check, X, RotateCcw, CheckCircle2 } from "lucide-react";
+import { AdminButton, adminBtn } from "@/components/admin/AdminButton";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 
 /**
  * Approve / reject controls for a pending property. Approve fires
@@ -73,41 +75,45 @@ export function ApprovePropertyButtons({
   }
 
   // "Ready" listings are already published and shouldn't be un-published
-  // from this control — there are sell-flow cancel paths for that.
-  // "Rejected" listings DO get an undo here, otherwise an accidental
-  // refusal is permanent until the seller re-submits.
+  // from this control — there are sell-flow cancel paths for that. Show a
+  // clear read-only "live" badge instead of a bare dash (which read as a
+  // missing/broken button).
   if (status === "ready") {
-    return <span className="text-xs text-muted">—</span>;
+    return (
+      <StatusBadge tone="ok" icon={<CheckCircle2 className="size-3" strokeWidth={2.5} />}>
+        Publiée
+      </StatusBadge>
+    );
   }
 
+  // "Rejected" listings DO get an undo here, otherwise an accidental
+  // refusal is permanent until the seller re-submits.
   if (status === "rejected") {
     return (
-      <button
-        type="button"
-        disabled={pending}
+      <AdminButton
+        variant="warnSoft"
+        pending={pending}
         onClick={restore}
-        className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100 disabled:opacity-50"
+        icon={<RotateCcw className="size-3.5" strokeWidth={2.5} />}
       >
-        {pending ? <Loader2 className="size-3.5 animate-spin" /> : <RotateCcw className="size-3.5" strokeWidth={2.5} />}
         Restaurer
-      </button>
+      </AdminButton>
     );
   }
 
   return (
     <div className="flex gap-2">
-      <button
-        type="button"
-        disabled={pending}
+      <AdminButton
+        variant="success"
+        pending={pending}
         onClick={approve}
-        className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
+        icon={<Check className="size-3.5" strokeWidth={2.5} />}
       >
-        {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" strokeWidth={2.5} />}
         Approuver
-      </button>
+      </AdminButton>
       <Link
         href={`/admin/properties/${id}/reject` as `/admin/properties/${string}`}
-        className="inline-flex items-center gap-1 rounded-md bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 ring-1 ring-red-200 transition hover:bg-red-100"
+        className={adminBtn("dangerSoft")}
       >
         <X className="size-3.5" strokeWidth={2.5} />
         Rejeter

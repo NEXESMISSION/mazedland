@@ -714,9 +714,9 @@ function NewListingView({
   isRTL: boolean;
 }) {
   const VALUE = [
-    { Icon: ShieldCheck, title: "Acheteurs vérifiés", body: "Identité et caution validées avant chaque enchère." },
-    { Icon: Wallet, title: "Paiement sécurisé", body: "Les fonds passent par un séquestre régulé." },
-    { Icon: Clock, title: "En ligne sous 24 h", body: "Votre annonce est vérifiée puis publiée rapidement." },
+    { Icon: ShieldCheck, title: "Acheteurs vérifiés" },
+    { Icon: Wallet, title: "Paiement sécurisé" },
+    { Icon: Clock, title: "En ligne sous 24 h" },
   ];
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-10 lg:max-w-[var(--max-w-wide)] lg:px-8 lg:py-10">
@@ -741,28 +741,23 @@ function NewListingView({
             </h1>
             <p className="mt-2.5 text-[14px] leading-relaxed text-muted">{subtitle}</p>
 
-            <ul className="mt-7 space-y-3">
+            <ul className="mt-7 space-y-2.5">
               {VALUE.map((v) => (
                 <li
                   key={v.title}
-                  className="flex items-start gap-3.5 rounded-2xl border border-black/[0.07] bg-white p-4"
+                  className="flex items-center gap-3 text-[13px] font-semibold text-foreground"
                 >
-                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/15">
-                    <v.Icon className="size-5" strokeWidth={2} />
+                  <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-gold-faint text-gold">
+                    <v.Icon className="size-4" strokeWidth={2} />
                   </span>
-                  <div className="min-w-0">
-                    <div className="text-[13.5px] font-bold leading-tight text-foreground">
-                      {v.title}
-                    </div>
-                    <div className="mt-0.5 text-[12px] leading-snug text-muted">{v.body}</div>
-                  </div>
+                  {v.title}
                 </li>
               ))}
             </ul>
 
-            <div className="mt-5 flex items-center gap-1.5 rounded-2xl bg-gold-faint px-4 py-3 text-[12px] font-semibold text-foreground ring-1 ring-gold/15">
+            <div className="mt-5 flex items-center gap-1.5 text-[12px] text-muted">
               <Images className="size-4 shrink-0 text-gold" strokeWidth={2} />
-              À préparer : photos, détails du bien et prix de départ.
+              À préparer : photos, détails et prix de départ.
             </div>
           </div>
         </div>

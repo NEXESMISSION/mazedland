@@ -32,13 +32,15 @@ export function KYCShell({
   const resolvedTitle = title ?? "Vérification d'identité";
   const steps = STEP_LABELS.map((label) => ({ label }));
   const showStepper = current >= 0;
+  // Intro (start) + terminal (status) screens hide the back/cancel chrome —
+  // there's nowhere meaningful to go "back" to from the first screen, and a
+  // bare X on the welcome screen reads as a dead-end.
+  const showNav = current >= 0;
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* ============================================================
-          MOBILE
-          ============================================================ */}
-      <div className="lg:hidden flex flex-col flex-1">
-        <header className="flex items-center gap-3 px-4 pt-4 pb-2">
+      {/* ── MOBILE header (<lg) ── */}
+      <header className="lg:hidden flex items-center gap-3 px-4 pt-4 pb-2">
+        {showNav ? (
           <Link
             href={backHref as `/${string}`}
             aria-label="Retour"
@@ -46,9 +48,13 @@ export function KYCShell({
           >
             <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
           </Link>
-          <div className="flex-1 min-w-0 text-center text-[13px] font-bold tracking-tight truncate">
-            {resolvedTitle}
-          </div>
+        ) : (
+          <span aria-hidden className="h-9 w-9 shrink-0" />
+        )}
+        <div className="flex-1 min-w-0 text-center text-[13px] font-bold tracking-tight truncate">
+          {resolvedTitle}
+        </div>
+        {showNav ? (
           <Link
             href="/"
             aria-label="Annuler"
@@ -56,25 +62,20 @@ export function KYCShell({
           >
             <X className="h-4 w-4" />
           </Link>
-        </header>
-
-        {showStepper && (
-          <div className="px-4 pb-3">
-            <Stepper steps={steps} current={current} />
-          </div>
+        ) : (
+          <span aria-hidden className="h-9 w-9 shrink-0" />
         )}
+      </header>
+      {showStepper && (
+        <div className="lg:hidden px-4 pb-3">
+          <Stepper steps={steps} current={current} />
+        </div>
+      )}
 
-        <main className="flex-1 px-4 py-2 max-w-[var(--max-w)] mx-auto w-full">
-          {children}
-        </main>
-      </div>
-
-      {/* ============================================================
-          DESKTOP
-          ============================================================ */}
-      <div className="hidden lg:flex lg:flex-col lg:flex-1 lg:min-h-screen">
-        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[var(--border)]">
-          <div className="max-w-[var(--max-w-content)] mx-auto px-8 h-16 flex items-center gap-6">
+      {/* ── DESKTOP header (lg+) ── */}
+      <header className="hidden lg:block sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[var(--border)]">
+        <div className="max-w-[var(--max-w-content)] mx-auto px-8 h-16 flex items-center gap-6">
+          {showNav && (
             <Link
               href={backHref as `/${string}`}
               className="inline-flex items-center gap-2 h-10 ps-3 pe-4 rounded-full ring-1 ring-[var(--border)] hover:ring-[var(--gold)] hover:text-[var(--gold)] text-sm font-bold transition-colors"
@@ -82,15 +83,17 @@ export function KYCShell({
               <ChevronLeft className="h-4 w-4" />
               Retour
             </Link>
-            <div className="flex-1 min-w-0">
-              <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] font-extrabold text-[var(--gold)]">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                KYC
-              </div>
-              <div className="mt-0.5 text-base font-black truncate tracking-tight">
-                {resolvedTitle}
-              </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] font-extrabold text-[var(--gold)]">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              KYC
             </div>
+            <div className="mt-0.5 text-base font-black truncate tracking-tight">
+              {resolvedTitle}
+            </div>
+          </div>
+          {showNav && (
             <Link
               href="/"
               className="inline-flex items-center gap-2 h-10 px-4 rounded-full ring-1 ring-[var(--border)] hover:ring-[var(--danger)]/50 hover:text-[var(--danger)] text-sm font-bold transition-colors"
@@ -98,20 +101,25 @@ export function KYCShell({
               <X className="h-4 w-4" />
               Annuler
             </Link>
-          </div>
-          {showStepper && (
-            <div className="max-w-[var(--max-w-content)] mx-auto px-8 pb-4">
-              <Stepper steps={steps} current={current} />
-            </div>
           )}
-        </header>
-
-        <main className="flex-1 max-w-[var(--max-w-content)] mx-auto w-full px-8 py-10">
-          <div className="rounded-[28px] bg-[var(--surface)] ring-1 ring-[var(--border)] p-10 xl:p-12 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.5)]">
-            {children}
+        </div>
+        {showStepper && (
+          <div className="max-w-[var(--max-w-content)] mx-auto px-8 pb-4">
+            <Stepper steps={steps} current={current} />
           </div>
-        </main>
-      </div>
+        )}
+      </header>
+
+      {/* ── SHARED content — rendered ONCE. Previously the children were
+          rendered in BOTH a mobile and a desktop subtree (one CSS-hidden);
+          for the camera/liveness step that mounted two <video> streams and
+          two upload pipelines, which double-showed the preview and stalled
+          the submit. One tree, responsive styling, fixes both. ── */}
+      <main className="flex-1 w-full mx-auto px-4 py-2 max-w-[var(--max-w)] lg:max-w-[var(--max-w-content)] lg:px-8 lg:py-10">
+        <div className="lg:rounded-[28px] lg:bg-[var(--surface)] lg:ring-1 lg:ring-[var(--border)] lg:p-10 lg:shadow-[0_30px_80px_-30px_rgba(0,0,0,0.5)] xl:p-12">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { KYCShell } from "@/components/layout/KYCShell";
 import { Button } from "@/components/ui/Button";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { StatusPoller } from "./StatusPoller";
+import { AutoHomeRedirect } from "./AutoHomeRedirect";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -49,9 +50,7 @@ export default async function KYCStatusPage({
           <div>
             <h2 className="text-xl font-bold">Vérification refusée</h2>
             <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
-              Vos documents n&apos;ont pas pu être validés. Reprenez la
-              vérification ou contactez le support si vous pensez qu&apos;il
-              s&apos;agit d&apos;une erreur.
+              Vos documents n&apos;ont pas été validés. Reprenez la vérification.
             </p>
           </div>
           <div className="space-y-2">
@@ -88,8 +87,8 @@ export default async function KYCStatusPage({
             <h2 className="text-2xl font-extrabold">Identité vérifiée</h2>
             <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
               {isPartner
-                ? "Vous pouvez maintenant publier vos biens et enchérir sur la plateforme."
-                : "Vous pouvez maintenant enchérir sur Batta et finaliser légalement vos achats."}
+                ? "Vous pouvez publier vos biens et enchérir."
+                : "Vous pouvez enchérir et finaliser vos achats."}
             </p>
           </div>
 
@@ -100,8 +99,8 @@ export default async function KYCStatusPage({
             </div>
             <div className="text-xs text-[var(--foreground-muted)]">
               {isPartner
-                ? "Votre badge partenaire est désormais visible sur vos annonces."
-                : "Votre badge enchérisseur apparaît sur chaque enchère que vous placez."}
+                ? "Badge partenaire visible sur vos annonces."
+                : "Badge enchérisseur visible sur vos enchères."}
             </div>
           </div>
 
@@ -136,8 +135,9 @@ export default async function KYCStatusPage({
   return (
     <KYCShell current={3}>
       <StatusPoller />
-      <div className="space-y-6 py-8 text-center">
-        <div className="relative mx-auto h-28 w-28">
+      <AutoHomeRedirect seconds={3} />
+      <div className="space-y-5 py-12 text-center">
+        <div className="relative mx-auto h-24 w-24">
           <div
             aria-hidden
             className="absolute inset-0 rounded-full"
@@ -148,48 +148,20 @@ export default async function KYCStatusPage({
           />
           <div className="relative h-full w-full rounded-full batta-gradient-gold shadow-[var(--shadow-gold)] flex items-center justify-center">
             <span className="absolute inset-[-6px] rounded-full border-2 border-[var(--gold-soft)]/40 border-t-[var(--gold)] animate-spin [animation-duration:2.4s]" />
-            <Clock className="relative h-12 w-12 text-white" strokeWidth={2} />
+            <Clock className="relative h-11 w-11 text-white" strokeWidth={2} />
           </div>
         </div>
 
         <div>
           <h2 className="text-2xl font-extrabold">Vérification en cours</h2>
           <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
-            Notre équipe va examiner votre dossier dans les prochaines heures.
-            Vous recevrez un email dès la validation.
+            Réponse sous 24–48&nbsp;h par email.
           </p>
         </div>
 
-        <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-4 text-start space-y-3">
-          <div className="flex items-start gap-3">
-            <Clock className="h-5 w-5 text-[var(--gold)] shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <div className="font-bold">Délai habituel : 24 à 48 h ouvrées</div>
-              <div className="text-xs text-[var(--foreground-muted)] mt-0.5 leading-relaxed">
-                Les soumissions reçues le week-end sont traitées le lundi matin.
-              </div>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="h-5 w-5 text-[var(--gold)] shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <div className="font-bold">Accès limité en attendant</div>
-              <div className="text-xs text-[var(--foreground-muted)] mt-0.5 leading-relaxed">
-                Vous pouvez parcourir les enchères mais pas encore enchérir
-                ni publier.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="pt-2 text-center">
-          <Link
-            href="/kyc/start"
-            className="text-sm font-semibold text-[var(--gold)] underline-offset-4 hover:underline"
-          >
-            Renvoyer à nouveau
-          </Link>
-        </div>
+        <p className="text-[11px] text-[var(--foreground-subtle)]">
+          Redirection vers l&apos;accueil…
+        </p>
       </div>
     </KYCShell>
   );

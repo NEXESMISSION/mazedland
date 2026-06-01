@@ -2,6 +2,7 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { ShieldCheck, MapPin } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -92,13 +93,13 @@ export default async function AdminUsers({
 
   return (
     <div>
-      <span className="batta-eyebrow">Personnes · Annuaire</span>
-      <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">Utilisateurs</h2>
-      <p className="mt-1 text-[12px] text-muted">
-        Rechercher et filtrer les comptes. La vérification d&apos;identité se fait dans la file KYC.
-      </p>
+      <AdminPageHeader
+        eyebrow="Personnes · Annuaire"
+        title="Utilisateurs"
+        description="Rechercher et filtrer les comptes. La vérification d'identité se fait dans la file KYC."
+      />
 
-      <div className="mt-4 flex flex-wrap gap-1.5">
+      <div className="mt-5 flex flex-wrap gap-1.5">
         {ROLES.map((r) => (
           <Link
             key={r.key}

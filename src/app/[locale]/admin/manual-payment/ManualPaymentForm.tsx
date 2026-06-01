@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
+import { useTransientDone } from "@/lib/useTransientDone";
 import { formatTND } from "@/lib/utils";
 import { resolveDeposit, type DepositConfig } from "@/lib/pricing";
 import {
@@ -48,6 +49,7 @@ export function ManualPaymentForm({ deposit }: { deposit: DepositConfig }) {
   const [amount, setAmount] = useState("");
   const [amountTouched, setAmountTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [done, flashDone] = useTransientDone();
 
   const [selUser, setSelUser] = useState<UserOpt | null>(null);
   const [selAuction, setSelAuction] = useState<AuctionOpt | null>(null);
@@ -87,6 +89,7 @@ export function ManualPaymentForm({ deposit }: { deposit: DepositConfig }) {
       } else {
         toast("Paiement enregistré.", "success");
       }
+      flashDone();
       // Reset for the next entry.
       setSelUser(null); setSelAuction(null); setNote(""); setAmount(""); setAmountTouched(false);
       router.refresh();
@@ -238,10 +241,20 @@ export function ManualPaymentForm({ deposit }: { deposit: DepositConfig }) {
       <button
         type="submit"
         disabled={submitting || !selUser || !selAuction}
-        className="batta-btn-luxe inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-[13.5px] disabled:opacity-50"
+        title={!selUser || !selAuction ? "Choisissez un utilisateur et une enchère" : undefined}
+        className={`inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-[13.5px] disabled:opacity-50 ${
+          done
+            ? "rounded-[var(--radius)] bg-[var(--success)] font-bold text-white"
+            : "batta-btn-luxe"
+        }`}
       >
-        {submitting ? <Loader2 className="size-4 animate-spin" /> : <Banknote className="size-4" strokeWidth={2.2} />}
-        Enregistrer le paiement
+        {done ? (
+          <><Check className="size-4" strokeWidth={2.6} /> Paiement enregistré</>
+        ) : submitting ? (
+          <><Loader2 className="size-4 animate-spin" /> Enregistrement…</>
+        ) : (
+          <><Banknote className="size-4" strokeWidth={2.2} /> Enregistrer le paiement</>
+        )}
       </button>
     </form>
   );
@@ -282,13 +295,24 @@ function Combobox<T extends { id: string }>({
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
+  // Only search once the admin has actually typed something. The old
+  // version fetched on mount with an empty query and force-opened the
+  // panel — so a list of "recent" rows popped up on its own before any
+  // input. Empty query → no request, closed panel.
   useEffect(() => {
+    const query = q.trim();
+    if (query.length < 1) {
+      setResults([]);
+      setOpen(false);
+      return;
+    }
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/admin/manual-payment/options?type=${type}&q=${encodeURIComponent(q)}`);
+        const res = await fetch(`/api/admin/manual-payment/options?type=${type}&q=${encodeURIComponent(query)}`);
         const j = await res.json().catch(() => ({}));
         setResults((j.results ?? []) as T[]);
         setOpen(true);
@@ -299,12 +323,23 @@ function Combobox<T extends { id: string }>({
     return () => { if (timer.current) clearTimeout(timer.current); };
   }, [q, type]);
 
+  // Click outside → close the panel (it used to stay open until a pick).
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
   return (
-    <div className="relative">
+    <div ref={rootRef} className="relative">
       <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 focus-within:border-gold">
         <span className="text-muted">{icon}</span>
         <input
-          type="text" value={q} onChange={(e) => setQ(e.target.value)} onFocus={() => setOpen(true)}
+          type="text" value={q} onChange={(e) => setQ(e.target.value)}
+          onFocus={() => { if (results.length > 0) setOpen(true); }}
           placeholder={placeholder}
           className="flex-1 bg-transparent py-2.5 text-[13px] text-foreground placeholder:text-muted focus:outline-none"
         />

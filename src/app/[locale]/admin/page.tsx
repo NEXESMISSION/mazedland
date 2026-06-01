@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import {
   Building2, Receipt, Banknote, Wallet, UserCheck,
   AlertTriangle, ArrowUpRight, CalendarClock,
@@ -63,16 +64,14 @@ export default async function AdminDashboard() {
 
   return (
     <div>
-      <span className="batta-eyebrow">Console</span>
-      <h1 className="mt-1.5 text-[26px] font-extrabold leading-tight tracking-tight">
-        Tableau de bord
-      </h1>
-      <p className="mt-1 text-[13px] text-muted">
-        Tout ce qui attend une décision, par file. Cliquez une carte pour traiter.
-      </p>
+      <AdminPageHeader
+        eyebrow="Console"
+        title="Tableau de bord"
+        description="Tout ce qui attend une décision, par file. Cliquez une carte pour traiter."
+      />
 
       {/* Top KPIs */}
-      <div className="mt-6 grid grid-cols-3 gap-4">
+      <div className="mt-8 grid grid-cols-3 gap-4">
         <Kpi label="En attente" value={totalPending} tone="brand" />
         <Kpi label="En retard (> 48 h)" value={totalOverdue} tone={totalOverdue > 0 ? "danger" : "muted"} Icon={AlertTriangle} />
         <Kpi label="Reçu aujourd'hui" value={todayIntake} tone="muted" Icon={CalendarClock} />
@@ -87,7 +86,7 @@ export default async function AdminDashboard() {
             className="group rounded-2xl bg-surface p-5 ring-1 ring-border transition hover:-translate-y-0.5 hover:ring-gold-soft/60 hover:shadow-[0_12px_30px_-14px_rgba(30,58,138,0.35)]"
           >
             <div className="flex items-start justify-between">
-              <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-gold-faint text-gold">
+              <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-surface-2 text-muted transition group-hover:text-gold">
                 <t.Icon className="size-5" strokeWidth={2} />
               </span>
               <ArrowUpRight className="size-4 text-muted transition group-hover:text-gold" strokeWidth={2} />

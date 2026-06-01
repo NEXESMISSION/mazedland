@@ -92,6 +92,26 @@ export async function PUT(req: NextRequest) {
     }
   }
 
+  // ── Anti-snipe (auction time extension), stored in minutes ───────────
+  let antiSnipeSec: { window: number; by: number } | null = null;
+  {
+    const v = body.auction_antisnipe as { window_min?: unknown; extend_min?: unknown } | undefined;
+    if (v && typeof v === "object") {
+      const clampMin = (raw: unknown) => {
+        const n = Math.floor(Number(raw));
+        return Number.isFinite(n) && n >= 0 ? Math.min(120, n) : 0;
+      };
+      const windowMin = clampMin(v.window_min);
+      const extendMin = clampMin(v.extend_min);
+      rows.push({
+        key: "auction_antisnipe",
+        value: { window_min: windowMin, extend_min: extendMin },
+        updated_by: user.id,
+      });
+      antiSnipeSec = { window: windowMin * 60, by: extendMin * 60 };
+    }
+  }
+
   // ── Payee text ───────────────────────────────────────────────────────
   for (const key of TEXT_KEYS) {
     if (!(key in body)) continue;
@@ -110,6 +130,19 @@ export async function PUT(req: NextRequest) {
   }
   const { error } = await admin.from("app_settings").upsert(rows, { onConflict: "key" });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Push the anti-snipe change onto auctions that are still open, so the
+  // setting governs live + scheduled lots immediately — not just ones
+  // created afterwards. (New auctions also read these values at creation.)
+  if (antiSnipeSec) {
+    await admin
+      .from("auctions")
+      .update({
+        extend_window_seconds: antiSnipeSec.window,
+        extend_by_seconds: antiSnipeSec.by,
+      })
+      .in("status", ["scheduled", "live", "extending"]);
+  }
 
   logAction(req, user, "settings.update", { keys: rows.map((r) => r.key) });
   return NextResponse.json({ ok: true, updated: rows.length });

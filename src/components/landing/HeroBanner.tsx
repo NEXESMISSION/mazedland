@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { isStaticSeedPath } from "@/lib/imageUrl";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export type HeroSlide = {
   /** Unique id for keying. Auction id when sourced from DB, "fallback-N" otherwise. */
@@ -31,7 +32,9 @@ export type HeroSlide = {
  * Auto-advancing hero carousel.
  *
  * Behaviour summary:
- *   - 5 s auto-advance, paused for 6 s after any user interaction.
+ *   - 3 s auto-advance; keeps running on hover. A manual nudge (drag,
+ *     arrow, dot) pauses it for 6 s so you can read the slide you landed on.
+ *   - Desktop shows prev/next arrows; mobile relies on swipe.
  *   - Pointer events drive a LIVE drag (the track follows the finger /
  *     mouse). Works for touch + mouse uniformly.
  *   - Release snaps to the nearest slide using a 1/4-width threshold.
@@ -46,7 +49,7 @@ export type HeroSlide = {
  */
 export function HeroBanner({
   slides,
-  intervalMs = 3500,
+  intervalMs = 3000,
   resumeAfterMs = 6000,
   isRTL = false,
 }: {
@@ -58,7 +61,6 @@ export function HeroBanner({
   const [index, setIndex] = useState(0);
   const [dragPx, setDragPx] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
   const lastInteractionAt = useRef(0);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const pointerStartX = useRef<number | null>(null);
@@ -66,8 +68,8 @@ export function HeroBanner({
   const draggedFar = useRef(false);
   const total = slides.length;
 
-  // Auto-advance. Pauses while dragging, hovering (desktop affordance),
-  // or within the cooldown after the last user interaction.
+  // Auto-advance. Keeps running on hover; only pauses while actively
+  // dragging or within the short cooldown after a manual nudge.
   useEffect(() => {
     if (total <= 1) return;
     if (typeof window === "undefined") return;
@@ -76,12 +78,11 @@ export function HeroBanner({
 
     const id = window.setInterval(() => {
       if (isDragging) return;
-      if (isHovering) return;
       if (Date.now() - lastInteractionAt.current < resumeAfterMs) return;
       setIndex((i) => (i + 1) % total);
     }, intervalMs);
     return () => window.clearInterval(id);
-  }, [total, intervalMs, resumeAfterMs, isDragging, isHovering]);
+  }, [total, intervalMs, resumeAfterMs, isDragging]);
 
   function jumpTo(next: number) {
     lastInteractionAt.current = Date.now();
@@ -179,8 +180,6 @@ export function HeroBanner({
         onPointerMove={onPointerMove}
         onPointerUp={endPointer}
         onPointerCancel={endPointer}
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
         onKeyDown={onKeyDown}
         style={{ touchAction: "pan-y" }}
       >
@@ -206,6 +205,32 @@ export function HeroBanner({
             />
           ))}
         </div>
+
+        {/* Prev / next arrows — desktop only (mobile uses swipe). Lets the
+            visitor step back to a slide they missed. stopPropagation keeps
+            the click from starting a drag on the track. */}
+        {total > 1 && (
+          <>
+            <button
+              type="button"
+              aria-label="Précédent"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => jumpTo(isRTL ? index + 1 : index - 1)}
+              className="absolute start-4 top-1/2 z-10 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70 lg:grid"
+            >
+              <ChevronLeft className="size-5" strokeWidth={2.5} />
+            </button>
+            <button
+              type="button"
+              aria-label="Suivant"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => jumpTo(isRTL ? index - 1 : index + 1)}
+              className="absolute end-4 top-1/2 z-10 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70 lg:grid"
+            >
+              <ChevronRight className="size-5" strokeWidth={2.5} />
+            </button>
+          </>
+        )}
 
         {/* Dot indicator — clickable, jumps directly to that slide. */}
         {total > 1 && (
@@ -271,7 +296,7 @@ function PhotoSlide({
       href={slide.href as `/${string}`}
       aria-hidden={!active}
       tabIndex={active ? 0 : -1}
-      className="group relative block aspect-[16/11] w-full shrink-0 overflow-hidden bg-surface-2"
+      className="group relative block aspect-[16/11] w-full shrink-0 overflow-hidden bg-surface-2 lg:aspect-[4/1]"
       style={{ minWidth: "100%" }}
       draggable={false}
     >
@@ -286,7 +311,7 @@ function PhotoSlide({
           src={slide.imageUrl!}
           alt=""
           fill
-          sizes="(min-width: 640px) 640px, 100vw"
+          sizes="(min-width: 1024px) 1280px, (min-width: 640px) 640px, 100vw"
           priority={priority}
           loading={priority ? "eager" : "lazy"}
           onError={() => setImageBroken(true)}
@@ -299,7 +324,7 @@ function PhotoSlide({
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/15" />
 
       <div
-        className={`absolute inset-0 z-[1] flex flex-col justify-end p-5 ${
+        className={`absolute inset-0 z-[1] flex flex-col justify-end p-5 lg:p-8 ${
           isRTL ? "items-end text-right" : "items-start text-left"
         }`}
       >
@@ -310,14 +335,14 @@ function PhotoSlide({
           </span>
         )}
         <h2
-          className={`mt-2.5 text-balance text-[22px] font-extrabold leading-[1.1] tracking-tight text-white drop-shadow-md md:text-[28px] ${
+          className={`mt-2.5 text-balance text-[22px] font-extrabold leading-[1.1] tracking-tight text-white drop-shadow-md md:text-[28px] lg:max-w-[60%] ${
             isRTL ? "font-arabic" : ""
           }`}
         >
           {slide.title}
         </h2>
         {slide.subtitle && (
-          <p className="mt-1.5 max-w-[90%] text-[12px] font-medium leading-snug text-white/80">
+          <p className="mt-1.5 max-w-[90%] text-[12px] font-medium leading-snug text-white/80 lg:max-w-[55%]">
             {slide.subtitle}
           </p>
         )}

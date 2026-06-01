@@ -203,7 +203,7 @@ export default async function ActivityPage({
             Mes achats
           </h1>
           <p className="mt-1.5 text-[12px] text-muted lg:text-[14px]">
-            Vos enchères en cours, vos acquisitions et vos favoris — au même endroit.
+            Enchères, acquisitions et favoris.
           </p>
         </div>
         <Link
@@ -252,7 +252,7 @@ export default async function ActivityPage({
         <div className="min-w-0 flex-1">
           <div className="text-[14px] font-bold text-foreground">Vous vendez aussi ?</div>
           <div className="mt-0.5 text-[11.5px] text-muted">
-            Vos annonces, revenus et retraits — tableau du vendeur.
+            Annonces, revenus et retraits.
           </div>
         </div>
         <ChevronEnd className="size-5 text-muted" />

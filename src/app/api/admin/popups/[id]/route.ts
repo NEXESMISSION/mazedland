@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { logAction } from "@/lib/activity";
 import { sanitizePopupBody } from "../route";
 
 /**
@@ -20,7 +21,7 @@ async function requireAdmin() {
   if (profile?.role !== "admin") {
     return { error: "forbidden", status: 403 as const, supabase: null };
   }
-  return { error: null, status: 200 as const, supabase };
+  return { error: null, status: 200 as const, supabase, user };
 }
 
 export async function GET(
@@ -61,6 +62,7 @@ export async function PATCH(
     .select("*")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  logAction(req, g.user!, "popup.update", { popupId: id });
   return NextResponse.json({ item: data });
 }
 
@@ -77,5 +79,6 @@ export async function DELETE(
 
   const { error } = await g.supabase.from("popups").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  logAction(req, g.user!, "popup.delete", { popupId: id });
   return NextResponse.json({ ok: true });
 }

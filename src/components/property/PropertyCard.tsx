@@ -8,6 +8,7 @@ import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { LiveTimer } from "@/components/landing/LiveTimer";
+import { StartBiddingButton } from "@/components/auction/StartBiddingButton";
 
 /**
  * Image-forward auction card — ported from the mazed-auto AuctionCard.
@@ -67,12 +68,13 @@ export async function PropertyCard({
   const lotNo = String(auction.id).replace(/-/g, "").slice(-4).toUpperCase();
 
   return (
-    <Link
-      href={`/auctions/${auction.id}`}
-      className="group block"
-      aria-label={property.title}
-    >
-      <div className="relative">
+    <div className="block">
+      <Link
+        href={`/auctions/${auction.id}`}
+        className="group block"
+        aria-label={property.title}
+      >
+        <div className="relative">
         {/* PHOTO — the only surface on the card */}
         <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-border transition-all duration-300 group-hover:ring-gold-soft/40">
           {heroPhoto ? (
@@ -223,8 +225,10 @@ export async function PropertyCard({
             )}
           </div>
         </div>
-      </div>
-    </Link>
+        </div>
+      </Link>
+      <StartBiddingButton auctionId={auction.id} isLive={isLive} />
+    </div>
   );
 }
 

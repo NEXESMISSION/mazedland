@@ -42,7 +42,7 @@ export default function KYCStartPage() {
               <span className="gradient-gold-text">identité</span>
             </h1>
             <p className="mt-2 max-w-[280px] text-[13px] leading-relaxed text-[var(--foreground-muted)]">
-              Débloquez les enchères, les ventes et le badge vérifié.
+              Débloquez enchères et ventes.
             </p>
 
             {/* Info pill — solid navy on white reads loud and clear. The
@@ -57,6 +57,13 @@ export default function KYCStartPage() {
             >
               Commencer
               <ArrowRight className="size-4" strokeWidth={2.6} />
+            </Link>
+
+            <Link
+              href="/"
+              className="mt-3 inline-flex h-10 w-full max-w-[280px] items-center justify-center rounded-full text-[13px] font-semibold text-[var(--foreground-muted)] transition hover:text-foreground"
+            >
+              Peut-être plus tard
             </Link>
           </div>
         </section>

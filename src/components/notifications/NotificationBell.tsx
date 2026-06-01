@@ -296,6 +296,14 @@ export function NotificationBell() {
     return () => window.clearInterval(id);
   }, [open]);
 
+  // Opening the panel clears the unread state — simply viewing the list
+  // marks everything read (the badge + bold rows clear). markAllRead is a
+  // no-op when there's nothing unread, so reopening doesn't re-fire writes.
+  useEffect(() => {
+    if (open) void markAllRead();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   async function markAllRead() {
     if (unread === 0) return;
     setUnread(0);

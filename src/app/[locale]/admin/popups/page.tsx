@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import type { Popup, PopupStatus, PopupVariant } from "@/lib/popups/schema";
 import {
   MessageSquare, PlusCircle, Eye, MousePointerClick,
@@ -57,25 +58,20 @@ export default async function AdminPopupsPage() {
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <span className="batta-eyebrow">Diffusion</span>
-          <h2 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">
-            Popups
-          </h2>
-          <p className="mt-1.5 text-[12px] text-muted">
-            Bannières, modales et bottom-sheets affichées sur le site.
-            Chaque popup cible un public, des pages et une fenêtre temporelle.
-          </p>
-        </div>
-        <Link
-          href={"/admin/popups/new" as never}
-          className="batta-btn-luxe tap-target inline-flex shrink-0 items-center gap-1.5 px-4 py-2 text-[12px]"
-        >
-          <PlusCircle className="size-4" strokeWidth={2.2} />
-          Nouveau popup
-        </Link>
-      </div>
+      <AdminPageHeader
+        eyebrow="Diffusion"
+        title="Popups"
+        description="Bannières, modales et bottom-sheets affichées sur le site. Chaque popup cible un public, des pages et une fenêtre temporelle."
+        actions={
+          <Link
+            href={"/admin/popups/new" as never}
+            className="batta-btn-luxe tap-target inline-flex shrink-0 items-center gap-1.5 px-4 py-2 text-[12px]"
+          >
+            <PlusCircle className="size-4" strokeWidth={2.2} />
+            Nouveau popup
+          </Link>
+        }
+      />
 
       {/* Stat tiles */}
       <div className="mt-5 grid grid-cols-3 gap-3">

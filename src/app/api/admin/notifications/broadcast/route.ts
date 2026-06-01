@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { logAction } from "@/lib/activity";
 
 /**
  * Admin compose + broadcast notification.
@@ -104,6 +105,9 @@ export async function POST(req: NextRequest) {
   });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  if (!test) {
+    logAction(req, user, "notification.broadcast", { kind, audience: audience.type });
   }
   return NextResponse.json({ ok: true, ...(data as Record<string, unknown>) });
 }

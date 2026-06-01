@@ -46,9 +46,6 @@ export default async function LoginPage() {
                 >
                   <span className="gradient-gold-text">{t("nav.login")}</span>
                 </h1>
-                <p className="mt-2 text-[12.5px] text-muted">
-                  Accédez à votre tableau de bord et vos enchères.
-                </p>
               </div>
 
               <div className="mt-7">
@@ -90,9 +87,6 @@ export default async function LoginPage() {
               >
                 Bienvenue sur <span className="gradient-gold-text">{t("brand.name")}</span>
               </h1>
-              <p className="mt-2 max-w-xs text-[13.5px] leading-relaxed text-muted">
-                Connectez-vous pour gérer vos enchères et votre profil en toute sécurité.
-              </p>
             </div>
 
             <div className="mt-8">

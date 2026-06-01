@@ -50,9 +50,13 @@ export type PaymentReviewItem = {
 export function PaymentsQueueList({
   items,
   view,
+  hideGroupHeader = false,
 }: {
   items: PaymentReviewItem[];
   view: string;
+  /** On the per-auction page the lot is already the page title, so the
+   *  per-group header band just repeats it — hide it there. */
+  hideGroupHeader?: boolean;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -146,28 +150,30 @@ export function PaymentsQueueList({
       <div className="space-y-6">
         {groups.map((g) => (
           <section key={g.key}>
-            <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-2">
-              {g.key !== "autres" ? (
-                <Link
-                  href={`/admin/auctions/${g.key}`}
-                  className="group/h inline-flex min-w-0 items-center gap-1.5 text-[13.5px] font-bold text-foreground hover:text-[var(--gold)]"
-                >
-                  <Building2 className="size-3.5 shrink-0 text-[var(--gold)]" strokeWidth={2.2} />
-                  <span className="truncate">{g.title}</span>
-                  {g.gov && <span className="text-[11px] font-normal text-[var(--foreground-muted)]">· {g.gov}</span>}
-                  <ExternalLink className="size-3 shrink-0 opacity-0 transition group-hover/h:opacity-100" />
-                </Link>
-              ) : (
-                <div className="inline-flex min-w-0 items-center gap-1.5 text-[13.5px] font-bold text-foreground">
-                  <Building2 className="size-3.5 shrink-0 text-[var(--gold)]" strokeWidth={2.2} />
-                  <span className="truncate">{g.title}</span>
+            {!hideGroupHeader && (
+              <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-2">
+                {g.key !== "autres" ? (
+                  <Link
+                    href={`/admin/auctions/${g.key}`}
+                    className="group/h inline-flex min-w-0 items-center gap-1.5 text-[13.5px] font-bold text-foreground hover:text-[var(--gold)]"
+                  >
+                    <Building2 className="size-3.5 shrink-0 text-[var(--gold)]" strokeWidth={2.2} />
+                    <span className="truncate">{g.title}</span>
+                    {g.gov && <span className="text-[11px] font-normal text-[var(--foreground-muted)]">· {g.gov}</span>}
+                    <ExternalLink className="size-3 shrink-0 opacity-0 transition group-hover/h:opacity-100" />
+                  </Link>
+                ) : (
+                  <div className="inline-flex min-w-0 items-center gap-1.5 text-[13.5px] font-bold text-foreground">
+                    <Building2 className="size-3.5 shrink-0 text-[var(--gold)]" strokeWidth={2.2} />
+                    <span className="truncate">{g.title}</span>
+                  </div>
+                )}
+                <div className="batta-tabular text-[11px] text-[var(--foreground-muted)]">
+                  {g.items.length} reçu{g.items.length > 1 ? "s" : ""} ·{" "}
+                  {g.total.toLocaleString("fr-FR")} TND
                 </div>
-              )}
-              <div className="batta-tabular text-[11px] text-[var(--foreground-muted)]">
-                {g.items.length} reçu{g.items.length > 1 ? "s" : ""} ·{" "}
-                {g.total.toLocaleString("fr-FR")} TND
               </div>
-            </div>
+            )}
             <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 xl:grid-cols-3">
               {g.items.map((item) => (
                 <article

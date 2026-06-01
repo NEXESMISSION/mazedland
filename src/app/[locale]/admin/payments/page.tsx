@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { formatTND } from "@/lib/utils";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Gavel, MapPin, Receipt, ChevronRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -74,15 +75,13 @@ export default async function AdminPaymentsPage({
 
   return (
     <div>
-      <span className="batta-eyebrow">Enchères · Paiements</span>
-      <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
-        Paiements — caution, achat, solde
-      </h2>
-      <p className="mt-1 text-[12px] text-muted">
-        Une carte par enchère. Cliquez pour vérifier ses reçus.
-      </p>
+      <AdminPageHeader
+        eyebrow="Enchères · Paiements"
+        title="Paiements — caution, achat, solde"
+        description="Une carte par enchère. Cliquez pour vérifier ses reçus."
+      />
 
-      <div className="mt-4 flex flex-wrap gap-1.5">
+      <div className="mt-5 flex flex-wrap gap-1.5">
         {STATUS_TABS.map((tab) => {
           const active = tab.value === status;
           return (
@@ -101,7 +100,7 @@ export default async function AdminPaymentsPage({
 
       <AdminQueryBar total={total} placeholder="Bien ou ville…" />
 
-      {error && <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error.message}</div>}
+      {error && <div className="mt-4 rounded-xl border border-[var(--accent-soft)] bg-[var(--accent-faint)] p-4 text-sm font-medium text-[var(--accent-deep)]">{error.message}</div>}
 
       {slice.length === 0 ? (
         <div className="batta-frame-gold relative mt-5 px-6 py-10 text-center text-[13px] text-muted">

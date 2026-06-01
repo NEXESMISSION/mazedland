@@ -19,7 +19,7 @@ export default async function PartnersLanding() {
           <div className="relative p-6">
             <span className="batta-eyebrow inline-flex items-center gap-2">
               <span className="size-1.5 rounded-full bg-gold pulse-gold" />
-              For institutions
+              Pour les institutions
             </span>
             <h1
               className={`mt-3 text-[28px] font-extrabold leading-tight tracking-tight ${
@@ -29,67 +29,66 @@ export default async function PartnersLanding() {
               <span className="gradient-gold-text">{t("nav.forBanks")}</span>
             </h1>
             <p className="mt-2.5 text-[13.5px] leading-relaxed text-muted">
-              Liquidate distressed assets at 10–20 % higher prices through
-              transparent auctions attended by KYC-verified bidders worldwide.
+              Liquidez vos actifs 10–20% plus cher, via des enchères vérifiées.
             </p>
           </div>
         </div>
       </section>
 
       <section className="mt-7 px-4">
-        <span className="batta-eyebrow">Partner programmes</span>
+        <span className="batta-eyebrow">Programmes partenaires</span>
         <h2
           className={`mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight ${
             isRTL ? "font-arabic" : ""
           }`}
         >
-          Three ways to work with Batta
+          Trois façons de travailler avec Batta
         </h2>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-3 lg:gap-5">
           <PartnerCard
             Icon={Landmark}
-            kicker="Banks"
-            title="Distressed-asset liquidation"
-            body="Dedicated dashboard, bulk listing, monthly P&amp;L reporting, API into your loan-tracking system."
-            cta="Talk to us"
+            kicker="Banques"
+            title="Liquidation d'actifs"
+            body="Tableau de bord dédié, mise en ligne groupée, reporting mensuel, API."
+            cta="Nous contacter"
             ctaHref="/partners/contact?segment=bank"
             isRTL={isRTL}
             perks={[
-              "Preferential 2% commission",
-              "Dedicated account manager",
-              "Auction calendar planning",
-              "Legal closing pipeline",
+              "Commission préférentielle 2%",
+              "Gestionnaire dédié",
+              "Calendrier d'enchères",
+              "Clôture juridique",
             ]}
           />
           <PartnerCard
             Icon={Building2}
-            kicker="Agencies"
-            title="Real-estate agencies"
-            body="Three subscription tiers from 99 to 799 TND/month. Verified-agency badge. Featured listings each month."
-            cta="See plans"
+            kicker="Agences"
+            title="Agences immobilières"
+            body="Abonnements de 99 à 799 TND/mois. Badge agence vérifiée. Annonces mises en avant."
+            cta="Voir les offres"
             ctaHref="/contact?segment=agency"
             isRTL={isRTL}
             perks={[
-              "Up to unlimited listings",
-              "Verified-agency badge",
-              "Featured slots monthly",
-              "Up to 1% commission discount",
+              "Annonces illimitées",
+              "Badge agence vérifiée",
+              "Mises en avant mensuelles",
+              "Jusqu'à 1% de remise",
             ]}
           />
           <PartnerCard
             Icon={Briefcase}
             kicker="Huissiers"
-            title="Court bailiffs"
-            body="Digitise judicial auctions. Reach 3–5 × more bidders than newspaper notices, while staying inside the legal framework."
-            cta="Apply for accreditation"
+            title="Huissiers de justice"
+            body="Digitalisez les ventes judiciaires. 3 à 5× plus d'enchérisseurs, dans le cadre légal."
+            cta="Demander l'accréditation"
             ctaHref="/contact?segment=bailiff"
             isRTL={isRTL}
             perks={[
-              "Free first three auctions",
-              "Auto-formatted notices",
-              "Built-in 8-day +1/6 window",
-              "Sealed digital minutes",
+              "3 premières enchères offertes",
+              "Avis auto-formatés",
+              "Fenêtre +1/6 sur 8 jours",
+              "Procès-verbaux numériques",
             ]}
           />
         </div>
@@ -97,18 +96,18 @@ export default async function PartnersLanding() {
         {/* Comparison strip */}
         <div className="batta-frame-gold relative mt-6 p-6">
           <div className="relative">
-            <span className="batta-eyebrow">Versus the legacy channel</span>
+            <span className="batta-eyebrow">Face au canal classique</span>
             <h3
               className={`mt-1.5 text-[18px] font-bold text-foreground ${
                 isRTL ? "font-arabic" : ""
               }`}
             >
-              Why Batta beats newspaper notices
+              Pourquoi Batta surpasse les annonces papier
             </h3>
             <div className="mt-4 grid grid-cols-3 divide-x divide-border">
-              <CompareStat label="Sale uplift" value="+12%" />
-              <CompareStat label="Time to hammer" value="14d" />
-              <CompareStat label="Verified bidders" value="100%" />
+              <CompareStat label="Gain de prix" value="+12%" />
+              <CompareStat label="Délai de vente" value="14j" />
+              <CompareStat label="Acheteurs vérifiés" value="100%" />
             </div>
           </div>
         </div>

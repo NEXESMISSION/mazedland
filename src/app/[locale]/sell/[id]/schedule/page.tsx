@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { ScheduleForm } from "@/components/sell/ScheduleForm";
+import { parseAntiSnipe } from "@/lib/pricing";
 import { Clock } from "lucide-react";
 
 // Schedule an auction for an already-approved listing.
@@ -62,6 +63,12 @@ export default async function ScheduleAuctionPage({
     );
   }
 
+  // Admin-controlled anti-snipe defaults — baked onto the new auction so
+  // the platform-wide setting governs it (see /admin/settings).
+  const { data: snipeRow } = await supabase
+    .from("app_settings").select("value").eq("key", "auction_antisnipe").maybeSingle();
+  const antiSnipe = parseAntiSnipe(snipeRow?.value);
+
   const { data: existing } = await supabase
     .from("auctions")
     .select("id, status")
@@ -114,7 +121,11 @@ export default async function ScheduleAuctionPage({
         <p className="mt-2 text-[12.5px] text-muted">{t("schedule.subtitle")}</p>
       </header>
       <div className="mt-5">
-        <ScheduleForm propertyId={property!.id} />
+        <ScheduleForm
+          propertyId={property!.id}
+          extendWindowSec={antiSnipe.windowMin * 60}
+          extendBySec={antiSnipe.extendMin * 60}
+        />
       </div>
     </div>
   );

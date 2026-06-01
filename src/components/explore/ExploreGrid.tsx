@@ -17,6 +17,7 @@ import { formatTND } from "@/lib/utils";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { LiveTimer } from "@/components/landing/LiveTimer";
 import { Pagination } from "@/components/ui/Pagination";
+import { SelectMenu, type SelectOption } from "@/components/ui/SelectMenu";
 import {
   ArrowUpRight,
   Gavel,
@@ -45,6 +46,10 @@ const PROPERTY_TYPES: { key: PropertyType; label: string }[] = [
 // Canonical 24-wilaya list (was a truncated 16 here, so users in 8
 // governorates could never filter to their region).
 const GOVERNORATES = TUNISIAN_GOVERNORATES;
+const GOV_OPTIONS: SelectOption[] = [
+  { value: "", label: "Tous les gouvernorats" },
+  ...GOVERNORATES.map((g) => ({ value: g, label: g })),
+];
 
 export type ExtraFilters = {
   types: PropertyType[];
@@ -756,17 +761,13 @@ function FilterPanel({
 
       {/* Gouvernorat + prix — one row inline, stacked in the narrow sidebar */}
       <div className={`mt-3 grid grid-cols-1 gap-2 ${sidebar ? "" : "sm:grid-cols-3"}`}>
-        <select
+        <SelectMenu
           value={draft.gov ?? ""}
-          onChange={(e) => setGov(e.target.value || null)}
-          aria-label="Gouvernorat"
-          className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-[13px]"
-        >
-          <option value="">Tous les gouvernorats</option>
-          {GOVERNORATES.map((g) => (
-            <option key={g} value={g}>{g}</option>
-          ))}
-        </select>
+          onChange={(v) => setGov(v || null)}
+          options={GOV_OPTIONS}
+          ariaLabel="Gouvernorat"
+          triggerClassName="flex w-full items-center gap-2 rounded-xl border border-border bg-white px-3 py-2.5 text-[13px] font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40"
+        />
         <input
           type="number"
           inputMode="numeric"

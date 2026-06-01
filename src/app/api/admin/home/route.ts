@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { logAction } from "@/lib/activity";
 
 /**
  * POST /api/admin/home — admin curation of home/search placements.
@@ -56,5 +57,6 @@ export async function POST(req: NextRequest) {
     .eq("status", "ready");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  logAction(req, user, "home.feature", { propertyId, home, top, banner });
   return NextResponse.json({ ok: true });
 }

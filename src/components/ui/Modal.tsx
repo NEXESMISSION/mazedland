@@ -12,7 +12,8 @@ interface ModalProps {
   description?: string;
   children: React.ReactNode;
   size?: "sm" | "md" | "lg";
-  /** When true (default), renders as a bottom-sheet on mobile. */
+  /** @deprecated No-op — modals are always centered now. Kept so existing
+   *  call sites that still pass it keep compiling. */
   mobileSheet?: boolean;
   /** Hide the close (X) button — for forced-decision flows. */
   hideClose?: boolean;
@@ -25,8 +26,8 @@ const sizeMap = {
 };
 
 /**
- * Lightweight portal-mounted dialog. Mobile becomes a bottom sheet,
- * desktop is a centered card. Escape closes; backdrop click closes;
+ * Lightweight portal-mounted dialog — a simple centered card on every
+ * breakpoint (no bottom-sheet). Escape closes; backdrop click closes;
  * Tab is trapped inside the dialog so keyboard nav doesn't escape into
  * the page behind.
  */
@@ -37,7 +38,6 @@ export function Modal({
   description,
   children,
   size = "md",
-  mobileSheet = true,
   hideClose = false,
 }: ModalProps) {
   const [mounted, setMounted] = React.useState(false);
@@ -105,7 +105,7 @@ export function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
     >
@@ -118,18 +118,11 @@ export function Modal({
         tabIndex={-1}
         className={cn(
           "relative w-full bg-[var(--surface)] border border-[var(--border)] shadow-[var(--shadow-lg)] overflow-hidden focus:outline-none",
-          mobileSheet
-            ? "rounded-t-[var(--radius-xl)] md:rounded-[var(--radius-md)]"
-            : "rounded-[var(--radius-md)] mx-4",
+          "rounded-[var(--radius-md)]",
           sizeMap[size],
           "max-h-[92vh] flex flex-col",
         )}
       >
-        {mobileSheet && (
-          <div className="md:hidden flex justify-center pt-2 pb-1">
-            <div className="h-1 w-10 rounded-full bg-[var(--border-strong)]" />
-          </div>
-        )}
         {(title || description || !hideClose) && (
           <div className="px-5 pt-4 pb-3 border-b border-[var(--border)]">
             <div className="flex items-start justify-between gap-3">
@@ -173,7 +166,6 @@ export function ModalFooter({
     <div
       className={cn(
         "px-5 py-4 border-t border-[var(--border)] bg-[var(--surface-2)] flex flex-col-reverse sm:flex-row gap-2 sm:justify-end",
-        "pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-4",
         className,
       )}
     >

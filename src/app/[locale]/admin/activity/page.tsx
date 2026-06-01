@@ -2,6 +2,7 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Activity, Eye, Zap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,51 @@ const TYPES = [
   { key: "page_view", label: "Pages visitées" },
   { key: "action", label: "Actions" },
 ] as const;
+
+type Tone = "ok" | "bad" | "warn" | "info" | "neutral";
+const TONE_CLASS: Record<Tone, string> = {
+  ok: "batta-tone-ok",
+  bad: "batta-tone-bad",
+  warn: "batta-tone-warn",
+  info: "bg-gold-faint text-gold ring-1 ring-gold/30",
+  neutral: "bg-surface-2 text-muted ring-1 ring-border",
+};
+
+// Human-readable label + tone for each logged action code. Anything not
+// mapped falls back to the raw code so a new action still shows up.
+const ACTION_META: Record<string, { label: string; tone: Tone }> = {
+  "payment.captured": { label: "Paiement validé", tone: "ok" },
+  "payment.failed": { label: "Paiement refusé", tone: "bad" },
+  "payment.manual": { label: "Paiement manuel enregistré", tone: "info" },
+  "kyc.verified": { label: "KYC approuvé", tone: "ok" },
+  "kyc.rejected": { label: "KYC rejeté", tone: "bad" },
+  "property.ready": { label: "Annonce validée", tone: "ok" },
+  "property.rejected": { label: "Annonce refusée", tone: "bad" },
+  "property.pending_review": { label: "Annonce remise en file", tone: "warn" },
+  "payout.request": { label: "Retrait demandé", tone: "info" },
+  "payout.processing": { label: "Retrait en traitement", tone: "warn" },
+  "payout.paid": { label: "Retrait payé", tone: "ok" },
+  "payout.rejected": { label: "Retrait refusé", tone: "bad" },
+  "deposit.prepare": { label: "Cautions préparées", tone: "info" },
+  "deposit.refund": { label: "Caution remboursée", tone: "ok" },
+  "deposit.forfeit": { label: "Caution saisie", tone: "bad" },
+  "inspector.approved": { label: "Inspecteur approuvé", tone: "ok" },
+  "notification.broadcast": { label: "Diffusion envoyée", tone: "info" },
+  "notification.delete": { label: "Notification supprimée", tone: "neutral" },
+  "notification.bulk_delete": { label: "Notifications supprimées", tone: "neutral" },
+  "settings.update": { label: "Réglages modifiés", tone: "info" },
+  "home.feature": { label: "Mise en avant (accueil)", tone: "info" },
+  "characteristics.update": { label: "Caractéristiques modifiées", tone: "info" },
+  "legal_docs.update": { label: "Documents légaux modifiés", tone: "info" },
+  "popup.create": { label: "Popup créé", tone: "info" },
+  "popup.update": { label: "Popup modifié", tone: "info" },
+  "popup.delete": { label: "Popup supprimé", tone: "neutral" },
+  logout: { label: "Déconnexion", tone: "neutral" },
+};
+function actionMeta(action: string | null): { label: string; tone: Tone } {
+  if (!action) return { label: "Action", tone: "neutral" };
+  return ACTION_META[action] ?? { label: action, tone: "neutral" };
+}
 
 type ActivityRow = {
   id: string;
@@ -118,13 +164,13 @@ export default async function AdminActivity({
 
   return (
     <div>
-      <span className="batta-eyebrow">Système · Surveillance</span>
-      <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">Journal d&apos;activité</h2>
-      <p className="mt-1 text-[12px] text-muted">
-        Qui visite la plateforme, quelles pages, et quelles actions sont effectuées.
-      </p>
+      <AdminPageHeader
+        eyebrow="Système · Surveillance"
+        title="Journal d'activité"
+        description="Qui visite la plateforme, quelles pages, et quelles actions sont effectuées."
+      />
 
-      <div className="mt-4 grid grid-cols-3 gap-3">
+      <div className="mt-6 grid grid-cols-3 gap-3">
         <div className="rounded-xl bg-surface px-4 py-3 ring-1 ring-border">
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
             <Eye className="size-3.5" /> Pages vues · 24h
@@ -202,11 +248,15 @@ export default async function AdminActivity({
                       )}
                     </td>
                     <td className="px-4 py-2.5">
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                        isAction ? "bg-gold-faint text-gold ring-1 ring-gold/30" : "bg-surface-2 text-muted ring-1 ring-border"
-                      }`}>
-                        {isAction ? e.action || "action" : "page"}
-                      </span>
+                      {isAction ? (
+                        <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold ${TONE_CLASS[actionMeta(e.action).tone]}`}>
+                          {actionMeta(e.action).label}
+                        </span>
+                      ) : (
+                        <span className="inline-block rounded-full bg-surface-2 px-2.5 py-0.5 text-[11px] font-bold text-muted ring-1 ring-border">
+                          Page vue
+                        </span>
+                      )}
                     </td>
                     <td className="max-w-[280px] truncate px-4 py-2.5 text-foreground/80" title={e.path || ""}>
                       {e.path || "—"}

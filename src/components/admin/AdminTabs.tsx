@@ -61,13 +61,12 @@ const GROUPS: Group[] = [
     key: "personnes",
     label: "Personnes",
     Icon: Users,
-    members: ["/admin/kyc-queue", "/admin/users", "/admin/inspectors", "/admin/fraud"],
+    members: ["/admin/kyc-queue", "/admin/users", "/admin/inspectors"],
     home: "/admin/kyc-queue",
     tabs: [
       { label: "KYC", href: "/admin/kyc-queue" },
       { label: "Utilisateurs", href: "/admin/users" },
       { label: "Inspecteurs", href: "/admin/inspectors" },
-      { label: "Fraude", href: "/admin/fraud" },
     ],
   },
   {
@@ -155,8 +154,8 @@ export function AdminTabs() {
                 className={
                   "tap-target inline-flex shrink-0 snap-start items-center rounded-lg px-3 py-1.5 text-[12px] font-bold transition " +
                   (on
-                    ? "bg-batta-gold text-white"
-                    : "bg-surface-2 text-foreground/70 hover:text-gold-bright")
+                    ? "bg-[var(--gold)] text-white"
+                    : "bg-surface-2 text-muted hover:text-[var(--gold-bright)]")
                 }
               >
                 {t.label}

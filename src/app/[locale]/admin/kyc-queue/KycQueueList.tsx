@@ -325,12 +325,10 @@ export function KycQueueList({
                       size="sm"
                       onClick={() => decide(item, "verified")}
                       disabled={busy !== null || bulkBusy}
+                      pending={busy === item.id}
+                      pendingLabel="Approbation…"
+                      icon={<Check className="size-4" />}
                     >
-                      {busy === item.id ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Check className="size-4" />
-                      )}
                       Approuver
                     </Button>
                   </div>
@@ -355,16 +353,20 @@ export function KycQueueList({
               variant="danger"
               onClick={() => { setRejectReason(DEFAULT_REJECT_REASON); setBulkRejectOpen(true); }}
               disabled={bulkBusy}
+              pending={bulkBusy}
+              pendingLabel="Traitement…"
+              icon={<X className="size-4" />}
             >
-              {bulkBusy ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
               Rejeter ({selected.size})
             </Button>
             <Button
               size="sm"
               onClick={() => runBulk("verified")}
               disabled={bulkBusy}
+              pending={bulkBusy}
+              pendingLabel="Traitement…"
+              icon={<Check className="size-4" />}
             >
-              {bulkBusy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
               Approuver ({selected.size})
             </Button>
             <button

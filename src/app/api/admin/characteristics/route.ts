@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { logAction } from "@/lib/activity";
 import type { PropertyType, AttributeDataType } from "@/lib/types";
 
 const PROPERTY_TYPES: PropertyType[] = [
@@ -227,6 +228,12 @@ export async function PUT(req: NextRequest) {
     if (iErr) return NextResponse.json({ error: iErr.message }, { status: 500 });
   }
 
+  logAction(req, user, "characteristics.update", {
+    propertyType,
+    deleted: toDelete.length,
+    updated: updates.length,
+    inserted: inserts.length,
+  });
   return NextResponse.json({
     ok: true,
     deleted: toDelete.length,

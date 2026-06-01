@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { logAction } from "@/lib/activity";
 
 /**
  * Admin popup CRUD — list + create.
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
     .select("*")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  logAction(req, g.user!, "popup.create", { slug: payload.slug });
   return NextResponse.json({ item: data });
 }
 

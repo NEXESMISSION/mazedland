@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { formatTND } from "@/lib/utils";
 import {
-  Gavel, MapPin, CheckCircle2, FileText, ChevronRight, CircleDollarSign,
+  Gavel, MapPin, CheckCircle2, FileText, ChevronRight, CircleDollarSign, Hourglass,
 } from "lucide-react";
 
 export type DepositRow = {
@@ -27,6 +27,15 @@ export type PrepareRow = {
   lockedCount: number;
 };
 
+/** Cautions held during the legal 1/6 surenchère window — not yet
+ *  refundable, shown for visibility with the date they free up. */
+export type HeldRow = {
+  auctionId: string;
+  title: string;
+  deadline: string | null;
+  lockedCount: number;
+};
+
 const fmt = (n: number) => `${formatTND(n, "fr")} TND`;
 
 type Box = { auctionId: string | null; title: string; gov: string; count: number; total: number };
@@ -37,11 +46,16 @@ type Box = { auctionId: string | null; title: string; gov: string; count: number
  * forfeited. The list stays a light summary (no inline action rows).
  */
 export function DepositsClient({
-  toPrepare, toRefund, refunded,
+  toPrepare, held = [], toRefund, refunded, filtering = false,
 }: {
   toPrepare: PrepareRow[];
+  held?: HeldRow[];
   toRefund: DepositRow[];
   refunded: DepositRow[];
+  /** When a search/date filter is active, the to-refund queue is the only
+   *  section that respects it — so we hide the unfiltered context sections
+   *  (prepare + recent refunds) to avoid looking like the filter "did nothing". */
+  filtering?: boolean;
 }) {
   // Search/date filtering now happens server-side (URL ?q / ?range) so it
   // spans the whole queue, not just this page slice. Here we only group the
@@ -60,7 +74,7 @@ export function DepositsClient({
   return (
     <div className="mt-5 space-y-6">
       {/* À préparer — ended lots whose cautions still need releasing */}
-      {toPrepare.length > 0 && (
+      {!filtering && toPrepare.length > 0 && (
         <section>
           <h3 className="batta-eyebrow mb-2 flex items-center gap-2">
             <span aria-hidden className="batta-gold-rule-short" />
@@ -80,6 +94,40 @@ export function DepositsClient({
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[13.5px] font-bold text-foreground">{a.title}</div>
                   <div className="mt-0.5 text-[11px] text-muted">{a.lockedCount} caution{a.lockedCount > 1 ? "s" : ""} à libérer</div>
+                </div>
+                <ChevronRight className="size-4 shrink-0 text-muted transition group-hover:text-gold" />
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* En attente — lots inside the legal 1/6 surenchère window. Cautions
+          stay locked (a bidder may still surenchère); they free up on their
+          own when the window closes. Read-only, informational. */}
+      {!filtering && held.length > 0 && (
+        <section>
+          <h3 className="batta-eyebrow mb-2 flex items-center gap-2">
+            <span aria-hidden className="batta-gold-rule-short" />
+            En attente · fenêtre de surenchère 1/6
+            <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-extrabold text-amber-700">{held.length}</span>
+          </h3>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {held.map((a) => (
+              <Link
+                key={a.auctionId}
+                href={`/admin/auctions/${a.auctionId}`}
+                className="group flex items-center gap-3 rounded-2xl bg-surface p-4 ring-1 ring-border transition hover:-translate-y-0.5 hover:ring-gold-soft/60"
+              >
+                <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500/12 text-amber-600">
+                  <Hourglass className="size-5" strokeWidth={2} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[13.5px] font-bold text-foreground">{a.title}</div>
+                  <div className="mt-0.5 text-[11px] text-muted">
+                    {a.lockedCount} caution{a.lockedCount > 1 ? "s" : ""} retenue{a.lockedCount > 1 ? "s" : ""}
+                    {a.deadline && <> · libérées le {new Date(a.deadline).toLocaleDateString("fr-FR")}</>}
+                  </div>
                 </div>
                 <ChevronRight className="size-4 shrink-0 text-muted transition group-hover:text-gold" />
               </Link>
@@ -110,25 +158,41 @@ export function DepositsClient({
               <Empty text="Aucune caution ne correspond à ce filtre." />
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {boxes.map((b) => (
-                  <Link
-                    key={b.auctionId ?? b.title}
-                    href={b.auctionId ? `/admin/auctions/${b.auctionId}` : "#"}
-                    className="group flex items-center gap-3 rounded-2xl bg-surface p-4 ring-1 ring-border transition hover:-translate-y-0.5 hover:ring-gold-soft/60 hover:shadow-[0_12px_30px_-14px_rgba(30,58,138,0.35)]"
-                  >
-                    <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gold-faint text-gold">
-                      <Gavel className="size-5" strokeWidth={2} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13.5px] font-bold text-foreground">{b.title}</div>
-                      <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted">
-                        {b.gov && <><MapPin className="size-3" /> {b.gov}<span aria-hidden className="opacity-40">·</span></>}
-                        <span className="batta-tabular">{b.count} caution{b.count > 1 ? "s" : ""} · {fmt(b.total)}</span>
+                {boxes.map((b) => {
+                  const inner = (
+                    <>
+                      <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gold-faint text-gold">
+                        <Gavel className="size-5" strokeWidth={2} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[13.5px] font-bold text-foreground">{b.title}</div>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted">
+                          {b.gov && <><MapPin className="size-3" /> {b.gov}<span aria-hidden className="opacity-40">·</span></>}
+                          <span className="batta-tabular">{b.count} caution{b.count > 1 ? "s" : ""} · {fmt(b.total)}</span>
+                        </div>
                       </div>
+                      {b.auctionId && <ChevronRight className="size-4 shrink-0 text-muted transition group-hover:text-gold" />}
+                    </>
+                  );
+                  // Orphaned deposits (no parent auction) aren't navigable —
+                  // render a static card instead of a dead "#" link.
+                  return b.auctionId ? (
+                    <Link
+                      key={b.auctionId}
+                      href={`/admin/auctions/${b.auctionId}`}
+                      className="group flex items-center gap-3 rounded-2xl bg-surface p-4 ring-1 ring-border transition hover:-translate-y-0.5 hover:ring-gold-soft/60 hover:shadow-[0_12px_30px_-14px_rgba(30,58,138,0.35)]"
+                    >
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div
+                      key={b.title}
+                      className="flex items-center gap-3 rounded-2xl bg-surface p-4 ring-1 ring-border opacity-80"
+                    >
+                      {inner}
                     </div>
-                    <ChevronRight className="size-4 shrink-0 text-muted transition group-hover:text-gold" />
-                  </Link>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
@@ -136,7 +200,7 @@ export function DepositsClient({
       </section>
 
       {/* Recent refunds — compact read-only */}
-      {refunded.length > 0 && (
+      {!filtering && refunded.length > 0 && (
         <section>
           <h3 className="batta-eyebrow mb-2 flex items-center gap-2">
             <span aria-hidden className="batta-gold-rule-short" />
@@ -146,7 +210,7 @@ export function DepositsClient({
             {refunded.map((d) => (
               <li key={d.id} className="flex items-center justify-between gap-3 rounded-xl bg-surface px-3.5 py-2.5 ring-1 ring-border">
                 <div className="min-w-0 inline-flex items-center gap-2">
-                  <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
+                  <CheckCircle2 className="size-4 shrink-0 text-[var(--success)]" />
                   <span className="truncate text-[12.5px] text-foreground">{d.bidder} · {d.title}</span>
                 </div>
                 <div className="shrink-0 text-right">

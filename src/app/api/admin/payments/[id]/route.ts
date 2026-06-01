@@ -149,9 +149,13 @@ export async function PATCH(
   const what = KIND_LABELS[payment.kind] ?? "votre paiement";
 
   // Auction-tied payment → the lot; otherwise it's a listing fee paid by
-  // the seller → their dashboard (the listing is now live).
+  // the seller → their dashboard (the listing is now live). A captured
+  // caution unlocks bidding, so drop the buyer straight on the bidding
+  // page rather than the auction landing.
   const link = payment.auction_id
-    ? `/auctions/${payment.auction_id}`
+    ? payment.kind === "deposit_lock"
+      ? `/auctions/${payment.auction_id}/bid`
+      : `/auctions/${payment.auction_id}`
     : "/sell";
 
   if (verdict === "captured") {

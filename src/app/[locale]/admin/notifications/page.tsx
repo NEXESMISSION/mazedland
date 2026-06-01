@@ -1,4 +1,5 @@
 import { AdminNotificationsClient } from "./AdminNotificationsClient";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 
 /**
  * Admin notification control center.
@@ -16,14 +17,11 @@ import { AdminNotificationsClient } from "./AdminNotificationsClient";
 export default function AdminNotificationsPage() {
   return (
     <div>
-      <span className="batta-eyebrow">Outils admin</span>
-      <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
-        Notifications
-      </h2>
-      <p className="mt-1 max-w-prose text-[13px] text-muted">
-        Composer un message ponctuel ou inspecter la file complète des
-        notifications envoyées.
-      </p>
+      <AdminPageHeader
+        eyebrow="Outils admin"
+        title="Notifications"
+        description="Composer un message ponctuel ou inspecter la file complète des notifications envoyées."
+      />
 
       <div className="mt-5">
         <AdminNotificationsClient />

@@ -81,7 +81,7 @@ export default async function AccountPage() {
                   <span className="gradient-gold-text">{t("guestTitle")}</span>
                 </h1>
                 <p className="mt-2 text-[12.5px] text-muted">
-                  Connectez-vous pour gérer vos enchères et votre profil.
+                  Connectez-vous pour continuer.
                 </p>
               </div>
 
@@ -125,29 +125,43 @@ export default async function AccountPage() {
       ? "/kyc/status"
       : "/kyc/start";
 
-  const primaryActions: ActionItem[] = [
+  const roleActions: ActionItem[] = [];
+  if (role === "admin") {
+    roleActions.push({ href: "/admin", Icon: LayoutDashboard, title: "Console admin", body: "Annonces, KYC, experts." });
+  } else if (role === "bank" || role === "agency" || role === "bailiff") {
+    roleActions.push({ href: "/partners/dashboard", Icon: Briefcase, title: "Espace partenaire", body: "Portefeuille banque / agence." });
+  } else if (role === "inspector") {
+    roleActions.push({ href: "/inspector", Icon: ClipboardCheck, title: "Espace inspecteur", body: "Vos missions d'expertise." });
+  } else {
+    roleActions.push({ href: "/inspectors/apply", Icon: UserCog, title: "Devenir inspecteur", body: "Rejoignez le réseau d'experts." });
+  }
+
+  // Account hub grouped by journey so a buyer isn't handed a seller
+  // dashboard next to their bids (and vice-versa). Identity/KYC + the
+  // role-specific space sit under "Mon compte"; buyer surfaces under
+  // "Acheteur"; selling under "Vendeur".
+  const accountActions: ActionItem[] = [
     {
       href: kycHref,
       Icon: ShieldCheck,
       title: t("sections.kyc"),
       body: kycStatus === "verified" ? "Identité vérifiée" : t("sections.kycBody"),
     },
-    { href: "/sell", Icon: Building2, title: "Tableau du vendeur", body: "Vos annonces, revenus et retraits." },
-    { href: "/account/activity", Icon: LayoutGrid, title: "Mes activités", body: "Enchères, acquisitions, participations et favoris." },
-    { href: "/account/inspections", Icon: ClipboardCheck, title: t("sections.inspections"), body: t("sections.inspectionsBody") },
-    { href: "/account/payments", Icon: Wallet, title: t("sections.payments"), body: t("sections.paymentsBody") },
+    ...roleActions,
   ];
-
-  const roleActions: ActionItem[] = [];
-  if (role === "admin") {
-    roleActions.push({ href: "/admin", Icon: LayoutDashboard, title: "Console admin", body: "Validez les annonces, le KYC et les inspecteurs." });
-  } else if (role === "bank" || role === "agency" || role === "bailiff") {
-    roleActions.push({ href: "/partners/dashboard", Icon: Briefcase, title: "Espace partenaire", body: "Gérez votre portefeuille banque / agence." });
-  } else if (role === "inspector") {
-    roleActions.push({ href: "/inspector", Icon: ClipboardCheck, title: "Espace inspecteur", body: "Les inspections qui vous sont assignées." });
-  } else {
-    roleActions.push({ href: "/inspectors/apply", Icon: UserCog, title: "Devenir inspecteur", body: "Rejoignez le réseau d'inspection terrain." });
-  }
+  const buyerActions: ActionItem[] = [
+    { href: "/account/activity", Icon: LayoutGrid, title: "Mes activités", body: "Enchères, achats et favoris." },
+    { href: "/account/payments", Icon: Wallet, title: t("sections.payments"), body: t("sections.paymentsBody") },
+    { href: "/account/inspections", Icon: ClipboardCheck, title: t("sections.inspections"), body: t("sections.inspectionsBody") },
+  ];
+  const sellerActions: ActionItem[] = [
+    { href: "/sell", Icon: Building2, title: "Tableau du vendeur", body: "Annonces, revenus, retraits." },
+  ];
+  const groups: { label: string; items: ActionItem[] }[] = [
+    { label: "Mon compte", items: accountActions },
+    { label: "Acheteur", items: buyerActions },
+    { label: "Vendeur", items: sellerActions },
+  ];
 
   const identity = (
     <section className="batta-surface-navy-luxe relative overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25">
@@ -180,20 +194,20 @@ export default async function AccountPage() {
       {/* ── MOBILE / tablet (< lg) — single column, unchanged ── */}
       <div className="lg:hidden mx-auto max-w-[var(--max-w)] px-4 py-6">
         {identity}
-        <section className="mt-5 overflow-hidden rounded-xl bg-surface ring-1 ring-border">
-          {primaryActions.map((a, i) => (
-            <Fragment key={a.href}>
-              <Row {...a} ChevronEnd={ChevronEnd} isRTL={isRTL} />
-              {i < primaryActions.length - 1 && <Divider />}
-            </Fragment>
-          ))}
-        </section>
-        <section className="mt-4 overflow-hidden rounded-xl bg-surface ring-1 ring-border">
-          {roleActions.map((a) => (
-            <Row key={a.href} {...a} ChevronEnd={ChevronEnd} isRTL={isRTL} />
-          ))}
-        </section>
-        <div className="mt-5">
+        {groups.map((g) => (
+          <section key={g.label} className="mt-5">
+            <p className="batta-eyebrow mb-2">{g.label}</p>
+            <div className="overflow-hidden rounded-xl bg-surface ring-1 ring-border">
+              {g.items.map((a, i) => (
+                <Fragment key={a.href}>
+                  <Row {...a} ChevronEnd={ChevronEnd} isRTL={isRTL} />
+                  {i < g.items.length - 1 && <Divider />}
+                </Fragment>
+              ))}
+            </div>
+          </section>
+        ))}
+        <div className="mt-6">
           <SignOutButton label="Se déconnecter" />
         </div>
       </div>
@@ -221,12 +235,16 @@ export default async function AccountPage() {
           </div>
         </section>
 
-        <p className="batta-eyebrow mb-4 mt-8">Gérer mon compte</p>
-        <div className="grid grid-cols-3 gap-4">
-          {[...primaryActions, ...roleActions].map((a) => (
-            <ActionTile key={a.href} {...a} isRTL={isRTL} />
-          ))}
-        </div>
+        {groups.map((g) => (
+          <div key={g.label} className="mt-8">
+            <p className="batta-eyebrow mb-4">{g.label}</p>
+            <div className="grid grid-cols-3 gap-4">
+              {g.items.map((a) => (
+                <ActionTile key={a.href} {...a} isRTL={isRTL} />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </>
   );

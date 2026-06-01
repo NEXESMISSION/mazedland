@@ -89,6 +89,28 @@ export function parseMonetizationSettings(
 }
 
 /**
+ * Anti-sniping (auction time-extension) config — admin-controlled, stored in
+ * MINUTES under the `auction_antisnipe` app_settings key. A bid landing in the
+ * last `windowMin` before the end pushes the close out by `extendMin`.
+ * Defaults match the original DB column defaults (5-min window, 10-min push).
+ */
+export type AntiSnipeSettings = { windowMin: number; extendMin: number };
+export const DEFAULT_ANTISNIPE: AntiSnipeSettings = { windowMin: 5, extendMin: 10 };
+
+export function parseAntiSnipe(raw: unknown): AntiSnipeSettings {
+  const o = (raw ?? {}) as Record<string, unknown>;
+  // Cap at 120 min so a fat-fingered value can't freeze an auction open.
+  const clampMin = (v: unknown, fb: number) => {
+    const n = Math.round(num(v, fb));
+    return Number.isFinite(n) && n >= 0 ? Math.min(120, n) : fb;
+  };
+  return {
+    windowMin: clampMin(o.window_min, DEFAULT_ANTISNIPE.windowMin),
+    extendMin: clampMin(o.extend_min, DEFAULT_ANTISNIPE.extendMin),
+  };
+}
+
+/**
  * Listing fee in TND. `declaredPrice` is the seller's sale price (direct
  * offers) — required for percent mode. Auctions have no price at posting
  * time, so percent there resolves to 0 (the admin UI restricts auctions to

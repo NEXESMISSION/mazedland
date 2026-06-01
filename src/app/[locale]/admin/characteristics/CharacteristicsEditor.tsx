@@ -389,7 +389,7 @@ export function CharacteristicsEditor({
                                 <button
                                   type="button"
                                   onClick={() => removeOption(i, oi)}
-                                  className="tap-target inline-flex size-7 shrink-0 items-center justify-center rounded-md text-red-400 hover:bg-red-500/10"
+                                  className="tap-target inline-flex size-7 shrink-0 items-center justify-center rounded-md text-[var(--danger)] hover:bg-[var(--accent-faint)]"
                                   aria-label="Supprimer le choix"
                                 >
                                   <Trash2 className="size-3.5" />
@@ -417,7 +417,7 @@ export function CharacteristicsEditor({
                       <button
                         type="button"
                         onClick={() => remove(i)}
-                        className="tap-target inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-red-400 hover:bg-red-500/10"
+                        className="tap-target inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-[var(--danger)] hover:bg-[var(--accent-faint)]"
                       >
                         <Trash2 className="size-3.5" />
                         Supprimer

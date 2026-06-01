@@ -6,6 +6,7 @@ import { PaymentsQueueList, type PaymentReviewItem } from "../../payments/Paymen
 import { CautionActions, type CautionRow } from "./CautionActions";
 import {
   ChevronLeft, Gavel, MapPin, Receipt, Banknote, Building2, Trophy, ExternalLink,
+  CheckCircle2, Inbox, HandCoins,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -118,12 +119,21 @@ export default async function AdminAuctionView({
 
   const winnerName = a.winner_user_id ? who(a.winner_user_id) : null;
 
+  // ── Summary numbers for the stat strip — so the admin reads the lot's
+  // state at a glance and empty zones can be hidden without losing info. ──
+  const pendingCount = feePending.length + entryPending.length;
+  const lockedAmount = cautions.filter((c) => c.state === "locked").reduce((s, c) => s + c.amount, 0);
+  const collected = [...fees, ...entry]
+    .filter((p) => p.status === "captured")
+    .reduce((s, p) => s + Number(p.amount), 0);
+
   return (
     <div>
       <Link href="/admin" className="inline-flex items-center gap-1 text-[12px] font-semibold text-muted hover:text-gold">
         <ChevronLeft className="size-3.5" /> Retour aux files
       </Link>
 
+      {/* ── Lot header ── */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <span className="batta-gold-fill inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider">
           <Gavel className="size-3" strokeWidth={2.5} /> {a.listing_type === "direct" ? "Offre directe" : "Enchère"}
@@ -139,22 +149,41 @@ export default async function AdminAuctionView({
         <Link href={`/auctions/${a.id}` as `/auctions/${string}`} className="inline-flex items-center gap-1 text-gold hover:underline"><ExternalLink className="size-3.5" /> Voir l&apos;annonce</Link>
       </div>
 
-      <div className="mt-7 space-y-7">
-        <Section icon={Building2} title="Reçus de création à traiter" count={feePending.length}>
-          {feePending.length === 0 ? <Empty text="Aucun reçu de création en attente." /> : <PaymentsQueueList items={feePending} view="pending_review" />}
-        </Section>
+      {/* ── At-a-glance stat strip ── */}
+      <div className="mt-5 grid grid-cols-3 gap-3">
+        <Stat icon={Inbox} label="À traiter" value={String(pendingCount)} tone={pendingCount > 0 ? "warn" : "muted"} />
+        <Stat icon={HandCoins} label="Cautions bloquées" value={fmt(lockedAmount)} tone="muted" />
+        <Stat icon={Banknote} label="Encaissé" value={fmt(collected)} tone={collected > 0 ? "ok" : "muted"} />
+      </div>
 
-        <Section icon={Receipt} title="Paiements à traiter (caution · achat · solde)" count={entryPending.length}>
-          {entryPending.length === 0 ? <Empty text="Aucun paiement d'entrée en attente." /> : <PaymentsQueueList items={entryPending} view="pending_review" />}
-        </Section>
+      <div className="mt-8 space-y-8">
+        {/* ── To-do zone — empty categories vanish; nothing pending = one slim all-clear. ── */}
+        {pendingCount === 0 ? (
+          <AllClear />
+        ) : (
+          <>
+            {feePending.length > 0 && (
+              <Section icon={Building2} title="Frais de création à valider" count={feePending.length}>
+                <PaymentsQueueList items={feePending} view="pending_review" hideGroupHeader />
+              </Section>
+            )}
+            {entryPending.length > 0 && (
+              <Section icon={Receipt} title="Paiements à valider · caution / achat / solde" count={entryPending.length}>
+                <PaymentsQueueList items={entryPending} view="pending_review" hideGroupHeader />
+              </Section>
+            )}
+          </>
+        )}
 
-        <Section icon={Banknote} title="Cautions" count={cautions.length}>
-          {cautions.length === 0 ? <Empty text="Aucune caution." /> : <CautionActions auctionId={id} deposits={cautions} />}
-        </Section>
+        {cautions.length > 0 && (
+          <Section icon={Banknote} title="Cautions" count={cautions.length}>
+            <CautionActions auctionId={id} deposits={cautions} status={a.status} />
+          </Section>
+        )}
 
         {resolved.length > 0 && (
-          <Section icon={Receipt} title="Reçus traités" count={resolved.length}>
-            <PaymentsQueueList items={resolved} view="all" />
+          <Section icon={Receipt} title="Historique des reçus" count={resolved.length} muted>
+            <PaymentsQueueList items={resolved} view="all" hideGroupHeader />
           </Section>
         )}
       </div>
@@ -162,11 +191,36 @@ export default async function AdminAuctionView({
   );
 }
 
-function Section({ icon: Icon, title, count, children }: { icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; title: string; count: number; children: React.ReactNode }) {
+function Stat({
+  icon: Icon, label, value, tone,
+}: {
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  label: string; value: string; tone: "ok" | "warn" | "muted";
+}) {
+  const accent = tone === "warn" ? "text-amber-600" : tone === "ok" ? "text-emerald-600" : "text-muted";
+  return (
+    <div className="rounded-xl bg-surface p-3.5 ring-1 ring-border">
+      <span className={`inline-flex size-8 items-center justify-center rounded-lg bg-surface-2 ring-1 ring-border ${accent}`}>
+        <Icon className="size-4" strokeWidth={2.2} />
+      </span>
+      <div className="batta-tabular mt-2.5 truncate text-[16px] font-extrabold leading-none text-foreground">{value}</div>
+      <div className="mt-1 text-[11px] font-semibold text-muted">{label}</div>
+    </div>
+  );
+}
+
+/** Section header: hairline-separated band so zones read as distinct blocks
+ *  without nesting boxes. `muted` dims a reference-only zone (history). */
+function Section({
+  icon: Icon, title, count, muted = false, children,
+}: {
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  title: string; count: number; muted?: boolean; children: React.ReactNode;
+}) {
   return (
     <section>
-      <h2 className="mb-2.5 flex items-center gap-2 text-[13px] font-bold text-foreground">
-        <Icon className="size-4 text-gold" strokeWidth={2.2} />
+      <h2 className={`mb-3 flex items-center gap-2 border-b border-border pb-2 text-[13px] font-bold ${muted ? "text-muted" : "text-foreground"}`}>
+        <Icon className={`size-4 ${muted ? "text-muted" : "text-gold"}`} strokeWidth={2.2} />
         {title}
         <span className="batta-tabular rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-bold text-muted ring-1 ring-border">{count}</span>
       </h2>
@@ -175,6 +229,16 @@ function Section({ icon: Icon, title, count, children }: { icon: React.Component
   );
 }
 
-function Empty({ text }: { text: string }) {
-  return <div className="rounded-xl border border-dashed border-border px-4 py-5 text-center text-[12px] text-muted">{text}</div>;
+function AllClear() {
+  return (
+    <div className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3.5 ring-1 ring-border">
+      <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+        <CheckCircle2 className="size-5" strokeWidth={2.2} />
+      </span>
+      <div className="text-[13px] font-bold text-foreground">
+        Aucun paiement à traiter
+        <span className="block text-[11.5px] font-normal text-muted">Tous les reçus de ce lot sont traités.</span>
+      </div>
+    </div>
+  );
 }

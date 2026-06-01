@@ -136,7 +136,7 @@ export function RejectPropertyForm({ propertyId }: { propertyId: string }) {
     <div className="space-y-5">
       <section>
         <label className="batta-eyebrow text-[10px]">
-          Motif <span className="text-red-400">*</span>
+          Motif <span className="text-[var(--danger)]">*</span>
         </label>
         <textarea
           value={reason}
@@ -169,7 +169,7 @@ export function RejectPropertyForm({ propertyId }: { propertyId: string }) {
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11.5px] font-semibold ring-1 transition ${
                   active
                     ? "bg-[var(--gold-faint)] text-[var(--gold-bright)] ring-[var(--gold)]/40"
-                    : "bg-surface-2 text-foreground/85 ring-border hover:bg-[var(--surface-3,#1a1a1a)] hover:ring-[var(--gold)]/40"
+                    : "bg-surface-2 text-foreground ring-border hover:bg-surface-3 hover:ring-[var(--gold)]/40"
                 }`}
               >
                 {active && <Check className="size-3" strokeWidth={3} />}
@@ -254,7 +254,7 @@ export function RejectPropertyForm({ propertyId }: { propertyId: string }) {
           type="button"
           disabled={pending || reason.trim().length < 5}
           onClick={submit}
-          className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[var(--radius)] bg-red-600 px-5 text-[13px] font-bold text-white shadow-[0_10px_30px_-12px_rgba(220,38,38,0.45)] transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[var(--radius)] bg-[var(--danger)] px-5 text-[13px] font-bold text-white shadow-[0_10px_30px_-12px_rgba(220,38,38,0.45)] transition hover:bg-[var(--accent-deep)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" strokeWidth={2.5} />}
           Refuser et notifier
