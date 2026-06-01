@@ -12,6 +12,7 @@ import { HeroCarousel } from "@/components/auction/HeroCarousel";
 import { AuctionPresencePing } from "@/components/auction/AuctionPresencePing";
 import { SellerAuctionBanner } from "@/components/auction/SellerAuctionBanner";
 import { AuctionDesktop } from "@/components/auction/AuctionDesktop";
+import { AuctionTerms } from "@/components/auction/AuctionTerms";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
 import { Link } from "@/i18n/navigation";
@@ -464,6 +465,21 @@ export default async function AuctionDetail({
           )}
         </div>
       </section>
+      )}
+
+      {/* Auction terms — caution + all the figures, easy to read. */}
+      {!isDirect && (
+        <div className="mx-4 mt-4">
+          <AuctionTerms
+            auction={auction}
+            currentPrice={currentPrice}
+            deposit={deposit}
+            depositRequired={depositRequired}
+            totalBids={totalBids}
+            isEnded={isEnded}
+            isLive={isLive}
+          />
+        </div>
       )}
 
       {/* Calendar reminder — its own row OUTSIDE the price card. The
