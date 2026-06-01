@@ -92,15 +92,14 @@ export default async function SellLandingPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect({ href: "/login", locale });
 
+  // KYC status + pricing settings are independent, so fetch them together
+  // (one round-trip wave instead of two back-to-back).
+  const [{ data: profile }, pricing] = await Promise.all([
+    supabase.from("profiles").select("kyc_status").eq("id", user!.id).single(),
+    fetchSellPricing(supabase),
+  ]);
   // KYC gate. Tunisian law requires verified identity to list.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("kyc_status")
-    .eq("id", user!.id)
-    .single();
   const kycVerified = profile?.kyc_status === "verified";
-
-  const pricing = await fetchSellPricing(supabase);
 
   if (!kycVerified) {
     return (

@@ -251,13 +251,22 @@ button, a {
   }
 }
 
-.hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Native momentum scrolling on iOS so the horizontal card rails glide
+     instead of stopping dead under the finger. */
+  -webkit-overflow-scrolling: touch;
+}
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 
 .snap-rail {
-  scroll-snap-type: x mandatory;
+  /* `proximity` (not `mandatory`) so a flick doesn't get yanked back to the
+     nearest card mid-gesture — smoother on touch while still snapping. */
+  scroll-snap-type: x proximity;
   scroll-padding-inline: 1.25rem;
   overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tap-target { min-height: 44px; min-width: 44px; }
@@ -848,6 +857,19 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
   background: var(--surface-2);
   border-radius: var(--radius);
   animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+/* Desktop (lg+) shows a single centered spinner (DesktopLoadingSpinner)
+   over every loading screen instead of skeletons. Belt-and-suspenders:
+   kill the shimmer animation on desktop so no placeholder can ever pulse
+   behind/around the spinner — the loading state stays a clean single
+   circle. Mobile keeps its detailed animated skeletons. */
+@media (min-width: 1024px) {
+  .skeleton,
+  .batta-skeleton,
+  .batta-skeleton-luxe {
+    animation: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

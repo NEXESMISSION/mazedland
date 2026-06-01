@@ -1,7 +1,7 @@
 import { redirect, Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
-import { Building2, ChevronRight, ChevronLeft } from "lucide-react";
+import { Building2, ChevronRight, ChevronLeft, Gavel, History, Heart, ArrowUpRight } from "lucide-react";
 import { ActivityTabs, type ActivityItem } from "./ActivityTabs";
 import { FocusRowHighlight } from "@/components/ui/FocusRowHighlight";
 
@@ -185,16 +185,51 @@ export default async function ActivityPage({
   const isRTL = locale === "ar";
   const ChevronEnd = isRTL ? ChevronLeft : ChevronRight;
 
+  // Tab counts for the desktop summary strip (mirror ActivityTabs' merge).
+  const enCoursCount = enCours.length + enAttente.length;
+  const termineesCount = gagnees.length + participees.length;
+  const favorisCount = favoris.length;
+
   return (
-    <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-16 lg:max-w-[var(--max-w-content)]">
+    <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-16 lg:max-w-4xl lg:px-6 lg:pt-9 lg:pb-24">
       <FocusRowHighlight idPrefix="act-" />
-      <span className="batta-eyebrow">Côté acheteur</span>
-      <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">
-        Mes achats
-      </h1>
-      <p className="mt-1.5 text-[12px] text-muted">
-        Vos enchères en cours, vos acquisitions et vos favoris — au même endroit.
-      </p>
+
+      {/* ── Header — compact on mobile, a proper page masthead on desktop
+          with the seller-space action pulled up to the top-right. ── */}
+      <div className="lg:flex lg:items-end lg:justify-between lg:gap-6">
+        <div>
+          <span className="batta-eyebrow">Côté acheteur</span>
+          <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight lg:text-[36px]">
+            Mes achats
+          </h1>
+          <p className="mt-1.5 text-[12px] text-muted lg:text-[14px]">
+            Vos enchères en cours, vos acquisitions et vos favoris — au même endroit.
+          </p>
+        </div>
+        <Link
+          href="/sell"
+          className="hidden shrink-0 items-center gap-2.5 rounded-2xl bg-surface px-4 py-3 ring-1 ring-border transition hover:ring-gold-soft/50 lg:inline-flex"
+        >
+          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/30">
+            <Building2 className="size-4" strokeWidth={2} />
+          </span>
+          <span className="text-start">
+            <span className="block text-[13px] font-bold leading-tight text-foreground">
+              Espace vendeur
+            </span>
+            <span className="block text-[11px] text-muted">Annonces · revenus · retraits</span>
+          </span>
+          <ArrowUpRight className="size-4 text-muted" strokeWidth={2.2} />
+        </Link>
+      </div>
+
+      {/* ── Desktop summary strip — three at-a-glance counts. Gives the wide
+          viewport substance instead of a lonely narrow column. ── */}
+      <div className="mt-7 hidden grid-cols-3 gap-4 lg:grid">
+        <StatCard label="En cours" value={enCoursCount} Icon={Gavel} tone="text-gold" />
+        <StatCard label="Terminées" value={termineesCount} Icon={History} tone="text-foreground/70" />
+        <StatCard label="Favoris" value={favorisCount} Icon={Heart} tone="text-red-500" />
+      </div>
 
       <ActivityTabs
         enCours={enCours}
@@ -206,11 +241,10 @@ export default async function ActivityPage({
         initialTab={initialTab}
       />
 
-      {/* Selling lives in its own dashboard — a quiet nudge for users who
-          also list properties. */}
+      {/* Mobile-only seller nudge (desktop shows the header action instead). */}
       <Link
         href="/sell"
-        className="mt-2 flex items-center gap-3 rounded-xl bg-surface p-4 ring-1 ring-border transition hover:ring-gold-soft/40"
+        className="mt-2 flex items-center gap-3 rounded-xl bg-surface p-4 ring-1 ring-border transition hover:ring-gold-soft/40 lg:hidden"
       >
         <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/30">
           <Building2 className="size-5" strokeWidth={2} />
@@ -223,6 +257,33 @@ export default async function ActivityPage({
         </div>
         <ChevronEnd className="size-5 text-muted" />
       </Link>
+    </div>
+  );
+}
+
+/** Desktop summary tile — icon + big count + label. */
+function StatCard({
+  label,
+  value,
+  Icon,
+  tone,
+}: {
+  label: string;
+  value: number;
+  Icon: typeof Gavel;
+  tone: string;
+}) {
+  return (
+    <div className="flex items-center gap-4 rounded-2xl bg-surface p-5 ring-1 ring-border">
+      <span className={`inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-surface-2 ring-1 ring-border ${tone}`}>
+        <Icon className="size-5" strokeWidth={2.2} />
+      </span>
+      <div>
+        <div className="batta-tabular text-[26px] font-extrabold leading-none text-foreground">
+          {value}
+        </div>
+        <div className="mt-1 text-[12px] font-semibold text-muted">{label}</div>
+      </div>
     </div>
   );
 }

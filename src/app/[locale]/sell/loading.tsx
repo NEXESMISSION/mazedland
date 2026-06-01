@@ -5,6 +5,7 @@
  * straight into the seller cockpit.)
  */
 import { SkeletonBar } from "@/components/ui/Skeleton";
+import { DesktopLoadingSpinner } from "@/components/ui/DesktopLoadingSpinner";
 
 export default function Loading() {
   return (
@@ -13,6 +14,7 @@ export default function Loading() {
       aria-live="polite"
       className="mx-auto max-w-[var(--max-w)] px-4 py-6 lg:max-w-[var(--max-w-content)]"
     >
+      <DesktopLoadingSpinner />
       <div className="flex items-end justify-between gap-3">
         <div className="space-y-2">
           <SkeletonBar height="h-2.5" width="w-20" />

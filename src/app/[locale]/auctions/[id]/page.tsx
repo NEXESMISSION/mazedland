@@ -381,7 +381,7 @@ export default async function AuctionDetail({
 
       {/* ─── HEADLINE PRICE + COUNTDOWN — auctions only ─── */}
       {!isDirect && (
-      <section className="batta-surface-navy-luxe relative mx-4 mt-5 overflow-hidden rounded-2xl ring-1 ring-gold/25">
+      <section className="relative mx-4 mt-5 overflow-hidden rounded-[26px] bg-gradient-to-br from-[var(--gold-faint)] to-white ring-1 ring-[var(--gold)]/25 shadow-[0_20px_50px_-34px_rgba(15,23,42,0.4)]">
         <div className="relative p-6">
           <div className="flex items-baseline justify-between gap-3">
             <span className="batta-eyebrow inline-flex items-center gap-2">
@@ -429,7 +429,7 @@ export default async function AuctionDetail({
             </div>
           ) : (
             <div className="mt-5 grid grid-cols-2 gap-2">
-              <div className="rounded-xl bg-surface-2 px-3.5 py-3 ring-1 ring-gold/15">
+              <div className="rounded-2xl bg-white/80 px-3.5 py-3 ring-1 ring-[var(--gold)]/15 backdrop-blur">
                 {/* Pre-live: count down to the start, so a seller who set
                     a time range immediately sees when the auction opens.
                     Once it's live, the same tile counts down to the end. */}
@@ -450,7 +450,7 @@ export default async function AuctionDetail({
                   );
                 })()}
               </div>
-              <div className="rounded-xl bg-surface-2 px-3.5 py-3 ring-1 ring-gold/15">
+              <div className="rounded-2xl bg-white/80 px-3.5 py-3 ring-1 ring-[var(--gold)]/15 backdrop-blur">
                 <div className="batta-eyebrow text-[9px]">{t("auction.depositRequired")}</div>
                 <div className="batta-tabular mt-1 text-[15px] font-bold text-foreground">
                   {depositRequired ? `${formatTND(deposit, locale)} ${t("common.tnd")}` : "Gratuit"}
@@ -796,8 +796,8 @@ function Spec({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl bg-surface p-3 ring-1 ring-border">
-      <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-gold-faint text-gold ring-1 ring-gold/30">
+    <div className="flex items-center gap-2 rounded-2xl bg-gradient-to-b from-white to-[var(--gold-faint)] p-3 ring-1 ring-[var(--gold)]/12">
+      <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-gold ring-1 ring-[var(--gold)]/20">
         <Icon className="size-4" strokeWidth={2} />
       </span>
       <div className="min-w-0">

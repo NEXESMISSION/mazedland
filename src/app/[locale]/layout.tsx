@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { routing } from "@/i18n/routing";
 import { MobileShell } from "@/components/layout/MobileShell";
-import { SplashScreen } from "@/components/layout/SplashScreen";
 import { NetworkStatus } from "@/components/layout/NetworkStatus";
 import { ToastProvider } from "@/components/ui/Toast";
 import { PopupManagerLazy } from "@/components/popups/PopupManagerLazy";
@@ -59,7 +58,6 @@ export default async function LocaleLayout({
     <NextIntlClientProvider locale={locale} messages={messages}>
       <ToastProvider>
         <NetworkStatus />
-        <SplashScreen />
         <WatchlistSync />
         <MobileShell>{children}</MobileShell>
         {/* Site-wide admin-managed popup surface. Lazy-loaded (ssr:false)

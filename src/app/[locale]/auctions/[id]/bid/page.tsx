@@ -331,10 +331,10 @@ export default async function BidPage({
             </div>
           </div>
         ) : (
-          // ── GATE / ENDED layout — composer alone. PreBidGate already
-          //    renders its own 2-col magazine layout (property hero + gate
-          //    card) on desktop, so we don't wrap it in another card.
-          <div className="lg:rounded-[24px] lg:bg-[var(--surface)] lg:ring-1 lg:ring-[var(--border)] lg:p-8 lg:shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]">
+          // ── GATE / ENDED layout — composer alone. PreBidGate now renders
+          //    its own single centered card, so this is just a passthrough
+          //    (no outer card chrome — that produced a card-in-card look).
+          <div className="lg:pt-2">
             <BidComposer
               auction={auction}
               userId={userId}

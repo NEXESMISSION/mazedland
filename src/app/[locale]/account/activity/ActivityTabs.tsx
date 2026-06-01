@@ -323,12 +323,13 @@ export function ActivityTabs({
   const EmptyIcon = empty.icon;
 
   return (
-    <div className="mt-1">
+    <div className="mt-1 lg:mt-8">
       <ActionBanner items={actionItems} locale={locale} />
 
-      {/* Tab strip — each chip carries its own count so the user sees
-          volume at a glance. */}
-      <div className="-mx-4 mt-5 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* Horizontal tab row — a clean segmented control on every breakpoint
+          (the vertical desktop rail left a lonely card floating in dead
+          space). Each chip carries its own count. */}
+      <div className="-mx-4 mt-5 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:px-0 lg:pb-0">
         {TABS.map(({ key, label, icon: Icon }) => {
           const count = data[key].length;
           const on = active === key;
@@ -337,13 +338,13 @@ export function ActivityTabs({
               key={key}
               type="button"
               onClick={() => setActive(key)}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-all ${
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-all lg:px-4 lg:py-2.5 lg:text-[13.5px] ${
                 on
                   ? "batta-gradient-gold text-white shadow-[var(--shadow-gold)]"
                   : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground"
               }`}
             >
-              <Icon className="size-3.5" strokeWidth={2.5} />
+              <Icon className="size-3.5 lg:size-4" strokeWidth={2.5} />
               {label}
               {count > 0 && (
                 <span
@@ -359,29 +360,32 @@ export function ActivityTabs({
         })}
       </div>
 
-      {items.length === 0 ? (
-        <div className="batta-frame-gold relative mt-5 px-6 py-12 text-center">
-          <EmptyIcon className="mx-auto size-8 text-gold" strokeWidth={2} />
-          <p className="mx-auto mt-3 max-w-xs text-[13px] leading-relaxed text-muted">
-            {empty.text}
-          </p>
-          <Link
-            href="/properties"
-            className="batta-btn-luxe tap-target mt-5 inline-flex items-center gap-1.5 px-5 py-2.5 text-[12.5px]"
-          >
-            <Search className="size-4" strokeWidth={2.5} />
-            Parcourir les enchères
-          </Link>
-        </div>
-      ) : (
-        <ul className="mt-4 space-y-2.5 pb-6">
-          {items.map((item) => (
-            <li key={item.auctionId} id={`act-${item.auctionId}`}>
-              <Row item={item} locale={locale} />
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* Content */}
+      <div>
+          {items.length === 0 ? (
+            <div className="batta-frame-gold relative mt-5 px-6 py-12 text-center lg:py-16">
+              <EmptyIcon className="mx-auto size-8 text-gold lg:size-10" strokeWidth={2} />
+              <p className="mx-auto mt-3 max-w-xs text-[13px] leading-relaxed text-muted lg:text-[14px]">
+                {empty.text}
+              </p>
+              <Link
+                href="/properties"
+                className="batta-btn-luxe tap-target mt-5 inline-flex items-center gap-1.5 px-5 py-2.5 text-[12.5px]"
+              >
+                <Search className="size-4" strokeWidth={2.5} />
+                Parcourir les enchères
+              </Link>
+            </div>
+          ) : (
+            <ul className="mt-4 space-y-2.5 pb-6 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0 lg:pb-0">
+              {items.map((item) => (
+                <li key={item.auctionId} id={`act-${item.auctionId}`}>
+                  <Row item={item} locale={locale} />
+                </li>
+              ))}
+            </ul>
+          )}
+      </div>
     </div>
   );
 }

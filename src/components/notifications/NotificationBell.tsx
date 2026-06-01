@@ -442,13 +442,8 @@ export function NotificationBell() {
             />
 
             <div
-              className="relative flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-[var(--surface)] shadow-[var(--shadow-lg)] ring-1 ring-[var(--border)] focus:outline-none animate-[batta-float-up_240ms_ease-out_both] lg:absolute lg:end-5 lg:top-[calc(var(--desktop-nav-h)-0.5rem)] lg:max-h-[min(640px,80vh)] lg:w-[480px] lg:max-w-[480px] lg:rounded-2xl lg:shadow-[0_24px_60px_-18px_rgba(15,23,42,0.32)] lg:ring-[var(--border)]"
+              className="relative flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-[var(--surface)] shadow-[var(--shadow-lg)] ring-1 ring-[var(--border)] focus:outline-none animate-[batta-float-up_240ms_ease-out_both] lg:absolute lg:end-[calc((100vw_-_min(100vw,var(--max-w-wide)))_/_2_+_2rem)] lg:top-[calc(var(--desktop-nav-h)+0.5rem)] lg:max-h-[min(620px,78vh)] lg:w-[420px] lg:max-w-[420px] lg:rounded-[22px] lg:shadow-[0_30px_80px_-24px_rgba(15,23,42,0.35)] lg:ring-1 lg:ring-black/[0.06]"
             >
-              {/* Caret pointing up at the bell — desktop only. */}
-              <span
-                aria-hidden
-                className="absolute -top-[7px] hidden size-3.5 rotate-45 rounded-tl-[3px] border-l border-t border-[var(--border)] bg-[var(--surface)] lg:block ltr:right-6 rtl:left-6"
-              />
               {/* Header — title + inline unread count, "Supprimer tout", close. */}
               <div className="flex items-center gap-3 px-5 pt-4 pb-3">
                 <h3 className="flex items-center gap-2 text-[16px] font-extrabold tracking-tight text-foreground leading-none">

@@ -894,7 +894,7 @@ export function SellForm({
   // ─── Step 3: Options & payment ─────────────────────────────────────────
   if (step === 3 && !isEdit) {
     return (
-      <form onSubmit={onFinalSubmit} className="mt-5 space-y-4">
+      <form onSubmit={onFinalSubmit} className="mt-5 space-y-4 lg:mt-0 lg:space-y-5">
         <StepHeader current={3} />
         <StationIntro index={3} title="Options & paiement" body={t("sell.promo.subtitle")} />
 
@@ -963,7 +963,7 @@ export function SellForm({
           </div>
         </div>
 
-        <div className="sticky bottom-[calc(var(--batta-bottombar-h)+var(--batta-safe-bottom)+12px)] z-20 mt-4 flex gap-2">
+        <div className="mt-6 flex gap-2 lg:mt-7 lg:justify-between lg:border-t lg:border-border lg:pt-6">
           <button
             type="button"
             onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }}
@@ -976,7 +976,7 @@ export function SellForm({
           <button
             type="submit"
             disabled={isPending}
-            className="batta-btn-luxe tap-target flex-1 px-5 py-3.5 text-[13.5px] disabled:opacity-50"
+            className="batta-btn-luxe tap-target flex-1 px-5 py-3.5 text-[13.5px] disabled:opacity-50 lg:flex-none lg:min-w-[240px]"
           >
             {isPending ? (
               <>
@@ -997,7 +997,7 @@ export function SellForm({
 
   // ─── Steps 1 & 2 (new mode) · or the single-page edit form ─────────────
   return (
-    <form onSubmit={onFormSubmit} className="mt-5 space-y-4">
+    <form onSubmit={onFormSubmit} className="mt-5 space-y-4 lg:mt-0 lg:space-y-5">
       {!isEdit && <StepHeader current={step} />}
       {!isEdit && step === 1 && (
         <StationIntro
@@ -1154,22 +1154,24 @@ export function SellForm({
         hidden={!isSectionVisible("section-address")}
         title="Localisation"
       >
-        <Select
-          label={t("sell.form.governorate")}
-          value={governorate}
-          onChange={setGovernorate}
-        >
-          {GOVERNORATES.map((g) => (
-            <option key={g} value={g}>
-              {g}
-            </option>
-          ))}
-        </Select>
-        <Field
-          label={t("sell.form.address")}
-          value={address}
-          onChange={setAddress}
-        />
+        <div className="grid gap-3.5 lg:grid-cols-2">
+          <Select
+            label={t("sell.form.governorate")}
+            value={governorate}
+            onChange={setGovernorate}
+          >
+            {GOVERNORATES.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </Select>
+          <Field
+            label={t("sell.form.address")}
+            value={address}
+            onChange={setAddress}
+          />
+        </div>
       </Section>
       </>
       )}
@@ -1343,7 +1345,7 @@ export function SellForm({
         <button
           type="submit"
           disabled={isPending}
-          className="batta-btn-luxe tap-target sticky bottom-[calc(var(--batta-bottombar-h)+var(--batta-safe-bottom)+12px)] z-20 mt-4 w-full px-5 py-3.5 text-[13.5px] disabled:opacity-50"
+          className="batta-btn-luxe tap-target mt-6 w-full px-5 py-3.5 text-[13.5px] disabled:opacity-50 lg:mt-7"
         >
           {isPending ? (
             <>
@@ -1358,13 +1360,13 @@ export function SellForm({
         <button
           type="submit"
           disabled={isPending}
-          className="batta-btn-luxe tap-target sticky bottom-[calc(var(--batta-bottombar-h)+var(--batta-safe-bottom)+12px)] z-20 mt-4 w-full px-5 py-3.5 text-[13.5px] disabled:opacity-50"
+          className="batta-btn-luxe tap-target mt-6 w-full px-5 py-3.5 text-[13.5px] disabled:opacity-50 lg:mt-7"
         >
           Continuer · Photos
           <ChevronNext className="size-4" />
         </button>
       ) : (
-        <div className="sticky bottom-[calc(var(--batta-bottombar-h)+var(--batta-safe-bottom)+12px)] z-20 mt-4 flex gap-2">
+        <div className="mt-6 flex gap-2 lg:mt-7 lg:justify-between lg:border-t lg:border-border lg:pt-6">
           <button
             type="button"
             onClick={() => { setStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
@@ -1377,7 +1379,7 @@ export function SellForm({
           <button
             type="submit"
             disabled={isPending}
-            className="batta-btn-luxe tap-target flex-1 px-5 py-3.5 text-[13.5px] disabled:opacity-50"
+            className="batta-btn-luxe tap-target flex-1 px-5 py-3.5 text-[13.5px] disabled:opacity-50 lg:flex-none lg:min-w-[240px]"
           >
             {t("sell.form.continueToPromos")}
             <ChevronNext className="size-4" />
