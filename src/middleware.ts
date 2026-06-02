@@ -70,36 +70,54 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
-  const supabase = createServerClient(url, key, {
-    cookies: {
-      getAll() {
-        return req.cookies.getAll();
-      },
-      setAll(toSet) {
-        for (const { name, value, options } of toSet) {
-          req.cookies.set(name, value);
-          res.cookies.set(name, value, options);
-        }
-      },
-    },
-  });
+  // Anonymous visitors have no Supabase auth cookie, so there is no token
+  // to refresh — calling getUser() for them is a pure-waste NETWORK round
+  // trip to the Auth server on EVERY page view (and it defeats the CDN on
+  // otherwise-static pages). At tens of thousands of visitors this is the
+  // single most-hit server cost, so we skip the whole Supabase client +
+  // getUser() round-trip unless an auth-token cookie is actually present.
+  // The gates below stay correct on the null-user path: the account-gate
+  // still redirects anonymous users to login; the auth-page and KYC gates
+  // simply no-op (they only act when authUserId is set).
+  //
+  // Supabase SSR stores the session in cookie(s) named
+  // `sb-<project-ref>-auth-token` (sometimes chunked `.0`, `.1`), so a
+  // name containing `-auth-token` reliably detects a logged-in session.
+  const hasAuthCookie = req.cookies
+    .getAll()
+    .some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
 
   let authUserId: string | null = null;
   let authUserEmail: string | null = null;
-  const endAuth = mwLog.time(`auth.getUser ${pathname}`);
-  try {
-    // Refresh the token if needed. We also keep the user id so the KYC
-    // gate below doesn't have to round-trip to getUser() again.
-    // NOTE: this is a NETWORK round-trip to Supabase auth on EVERY
-    // navigation — the timer above quantifies its cost so we can decide
-    // whether to cache/skip it for anonymous visitors.
-    const { data } = await supabase.auth.getUser();
-    authUserId = data.user?.id ?? null;
-    authUserEmail = data.user?.email ?? null;
-  } catch (err) {
-    mwLog.warn(`session refresh failed: ${err instanceof Error ? err.message : err}`);
-  } finally {
-    endAuth();
+  let supabase: ReturnType<typeof createServerClient> | null = null;
+
+  if (hasAuthCookie) {
+    supabase = createServerClient(url, key, {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(toSet) {
+          for (const { name, value, options } of toSet) {
+            req.cookies.set(name, value);
+            res.cookies.set(name, value, options);
+          }
+        },
+      },
+    });
+
+    const endAuth = mwLog.time(`auth.getUser ${pathname}`);
+    try {
+      // Refresh the token if needed. We also keep the user id so the KYC
+      // gate below doesn't have to round-trip to getUser() again.
+      const { data } = await supabase.auth.getUser();
+      authUserId = data.user?.id ?? null;
+      authUserEmail = data.user?.email ?? null;
+    } catch (err) {
+      mwLog.warn(`session refresh failed: ${err instanceof Error ? err.message : err}`);
+    } finally {
+      endAuth();
+    }
   }
 
   // Auth-page gate. A signed-in user has no reason to see the sign-in /
@@ -138,7 +156,7 @@ export async function middleware(req: NextRequest) {
   const kycMatch = pathname.match(
     /^\/(fr|ar|en)\/kyc\/(start|id-front|id-back|selfie|processing)\/?$/,
   );
-  if (kycMatch && authUserId) {
+  if (kycMatch && authUserId && supabase) {
     try {
       const { data: profile } = await supabase
         .from("profiles")

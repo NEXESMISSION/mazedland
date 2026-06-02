@@ -144,13 +144,17 @@ export function BidHistoryRealtime({
     };
   }, [auctionId]);
 
-  // Polling fallback — reconciles the top-8 leaderboard whenever
-  // Supabase Realtime might have dropped INSERT events. Adaptive
-  // cadence mirrors BidComposer:
+  // Polling fallback — a SAFETY NET, not the live channel. The realtime
+  // INSERT subscription above is the primary path and pushes new bids
+  // instantly; this poll only reconciles the top-8 leaderboard for the
+  // rare INSERT event Supabase Realtime drops. The query here is heavier
+  // (a join to profiles), so at tens of thousands of concurrent viewers
+  // a 1 s cadence was the single biggest DB-load source. Slowed on
+  // purpose — realtime keeps the feed instant, the poll just heals gaps.
   //
-  //   HOT  (1 s)  — bid landed in the last 30 s, OR the poll itself
+  //   HOT  (7 s)  — bid landed in the last 30 s, OR the poll itself
   //                 detected a new row id (means realtime missed it).
-  //   COLD (4 s)  — quiet for 30 s. Idle auctions drop here.
+  //   COLD (30 s) — quiet for 30 s. Idle auctions drop here.
   //
   // Without this poll, two clients could each see *themselves* as the
   // leader because their local bid was the only one their realtime
@@ -161,8 +165,8 @@ export function BidHistoryRealtime({
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
-    const HOT_INTERVAL_MS = 1_000;
-    const COLD_INTERVAL_MS = 4_000;
+    const HOT_INTERVAL_MS = 7_000;
+    const COLD_INTERVAL_MS = 30_000;
     const HOT_WINDOW_MS = 30_000;
 
     function nextInterval(): number {

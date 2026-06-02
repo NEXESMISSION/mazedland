@@ -4,7 +4,8 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { AuctionWithProperty } from "@/lib/types";
 import { formatTND } from "@/lib/utils";
-import { parseMonetizationSettings, resolveDeposit } from "@/lib/pricing";
+import { resolveDeposit } from "@/lib/pricing";
+import { getCachedMonetization } from "@/lib/settings";
 import { Countdown } from "@/components/auction/Countdown";
 import { AuctionCalendarMenu } from "@/components/auction/AuctionCalendarMenu";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
@@ -41,7 +42,7 @@ export default async function AuctionDetail({
   const isRTL = locale === "ar";
   const supabase = await getServerSupabase();
 
-  const [auctionRes, userRes, bidCountRes, depRowRes] = await Promise.all([
+  const [auctionRes, userRes, bidCountRes, mon] = await Promise.all([
     supabase
       .from("auctions")
       .select(`
@@ -61,9 +62,10 @@ export default async function AuctionDetail({
       .from("bids")
       .select("id", { count: "exact", head: true })
       .eq("auction_id", id),
-    // Deposit settings are global + independent of the auction row, so they
-    // ride in this first parallel wave instead of a later sequential await.
-    supabase.from("app_settings").select("value").eq("key", "deposit").maybeSingle(),
+    // Deposit settings are global + admin-controlled — served from the
+    // cached app_settings layer (no per-request DB round-trip), still in
+    // this first parallel wave so a cache miss overlaps the other queries.
+    getCachedMonetization(),
   ]);
 
   if (auctionRes.error || !auctionRes.data) {
@@ -138,12 +140,9 @@ export default async function AuctionDetail({
   const userId = userRes.data.user?.id ?? null;
   const currentPrice = auction.current_price ?? auction.opening_price;
   // Deposit is admin-configurable (free / fixed / percent + free window).
-  // Settings came back in the first parallel wave (depRowRes).
-  const depCfg = parseMonetizationSettings(
-    new Map<string, unknown>([["deposit", depRowRes.data?.value]]),
-  ).deposit;
+  // Deposit config came back (cached) in the first parallel wave.
   const { required: depositRequired, amount: deposit } = resolveDeposit(
-    depCfg, auction.opening_price,
+    mon.deposit, auction.opening_price,
   );
   const isLive = auction.status === "live" || auction.status === "extending";
   // listing_type='direct' → fixed-price sale, no bidding. DirectSalePanel

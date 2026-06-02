@@ -14,9 +14,16 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
  *
  * Pings:
  *   - immediately on mount
- *   - every 25s while the tab is visible
+ *   - every 35s while the tab is visible (kept comfortably under the
+ *     server's 45s window; a wider interval means fewer DB writes per
+ *     viewer — presence cost scales with VIEWERS, not bidders, so this
+ *     matters a lot at tens of thousands of concurrent watchers)
  *   - one extra ping when the tab becomes visible again (so a quick
  *     tab-switch doesn't blow past the 45s window).
+ *
+ * This is the single owner of the heartbeat. Mount it once per surface
+ * (auction detail page AND bid page) — do NOT also ping from inside
+ * BidComposer, or every bid-page viewer doubles the write load.
  *
  * No-ops when there's no `userId` (anonymous browsers don't need to
  * suppress notifications they wouldn't get anyway).
@@ -43,7 +50,7 @@ export function AuctionPresencePing({
     };
 
     ping();
-    const intervalId = window.setInterval(ping, 25_000);
+    const intervalId = window.setInterval(ping, 35_000);
     // Tab returns to foreground → ping right away so the 45s window
     // doesn't lapse just because the user briefly switched tabs.
     const onVisibility = () => {

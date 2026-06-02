@@ -2,9 +2,11 @@ import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { parseMonetizationSettings, resolveDeposit } from "@/lib/pricing";
+import { resolveDeposit } from "@/lib/pricing";
+import { getCachedMonetization } from "@/lib/settings";
 import { BidComposer } from "@/components/auction/BidComposer";
 import { AuctionEndModal } from "@/components/auction/AuctionEndModal";
+import { AuctionPresencePing } from "@/components/auction/AuctionPresencePing";
 import { SixthOfferForm } from "@/components/auction/SixthOfferForm";
 import { LiveTimer } from "@/components/landing/LiveTimer";
 import { Link } from "@/i18n/navigation";
@@ -136,13 +138,11 @@ export default async function BidPage({
   if (isOwner) {
     redirect(`/${locale}/auctions/${id}`);
   }
-  const { data: depRow } = await supabase
-    .from("app_settings").select("value").eq("key", "deposit").maybeSingle();
-  const depCfg = parseMonetizationSettings(
-    new Map<string, unknown>([["deposit", depRow?.value]]),
-  ).deposit;
+  // Deposit config is admin-controlled global settings — served from the
+  // cached app_settings layer instead of a per-request DB read.
+  const mon = await getCachedMonetization();
   const { required: depositRequired, amount: depositAmount } = resolveDeposit(
-    depCfg, auction.opening_price,
+    mon.deposit, auction.opening_price,
   );
   const isLive = auction.status === "live" || auction.status === "extending";
   const isSealedLive = isLive && auction.type === "sealed";
@@ -183,6 +183,12 @@ export default async function BidPage({
 
       {/* Pops once when a bidder lands on a freshly-ended auction. */}
       <AuctionEndModal auction={auction} userId={userId} locale={locale} />
+
+      {/* Presence heartbeat — single owner for the bid page (BidComposer
+          no longer pings). Lets place_bid skip the redundant outbid push
+          for a user who's actively watching. Mounts in both the bidder
+          and gate layouts because it sits above the ternary below. */}
+      <AuctionPresencePing auctionId={auction.id} userId={userId} />
 
       {/* ─── PROPERTY CONTEXT STRIP ───
               Compact thumbnail + title + governorate row, deep-linking back

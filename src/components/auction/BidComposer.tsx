@@ -563,24 +563,9 @@ function ActiveComposer({
     setAmountStr(String(Math.max(0, Math.floor(v))));
   }
 
-  // Presence heartbeat — lets the server skip the "outbid" push for someone
-  // who's actively watching this auction (they already see the price move).
-  useEffect(() => {
-    if (!userId) return;
-    const supabase = getBrowserSupabase();
-    const ping = () => {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
-      void supabase
-        .from("auction_presence")
-        .upsert(
-          { user_id: userId, auction_id: auction.id, seen_at: new Date().toISOString() },
-          { onConflict: "user_id,auction_id" },
-        );
-    };
-    ping();
-    const id = setInterval(ping, 25000);
-    return () => clearInterval(id);
-  }, [userId, auction.id]);
+  // Presence heartbeat lives in <AuctionPresencePing> (mounted by the bid
+  // page), NOT here — having BidComposer ping too just doubled the
+  // auction_presence write load on every bid-page viewer. One owner only.
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [showRules, setShowRules] = useState(false);
@@ -637,8 +622,8 @@ function ActiveComposer({
           new: { current_price: number | null; status: string; ends_at: string | null };
         }) => {
           const next = payload.new;
-          // Mark this auction as "hot" — the adaptive poll downstream
-          // will stay on 1 s cadence for the next 30 s.
+          // Mark this auction as "hot" — the adaptive safety-net poll
+          // downstream stays on its tighter cadence for the next 30 s.
           lastActivityRef.current = Date.now();
           // English / sealed: track the server's authoritative
           // current_price (already reflects proxy resolution + sealed
@@ -687,19 +672,23 @@ function ActiveComposer({
     };
   }, [auction.id, isDutch, router]);
 
-  // Polling fallback — reconciles current_price + status whenever
-  // Supabase Realtime might have dropped an event. Adaptive cadence:
+  // Polling fallback — a SAFETY NET, not the live channel. Realtime
+  // (the channel above) is the primary path: it pushes every price /
+  // status / bid change instantly. This poll only exists to reconcile
+  // the rare event Supabase Realtime drops. So the cadence is slow on
+  // purpose — going faster just hammers the DB from every open browser
+  // without improving the live feel (realtime already covers that).
   //
-  //   HOT  (1 s)  — activity in the last 30 s (a realtime UPDATE or
-  //                 INSERT just landed, OR the poll itself detected a
-  //                 missed price change). Keeps the live-bid feel.
-  //   COLD (4 s)  — nothing has changed for 30 s. Quiet auctions and
-  //                 background tabs drop to this cadence, cutting
-  //                 traffic by ~60% on the typical idle auction.
+  // At tens of thousands of concurrent viewers, a 1 s poll meant ~Nk
+  // direct DB queries/second per hot auction. These intervals collapse
+  // that by ~7–30× while realtime keeps the UI instant.
+  //
+  //   HOT  (7 s)  — activity in the last 30 s. Tighter reconcile window
+  //                 right after a bid, in case a realtime echo was lost.
+  //   COLD (30 s) — quiet for 30 s. Idle auctions + background tabs.
   //
   // The hot/cold switch is driven by `lastActivityRef`, which the
-  // realtime handlers above also bump — so the very next poll tick
-  // after a bid lands stays at 1 s.
+  // realtime handlers above also bump.
   //
   // Pauses while the tab is hidden so we don't spam the DB for users
   // who tabbed away. Skipped for Dutch — its price is driven by the
@@ -710,8 +699,8 @@ function ActiveComposer({
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
-    const HOT_INTERVAL_MS = 1_000;
-    const COLD_INTERVAL_MS = 4_000;
+    const HOT_INTERVAL_MS = 7_000;
+    const COLD_INTERVAL_MS = 30_000;
     const HOT_WINDOW_MS = 30_000;
 
     function nextInterval(): number {

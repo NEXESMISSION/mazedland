@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSupabase } from "@/lib/supabase/server";
+import { revalidateTag } from "next/cache";
 import { getServiceSupabase } from "@/lib/supabase/admin";
-import { isSameOrigin } from "@/lib/sameOrigin";
+import { requireAdmin } from "@/lib/admin/guard";
 import { cleanDurationDays } from "@/lib/pricing";
+import { APP_SETTINGS_TAG } from "@/lib/settings";
 import { logAction } from "@/lib/activity";
 
 const TEXT_KEYS = [
@@ -28,18 +29,9 @@ function cleanValue(mode: Mode, raw: unknown): number {
  * allowlist to keep the surface tight.
  */
 export async function PUT(req: NextRequest) {
-  if (!isSameOrigin(req)) {
-    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
-  }
-  const supabase = await getServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
-
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
+  const gate = await requireAdmin(req);
+  if (gate instanceof NextResponse) return gate;
+  const { user } = gate;
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const rows: { key: string; value: unknown; updated_by: string }[] = [];
@@ -130,6 +122,11 @@ export async function PUT(req: NextRequest) {
   }
   const { error } = await admin.from("app_settings").upsert(rows, { onConflict: "key" });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Bust the cached app_settings read so the new fees/deposit/anti-snipe take
+  // effect immediately across the app instead of waiting out the 300s TTL.
+  // Next 16 requires the cache-life profile arg; "max" fully purges the tag.
+  revalidateTag(APP_SETTINGS_TAG, "max");
 
   // Push the anti-snipe change onto auctions that are still open, so the
   // setting governs live + scheduled lots immediately — not just ones

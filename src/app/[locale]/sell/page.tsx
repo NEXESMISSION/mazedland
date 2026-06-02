@@ -3,7 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { SellForm, type SellFormPricing } from "@/components/sell/SellForm";
-import { parseMonetizationSettings } from "@/lib/pricing";
+import { getCachedMonetization } from "@/lib/settings";
 import { CancelAuctionButton } from "@/components/sell/CancelAuctionButton";
 import { PayoutRequestTrigger } from "@/components/sell/PayoutRequestModal";
 import { formatTND } from "@/lib/utils";
@@ -96,7 +96,7 @@ export default async function SellLandingPage({
   // (one round-trip wave instead of two back-to-back).
   const [{ data: profile }, pricing] = await Promise.all([
     supabase.from("profiles").select("kyc_status").eq("id", user!.id).single(),
-    fetchSellPricing(supabase),
+    fetchSellPricing(),
   ]);
   // KYC gate. Tunisian law requires verified identity to list.
   const kycVerified = profile?.kyc_status === "verified";
@@ -800,22 +800,10 @@ function StatusPill({
  * can show "+15 TND" labels on each promotion option. Falls back to safe
  * defaults if a key is missing so the page doesn't crash on a fresh DB.
  */
-async function fetchSellPricing(
-  supabase: Awaited<ReturnType<typeof getServerSupabase>>,
-): Promise<SellFormPricing> {
-  const { data } = await supabase
-    .from("app_settings")
-    .select("key, value")
-    .in("key", [
-      "fee_listing_auction",
-      "fee_listing_direct",
-      "promo_home",
-      "promo_top",
-      "promo_banner",
-    ]);
-  const m = new Map<string, unknown>();
-  for (const r of data ?? []) m.set((r as { key: string }).key, (r as { value: unknown }).value);
-  const mon = parseMonetizationSettings(m);
+async function fetchSellPricing(): Promise<SellFormPricing> {
+  // Cached app_settings — these only feed the "+15 TND" labels in the form,
+  // so a per-request DB read here is pure waste.
+  const mon = await getCachedMonetization();
   return {
     feeAuction: mon.feeListingAuction,
     feeDirect: mon.feeListingDirect,

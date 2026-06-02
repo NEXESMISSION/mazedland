@@ -10,6 +10,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: import.meta.dirname,
   },
+  // lucide-react is named-imported across ~125 files. This rewrites those
+  // named imports to per-icon deep imports at build time, guaranteeing only
+  // the icons actually used are bundled (insurance against the barrel
+  // re-export accidentally pulling the whole icon set) and speeding dev
+  // compile. Safe, zero-behaviour-change.
+  experimental: {
+    optimizePackageImports: ["lucide-react"],
+  },
   images: {
     // AVIF first, then WebP. AVIF is ~25–30 % smaller than WebP at the
     // same perceptual quality; next/image negotiates per request based

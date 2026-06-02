@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSupabase } from "@/lib/supabase/server";
-import { isSameOrigin } from "@/lib/sameOrigin";
+import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 
 /**
@@ -14,19 +13,10 @@ export async function DELETE(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  if (!isSameOrigin(req)) {
-    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
-  }
+  const gate = await requireAdmin(req);
+  if (gate instanceof NextResponse) return gate;
+  const { user, supabase } = gate;
   const { id } = await ctx.params;
-  const supabase = await getServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
-
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
 
   const { error } = await supabase
     .from("notifications")

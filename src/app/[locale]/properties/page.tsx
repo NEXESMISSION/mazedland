@@ -1,10 +1,8 @@
-import { getServerSupabase } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import type { AuctionWithProperty, PropertyType } from "@/lib/types";
 import { ExploreView } from "@/components/explore/ExploreView";
 import type { ExploreFilter } from "@/components/explore/types";
-
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 const PAGE_SIZE = 12;
 
@@ -12,6 +10,89 @@ const VALID_TYPES: PropertyType[] = [
   "apartment", "house", "villa", "land",
   "commercial", "office", "warehouse", "farm",
 ];
+
+type ExploreQueryParams = {
+  filter: ExploreFilter;
+  types: PropertyType[];
+  gov: string | null;
+  term: string;
+  minPrice: number | null;
+  maxPrice: number | null;
+  minArea: number | null;
+  minRooms: number | null;
+  from: number;
+  to: number;
+};
+
+/**
+ * The catalogue page is the same for every visitor — listings are public
+ * (status scheduled/live/extending + property ready) and the saved-heart /
+ * login state is filled in client-side after hydration (see WatchlistButton:
+ * the server `loggedIn` is only a pre-hydration fallback). So we cache the
+ * heavy join+count query per filter-combination for 60s with the cookieless
+ * service-role client — exactly the home-feed pattern — instead of running a
+ * full DB round-trip + an auth.getUser() on every single visit. At scale this
+ * turns the app's second-busiest page from per-request DB work into mostly
+ * cache hits.
+ */
+const getExploreFeed = unstable_cache(
+  async (
+    p: ExploreQueryParams,
+  ): Promise<{ items: AuctionWithProperty[]; totalCount: number }> => {
+    const sb = getServiceSupabase();
+    if (!sb) return { items: [], totalCount: 0 };
+
+    let q = sb
+      .from("auctions")
+      .select(
+        `
+        *,
+        property:properties!inner (
+          *,
+          photos:property_photos (id, storage_path, sort_order, caption)
+        )
+      `,
+        { count: "exact" },
+      )
+      .in("status", ["scheduled", "live", "extending"])
+      .eq("property.status", "ready")
+      .order("created_at", { ascending: false })
+      .range(p.from, p.to);
+
+    if (p.filter === "auction") q = q.eq("listing_type", "auction");
+    else if (p.filter === "direct") q = q.eq("listing_type", "direct");
+
+    if (p.types.length > 0) q = q.in("property.type", p.types);
+    if (p.gov) q = q.eq("property.governorate", p.gov);
+    if (p.term) {
+      q = q.or(
+        `title.ilike.*${p.term}*,governorate.ilike.*${p.term}*,address.ilike.*${p.term}*`,
+        { referencedTable: "property" },
+      );
+    }
+    if (p.minArea !== null) q = q.gte("property.area_sqm", p.minArea);
+    if (p.minRooms !== null) q = q.gte("property.rooms", p.minRooms);
+    if (p.minPrice !== null) {
+      q = q.or(
+        `current_price.gte.${p.minPrice},sale_price.gte.${p.minPrice},opening_price.gte.${p.minPrice}`,
+      );
+    }
+    if (p.maxPrice !== null) {
+      q = q.or(
+        `current_price.lte.${p.maxPrice},sale_price.lte.${p.maxPrice},opening_price.lte.${p.maxPrice}`,
+      );
+    }
+
+    const res = await q;
+    if (res.error) {
+      console.error("[/properties] supabase error", res.error);
+    }
+    const items = (res.data ?? []) as unknown as AuctionWithProperty[];
+    return { items, totalCount: res.count ?? items.length };
+  },
+  ["explore-feed"],
+  { revalidate: 60, tags: ["explore-feed"] },
+);
 
 /**
  * Explore — paginated listing index.
@@ -61,67 +142,32 @@ export default async function ExplorePage({
   let items: AuctionWithProperty[] = [];
   let totalCount = 0;
   let totalPages = 1;
-  let loggedIn = false;
   // Filled client-side by the watchlist store; kept empty server-side.
   const savedAuctionIds: string[] = [];
 
   try {
-    const supabase = await getServerSupabase();
-    let q = supabase
-      .from("auctions")
-      .select(
-        `
-        *,
-        property:properties!inner (
-          *,
-          photos:property_photos (id, storage_path, sort_order, caption)
-        )
-      `,
-        { count: "exact" },
-      )
-      .in("status", ["scheduled", "live", "extending"])
-      .eq("property.status", "ready")
-      .order("created_at", { ascending: false })
-      .range(from, to);
-
-    if (initialFilter === "auction") q = q.eq("listing_type", "auction");
-    else if (initialFilter === "direct") q = q.eq("listing_type", "direct");
-
-    if (types.length > 0) q = q.in("property.type", types);
-    if (gov) q = q.eq("property.governorate", gov);
-    if (term) {
-      q = q.or(
-        `title.ilike.*${term}*,governorate.ilike.*${term}*,address.ilike.*${term}*`,
-        { referencedTable: "property" },
-      );
-    }
-    if (minArea !== null) q = q.gte("property.area_sqm", minArea);
-    if (minRooms !== null) q = q.gte("property.rooms", minRooms);
-    if (minPrice !== null) {
-      q = q.or(
-        `current_price.gte.${minPrice},sale_price.gte.${minPrice},opening_price.gte.${minPrice}`,
-      );
-    }
-    if (maxPrice !== null) {
-      q = q.or(
-        `current_price.lte.${maxPrice},sale_price.lte.${maxPrice},opening_price.lte.${maxPrice}`,
-      );
-    }
-
-    const [rowsRes, userRes] = await Promise.all([q, supabase.auth.getUser()]);
-    if (rowsRes.error) {
-      console.error("[/properties] supabase error", rowsRes.error);
-    }
-    items = (rowsRes.data ?? []) as unknown as AuctionWithProperty[];
-    totalCount = rowsRes.count ?? items.length;
+    const feed = await getExploreFeed({
+      filter: initialFilter,
+      types,
+      gov,
+      term,
+      minPrice,
+      maxPrice,
+      minArea,
+      minRooms,
+      from,
+      to,
+    });
+    items = feed.items;
+    totalCount = feed.totalCount;
     totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-    loggedIn = !!userRes.data.user;
-    // Saved-heart state is filled in client-side by the shared watchlist
-    // store (WatchlistButton + WatchlistSync), so we skip the per-request
-    // watchlist round-trip — /properties renders in a single query wave.
+    // Saved-heart + login state are filled in client-side by the shared
+    // watchlist store (WatchlistButton + WatchlistSync), so we skip both the
+    // per-request watchlist round-trip AND the auth.getUser() here — the
+    // catalogue render is now fully shareable + cacheable across users.
   } catch (err) {
     console.warn(
-      "[/properties] supabase unavailable:",
+      "[/properties] feed unavailable:",
       err instanceof Error ? err.message : err,
     );
   }
@@ -133,7 +179,7 @@ export default async function ExplorePage({
       initialPage={initialPage}
       initialTotalPages={totalPages}
       initialTotalCount={totalCount}
-      loggedIn={loggedIn}
+      loggedIn={false}
       savedAuctionIds={savedAuctionIds}
       initialSearch={term}
       initialExtra={{

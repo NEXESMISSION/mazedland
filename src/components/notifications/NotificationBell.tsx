@@ -63,7 +63,14 @@ type NotificationRow = {
   created_at: string;
 };
 
-const POLL_MS = 60_000;
+// Safety-net poll only. The realtime channel below (INSERT/UPDATE/DELETE,
+// all user-filtered + debounced) is the primary path and keeps the badge
+// live within ~250ms of any change. This poll just heals the rare dropped
+// realtime event, so it's intentionally slow: at 60s it meant ~N req/sec
+// of getUser()+count queries from every signed-in tab, 24/7, regardless of
+// whether anything changed — the highest-volume idle cost in the app.
+// 5 min keeps the heal guarantee while cutting that load ~5×.
+const POLL_MS = 300_000;
 // Re-render relative timestamps every 30s while the dialog is open so
 // "il y a 1 min" doesn't freeze.
 const TICK_MS = 30_000;
@@ -222,7 +229,7 @@ export function NotificationBell() {
           () => scheduleRefresh(),
         )
         // UPDATE → catches mark-as-read from another tab (the badge
-        // here would otherwise stay stale until the next 60s poll) and
+        // here would otherwise stay stale until the next safety-net poll) and
         // DELETE → catches a row removed elsewhere (admin bulk-delete,
         // self-clear from another device). We share the same debounce
         // so a burst of events still only triggers one /api/notifications

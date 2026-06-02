@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
-import { isSameOrigin } from "@/lib/sameOrigin";
+import { requireAdmin } from "@/lib/admin/guard";
 
 /**
  * GET /api/admin/manual-payment/options?type=user|auction&q=… — admin-only.
@@ -9,17 +8,8 @@ import { isSameOrigin } from "@/lib/sameOrigin";
  * broad browser-side RLS reads. Service-role, capped at 10 results.
  */
 export async function GET(req: NextRequest) {
-  if (!isSameOrigin(req)) {
-    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
-  }
-  const supabase = await getServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
+  const gate = await requireAdmin(req);
+  if (gate instanceof NextResponse) return gate;
 
   const url = new URL(req.url);
   const type = url.searchParams.get("type");

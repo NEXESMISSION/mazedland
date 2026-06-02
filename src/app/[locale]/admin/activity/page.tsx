@@ -117,11 +117,18 @@ export default async function AdminActivity({
 
   const since24h = new Date(Date.now() - 86_400_000).toISOString();
 
+  // `estimated`, NOT `exact`: activity_log is the fastest-growing table in
+  // the app (middleware writes a page_view per navigation), so an exact
+  // count here is a full-table scan that gets slower every day — run on
+  // every admin activity page load AND every pagination click. `estimated`
+  // returns the real count while the result set is small and falls back to
+  // the planner's row estimate once the table is large. Pagination totals
+  // may be approximate on a huge log, which is fine for an audit viewer.
   let query = sb
     .from("activity_log")
     .select(
       "id, created_at, user_id, user_email, type, action, path, method, status, ip, user_agent",
-      { count: "exact" },
+      { count: "estimated" },
     );
   if (type !== "all") query = query.eq("type", type);
   if (q) query = query.or(`user_email.ilike.%${q}%,path.ilike.%${q}%,action.ilike.%${q}%`);

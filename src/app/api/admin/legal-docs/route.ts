@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
-import { isSameOrigin } from "@/lib/sameOrigin";
+import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import type { PropertyType } from "@/lib/types";
 
@@ -28,18 +27,9 @@ type IncomingItem = {
  * three round-trips for create/update/delete.
  */
 export async function PUT(req: NextRequest) {
-  if (!isSameOrigin(req)) {
-    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
-  }
-  const supabase = await getServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
-
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
+  const gate = await requireAdmin(req);
+  if (gate instanceof NextResponse) return gate;
+  const { user } = gate;
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const propertyType = body.property_type as PropertyType | undefined;
