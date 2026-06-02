@@ -118,6 +118,19 @@ export default async function CheckoutEntry({
     redirect(`/${locale}/auctions/${a.id}`);
   }
 
+  // Final payment is WINNER-ONLY. Without this gate a losing bidder could open
+  // /payment/checkout?type=final_payment&auction=X and be charged for a win
+  // they don't hold — the capture would then no-op (auction already closed),
+  // taking their money for nothing. Only the recorded winner of a settled
+  // auction may pay the balance.
+  if (kind === "final_payment") {
+    const isWinner = a.winner_user_id === user.id;
+    const settled = a.status === "awarded" || a.status === "ended_sold";
+    if (!isWinner || !settled) {
+      redirect(`/${locale}/auctions/${a.id}`);
+    }
+  }
+
   // Compute authoritative amount.
   let amount = 0;
   switch (kind) {
@@ -159,6 +172,22 @@ export default async function CheckoutEntry({
   // Find or create a pending payment row for this user+auction+kind.
   const dbKind =
     kind === "deposit" ? "deposit_lock" : kind === "buy_now" ? "buy_now" : "final_payment";
+
+  // Already paid? Don't let the user (or a stale notification link) open a
+  // second checkout for a purchase that's already captured — a second receipt
+  // + admin capture would double-charge them and inflate seller earnings.
+  // Bounce to the auction (which shows the settled/won state).
+  const { data: alreadyPaid } = await supabase
+    .from("payments")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("auction_id", auctionId)
+    .eq("kind", dbKind)
+    .eq("status", "captured")
+    .limit(1);
+  if (alreadyPaid && alreadyPaid.length > 0) {
+    redirect(`/${locale}/auctions/${a.id}`);
+  }
 
   // Find the latest reusable payment. NOTE: use limit(1), not maybeSingle —
   // maybeSingle THROWS when >1 row matches, which made `existing` null and

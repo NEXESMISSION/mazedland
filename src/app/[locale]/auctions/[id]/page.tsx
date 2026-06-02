@@ -339,6 +339,43 @@ export default async function AuctionDetail({
     ? `/payment/checkout?type=deposit&auction=${auction.id}`
     : `/auctions/${auction.id}/bid`) as never;
 
+  // Winner balance: drives the "pay the final balance" CTA in the win row
+  // below. The winner is told (by notification) to pay the balance or forfeit
+  // their caution — without this CTA they had no way to actually pay. null =
+  // nothing owed / already captured.
+  let winnerBalance: number | null = null;
+  const isWinner =
+    !isDirect && auction.winner_user_id != null && userId === auction.winner_user_id;
+  const isSettled = auction.status === "awarded" || auction.status === "ended_sold";
+  if (isWinner && isSettled && userId) {
+    const [winPayRes, winDepRes] = await Promise.all([
+      supabase
+        .from("payments")
+        .select("status")
+        .eq("auction_id", id)
+        .eq("user_id", userId)
+        .eq("kind", "final_payment")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("auction_deposits")
+        .select("amount")
+        .eq("auction_id", id)
+        .eq("user_id", userId)
+        .is("forfeited_at", null)
+        .order("amount", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    if (winPayRes.data?.status !== "captured") {
+      const full = Number(auction.winner_amount ?? 0);
+      const credit = Number(winDepRes.data?.amount ?? 0);
+      const bal = Math.max(0, Math.round((full - credit) * 100) / 100);
+      winnerBalance = bal > 0 ? bal : null;
+    }
+  }
+
   return (
     <>
       {/* Suppress "you've been outbid" notifications while the user
@@ -372,6 +409,7 @@ export default async function AuctionDetail({
         myInspection={myInspection}
         sellerFinalPayment={sellerFinalPayment}
         sellerActiveDeposits={sellerActiveDeposits}
+        winnerBalance={winnerBalance}
       />
 
       {/* ─── MOBILE / tablet (default, hidden on lg+) ─── */}
@@ -607,22 +645,48 @@ export default async function AuctionDetail({
         && auction.winner_user_id
         && userId === auction.winner_user_id && (
         <section className="mx-4 mt-3">
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-[var(--gold-faint)] px-4 py-3 ring-1 ring-[var(--gold-soft)]">
-            <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-[0.16em] font-bold text-[var(--gold)]">
-                {t("auction.wonByYou")}
+          {winnerBalance != null ? (
+            // Balance still owed → the actual "pay" path (was missing entirely;
+            // winners were told to pay-or-forfeit with no button to pay).
+            <div className="rounded-xl bg-[var(--gold-faint)] px-4 py-3.5 ring-1 ring-[var(--gold-soft)]">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase tracking-[0.16em] font-bold text-[var(--gold)]">
+                    {t("auction.wonByYou")}
+                  </div>
+                  <div className="mt-0.5 text-[12px] text-[var(--foreground-muted)]">
+                    Solde à régler — votre caution est déduite.
+                  </div>
+                </div>
+                <div className="batta-tabular shrink-0 text-base font-extrabold text-foreground">
+                  {formatTND(winnerBalance, locale)}
+                </div>
               </div>
-              <div className="batta-tabular mt-0.5 text-base font-bold text-foreground">
-                {formatTND(Number(auction.winner_amount ?? currentPrice), locale)}
-              </div>
+              <Link
+                href={`/payment/checkout?type=final_payment&auction=${auction.id}` as never}
+                className="batta-btn-luxe tap-target mt-3 flex h-11 w-full items-center justify-center text-[13px]"
+              >
+                Payer le solde
+              </Link>
             </div>
-            <Link
-              href={{ pathname: "/account/activity", query: { tab: "gagnees" } }}
-              className="shrink-0 text-[12px] font-semibold text-[var(--gold)] hover:underline"
-            >
-              {t("auction.myWins")} →
-            </Link>
-          </div>
+          ) : (
+            <div className="flex items-center justify-between gap-3 rounded-xl bg-[var(--gold-faint)] px-4 py-3 ring-1 ring-[var(--gold-soft)]">
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-[0.16em] font-bold text-[var(--gold)]">
+                  {t("auction.wonByYou")}
+                </div>
+                <div className="batta-tabular mt-0.5 text-base font-bold text-foreground">
+                  {formatTND(Number(auction.winner_amount ?? currentPrice), locale)}
+                </div>
+              </div>
+              <Link
+                href={{ pathname: "/account/activity", query: { tab: "gagnees" } }}
+                className="shrink-0 text-[12px] font-semibold text-[var(--gold)] hover:underline"
+              >
+                {t("auction.myWins")} →
+              </Link>
+            </div>
+          )}
         </section>
       )}
 

@@ -54,13 +54,16 @@ export async function AuctionDesktop(props: {
   myInspection: { id: string; status: string } | null;
   sellerFinalPayment: { id: string; status: string; amount: number } | null;
   sellerActiveDeposits: number;
+  /** Balance the winner still owes (winner_amount − caution), or null when
+   *  nothing is due / already paid. Drives the "Payer le solde" CTA. */
+  winnerBalance: number | null;
 }) {
   const {
     auction, totalBids, currentPrice, depositRequired, deposit,
     isLive, isDirect, hasBuyNow, isEnded, isOwner,
     kycVerified, hasActiveDeposit, depositUnderReview, userId,
     documents, attrKinds, attrs, myInspection,
-    sellerFinalPayment, sellerActiveDeposits,
+    sellerFinalPayment, sellerActiveDeposits, winnerBalance,
   } = props;
 
   const t = await getTranslations();
@@ -288,7 +291,23 @@ export async function AuctionDesktop(props: {
                   </div>
                 )}
 
-                {!showBidCta && isWinner && (
+                {!showBidCta && isWinner && winnerBalance != null && (
+                  <div className="mt-5 rounded-2xl bg-[var(--gold-faint)] p-4 ring-1 ring-[var(--gold-soft)]">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[12px] text-muted">Solde à régler — caution déduite</span>
+                      <span className="batta-tabular text-[15px] font-extrabold text-foreground">
+                        {formatTND(winnerBalance, locale)} {tnd}
+                      </span>
+                    </div>
+                    <Link
+                      href={`/payment/checkout?type=final_payment&auction=${auction.id}` as never}
+                      className="batta-gradient-gold mt-3 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full text-[13.5px] font-extrabold uppercase tracking-[0.1em] text-white shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
+                    >
+                      <Trophy className="size-4" strokeWidth={2.4} /> Payer le solde
+                    </Link>
+                  </div>
+                )}
+                {!showBidCta && isWinner && winnerBalance == null && (
                   <Link href={{ pathname: "/account/activity", query: { tab: "gagnees" } }} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--gold-faint)] px-4 py-2.5 text-[12.5px] font-semibold text-[var(--gold)] ring-1 ring-[var(--gold-soft)] transition hover:underline">
                     <Trophy className="size-4" strokeWidth={2.2} /> {t("auction.myWins")} →
                   </Link>
