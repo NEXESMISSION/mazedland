@@ -64,6 +64,25 @@ export async function POST(req: NextRequest) {
     if (dep.refunded_at) return NextResponse.json({ error: "already_refunded" }, { status: 409 });
     if (dep.forfeited_at) return NextResponse.json({ error: "forfeited" }, { status: 409 });
 
+    // Don't refund the WINNER's caution on a settled sale. The winner's
+    // deposit is part of the purchase price — it's netted out of their final
+    // payment AND counted in the seller's earnings. Refunding it here would
+    // silently under-pay the seller. (Use forfeit, or unwind the sale first.)
+    {
+      const { data: auc } = await admin
+        .from("auctions")
+        .select("status, winner_user_id")
+        .eq("id", dep.auction_id)
+        .maybeSingle();
+      if (
+        auc &&
+        auc.winner_user_id === dep.user_id &&
+        (auc.status === "ended_sold" || auc.status === "awarded")
+      ) {
+        return NextResponse.json({ error: "winner_caution_locked" }, { status: 409 });
+      }
+    }
+
     const { error } = await admin
       .from("auction_deposits")
       .update({

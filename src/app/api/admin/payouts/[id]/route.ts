@@ -36,63 +36,32 @@ export async function PATCH(
     return NextResponse.json({ error: "bad_status" }, { status: 400 });
   }
 
-  const update: Record<string, unknown> = {
-    status,
-    reviewer_id: user.id,
-    reviewer_notes: notes,
-  };
-  if (status === "paid") {
-    update.processed_at = new Date().toISOString();
+  // Atomic, per-seller-serialized transition. The RPC takes an advisory lock
+  // on the seller, asserts a valid prior status, and (for 'paid') rechecks the
+  // payable balance UNDER the lock — so two admins/tabs can't both mark
+  // payouts paid off a stale balance and over-pay the seller. See migration
+  // 0059_admin_set_payout_status.sql. Runs on the user client so auth.uid()
+  // is the admin and is_admin() resolves true.
+  const { data: result, error: rpcErr } = await supabase.rpc("admin_set_payout_status", {
+    p_payout_id: id,
+    p_status: status,
+    p_notes: notes,
+  });
+  if (rpcErr) {
+    const msg = rpcErr.message || "payout_update_failed";
+    const code =
+      msg.includes("balance_insufficient") || msg.includes("payout_terminal") ? 409
+      : msg.includes("payout_not_found") ? 404
+      : msg.includes("forbidden") ? 403
+      : 500;
+    return NextResponse.json({ error: msg }, { status: code });
   }
-
-  // Fetch the payout owner + amount so we can notify the seller.
-  const { data: payout } = await supabase
-    .from("seller_payouts")
-    .select("id, seller_id, amount, iban")
-    .eq("id", id)
-    .single();
-
-  // Re-validate the balance before paying out: the seller's net can erode
-  // after the request (e.g. a sale's payment was later refunded), and the
-  // request-time check is now stale. Block the payout if it exceeds what's
-  // still owed (lifetime_net − already paid out).
-  if (status === "paid" && payout?.seller_id) {
-    const { data: bal } = await supabase.rpc("seller_balance", {
-      p_seller_id: payout.seller_id,
-    });
-    const net = Number((bal as { lifetime_net?: number } | null)?.lifetime_net ?? 0);
-    const paidOut = Number((bal as { paid_out?: number } | null)?.paid_out ?? 0);
-    // Reserve OTHER in-flight ('processing') payouts for the same seller too.
-    // `paid_out` only counts already-paid rows, so without this two admins (or
-    // two tabs) marking two different payouts paid at once both read
-    // paid_out=0, both pass, and the seller is over-paid. Subtracting
-    // in-flight closes that window. (A DB row-lock RPC is the complete fix.)
-    const { data: inflight } = await supabase
-      .from("seller_payouts")
-      .select("amount")
-      .eq("seller_id", payout.seller_id)
-      .eq("status", "processing")
-      .neq("id", id);
-    const reserved = (inflight ?? []).reduce(
-      (s, r) => s + Number((r as { amount: number }).amount),
-      0,
-    );
-    const payable = Math.round((net - paidOut - reserved) * 100) / 100;
-    if (Number(payout.amount) > payable + 0.001) {
-      return NextResponse.json(
-        { error: "balance_insufficient", detail: `payable: ${payable}, payout: ${payout.amount}` },
-        { status: 409 },
-      );
-    }
-  }
-
-  const { error } = await supabase
-    .from("seller_payouts")
-    .update(update)
-    .eq("id", id);
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  const payout = result as {
+    seller_id: string;
+    amount: number;
+    iban: string | null;
+    prev_status: string;
+  } | null;
 
   if (payout?.seller_id) {
     const admin = getServiceSupabase();
