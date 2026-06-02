@@ -3,6 +3,9 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { PWARegister } from "@/components/layout/PWARegister";
 import { Suspense } from "react";
 import { ClientLogger } from "@/components/dev/ClientLogger";
+import { ClientErrorReporter } from "@/components/observability/ClientErrorReporter";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 // Jakarta only — same family the mazed auto codebase ships with.
@@ -146,6 +149,14 @@ export default async function RootLayout({
       >
         {children}
         <PWARegister />
+        {/* Ships uncaught client errors + unhandled rejections to the server
+            log sink — pairs with instrumentation.ts (server errors) for a
+            single, unified observability stream. */}
+        <ClientErrorReporter />
+        {/* Vercel web analytics + Core Web Vitals (zero-config, no DSN).
+            Real-user performance + traffic without a third-party tag. */}
+        <Analytics />
+        <SpeedInsights />
         <Suspense fallback={null}>
           <ClientLogger />
         </Suspense>

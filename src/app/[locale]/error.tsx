@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AlertTriangle, RotateCcw, Home, WifiOff } from "lucide-react";
+import { reportClientError } from "@/components/observability/ClientErrorReporter";
 
 /**
  * Locale-root error boundary. Without this, a render error anywhere
@@ -49,15 +50,18 @@ export default function LocaleError({
   const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
-    // Best-effort visibility for whoever is watching the console —
-    // in prod this is the only signal we get unless Sentry is wired.
-    // eslint-disable-next-line no-console
-    console.error("[boundary] segment error", {
-      message: error?.message,
-      digest: error?.digest,
-      isNetwork,
-      stack: error?.stack?.split("\n").slice(0, 4),
-    });
+    // Ship boundary-caught errors to the server sink (these never reach
+    // window.onerror). Network blips aren't bugs — skip those to keep the
+    // signal clean. Server components' errors are also captured server-side
+    // by instrumentation.ts; this covers the client-render path + the digest.
+    if (!isNetwork) {
+      reportClientError({
+        message: error?.message || "Segment render error",
+        stack: error?.stack,
+        source: error?.digest ? `digest:${error.digest}` : undefined,
+        kind: "react-boundary",
+      });
+    }
   }, [error, isNetwork]);
 
   // Auto-recover network-flavored failures the moment the browser
