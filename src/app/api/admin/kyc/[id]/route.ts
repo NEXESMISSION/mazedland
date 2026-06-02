@@ -32,24 +32,16 @@ export async function PATCH(
     );
   }
 
-  const now = new Date().toISOString();
-
-  // Update both rows so we don't end up with a verified submission that
-  // didn't update the user's `kyc_status`.
-  const { error: e1 } = await supabase
-    .from("kyc_submissions")
-    .update({ status: verdict, reviewer_id: user.id, rejection_reason: notes, reviewed_at: now })
-    .eq("id", id);
-  if (e1) return NextResponse.json({ error: e1.message }, { status: 500 });
-
-  const { error: e2 } = await supabase
-    .from("profiles")
-    .update({
-      kyc_status: verdict,
-      kyc_verified_at: verdict === "verified" ? now : null,
-    })
-    .eq("id", subjectId);
-  if (e2) return NextResponse.json({ error: e2.message }, { status: 500 });
+  // Atomic: update kyc_submissions + profiles together in one transaction via
+  // the review_kyc RPC (migration 0058), so we can never land in a
+  // "verified submission / unverified profile" mismatch.
+  const { error: reviewErr } = await supabase.rpc("review_kyc", {
+    p_submission_id: id,
+    p_subject_id: subjectId,
+    p_verdict: verdict,
+    p_notes: notes,
+  });
+  if (reviewErr) return NextResponse.json({ error: reviewErr.message }, { status: 500 });
 
   // Notify the user. Notifications insert is service-role-only by
   // design (no INSERT policy on the table), so we go through the

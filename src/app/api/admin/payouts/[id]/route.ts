@@ -62,7 +62,22 @@ export async function PATCH(
     });
     const net = Number((bal as { lifetime_net?: number } | null)?.lifetime_net ?? 0);
     const paidOut = Number((bal as { paid_out?: number } | null)?.paid_out ?? 0);
-    const payable = Math.round((net - paidOut) * 100) / 100;
+    // Reserve OTHER in-flight ('processing') payouts for the same seller too.
+    // `paid_out` only counts already-paid rows, so without this two admins (or
+    // two tabs) marking two different payouts paid at once both read
+    // paid_out=0, both pass, and the seller is over-paid. Subtracting
+    // in-flight closes that window. (A DB row-lock RPC is the complete fix.)
+    const { data: inflight } = await supabase
+      .from("seller_payouts")
+      .select("amount")
+      .eq("seller_id", payout.seller_id)
+      .eq("status", "processing")
+      .neq("id", id);
+    const reserved = (inflight ?? []).reduce(
+      (s, r) => s + Number((r as { amount: number }).amount),
+      0,
+    );
+    const payable = Math.round((net - paidOut - reserved) * 100) / 100;
     if (Number(payout.amount) > payable + 0.001) {
       return NextResponse.json(
         { error: "balance_insufficient", detail: `payable: ${payable}, payout: ${payout.amount}` },
