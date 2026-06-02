@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
-import { MailCheck, Loader2 } from "lucide-react";
+import { MailCheck, Loader2, Smartphone } from "lucide-react";
 import { PhoneInput } from "./PhoneInput";
 import { TUNISIAN_GOVERNORATES, normalizeE164, validatePhone } from "@/lib/tunisia";
 import { Modal } from "@/components/ui/Modal";
@@ -41,6 +41,47 @@ export function SignupForm() {
   const [error, setError] = useState<string | null>(null);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  // Phone-OTP gate (active only when WinSMS is configured server-side).
+  const [otpPhase, setOtpPhase] = useState(false);
+  const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+
+  // Tick the resend cooldown.
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const t = setInterval(() => setOtpCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [otpCooldown]);
+
+  // The real account creation — runs after phone verification (or directly
+  // when SMS isn't configured).
+  async function performSignup(normalizedPhone: string) {
+    const supabase = getBrowserSupabase();
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          phone: normalizedPhone,
+          governorate,
+        },
+      },
+    });
+    if (error) {
+      setError(error.message);
+      setOtpPhase(false);
+      return;
+    }
+    if (data.user && !data.user.email_confirmed_at) {
+      setPendingEmail(email);
+      return;
+    }
+    router.replace("/kyc");
+    router.refresh();
+  }
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,29 +108,119 @@ export function SignupForm() {
       return;
     }
     startTransition(async () => {
-      const supabase = getBrowserSupabase();
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            phone: normalizedPhone,
-            governorate,
-          },
-        },
-      });
-      if (error) {
-        setError(error.message);
-        return;
+      // Step 1: ask for an SMS code. If SMS isn't configured the endpoint
+      // says so and we sign up directly — identical to the old flow.
+      try {
+        const res = await fetch("/api/auth/phone/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: normalizedPhone }),
+        });
+        const j = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          configured?: boolean;
+          error?: string;
+          retryAfter?: number;
+        };
+        if (res.ok && j.configured === false) {
+          await performSignup(normalizedPhone);
+          return;
+        }
+        if (res.ok && j.ok) {
+          setVerifiedPhone(normalizedPhone);
+          setOtpPhase(true);
+          setOtpCode("");
+          setOtpError(null);
+          setOtpCooldown(60);
+          return;
+        }
+        if (res.status === 429 && j.error === "cooldown") {
+          setError(`Patientez ${j.retryAfter ?? 60}s avant de redemander un code.`);
+        } else {
+          setError("Échec de l'envoi du code SMS. Vérifiez le numéro et réessayez.");
+        }
+      } catch {
+        setError("Erreur réseau. Réessayez.");
       }
-      if (data.user && !data.user.email_confirmed_at) {
-        setPendingEmail(email);
-        return;
-      }
-      router.replace("/kyc");
-      router.refresh();
     });
+  }
+
+  function onVerify(e: React.FormEvent) {
+    e.preventDefault();
+    setOtpError(null);
+    const clean = otpCode.replace(/\D/g, "");
+    if (clean.length !== 6) {
+      setOtpError("Entrez le code à 6 chiffres.");
+      return;
+    }
+    if (!verifiedPhone) return;
+    startTransition(async () => {
+      try {
+        const res = await fetch("/api/auth/phone/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: verifiedPhone, code: clean }),
+        });
+        const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+        if (res.ok && j.ok) {
+          await performSignup(verifiedPhone);
+          return;
+        }
+        const map: Record<string, string> = {
+          wrong_code: "Code incorrect.",
+          expired: "Code expiré. Redemandez-en un.",
+          no_code: "Aucun code en cours. Redemandez-en un.",
+          too_many_attempts: "Trop de tentatives. Redemandez un code.",
+        };
+        setOtpError(map[j.error ?? ""] ?? "Échec de la vérification.");
+      } catch {
+        setOtpError("Erreur réseau. Réessayez.");
+      }
+    });
+  }
+
+  function resendOtp() {
+    if (otpCooldown > 0 || !verifiedPhone) return;
+    setOtpError(null);
+    startTransition(async () => {
+      try {
+        const res = await fetch("/api/auth/phone/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: verifiedPhone }),
+        });
+        const j = (await res.json().catch(() => ({}))) as { ok?: boolean; retryAfter?: number; error?: string };
+        if (res.ok && j.ok) {
+          setOtpCooldown(60);
+        } else if (res.status === 429 && j.error === "cooldown") {
+          setOtpCooldown(j.retryAfter ?? 60);
+        } else {
+          setOtpError("Échec du renvoi. Réessayez.");
+        }
+      } catch {
+        setOtpError("Erreur réseau. Réessayez.");
+      }
+    });
+  }
+
+  if (otpPhase && !pendingEmail) {
+    return (
+      <PhoneVerify
+        phone={verifiedPhone ?? ""}
+        code={otpCode}
+        onCodeChange={setOtpCode}
+        onVerify={onVerify}
+        onResend={resendOtp}
+        onBack={() => {
+          setOtpPhase(false);
+          setOtpError(null);
+          setOtpCode("");
+        }}
+        cooldown={otpCooldown}
+        error={otpError}
+        pending={isPending}
+      />
+    );
   }
 
   if (pendingEmail) {
@@ -208,6 +339,84 @@ export function SignupForm() {
         Compte partenaire (agence, expert, banque) ? Créez un compte ici puis
         candidatez depuis <span className="text-batta-cream">Compte</span>.
       </p>
+    </form>
+  );
+}
+
+/**
+ * SMS code-entry step shown between the signup form and account creation,
+ * only when WinSMS is configured server-side. Mirrors the "check your email"
+ * card's visual language.
+ */
+function PhoneVerify({
+  phone, code, onCodeChange, onVerify, onResend, onBack, cooldown, error, pending,
+}: {
+  phone: string;
+  code: string;
+  onCodeChange: (v: string) => void;
+  onVerify: (e: React.FormEvent) => void;
+  onResend: () => void;
+  onBack: () => void;
+  cooldown: number;
+  error: string | null;
+  pending: boolean;
+}) {
+  return (
+    <form onSubmit={onVerify} className="batta-frame-gold relative p-6 text-center">
+      <span className="batta-monogram batta-monogram-filled mx-auto mb-3 size-12 text-[18px]">
+        <Smartphone className="size-5" strokeWidth={1.75} />
+      </span>
+      <h2 className="batta-serif text-[18px] font-semibold text-batta-cream">
+        Vérifiez votre numéro
+      </h2>
+      <p className="mt-2 text-sm text-batta-cream/75">
+        Entrez le code à 6 chiffres envoyé par SMS au{" "}
+        <span className="font-bold text-batta-cream">{phone}</span>.
+      </p>
+
+      <input
+        type="text"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        maxLength={6}
+        value={code}
+        onChange={(e) => onCodeChange(e.target.value.replace(/\D/g, ""))}
+        placeholder="••••••"
+        className="mt-5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-3 text-center text-[22px] font-bold tracking-[0.4em] text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+      />
+
+      {error && (
+        <p className="batta-tone-bad mt-3 rounded-lg px-3 py-2 text-xs">{error}</p>
+      )}
+
+      <div className="mt-5 flex flex-col gap-2">
+        <button
+          type="submit"
+          disabled={pending || code.replace(/\D/g, "").length !== 6}
+          className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
+        >
+          {pending ? (
+            <><Loader2 className="inline size-4 animate-spin" /> Vérification…</>
+          ) : (
+            "Vérifier et créer le compte"
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={onResend}
+          disabled={cooldown > 0 || pending}
+          className="batta-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
+        >
+          {cooldown > 0 ? `Renvoyer le code (${cooldown}s)` : "Renvoyer le code"}
+        </button>
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-[12px] text-batta-cream/70 hover:text-gold-bright"
+        >
+          Modifier mes informations
+        </button>
+      </div>
     </form>
   );
 }
