@@ -13,3 +13,8 @@ next-env.d.ts
 # Local dev-only — Supabase CLI workspace + Claude Code preview launcher.
 supabase/.temp/
 .claude/launch.json
+
+# Cloudflare/wrangler experiment artifacts (never commit secrets/build output)
+.dev.vars
+.open-next/
+.wrangler/
