@@ -1,9 +1,13 @@
+import type { Metadata } from "next";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { redirect } from "@/i18n/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import type { AuctionWithProperty } from "@/lib/types";
 import { formatTND } from "@/lib/utils";
+import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { resolveDeposit } from "@/lib/pricing";
 import { getCachedMonetization } from "@/lib/settings";
 import { Countdown } from "@/components/auction/Countdown";
@@ -23,6 +27,82 @@ import {
   ClipboardCheck, FileText, Lock, Gavel, Download, Clock,
   Hourglass,
 } from "lucide-react";
+
+// Lightweight SEO lookup — just the fields a search result / social card
+// needs. `cache()` dedupes the call across generateMetadata and any other
+// caller in the same request. Cookieless service-role read (the listing is
+// public), so it never forces the page dynamic on its own.
+const getAuctionSeo = cache(async (id: string) => {
+  const sb = getServiceSupabase();
+  if (!sb) return null;
+  const { data } = await sb
+    .from("auctions")
+    .select(
+      "id, status, opening_price, current_price, sale_price, listing_type, property:properties!inner(title, description, governorate, status, photos:property_photos(storage_path, sort_order))",
+    )
+    .eq("id", id)
+    .maybeSingle();
+  return (data as unknown as {
+    status: string;
+    opening_price: number | null;
+    current_price: number | null;
+    sale_price: number | null;
+    listing_type: string;
+    property: {
+      title: string;
+      description: string | null;
+      governorate: string | null;
+      status: string;
+      photos: { storage_path: string; sort_order: number }[] | null;
+    };
+  } | null) ?? null;
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string; locale: string }>;
+}): Promise<Metadata> {
+  const { id, locale } = await params;
+  const a = await getAuctionSeo(id);
+  if (!a || a.property.status !== "ready") {
+    return { title: "Enchère", robots: { index: false } };
+  }
+  const p = a.property;
+  const price = a.current_price ?? a.sale_price ?? a.opening_price ?? 0;
+  const priceLabel = price > 0 ? `${formatTND(price, locale)} TND` : null;
+  const isDirect = a.listing_type === "direct";
+  const where = p.governorate ? ` à ${p.governorate}` : "";
+  const title = priceLabel
+    ? `${p.title}${where} — ${priceLabel}`
+    : `${p.title}${where}`;
+  const description =
+    (p.description?.trim().slice(0, 200)) ||
+    `${isDirect ? "Vente directe" : "Enchère immobilière"}${where} sur Batta.tn — ${
+      priceLabel ? `${isDirect ? "prix" : "mise à prix"} ${priceLabel}.` : "la plateforme tunisienne des enchères immobilières."
+    }`;
+  const photo = (p.photos ?? []).slice().sort((x, y) => x.sort_order - y.sort_order)[0];
+  const ogImage = photo ? propertyPhotoUrl(photo.storage_path, { transform: { width: 1200, quality: 80 } }) : undefined;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/fr/auctions/${id}` },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      url: `/fr/auctions/${id}`,
+      images: ogImage ? [{ url: ogImage, width: 1200, height: 800, alt: p.title }] : undefined,
+    },
+    twitter: {
+      card: ogImage ? "summary_large_image" : "summary",
+      title,
+      description,
+      images: ogImage ? [ogImage] : undefined,
+    },
+  };
+}
 
 /**
  * Auction detail — black + gold dark mode, ported to the mazed-auto

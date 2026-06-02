@@ -1,8 +1,23 @@
+import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import type { AuctionWithProperty, PropertyType } from "@/lib/types";
 import { ExploreView } from "@/components/explore/ExploreView";
 import type { ExploreFilter } from "@/components/explore/types";
+
+export const metadata: Metadata = {
+  title: "Biens immobiliers aux enchères",
+  description:
+    "Parcourez les biens immobiliers en vente aux enchères et en vente directe partout en Tunisie — appartements, maisons, villas, terrains et locaux. Mises à prix transparentes sur Batta.tn.",
+  alternates: { canonical: "/fr/properties" },
+  openGraph: {
+    title: "Biens immobiliers aux enchères — Batta.tn",
+    description:
+      "Tous les biens en vente aux enchères et en vente directe en Tunisie, en un seul endroit.",
+    type: "website",
+    url: "/fr/properties",
+  },
+};
 
 const PAGE_SIZE = 12;
 
