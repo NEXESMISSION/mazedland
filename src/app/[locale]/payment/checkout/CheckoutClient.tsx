@@ -37,6 +37,10 @@ interface Props {
   locale: string;
   /** True when re-uploading after a rejection (or a refresh). */
   reupload: boolean;
+  /** When set (listing-fee payments), shows a "Modifier l'annonce" link so the
+   *  seller can go back and fix the listing before paying. Full locale-prefixed
+   *  href to the edit page (which returns here after saving). */
+  editHref?: string;
 }
 
 const KIND_TITLES: Record<CheckoutKind, { label: string; body: string }> = {
@@ -88,6 +92,7 @@ export function CheckoutClient({
   instructions,
   locale,
   reupload,
+  editHref,
 }: Props) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -406,6 +411,16 @@ export function CheckoutClient({
           <p className="mx-auto mt-2 max-w-xs text-[11.5px] leading-snug text-[var(--foreground-muted)]">
             {meta.body}
           </p>
+          {editHref && (
+            // Made a mistake? Go back and fix the listing before paying — saving
+            // returns straight here to finish payment (no duplicate listing/fee).
+            <a
+              href={editHref}
+              className="tap-target mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold text-[var(--gold)] ring-1 ring-[var(--gold-soft)] transition hover:bg-[var(--gold-faint)]"
+            >
+              ← Modifier l&apos;annonce
+            </a>
+          )}
         </section>
 
         {reupload && (

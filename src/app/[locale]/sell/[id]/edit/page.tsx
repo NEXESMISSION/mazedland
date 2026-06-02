@@ -17,10 +17,17 @@ export default async function EditListingPage({
   searchParams,
 }: {
   params: Promise<{ id: string; locale: string }>;
-  searchParams: Promise<{ focus?: string }>;
+  searchParams: Promise<{ focus?: string; return_payment?: string }>;
 }) {
   const { id, locale } = await params;
-  const { focus: focusParam } = await searchParams;
+  const { focus: focusParam, return_payment: returnPaymentParam } = await searchParams;
+  // When the seller clicked "Modifier l'annonce" from the payment page, send
+  // them straight back to that pending checkout after they save (instead of the
+  // dashboard). Only accept a uuid so it can't be used as an open redirect.
+  const returnTo =
+    returnPaymentParam && /^[0-9a-f-]{36}$/i.test(returnPaymentParam)
+      ? `/payment/checkout?payment=${returnPaymentParam}`
+      : undefined;
   // `?focus=` accepts a comma-separated list (e.g. ?focus=photos,documents)
   // because one rejection can carry multiple categories at once. Each
   // valid category contributes a ring-highlight on the matching Section
@@ -166,6 +173,7 @@ export default async function EditListingPage({
             inert here — pass zeros. */}
         <SellForm
           initial={initial}
+          returnTo={returnTo}
           focusCategories={effectiveFocus}
           focusMode={rejection?.mode}
           pricing={{

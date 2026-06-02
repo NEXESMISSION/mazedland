@@ -107,9 +107,14 @@ export function SellForm({
   pricing,
   focusCategories,
   focusMode,
+  returnTo,
 }: {
   initial?: SellFormInitial;
   pricing: SellFormPricing;
+  /** Where to send the user after a successful EDIT save. Defaults to /sell.
+   *  Set to the checkout URL when the seller came back from the payment page
+   *  to fix a mistake, so saving drops them straight back into payment. */
+  returnTo?: string;
   /** When the seller arrives from a rejection notification, the edit
    *  page passes through every rejection category the admin flagged
    *  so the form can ring-highlight ALL the sections to fix, not just
@@ -832,6 +837,13 @@ export function SellForm({
         //    listing sits in pending_review forever with no receipt
         //    attached and the admin queue can't act on it.
         if (isEdit && !initial?.wasRejected) {
+          // If the seller came back from the payment page to fix something,
+          // drop them straight back into checkout to finish paying; otherwise
+          // the usual "saved" screen → dashboard.
+          if (returnTo) {
+            router.replace(returnTo as "/payment/checkout");
+            return;
+          }
           setSuccess(true);
           setTimeout(() => router.replace("/sell"), 2000);
           return;

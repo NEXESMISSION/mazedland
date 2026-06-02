@@ -64,10 +64,18 @@ export default async function CheckoutEntry({
         ? await fetchPropertySummary(pay.property_id)
         : null;
 
+    const mappedKind = mapDbKindToCheckoutKind(pay.kind);
+    // Listing-fee payments are tied to an editable property → let the seller
+    // go back and fix the listing before paying. Returns to this checkout.
+    const editHref =
+      mappedKind === "listing_fee" && pay.property_id
+        ? `/${locale}/sell/${pay.property_id}/edit?return_payment=${pay.id}`
+        : undefined;
+
     return (
       <CheckoutClient
         paymentId={pay.id as string}
-        kind={mapDbKindToCheckoutKind(pay.kind)}
+        kind={mappedKind}
         amount={Number(pay.amount)}
         auction={auction}
         instructions={paymentInstructions({
@@ -77,6 +85,7 @@ export default async function CheckoutEntry({
         })}
         locale={locale}
         reupload={pay.status === "pending_review"}
+        editHref={editHref}
       />
     );
   }
