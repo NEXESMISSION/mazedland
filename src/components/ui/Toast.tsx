@@ -50,8 +50,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       {children}
       {/* Top-anchored stack — sits below the status bar with safe-area
-          padding so notifications never collide with the bottom tab bar. */}
-      <div className="fixed inset-x-0 top-0 z-[100] flex flex-col items-center gap-2 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pointer-events-none">
+          padding so notifications never collide with the bottom tab bar.
+          aria-live so screen-reader users hear toasts; assertive because
+          most are action results (errors/confirmations) the user is waiting
+          on. role="status" keeps it a non-interrupting live region. */}
+      <div
+        role="status"
+        aria-live="assertive"
+        aria-atomic="false"
+        className="fixed inset-x-0 top-0 z-[100] flex flex-col items-center gap-2 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pointer-events-none"
+      >
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} onClose={() => dismiss(t.id)} />
         ))}

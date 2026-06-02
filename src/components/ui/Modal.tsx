@@ -43,6 +43,11 @@ export function Modal({
   const [mounted, setMounted] = React.useState(false);
   const dialogRef = React.useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = React.useRef<HTMLElement | null>(null);
+  // Stable ids so the dialog can point screen readers at its own title /
+  // description (announced on open instead of a bare "dialog").
+  const baseId = React.useId();
+  const titleId = `${baseId}-title`;
+  const descId = `${baseId}-desc`;
 
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -108,6 +113,8 @@ export function Modal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
+      aria-labelledby={title ? titleId : undefined}
+      aria-describedby={description ? descId : undefined}
     >
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -128,10 +135,10 @@ export function Modal({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 {title && (
-                  <h3 className="font-bold text-lg leading-tight">{title}</h3>
+                  <h3 id={titleId} className="font-bold text-lg leading-tight">{title}</h3>
                 )}
                 {description && (
-                  <p className="text-sm text-[var(--foreground-muted)] mt-1">
+                  <p id={descId} className="text-sm text-[var(--foreground-muted)] mt-1">
                     {description}
                   </p>
                 )}
