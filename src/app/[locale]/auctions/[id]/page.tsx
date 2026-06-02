@@ -666,7 +666,7 @@ export default async function AuctionDetail({
           <span aria-hidden className="batta-gold-rule-short" />
           Caractéristiques
         </h2>
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
           <Spec Icon={Building2} label={t("property.type")} value={t(`property.types.${property.type}`)} />
           {attrKinds.map((k) => {
             const raw = attrs[k.field_key];

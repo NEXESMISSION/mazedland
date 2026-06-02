@@ -177,7 +177,7 @@ export default async function AdminActivity({
         description="Qui visite la plateforme, quelles pages, et quelles actions sont effectuées."
       />
 
-      <div className="mt-6 grid grid-cols-3 gap-3">
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl bg-surface px-4 py-3 ring-1 ring-border">
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
             <Eye className="size-3.5" /> Pages vues · 24h

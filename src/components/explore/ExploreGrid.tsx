@@ -355,7 +355,7 @@ export function ExploreGrid({
 
         <div ref={topAnchorRef} className="min-w-0 px-4 pt-5 lg:flex-1 lg:px-0">
           <div className="min-w-0">
-            <span className="batta-eyebrow">The catalogue</span>
+            <span className="batta-eyebrow">Le catalogue</span>
             <h1 className="mt-1.5 text-[26px] font-extrabold leading-tight tracking-tight">
               {t("nav.properties")}
             </h1>

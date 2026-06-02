@@ -378,7 +378,7 @@ function WinnerBanner({
           aria-hidden
           className="absolute inset-2 rounded-full bg-[var(--gold)]/25 animate-ping [animation-delay:600ms]"
         />
-        <div className="relative h-20 w-20 rounded-full bg-[var(--gold)] flex items-center justify-center shadow-[0_0_60px_rgba(212,175,55,0.55)] batta-celebrate-pop">
+        <div className="relative h-20 w-20 rounded-full bg-[var(--gold)] flex items-center justify-center shadow-[0_0_60px_rgba(30,58,138,0.55)] batta-celebrate-pop">
           <Trophy className="h-10 w-10 text-white" strokeWidth={2.2} />
         </div>
       </div>

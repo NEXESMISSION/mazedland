@@ -1,13 +1,12 @@
 import { redirect } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { AdminSidebar, AdminMobileBar } from "@/components/admin/AdminSidebar";
 
 /**
- * Admin console — gated to role=admin. Desktop-only, single layout: a
- * sticky left sidebar (the only navigation) + a wide content canvas.
- * The consumer chrome (TopBar / DesktopNav / BottomTabBar) is suppressed
- * for /admin in MobileShell, so this is the whole shell — clean and
- * uncluttered, no second navigation stacked on top.
+ * Admin console — gated to role=admin. Responsive shell: a sticky left rail on
+ * desktop (lg+), a top bar + slide-over drawer on mobile/tablet. The consumer
+ * chrome (TopBar / DesktopNav / BottomTabBar) is suppressed for /admin in
+ * MobileShell, so this is the whole shell.
  */
 export default async function AdminLayout({
   children,
@@ -36,7 +35,8 @@ export default async function AdminLayout({
     <div className="flex min-h-screen bg-surface">
       <AdminSidebar />
       <main className="min-w-0 flex-1">
-        <div className="mx-auto max-w-[1320px] px-10 py-10">{children}</div>
+        <AdminMobileBar />
+        <div className="mx-auto max-w-[1320px] px-4 py-6 lg:px-10 lg:py-10">{children}</div>
       </main>
     </div>
   );

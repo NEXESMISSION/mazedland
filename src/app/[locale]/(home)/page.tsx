@@ -735,7 +735,7 @@ export default async function LandingPage({
           className="batta-surface-navy-luxe tap-target relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25 transition active:scale-[0.99] lg:hidden"
         >
           <div className="relative min-w-0">
-            <span className="batta-eyebrow">Browse the catalogue</span>
+            <span className="batta-eyebrow">Parcourir le catalogue</span>
             <div
               className={`mt-2 text-[22px] font-extrabold leading-tight tracking-tight ${
                 isRTL ? "font-arabic" : ""

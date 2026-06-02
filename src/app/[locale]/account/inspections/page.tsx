@@ -67,10 +67,22 @@ export default async function MyInspectionsPage({
     }
   }
 
+  // French labels for the inspection lifecycle (was rendering raw enum values
+  // like "in progress" via replace(/_/g," ") in an otherwise French app).
+  const STATUS_FR: Record<string, string> = {
+    requested: "Demandée",
+    scheduled: "Planifiée",
+    in_progress: "En cours",
+    submitted: "Rapport prêt",
+    approved: "Approuvée",
+    completed: "Terminée",
+    cancelled: "Annulée",
+  };
+
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 lg:max-w-[var(--max-w-content)]">
       <FocusRowHighlight idPrefix="ins-" />
-      <span className="batta-eyebrow">Pre-bid reports</span>
+      <span className="batta-eyebrow">Rapports d&apos;inspection</span>
       <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">
         {t("account.myInspections")}
       </h1>
@@ -79,12 +91,12 @@ export default async function MyInspectionsPage({
       {inspections.length === 0 ? (
         <div className="batta-frame-gold relative mt-6 px-6 py-10 text-center">
           <ClipboardCheck className="mx-auto size-8 text-gold" strokeWidth={2} />
-          <p className="mt-3 text-[13px] text-muted">No inspections yet.</p>
+          <p className="mt-3 text-[13px] text-muted">Aucune inspection pour le moment.</p>
           <Link
             href="/properties"
             className="batta-btn-luxe tap-target mt-5 inline-flex px-5 py-2.5 text-[12.5px]"
           >
-            Browse properties
+            Parcourir les biens
           </Link>
         </div>
       ) : (
@@ -147,7 +159,7 @@ export default async function MyInspectionsPage({
                   </div>
                 </div>
                 <div className={`flex items-center justify-between gap-2 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] ${tone}`}>
-                  <span>{ins.status.replace(/_/g, " ")}</span>
+                  <span>{STATUS_FR[ins.status] ?? ins.status.replace(/_/g, " ")}</span>
                   {reportReady && (
                     <a
                       href={`/api/inspector/report/${ins.id}`}

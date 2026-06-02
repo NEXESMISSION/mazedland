@@ -71,7 +71,7 @@ export default async function AdminDashboard() {
       />
 
       {/* Top KPIs */}
-      <div className="mt-8 grid grid-cols-3 gap-4">
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Kpi label="En attente" value={totalPending} tone="brand" />
         <Kpi label="En retard (> 48 h)" value={totalOverdue} tone={totalOverdue > 0 ? "danger" : "muted"} Icon={AlertTriangle} />
         <Kpi label="Reçu aujourd'hui" value={todayIntake} tone="muted" Icon={CalendarClock} />

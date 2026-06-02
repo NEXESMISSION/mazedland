@@ -145,7 +145,7 @@ export function AuctionEndModal({ auction, userId, locale }: Props) {
                 aria-hidden
                 className="absolute inset-2 rounded-full bg-[var(--gold)]/25 animate-ping [animation-delay:600ms]"
               />
-              <div className="relative h-24 w-24 rounded-full bg-[var(--gold)] flex items-center justify-center shadow-[0_0_60px_rgba(212,175,55,0.55)] batta-celebrate-pop">
+              <div className="relative h-24 w-24 rounded-full bg-[var(--gold)] flex items-center justify-center shadow-[0_0_60px_rgba(30,58,138,0.55)] batta-celebrate-pop">
                 <Trophy className="h-12 w-12 text-white" strokeWidth={2.2} />
               </div>
             </div>
