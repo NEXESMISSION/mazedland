@@ -108,8 +108,18 @@ export function SignupForm() {
       return;
     }
     startTransition(async () => {
-      // Step 1: ask for an SMS code. If SMS isn't configured the endpoint
-      // says so and we sign up directly — identical to the old flow.
+      // Step 1: request an SMS code. The phone-OTP gate must NEVER block
+      // account creation through a fault on our side — so anything that isn't
+      // a clean "code sent" or a user-fixable bad number falls through to
+      // creating the account directly. Availability of signup > the optional
+      // SMS gate; an unverified phone is acceptable, a dead signup funnel isn't.
+      const goToOtp = (cooldown: number) => {
+        setVerifiedPhone(normalizedPhone);
+        setOtpPhase(true);
+        setOtpCode("");
+        setOtpError(null);
+        setOtpCooldown(cooldown);
+      };
       try {
         const res = await fetch("/api/auth/phone/send", {
           method: "POST",
@@ -122,25 +132,34 @@ export function SignupForm() {
           error?: string;
           retryAfter?: number;
         };
+        // SMS disabled server-side → create the account directly (old flow).
         if (res.ok && j.configured === false) {
           await performSignup(normalizedPhone);
           return;
         }
+        // Code sent → go to the verification step.
         if (res.ok && j.ok) {
-          setVerifiedPhone(normalizedPhone);
-          setOtpPhase(true);
-          setOtpCode("");
-          setOtpError(null);
-          setOtpCooldown(60);
+          goToOtp(60);
           return;
         }
-        if (res.status === 429 && j.error === "cooldown") {
-          setError(`Patientez ${j.retryAfter ?? 60}s avant de redemander un code.`);
-        } else {
-          setError("Échec de l'envoi du code SMS. Vérifiez le numéro et réessayez.");
+        // 429: a valid code is already out (recent send) or the hourly cap was
+        // hit — either way let the user enter the code they have.
+        if (res.status === 429) {
+          goToOtp(j.error === "cooldown" ? j.retryAfter ?? 60 : 60);
+          return;
         }
+        // Bad phone number → the only case the user must fix before continuing.
+        if (res.status === 400 && j.error === "invalid_phone") {
+          setError("Numéro de téléphone invalide.");
+          return;
+        }
+        // Anything else (provider down, no SMS credit, DB hiccup) is on us —
+        // don't strand the user; create the account (phone stays unverified).
+        await performSignup(normalizedPhone);
       } catch {
-        setError("Erreur réseau. Réessayez.");
+        // Couldn't even reach our API — fall back to direct signup rather than
+        // blocking. performSignup surfaces its own error if it also fails.
+        await performSignup(normalizedPhone);
       }
     });
   }
