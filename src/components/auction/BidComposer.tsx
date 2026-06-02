@@ -90,11 +90,6 @@ interface Props {
   /** Admin setting: false when entry is free (free mode or free window). */
   depositRequired?: boolean;
   totalBids: number;
-  /** Id of the current top bidder, if any. When this equals `userId`,
-   *  the composer drops the minimum-increment floor: the user is just
-   *  raising their own lead, so any amount > current_price is valid.
-   *  Mirrors the same self-raise allowance in the DB place_bid RPC. */
-  currentTopBidderId?: string | null;
   locale: string;
 }
 
@@ -115,7 +110,6 @@ export function BidComposer({
   depositAmount,
   depositRequired = true,
   totalBids,
-  currentTopBidderId = null,
   locale,
 }: Props) {
   const router = useRouter();
@@ -345,9 +339,7 @@ export function BidComposer({
   return (
     <ActiveComposer
       auction={auction}
-      userId={userId}
       totalBids={totalBids}
-      currentTopBidderId={currentTopBidderId}
       locale={locale}
     />
   );
@@ -503,15 +495,11 @@ function EndedBanner({
 
 function ActiveComposer({
   auction,
-  userId,
   totalBids,
-  currentTopBidderId,
   locale,
 }: {
   auction: AuctionWithProperty;
-  userId: string;
   totalBids: number;
-  currentTopBidderId: string | null;
   locale: string;
 }) {
   const { toast } = useToast();
@@ -539,16 +527,11 @@ function ActiveComposer({
   //                 same friendly suggestion as everyone else
   //                 instead of a +1-TND chase.
   //
-  //   submitMin   — what the server will actually ACCEPT. For
-  //                 normal bidders this equals minNext. For the
-  //                 current top bidder (self-raise) we drop it to
-  //                 currentPrice + 1 TND so they can type a smaller
-  //                 raise manually if they want — the DB place_bid
-  //                 RPC mirrors this (see migration 0046).
-  const isCurrentTop =
-    !!userId && !!currentTopBidderId && userId === currentTopBidderId;
+  // (The DB place_bid RPC is the authority on the accepted minimum — for the
+  // current top bidder it allows currentPrice + 1 TND; see migration 0046.
+  // The client only needs to suggest minNext, so we don't recompute that
+  // server-side floor here.)
   const minNext = nextMinBid(auction, currentPrice);
-  const submitMin = isCurrentTop ? currentPrice + 1 : minNext;
   const inc = minBidIncrement(currentPrice);
 
   // English/sealed amount input. Sealed uses opening_price as the floor;

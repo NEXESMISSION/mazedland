@@ -1,6 +1,6 @@
 import { redirect } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { getTranslations, getLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { SellForm, type SellFormInitial, type ListingType } from "@/components/sell/SellForm";
 import type { PropertyType } from "@/lib/types";

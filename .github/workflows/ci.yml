@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   check:
-    name: Lint + typecheck
+    name: Lint + typecheck + test + build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -44,3 +44,15 @@ jobs:
 
       - name: TypeScript
         run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      # Catch build-breaking changes (type errors only surface here, bad
+      # imports, RSC/client boundary violations) before they reach main.
+      # Supabase env isn't needed: pages degrade gracefully when it's absent
+      # (the data fetchers already guard for it), so the build still completes.
+      - name: Build
+        run: pnpm build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"

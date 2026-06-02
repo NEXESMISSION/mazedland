@@ -82,7 +82,9 @@ export function BidHistoryRealtime({
   // Bump this counter when the cache grows, so the rendered list
   // re-renders with the freshly resolved names (Map mutations alone
   // don't trigger React).
-  const [nameVersion, setNameVersion] = useState(0);
+  // Only the setter matters — bumping it forces the list to re-render with
+  // freshly-resolved names; the counter value itself is never read.
+  const [, setNameVersion] = useState(0);
 
   // Shared activity timestamp — bumped by the realtime INSERT handler
   // AND by the poll when it spots a new bid id. The adaptive poll

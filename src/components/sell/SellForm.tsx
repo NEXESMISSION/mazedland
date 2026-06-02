@@ -223,9 +223,10 @@ export function SellForm({
   // the gallery first, so the seller sees what's there. Trashing one
   // moves its id into removedExistingPhotoIds; on submit those rows are
   // deleted from property_photos + the storage object is removed.
-  const [existingPhotos, setExistingPhotos] = useState(
-    initial?.existingPhotos ?? [],
-  );
+  // Seeded once from props; trashing a photo records its id in
+  // removedExistingPhotoIds rather than mutating this list, so there's no
+  // setter.
+  const [existingPhotos] = useState(initial?.existingPhotos ?? []);
   const [removedExistingPhotoIds, setRemovedExistingPhotoIds] = useState<
     Set<string>
   >(() => new Set());

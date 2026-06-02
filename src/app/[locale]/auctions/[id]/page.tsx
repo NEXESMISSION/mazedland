@@ -20,7 +20,7 @@ import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { Link } from "@/i18n/navigation";
 import {
   MapPin, Ruler, BedDouble, Bath, Building2, Calendar,
-  ShieldCheck, ClipboardCheck, FileText, Lock, Gavel, Download, Clock,
+  ClipboardCheck, FileText, Lock, Gavel, Download, Clock,
   Hourglass,
 } from "lucide-react";
 

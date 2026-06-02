@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { isStaticSeedPath } from "@/lib/imageUrl";

@@ -29,7 +29,7 @@ export default async function AdminPopupsPage() {
   // One head-count per popup for the impression/click summary. Cheap pair
   // of count queries that fan-out in parallel; only run when there's at
   // least one popup so an empty page costs nothing.
-  let stats = new Map<string, { impressions: number; clicks: number }>();
+  const stats = new Map<string, { impressions: number; clicks: number }>();
   if (popups.length > 0) {
     const ids = popups.map((p) => p.id);
     const [impRes, clkRes] = await Promise.all([

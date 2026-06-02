@@ -41,7 +41,7 @@ export default async function BidPage({
   const t = await getTranslations();
   const supabase = await getServerSupabase();
 
-  const [auctionRes, bidCountRes, initialBidsRes, topBidRes, userRes] = await Promise.all([
+  const [auctionRes, bidCountRes, initialBidsRes, userRes] = await Promise.all([
     supabase
       .from("auctions")
       .select(
@@ -64,18 +64,6 @@ export default async function BidPage({
       .eq("auction_id", id)
       .order("placed_at", { ascending: false })
       .limit(8),
-    // Current top bidder — matches the ordering the place_bid RPC uses
-    // (amount desc, placed_at asc). The composer needs this so the
-    // current leader can raise their own bid without the min-increment
-    // floor (DB place_bid was updated to allow self-raise in 0046).
-    supabase
-      .from("bids")
-      .select("bidder_id")
-      .eq("auction_id", id)
-      .order("amount", { ascending: false })
-      .order("placed_at", { ascending: true })
-      .limit(1)
-      .maybeSingle(),
     supabase.auth.getUser(),
   ]);
 
@@ -93,8 +81,6 @@ export default async function BidPage({
   }
   const totalBids = bidCountRes.count ?? 0;
   const initialBids = (initialBidsRes.data ?? []) as Bid[];
-  const currentTopBidderId =
-    (topBidRes.data as { bidder_id: string } | null)?.bidder_id ?? null;
   const userId = userRes.data.user?.id ?? null;
 
   // Server-truth pre-flight: KYC + deposit. The composer needs these
@@ -340,7 +326,6 @@ export default async function BidPage({
                   depositAmount={depositAmount}
                   depositRequired={depositRequired}
                   totalBids={totalBids}
-                  currentTopBidderId={currentTopBidderId}
                   locale={locale}
                 />
               </div>

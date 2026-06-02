@@ -376,7 +376,7 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
     // is already in progress AND we saw a valid frame within HOLD_GRACE_MS,
     // we leave the timer alone — the user is just briefly out-of-frame as
     // they finish the turn, not starting over.
-    const softReset = (reason: "no_face" | "too_small" | "wrong_pose") => {
+    const softReset = (_reason: "no_face" | "too_small" | "wrong_pose") => {
       const now = performance.now();
       const lastGood = lastGoodFrameAtRef.current;
       const withinGrace =
