@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "@/i18n/navigation";
 import { Camera, Eye, ArrowRight, ArrowLeft } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
@@ -8,8 +9,17 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/auth";
 import { getBrowserSupabase } from "@/lib/supabase/client";
-import { LivenessCheck } from "@/components/auction/LivenessCheck";
 import { updateKycDraft, readKycDraft, clearKycDraft } from "@/lib/kycDraft";
+
+// LivenessCheck is ~950 lines and pulls in the camera/detection machinery
+// (it lazy-loads face-api on top of that). It only renders after the user
+// taps "Commencer", so we code-split it out of the selfie route's initial
+// bundle — nothing of it ships until the check actually starts. ssr:false
+// because it's camera/DOM-only and has no meaningful server render.
+const LivenessCheck = dynamic(
+  () => import("@/components/auction/LivenessCheck").then((m) => m.LivenessCheck),
+  { ssr: false },
+);
 
 export default function KYCSelfiePage() {
   const router = useRouter();
