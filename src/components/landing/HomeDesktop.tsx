@@ -15,13 +15,14 @@ import {
   ArrowUpRight,
   ChevronRight,
   ChevronLeft,
-  Building2,
   Gavel,
   ShieldCheck,
   ClipboardCheck,
   Scale,
   Lock,
   CheckCircle2,
+  CalendarClock,
+  MapPin,
   Zap,
   Users,
 } from "lucide-react";
@@ -91,6 +92,7 @@ export async function HomeDesktop({
   savedIds,
   loggedIn,
   liveCount,
+  scheduledCount,
   soldThisMonthCount,
   coverageGovs,
   endingSoonSlides = [],
@@ -120,10 +122,21 @@ export async function HomeDesktop({
   const isRTL = locale === "ar";
   const ChevronEnd = isRTL ? ChevronLeft : ChevronRight;
 
-  const stats = [
-    { value: liveCount,          label: "Enchères en cours", sub: "En temps réel",   Icon: Gavel,        wrap: "bg-red-50 text-red-500",         num: "text-red-500" },
-    { value: soldThisMonthCount, label: "Vendues ce mois-ci", sub: "Biens attribués", Icon: CheckCircle2, wrap: "bg-emerald-50 text-emerald-600", num: "text-emerald-600" },
-    { value: coverageGovs,       label: "Gouvernorats",      sub: "Actif",            Icon: Building2,    wrap: "bg-violet-50 text-violet-600",   num: "text-violet-600" },
+  // Live-stats strip. Cohesive navy/gold treatment (no more red/green/violet)
+  // and — critically — never surfaces a sad "0": the middle slot degrades from
+  // "sold this month" → "upcoming auctions" → a qualitative "100% verified" so
+  // a fresh marketplace still reads as alive and trustworthy.
+  const fmt = (n: number) => n.toLocaleString("fr-FR");
+  const secondStat =
+    soldThisMonthCount > 0
+      ? { display: fmt(soldThisMonthCount), label: "Vendues ce mois-ci", sub: "Biens attribués", Icon: CheckCircle2, live: false }
+      : scheduledCount > 0
+        ? { display: fmt(scheduledCount), label: "Enchères à venir", sub: "Bientôt en ligne", Icon: CalendarClock, live: false }
+        : { display: "100%", label: "Transactions vérifiées", sub: "KYC + caution", Icon: ShieldCheck, live: false };
+  const stats: { display: string; label: string; sub: string; Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; live: boolean }[] = [
+    { display: fmt(liveCount), label: "Enchères en cours", sub: "En temps réel", Icon: Gavel, live: true },
+    secondStat,
+    { display: fmt(coverageGovs), label: coverageGovs > 1 ? "Gouvernorats" : "Gouvernorat", sub: "Couverture nationale", Icon: MapPin, live: false },
   ];
 
   // Featured showcase — the top trending lots, rendered as a single
@@ -154,7 +167,18 @@ export async function HomeDesktop({
   return (
     <div className={`${alwaysVisible ? "block" : "hidden lg:block"} mx-auto max-w-[var(--max-w-wide)] px-8 pb-24`}>
       {/* ─── SPLIT HERO — copy + search left, lot imagery right ─── */}
-      <section className="pt-8">
+      <section className="relative isolate pt-8">
+        {/* Soft brand bloom behind the showcase so the hero reads premium
+            rather than flat white, plus a faint hairline-grid wash. Both are
+            pure CSS, pointer-transparent, and sit on -z so content is above. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 -top-12 -z-10 h-[600px]"
+          style={{
+            background:
+              "radial-gradient(46% 58% at 80% 6%, var(--gold-faint) 0%, transparent 68%), radial-gradient(40% 50% at 6% 40%, var(--gold-faint) 0%, transparent 70%)",
+          }}
+        />
         <div className="grid grid-cols-12 items-center gap-10">
           {/* LEFT — brand copy + trust pillars */}
           <div className="col-span-6">
@@ -251,22 +275,37 @@ export async function HomeDesktop({
           <HomeSearch isRTL={isRTL} layout="bar" />
         </div>
 
-        {/* Live-stats strip — icon badge + figure + label + sublabel. */}
-        <div className="mt-6 grid grid-cols-3 divide-x divide-border overflow-hidden rounded-2xl bg-surface ring-1 ring-border rtl:divide-x-reverse">
-          {stats.map(({ value, label, sub, Icon, wrap, num }) => (
-            <div key={label} className="flex items-center gap-3 px-6 py-5">
-              <span className={`inline-flex size-11 shrink-0 items-center justify-center rounded-full ${wrap}`}>
-                <Icon className="size-5" strokeWidth={2} />
-              </span>
-              <div className="min-w-0">
-                <div className={`batta-tabular text-[26px] font-extrabold leading-none ${num}`}>
-                  {value.toLocaleString("fr-FR")}
+        {/* Live-stats strip — cohesive navy/gold metrics bar with a gold top
+            hairline and gradient figures. No more clashing red/green/violet. */}
+        <div className="relative mt-6 overflow-hidden rounded-2xl bg-surface ring-1 ring-border shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+          <span
+            aria-hidden
+            className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold-soft/45 to-transparent"
+          />
+          <div className="grid grid-cols-3 divide-x divide-border rtl:divide-x-reverse">
+            {stats.map(({ display, label, sub, Icon, live }) => (
+              <div key={label} className="group flex items-center gap-3.5 px-6 py-5">
+                <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/15 transition group-hover:ring-gold/30">
+                  <Icon className="size-5" strokeWidth={2} />
+                </span>
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="batta-tabular gradient-gold-text text-[28px] font-extrabold leading-none">
+                      {display}
+                    </span>
+                    {live && (
+                      <span
+                        aria-hidden
+                        className="batta-pulse-dot size-2 rounded-full bg-[var(--accent)] text-[var(--accent)]/40"
+                      />
+                    )}
+                  </div>
+                  <div className="mt-1.5 text-[12.5px] font-bold leading-tight text-foreground">{label}</div>
+                  <div className="text-[10.5px] text-muted">{sub}</div>
                 </div>
-                <div className="mt-1 text-[12.5px] font-bold leading-tight text-foreground">{label}</div>
-                <div className="text-[10.5px] text-muted">{sub}</div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
