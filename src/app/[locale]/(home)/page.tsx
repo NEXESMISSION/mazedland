@@ -12,8 +12,7 @@ import { HomeDesktop } from "@/components/landing/HomeDesktop";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
-import { getServiceSupabase } from "@/lib/supabase/admin";
-import { unstable_cache } from "next/cache";
+import { getHomeFeed, type HammeredRow } from "@/lib/home/feed";
 import { log } from "@/lib/log";
 import { PerfProbe } from "@/components/dev/PerfProbe";
 
@@ -43,22 +42,8 @@ import {
   Sparkles,
 } from "lucide-react";
 
-// Row type for the "Recently hammered" rail — declared at the top of
-// the module so the LandingPage function can reference it from inside
-// its `let hammered: HammeredRow[]` initialisation. (Turbopack's TS
-// hoister doesn't always lift type aliases past long function bodies,
-// so we put it above the use site explicitly.)
-type HammeredRow = {
-  id: string;
-  winner_amount: number | string | null;
-  hammer_at: string | null;
-  type: string;
-  property: {
-    title: string;
-    governorate: string;
-    photos?: { id: string; storage_path: string; sort_order: number }[];
-  };
-};
+// Home data layer (getHomeFeed + selects + feed types) lives in
+// "@/lib/home/feed" so this route file stays render-focused.
 
 /**
  * Race a promise against a deadline. The home page fans out several
@@ -134,96 +119,6 @@ const TRUST_PILLARS: {
 const _sparklesKeepAlive = Sparkles;
 void _sparklesKeepAlive;
 
-// Trimmed column sets — the home cards + hero only read a handful of fields,
-// not the full `auctions.* / properties.*` rows. promo_banner /
-// promo_home_featured drive the paid-placement sort; the rest feed
-// PropertyCard + buildHeroSlides.
-const HOME_AUCTION_SELECT = `
-  id, status, type, listing_type, opening_price, current_price, ends_at, created_at,
-  property:properties!inner (
-    id, title, governorate, status, promo_banner, promo_home_featured,
-    photos:property_photos ( id, storage_path, sort_order )
-  )
-`;
-const HOME_HAMMERED_SELECT = `
-  id, winner_amount, hammer_at, type,
-  property:properties!inner (
-    title, governorate, status,
-    photos:property_photos ( id, storage_path, sort_order )
-  )
-`;
-
-type HomeFeed = {
-  live: { rows: unknown[]; count: number };
-  hammered: unknown[];
-  nouveautes: unknown[];
-  scheduledCount: number;
-  soldThisMonthCount: number;
-  govs: string[];
-};
-
-/**
- * The heavy, SHARED home queries — same for every visitor, so we cache the
- * result for 60s instead of re-running 6 round-trips on every pageview. Uses
- * the cookieless service-role client (these are public status='ready' rows;
- * no per-user scoping) because `unstable_cache` can't read request cookies.
- * The per-user watchlist stays out of here and runs fresh per request.
- */
-const getHomeFeed = unstable_cache(
-  async (monthStart: string): Promise<HomeFeed | null> => {
-    const sb = getServiceSupabase();
-    if (!sb) return null;
-    // We only reach here on a CACHE MISS (unstable_cache short-circuits hits
-    // before invoking this fn), so every line below is a real Supabase
-    // round-trip. Time each query individually to see which dominates.
-    const fperf = log.scope("home:feed");
-    const endTotal = fperf.time("MISS — ran 6 parallel queries");
-    const timed = <T,>(label: string, p: PromiseLike<T>): Promise<T> => {
-      const end = fperf.time(label);
-      return Promise.resolve(p).then((r) => {
-        end();
-        return r;
-      });
-    };
-    const [liveRes, hammeredRes, nouveautesRes, scheduledRes, soldMonthRes, govRes] =
-      await Promise.all([
-        timed("q1 live(18)", sb.from("auctions").select(HOME_AUCTION_SELECT, { count: "exact" })
-          .in("status", ["scheduled", "live", "extending"])
-          .eq("property.status", "ready")
-          .order("ends_at", { ascending: true })
-          .limit(18)),
-        timed("q2 hammered(14)", sb.from("auctions").select(HOME_HAMMERED_SELECT)
-          .in("status", ["ended_sold", "awarded"])
-          .eq("property.status", "ready")
-          .order("hammer_at", { ascending: false })
-          .limit(14)),
-        timed("q3 nouveautes(14)", sb.from("auctions").select(HOME_AUCTION_SELECT)
-          .in("status", ["scheduled", "live", "extending"])
-          .eq("property.status", "ready")
-          .order("created_at", { ascending: false })
-          .limit(14)),
-        timed("q4 scheduledCount", sb.from("auctions").select("id", { count: "exact", head: true })
-          .eq("status", "scheduled")),
-        timed("q5 soldThisMonth", sb.from("auctions").select("id", { count: "exact", head: true })
-          .in("status", ["ended_sold", "awarded"])
-          .gte("hammer_at", monthStart)),
-        timed("q6 govs(500)", sb.from("properties").select("governorate").eq("status", "ready").limit(500)),
-      ]);
-    endTotal();
-    return {
-      live: { rows: liveRes.data ?? [], count: liveRes.count ?? (liveRes.data?.length ?? 0) },
-      hammered: hammeredRes.data ?? [],
-      nouveautes: nouveautesRes.data ?? [],
-      scheduledCount: scheduledRes.count ?? 0,
-      soldThisMonthCount: soldMonthRes.count ?? 0,
-      govs: (govRes.data ?? [])
-        .map((r) => (r as { governorate: string | null }).governorate)
-        .filter((g): g is string => typeof g === "string" && g.length > 0),
-    };
-  },
-  ["home-feed"],
-  { revalidate: 60, tags: ["home-feed"] },
-);
 
 export default async function LandingPage({
   params,
