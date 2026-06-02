@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import { PWARegister } from "@/components/layout/PWARegister";
 import { Suspense } from "react";
 import { ClientLogger } from "@/components/dev/ClientLogger";
@@ -8,18 +8,16 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
-// Jakarta only — same family the mazed auto codebase ships with.
-// Pairs cleanly with the black + gold palette and reads great at every
-// size from a 10px eyebrow to a 36px hero title.
-const jakarta = Plus_Jakarta_Sans({
+// Plus Jakarta Sans — SELF-HOSTED (next/font/local) instead of next/font/google.
+// Two wins: (1) the build no longer fetches the font from Google at build time,
+// which was the cause of intermittent `next build` failures on flaky networks;
+// (2) zero render-blocking round-trip to fonts.gstatic.com at runtime → faster
+// first paint. One latin-subset variable woff2 (~27 KB) covers weights 400–800
+// (the only range the UI uses); latin already covers all French accents.
+const jakarta = localFont({
+  src: "./fonts/PlusJakartaSans-latin.woff2",
   variable: "--font-jakarta",
-  // French-only site: the "latin" subset already covers all French accents
-  // (é è ê à ç …, U+00xx). "latin-ext" only adds Eastern-European glyphs we
-  // never render, so dropping it ~halves the font payload on every page.
-  subsets: ["latin"],
-  // Weight 300 was used in exactly one spot (switched to 400); the rest of
-  // the UI lives in 400/500/600/700/800. Fewer weights = fewer font files.
-  weight: ["400", "500", "600", "700", "800"],
+  weight: "400 800",
   display: "swap",
 });
 
@@ -122,7 +120,6 @@ export default async function RootLayout({
             pages, but pre-warming costs ~0 and shaves perceived load
             time on the map iframe. */}
         <link rel="dns-prefetch" href="https://tile.openstreetmap.org" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Preload the splash-screen wordmark so it paints before any
             JS hydrates. AVIF is ~4 KB; the second preload covers the
             handful of browsers (older Safari, Firefox without AVIF) that
