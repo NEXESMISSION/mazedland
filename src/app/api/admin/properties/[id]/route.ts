@@ -20,12 +20,29 @@ export async function PATCH(
     return NextResponse.json({ error: "bad_status" }, { status: 400 });
   }
 
-  // Fetch the property owner + title before update so we can notify after.
+  // Fetch the property owner + title + CURRENT status before update so we can
+  // notify after AND guard the transition.
   const { data: prop } = await supabase
     .from("properties")
-    .select("id, owner_id, title, listing_type")
+    .select("id, owner_id, title, listing_type, status")
     .eq("id", id)
     .single();
+
+  // Status-transition guard. Without this, the endpoint would re-process an
+  // already-published/already-reviewed listing — re-firing notifications and
+  // the listing-fee auto-fail logic, or resurrecting a rejected one. Only
+  // allow: approve/reject from a reviewable state, restore from rejected.
+  const cur = (prop?.status as string | undefined) ?? undefined;
+  const reviewable = cur === "pending_review" || cur === "draft";
+  const allowed =
+    ((status === "ready" || status === "rejected") && reviewable) ||
+    (status === "pending_review" && cur === "rejected");
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "invalid_transition", from: cur ?? null, to: status },
+      { status: 409 },
+    );
+  }
 
   const { error } = await supabase
     .from("properties")

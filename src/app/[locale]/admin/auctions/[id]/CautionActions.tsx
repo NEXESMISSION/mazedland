@@ -48,6 +48,7 @@ export function CautionActions({
   const { toast } = useToast();
   const [busy, setBusy] = useState<string | null>(null);
   const [refundingId, setRefundingId] = useState<string | null>(null);
+  const [confirmForfeitId, setConfirmForfeitId] = useState<string | null>(null);
   const [ref, setRef] = useState("");
   const [, start] = useTransition();
 
@@ -141,15 +142,29 @@ export function CautionActions({
                   <button type="button" onClick={() => { setRefundingId(d.id); setRef(""); }} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 text-[12.5px] font-bold text-white shadow-sm transition hover:bg-emerald-700">
                     <CircleDollarSign className="size-3.5" /> Marquer remboursée
                   </button>
-                  <button type="button" disabled={busy === `forf-${d.id}`}
-                    onClick={async () => {
-                      if (await post({ action: "forfeit", depositId: d.id }, `forf-${d.id}`)) {
-                        toast("Caution confisquée.", "warning"); start(() => router.refresh());
-                      }
-                    }}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-50 px-3.5 text-[12.5px] font-bold text-red-600 ring-1 ring-red-200 transition hover:bg-red-100 disabled:opacity-50">
-                    <ShieldX className="size-3.5" /> Confisquer
-                  </button>
+                  {confirmForfeitId === d.id ? (
+                    // Two-step confirm — forfeit permanently takes a bidder's
+                    // real money, so never act on a single click.
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="text-[11.5px] font-semibold text-red-600">Confisquer définitivement ?</span>
+                      <button type="button" disabled={busy === `forf-${d.id}`}
+                        onClick={async () => {
+                          if (await post({ action: "forfeit", depositId: d.id }, `forf-${d.id}`)) {
+                            toast("Caution confisquée.", "warning"); setConfirmForfeitId(null); start(() => router.refresh());
+                          }
+                        }}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-3.5 text-[12.5px] font-bold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50">
+                        {busy === `forf-${d.id}` ? <Loader2 className="size-3.5 animate-spin" /> : <ShieldX className="size-3.5" />} Oui, confisquer
+                      </button>
+                      <button type="button" onClick={() => setConfirmForfeitId(null)} className="inline-flex h-9 items-center rounded-lg px-3 text-[12.5px] font-semibold text-muted transition hover:bg-surface-2 hover:text-foreground">Annuler</button>
+                    </span>
+                  ) : (
+                    <button type="button"
+                      onClick={() => setConfirmForfeitId(d.id)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-50 px-3.5 text-[12.5px] font-bold text-red-600 ring-1 ring-red-200 transition hover:bg-red-100">
+                      <ShieldX className="size-3.5" /> Confisquer
+                    </button>
+                  )}
                 </div>
               )
             )}
