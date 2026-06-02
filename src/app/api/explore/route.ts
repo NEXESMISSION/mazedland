@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { AuctionWithProperty, PropertyType } from "@/lib/types";
 import { withRouteLogger } from "@/lib/withRouteLogger";
+import { stripAccents } from "@/lib/search";
 import { log } from "@/lib/log";
 
 const xLog = log.scope("api");
@@ -99,13 +100,13 @@ export const GET = withRouteLogger(async (req: NextRequest) => {
 
   if (types.length > 0) q = q.in("property.type", types);
   if (gov) q = q.eq("property.governorate", gov);
-  // Match the term against title OR governorate OR address on the embedded
-  // property (referencedTable scopes the or() to the joined resource).
+  // Match the term against the property's accent-folded search_text (covers
+  // title + governorate + address + description in one trigram-indexed
+  // column). We strip accents off the term so "beja" hits "Béja" and vice
+  // versa. Single ILIKE on a GIN-indexed column → faster than the old 3-way
+  // or() and diacritic-insensitive.
   if (term) {
-    q = q.or(
-      `title.ilike.*${term}*,governorate.ilike.*${term}*,address.ilike.*${term}*`,
-      { referencedTable: "property" },
-    );
+    q = q.ilike("property.search_text", `%${stripAccents(term)}%`);
   }
   if (minArea !== null) q = q.gte("property.area_sqm", minArea);
   if (minRooms !== null) q = q.gte("property.rooms", minRooms);

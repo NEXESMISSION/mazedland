@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeSearchQuery, buildIlikeOrClause, PROPERTY_SEARCH_FIELDS } from "./search";
+import { normalizeSearchQuery, buildIlikeOrClause, PROPERTY_SEARCH_FIELDS, stripAccents } from "./search";
 
 describe("normalizeSearchQuery", () => {
   it("trims and collapses interior whitespace", () => {
@@ -27,5 +27,21 @@ describe("buildIlikeOrClause", () => {
     const clause = buildIlikeOrClause("x", PROPERTY_SEARCH_FIELDS);
     expect(clause.split(",")).toHaveLength(PROPERTY_SEARCH_FIELDS.length);
     expect(clause).toContain("governorate.ilike.%x%");
+  });
+});
+
+describe("stripAccents", () => {
+  it("folds French/Latin diacritics and lower-cases (mirrors f_unaccent)", () => {
+    expect(stripAccents("Béja")).toBe("beja");
+    expect(stripAccents("Médenine")).toBe("medenine");
+    expect(stripAccents("Résidentiel Orienté")).toBe("residentiel oriente");
+  });
+  it("leaves non-Latin scripts (Arabic) untouched", () => {
+    expect(stripAccents("صفاقس")).toBe("صفاقس");
+  });
+  it("returns empty string for nullish input", () => {
+    expect(stripAccents(null)).toBe("");
+    expect(stripAccents(undefined)).toBe("");
+    expect(stripAccents("")).toBe("");
   });
 });

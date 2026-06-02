@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import type { AuctionWithProperty, PropertyType } from "@/lib/types";
 import { ExploreView } from "@/components/explore/ExploreView";
 import type { ExploreFilter } from "@/components/explore/types";
+import { stripAccents } from "@/lib/search";
 
 export const metadata: Metadata = {
   title: "Biens immobiliers aux enchères",
@@ -80,10 +81,9 @@ const getExploreFeed = unstable_cache(
     if (p.types.length > 0) q = q.in("property.type", p.types);
     if (p.gov) q = q.eq("property.governorate", p.gov);
     if (p.term) {
-      q = q.or(
-        `title.ilike.*${p.term}*,governorate.ilike.*${p.term}*,address.ilike.*${p.term}*`,
-        { referencedTable: "property" },
-      );
+      // Accent-folded match against the property's search_text generated
+      // column (migration 0062) — diacritic-insensitive, trigram-indexed.
+      q = q.ilike("property.search_text", `%${stripAccents(p.term)}%`);
     }
     if (p.minArea !== null) q = q.gte("property.area_sqm", p.minArea);
     if (p.minRooms !== null) q = q.gte("property.rooms", p.minRooms);

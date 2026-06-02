@@ -376,8 +376,47 @@ export default async function AuctionDetail({
     }
   }
 
+  // ─── JSON-LD structured data ───────────────────────────────────────
+  // Lets Google surface price / title / image as a rich result. Built from
+  // the same fields the page already loaded; server-rendered into static
+  // HTML so crawlers see it without running JS.
+  const seoPrice =
+    currentPrice || Number(auction.sale_price ?? 0) || Number(auction.opening_price ?? 0);
+  const seoImages = photos
+    .slice(0, 6)
+    .map((ph) => propertyPhotoUrl(ph.storage_path, { transform: { width: 1200, quality: 80 } }));
+  const seoSiteUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://batta.tn")
+  ).replace(/\/$/, "");
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: property.title,
+    description:
+      (property.description ?? "").trim().slice(0, 500) ||
+      `${auction.listing_type === "direct" ? "Vente directe" : "Enchère immobilière"} sur Batta.tn`,
+    ...(seoImages.length ? { image: seoImages } : {}),
+    category: "Immobilier",
+    ...(property.governorate ? { areaServed: property.governorate } : {}),
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "TND",
+      ...(seoPrice > 0 ? { price: seoPrice } : {}),
+      availability: ["scheduled", "live", "extending"].includes(auction.status)
+        ? "https://schema.org/InStock"
+        : "https://schema.org/SoldOut",
+      url: `${seoSiteUrl}/fr/auctions/${auction.id}`,
+    },
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Suppress "you've been outbid" notifications while the user
           has this page open. The DB place_bid RPC skips the push when
           the bidder has pinged auction_presence in the last 45s; that

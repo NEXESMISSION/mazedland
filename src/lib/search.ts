@@ -15,12 +15,25 @@
  *      Without this users would search "Sfax" and miss every listing
  *      titled "1BR apartment" with `governorate = "Sfax"`.
  *
- * Diacritic insensitivity (so "Béja" matches "beja") still needs the
- * Postgres `unaccent` extension and a migration to back it. Kept out
- * of this util for now so it can land later without touching callers.
+ * Diacritic insensitivity (so "Béja" matches "beja") is backed by the
+ * Postgres `unaccent` extension + a `search_text` generated column on
+ * properties (migration 0062). Callers fold the user's term with
+ * `stripAccents` below so both sides are diacritic-free before matching.
  */
 
 const ILIKE_AND_OR_SPECIALS = /[%_,\\()"]/g;
+
+/**
+ * Fold accents/diacritics off a string and lower-case it, mirroring the
+ * Postgres `f_unaccent(lower(...))` used to build properties.search_text.
+ * "Béja" → "beja", "Médenine" → "medenine". Non-Latin scripts (Arabic) are
+ * untouched, matching unaccent's behaviour. Use this on the user's search
+ * term before an ILIKE against search_text.
+ */
+export function stripAccents(raw: string | null | undefined): string {
+  if (!raw) return "";
+  return raw.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+}
 
 export function normalizeSearchQuery(raw: string | null | undefined): string {
   if (!raw) return "";
