@@ -14,6 +14,7 @@ const TYPES = [
   { key: "all", label: "Tout" },
   { key: "page_view", label: "Pages visitées" },
   { key: "action", label: "Actions" },
+  { key: "error", label: "Erreurs" },
 ] as const;
 
 type Tone = "ok" | "bad" | "warn" | "info" | "neutral";

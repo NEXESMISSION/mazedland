@@ -67,6 +67,13 @@ export async function POST(req: NextRequest) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  // DB-backed rate limit — robust across serverless instances (the in-process
+  // limiter above resets per instance). Hardens against phone enumeration.
+  const { data: blocked } = await admin.rpc("check_auth_ratelimit", { p_ip: ip });
+  if (blocked === true) {
+    return NextResponse.json({ email: null }, { status: 429 });
+  }
+
   const { data: profile } = await admin
     .from("profiles")
     .select("id")

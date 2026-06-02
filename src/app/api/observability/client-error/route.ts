@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { log } from "@/lib/log";
+import { logError } from "@/lib/activity";
 
 const cliErr = log.scope("cer");
 
@@ -33,6 +34,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
     const stack = clip(body.stack, 2000);
     if (stack) cliErr.error(stack);
+    // Persist so it shows in /admin/activity, not just the log stream.
+    logError({
+      action: `client.${clip(body.kind, 24) ?? "error"}`,
+      path: clip(body.url, 200) ?? null,
+      metadata: {
+        message: clip(body.message, 300),
+        source: clip(body.source, 200),
+        ua: req.headers.get("user-agent")?.slice(0, 160) ?? undefined,
+      },
+    });
   } catch {
     // swallow — observability must never error the caller
   }

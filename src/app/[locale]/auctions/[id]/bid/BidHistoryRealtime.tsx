@@ -333,11 +333,6 @@ export function BidHistoryRealtime({
                           )}
                         </span>
                       )}
-                      {b.is_proxy && (
-                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-[var(--gold)]">
-                          PROXY
-                        </span>
-                      )}
                       {isLeader && !isSealedLive && (
                         <span className="hidden lg:inline-flex items-center px-1.5 h-4 rounded-full bg-[var(--gold-faint)] text-[var(--gold)] text-[9px] font-extrabold uppercase tracking-wider">
                           En tête

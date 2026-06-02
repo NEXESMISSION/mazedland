@@ -1,4 +1,5 @@
 import { log } from "@/lib/log";
+import { logError } from "@/lib/activity";
 
 const errLog = log.scope("err");
 
@@ -40,4 +41,18 @@ export async function onRequestError(
   });
   // Preserve the stack on its own line for grep-ability.
   if (e?.stack) errLog.error(e.stack);
+
+  // Persist to activity_log (type='error') so it's queryable + visible in
+  // /admin/activity, not just in the log stream. Fire-and-forget.
+  logError({
+    action: `server.${context.routeType || "error"}`,
+    path: request.path,
+    metadata: {
+      method: request.method,
+      name: e?.name ?? "Error",
+      message: (e?.message ?? String(error)).slice(0, 500),
+      digest: e?.digest,
+      route: context.routePath,
+    },
+  });
 }

@@ -12,7 +12,7 @@ import { log } from "@/lib/log";
 
 const aLog = log.scope("act");
 
-export type ActivityType = "page_view" | "action";
+export type ActivityType = "page_view" | "action" | "error";
 
 export type ActivityRecord = {
   type: ActivityType;
@@ -56,6 +56,32 @@ export function logActivity(rec: ActivityRecord): void {
     .then(({ error }) => {
       if (error) aLog.warn(`insert failed: ${error.message}`);
     });
+}
+
+/**
+ * Persist an error to activity_log (type='error') so it's queryable and shows
+ * up in the /admin/activity viewer, not just in ephemeral logs. Fire-and-forget
+ * like the rest — observability must never break the request. `action` carries
+ * a short label/scope (e.g. "server.500", "client.unhandledrejection") and
+ * metadata carries the message/stack/digest.
+ */
+export function logError(rec: {
+  action: string;
+  path?: string | null;
+  status?: number | null;
+  userId?: string | null;
+  userEmail?: string | null;
+  metadata?: Record<string, unknown>;
+}): void {
+  logActivity({
+    type: "error",
+    action: rec.action,
+    path: rec.path ?? null,
+    status: rec.status ?? null,
+    userId: rec.userId ?? null,
+    userEmail: rec.userEmail ?? null,
+    metadata: rec.metadata ?? {},
+  });
 }
 
 /** Pull the best-effort client metadata (IP, UA, referer) off a request. */
