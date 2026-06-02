@@ -49,7 +49,7 @@ export function MobileShell({ children }: { children: React.ReactNode }) {
     return (
       <>
         <ScrollToTop />
-        <main className="min-h-screen">{children}</main>
+        <main id="main-content" tabIndex={-1} className="min-h-screen">{children}</main>
       </>
     );
   }
@@ -60,7 +60,7 @@ export function MobileShell({ children }: { children: React.ReactNode }) {
       <TopBar />
       <DesktopNav />
       <PullToRefresh>
-        <main className="batta-shell-main">{children}</main>
+        <main id="main-content" tabIndex={-1} className="batta-shell-main">{children}</main>
       </PullToRefresh>
       <BottomTabBar />
       <KYCNudgeModal />

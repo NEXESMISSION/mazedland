@@ -144,6 +144,14 @@ export default async function RootLayout({
         className="min-h-full bg-background text-foreground font-sans"
         style={{ background: "#ffffff" }}
       >
+        {/* Skip link — first focusable element; lets keyboard/screen-reader
+            users jump past the nav straight to the page content. */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:rounded-lg focus:bg-[var(--gold)] focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white focus:shadow-lg"
+        >
+          Aller au contenu
+        </a>
         {children}
         <PWARegister />
         {/* Ships uncaught client errors + unhandled rejections to the server
