@@ -167,18 +167,19 @@ export async function HomeDesktop({
   return (
     <div className={`${alwaysVisible ? "block" : "hidden lg:block"} mx-auto max-w-[var(--max-w-wide)] px-8 pb-24`}>
       {/* ─── SPLIT HERO — copy + search left, lot imagery right ─── */}
-      <section className="relative isolate pt-8">
-        {/* Soft brand bloom behind the showcase so the hero reads premium
-            rather than flat white, plus a faint hairline-grid wash. Both are
-            pure CSS, pointer-transparent, and sit on -z so content is above. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 -top-12 -z-10 h-[600px]"
-          style={{
-            background:
-              "radial-gradient(46% 58% at 80% 6%, var(--gold-faint) 0%, transparent 68%), radial-gradient(40% 50% at 6% 40%, var(--gold-faint) 0%, transparent 70%)",
-          }}
-        />
+      {/* The soft brand bloom is painted as the section's own background (not a
+          -z child) so it lifts the hero off flat white WITHOUT creating a
+          stacking context — an `isolate`/`-z` wrapper here would trap the
+          search dropdowns (z-50) inside the hero and let the live ticker below
+          paint through them. */}
+      <section
+        className="relative pt-8"
+        style={{
+          backgroundImage:
+            "radial-gradient(46% 52% at 82% 4%, var(--gold-faint) 0%, transparent 66%), radial-gradient(38% 46% at 4% 36%, var(--gold-faint) 0%, transparent 70%)",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
         <div className="grid grid-cols-12 items-center gap-10">
           {/* LEFT — brand copy + trust pillars */}
           <div className="col-span-6">
