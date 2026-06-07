@@ -19,6 +19,9 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
+// Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
+export const dynamic = "force-dynamic";
+
 /**
  * Account hub — identity card on top, then grouped action rows. The
  * three group cards use the dark `surface` colour with a gold-tinted

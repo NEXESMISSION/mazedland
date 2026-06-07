@@ -3,6 +3,9 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { InspectorApplyForm } from "@/components/inspector/InspectorApplyForm";
 import { getLocale, getTranslations } from "next-intl/server";
 
+// Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
+export const dynamic = "force-dynamic";
+
 export default async function InspectorApply({
   params,
 }: { params: Promise<{ locale: string }> }) {

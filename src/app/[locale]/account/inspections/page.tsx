@@ -6,6 +6,9 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { ClipboardCheck, Calendar, MapPin, FileText } from "lucide-react";
 import { FocusRowHighlight } from "@/components/ui/FocusRowHighlight";
 
+// Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
+export const dynamic = "force-dynamic";
+
 /**
  * Buyer-side inspections — surfaces the report download once an
  * inspection reaches `submitted` or `approved` (audit #11).

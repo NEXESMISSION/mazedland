@@ -6,6 +6,11 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { InspectionActions } from "@/components/inspector/InspectionActions";
 import { ClipboardCheck, Calendar, MapPin, FileText } from "lucide-react";
 
+// Per-user, auth-gated dashboard — never static. Without this the build tries
+// to prerender /fr/inspector, and in an env-less build (CI) getServerSupabase()
+// throws during export and fails the whole build. Force-dynamic skips prerender.
+export const dynamic = "force-dynamic";
+
 /**
  * Inspector dashboard. Gated to role=inspector. Lists every assignment
  * grouped by lifecycle bucket (incoming → active → submitted → approved).

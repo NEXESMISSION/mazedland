@@ -7,6 +7,9 @@ import type { PropertyType } from "@/lib/types";
 import { parseRejection, REJECTION_CATEGORIES, REJECTION_CATEGORY_LABELS, type RejectionCategory } from "@/lib/rejection";
 import { AlertTriangle, Lightbulb } from "lucide-react";
 
+// Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
+export const dynamic = "force-dynamic";
+
 /**
  * Edit + resubmit a property listing (audit #14). Only the owner (or
  * admin) can reach this page — RLS on properties hides the row from

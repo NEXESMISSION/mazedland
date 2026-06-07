@@ -3,6 +3,9 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { BookInspectionForm } from "@/components/inspector/BookInspectionForm";
 import { getLocale } from "next-intl/server";
 
+// Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
+export const dynamic = "force-dynamic";
+
 export default async function BookInspection({
   searchParams,
   params,

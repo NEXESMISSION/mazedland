@@ -48,14 +48,19 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
-      # Catch build-breaking changes (type errors only surface here, bad
-      # imports, RSC/client boundary violations) before they reach main.
-      # Supabase env isn't needed: pages degrade gracefully when it's absent
-      # (the data fetchers already guard for it), so the build still completes.
+      # Build with the PUBLIC Supabase env so CI mirrors prod/Vercel. Not every
+      # page degrades env-lessly (auth-gated dashboards + cached feeds touch
+      # Supabase at prerender), so the build needs these. They're the public
+      # client values (anon key is RLS-scoped and already shipped in the browser
+      # bundle) — add them as repo secrets: NEXT_PUBLIC_SUPABASE_URL +
+      # NEXT_PUBLIC_SUPABASE_ANON_KEY. The build never hits the DB (prerender
+      # has no session), so no service key is required.
       - name: Build
         run: pnpm build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       # Security regression gate — re-runs the live exploits (B1/B2/B6) and
       # FAILS if any reopens. Runs ONLY when SECURITY_TEST_* secrets are set

@@ -4,6 +4,9 @@ import { Link } from "@/i18n/navigation";
 import { getLocale } from "next-intl/server";
 import { Plus, Briefcase } from "lucide-react";
 
+// Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
+export const dynamic = "force-dynamic";
+
 /**
  * Partner dashboard — bank, agency, bailiff portfolio view. Identity
  * card on top with role + counts, then a properties list. Visual

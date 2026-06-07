@@ -6,6 +6,9 @@ import { ScheduleForm } from "@/components/sell/ScheduleForm";
 import { parseAntiSnipe } from "@/lib/pricing";
 import { Clock } from "lucide-react";
 
+// Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
+export const dynamic = "force-dynamic";
+
 // Schedule an auction for an already-approved listing.
 export default async function ScheduleAuctionPage({
   params,
