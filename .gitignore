@@ -18,3 +18,8 @@ supabase/.temp/
 .dev.vars
 .open-next/
 .wrangler/
+
+# Internal security audit (exploit detail) — keep local, never publish to the
+# public repo. Tracked once by mistake; untracked in this commit.
+DEEP-AUDIT-*.md
+verify-*.log
