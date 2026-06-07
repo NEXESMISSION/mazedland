@@ -90,7 +90,7 @@ export async function POST(
     .update({ status: "cancelled" })
     .eq("id", auctionId);
   if (updErr) {
-    return NextResponse.json({ error: updErr.message }, { status: 500 });
+    return NextResponse.json({ error: "cancel_failed" }, { status: 500 });
   }
 
   const title = (auction as unknown as { property: { title: string } }).property?.title;

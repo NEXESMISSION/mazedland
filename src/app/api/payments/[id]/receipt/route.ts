@@ -91,7 +91,7 @@ export async function POST(
     })
     .eq("id", paymentId);
   if (updErr) {
-    return NextResponse.json({ error: updErr.message }, { status: 500 });
+    return NextResponse.json({ error: "receipt_failed" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

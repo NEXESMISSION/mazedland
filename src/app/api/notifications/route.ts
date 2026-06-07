@@ -79,7 +79,15 @@ export async function PATCH(req: NextRequest) {
     .is("read_at", null);
 
   if (Array.isArray(body.ids) && body.ids.length > 0) {
-    update = update.in("id", body.ids as string[]);
+    // Validate + cap the client-supplied id list (matches the DELETE sibling):
+    // no unbounded / non-string IN() payloads.
+    const ids = (body.ids as unknown[])
+      .filter((x): x is string => typeof x === "string" && x.length > 0)
+      .slice(0, 500);
+    if (ids.length === 0) {
+      return NextResponse.json({ error: "ids_required" }, { status: 400 });
+    }
+    update = update.in("id", ids);
   } else if (body.all !== true) {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }

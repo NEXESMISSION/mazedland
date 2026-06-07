@@ -32,6 +32,14 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
 
+  // Reject an oversized body from its declared length BEFORE buffering it into
+  // memory — otherwise a multi-GB upload OOMs the function before the cap below
+  // ever runs. The post-buffer check stays as a backstop for chunked requests.
+  const declaredLen = Number(req.headers.get("content-length") ?? 0);
+  if (Number.isFinite(declaredLen) && declaredLen > MAX_BYTES) {
+    return NextResponse.json({ error: "too_large" }, { status: 413 });
+  }
+
   const buf = Buffer.from(await req.arrayBuffer());
   if (buf.byteLength === 0) {
     return NextResponse.json({ error: "empty_body" }, { status: 400 });

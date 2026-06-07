@@ -167,7 +167,7 @@ export async function POST(
         .limit(1);
       if (raceRows?.[0]) return NextResponse.json({ paymentId: raceRows[0].id, amount });
     }
-    return NextResponse.json({ error: insErr?.message ?? "insert_failed" }, { status: 500 });
+    return NextResponse.json({ error: "insert_failed" }, { status: 500 });
   }
 
   // Submission receipt to the seller. Listing-fee accept/reject already

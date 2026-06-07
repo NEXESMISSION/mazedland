@@ -83,7 +83,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const { error } = await admin
+    // Atomic guard: only the FIRST concurrent refund wins. `.is('refunded_at',
+    // null)` makes the UPDATE itself the lock — two admins/tabs hitting this at
+    // once can't both refund (and double-notify) the same caution.
+    const { data: updatedDep, error } = await admin
       .from("auction_deposits")
       .update({
         refunded_at: new Date().toISOString(),
@@ -92,8 +95,14 @@ export async function POST(req: NextRequest) {
         // ensure released so it leaves the queue cleanly
         released_at: dep.released_at ?? new Date().toISOString(),
       })
-      .eq("id", depositId);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      .eq("id", depositId)
+      .is("refunded_at", null)
+      .select("id");
+    if (error) return NextResponse.json({ error: "refund_failed" }, { status: 500 });
+    if (!updatedDep || updatedDep.length === 0) {
+      // Lost the race — another request already refunded it. Don't re-notify.
+      return NextResponse.json({ error: "already_refunded" }, { status: 409 });
+    }
 
     // Reflect the refund on the corresponding deposit-lock payment so the
     // user's /account/payments shows "Remboursé" instead of "Payé". Free

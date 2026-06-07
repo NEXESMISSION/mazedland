@@ -4,6 +4,10 @@ import { sendEmail, isEmailConfigured } from "@/lib/email";
 import { log } from "@/lib/log";
 
 export const dynamic = "force-dynamic";
+// Give the worker real headroom: a Resend latency spike must not kill the
+// run mid-batch under the platform-default timeout (which was leaving rows
+// half-processed). 60s is within the Vercel Pro ceiling.
+export const maxDuration = 60;
 
 const cLog = log.scope("cron-mail");
 
@@ -36,8 +40,18 @@ const EMAILABLE = new Set([
   "kyc_rejected",
 ]);
 
-const MAX_PER_RUN = 50;
+// Drain a close/broadcast wave fast enough that nothing money-critical ages
+// out. 200/run with the */5 cron ≈ 2,400 emails/hr, vs the old 300/hr that
+// silently dropped same-day winner/payment emails past the 24h cutoff.
+const MAX_PER_RUN = 200;
 const MAX_ATTEMPTS = 5;
+// Process rows concurrently (each does getUserById + send + stamp); a serial
+// loop was the other timeout vector.
+const CONCURRENCY = 8;
+// Safety net only — bound how far back we look so first-time email enablement
+// can't blast ancient history. Far wider than the old 24h so that under
+// normal operation a row is bounded by MAX_ATTEMPTS, never by age.
+const LOOKBACK_DAYS = 7;
 
 function siteUrl(): string {
   return (
@@ -89,8 +103,11 @@ async function run(req: NextRequest) {
   if (!admin) {
     return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
   }
+  // Bind the narrowed (non-null) client so the per-row closure below keeps the
+  // narrowing — TS drops it for a captured `const` inside a nested function.
+  const db = admin;
 
-  const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const sinceIso = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const { data: rows, error } = await admin
     .from("notifications")
     .select("id, user_id, kind, title, body, link, email_attempts")
@@ -111,26 +128,25 @@ async function run(req: NextRequest) {
   let failed = 0;
   let skipped = 0;
 
-  for (const r of rows ?? []) {
-    const row = r as {
-      id: string;
-      user_id: string;
-      kind: string;
-      title: string | null;
-      body: string | null;
-      link: string | null;
-      email_attempts: number | null;
-    };
+  type Row = {
+    id: string;
+    user_id: string;
+    kind: string;
+    title: string | null;
+    body: string | null;
+    link: string | null;
+    email_attempts: number | null;
+  };
 
+  async function processRow(row: Row): Promise<"sent" | "failed" | "skipped"> {
     // Resolve the recipient's email from auth (profiles doesn't store it).
-    const { data: userRes } = await admin.auth.admin.getUserById(row.user_id);
+    const { data: userRes } = await db.auth.admin.getUserById(row.user_id);
     const to = userRes?.user?.email ?? null;
 
     if (!to || to.endsWith("@deleted.invalid")) {
       // Recipient gone / anonymised — mark done so we don't retry forever.
-      await admin.from("notifications").update({ emailed_at: new Date().toISOString() }).eq("id", row.id);
-      skipped++;
-      continue;
+      await db.from("notifications").update({ emailed_at: new Date().toISOString() }).eq("id", row.id);
+      return "skipped";
     }
 
     const title = row.title ?? "Notification Batta.tn";
@@ -145,22 +161,34 @@ async function run(req: NextRequest) {
     });
 
     if (result.ok) {
-      await admin.from("notifications").update({ emailed_at: new Date().toISOString() }).eq("id", row.id);
-      sent++;
-    } else if (result.skipped) {
-      skipped++;
-    } else {
-      // Best-effort retry counter. Serial loop + 5-min cadence → the simple
-      // read+1 is safe here; after MAX_ATTEMPTS the row drops out of the query.
-      await admin
-        .from("notifications")
-        .update({ email_attempts: (row.email_attempts ?? 0) + 1 })
-        .eq("id", row.id);
-      failed++;
+      await db.from("notifications").update({ emailed_at: new Date().toISOString() }).eq("id", row.id);
+      return "sent";
+    }
+    if (result.skipped) return "skipped";
+
+    // Best-effort retry counter; after MAX_ATTEMPTS the row drops out of the
+    // query. (Per-row, so concurrent rows never touch the same counter.)
+    await db
+      .from("notifications")
+      .update({ email_attempts: (row.email_attempts ?? 0) + 1 })
+      .eq("id", row.id);
+    return "failed";
+  }
+
+  // Process in bounded-concurrency chunks, preserving oldest-first ordering
+  // across chunks. Sends fan out CONCURRENCY-wide so one slow Resend call
+  // can't serialize the whole batch into a timeout.
+  const all = (rows ?? []) as Row[];
+  for (let i = 0; i < all.length; i += CONCURRENCY) {
+    const outcomes = await Promise.all(all.slice(i, i + CONCURRENCY).map(processRow));
+    for (const o of outcomes) {
+      if (o === "sent") sent++;
+      else if (o === "failed") failed++;
+      else skipped++;
     }
   }
 
-  return NextResponse.json({ ok: true, sent, failed, skipped, scanned: rows?.length ?? 0 });
+  return NextResponse.json({ ok: true, sent, failed, skipped, scanned: all.length });
 }
 
 export const GET = run;

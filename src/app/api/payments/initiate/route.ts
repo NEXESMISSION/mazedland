@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     .single();
   if (insertErr || !payment) {
     return NextResponse.json(
-      { error: insertErr?.message ?? "insert_failed" },
+      { error: "insert_failed" },
       { status: 500 },
     );
   }

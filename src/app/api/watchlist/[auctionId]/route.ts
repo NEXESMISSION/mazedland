@@ -60,7 +60,7 @@ export async function POST(
     .from("watchlist")
     .upsert({ user_id: user.id, auction_id: auctionId }, { onConflict: "user_id,auction_id" });
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "watchlist_failed" }, { status: 500 });
   }
   return NextResponse.json({ ok: true, saved: true });
 }

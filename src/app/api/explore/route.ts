@@ -1,11 +1,87 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSupabase } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import type { AuctionWithProperty, PropertyType } from "@/lib/types";
 import { withRouteLogger } from "@/lib/withRouteLogger";
 import { stripAccents } from "@/lib/search";
 import { log } from "@/lib/log";
 
 const xLog = log.scope("api");
+
+type ExploreParams = {
+  filter: "all" | "auction" | "direct";
+  types: PropertyType[];
+  gov: string | null;
+  term: string;
+  minPrice: number | null;
+  maxPrice: number | null;
+  minArea: number | null;
+  minRooms: number | null;
+  from: number;
+  to: number;
+};
+
+// The explore feed is PUBLIC data only (browseable auctions on ready
+// properties — no per-user rows), so it's identical for everyone and safe to
+// serve from the cookieless service-role client behind unstable_cache. This
+// mirrors the home/catalogue feeds and stops every pagination/filter click
+// from hitting Postgres with an uncached join + count. Keyed by every filter
+// input; 30s revalidate balances freshness against a cold-cache DB storm.
+const fetchExplore = unstable_cache(
+  async (p: ExploreParams) => {
+    const supabase = getServiceSupabase();
+    if (!supabase) return { items: [] as AuctionWithProperty[], count: 0, error: "server_misconfigured" };
+
+    let q = supabase
+      .from("auctions")
+      .select(
+        `
+        *,
+        property:properties!inner (
+          *,
+          photos:property_photos (id, storage_path, sort_order, caption)
+        )
+      `,
+        { count: "exact" },
+      )
+      .in("status", ["scheduled", "live", "extending"])
+      .eq("property.status", "ready")
+      .order("created_at", { ascending: false })
+      .range(p.from, p.to);
+
+    if (p.filter === "auction") q = q.eq("listing_type", "auction");
+    else if (p.filter === "direct") q = q.eq("listing_type", "direct");
+
+    if (p.types.length > 0) q = q.in("property.type", p.types);
+    if (p.gov) q = q.eq("property.governorate", p.gov);
+    if (p.term) q = q.ilike("property.search_text", `%${stripAccents(p.term)}%`);
+    if (p.minArea !== null) q = q.gte("property.area_sqm", p.minArea);
+    if (p.minRooms !== null) q = q.gte("property.rooms", p.minRooms);
+    if (p.minPrice !== null) {
+      q = q.or(
+        `current_price.gte.${p.minPrice},sale_price.gte.${p.minPrice},opening_price.gte.${p.minPrice}`,
+      );
+    }
+    if (p.maxPrice !== null) {
+      q = q.or(
+        `current_price.lte.${p.maxPrice},sale_price.lte.${p.maxPrice},opening_price.lte.${p.maxPrice}`,
+      );
+    }
+
+    const { data, error, count } = await q;
+    if (error) {
+      xLog.error("explore select failed", error);
+      return { items: [] as AuctionWithProperty[], count: 0, error: "explore_failed" };
+    }
+    return {
+      items: (data ?? []) as unknown as AuctionWithProperty[],
+      count: count ?? 0,
+      error: null as string | null,
+    };
+  },
+  ["explore-feed"],
+  { revalidate: 30 },
+);
 
 /**
  * GET /api/explore — page-numbered listing feed (1, 2, 3, …).
@@ -73,70 +149,18 @@ export const GET = withRouteLogger(async (req: NextRequest) => {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  const supabase = await getServerSupabase();
-
-  // `count: 'exact'` makes PostgREST return the total row count alongside
-  // the page slice in a single round-trip. We use it to compute totalPages
-  // for the numbered pagination UI.
-  let q = supabase
-    .from("auctions")
-    .select(
-      `
-      *,
-      property:properties!inner (
-        *,
-        photos:property_photos (id, storage_path, sort_order, caption)
-      )
-    `,
-      { count: "exact" },
-    )
-    .in("status", ["scheduled", "live", "extending"])
-    .eq("property.status", "ready")
-    .order("created_at", { ascending: false })
-    .range(from, to);
-
-  if (filter === "auction") q = q.eq("listing_type", "auction");
-  else if (filter === "direct") q = q.eq("listing_type", "direct");
-
-  if (types.length > 0) q = q.in("property.type", types);
-  if (gov) q = q.eq("property.governorate", gov);
-  // Match the term against the property's accent-folded search_text (covers
-  // title + governorate + address + description in one trigram-indexed
-  // column). We strip accents off the term so "beja" hits "Béja" and vice
-  // versa. Single ILIKE on a GIN-indexed column → faster than the old 3-way
-  // or() and diacritic-insensitive.
-  if (term) {
-    q = q.ilike("property.search_text", `%${stripAccents(term)}%`);
-  }
-  if (minArea !== null) q = q.gte("property.area_sqm", minArea);
-  if (minRooms !== null) q = q.gte("property.rooms", minRooms);
-
-  // Price filter — we OR across the three price columns so a listing
-  // passes if ANY of (current_price | sale_price | opening_price) falls
-  // in the window. This keeps the filter forgiving: a scheduled auction
-  // with no bid still appears at its opening price.
-  if (minPrice !== null) {
-    q = q.or(
-      `current_price.gte.${minPrice},sale_price.gte.${minPrice},opening_price.gte.${minPrice}`,
-    );
-  }
-  if (maxPrice !== null) {
-    q = q.or(
-      `current_price.lte.${maxPrice},sale_price.lte.${maxPrice},opening_price.lte.${maxPrice}`,
-    );
-  }
-
   const stopTimer = xLog.time("explore.select");
-  const { data, error, count } = await q;
+  const { items, count, error } = await fetchExplore({
+    filter, types, gov, term, minPrice, maxPrice, minArea, minRooms, from, to,
+  });
   stopTimer();
 
   if (error) {
-    xLog.error("explore select failed", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Generic error to the client; the real cause is logged server-side.
+    return NextResponse.json({ error: "explore_failed" }, { status: 500 });
   }
 
-  const items = (data ?? []) as unknown as AuctionWithProperty[];
-  const totalCount = count ?? items.length;
+  const totalCount = count || items.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
 
   return NextResponse.json({

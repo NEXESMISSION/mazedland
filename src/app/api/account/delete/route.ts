@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { log } from "@/lib/log";
 
@@ -21,6 +22,10 @@ const dLog = log.scope("acc-del");
  * win, pending payment/payout) so the UI can explain what to settle first.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Irreversible PII scrub + permanent ban — must be same-origin (CSRF).
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
+  }
   const supabase = await getServerSupabase();
   const {
     data: { user },

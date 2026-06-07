@@ -52,7 +52,11 @@ export async function GET(req: NextRequest) {
         recipient:profiles!notifications_user_id_fkey (full_name, role),
         sender:profiles!notifications_created_by_fkey (full_name, role)
       `,
-      { count: "exact" },
+      // `estimated`, not `exact`: notifications is the fastest-fan-out table
+      // (one row per recipient per event; a broadcast = one row per user), so
+      // an exact full-count scan on every admin queue load gets slower with
+      // every broadcast. Approximate total is fine for a paginated admin list.
+      { count: "estimated" },
     )
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);

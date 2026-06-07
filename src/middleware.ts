@@ -176,12 +176,16 @@ export async function middleware(req: NextRequest) {
 
   // Activity log — record the page view (who is on the site, what page).
   // Fire-and-forget so navigation is never slowed. We log real page
-  // navigations only: GET requests that aren't router prefetches. Both
-  // authenticated and anonymous visits are captured (anonymous → null
-  // user). The matcher already excludes /api, _next and static assets.
-  // Prefetch already returned early above, so any GET reaching here is a real
-  // navigation worth recording.
-  if (req.method === "GET") {
+  // navigations only: GET requests that aren't router prefetches.
+  //
+  // SCALE: a DB write on EVERY pageview is the highest-volume write in the
+  // system and erodes the CDN/ISR savings. Keep every AUTHENTICATED view (the
+  // valuable "who is active, where" audit signal, bounded by logged-in users)
+  // but SAMPLE anonymous views — those are the unbounded bulk and Vercel
+  // Analytics already covers anonymous traffic. Cuts the write amplification
+  // by ~an order of magnitude at scale.
+  const PAGEVIEW_ANON_SAMPLE = 0.1;
+  if (req.method === "GET" && (authUserId !== null || Math.random() < PAGEVIEW_ANON_SAMPLE)) {
     logActivity({
       type: "page_view",
       userId: authUserId,

@@ -128,7 +128,10 @@ export function NotificationBell() {
   const refresh = useCallback(async () => {
     try {
       const want = Math.min(50, Math.max(PAGE_SIZE, items.length));
-      const res = await fetch(`/api/notifications?limit=${want}`, { cache: "no-store" });
+      const res = await fetch(`/api/notifications?limit=${want}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(10000),
+      });
       if (!res.ok) return;
       const data = (await res.json()) as {
         items: NotificationRow[];
@@ -152,7 +155,7 @@ export function NotificationBell() {
     try {
       const res = await fetch(
         `/api/notifications?limit=${PAGE_SIZE}&offset=${items.length}`,
-        { cache: "no-store" },
+        { cache: "no-store", signal: AbortSignal.timeout(10000) },
       );
       if (!res.ok) return;
       const data = (await res.json()) as { items: NotificationRow[]; hasMore?: boolean };

@@ -51,7 +51,7 @@ export function subscribeDeposits(fn: () => void): () => void {
  */
 export function ensureDepositsHydrated(): void {
   if (state.hydrated || inflight || typeof window === "undefined") return;
-  inflight = fetch("/api/my-deposits", { cache: "no-store" })
+  inflight = fetch("/api/my-deposits", { cache: "no-store", signal: AbortSignal.timeout(10000) })
     .then((r) => (r.ok ? r.json() : { loggedIn: false, ids: [] }))
     .then((d: { loggedIn?: boolean; ids?: string[] }) => {
       state = {

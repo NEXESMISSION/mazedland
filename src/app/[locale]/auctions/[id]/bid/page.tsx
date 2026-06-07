@@ -60,7 +60,8 @@ export default async function BidPage({
     // instead of the truncated UUID slice "ec0043…" the audit flagged.
     supabase
       .from("bids")
-      .select("*, bidder:profiles!bids_bidder_id_fkey(full_name)")
+      // Explicit columns — keep ip_address / max_amount off the wire.
+      .select("id, auction_id, bidder_id, amount, is_proxy, is_winning, placed_at, bidder:profiles!bids_bidder_id_fkey(full_name)")
       .eq("auction_id", id)
       .order("placed_at", { ascending: false })
       .limit(8),
@@ -80,7 +81,10 @@ export default async function BidPage({
     redirect(`/${locale}/auctions/${id}`);
   }
   const totalBids = bidCountRes.count ?? 0;
-  const initialBids = (initialBidsRes.data ?? []) as Bid[];
+  // Cast through unknown: we deliberately omit ip_address/max_amount from the
+  // select (privacy), so the row shape is a subset of Bid. The composer/history
+  // never read those fields.
+  const initialBids = (initialBidsRes.data ?? []) as unknown as Bid[];
   const userId = userRes.data.user?.id ?? null;
 
   // Server-truth pre-flight: KYC + deposit. The composer needs these

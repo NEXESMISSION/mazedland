@@ -152,12 +152,30 @@ export default async function CheckoutEntry({
       amount = resolveDeposit(depCfg, Number(a.opening_price)).amount;
       break;
     }
-    case "buy_now":
-      amount =
+    case "buy_now": {
+      const full =
         a.listing_type === "direct"
           ? Number(a.sale_price ?? 0)
           : Number(a.buy_now_price ?? 0);
+      // Net any active deposit the buyer already locked on THIS auction. The
+      // buy-now RPC (close_auction_on_purchase) only releases LOSING bidders'
+      // deposits and deliberately keeps the buyer's own caution as "part of
+      // the purchase" — so charging the full buy-now price on top double-pays
+      // them. Mirrors the final_payment netting. Direct listings have no
+      // deposit, so credit resolves to 0 and the full sale price is charged.
+      const { data: depRows } = await supabase
+        .from("auction_deposits")
+        .select("amount")
+        .eq("auction_id", auctionId)
+        .eq("user_id", user.id)
+        .is("released_at", null)
+        .is("forfeited_at", null)
+        .order("amount", { ascending: false })
+        .limit(1);
+      const credit = Number(depRows?.[0]?.amount ?? 0);
+      amount = Math.max(0, Math.round((full - credit) * 100) / 100);
       break;
+    }
     case "final_payment": {
       // Net the deposit already paid: the caution is "part of the purchase",
       // so the final balance is the hammer price minus the winner's locked

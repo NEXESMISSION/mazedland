@@ -56,3 +56,15 @@ jobs:
         run: pnpm build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+
+      # Security regression gate — re-runs the live exploits (B1/B2/B6) and
+      # FAILS if any reopens. Runs ONLY when SECURITY_TEST_* secrets are set
+      # (point them at a STAGING project — it creates+deletes a probe signup
+      # each run). Skips cleanly otherwise so CI isn't blocked until configured.
+      - name: Security regression
+        if: ${{ secrets.SECURITY_TEST_SUPABASE_URL != '' }}
+        run: pnpm test:security
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SECURITY_TEST_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SECURITY_TEST_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SECURITY_TEST_SERVICE_ROLE_KEY }}

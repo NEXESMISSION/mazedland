@@ -185,7 +185,9 @@ export function BidHistoryRealtime({
       try {
         const { data, error } = await supabase
           .from("bids")
-          .select("*, bidder:profiles!bids_bidder_id_fkey(full_name)")
+          // Explicit columns — never ship ip_address / max_amount to the client
+          // (bidder IP + proxy ceiling are not the UI's business).
+          .select("id, auction_id, bidder_id, amount, is_proxy, is_winning, placed_at, bidder:profiles!bids_bidder_id_fkey(full_name)")
           .eq("auction_id", auctionId)
           .order("placed_at", { ascending: false })
           .limit(8);

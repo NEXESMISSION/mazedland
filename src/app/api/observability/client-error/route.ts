@@ -5,6 +5,29 @@ import { logError } from "@/lib/activity";
 
 const cliErr = log.scope("cer");
 
+// Per-IP rate limit so a single client's crash-loop can't turn this sink into
+// an unbounded activity_log write storm (a same-origin POST is forgeable). In
+// memory / per-instance — deliberately no DB round-trip (that would add the
+// very load we're capping); good enough to blunt a runaway client. Beyond the
+// cap we drop the report (still 204, indistinguishable to the caller).
+const RL_WINDOW_MS = 60_000;
+const RL_MAX = 20;
+const rlHits = new Map<string, number[]>();
+function rateLimited(ip: string): boolean {
+  const now = Date.now();
+  const arr = (rlHits.get(ip) ?? []).filter((t) => now - t < RL_WINDOW_MS);
+  if (arr.length >= RL_MAX) {
+    rlHits.set(ip, arr);
+    return true;
+  }
+  arr.push(now);
+  rlHits.set(ip, arr);
+  if (rlHits.size > 5000) {
+    for (const [k, v] of rlHits) if (v.every((t) => now - t > RL_WINDOW_MS)) rlHits.delete(k);
+  }
+  return false;
+}
+
 /**
  * Sink for client-side crashes (window.onerror / unhandledrejection / React
  * error boundaries). The browser POSTs a small JSON payload; we log it
@@ -17,6 +40,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ ok: false }, { status: 403 });
   }
+  // Per-IP cap so a crash-loop can't flood activity_log.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (rateLimited(ip)) return new NextResponse(null, { status: 204 });
   try {
     const body = (await req.json().catch(() => ({}))) as {
       message?: unknown;
