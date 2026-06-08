@@ -21,6 +21,26 @@ export default function GlobalError({
       message: error?.message,
       digest: error?.digest,
     });
+    // Ship to the observability sink so a ROOT-layout crash lands in the same
+    // server-side stream + /admin/activity as every other error — not just the
+    // user's browser console (where no operator ever sees it). Best-effort +
+    // keepalive so the beacon survives the boundary re-render; never throws.
+    try {
+      fetch("/api/observability/client-error", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          kind: "global_error",
+          message: error?.message ?? "(no message)",
+          stack: error?.stack,
+          url: typeof window !== "undefined" ? window.location.href : undefined,
+          source: error?.digest ? `digest:${error.digest}` : undefined,
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      /* observability must never break the last-resort boundary */
+    }
   }, [error]);
 
   return (

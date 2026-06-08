@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { secretMatches } from "@/lib/cron/auth";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { fail } from "@/lib/http/errors";
 
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization") ?? "";
   const key = req.nextUrl.searchParams.get("key") ?? "";
   const provided = auth.startsWith("Bearer ") ? auth.slice(7) : key;
-  if (provided !== secret) {
+  if (!secretMatches(provided, secret)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
