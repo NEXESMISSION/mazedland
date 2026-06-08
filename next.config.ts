@@ -39,13 +39,15 @@ const nextConfig: NextConfig = {
     // (fewer + smaller transforms = faster loads, lower bandwidth).
     deviceSizes: [360, 640, 828, 1080, 1280, 1920],
     imageSizes: [120, 200, 280, 384],
+    // Scope to the Supabase Storage public path so the optimizer can only
+    // transcode our OWN stored images, not arbitrary URLs on the project host.
+    // Dropped the unsplash/picsum hosts (test-only, never rendered): allowing
+    // huge public image hosts made /_next/image an anonymous denial-of-wallet —
+    // an attacker varies url+width for unlimited cache-miss transcodes billed
+    // to us. (Realtime/edge rate-limiting of /_next/image is a separate WAF
+    // task; this removes the unbounded-distinct-source amplifier.)
     remotePatterns: [
-      { protocol: "https", hostname: "*.supabase.co" },
-      { protocol: "https", hostname: "images.unsplash.com" },
-      // Lorem-ipsum-for-photos. Used as a placeholder source for hero
-      // and seed-data slots until the catalogue ships real photography.
-      { protocol: "https", hostname: "picsum.photos" },
-      { protocol: "https", hostname: "fastly.picsum.photos" },
+      { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
     ],
   },
   async headers() {

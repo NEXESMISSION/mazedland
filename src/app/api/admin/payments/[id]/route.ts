@@ -112,7 +112,10 @@ export async function PATCH(
   // when status flips to 'captured' and handles the auction-side
   // bookkeeping (auction_deposits row insert, close_auction_on_purchase
   // for buy_now, etc).
-  const { error: updErr } = await admin
+  // Compare-and-set: only resolve a row that is still unresolved. The early
+  // already_resolved check above is a fast-fail; this closes the TOCTOU so two
+  // concurrent admins (or an admin racing a user-cancel) can't both write.
+  const { data: updated, error: updErr } = await admin
     .from("payments")
     .update({
       status: verdict,
@@ -120,9 +123,17 @@ export async function PATCH(
       reviewer_id: user.id,
       reviewed_at: new Date().toISOString(),
     })
-    .eq("id", paymentId);
+    .eq("id", paymentId)
+    .in("status", ["pending", "pending_review"])
+    .select("id");
   if (updErr) {
-    return NextResponse.json({ error: updErr.message }, { status: 500 });
+    return NextResponse.json({ error: "update_failed" }, { status: 500 });
+  }
+  if (!updated || updated.length === 0) {
+    return NextResponse.json(
+      { error: "already_resolved", detail: "Le paiement a déjà été traité." },
+      { status: 409 },
+    );
   }
 
   // Notify the buyer.

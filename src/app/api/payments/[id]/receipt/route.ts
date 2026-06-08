@@ -81,7 +81,9 @@ export async function POST(
     return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
   }
 
-  const { error: updErr } = await admin
+  // Compare-and-set: only attach a receipt to a still-actionable row. If it was
+  // captured/failed concurrently, match 0 rows rather than resurrecting it.
+  const { data: updated, error: updErr } = await admin
     .from("payments")
     .update({
       provider,
@@ -89,9 +91,17 @@ export async function POST(
       receipt_uploaded_at: new Date().toISOString(),
       status: "pending_review",
     })
-    .eq("id", paymentId);
+    .eq("id", paymentId)
+    .in("status", ["pending", "pending_review"])
+    .select("id");
   if (updErr) {
     return NextResponse.json({ error: "receipt_failed" }, { status: 500 });
+  }
+  if (!updated || updated.length === 0) {
+    return NextResponse.json(
+      { error: "payment_already_resolved" },
+      { status: 409 },
+    );
   }
 
   return NextResponse.json({ ok: true });

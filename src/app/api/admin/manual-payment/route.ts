@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
 
   const { data: auction } = await admin
     .from("auctions")
-    .select("id, status, winner_user_id, buy_now_price, current_price, opening_price, property_id")
+    .select("id, status, winner_user_id, winner_amount, buy_now_price, current_price, opening_price, property_id")
     .eq("id", auctionId)
     .single();
   if (!auction) return NextResponse.json({ error: "auction_not_found" }, { status: 404 });
@@ -114,15 +114,39 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
+    // Reject a second CAPTURED purchase of the same kind (0084 partial unique
+    // index is the hard backstop; this is the friendly 409). Stops the
+    // online-capture + admin-manual double-credit / double-charge.
+    const { data: dupCaptured } = await admin
+      .from("payments")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("auction_id", auctionId)
+      .eq("kind", kind)
+      .eq("status", "captured")
+      .limit(1);
+    if (dupCaptured && dupCaptured.length > 0) {
+      return NextResponse.json(
+        { error: "already_captured", detail: "Un paiement validé de ce type existe déjà pour cet utilisateur sur cette enchère." },
+        { status: 409 },
+      );
+    }
   }
 
-  // For a buy_now where the buyer locked a deposit online, the caution is part
-  // of the purchase (mirrors the online buy-now route + close_auction_on_purchase,
-  // which validates amount + deposit == buy_now_price). Record the NET against the
-  // authoritative buy_now_price so the trigger's close doesn't reject it
-  // (amount_mismatch → captured row rolls back) and the buyer isn't double-charged.
+  // Record the AUTHORITATIVE net amount server-side — never trust the admin's
+  // typed figure for a settlement (a typo/insider amount would flow straight
+  // into seller_earnings/withdrawable balance). The winner's locked caution is
+  // part of the purchase, so: buy_now = buy_now_price − deposit, and
+  // final_payment = winner_amount − deposit. Keeps displayed==charged and
+  // matches what close_auction_on_purchase validates (amount + deposit == price).
   let insertAmount = amount;
-  if (kind === "buy_now" && auction.buy_now_price != null) {
+  const settlementPrice =
+    kind === "buy_now"
+      ? (auction.buy_now_price != null ? Number(auction.buy_now_price) : null)
+      : kind === "final_payment"
+        ? (auction.winner_amount != null ? Number(auction.winner_amount) : null)
+        : null;
+  if (settlementPrice != null) {
     const { data: depRows } = await admin
       .from("auction_deposits")
       .select("amount")
@@ -133,9 +157,7 @@ export async function POST(req: NextRequest) {
       .order("amount", { ascending: false })
       .limit(1);
     const credit = Number(depRows?.[0]?.amount ?? 0);
-    if (credit > 0) {
-      insertAmount = Math.max(0, Math.round((Number(auction.buy_now_price) - credit) * 100) / 100);
-    }
+    insertAmount = Math.max(0, Math.round((settlementPrice - credit) * 100) / 100);
   }
 
   // ── Insert the captured payment (trigger handles the rest) ───────────────

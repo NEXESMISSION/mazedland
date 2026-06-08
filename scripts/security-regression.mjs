@@ -114,5 +114,34 @@ const P = (ok, label) => { console.log(`${ok ? "✅ PASS" : "❌ FAIL"} — ${la
   P(!!error, `B2 forge-deposit: insert blocked${error ? ` (${error.code})` : " — ACCEPTED (!!)"}`);
 }
 
+// ENQ — a logged-in user must NOT be able to call enqueue_notification
+// (forged notifications / platform-branded phishing emails). 0082 revokes the
+// 6-arg overload from `authenticated`.
+{
+  const email = `sec-enq-${process.hrtime.bigint()}@example.com`;
+  const password = "SecProbe!2026x";
+  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
+  if (cErr) { P(false, `ENQ: probe user create failed (${cErr.message})`); }
+  else {
+    const uid = created.user?.id;
+    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
+    await authed.auth.signInWithPassword({ email, password });
+    const { error } = await authed.rpc("enqueue_notification", {
+      p_user_id: uid, p_kind: "payment_accepted", p_title: "X", p_body: "Y", p_link: "/account/payments", p_payload: {},
+    });
+    P(!!error, `ENQ enqueue_notification: blocked for authenticated${error ? ` (${error.code ?? (error.message||"").slice(0,40)})` : " — CALLABLE (!!)"}`);
+    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
+  }
+}
+
+// BIDS — sensitive columns (ip_address/max_amount/device_hash) must NOT be
+// readable by anon/authenticated via PostgREST. 0083 revokes them.
+{
+  const { error } = await freshAnon().from("bids").select("id, max_amount, ip_address").limit(1);
+  P(!!error, `BIDS column lockdown: max_amount/ip_address blocked${error ? ` (${error.code ?? ""})` : " — READABLE (!!)"}`);
+  const { error: okErr } = await freshAnon().from("bids").select("id, amount, bidder_id").limit(1);
+  P(!okErr, `BIDS safe columns still readable${okErr ? ` — ${okErr.message}` : ""}`);
+}
+
 console.log(`\n${fails === 0 ? "ALL SECURITY CHECKS PASSED" : `${fails} SECURITY CHECK(S) FAILED`}`);
 process.exit(fails === 0 ? 0 : 1);

@@ -34,7 +34,7 @@ export async function POST(
   const { data: auction } = await supabase
     .from("auctions")
     .select(
-      "id, status, listing_type, opening_price, sale_price, buy_now_price, property:properties (owner_id, title)",
+      "id, status, listing_type, opening_price, sale_price, buy_now_price, current_price, property:properties (owner_id, title)",
     )
     .eq("id", auctionId)
     .single();
@@ -49,6 +49,7 @@ export async function POST(
     opening_price: number;
     sale_price: number | null;
     buy_now_price: number | null;
+    current_price: number | null;
     property: { owner_id: string; title: string };
   };
 
@@ -57,6 +58,22 @@ export async function POST(
     || (a.listing_type === "auction" && ["live", "extending"].includes(a.status));
   if (!openForPurchase) {
     return NextResponse.json({ error: "auction_closed" }, { status: 409 });
+  }
+
+  // Once the standing high bid has met/exceeded the buy-now price, buy-now is
+  // retired — it must NOT close under the current leader (who would otherwise
+  // be displaced + refunded). Defense-in-depth: close_auction_on_purchase
+  // (0085) also no-ops this case at capture time.
+  if (
+    a.listing_type === "auction" &&
+    a.buy_now_price != null &&
+    a.current_price != null &&
+    Number(a.current_price) >= Number(a.buy_now_price)
+  ) {
+    return NextResponse.json(
+      { error: "buy_now_unavailable", detail: "Les enchères ont atteint ou dépassé le prix d'achat immédiat." },
+      { status: 409 },
+    );
   }
 
   const fullPrice =

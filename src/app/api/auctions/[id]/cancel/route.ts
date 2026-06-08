@@ -51,46 +51,38 @@ export async function POST(
     return NextResponse.json({ error: "not_owner" }, { status: 403 });
   }
 
-  if (!["scheduled", "live", "extending"].includes(auction.status as string)) {
-    return NextResponse.json(
-      { error: "not_cancellable", detail: "L'enchère est déjà clôturée." },
-      { status: 409 },
-    );
+  // Atomic, race-safe cancel: cancel_auction_safe() locks the auction FOR
+  // UPDATE, re-checks ownership + status + bid count INSIDE the lock, and
+  // refuses ('has_bids') if any bid exists. Serializes against place_bid's
+  // own FOR UPDATE, so a bid landing mid-cancel can no longer be stranded on a
+  // cancelled lot (the old check-then-write TOCTOU). Runs as the user.
+  const { error: cancelErr } = await supabase.rpc("cancel_auction_safe", {
+    p_auction_id: auctionId,
+  });
+  if (cancelErr) {
+    const msg = cancelErr.message ?? "";
+    if (msg.includes("has_bids")) {
+      return NextResponse.json(
+        { error: "has_bids", detail: "L'enchère a reçu des offres. Contactez l'administration pour l'annuler." },
+        { status: 409 },
+      );
+    }
+    if (msg.includes("not_cancellable")) {
+      return NextResponse.json(
+        { error: "not_cancellable", detail: "L'enchère est déjà clôturée." },
+        { status: 409 },
+      );
+    }
+    const code = msg.includes("forbidden") ? 403
+      : msg.includes("auction_not_found") ? 404
+      : msg.includes("auth") ? 401 : 500;
+    return NextResponse.json({ error: "cancel_failed" }, { status: code });
   }
 
-  // Bid-count gate. We use head:exact so we don't pull rows we'll
-  // immediately discard. RLS allows owners to count bids on their own
-  // auctions so the SSR-bound client is fine.
-  const { count: bidCount } = await supabase
-    .from("bids")
-    .select("id", { count: "exact", head: true })
-    .eq("auction_id", auctionId);
-  if ((bidCount ?? 0) > 0) {
-    return NextResponse.json(
-      {
-        error: "has_bids",
-        detail:
-          "L'enchère a reçu des offres. Contactez l'administration pour l'annuler.",
-      },
-      { status: 409 },
-    );
-  }
-
-  // Flip the status. We use the service-role client because the
-  // auctions table has no UPDATE policy for sellers (state transitions
-  // are owned by the engine + admin). Ownership + bid-count guards
-  // above are the authorisation layer.
+  // Cancel committed. Notifications below are best-effort (service-role).
   const admin = getServiceSupabase();
   if (!admin) {
-    return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
-  }
-
-  const { error: updErr } = await admin
-    .from("auctions")
-    .update({ status: "cancelled" })
-    .eq("id", auctionId);
-  if (updErr) {
-    return NextResponse.json({ error: "cancel_failed" }, { status: 500 });
+    return NextResponse.json({ ok: true });
   }
 
   const title = (auction as unknown as { property: { title: string } }).property?.title;

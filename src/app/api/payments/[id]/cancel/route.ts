@@ -65,16 +65,28 @@ export async function POST(
     return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
   }
 
-  const { error: updErr } = await admin
+  // Compare-and-set on status='pending': if the row left 'pending' between our
+  // read and this write (e.g. an admin captured it concurrently), the update
+  // matches 0 rows and we DON'T clobber the captured payment / corrupt the
+  // ledger. .select() lets us read the affected-row count.
+  const { data: updated, error: updErr } = await admin
     .from("payments")
     .update({
       status: "failed",
       admin_notes: "Annulé par l'utilisateur",
       reviewed_at: new Date().toISOString(),
     })
-    .eq("id", paymentId);
+    .eq("id", paymentId)
+    .eq("status", "pending")
+    .select("id");
   if (updErr) {
-    return NextResponse.json({ error: updErr.message }, { status: 500 });
+    return NextResponse.json({ error: "cancel_failed" }, { status: 500 });
+  }
+  if (!updated || updated.length === 0) {
+    return NextResponse.json(
+      { error: "not_cancellable", detail: "Le paiement a changé d'état entre-temps." },
+      { status: 409 },
+    );
   }
 
   // Best-effort receipt cleanup. `pending` rows shouldn't have a
