@@ -143,5 +143,53 @@ const P = (ok, label) => { console.log(`${ok ? "✅ PASS" : "❌ FAIL"} — ${la
   P(!okErr, `BIDS safe columns still readable${okErr ? ` — ${okErr.message}` : ""}`);
 }
 
+// B7 — a SELLER must NOT mutate their own auction row directly via PostgREST,
+// bypassing the place_bid/close/tick state machine. 0099 drops the owner
+// `FOR ALL` policy (it allowed UPDATE/DELETE), leaving owner INSERT + admin
+// writes only. The exploit: a seller "awards" their own auction to themselves
+// (or an accomplice) at a sham price. With RLS this UPDATE matches no policy
+// and is a 0-row no-op, so we verify the row is UNCHANGED via service-role.
+{
+  const email = `sec-seller-${process.hrtime.bigint()}@example.com`;
+  const password = "SecProbe!2026x";
+  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
+  if (cErr) { P(false, `B7: probe seller create failed (${cErr.message})`); }
+  else {
+    const uid = created.user?.id;
+    let propId, aucId;
+    const { data: prop, error: pErr } = await svc.from("properties")
+      .insert({ owner_id: uid, title: "SEC PROBE LOT", type: "apartment", governorate: "Tunis" })
+      .select("id").single();
+    if (pErr || !prop) { P(false, `B7: property seed failed (${pErr?.message ?? "no row"})`); }
+    else {
+      propId = prop.id;
+      const nowMs = Date.now();
+      const { data: auc, error: aErr } = await svc.from("auctions")
+        .insert({
+          property_id: propId, type: "english", opening_price: 1000, current_price: 1000, status: "live",
+          starts_at: new Date(nowMs - 3_600_000).toISOString(),
+          ends_at: new Date(nowMs + 3_600_000).toISOString(),
+        })
+        .select("id").single();
+      if (aErr || !auc) { P(false, `B7: auction seed failed (${aErr?.message ?? "no row"})`); }
+      else {
+        aucId = auc.id;
+        const authed = createClient(url, anonKey, { auth: { persistSession: false } });
+        await authed.auth.signInWithPassword({ email, password });
+        await authed.from("auctions").update({
+          status: "ended_sold", winner_user_id: uid, winner_amount: 1, current_price: 999_999,
+        }).eq("id", aucId);
+        const { data: after } = await svc.from("auctions")
+          .select("status, winner_user_id, current_price").eq("id", aucId).single();
+        const unchanged = !!after && after.status === "live" && after.winner_user_id === null && Number(after.current_price) === 1000;
+        P(unchanged, `B7 seller-hijack: direct UPDATE of own auction blocked (status=${after?.status}, winner=${after?.winner_user_id ? "SET(!!)" : "null"})`);
+      }
+    }
+    if (aucId) await svc.from("auctions").delete().eq("id", aucId).then(() => {}, () => {});
+    if (propId) await svc.from("properties").delete().eq("id", propId).then(() => {}, () => {});
+    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
+  }
+}
+
 console.log(`\n${fails === 0 ? "ALL SECURITY CHECKS PASSED" : `${fails} SECURITY CHECK(S) FAILED`}`);
 process.exit(fails === 0 ? 0 : 1);
