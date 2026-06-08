@@ -15,16 +15,25 @@ export default async function InspectorsIndex() {
   let inspectors: unknown[] | null = null;
   try {
     const supabase = await getServerSupabase();
-    const { data } = await supabase
+    const { data: rows } = await supabase
       .from("inspectors")
-      .select(`
-        id, speciality, governorates, bio, rating_avg, rating_count,
-        profile:profiles!inner (full_name)
-      `)
+      .select(`id, speciality, governorates, bio, rating_avg, rating_count`)
       .eq("approved", true)
       .order("rating_avg", { ascending: false })
       .limit(48);
-    inspectors = data;
+    // Names come from the safe public_profiles view, not a profiles embed
+    // (profiles is self/admin-only since 0080). Batched single round-trip.
+    const ids = (rows ?? []).map((r) => r.id as string);
+    const names = new Map<string, string | null>();
+    if (ids.length > 0) {
+      const { data: profs } = await supabase
+        .from("public_profiles").select("id, full_name").in("id", ids);
+      for (const p of profs ?? []) names.set(p.id as string, (p.full_name as string) ?? null);
+    }
+    inspectors = (rows ?? []).map((r) => ({
+      ...r,
+      profile: { full_name: names.get(r.id as string) ?? null },
+    }));
   } catch (err) {
     console.warn("[/inspectors] supabase unavailable:", err instanceof Error ? err.message : err);
   }

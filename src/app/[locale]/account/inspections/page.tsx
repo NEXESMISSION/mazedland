@@ -62,7 +62,7 @@ export default async function MyInspectionsPage({
   const inspectorNames = new Map<string, string>();
   if (inspectorIds.length > 0) {
     const { data: profs } = await supabase
-      .from("profiles")
+      .from("public_profiles")
       .select("id, full_name")
       .in("id", inspectorIds);
     for (const p of profs ?? []) {

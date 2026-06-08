@@ -47,6 +47,7 @@ export async function POST(
       msg.includes("kyc_required") ? 403 :
       msg.includes("deposit_required") ? 402 :
       msg.includes("self_bid_forbidden") ? 403 :
+      msg.includes("bid_too_fast") ? 429 :
       msg.includes("dutch_price_drifted") ? 409 :
       400;
     return NextResponse.json({ error: msg }, { status: code });

@@ -43,12 +43,25 @@ export default async function BookInspection({
     );
   }
 
-  const { data: inspectors } = await supabase
+  const { data: inspectorRows } = await supabase
     .from("inspectors")
-    .select(`id, speciality, rating_avg, profile:profiles!inner (full_name)`)
+    .select(`id, speciality, rating_avg`)
     .eq("approved", true)
     .contains("governorates", [property.governorate])
     .limit(20);
+  // Names from the safe public_profiles view (profiles is self/admin-only since
+  // 0080). Batched single round-trip.
+  const inspectorIds = (inspectorRows ?? []).map((r) => r.id as string);
+  const inspectorNames = new Map<string, string | null>();
+  if (inspectorIds.length > 0) {
+    const { data: profs } = await supabase
+      .from("public_profiles").select("id, full_name").in("id", inspectorIds);
+    for (const p of profs ?? []) inspectorNames.set(p.id as string, (p.full_name as string) ?? null);
+  }
+  const inspectors = (inspectorRows ?? []).map((r) => ({
+    ...r,
+    profile: { full_name: inspectorNames.get(r.id as string) ?? null },
+  }));
 
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 py-6 lg:max-w-[var(--max-w-content)]">

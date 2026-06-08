@@ -221,7 +221,7 @@ export default async function CheckoutEntry({
   // spawned a fresh row on every visit (the runaway-duplicate bug).
   const { data: existingRows } = await supabase
     .from("payments")
-    .select("id, status")
+    .select("id, status, amount")
     .eq("user_id", user.id)
     .eq("auction_id", auctionId)
     .eq("kind", dbKind)
@@ -232,6 +232,14 @@ export default async function CheckoutEntry({
   let paymentId: string;
   if (existingRows && existingRows.length > 0) {
     paymentId = existingRows[0].id as string;
+    // Reconcile the stored amount to the freshly recomputed one. A pending row
+    // can carry a stale amount if fees/deposit/buy-now settings changed (or it
+    // was created at the un-netted price). The capture charges the STORED
+    // amount, so without this the displayed and charged amounts can diverge.
+    const reconcile = getServiceSupabase();
+    if (reconcile && Number(existingRows[0].amount) !== amount) {
+      await reconcile.from("payments").update({ amount }).eq("id", paymentId);
+    }
   } else {
     // Service-role insert so we don't depend on the user's RLS policy.
     const admin = getServiceSupabase();

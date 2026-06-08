@@ -39,6 +39,8 @@ const BID_ERROR_LABELS: Record<string, string> = {
   self_bid_forbidden: "Vous ne pouvez pas enchérir sur votre propre bien.",
   below_opening: "Votre offre est inférieure au prix d'ouverture.",
   below_min_increment: "Votre offre est inférieure à l'incrément minimum.",
+  below_current: "Votre nouvelle offre doit dépasser votre offre actuelle.",
+  bid_too_fast: "Vous enchérissez trop vite — patientez quelques secondes.",
   dutch_price_drifted: "Le prix a baissé entre-temps — réessayez.",
   invalid_amount: "Montant invalide.",
   already_highest: "Vous êtes déjà le meilleur enchérisseur.",

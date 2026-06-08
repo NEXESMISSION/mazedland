@@ -16,7 +16,6 @@ const STATUS_TABS = [
   { value: "all", label: "Tous" },
 ] as const;
 type StatusTab = (typeof STATUS_TABS)[number]["value"];
-const ENTRY_KINDS = ["deposit_lock", "buy_now", "final_payment"];
 const PAGE_SIZE = 24; // auction boxes per page
 const fmt = (n: number) => `${formatTND(n, "fr")} TND`;
 
@@ -39,39 +38,32 @@ export default async function AdminPaymentsPage({
   const sinceDays = rangeParam === "1" || rangeParam === "7" || rangeParam === "30" ? Number(rangeParam) : null;
   const page = Math.max(1, Number(pageParam) || 1);
 
-  let query = sb
-    .from("payments")
-    .select(`auction_id, amount, receipt_uploaded_at, auction:auctions!inner ( id, status, property:properties ( title, governorate ) )`)
-    .in("kind", ENTRY_KINDS)
-    .not("auction_id", "is", null);
-  if (status !== "all") query = query.eq("status", status);
-  else query = query.in("status", ["pending_review", "captured", "failed"]);
-  if (sinceDays) query = query.gte("receipt_uploaded_at", new Date(Date.now() - sinceDays * 86_400_000).toISOString());
-  query = query.order("receipt_uploaded_at", { ascending: status === "pending_review" }).limit(5000);
-
-  const { data, error } = await query;
-  type Row = { auction_id: string; amount: number; receipt_uploaded_at: string | null; auction: { id: string; status: string; property: { title: string; governorate: string } | null } | null };
-  const rows = (data ?? []) as unknown as Row[];
-
-  // Group by auction → one box.
-  const map = new Map<string, { auctionId: string; title: string; gov: string; status: string; count: number; total: number; oldest: string | null }>();
-  for (const r of rows) {
-    const key = r.auction_id;
-    const g = map.get(key) ?? {
-      auctionId: key, title: r.auction?.property?.title ?? "—", gov: r.auction?.property?.governorate ?? "",
-      status: r.auction?.status ?? "", count: 0, total: 0, oldest: null,
-    };
-    g.count += 1; g.total += Number(r.amount);
-    if (r.receipt_uploaded_at && (!g.oldest || r.receipt_uploaded_at < g.oldest)) g.oldest = r.receipt_uploaded_at;
-    map.set(key, g);
-  }
-  let boxes = Array.from(map.values());
-  if (q) boxes = boxes.filter((b) => b.title.toLowerCase().includes(q) || b.gov.toLowerCase().includes(q));
-  boxes.sort((a, b) => b.count - a.count);
-
-  const total = boxes.length;
+  // Group + filter + paginate in SQL (admin_payment_boxes RPC). The old path
+  // pulled up to 5000 joined rows and grouped/sliced in Node — silently
+  // truncating the admin money console past ~3k payments. Now SQL returns just
+  // this page plus the true total.
+  const { data, error } = await sb.rpc("admin_payment_boxes", {
+    p_status: status,
+    p_q: q || null,
+    p_since_days: sinceDays,
+    p_page: page,
+    p_page_size: PAGE_SIZE,
+  });
+  const result = (data ?? { total: 0, boxes: [] }) as {
+    total: number;
+    boxes: { auction_id: string; title: string | null; gov: string | null; status: string | null; cnt: number; total: number; oldest: string | null }[];
+  };
+  const slice = (result.boxes ?? []).map((b) => ({
+    auctionId: b.auction_id,
+    title: b.title ?? "—",
+    gov: b.gov ?? "",
+    status: b.status ?? "",
+    count: Number(b.cnt),
+    total: Number(b.total),
+    oldest: b.oldest,
+  }));
+  const total = Number(result.total ?? 0);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const slice = boxes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div>

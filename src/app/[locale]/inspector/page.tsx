@@ -36,17 +36,16 @@ export default async function InspectorDashboard({
   const { data: rows } = await supabase
     .from("inspections")
     .select(`
-      id, kind, status, scheduled_at, fee_amount, report_pdf_path, created_at,
+      id, kind, status, scheduled_at, fee_amount, report_pdf_path, created_at, requested_by,
       property:properties (
         id, title, governorate, type,
         photos:property_photos (id, storage_path, sort_order)
-      ),
-      requester:profiles!inspections_requested_by_fkey (full_name)
+      )
     `)
     .eq("inspector_id", user!.id)
     .order("created_at", { ascending: false });
 
-  const inspections = (rows ?? []) as unknown as Array<{
+  const rawInspections = (rows ?? []) as unknown as Array<{
     id: string;
     kind: string;
     status: string;
@@ -54,6 +53,7 @@ export default async function InspectorDashboard({
     fee_amount: number;
     report_pdf_path: string | null;
     created_at: string;
+    requested_by: string | null;
     property: {
       id: string;
       title: string;
@@ -61,8 +61,27 @@ export default async function InspectorDashboard({
       type: string;
       photos: { id: string; storage_path: string; sort_order: number }[];
     };
-    requester: { full_name: string | null } | null;
   }>;
+
+  // Requester display names via the safe public_profiles view (profiles is
+  // self/admin-only since 0080; a view can't be FK-embedded). Batched lookup.
+  const requesterIds = Array.from(
+    new Set(rawInspections.map((r) => r.requested_by).filter(Boolean) as string[]),
+  );
+  const requesterNames = new Map<string, string | null>();
+  if (requesterIds.length > 0) {
+    const { data: profs } = await supabase
+      .from("public_profiles").select("id, full_name").in("id", requesterIds);
+    for (const p of (profs ?? []) as { id: string; full_name: string | null }[]) {
+      requesterNames.set(p.id, p.full_name);
+    }
+  }
+  const inspections = rawInspections.map((r) => ({
+    ...r,
+    requester: {
+      full_name: r.requested_by ? requesterNames.get(r.requested_by) ?? null : null,
+    } as { full_name: string | null } | null,
+  }));
 
   const buckets = {
     incoming: inspections.filter((i) => i.status === "requested"),

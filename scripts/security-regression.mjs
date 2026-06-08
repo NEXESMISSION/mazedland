@@ -62,10 +62,49 @@ const P = (ok, label) => { console.log(`${ok ? "✅ PASS" : "❌ FAIL"} — ${la
   P(leaks === 0, `B6 anon PII scrape: phone read blocked across 12 attempts (leaks=${leaks})`);
 }
 
-// Positive control — public id/full_name/role must STILL be readable.
+// B6-AUTH — a LOGGED-IN (non-admin) user must NOT read OTHER users'
+// phone/kyc either. This is the vector 0068/0075/0076 left open and 0080
+// closes (dropped the broad actor row-policy; cross-user names now come from
+// the public_profiles view, never the sensitive columns).
 {
-  const { error } = await freshAnon().from("profiles").select("id, full_name, role").limit(1);
-  P(!error, `public id/full_name/role still readable (inspector/partner pages intact)${error ? ` — ${error.message}` : ""}`);
+  const email = `sec-auth-${process.hrtime.bigint()}@example.com`;
+  const password = "SecProbe!2026x";
+  const { data: created, error: cErr } = await svc.auth.admin.createUser({
+    email, password, email_confirm: true,
+  });
+  if (cErr) {
+    P(false, `B6-auth: could not create probe user (${cErr.message})`);
+  } else {
+    const uid = created.user?.id;
+    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
+    const { error: sErr } = await authed.auth.signInWithPassword({ email, password });
+    if (sErr) {
+      P(false, `B6-auth: probe sign-in failed (${sErr.message})`);
+    } else {
+      let leaks = 0;
+      for (let i = 0; i < 8; i++) {
+        const { data } = await authed
+          .from("profiles").select("id, phone, kyc_status")
+          .neq("id", uid).not("phone", "is", null).limit(5);
+        if (!data) continue;
+        if (data.some((r) => r.phone || r.kyc_status)) leaks++;
+      }
+      P(leaks === 0, `B6-auth PII scrape: logged-in read of OTHERS' phone/kyc blocked (leaks=${leaks})`);
+
+      // Positive control — display names still resolve via the safe view.
+      const { error: ppErr } = await authed
+        .from("public_profiles").select("id, full_name, role").limit(1);
+      P(!ppErr, `public_profiles readable by authenticated (bid history / inspectors intact)${ppErr ? ` — ${ppErr.message}` : ""}`);
+    }
+    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
+  }
+}
+
+// Positive control — anon public_profiles read still works for the public
+// inspector/partner pages (id/full_name/role only).
+{
+  const { error } = await freshAnon().from("public_profiles").select("id, full_name, role").limit(1);
+  P(!error, `anon public_profiles readable (inspector/partner pages intact)${error ? ` — ${error.message}` : ""}`);
 }
 
 // B2 — a client must NOT be able to insert an auction_deposits row.

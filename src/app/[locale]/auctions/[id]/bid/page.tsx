@@ -60,8 +60,10 @@ export default async function BidPage({
     // instead of the truncated UUID slice "ec0043…" the audit flagged.
     supabase
       .from("bids")
-      // Explicit columns — keep ip_address / max_amount off the wire.
-      .select("id, auction_id, bidder_id, amount, is_proxy, is_winning, placed_at, bidder:profiles!bids_bidder_id_fkey(full_name)")
+      // Explicit columns — keep ip_address / max_amount off the wire. Names are
+      // resolved below via the safe public_profiles view (profiles is
+      // self/admin-only since 0080; a view can't be FK-embedded).
+      .select("id, auction_id, bidder_id, amount, is_proxy, is_winning, placed_at")
       .eq("auction_id", id)
       .order("placed_at", { ascending: false })
       .limit(8),
@@ -84,7 +86,23 @@ export default async function BidPage({
   // Cast through unknown: we deliberately omit ip_address/max_amount from the
   // select (privacy), so the row shape is a subset of Bid. The composer/history
   // never read those fields.
-  const initialBids = (initialBidsRes.data ?? []) as unknown as Bid[];
+  const rawBids = (initialBidsRes.data ?? []) as unknown as Bid[];
+  // Resolve bidder display names via the safe public_profiles view (profiles is
+  // self/admin-only since 0080), then attach as the embedded `bidder` shape the
+  // history component expects.
+  const bidderIds = Array.from(new Set(rawBids.map((b) => b.bidder_id).filter(Boolean)));
+  const bidderNames = new Map<string, string | null>();
+  if (bidderIds.length > 0) {
+    const { data: profs } = await supabase
+      .from("public_profiles").select("id, full_name").in("id", bidderIds);
+    for (const p of (profs ?? []) as { id: string; full_name: string | null }[]) {
+      bidderNames.set(p.id, p.full_name);
+    }
+  }
+  const initialBids = rawBids.map((b) => ({
+    ...b,
+    bidder: { full_name: bidderNames.get(b.bidder_id) ?? null },
+  }));
   const userId = userRes.data.user?.id ?? null;
 
   // Server-truth pre-flight: KYC + deposit. The composer needs these

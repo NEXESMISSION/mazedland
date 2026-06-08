@@ -59,14 +59,33 @@ export async function POST(
     return NextResponse.json({ error: "auction_closed" }, { status: 409 });
   }
 
-  const amount =
+  const fullPrice =
     a.listing_type === "direct" ? Number(a.sale_price) : Number(a.buy_now_price);
-  if (!amount || amount <= 0) {
+  if (!fullPrice || fullPrice <= 0) {
     return NextResponse.json(
       { error: "buy_now_not_available" },
       { status: 400 },
     );
   }
+
+  // Net any active deposit the buyer already locked on THIS auction. The
+  // winner's caution is "part of the purchase" (mirrors final_payment), so the
+  // buy-now charge is (price − deposit); the deposit stays locked and
+  // close_auction_on_purchase validates (amount + deposit) == price. Direct
+  // sales have no deposit, so credit resolves to 0 and the full price is
+  // charged. Computing it HERE (not just in checkout) keeps the stored row
+  // amount == the charged amount no matter which entry path created it.
+  const { data: depRows } = await supabase
+    .from("auction_deposits")
+    .select("amount")
+    .eq("auction_id", auctionId)
+    .eq("user_id", user.id)
+    .is("released_at", null)
+    .is("forfeited_at", null)
+    .order("amount", { ascending: false })
+    .limit(1);
+  const credit = Number(depRows?.[0]?.amount ?? 0);
+  const amount = Math.max(0, Math.round((fullPrice - credit) * 100) / 100);
 
   if (a.property.owner_id === user.id) {
     return NextResponse.json({ error: "self_purchase_forbidden" }, { status: 403 });
@@ -102,6 +121,14 @@ export async function POST(
     .maybeSingle();
 
   if (pending) {
+    // Reconcile a possibly-stale stored amount to the freshly netted value so
+    // the charged amount always matches what we display. Service-role: the
+    // user can't update payments directly (locked down), and the row may have
+    // been created at the full price before deposit-netting.
+    const reconcile = getServiceSupabase();
+    if (reconcile) {
+      await reconcile.from("payments").update({ amount }).eq("id", pending.id);
+    }
     return NextResponse.json({ ok: true, paymentId: pending.id, amount });
   }
 

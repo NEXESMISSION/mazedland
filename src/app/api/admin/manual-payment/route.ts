@@ -116,6 +116,28 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // For a buy_now where the buyer locked a deposit online, the caution is part
+  // of the purchase (mirrors the online buy-now route + close_auction_on_purchase,
+  // which validates amount + deposit == buy_now_price). Record the NET against the
+  // authoritative buy_now_price so the trigger's close doesn't reject it
+  // (amount_mismatch → captured row rolls back) and the buyer isn't double-charged.
+  let insertAmount = amount;
+  if (kind === "buy_now" && auction.buy_now_price != null) {
+    const { data: depRows } = await admin
+      .from("auction_deposits")
+      .select("amount")
+      .eq("auction_id", auctionId)
+      .eq("user_id", userId)
+      .is("released_at", null)
+      .is("forfeited_at", null)
+      .order("amount", { ascending: false })
+      .limit(1);
+    const credit = Number(depRows?.[0]?.amount ?? 0);
+    if (credit > 0) {
+      insertAmount = Math.max(0, Math.round((Number(auction.buy_now_price) - credit) * 100) / 100);
+    }
+  }
+
   // ── Insert the captured payment (trigger handles the rest) ───────────────
   const now = new Date().toISOString();
   const { data: created, error: insErr } = await admin
@@ -127,7 +149,7 @@ export async function POST(req: NextRequest) {
       // admin-recorded offline payments. The real method (cash/cheque/…)
       // lives in metadata.method so no enum migration is needed.
       provider: "manual",
-      amount,
+      amount: insertAmount,
       auction_id: auctionId,
       property_id: auction.property_id,
       status: "captured",
@@ -157,11 +179,11 @@ export async function POST(req: NextRequest) {
     p_user_id: userId,
     p_kind: "payment_accepted",
     p_title: `${KIND_LABEL[kind]} a été enregistrée`,
-    p_body: `Un paiement de ${amount.toFixed(2)} TND (${method === "cash" ? "espèces" : method}) a été enregistré par l'équipe Batta.`,
+    p_body: `Un paiement de ${insertAmount.toFixed(2)} TND (${method === "cash" ? "espèces" : method}) a été enregistré par l'équipe Batta.`,
     p_link: kind === "deposit_lock" ? `/auctions/${auctionId}/bid` : `/auctions/${auctionId}`,
   });
 
-  logAction(req, user, "payment.manual", { kind, amount, payerId: userId, auctionId });
+  logAction(req, user, "payment.manual", { kind, amount: insertAmount, payerId: userId, auctionId });
   return NextResponse.json({
     ok: true,
     paymentId: created.id,

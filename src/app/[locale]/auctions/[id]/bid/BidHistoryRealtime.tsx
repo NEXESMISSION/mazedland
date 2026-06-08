@@ -127,7 +127,7 @@ export function BidHistoryRealtime({
           // (this session) resolves instantly.
           if (!nameCacheRef.current.has(incoming.bidder_id)) {
             void supabase
-              .from("profiles")
+              .from("public_profiles")
               .select("full_name")
               .eq("id", incoming.bidder_id)
               .maybeSingle()
@@ -187,7 +187,7 @@ export function BidHistoryRealtime({
           .from("bids")
           // Explicit columns — never ship ip_address / max_amount to the client
           // (bidder IP + proxy ceiling are not the UI's business).
-          .select("id, auction_id, bidder_id, amount, is_proxy, is_winning, placed_at, bidder:profiles!bids_bidder_id_fkey(full_name)")
+          .select("id, auction_id, bidder_id, amount, is_proxy, is_winning, placed_at")
           .eq("auction_id", auctionId)
           .order("placed_at", { ascending: false })
           .limit(8);
@@ -195,7 +195,23 @@ export function BidHistoryRealtime({
           schedule();
           return;
         }
-        const next = data as unknown as EnrichedBid[];
+        // Resolve display names via the safe public_profiles view (profiles is
+        // self/admin-only since 0080 — no FK embed possible on a view).
+        const rows = data as unknown as Bid[];
+        const ids = Array.from(new Set(rows.map((b) => b.bidder_id).filter(Boolean)));
+        const nameMap = new Map<string, string | null>();
+        if (ids.length > 0) {
+          const { data: profs } = await supabase
+            .from("public_profiles").select("id, full_name").in("id", ids);
+          for (const p of (profs ?? []) as { id: string; full_name: string | null }[]) {
+            nameMap.set(p.id, p.full_name);
+          }
+        }
+        if (cancelled) return;
+        const next: EnrichedBid[] = rows.map((b) => ({
+          ...b,
+          bidder: { full_name: nameMap.get(b.bidder_id) ?? null },
+        }));
         // Refresh the name cache from whatever the poll just brought
         // back — keeps "Ahmed B." correct even if the user changed
         // their profile name mid-auction.

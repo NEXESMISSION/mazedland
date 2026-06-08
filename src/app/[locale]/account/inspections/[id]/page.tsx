@@ -63,17 +63,17 @@ export default async function InspectionDetailPage({
     } | null;
   };
 
-  // inspections.inspector_id → inspectors.id, which equals the profile id —
-  // so look the inspector's name up directly in profiles (no FK embed: the
-  // inspector FK targets `inspectors`, not `profiles`).
+  // Inspector contact (name + phone) via a relationship-scoped RPC: it returns
+  // the assigned inspector's details ONLY to a party of this inspection. The
+  // broad profiles.phone read this replaced was the authenticated PII leak
+  // (anyone could read any inspector's phone); names/phones are no longer
+  // directly readable cross-user (see migration 0080).
   let inspector: { full_name: string | null; phone: string | null } | null = null;
   if (ins.inspector_id) {
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("full_name, phone")
-      .eq("id", ins.inspector_id)
-      .maybeSingle();
-    inspector = prof ?? null;
+    const { data: contact } = await supabase.rpc("get_inspection_contact", {
+      p_inspection_id: id,
+    });
+    inspector = (contact as { full_name: string | null; phone: string | null }[] | null)?.[0] ?? null;
   }
 
   const photo = ins.property?.photos?.sort((a, b) => a.sort_order - b.sort_order)[0];
