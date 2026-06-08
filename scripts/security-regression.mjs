@@ -212,5 +212,68 @@ const P = (ok, label) => { console.log(`${ok ? "✅ PASS" : "❌ FAIL"} — ${la
   }
 }
 
+// B9 — seller-created auctions are validated server-side (0106): a seller must
+// NOT be able to (a) auction a non-'ready' (unmoderated/rejected) property, nor
+// (b) run a second concurrent active auction on one asset.
+{
+  const email = `sec-auc-${process.hrtime.bigint()}@example.com`;
+  const password = "SecProbe!2026x";
+  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
+  if (cErr) { P(false, `B9: probe seller create failed (${cErr.message})`); }
+  else {
+    const uid = created.user?.id;
+    let propId;
+    const nowMs = Date.now();
+    const mkAuction = (authed, propertyId) => authed.from("auctions").insert({
+      property_id: propertyId, type: "english", opening_price: 1000, status: "scheduled",
+      starts_at: new Date(nowMs + 3_600_000).toISOString(),
+      ends_at: new Date(nowMs + 7_200_000).toISOString(),
+    }).select("id").single();
+
+    // Draft (unmoderated) property owned by the seller.
+    const { data: prop } = await svc.from("properties")
+      .insert({ owner_id: uid, title: "SEC PROBE AUC", type: "apartment", governorate: "Tunis", status: "draft" })
+      .select("id").single();
+    propId = prop?.id;
+    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
+    await authed.auth.signInWithPassword({ email, password });
+
+    // (a) auction on a non-ready property must be rejected by the trigger.
+    const { error: draftErr } = await mkAuction(authed, propId);
+    P(!!draftErr, `B9a auction-on-unmoderated: blocked${draftErr ? "" : " — ACCEPTED (!!)"}`);
+
+    // Promote to ready; first auction should succeed, a SECOND active one must fail.
+    await svc.from("properties").update({ status: "ready" }).eq("id", propId);
+    const { data: first, error: firstErr } = await mkAuction(authed, propId);
+    const { error: secondErr } = await mkAuction(authed, propId);
+    P(!firstErr && !!secondErr,
+      `B9b one-active-auction-per-property: 1st ok, 2nd blocked${firstErr ? ` (1st failed: ${firstErr.code})` : ""}${secondErr ? "" : " — 2nd ACCEPTED (!!)"}`);
+
+    // Cleanup (auctions first — FK restrict — then property, then user).
+    await svc.from("auctions").delete().eq("property_id", propId).then(() => {}, () => {});
+    if (first?.id) { /* deleted above */ }
+    if (propId) await svc.from("properties").delete().eq("id", propId).then(() => {}, () => {});
+    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
+  }
+}
+
+// B10 — a logged-in user must NOT be able to enumerate the pg_cron schedule
+// (job names + command text) via list_cron_jobs(). 0107 revokes it from
+// `authenticated` (kept for service_role/ops only).
+{
+  const email = `sec-cron-${process.hrtime.bigint()}@example.com`;
+  const password = "SecProbe!2026x";
+  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
+  if (cErr) { P(false, `B10: probe user create failed (${cErr.message})`); }
+  else {
+    const uid = created.user?.id;
+    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
+    await authed.auth.signInWithPassword({ email, password });
+    const { error } = await authed.rpc("list_cron_jobs");
+    P(!!error, `B10 cron-schedule enumeration: blocked for authenticated${error ? ` (${error.code ?? ""})` : " — CALLABLE (!!)"}`);
+    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
+  }
+}
+
 console.log(`\n${fails === 0 ? "ALL SECURITY CHECKS PASSED" : `${fails} SECURITY CHECK(S) FAILED`}`);
 process.exit(fails === 0 ? 0 : 1);
