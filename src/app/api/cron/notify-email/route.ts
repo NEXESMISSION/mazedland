@@ -122,18 +122,20 @@ async function run(req: NextRequest) {
   }
 
   const sinceIso = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const { data: rows, error } = await admin
-    .from("notifications")
-    .select("id, user_id, kind, title, body, link, email_attempts")
-    .is("emailed_at", null)
-    .lt("email_attempts", MAX_ATTEMPTS)
-    .gte("created_at", sinceIso)
-    .in("kind", Array.from(EMAILABLE))
-    .order("created_at", { ascending: true })
-    .limit(MAX_PER_RUN);
+  // Atomic claim: SELECT … FOR UPDATE SKIP LOCKED + email_attempts++ in ONE
+  // statement (0111), so two overlapping runs grab DISJOINT rows — no
+  // double-send of a money-critical email — and a crashed run leaves rows
+  // reclaimable up to MAX_ATTEMPTS. Returned rows are already claimed
+  // (email_attempts reflects the post-increment value).
+  const { data: rows, error } = await db.rpc("claim_emailable_notifications", {
+    p_limit: MAX_PER_RUN,
+    p_kinds: Array.from(EMAILABLE),
+    p_since: sinceIso,
+    p_max_attempts: MAX_ATTEMPTS,
+  });
 
   if (error) {
-    cLog.error(`select failed: ${error.message}`);
+    cLog.error(`claim failed: ${error.message}`);
     return fail("fetch_failed", 500, error);
   }
 
@@ -181,17 +183,12 @@ async function run(req: NextRequest) {
     }
     if (result.skipped) return "skipped";
 
-    // Best-effort retry counter; after MAX_ATTEMPTS the row drops out of the
-    // query. (Per-row, so concurrent rows never touch the same counter.) When
-    // this attempt is the LAST one, the row becomes a dead letter — a
-    // money-critical email that will never be retried — so flag it for the
-    // aggregated admin alert below.
-    const nextAttempts = (row.email_attempts ?? 0) + 1;
-    await db
-      .from("notifications")
-      .update({ email_attempts: nextAttempts })
-      .eq("id", row.id);
-    return nextAttempts >= MAX_ATTEMPTS ? "deadletter" : "failed";
+    // The row was already claimed (email_attempts incremented atomically by the
+    // claim RPC), so we do NOT bump it again here. If the claimed value has hit
+    // the cap, this row will never be re-claimed → it's a dead letter (a
+    // money-critical email that will never be retried); otherwise it stays for a
+    // later run to retry.
+    return (row.email_attempts ?? 0) >= MAX_ATTEMPTS ? "deadletter" : "failed";
   }
 
   // Process in bounded-concurrency chunks, preserving oldest-first ordering
