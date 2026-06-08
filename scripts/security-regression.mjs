@@ -309,5 +309,26 @@ const P = (ok, label) => { console.log(`${ok ? "✅ PASS" : "❌ FAIL"} — ${la
   }
 }
 
+// B13 — seller_payouts.status must NOT be directly UPDATE-able via PostgREST
+// (even by an admin), so the advisory-locked balance recheck in
+// admin_set_payout_status can't be bypassed. 0115 revokes table UPDATE and
+// grants only (claimed_by, claimed_at). Column privilege is checked before row
+// match, so this fails for any authenticated caller regardless of RLS.
+{
+  const email = `sec-payupd-${process.hrtime.bigint()}@example.com`;
+  const password = "SecProbe!2026x";
+  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
+  if (cErr) { P(false, `B13: probe user create failed (${cErr.message})`); }
+  else {
+    const uid = created.user?.id;
+    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
+    await authed.auth.signInWithPassword({ email, password });
+    const { error } = await authed
+      .from("seller_payouts").update({ status: "paid" }).eq("id", "00000000-0000-0000-0000-000000000000");
+    P(!!error, `B13 payout-status direct UPDATE: blocked${error ? ` (${error.code ?? ""})` : " — ALLOWED (!!)"}`);
+    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
+  }
+}
+
 console.log(`\n${fails === 0 ? "ALL SECURITY CHECKS PASSED" : `${fails} SECURITY CHECK(S) FAILED`}`);
 process.exit(fails === 0 ? 0 : 1);

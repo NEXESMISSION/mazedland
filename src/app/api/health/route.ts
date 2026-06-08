@@ -1,26 +1,24 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { secretMatches } from "@/lib/cron/auth";
+import { evaluateHeartbeats, type HeartbeatRow } from "@/lib/observability/health";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Liveness / dead-man's-switch for the in-DB schedulers.
+ * Liveness / dead-man's-switch for the schedulers.
  *
- * process_bid_events (and, via the tick HTTP backstop, the auction tick) stamp
- * public.cron_heartbeat on every run. This endpoint reads those stamps and
- * returns 503 when any monitored job hasn't run within STALE_SECONDS — so an
- * external uptime monitor (Vercel, UptimeRobot, a GitHub Action) pointed here
- * detects a stalled pg_cron (auctions silently not closing / bid notifications
- * frozen) instead of waiting for user complaints.
+ * Every monitored cron stamps public.cron_heartbeat on each run; this endpoint
+ * returns 503 when any job is stale beyond its own max_age_seconds budget — so
+ * an external monitor pointed here detects a stalled scheduler (auctions not
+ * closing, money emails not sending) instead of waiting for user complaints.
+ * The staleness math lives in src/lib/observability/health.ts (unit-tested).
  *
- * Read-only liveness only — exposes job names + ages, never user data.
+ * The 200/503 status is public (an anonymous monitor needs it). The detailed
+ * scheduler TOPOLOGY (job names, cadences, ages) is returned only to a caller
+ * holding the CRON_SECRET, so the internal schedule isn't enumerable by anyone.
  */
-// Fallback budget for any heartbeat row created before 0101 added a per-job
-// max_age_seconds (minute-cadence jobs). Each row now carries its OWN budget so
-// slower jobs (ending-soon */10, final-payment-due hourly) aren't false-stale.
-const DEFAULT_STALE_SECONDS = 300;
-
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   const admin = getServiceSupabase();
   if (!admin) {
     return NextResponse.json({ ok: false, error: "supabase_not_configured" }, { status: 503 });
@@ -33,25 +31,17 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "heartbeat_unreadable" }, { status: 503 });
   }
 
-  const now = Date.now();
-  const jobs = (data ?? []).map((r) => {
-    const ageS = Math.round((now - new Date(r.last_run as string).getTime()) / 1000);
-    const maxAge = Number(r.max_age_seconds ?? DEFAULT_STALE_SECONDS) || DEFAULT_STALE_SECONDS;
-    return {
-      job: r.job as string,
-      last_run: r.last_run as string,
-      age_seconds: ageS,
-      max_age_seconds: maxAge,
-      stale: ageS > maxAge,
-    };
-  });
-  const stale = jobs.filter((j) => j.stale).map((j) => j.job);
-  // No heartbeat rows yet (fresh deploy, crons haven't run) is treated as
-  // not-yet-healthy rather than a hard failure spamming alerts on day one.
-  const ok = jobs.length > 0 && stale.length === 0;
+  const status = evaluateHeartbeats((data ?? []) as HeartbeatRow[], Date.now());
 
-  return NextResponse.json(
-    { ok, stale, jobs },
-    { status: ok ? 200 : 503 },
-  );
+  const secret = process.env.CRON_SECRET;
+  const authHeader = req.headers.get("authorization") ?? "";
+  const key = req.nextUrl.searchParams.get("key") ?? "";
+  const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : key;
+  const authorized = !!secret && secretMatches(provided, secret);
+
+  const body = authorized
+    ? { ok: status.ok, stale: status.stale, jobs: status.jobs }
+    : { ok: status.ok, stale_count: status.stale.length };
+
+  return NextResponse.json(body, { status: status.ok ? 200 : 503 });
 }
