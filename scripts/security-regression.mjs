@@ -286,5 +286,28 @@ const P = (ok, label) => { console.log(`${ok ? "✅ PASS" : "❌ FAIL"} — ${la
   P(!okErr, `auctions safe columns still readable${okErr ? ` — ${okErr.message}` : ""}`);
 }
 
+// B12 — close_auction_on_purchase must NOT be directly callable by an
+// authenticated user (it closes an auction + sets winner with NO payment
+// capture = free win / denial-of-sale). 0113 revokes it; only the
+// _on_payment_captured trigger (SECURITY DEFINER) invokes it.
+{
+  const email = `sec-close-${process.hrtime.bigint()}@example.com`;
+  const password = "SecProbe!2026x";
+  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
+  if (cErr) { P(false, `B12: probe user create failed (${cErr.message})`); }
+  else {
+    const uid = created.user?.id;
+    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
+    await authed.auth.signInWithPassword({ email, password });
+    const { error } = await authed.rpc("close_auction_on_purchase", {
+      p_auction_id: "00000000-0000-0000-0000-000000000000",
+      p_buyer_id: uid,
+      p_amount: 1,
+    });
+    P(!!error, `B12 close_auction direct-call: blocked for authenticated${error ? ` (${error.code ?? ""})` : " — CALLABLE (!!)"}`);
+    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
+  }
+}
+
 console.log(`\n${fails === 0 ? "ALL SECURITY CHECKS PASSED" : `${fails} SECURITY CHECK(S) FAILED`}`);
 process.exit(fails === 0 ? 0 : 1);
