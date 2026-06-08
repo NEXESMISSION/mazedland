@@ -1,8 +1,18 @@
 import { unstable_cache } from "next/cache";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 
+// Explicit auction columns — NOT `*`. This fetch uses the service-role client
+// (to be cacheable), which BYPASSES the 0112 column-grant lockdown, so we must
+// omit reserve_price here too or it would be serialized into the client
+// hydration payload. (Mirrors the safe column set granted in 0112.)
 const DETAIL_SELECT = `
-  *,
+  id, property_id, type, opening_price,
+  dutch_start_price, dutch_floor_price, dutch_decrement, dutch_tick_seconds,
+  starts_at, ends_at, extend_window_seconds, extend_by_seconds,
+  status, current_price, sixth_offer_deadline,
+  winner_user_id, winner_amount, hammer_at, created_at, updated_at,
+  listing_type, sale_price, sale_negotiable, buy_now_price,
+  final_payment_due_at, relisted_from_id, bid_count,
   property:properties (
     *,
     photos:property_photos (id, storage_path, sort_order, caption)

@@ -275,5 +275,16 @@ const P = (ok, label) => { console.log(`${ok ? "✅ PASS" : "❌ FAIL"} — ${la
   }
 }
 
+// B11 — the seller's secret reserve_price must NOT be readable by anon/
+// authenticated via PostgREST (a bidder reading it defeats the reserve). 0112
+// revokes table SELECT + re-grants every column except reserve_price.
+{
+  const { error } = await freshAnon().from("auctions").select("id, reserve_price").limit(1);
+  P(!!error, `B11 reserve_price hidden: anon select(reserve_price) blocked${error ? ` (${error.code ?? ""})` : " — READABLE (!!)"}`);
+  const { error: okErr } = await freshAnon()
+    .from("auctions").select("id, opening_price, current_price, status").limit(1);
+  P(!okErr, `auctions safe columns still readable${okErr ? ` — ${okErr.message}` : ""}`);
+}
+
 console.log(`\n${fails === 0 ? "ALL SECURITY CHECKS PASSED" : `${fails} SECURITY CHECK(S) FAILED`}`);
 process.exit(fails === 0 ? 0 : 1);
