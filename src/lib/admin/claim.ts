@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { getServerSupabase } from "@/lib/supabase/server";
+import { fail } from "@/lib/http/errors";
 
 type ServerSupabase = Awaited<ReturnType<typeof getServerSupabase>>;
 
@@ -49,7 +50,7 @@ export async function handleClaim(
     .or(`claimed_by.is.null,claimed_by.eq.${userId},claimed_at.lt.${staleIso}`)
     .select("id, claimed_by, claimed_at");
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return fail("claim_failed", 500, error);
   if (!updated || updated.length === 0) {
     // Someone else holds a fresh claim.
     const { data: cur } = await supabase
