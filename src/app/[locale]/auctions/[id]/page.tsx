@@ -420,7 +420,11 @@ export default async function AuctionDetail({
           ping previously fired only from the bid page, so anyone
           sitting on the detail page still got spammed with outbid
           notifications they could already see live. */}
-      <AuctionPresencePing auctionId={auction.id} userId={userId} />
+      <AuctionPresencePing
+        auctionId={auction.id}
+        userId={userId}
+        active={auction.status === "live" || auction.status === "extending"}
+      />
 
       {/* ─── DESKTOP (lg+) — clean two-column layout in its own file so
               the mobile tree below is never touched. ─── */}

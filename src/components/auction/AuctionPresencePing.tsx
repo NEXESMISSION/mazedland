@@ -26,17 +26,24 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
  * BidComposer, or every bid-page viewer doubles the write load.
  *
  * No-ops when there's no `userId` (anonymous browsers don't need to
- * suppress notifications they wouldn't get anyway).
+ * suppress notifications they wouldn't get anyway) OR when the auction is not
+ * `active` (live/extending). Presence ONLY feeds place_bid's outbid-suppression,
+ * which runs solely on live/extending english auctions — so pinging on
+ * scheduled/sixth-offer/ended/sold/cancelled lots (which collect heavy
+ * post-close views) is pure write waste. Gating to active cuts the hot-write
+ * load to just the viewers who can actually be outbid.
  */
 export function AuctionPresencePing({
   auctionId,
   userId,
+  active,
 }: {
   auctionId: string;
   userId: string | null;
+  active: boolean;
 }) {
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !active) return;
     const supabase = getBrowserSupabase();
 
     const ping = () => {
@@ -62,7 +69,7 @@ export function AuctionPresencePing({
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [userId, auctionId]);
+  }, [userId, auctionId, active]);
 
   return null;
 }

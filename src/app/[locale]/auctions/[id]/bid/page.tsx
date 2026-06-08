@@ -193,7 +193,11 @@ export default async function BidPage({
           no longer pings). Lets place_bid skip the redundant outbid push
           for a user who's actively watching. Mounts in both the bidder
           and gate layouts because it sits above the ternary below. */}
-      <AuctionPresencePing auctionId={auction.id} userId={userId} />
+      <AuctionPresencePing
+        auctionId={auction.id}
+        userId={userId}
+        active={auction.status === "live" || auction.status === "extending"}
+      />
 
       {/* ─── PROPERTY CONTEXT STRIP ───
               Compact thumbnail + title + governorate row, deep-linking back
