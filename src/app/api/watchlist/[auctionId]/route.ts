@@ -82,6 +82,6 @@ export async function DELETE(
     .delete()
     .eq("user_id", user.id)
     .eq("auction_id", auctionId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "watchlist_failed" }, { status: 500 });
   return NextResponse.json({ ok: true, saved: false });
 }

@@ -38,9 +38,15 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await admin.rpc("tick_auctions");
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "tick_failed" }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, ...(data as Record<string, unknown>) });
+  // Also drain the bid-notification queue here so this external HTTP trigger is
+  // a real backstop for the fan-out too — if the pg_cron `process_bid_events`
+  // job stalls, an external scheduler hitting this route keeps outbid/watchlist
+  // pings flowing (and stamps the cron heartbeat). Best-effort: a drain error
+  // must not fail the tick.
+  const { data: drain } = await admin.rpc("process_bid_events");
+  return NextResponse.json({ ok: true, ...(data as Record<string, unknown>), drain: drain ?? null });
 }
 
 // Vercel Cron sometimes posts; accept both verbs.

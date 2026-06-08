@@ -82,7 +82,7 @@ export async function POST(
       .from("auction_deposits")
       .insert({ auction_id: auctionId, user_id: user.id, amount: 0 });
     if (insErr && !/duplicate|unique/i.test(insErr.message)) {
-      return NextResponse.json({ error: insErr.message }, { status: 500 });
+      return NextResponse.json({ error: "deposit_failed" }, { status: 500 });
     }
     return NextResponse.json({ ok: true, free: true });
   }

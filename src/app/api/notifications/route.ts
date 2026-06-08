@@ -93,7 +93,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { error } = await update;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "update_failed" }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
 

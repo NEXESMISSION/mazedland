@@ -186,6 +186,7 @@ export default async function CheckoutEntry({
         .select("amount")
         .eq("auction_id", auctionId)
         .eq("user_id", user.id)
+        .is("released_at", null)
         .is("forfeited_at", null)
         .order("amount", { ascending: false })
         .limit(1);
