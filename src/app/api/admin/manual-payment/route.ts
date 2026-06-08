@@ -117,17 +117,25 @@ export async function POST(req: NextRequest) {
     // Reject a second CAPTURED purchase of the same kind (0084 partial unique
     // index is the hard backstop; this is the friendly 409). Stops the
     // online-capture + admin-manual double-credit / double-charge.
+    //
+    // CROSS-KIND: buy_now and final_payment are mutually-exclusive settlements
+    // for one lot (a buy-now IS the full settlement). The 0084 index does NOT
+    // collide them (different kind), and after a buy_now close the buyer IS
+    // winner_user_id, so the not_winner gate above passes too — without this
+    // check an admin could record a final_payment on top of a captured buy_now
+    // and seller_earnings would credit a full price twice. 0096 is the
+    // self-healing ledger backstop; this is the friendly 409.
     const { data: dupCaptured } = await admin
       .from("payments")
       .select("id")
       .eq("user_id", userId)
       .eq("auction_id", auctionId)
-      .eq("kind", kind)
+      .in("kind", ["buy_now", "final_payment"])
       .eq("status", "captured")
       .limit(1);
     if (dupCaptured && dupCaptured.length > 0) {
       return NextResponse.json(
-        { error: "already_captured", detail: "Un paiement validé de ce type existe déjà pour cet utilisateur sur cette enchère." },
+        { error: "already_captured", detail: "Un règlement validé (achat immédiat ou paiement final) existe déjà pour cet utilisateur sur cette enchère." },
         { status: 409 },
       );
     }

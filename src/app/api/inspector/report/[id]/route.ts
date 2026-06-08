@@ -30,10 +30,8 @@ export async function GET(
     .from("inspection-reports")
     .createSignedUrl(ins.report_pdf_path, 60); // 60-second URL — re-fetched on every link tap
   if (error || !signed) {
-    return NextResponse.json(
-      { error: "forbidden", detail: error?.message },
-      { status: 403 },
-    );
+    // Don't echo the raw storage error to the client (path/bucket recon).
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
   return NextResponse.redirect(signed.signedUrl, { status: 302 });
 }

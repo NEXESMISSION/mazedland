@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { log } from "@/lib/log";
 
 /**
  * Buy-now / direct-sale purchase — manual receipt flow.
@@ -163,8 +164,11 @@ export async function POST(
     .select("id")
     .single();
   if (payErr || !payment) {
+    // Redact the raw Postgres/PostgREST message (table/column/constraint recon);
+    // log it server-side instead.
+    if (payErr) log.scope("api").error("buy_now payment insert failed", { msg: payErr.message });
     return NextResponse.json(
-      { error: payErr?.message ?? "payment_insert_failed" },
+      { error: "payment_insert_failed" },
       { status: 500 },
     );
   }

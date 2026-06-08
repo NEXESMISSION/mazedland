@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { isValidIban, normalizeIban } from "@/lib/iban";
 import { logAction } from "@/lib/activity";
+import { log } from "@/lib/log";
 
 /**
  * Seller payout endpoint.
@@ -48,16 +49,22 @@ export async function POST(req: NextRequest) {
     p_iban: iban,
   });
   if (error) {
-    const code = error.message.includes("insufficient_balance")
-      ? "insufficient_balance"
-      : error.message.includes("invalid_amount")
-        ? "invalid_amount"
-        : error.message.includes("auth")
-          ? "auth"
-          : error.message;
+    // Map only the KNOWN, safe named exceptions to a stable client code.
+    // Anything else is redacted to a generic error — raw Postgres/PostgREST
+    // messages (and `error.details`, which can echo balance figures / column
+    // names) must never reach an end user. The real cause is logged server-side
+    // for the operator.
+    const known =
+      error.message.includes("insufficient_balance") ? "insufficient_balance"
+      : error.message.includes("invalid_amount") ? "invalid_amount"
+      : error.message.includes("auth") ? "auth"
+      : null;
+    if (!known) {
+      log.scope("api").error("request_payout failed", { msg: error.message });
+    }
     return NextResponse.json(
-      { error: code, detail: error.details ?? error.message },
-      { status: 400 },
+      { error: known ?? "payout_failed" },
+      { status: known ? 400 : 500 },
     );
   }
   logAction(req, user, "payout.request", { amount, hasIban: iban !== null });

@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Constant-time secret compare. A plain `provided !== secret` short-circuits on
+ * the first differing byte, leaking the secret length / prefix through response
+ * timing to an attacker who can measure it. timingSafeEqual requires equal-length
+ * buffers, so we length-check first (length is not itself secret enough to matter
+ * vs. the byte-by-byte oracle this removes).
+ */
+function secretMatches(provided: string, secret: string): boolean {
+  const a = Buffer.from(provided);
+  const b = Buffer.from(secret);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
 
 /**
  * Fallback trigger for the auction state machine.
@@ -27,7 +42,7 @@ export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization") ?? "";
   const key = req.nextUrl.searchParams.get("key") ?? "";
   const provided = auth.startsWith("Bearer ") ? auth.slice(7) : key;
-  if (provided !== secret) {
+  if (!secretMatches(provided, secret)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
