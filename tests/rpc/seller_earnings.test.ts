@@ -167,7 +167,7 @@ describe("seller_earnings — credits a sale exactly once", () => {
     expect(gross).toBeCloseTo(price, 2);
   });
 
-  it("(c) 0096: buy_now + a stray final_payment for the same winner counts ONCE", async () => {
+  it("(c) 0105: a second settlement (final_payment after buy_now) is BLOCKED — no double-charge", async () => {
     const seller = await newUser();
     const winner = await newUser({ kyc: "verified" });
 
@@ -195,18 +195,21 @@ describe("seller_earnings — credits a sale exactly once", () => {
     expect(a1.status).toBe("ended_sold");
     expect(a1.winner_user_id).toBe(winner.id);
 
-    // A stray final_payment for the SAME winner+auction also captures (the 0084
-    // unique index keys on kind, so a different kind does not collide).
+    // 0105: a SECOND captured settlement (final_payment) for the SAME
+    // winner+lot is rejected at the DB by the partial unique index
+    // (payments_one_settlement_per_winner) — the buyer cannot be double-charged.
+    // The capture must FAIL (no id, an error string).
     const fp = await capturePurchase(svc, {
       userId: winner.id,
       auctionId,
       amount: buyNow,
       kind: "final_payment",
     });
-    expect(fp.error, fp.error).toBeUndefined();
+    expect(fp.error, "second settlement must be rejected by the unique index").toBeDefined();
+    expect(fp.id).toBeUndefined();
 
     const rows = await earningsAsSeller(seller);
-    // ONLY the buy_now line item counts; the final_payment is excluded.
+    // Exactly the one buy_now settlement counts — one hammer price, once.
     const auctionRows = rows.filter((r) => r.auction_id === auctionId);
     expect(auctionRows.length).toBe(1);
     expect(auctionRows[0].kind).toBe("buy_now");

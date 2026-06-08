@@ -197,6 +197,16 @@ export async function POST(req: NextRequest) {
     .select("id")
     .single();
   if (insErr || !created) {
+    // A concurrent settlement that slipped past the lock-free dedup above
+    // collides with the 0105 partial unique index (payments_one_settlement_
+    // per_winner) — the buyer was NOT double-charged; the DB held the line.
+    // Translate to the same friendly 409 instead of a generic 500.
+    if (insErr && /duplicate|unique|payments_one_settlement/i.test(insErr.message)) {
+      return NextResponse.json(
+        { error: "already_captured", detail: "Un règlement validé existe déjà pour cet utilisateur sur cette enchère." },
+        { status: 409 },
+      );
+    }
     return fail("insert_failed", 500, insErr ?? undefined);
   }
 
