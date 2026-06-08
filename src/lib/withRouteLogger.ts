@@ -40,8 +40,11 @@ export function withRouteLogger<Params = unknown>(
     } catch (err) {
       const ms = Math.round(performance.now() - t0);
       routeLog.error(`${tag} threw`, { ms, err: err instanceof Error ? err.message : String(err) });
+      // Log the real message server-side (above) but DON'T leak it to the
+      // client — raw Postgres/PostgREST errors expose table/column/constraint
+      // names useful for schema recon.
       return NextResponse.json(
-        { error: "internal_error", detail: err instanceof Error ? err.message : String(err) },
+        { error: "internal_error" },
         { status: 500 },
       );
     }

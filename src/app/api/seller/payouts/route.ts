@@ -79,7 +79,7 @@ export async function GET() {
     .limit(50);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "payouts_failed" }, { status: 500 });
   }
   return NextResponse.json({ payouts: data ?? [] });
 }
