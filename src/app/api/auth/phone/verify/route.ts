@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { isSameOrigin } from "@/lib/sameOrigin";
 import { hashCode } from "@/lib/otp";
 
 const MAX_ATTEMPTS = 5;
@@ -14,6 +15,14 @@ const MAX_ATTEMPTS = 5;
  * Constant set of error codes so it doesn't leak whether the number exists.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
+  }
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "anonymous";
+
   let phone = "";
   let code = "";
   try {
@@ -29,6 +38,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const admin = getServiceSupabase();
   if (!admin) return NextResponse.json({ error: "not_configured" }, { status: 503 });
+
+  // Per-IP throttle (cross-instance): the per-number attempt cap below does not
+  // stop an attacker brute-forcing codes across many numbers from one IP.
+  const { data: ipBlocked } = await admin.rpc("check_auth_ratelimit", { p_ip: ip });
+  if (ipBlocked === true) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
 
   const { data: row } = await admin
     .from("phone_otps")

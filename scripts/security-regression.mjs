@@ -191,5 +191,26 @@ const P = (ok, label) => { console.log(`${ok ? "✅ PASS" : "❌ FAIL"} — ${la
   }
 }
 
+// B8 — a logged-in user must NOT be able to INSERT a seller_payouts row
+// directly via PostgREST (forging a 'requested' payout with an arbitrary amount
+// bypasses request_payout's balance check). 0103 drops payouts_self_insert +
+// revokes the INSERT grant; the only legit path is the request_payout RPC.
+{
+  const email = `sec-payout-${process.hrtime.bigint()}@example.com`;
+  const password = "SecProbe!2026x";
+  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
+  if (cErr) { P(false, `B8: probe user create failed (${cErr.message})`); }
+  else {
+    const uid = created.user?.id;
+    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
+    await authed.auth.signInWithPassword({ email, password });
+    const { error } = await authed.from("seller_payouts").insert({
+      seller_id: uid, amount: 999999, status: "requested", iban: "TN5904018104004942712345",
+    });
+    P(!!error, `B8 forge-payout: direct seller_payouts INSERT blocked${error ? ` (${error.code ?? ""})` : " — ACCEPTED (!!)"}`);
+    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
+  }
+}
+
 console.log(`\n${fails === 0 ? "ALL SECURITY CHECKS PASSED" : `${fails} SECURITY CHECK(S) FAILED`}`);
 process.exit(fails === 0 ? 0 : 1);

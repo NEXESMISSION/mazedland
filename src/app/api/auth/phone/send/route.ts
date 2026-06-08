@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomInt } from "crypto";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { isSameOrigin } from "@/lib/sameOrigin";
 import { sendSms, isSmsConfigured } from "@/lib/winsms";
 import { hashCode } from "@/lib/otp";
 import { log } from "@/lib/log";
@@ -23,6 +24,16 @@ const CODE_TTL_MS = 10 * 60 * 1000;
  * is already registered.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // CSRF: only our own origin may trigger SMS (each send costs real operator
+  // money and spams a real phone).
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
+  }
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "anonymous";
+
   // SMS off → tell the client to proceed without verification.
   if (!isSmsConfigured()) {
     return NextResponse.json({ ok: true, configured: false });
@@ -41,6 +52,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const admin = getServiceSupabase();
   if (!admin) return NextResponse.json({ error: "not_configured" }, { status: 503 });
+
+  // Per-IP throttle (cross-instance, DB-backed). The per-NUMBER cooldown below
+  // does not stop an attacker iterating MANY numbers from one IP to burn SMS
+  // credit / spam arbitrary phones — this does.
+  const { data: ipBlocked } = await admin.rpc("check_auth_ratelimit", { p_ip: ip });
+  if (ipBlocked === true) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
 
   const now = Date.now();
   const { data: existing } = await admin
