@@ -64,13 +64,17 @@ export function LoginForm() {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      // Resolve the email we'll sign in with. In email mode it's typed
-      // directly; in phone mode we POST to /api/auth/email-by-phone
-      // (service-role lookup) which returns the auth.users email for
-      // that phone — or null if none, in which case we surface the same
-      // "invalid credentials" wording Supabase would.
-      let signInEmail = email.trim();
+      // Hard navigation (not router.replace+refresh): the @supabase/ssr auth
+      // cookie is written synchronously, but a soft refresh can prefetch the
+      // destination before the cookie propagates, leaving the render anonymous.
+      const destination = next === "/" ? `/${locale}` : `/${locale}${next}`;
+
       if (mode === "phone") {
+        // Phone sign-in is fully server-side (/api/auth/login-by-phone): the
+        // phone→email resolution AND the sign-in happen on the server so the
+        // account's email never reaches the client (the old email-by-phone
+        // endpoint was a disclosure/enumeration oracle). The route writes the
+        // auth cookie onto its response; we just reload.
         const check = validatePhone(dialCode, phoneNumber);
         if (!check.ok) {
           setError(check.reason);
@@ -82,47 +86,39 @@ export function LoginForm() {
           return;
         }
         try {
-          const res = await fetch("/api/auth/email-by-phone", {
+          const res = await fetch("/api/auth/login-by-phone", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ phone }),
+            body: JSON.stringify({ phone, password }),
           });
-          const data = (await res.json()) as { email: string | null };
-          if (!data.email) {
-            // Specific wording so the user knows the phone is the
-            // problem (not the password), without leaking "user
-            // exists" via different messages.
-            setError(
-              `Aucun compte n'est associé au numéro ${phone}. Vérifiez le numéro ou créez un compte.`,
-            );
+          const data = (await res.json().catch(() => ({}))) as { ok?: boolean };
+          if (!data.ok) {
+            // Generic wording — never reveals whether the phone is the problem
+            // or the password (no account-enumeration signal).
+            setError("Identifiants invalides. Vérifiez le numéro et le mot de passe.");
             return;
           }
-          signInEmail = data.email;
         } catch {
           setError(
             "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
           );
           return;
         }
+        window.location.assign(destination);
+        return;
       }
 
+      // Email mode — client-side sign-in (already enumeration-safe: Supabase
+      // returns one generic error for unknown-user and wrong-password alike).
       const supabase = getBrowserSupabase();
       const { error } = await supabase.auth.signInWithPassword({
-        email: signInEmail,
+        email: email.trim(),
         password,
       });
       if (error) {
         setError(error.message);
         return;
       }
-      // Hard navigation rather than router.replace + router.refresh.
-      // The Supabase auth cookie is written synchronously by @supabase/ssr,
-      // but the Next router's soft refresh sometimes prefetches the
-      // destination page before the cookie has propagated to the document,
-      // leaving the server render anonymous and the account page back on
-      // the guest banner. A full reload guarantees the new cookie is
-      // attached to the next request.
-      const destination = next === "/" ? `/${locale}` : `/${locale}${next}`;
       window.location.assign(destination);
     });
   }
