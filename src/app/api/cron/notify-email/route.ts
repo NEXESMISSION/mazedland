@@ -95,11 +95,6 @@ async function run(req: NextRequest) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  // No email provider yet → no-op, leave rows untouched.
-  if (!isEmailConfigured()) {
-    return NextResponse.json({ ok: true, skipped: "email_not_configured" });
-  }
-
   const admin = getServiceSupabase();
   if (!admin) {
     return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
@@ -107,6 +102,23 @@ async function run(req: NextRequest) {
   // Bind the narrowed (non-null) client so the per-row closure below keeps the
   // narrowing — TS drops it for a captured `const` inside a nested function.
   const db = admin;
+
+  // Heartbeat: this worker is the ONLY delivery path for money-critical email
+  // (auction_won / final_payment_due / payment & KYC verdicts). Stamp on every
+  // successful run so /api/health (per-job budget = 1800s ≈ 3 missed */10 runs)
+  // turns a stalled drain — which silently costs a buyer their deposit — into a
+  // visible 503. Stamped on SUCCESS paths only: a fetch error returns before the
+  // stamp, so the heartbeat correctly ages out and is detected.
+  const stampHeartbeat = () =>
+    db
+      .rpc("stamp_cron_heartbeat", { p_job: "notify_email", p_max_age: 1800 })
+      .then(() => {}, () => {});
+
+  // No email provider yet → no-op, but the worker itself is alive.
+  if (!isEmailConfigured()) {
+    await stampHeartbeat();
+    return NextResponse.json({ ok: true, skipped: "email_not_configured" });
+  }
 
   const sinceIso = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const { data: rows, error } = await admin
@@ -128,6 +140,7 @@ async function run(req: NextRequest) {
   let sent = 0;
   let failed = 0;
   let skipped = 0;
+  let deadLettered = 0;
 
   type Row = {
     id: string;
@@ -139,7 +152,7 @@ async function run(req: NextRequest) {
     email_attempts: number | null;
   };
 
-  async function processRow(row: Row): Promise<"sent" | "failed" | "skipped"> {
+  async function processRow(row: Row): Promise<"sent" | "failed" | "skipped" | "deadletter"> {
     // Resolve the recipient's email from auth (profiles doesn't store it).
     const { data: userRes } = await db.auth.admin.getUserById(row.user_id);
     const to = userRes?.user?.email ?? null;
@@ -168,12 +181,16 @@ async function run(req: NextRequest) {
     if (result.skipped) return "skipped";
 
     // Best-effort retry counter; after MAX_ATTEMPTS the row drops out of the
-    // query. (Per-row, so concurrent rows never touch the same counter.)
+    // query. (Per-row, so concurrent rows never touch the same counter.) When
+    // this attempt is the LAST one, the row becomes a dead letter — a
+    // money-critical email that will never be retried — so flag it for the
+    // aggregated admin alert below.
+    const nextAttempts = (row.email_attempts ?? 0) + 1;
     await db
       .from("notifications")
-      .update({ email_attempts: (row.email_attempts ?? 0) + 1 })
+      .update({ email_attempts: nextAttempts })
       .eq("id", row.id);
-    return "failed";
+    return nextAttempts >= MAX_ATTEMPTS ? "deadletter" : "failed";
   }
 
   // Process in bounded-concurrency chunks, preserving oldest-first ordering
@@ -185,11 +202,33 @@ async function run(req: NextRequest) {
     for (const o of outcomes) {
       if (o === "sent") sent++;
       else if (o === "failed") failed++;
+      else if (o === "deadletter") { failed++; deadLettered++; }
       else skipped++;
     }
   }
 
-  return NextResponse.json({ ok: true, sent, failed, skipped, scanned: all.length });
+  // Dead-letter alert: a money-critical email that exhausted MAX_ATTEMPTS will
+  // never be retried (it drops out of the query). Previously this was silent —
+  // the exact failure that costs a buyer their deposit. Raise ONE aggregated
+  // admin alert + a loud structured log so the operator can act (check the
+  // email provider, contact the affected users out-of-band).
+  if (deadLettered > 0) {
+    cLog.error(`DEAD_LETTER: ${deadLettered} money-critical email(s) permanently failed (>=${MAX_ATTEMPTS} attempts)`);
+    await db
+      .rpc("_notify_admins", {
+        p_kind: "admin_email_deadletter",
+        p_title: "E-mails non délivrés",
+        p_body:
+          `${deadLettered} e-mail(s) critiques (gagnant d'enchère / paiement / KYC) ont échoué après ` +
+          `${MAX_ATTEMPTS} tentatives et ne seront plus réessayés. Vérifiez le fournisseur d'e-mail ` +
+          `et contactez les utilisateurs concernés.`,
+        p_link: "/admin",
+      })
+      .then(() => {}, () => {});
+  }
+
+  await stampHeartbeat();
+  return NextResponse.json({ ok: true, sent, failed, skipped, deadLettered, scanned: all.length });
 }
 
 export const GET = run;
