@@ -15,7 +15,10 @@ export const dynamic = "force-dynamic";
  *
  * Read-only liveness only — exposes job names + ages, never user data.
  */
-const STALE_SECONDS = 300;
+// Fallback budget for any heartbeat row created before 0101 added a per-job
+// max_age_seconds (minute-cadence jobs). Each row now carries its OWN budget so
+// slower jobs (ending-soon */10, final-payment-due hourly) aren't false-stale.
+const DEFAULT_STALE_SECONDS = 300;
 
 export async function GET(): Promise<NextResponse> {
   const admin = getServiceSupabase();
@@ -23,7 +26,9 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "supabase_not_configured" }, { status: 503 });
   }
 
-  const { data, error } = await admin.from("cron_heartbeat").select("job, last_run");
+  const { data, error } = await admin
+    .from("cron_heartbeat")
+    .select("job, last_run, max_age_seconds");
   if (error) {
     return NextResponse.json({ ok: false, error: "heartbeat_unreadable" }, { status: 503 });
   }
@@ -31,15 +36,22 @@ export async function GET(): Promise<NextResponse> {
   const now = Date.now();
   const jobs = (data ?? []).map((r) => {
     const ageS = Math.round((now - new Date(r.last_run as string).getTime()) / 1000);
-    return { job: r.job as string, last_run: r.last_run as string, age_seconds: ageS };
+    const maxAge = Number(r.max_age_seconds ?? DEFAULT_STALE_SECONDS) || DEFAULT_STALE_SECONDS;
+    return {
+      job: r.job as string,
+      last_run: r.last_run as string,
+      age_seconds: ageS,
+      max_age_seconds: maxAge,
+      stale: ageS > maxAge,
+    };
   });
-  const stale = jobs.filter((j) => j.age_seconds > STALE_SECONDS).map((j) => j.job);
+  const stale = jobs.filter((j) => j.stale).map((j) => j.job);
   // No heartbeat rows yet (fresh deploy, crons haven't run) is treated as
   // not-yet-healthy rather than a hard failure spamming alerts on day one.
   const ok = jobs.length > 0 && stale.length === 0;
 
   return NextResponse.json(
-    { ok, staleSeconds: STALE_SECONDS, stale, jobs },
+    { ok, stale, jobs },
     { status: ok ? 200 : 503 },
   );
 }
