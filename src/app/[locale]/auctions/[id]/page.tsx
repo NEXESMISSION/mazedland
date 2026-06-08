@@ -11,6 +11,7 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { resolveDeposit } from "@/lib/pricing";
 import { getCachedMonetization } from "@/lib/settings";
 import { jsonLdSafe } from "@/lib/jsonld";
+import { getPublicAuctionDetail } from "@/lib/auction/detail";
 import { Countdown } from "@/components/auction/Countdown";
 import { AuctionCalendarMenu } from "@/components/auction/AuctionCalendarMenu";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
@@ -123,8 +124,24 @@ export default async function AuctionDetail({
   const isRTL = locale === "ar";
   const supabase = await getServerSupabase();
 
-  const [auctionRes, userRes, mon] = await Promise.all([
-    supabase
+  const [cachedAuction, userRes, mon] = await Promise.all([
+    // Public auction shell (auction + property + photos), cached 15s + shared
+    // across all viewers — the hot path. Per-user bits below stay live.
+    getPublicAuctionDetail(id),
+    supabase.auth.getUser(),
+    // Deposit settings are global + admin-controlled — served from the
+    // cached app_settings layer (no per-request DB round-trip), still in
+    // this first parallel wave so a cache miss overlaps the other queries.
+    getCachedMonetization(),
+  ]);
+
+  // The public cache excludes 'cancelled' lots (matches auctions_public_read).
+  // On a miss the lot is either gone or cancelled → fall back to the per-user
+  // RLS-scoped fetch so the OWNER still sees their own cancelled auction, while
+  // a non-owner still gets RLS-null and lands in the recovery below.
+  let auctionData: unknown = cachedAuction;
+  if (!auctionData) {
+    const { data } = await supabase
       .from("auctions")
       .select(`
         *,
@@ -134,15 +151,11 @@ export default async function AuctionDetail({
         )
       `)
       .eq("id", id)
-      .single(),
-    supabase.auth.getUser(),
-    // Deposit settings are global + admin-controlled — served from the
-    // cached app_settings layer (no per-request DB round-trip), still in
-    // this first parallel wave so a cache miss overlaps the other queries.
-    getCachedMonetization(),
-  ]);
+      .maybeSingle();
+    auctionData = data ?? null;
+  }
 
-  if (auctionRes.error || !auctionRes.data) {
+  if (!auctionData) {
     // An auction the user was watching / bidding on can disappear (admin
     // cancel + scrub, hard-delete from /admin/properties). Old bell rows
     // baked `/auctions/<id>` into their link, so without this recovery
@@ -161,7 +174,7 @@ export default async function AuctionDetail({
     notFound();
   }
 
-  const auction = auctionRes.data as unknown as AuctionWithProperty;
+  const auction = auctionData as unknown as AuctionWithProperty;
   // Denormalized counter (0098), maintained by a SECURITY DEFINER trigger on
   // bids — counts ALL bids (incl. sealed) without scanning the bids table or
   // tripping sealed-amount RLS, and without a per-viewer count() query.
