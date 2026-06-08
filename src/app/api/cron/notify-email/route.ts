@@ -40,6 +40,12 @@ const EMAILABLE = new Set([
   "payment_rejected",
   "kyc_verified",
   "kyc_rejected",
+  // OPERATIONAL/MONEY admin alerts — out-of-band delivery (not just the in-app
+  // bell) so a stranded payment, a clawback owed, or a dead-lettered email is
+  // actioned even when no admin is looking at the dashboard. Low volume.
+  "admin_refund_due",       // 0095 stranded buy-now
+  "admin_clawback_owed",    // 0110 settlement reversed after payout
+  "admin_email_deadletter", // notify-email exhausted MAX_ATTEMPTS
 ]);
 
 // Drain a close/broadcast wave fast enough that nothing money-critical ages
