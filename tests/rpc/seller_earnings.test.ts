@@ -261,4 +261,50 @@ describe("seller_earnings — credits a sale exactly once", () => {
     expect(netForAuction(rows, auctionId)).toBeCloseTo(0, 2);
     expect(rowsForAuction(rows, auctionId)).toBe(0);
   });
+
+  it("(e) 0102: a deposit BEFORE the winner settles the balance credits 0 (no premature payout)", async () => {
+    const seller = await newUser();
+    const winner = await newUser({ kyc: "verified" });
+
+    const price = 100_000;
+    const deposit = 10_000;
+
+    const { auctionId } = await seedAuction(svc, {
+      ownerId: seller.id,
+      type: "english",
+      status: "live",
+      openingPrice: price,
+    });
+
+    // Winner locks + captures a deposit and the auction is AWARDED to them ...
+    await captureDeposit(svc, { userId: winner.id, auctionId, amount: deposit });
+    await setAuction(svc, auctionId, {
+      status: "awarded",
+      winner_user_id: winner.id,
+      winner_amount: price,
+      current_price: price,
+    });
+
+    // ... but the winner has NOT paid the balance (no final_payment / buy_now).
+    // The deposit is held earnest money — forfeitable on default — NOT seller
+    // earnings. It must contribute 0 to withdrawable balance until settlement.
+    const rows = await earningsAsSeller(seller);
+    expect(netForAuction(rows, auctionId)).toBeCloseTo(0, 2);
+    expect(rowsForAuction(rows, auctionId)).toBe(0);
+
+    // Once the balance is captured, BOTH the deposit and the final_payment
+    // count — exactly one hammer price, no more (parity with scenario (a)).
+    await capturePurchase(svc, {
+      userId: winner.id,
+      auctionId,
+      amount: price - deposit,
+      kind: "final_payment",
+    });
+    const settled = await earningsAsSeller(seller);
+    expect(rowsForAuction(settled, auctionId)).toBe(2);
+    const gross = settled
+      .filter((r) => r.auction_id === auctionId)
+      .reduce((s, r) => s + Number(r.gross_amount), 0);
+    expect(gross).toBeCloseTo(price, 2);
+  });
 });

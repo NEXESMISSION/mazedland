@@ -10,6 +10,7 @@ import { formatTND } from "@/lib/utils";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { resolveDeposit } from "@/lib/pricing";
 import { getCachedMonetization } from "@/lib/settings";
+import { jsonLdSafe } from "@/lib/jsonld";
 import { Countdown } from "@/components/auction/Countdown";
 import { AuctionCalendarMenu } from "@/components/auction/AuctionCalendarMenu";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
@@ -410,7 +411,7 @@ export default async function AuctionDetail({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
       />
 
       {/* Suppress "you've been outbid" notifications while the user
