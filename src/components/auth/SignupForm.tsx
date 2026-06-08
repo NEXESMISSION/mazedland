@@ -401,6 +401,7 @@ function PhoneVerify({
         value={code}
         onChange={(e) => onCodeChange(e.target.value.replace(/\D/g, ""))}
         placeholder="••••••"
+        aria-label="Code de vérification à 6 chiffres"
         className="mt-5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-3 text-center text-[22px] font-bold tracking-[0.4em] text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
       />
 

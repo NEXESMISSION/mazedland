@@ -87,6 +87,7 @@ export function HomeSearch({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder={t("search.placeholder")}
+            aria-label={t("search.placeholder")}
             className="w-full rounded-xl bg-transparent py-3.5 text-[14px] text-foreground placeholder:text-muted focus:outline-none ltr:pl-11 ltr:pr-3 rtl:pl-3 rtl:pr-11"
           />
         </div>
@@ -138,6 +139,7 @@ export function HomeSearch({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={t("search.placeholder")}
+              aria-label={t("search.placeholder")}
               className="w-full rounded-full bg-surface-2 py-3 text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-gold/40 ltr:pl-9 ltr:pr-3 rtl:pl-3 rtl:pr-9"
             />
           </div>

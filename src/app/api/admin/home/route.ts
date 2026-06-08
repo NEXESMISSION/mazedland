@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 
 /**
  * POST /api/admin/home — admin curation of home/search placements.
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
     })
     .eq("id", propertyId)
     .eq("status", "ready");
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return fail("home_feature_failed", 500, error);
 
   logAction(req, user, "home.feature", { propertyId, home, top, banner });
   return NextResponse.json({ ok: true });

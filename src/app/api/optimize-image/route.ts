@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { fail } from "@/lib/http/errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -72,10 +73,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (e) {
-    return NextResponse.json(
-      { error: "decode_failed", detail: e instanceof Error ? e.message : String(e) },
-      { status: 422 },
-    );
+    return fail("decode_failed", 422, e);
   }
 }
 

@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { handleClaim } from "@/lib/admin/claim";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 
 /**
  * Admin endpoint to advance a payout through its lifecycle.
@@ -48,13 +49,17 @@ export async function PATCH(
     p_notes: notes,
   });
   if (rpcErr) {
-    const msg = rpcErr.message || "payout_update_failed";
-    const code =
-      msg.includes("balance_insufficient") || msg.includes("payout_terminal") ? 409
-      : msg.includes("payout_not_found") ? 404
-      : msg.includes("forbidden") ? 403
-      : 500;
-    return NextResponse.json({ error: msg }, { status: code });
+    // Preserve the safe-code → HTTP-status mapping, but never echo the raw
+    // Postgres/RAISE text to the client. Each known RAISE maps to a stable
+    // client code; the real message is logged server-side by fail().
+    const msg = rpcErr.message || "";
+    const [clientCode, status] =
+      msg.includes("balance_insufficient") ? ["balance_insufficient", 409] as const
+      : msg.includes("payout_terminal") ? ["payout_terminal", 409] as const
+      : msg.includes("payout_not_found") ? ["payout_not_found", 404] as const
+      : msg.includes("forbidden") ? ["forbidden", 403] as const
+      : ["payout_update_failed", 500] as const;
+    return fail(clientCode, status, rpcErr);
   }
   const payout = result as {
     seller_id: string;

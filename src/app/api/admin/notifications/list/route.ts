@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard";
+import { fail } from "@/lib/http/errors";
 
 /**
  * Admin queue inspector — list notifications across all users with
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
   if (since) query = query.gte("created_at", since);
 
   const { data, count, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return fail("notifications_fetch_failed", 500, error);
 
   // Stats — small parallel queries scoped to admin-visible rows. These
   // are cheap thanks to the indexes added in earlier migrations.

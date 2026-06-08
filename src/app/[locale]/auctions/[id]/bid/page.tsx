@@ -41,7 +41,7 @@ export default async function BidPage({
   const t = await getTranslations();
   const supabase = await getServerSupabase();
 
-  const [auctionRes, bidCountRes, initialBidsRes, userRes] = await Promise.all([
+  const [auctionRes, initialBidsRes, userRes] = await Promise.all([
     supabase
       .from("auctions")
       .select(
@@ -49,10 +49,6 @@ export default async function BidPage({
       )
       .eq("id", id)
       .single(),
-    supabase
-      .from("bids")
-      .select("id", { count: "exact", head: true })
-      .eq("auction_id", id),
     // Seed the history list — RLS hides sealed-bid amounts from non-self
     // rows during live phase, but rows still come through so the count
     // strip can show "X autres offres révélées à la clôture".
@@ -82,7 +78,8 @@ export default async function BidPage({
   if (auction.listing_type === "direct") {
     redirect(`/${locale}/auctions/${id}`);
   }
-  const totalBids = bidCountRes.count ?? 0;
+  // Denormalized counter (0098) — no per-viewer count() on the bids table.
+  const totalBids = auction.bid_count ?? 0;
   // Cast through unknown: we deliberately omit ip_address/max_amount from the
   // select (privacy), so the row shape is a subset of Bid. The composer/history
   // never read those fields.

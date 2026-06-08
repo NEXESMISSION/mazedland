@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { sendEmail, isEmailConfigured } from "@/lib/email";
 import { log } from "@/lib/log";
+import { fail } from "@/lib/http/errors";
 
 export const dynamic = "force-dynamic";
 // Give the worker real headroom: a Resend latency spike must not kill the
@@ -120,7 +121,7 @@ async function run(req: NextRequest) {
 
   if (error) {
     cLog.error(`select failed: ${error.message}`);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return fail("fetch_failed", 500, error);
   }
 
   const base = siteUrl();

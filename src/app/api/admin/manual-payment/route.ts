@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 
 /**
  * POST /api/admin/manual-payment — admin-only.
@@ -196,7 +197,7 @@ export async function POST(req: NextRequest) {
     .select("id")
     .single();
   if (insErr || !created) {
-    return NextResponse.json({ error: insErr?.message ?? "insert_failed" }, { status: 500 });
+    return fail("insert_failed", 500, insErr ?? undefined);
   }
 
   // ── Notify the payer (reuse the existing accepted-payment kind) ──────────

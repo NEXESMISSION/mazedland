@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 import { sanitizePopupBody } from "../route";
 
 /**
@@ -34,7 +35,7 @@ export async function GET(
 
   const { data, error } = await g.supabase
     .from("popups").select("*").eq("id", id).single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 404 });
+  if (error) return fail("popup_not_found", 404, error);
   return NextResponse.json({ item: data });
 }
 
@@ -61,7 +62,7 @@ export async function PATCH(
     .eq("id", id)
     .select("*")
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return fail("popup_update_failed", 500, error);
   logAction(req, g.user!, "popup.update", { popupId: id });
   return NextResponse.json({ item: data });
 }
@@ -78,7 +79,7 @@ export async function DELETE(
   if (!g.supabase) return NextResponse.json({ error: g.error }, { status: g.status });
 
   const { error } = await g.supabase.from("popups").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return fail("popup_delete_failed", 500, error);
   logAction(req, g.user!, "popup.delete", { popupId: id });
   return NextResponse.json({ ok: true });
 }

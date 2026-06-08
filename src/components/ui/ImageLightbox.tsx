@@ -149,6 +149,9 @@ function Viewer({ src, alt, onClose }: { src: string; alt: string; onClose: () =
   return (
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Image en plein écran"
       onClick={(e) => {
         // Close only on a genuine backdrop click (not after a pan/pinch).
         if (e.target === e.currentTarget && !moved.current) onClose();

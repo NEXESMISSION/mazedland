@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 
 /**
  * Admin queue inspector — delete a single notification.
@@ -23,7 +24,7 @@ export async function DELETE(
     .delete()
     .eq("id", id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return fail("notification_delete_failed", 500, error);
   logAction(req, user, "notification.delete", { notificationId: id });
   return NextResponse.json({ ok: true });
 }

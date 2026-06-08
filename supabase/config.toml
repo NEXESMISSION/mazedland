@@ -1,0 +1,91 @@
+# ============================================================================
+# Supabase local-stack config for Batta.tn.
+#
+# This drives `supabase start` / `supabase db start`, which spins up a real
+# local Supabase Postgres and APPLIES supabase/migrations/** in full — the
+# auth/storage schemas, the anon/authenticated/service_role roles, pg_cron, and
+# the auth.uid()/auth.jwt() helpers the money/auction RPCs depend on. A bare
+# postgres image cannot run these migrations; the CI integration job and the
+# `pnpm test:rpc` suite both target this stack.
+#
+# major_version MUST match the remote project (Postgres 17 — see
+# supabase/.temp/postgres-version). Auth rate limits are raised well above the
+# hosted defaults because the RPC suite creates + signs in many throwaway users
+# in a short window; the hosted defaults (30 / 5 min) would throttle it and make
+# the gate flaky. This file is for LOCAL/CI throwaway stacks only.
+# ============================================================================
+project_id = "batta"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.pooler]
+enabled = false
+
+[db.migrations]
+enabled = true
+
+[db.seed]
+# The RPC integration suite seeds its own fixtures per-test via the service-role
+# client; no SQL seed file is needed (and none exists).
+enabled = false
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = false
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["http://127.0.0.1:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+minimum_password_length = 6
+password_requirements = ""
+
+# Raised far above the hosted defaults so the test suite's burst of
+# createUser + signInWithPassword calls isn't throttled. Local/CI only.
+[auth.rate_limit]
+email_sent = 3600
+sms_sent = 3600
+anonymous_users = 3600
+token_refresh = 3600
+sign_in_sign_ups = 3600
+token_verifications = 3600
+web3 = 3600
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+# Don't require a mailbox round-trip; tests use email_confirm:true via the admin
+# API and sign in immediately.
+double_confirm_changes = false
+
+[edge_runtime]
+enabled = false
+
+[analytics]
+enabled = false

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 
 /**
  * Bulk delete for the admin queue inspector. Accepts the same filter
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await del.select("id");
   if (error) {
     console.error("[api/admin/notifications/bulk-delete] supabase error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return fail("bulk_delete_failed", 500, error);
   }
   const deletedCount = data?.length ?? 0;
   console.log(

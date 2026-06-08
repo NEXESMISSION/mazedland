@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const gate = await requireAdmin(req);
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     .from("inspectors")
     .update({ approved: true, approved_at: now })
     .eq("id", id);
-  if (e1) return NextResponse.json({ error: e1.message }, { status: 500 });
+  if (e1) return fail("inspector_approve_failed", 500, e1);
 
   // 2. Elevate the profile role so the inspector passes role-gated
   //    queries (RLS policies, admin/inspector router checks). Without
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     .from("profiles")
     .update({ role: "inspector" })
     .eq("id", id);
-  if (e2) return NextResponse.json({ error: e2.message }, { status: 500 });
+  if (e2) return fail("inspector_role_update_failed", 500, e2);
 
   // Notify the new inspector.
   const admin = getServiceSupabase();

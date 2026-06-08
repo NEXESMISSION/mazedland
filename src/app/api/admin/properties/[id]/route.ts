@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { parseRejection } from "@/lib/rejection";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 
 export async function PATCH(
   req: NextRequest,
@@ -54,7 +55,7 @@ export async function PATCH(
     })
     .eq("id", id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return fail("property_update_failed", 500, error);
 
   if (prop?.owner_id) {
     const admin = getServiceSupabase();

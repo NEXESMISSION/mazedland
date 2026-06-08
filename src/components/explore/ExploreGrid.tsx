@@ -773,6 +773,7 @@ function FilterPanel({
           inputMode="numeric"
           min={0}
           placeholder="Prix min (TND)"
+          aria-label="Prix minimum (TND)"
           value={draft.minPrice ?? ""}
           onChange={(e) => setNum("minPrice")(e.target.value)}
           className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-[13px] tabular-nums"
@@ -782,6 +783,7 @@ function FilterPanel({
           inputMode="numeric"
           min={0}
           placeholder="Prix max (TND)"
+          aria-label="Prix maximum (TND)"
           value={draft.maxPrice ?? ""}
           onChange={(e) => setNum("maxPrice")(e.target.value)}
           className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-[13px] tabular-nums"

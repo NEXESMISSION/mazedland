@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 import type { PropertyType } from "@/lib/types";
 
 const PROPERTY_TYPES: PropertyType[] = [
@@ -94,7 +95,7 @@ export async function PUT(req: NextRequest) {
     .from("legal_doc_kinds")
     .select("id")
     .eq("property_type", propertyType);
-  if (exErr) return NextResponse.json({ error: exErr.message }, { status: 500 });
+  if (exErr) return fail("fetch_failed", 500, exErr);
 
   const keepIds = new Set(cleaned.map((c) => c.id).filter(Boolean) as string[]);
   const toDelete = (existing ?? [])
@@ -106,7 +107,7 @@ export async function PUT(req: NextRequest) {
       .from("legal_doc_kinds")
       .delete()
       .in("id", toDelete);
-    if (dErr) return NextResponse.json({ error: dErr.message }, { status: 500 });
+    if (dErr) return fail("delete_failed", 500, dErr);
   }
 
   // 2. Upsert: rows with an id update, rows without an id insert.
@@ -125,7 +126,7 @@ export async function PUT(req: NextRequest) {
         })
         .eq("id", u.id)
         .eq("property_type", propertyType);
-      if (uErr) return NextResponse.json({ error: uErr.message }, { status: 500 });
+      if (uErr) return fail("update_failed", 500, uErr);
     }
   }
   if (inserts.length > 0) {
@@ -140,7 +141,7 @@ export async function PUT(req: NextRequest) {
           sort_order: i.sort_order,
         })),
       );
-    if (iErr) return NextResponse.json({ error: iErr.message }, { status: 500 });
+    if (iErr) return fail("insert_failed", 500, iErr);
   }
 
   logAction(req, user, "legal_docs.update", {

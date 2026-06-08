@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { parseMonetizationSettings, resolveDeposit } from "@/lib/pricing";
+import { fail } from "@/lib/http/errors";
 
 /**
  * Lock the participation deposit for an auction (amount resolved from the
@@ -134,10 +135,7 @@ export async function POST(
         return NextResponse.json({ ok: true, paymentId: raceRows[0].id, amount });
       }
     }
-    return NextResponse.json(
-      { error: payErr?.message ?? "payment_insert_failed" },
-      { status: 500 },
-    );
+    return fail("payment_insert_failed", 500, payErr);
   }
 
   return NextResponse.json({ ok: true, paymentId: payment.id, amount });

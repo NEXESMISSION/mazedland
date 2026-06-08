@@ -80,3 +80,62 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SECURITY_TEST_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SECURITY_TEST_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SECURITY_TEST_SERVICE_ROLE_KEY }}
+
+  # ── REQUIRED money/auction RPC integration gate ──────────────────────────
+  # The audit's #1 finding: the SECURITY DEFINER PL/pgSQL RPCs that move money
+  # (place_bid, close_auction_on_purchase, seller_earnings, seller_balance,
+  # request_payout) had ZERO automated tests. This job stands up a THROWAWAY
+  # local Supabase stack, applies supabase/migrations/** in full (auth/storage
+  # schemas, anon/authenticated/service_role roles, pg_cron, auth.uid()), and
+  # runs the integration suite against it. No secrets — the stack mints its own
+  # keys, so this runs on EVERY PR to main and is REQUIRED (not gated behind
+  # optional staging secrets like the exploit gate above). GitHub-hosted runners
+  # ship Docker, which `supabase start` needs.
+  rpc-integration:
+    name: Money/auction RPC integration (local Supabase stack)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Brings up the local stack and APPLIES supabase/migrations/** to a real
+      # Supabase Postgres (a bare postgres can't run these migrations).
+      - name: Start local Supabase stack
+        run: supabase start
+
+      # `supabase status -o env` prints the stack's connection vars. We override
+      # the variable names so it emits EXACTLY what the suite reads, then append
+      # to $GITHUB_ENV for the test step. This avoids brittle parsing and stays
+      # version-safe. (The local stack mints its own keys — nothing secret.)
+      - name: Export stack connection env
+        run: |
+          supabase status -o env \
+            --override-name api.url=SUPABASE_URL \
+            --override-name auth.anon_key=SUPABASE_ANON_KEY \
+            --override-name auth.service_role_key=SUPABASE_SERVICE_ROLE_KEY \
+            --override-name db.url=SUPABASE_DB_URL \
+            >> "$GITHUB_ENV"
+
+      - name: RPC integration tests
+        run: pnpm test:rpc
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: supabase stop --no-backup || true

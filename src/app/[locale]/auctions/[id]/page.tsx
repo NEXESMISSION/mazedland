@@ -122,7 +122,7 @@ export default async function AuctionDetail({
   const isRTL = locale === "ar";
   const supabase = await getServerSupabase();
 
-  const [auctionRes, userRes, bidCountRes, mon] = await Promise.all([
+  const [auctionRes, userRes, mon] = await Promise.all([
     supabase
       .from("auctions")
       .select(`
@@ -135,13 +135,6 @@ export default async function AuctionDetail({
       .eq("id", id)
       .single(),
     supabase.auth.getUser(),
-    // Total count bypasses sealed-bid amount RLS (head only returns the
-    // row count, no masked-amount column) so we can show "X offres" on
-    // every auction type without leaking sealed amounts.
-    supabase
-      .from("bids")
-      .select("id", { count: "exact", head: true })
-      .eq("auction_id", id),
     // Deposit settings are global + admin-controlled — served from the
     // cached app_settings layer (no per-request DB round-trip), still in
     // this first parallel wave so a cache miss overlaps the other queries.
@@ -168,7 +161,10 @@ export default async function AuctionDetail({
   }
 
   const auction = auctionRes.data as unknown as AuctionWithProperty;
-  const totalBids = bidCountRes.count ?? 0;
+  // Denormalized counter (0098), maintained by a SECURITY DEFINER trigger on
+  // bids — counts ALL bids (incl. sealed) without scanning the bids table or
+  // tripping sealed-amount RLS, and without a per-viewer count() query.
+  const totalBids = auction.bid_count ?? 0;
   const property = auction.property;
   const photos = property.photos?.sort((a, b) => a.sort_order - b.sort_order) ?? [];
   const lotNo = String(auction.id).replace(/-/g, "").slice(-4).toUpperCase();

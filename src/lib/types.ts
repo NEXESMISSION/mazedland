@@ -120,6 +120,9 @@ export type Auction = {
   sale_negotiable: boolean;
   // Optional "skip the bidding" price on auctions; null on direct.
   buy_now_price: number | null;
+  // Denormalized bid count (0098), maintained by a trigger on bids. Read by
+  // the auction detail + bid pages instead of a per-viewer count() query.
+  bid_count: number;
 };
 
 export type Bid = {

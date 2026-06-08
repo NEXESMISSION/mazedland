@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 
 /**
  * POST /api/admin/deposits — admin-only deposit lifecycle actions.
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
       .is("forfeited_at", null);
     if (auc.winner_user_id) q = q.neq("user_id", auc.winner_user_id as string);
     const { data: released, error } = await q.select("id");
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return fail("deposit_prepare_failed", 500, error);
     logAction(req, user, "deposit.prepare", { auctionId, released: released?.length ?? 0 });
     return NextResponse.json({ ok: true, released: released?.length ?? 0 });
   }
@@ -142,7 +143,7 @@ export async function POST(req: NextRequest) {
       .eq("id", depositId)
       .is("forfeited_at", null)
       .is("refunded_at", null);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return fail("deposit_forfeit_failed", 500, error);
     logAction(req, user, "deposit.forfeit", { depositId });
     return NextResponse.json({ ok: true });
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { fail } from "@/lib/http/errors";
 
 /**
  * Records a popup-lifecycle event: an impression (the user saw the
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return fail("popup_event_failed", 500, error);
   }
   return NextResponse.json({ ok: true });
 }

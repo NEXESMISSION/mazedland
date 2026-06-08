@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
+import { fail } from "@/lib/http/errors";
 
 /**
  * GET /api/admin/manual-payment/options?type=user|auction&q=… — admin-only.
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
       .limit(10);
     if (q) query = query.or(`full_name.ilike.%${q}%,phone.ilike.%${q}%`);
     const { data, error } = await query;
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return fail("user_search_failed", 500, error);
     return NextResponse.json({ results: data ?? [] });
   }
 
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
     // Surface the actionable lots first.
     query = query.order("created_at", { ascending: false });
     const { data, error } = await query;
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return fail("auction_search_failed", 500, error);
     type Row = {
       id: string; status: string; winner_user_id: string | null;
       buy_now_price: number | null; current_price: number | null; opening_price: number;

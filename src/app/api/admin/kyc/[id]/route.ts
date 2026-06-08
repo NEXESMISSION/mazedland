@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { handleClaim } from "@/lib/admin/claim";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 
 export async function PATCH(
   req: NextRequest,
@@ -41,7 +42,7 @@ export async function PATCH(
     p_verdict: verdict,
     p_notes: notes,
   });
-  if (reviewErr) return NextResponse.json({ error: reviewErr.message }, { status: 500 });
+  if (reviewErr) return fail("kyc_review_failed", 500, reviewErr);
 
   // Notify the user. Notifications insert is service-role-only by
   // design (no INSERT policy on the table), so we go through the

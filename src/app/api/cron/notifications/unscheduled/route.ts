@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { fail } from "@/lib/http/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await admin.rpc("notify_unscheduled_listings");
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return fail("rpc_failed", 500, error);
   }
   return NextResponse.json({ ok: true, ...(data as Record<string, unknown>) });
 }

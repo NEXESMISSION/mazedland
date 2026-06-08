@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { cleanDurationDays } from "@/lib/pricing";
 import { APP_SETTINGS_TAG } from "@/lib/settings";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 
 const TEXT_KEYS = [
   "payee_name",
@@ -121,7 +122,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
   }
   const { error } = await admin.from("app_settings").upsert(rows, { onConflict: "key" });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return fail("settings_update_failed", 500, error);
 
   // Bust the cached app_settings read so the new fees/deposit/anti-snipe take
   // effect immediately across the app instead of waiting out the 300s TTL.

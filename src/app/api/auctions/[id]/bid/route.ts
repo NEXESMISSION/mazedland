@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { fail } from "@/lib/http/errors";
 
 /**
  * Place a bid on an auction. All validation, state mutation, and race
@@ -38,19 +39,24 @@ export async function POST(
   });
 
   if (error) {
-    // Map the SQL-side `raise exception 'foo'` text into HTTP statuses.
+    // Map the SQL-side `raise exception 'foo'` text into a stable client code
+    // + HTTP status. The raw Postgres/PostgREST message is never echoed back —
+    // only the known named exception (recognised by substring) becomes a safe
+    // code; anything else is redacted to a generic `bid_failed`. The real cause
+    // is logged server-side by fail().
     const msg = error.message ?? "";
-    const code =
-      msg.includes("auth") ? 401 :
-      msg.includes("auction_not_found") ? 404 :
-      msg.includes("auction_closed") || msg.includes("auction_expired") ? 409 :
-      msg.includes("kyc_required") ? 403 :
-      msg.includes("deposit_required") ? 402 :
-      msg.includes("self_bid_forbidden") ? 403 :
-      msg.includes("bid_too_fast") ? 429 :
-      msg.includes("dutch_price_drifted") ? 409 :
-      400;
-    return NextResponse.json({ error: msg }, { status: code });
+    const known: [string, number] | null =
+      msg.includes("auth") ? ["auth", 401] :
+      msg.includes("auction_not_found") ? ["auction_not_found", 404] :
+      msg.includes("auction_closed") ? ["auction_closed", 409] :
+      msg.includes("auction_expired") ? ["auction_expired", 409] :
+      msg.includes("kyc_required") ? ["kyc_required", 403] :
+      msg.includes("deposit_required") ? ["deposit_required", 402] :
+      msg.includes("self_bid_forbidden") ? ["self_bid_forbidden", 403] :
+      msg.includes("bid_too_fast") ? ["bid_too_fast", 429] :
+      msg.includes("dutch_price_drifted") ? ["dutch_price_drifted", 409] :
+      null;
+    return fail(known ? known[0] : "bid_failed", known ? known[1] : 400, error);
   }
 
   return NextResponse.json({ ok: true, ...(data as Record<string, unknown>) });

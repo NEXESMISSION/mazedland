@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 
 /**
  * Admin compose + broadcast notification.
@@ -94,7 +95,7 @@ export async function POST(req: NextRequest) {
     p_payload: payload,
   });
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return fail("broadcast_failed", 500, error);
   }
   if (!test) {
     logAction(req, user, "notification.broadcast", { kind, audience: audience.type });

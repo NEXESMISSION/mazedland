@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 
 /**
  * Admin receipt review.
@@ -93,7 +94,7 @@ export async function PATCH(
         p_durations: sanitized,
       });
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return fail("accept_listing_payment_failed", 500, error);
       }
       return NextResponse.json({ ok: true });
     } else {
@@ -102,7 +103,7 @@ export async function PATCH(
         p_reason: notes,
       });
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return fail("reject_listing_payment_failed", 500, error);
       }
       return NextResponse.json({ ok: true });
     }

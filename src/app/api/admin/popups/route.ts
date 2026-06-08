@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
 
 /**
  * Admin popup CRUD — list + create.
@@ -44,7 +45,7 @@ export async function GET() {
     .from("popups")
     .select("*")
     .order("created_at", { ascending: false });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return fail("popups_fetch_failed", 500, error);
   return NextResponse.json({ items: data ?? [] });
 }
 
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
     .insert({ ...payload, created_by: g.user!.id })
     .select("*")
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return fail("popup_create_failed", 500, error);
   logAction(req, g.user!, "popup.create", { slug: payload.slug });
   return NextResponse.json({ item: data });
 }
