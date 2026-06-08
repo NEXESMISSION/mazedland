@@ -310,4 +310,45 @@ describe("seller_earnings — credits a sale exactly once", () => {
       .reduce((s, r) => s + Number(r.gross_amount), 0);
     expect(gross).toBeCloseTo(price, 2);
   });
+
+  it("(f) 0110: reverse_settlement (admin-only) removes the seller credit", async () => {
+    const seller = await newUser();
+    const winner = await newUser({ kyc: "verified" });
+    const adminUser = await newUser({ role: "admin" });
+
+    const buyNow = 150_000;
+    const { auctionId } = await seedAuction(svc, {
+      ownerId: seller.id,
+      type: "english",
+      status: "live",
+      openingPrice: 100_000,
+      buyNowPrice: buyNow,
+    });
+
+    const bn = await capturePurchase(svc, {
+      userId: winner.id,
+      auctionId,
+      amount: buyNow,
+      kind: "buy_now",
+    });
+    expect(bn.error, bn.error).toBeUndefined();
+    expect(netForAuction(await earningsAsSeller(seller), auctionId)).toBeCloseTo(net(buyNow), 2);
+
+    // A non-admin (the seller) must NOT be able to reverse a settlement.
+    const { error: forbid } = await seller.client.rpc("reverse_settlement", {
+      p_payment_id: bn.id,
+      p_reason: "x",
+    });
+    expect(forbid, "non-admin reversal must be forbidden").toBeTruthy();
+    // Still credited — the rejected reversal changed nothing.
+    expect(rowsForAuction(await earningsAsSeller(seller), auctionId)).toBe(1);
+
+    // Admin reverses → the credit drops out of the seller's lifetime net.
+    const { error: revErr } = await adminUser.client.rpc("reverse_settlement", {
+      p_payment_id: bn.id,
+      p_reason: "test reversal",
+    });
+    expect(revErr, revErr?.message).toBeNull();
+    expect(rowsForAuction(await earningsAsSeller(seller), auctionId)).toBe(0);
+  });
 });
