@@ -81,7 +81,7 @@ export function ForgotPasswordForm() {
         />
       </label>
       {error && (
-        <p className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
+        <p role="alert" aria-live="assertive" className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
       )}
       <button
         type="submit"

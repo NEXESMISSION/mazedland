@@ -331,7 +331,7 @@ export function SignupForm() {
       </div>
 
       {error && (
-        <p className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
+        <p role="alert" aria-live="assertive" className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
       )}
       <button
         type="submit"
@@ -406,7 +406,7 @@ function PhoneVerify({
       />
 
       {error && (
-        <p className="batta-tone-bad mt-3 rounded-lg px-3 py-2 text-xs">{error}</p>
+        <p role="alert" aria-live="assertive" className="batta-tone-bad mt-3 rounded-lg px-3 py-2 text-xs">{error}</p>
       )}
 
       <div className="mt-5 flex flex-col gap-2">

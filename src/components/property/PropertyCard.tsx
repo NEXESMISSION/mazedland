@@ -69,11 +69,13 @@ export async function PropertyCard({
 
   return (
     <div className="block">
-      <Link
-        href={`/auctions/${auction.id}`}
-        className="group block"
-        aria-label={property.title}
-      >
+      {/* The clickable area is a STRETCHED LINK overlay (absolute inset-0), NOT
+          an <a> wrapping the whole card — wrapping nests the WatchlistButton
+          <button> inside an <a> (invalid HTML; breaks assistive tech +
+          hydration). The heart sits ABOVE the link via z-index so it stays
+          independently clickable; StartBiddingButton stays OUTSIDE this wrapper
+          so the overlay never covers it. */}
+      <div className="group relative block">
         <div className="relative">
         {/* PHOTO — the only surface on the card */}
         <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-border transition-all duration-300 group-hover:ring-gold-soft/40">
@@ -150,8 +152,9 @@ export async function PropertyCard({
             )}
           </div>
 
-          {/* Bottom-leading — watchlist heart */}
-          <div className="absolute bottom-2.5 start-2.5">
+          {/* Bottom-leading — watchlist heart. z-20 keeps it ABOVE the
+              stretched card link (z-10) so its button still receives clicks. */}
+          <div className="absolute bottom-2.5 start-2.5 z-20">
             <WatchlistButton
               auctionId={auction.id}
               initialSaved={saved}
@@ -226,7 +229,17 @@ export async function PropertyCard({
           </div>
         </div>
         </div>
-      </Link>
+        {/* Stretched link — makes the whole card-content clickable without
+            wrapping the interactive heart in an <a>. z-10 sits under the
+            heart's z-20; the StartBiddingButton below is outside this wrapper. */}
+        <Link
+          href={`/auctions/${auction.id}`}
+          aria-label={property.title}
+          className="absolute inset-0 z-10"
+        >
+          <span className="sr-only">{property.title}</span>
+        </Link>
+      </div>
       <StartBiddingButton auctionId={auction.id} isLive={isLive} />
     </div>
   );

@@ -178,7 +178,7 @@ export function LoginForm() {
           Mot de passe oublié ?
         </Link>
       </div>
-      {error && <p className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>}
+      {error && <p role="alert" aria-live="assertive" className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>}
       <button
         type="submit"
         disabled={isPending}
