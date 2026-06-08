@@ -43,9 +43,9 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     // Soft-fail: PopupManager treats an error as "nothing to show" rather
-    // than blocking the page render. Surface the message so a misbehaving
-    // matcher can be debugged from the network panel.
-    return NextResponse.json({ items: [], error: error.message }, { status: 200 });
+    // than blocking the page render. Generic code only — this endpoint is
+    // anon-reachable on every route change, so don't leak raw PostgREST text.
+    return NextResponse.json({ items: [], error: "match_failed" }, { status: 200 });
   }
 
   // Apply the page glob filter here in JS so the syntax (including the

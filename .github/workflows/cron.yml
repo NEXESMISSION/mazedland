@@ -1,0 +1,61 @@
+name: External cron backstop
+
+# Supabase pg_cron is the PRIMARY minute-scheduler (tick_auctions_cron +
+# process_bid_events). This workflow is the BACKSTOP + dead-man's-switch: if
+# pg_cron stalls (extension disabled, project paused, scheduler incident), this
+# keeps the auction engine + bid-notification drain running and surfaces the
+# outage via the health check. GitHub's scheduled runner is best-effort (often
+# ~5-min granularity, can be delayed under load), so it is a safety net, not a
+# precise minute clock — pg_cron remains primary.
+#
+# Required repo config: secret CRON_SECRET (matches the deploy's CRON_SECRET)
+# and variable SITE_URL (e.g. https://batta.tn). Without them the job no-ops
+# loudly rather than silently passing.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: cron-backstop
+  cancel-in-progress: false
+
+jobs:
+  backstop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Config check
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$SITE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::error::Set repo variable SITE_URL and secret CRON_SECRET to enable the backstop."
+            exit 1
+          fi
+
+      # Probe health BEFORE the tick so a stale heartbeat (pg_cron stalled) is
+      # observable — the tick below refreshes it, so checking after would always
+      # read fresh. Warn-only: this run is about to RECOVER via the tick. A hard
+      # pager should be an INDEPENDENT external monitor polling /api/health on
+      # its own cadence (see README) — this in-run probe is a smoke test, not
+      # the stall detector.
+      - name: Health probe (pre-tick, warn-only)
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: |
+          code=$(curl -s -o /tmp/health.json -w "%{http_code}" "$SITE_URL/api/health")
+          echo "health HTTP $code"; cat /tmp/health.json 2>/dev/null || true
+          if [ "$code" != "200" ]; then echo "::warning::/api/health $code — a scheduler heartbeat is stale; recovering via tick below"; fi
+
+      - name: Tick auctions + drain bid queue (HTTP backstop)
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          code=$(curl -s -o /tmp/tick.json -w "%{http_code}" -X POST \
+            "$SITE_URL/api/cron/auctions/tick" \
+            -H "Authorization: Bearer $CRON_SECRET")
+          echo "tick HTTP $code"; cat /tmp/tick.json 2>/dev/null || true
+          if [ "$code" != "200" ]; then echo "::error::tick returned $code"; exit 1; fi

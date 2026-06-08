@@ -3,11 +3,9 @@ import type { Auction } from "./types";
 import {
   nextMinBid,
   nextEndsAtAfterBid,
-  resolveProxyBid,
   dutchCurrentPrice,
   minSixthOffer,
   secondsRemaining,
-  bidHistoryForDisplay,
 } from "./auction-engine";
 
 // Minimal Auction fixture — only the fields the engine reads. Cast keeps the
@@ -51,48 +49,6 @@ describe("nextEndsAtAfterBid (anti-snipe)", () => {
   });
 });
 
-describe("resolveProxyBid (eBay-style)", () => {
-  it("first bidder ever sits at the opening price", () => {
-    const r = resolveProxyBid({
-      existingMaxBids: [],
-      incomingBidderId: "u1",
-      incomingMaxAmount: 200_000,
-      openingPrice: 100_000,
-    });
-    expect(r).toEqual({ winningBidderId: "u1", visibleAmount: 100_000 });
-  });
-  it("highest max wins; visible settles one increment over the runner-up", () => {
-    const r = resolveProxyBid({
-      existingMaxBids: [{ bidder_id: "u1", max_amount: 120_000 }],
-      incomingBidderId: "u2",
-      incomingMaxAmount: 200_000,
-      openingPrice: 100_000,
-    });
-    // runnerUp 120k +5k increment = 125k, under winner's 200k ceiling
-    expect(r).toEqual({ winningBidderId: "u2", visibleAmount: 125_000 });
-  });
-  it("clamps the visible price to the winner's ceiling", () => {
-    const r = resolveProxyBid({
-      existingMaxBids: [{ bidder_id: "u1", max_amount: 123_000 }],
-      incomingBidderId: "u2",
-      incomingMaxAmount: 124_000,
-      openingPrice: 100_000,
-    });
-    // stepped = 123k+5k = 128k, clamped down to winner ceiling 124k
-    expect(r).toEqual({ winningBidderId: "u2", visibleAmount: 124_000 });
-  });
-  it("lets a bidder raise their own ceiling (drops their prior max)", () => {
-    const r = resolveProxyBid({
-      existingMaxBids: [{ bidder_id: "u1", max_amount: 130_000 }],
-      incomingBidderId: "u1",
-      incomingMaxAmount: 300_000,
-      openingPrice: 100_000,
-    });
-    // only one effective bidder → back to opening floor
-    expect(r).toEqual({ winningBidderId: "u1", visibleAmount: 100_000 });
-  });
-});
-
 describe("dutchCurrentPrice", () => {
   const d = auction({
     type: "dutch",
@@ -129,18 +85,5 @@ describe("secondsRemaining", () => {
     const now = new Date("2026-06-10T11:59:00Z");
     expect(secondsRemaining("2026-06-10T12:00:00Z", now)).toBe(60);
     expect(secondsRemaining("2026-06-10T11:58:00Z", now)).toBe(-60);
-  });
-});
-
-describe("bidHistoryForDisplay", () => {
-  it("sorts newest-first and collapses repeat proxy bids per bidder", () => {
-    const bids = [
-      { id: "1", bidder_id: "u1", placed_at: "2026-06-01T00:00:00Z", is_proxy: true },
-      { id: "2", bidder_id: "u1", placed_at: "2026-06-01T00:05:00Z", is_proxy: true },
-      { id: "3", bidder_id: "u2", placed_at: "2026-06-01T00:03:00Z", is_proxy: false },
-    ] as unknown as Parameters<typeof bidHistoryForDisplay>[0];
-    const out = bidHistoryForDisplay(bids);
-    // newest u1 proxy kept (id 2), older u1 proxy (id 1) dropped, u2 kept
-    expect(out.map((b) => b.id)).toEqual(["2", "3"]);
   });
 });

@@ -145,7 +145,7 @@ export async function DELETE(req: NextRequest) {
   // successful delete from a no-op.
   const { data, error } = await del.select("id");
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "delete_failed" }, { status: 500 });
   }
   return NextResponse.json({ ok: true, deletedCount: data?.length ?? 0 });
 }

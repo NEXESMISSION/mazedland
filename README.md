@@ -45,7 +45,7 @@ Supabase migrations live under `supabase/migrations/`. Apply with `supabase db p
 1. Connect this repo to a Vercel project.
 2. Set every env var from the table above in **Project Settings → Environment Variables** (Production + Preview).
 3. Push to `main` — Vercel builds with `pnpm build` / serves with `next start`.
-4. The cron in `vercel.json` ticks the auction state machine every minute (`/api/cron/auctions/tick`).
+4. The auction state machine ticks every minute via **Supabase pg_cron** (`tick_auctions_cron` → `tick_auctions`) — the primary scheduler. `vercel.json` carries only the email-outbox cron (Vercel Hobby caps crons at daily). An **external backstop** (`.github/workflows/cron.yml`) hits `/api/cron/auctions/tick` and polls `/api/health` so a pg_cron stall is detected — set the `CRON_SECRET` secret and `SITE_URL` variable in the repo for it to run.
 
 ## Scripts
 

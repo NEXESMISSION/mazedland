@@ -36,7 +36,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
   }
 
-  const { data, error } = await admin.rpc("tick_auctions");
+  // tick_auctions_cron = tick_auctions + stamps the 'tick_auctions' heartbeat
+  // (0093), so this external backstop path keeps /api/health's dead-man's-switch
+  // fresh for the auction engine too.
+  const { data, error } = await admin.rpc("tick_auctions_cron");
   if (error) {
     return NextResponse.json({ error: "tick_failed" }, { status: 500 });
   }

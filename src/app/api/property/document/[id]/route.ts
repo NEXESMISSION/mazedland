@@ -36,10 +36,7 @@ export async function GET(
     .from("property-documents")
     .createSignedUrl(doc.storage_path, 60);
   if (error || !signed) {
-    return NextResponse.json(
-      { error: "storage_forbidden", detail: error?.message },
-      { status: 403 },
-    );
+    return NextResponse.json({ error: "storage_forbidden" }, { status: 403 });
   }
   return NextResponse.redirect(signed.signedUrl, { status: 302 });
 }
