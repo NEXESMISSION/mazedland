@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { resolveDeposit } from "@/lib/pricing";
 import { getCachedMonetization } from "@/lib/settings";
+import { AUCTION_DETAIL_SELECT } from "@/lib/auction/detail";
 import { BidComposer } from "@/components/auction/BidComposer";
 import { AuctionEndModal } from "@/components/auction/AuctionEndModal";
 import { AuctionPresencePing } from "@/components/auction/AuctionPresencePing";
@@ -42,11 +43,13 @@ export default async function BidPage({
   const supabase = await getServerSupabase();
 
   const [auctionRes, initialBidsRes, userRes] = await Promise.all([
+    // Explicit columns (AUCTION_DETAIL_SELECT), NOT `*`: a `select *` from the
+    // authenticated role hits the ungranted reserve_price (0112 lockdown) and
+    // fails "permission denied for table auctions" → notFound() → every
+    // logged-in user gets "Page introuvable" on /bid (bidding unreachable).
     supabase
       .from("auctions")
-      .select(
-        `*, property:properties (*, photos:property_photos (id, storage_path, sort_order, caption))`,
-      )
+      .select(AUCTION_DETAIL_SELECT)
       .eq("id", id)
       .single(),
     // Seed the history list — RLS hides sealed-bid amounts from non-self

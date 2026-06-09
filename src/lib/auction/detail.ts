@@ -5,7 +5,13 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 // (to be cacheable), which BYPASSES the 0112 column-grant lockdown, so we must
 // omit reserve_price here too or it would be serialized into the client
 // hydration payload. (Mirrors the safe column set granted in 0112.)
-const DETAIL_SELECT = `
+//
+// EXPORTED: RLS-client reads of auctions MUST also use this list, never `select
+// *`. Under 0112's column-grant lockdown a `select *` from the authenticated
+// role hits the ungranted reserve_price and fails with "permission denied for
+// table auctions" → the page 404s for logged-in users. The bid page + the
+// detail page's RLS fallback reuse this.
+export const AUCTION_DETAIL_SELECT = `
   id, property_id, type, opening_price,
   dutch_start_price, dutch_floor_price, dutch_decrement, dutch_tick_seconds,
   starts_at, ends_at, extend_window_seconds, extend_by_seconds,
@@ -45,7 +51,7 @@ export const getPublicAuctionDetail = unstable_cache(
     if (!sb) return null;
     const { data } = await sb
       .from("auctions")
-      .select(DETAIL_SELECT)
+      .select(AUCTION_DETAIL_SELECT)
       .eq("id", id)
       .neq("status", "cancelled")
       .maybeSingle();

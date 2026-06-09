@@ -11,7 +11,7 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { resolveDeposit } from "@/lib/pricing";
 import { getCachedMonetization } from "@/lib/settings";
 import { jsonLdSafe } from "@/lib/jsonld";
-import { getPublicAuctionDetail } from "@/lib/auction/detail";
+import { getPublicAuctionDetail, AUCTION_DETAIL_SELECT } from "@/lib/auction/detail";
 import { Countdown } from "@/components/auction/Countdown";
 import { AuctionCalendarMenu } from "@/components/auction/AuctionCalendarMenu";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
@@ -141,15 +141,12 @@ export default async function AuctionDetail({
   // a non-owner still gets RLS-null and lands in the recovery below.
   let auctionData: unknown = cachedAuction;
   if (!auctionData) {
+    // Explicit columns (NOT `*`): under the 0112 column-grant lockdown a
+    // `select *` from the authenticated role fails "permission denied" on the
+    // ungranted reserve_price, nulling the owner's own cancelled-lot fallback.
     const { data } = await supabase
       .from("auctions")
-      .select(`
-        *,
-        property:properties (
-          *,
-          photos:property_photos (id, storage_path, sort_order, caption)
-        )
-      `)
+      .select(AUCTION_DETAIL_SELECT)
       .eq("id", id)
       .maybeSingle();
     auctionData = data ?? null;
