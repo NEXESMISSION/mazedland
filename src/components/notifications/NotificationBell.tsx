@@ -325,6 +325,7 @@ export function NotificationBell() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ all: true }),
+        signal: AbortSignal.timeout(10000),
       });
     } catch {
       // best-effort
@@ -343,6 +344,7 @@ export function NotificationBell() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: [id] }),
+        signal: AbortSignal.timeout(10000),
       });
     } catch {
       // best-effort
@@ -364,6 +366,7 @@ export function NotificationBell() {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: [id] }),
+        signal: AbortSignal.timeout(10000),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error("delete_failed");
@@ -391,6 +394,7 @@ export function NotificationBell() {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ all: true }),
+        signal: AbortSignal.timeout(10000),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error("delete_failed");
