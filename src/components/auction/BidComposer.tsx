@@ -585,6 +585,13 @@ function ActiveComposer({
   // traffic on idle auctions without changing the live-bid feel.
   const lastActivityRef = useRef<number>(0);
 
+  // Realtime channel health, read by the safety-net poll to choose its cadence.
+  // 'healthy' once the channel reaches SUBSCRIBED; 'degraded' on channel
+  // error/close/timeout — or if it never subscribes (WebSocket blocked by a
+  // proxy) — so the poll tightens to cover for a realtime outage instead of
+  // leaving the viewer stuck on a stale price.
+  const realtimeHealthRef = useRef<"healthy" | "degraded">("healthy");
+
   // For Dutch we still subscribe — Dutch has no "live bidders" per se,
   // but the auction row updates (status → ended_sold) when someone else
   // accepts, and we need to react. The local 10s ticker keeps driving
@@ -592,6 +599,25 @@ function ActiveComposer({
   useEffect(() => {
     const supabase = getBrowserSupabase();
     let flashTimer: ReturnType<typeof setTimeout> | null = null;
+    // Coalesce a burst of bid INSERTs on a hot lot into ONE state flush so
+    // ~50 events/sec don't trigger 50 re-renders on every viewer.
+    let pendingInserts = 0;
+    let coalesceTimer: ReturnType<typeof setTimeout> | null = null;
+    const flushInserts = () => {
+      coalesceTimer = null;
+      if (pendingInserts === 0) return;
+      const n = pendingInserts;
+      pendingInserts = 0;
+      setBidsCount((c) => c + n);
+      setRecentBidFlash(true);
+      if (flashTimer) clearTimeout(flashTimer);
+      flashTimer = setTimeout(() => setRecentBidFlash(false), 1500);
+    };
+    // If the channel never reaches SUBSCRIBED (realtime blocked), drop to the
+    // degraded cadence after a grace period so the poll takes over.
+    let subTimeout: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+      realtimeHealthRef.current = "degraded";
+    }, 8000);
 
     const channel = supabase
       .channel(`bid-composer:${auction.id}`)
@@ -643,16 +669,23 @@ function ActiveComposer({
         } as never,
         () => {
           lastActivityRef.current = Date.now();
-          setBidsCount((c) => c + 1);
-          setRecentBidFlash(true);
-          if (flashTimer) clearTimeout(flashTimer);
-          flashTimer = setTimeout(() => setRecentBidFlash(false), 1500);
+          pendingInserts += 1;
+          if (!coalesceTimer) coalesceTimer = setTimeout(flushInserts, 250);
         },
       )
-      .subscribe();
+      .subscribe((status: string) => {
+        if (status === "SUBSCRIBED") {
+          if (subTimeout) { clearTimeout(subTimeout); subTimeout = null; }
+          realtimeHealthRef.current = "healthy";
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          realtimeHealthRef.current = "degraded";
+        }
+      });
 
     return () => {
       if (flashTimer) clearTimeout(flashTimer);
+      if (coalesceTimer) clearTimeout(coalesceTimer);
+      if (subTimeout) clearTimeout(subTimeout);
       supabase.removeChannel(channel);
     };
   }, [auction.id, isDutch, router]);
@@ -684,13 +717,19 @@ function ActiveComposer({
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
-    const HOT_INTERVAL_MS = 7_000;
-    const COLD_INTERVAL_MS = 30_000;
+    // Realtime is the live path; this poll only reconciles the rare dropped
+    // event. When the channel is HEALTHY we reconcile lazily (far less DB load
+    // from every viewer at scale); when it's DEGRADED we tighten to an active
+    // cadence so the viewer still tracks the price while realtime recovers.
+    const HEALTHY_HOT_MS = 12_000;
+    const HEALTHY_COLD_MS = 45_000;
+    const DEGRADED_MS = 4_000;
     const HOT_WINDOW_MS = 30_000;
 
     function nextInterval(): number {
+      if (realtimeHealthRef.current === "degraded") return DEGRADED_MS;
       const age = Date.now() - lastActivityRef.current;
-      return age < HOT_WINDOW_MS ? HOT_INTERVAL_MS : COLD_INTERVAL_MS;
+      return age < HOT_WINDOW_MS ? HEALTHY_HOT_MS : HEALTHY_COLD_MS;
     }
 
     async function pollOnce() {
