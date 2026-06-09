@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { fail } from "@/lib/http/errors";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 /**
  * Fallback trigger for final-payment-due reminders (T-7d, T-1d, overdue).

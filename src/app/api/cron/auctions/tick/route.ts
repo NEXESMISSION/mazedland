@@ -3,6 +3,9 @@ import { timingSafeEqual } from "node:crypto";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
+// A catch-up run after a cron gap can close up to TICK_BATCH (500) auctions with
+// notifications in one call — give it room past Vercel's short default timeout.
+export const maxDuration = 60;
 
 /**
  * Constant-time secret compare. A plain `provided !== secret` short-circuits on

@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { fail } from "@/lib/http/errors";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 /**
  * Fallback trigger for the notifications retention sweep — deletes
