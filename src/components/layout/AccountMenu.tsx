@@ -32,6 +32,8 @@ export function AccountMenu() {
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Resolve auth state once + keep it in sync.
   useEffect(() => {
@@ -54,7 +56,12 @@ export function AccountMenu() {
     function onDown(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus(); // APG: return focus to the trigger on close
+      }
+    }
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -62,6 +69,35 @@ export function AccountMenu() {
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  // APG menu keyboard support: move focus into the menu on open, and let
+  // Arrow/Home/End rove between items (they're also Tab-reachable).
+  useEffect(() => {
+    if (!open) return;
+    const items = menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]');
+    items?.[0]?.focus();
+  }, [open]);
+
+  function onMenuKey(e: React.KeyboardEvent) {
+    const items = Array.from(
+      menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [],
+    );
+    if (items.length === 0) return;
+    const idx = items.indexOf(document.activeElement as HTMLElement);
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      items[(idx + 1 + items.length) % items.length]?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      items[(idx - 1 + items.length) % items.length]?.focus();
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      items[0]?.focus();
+    } else if (e.key === "End") {
+      e.preventDefault();
+      items[items.length - 1]?.focus();
+    }
+  }
 
   async function logout() {
     if (loggingOut) return;
@@ -95,6 +131,7 @@ export function AccountMenu() {
   return (
     <div ref={ref} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
@@ -111,7 +148,10 @@ export function AccountMenu() {
 
       {open && (
         <div
+          ref={menuRef}
           role="menu"
+          aria-label="Mon compte"
+          onKeyDown={onMenuKey}
           className="absolute end-0 mt-2 w-60 overflow-hidden rounded-2xl border border-border bg-surface p-1.5 shadow-[0_20px_50px_-18px_rgba(0,0,0,0.45)]"
         >
           {ITEMS.map((it) => (
