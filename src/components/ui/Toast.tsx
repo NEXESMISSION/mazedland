@@ -114,8 +114,8 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       </div>
       <button
         onClick={onClose}
-        aria-label="Close"
-        className="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[var(--foreground-muted)] hover:bg-[var(--surface-2)] hover:text-foreground transition-colors"
+        aria-label="Fermer"
+        className="tap-target shrink-0 rounded-full flex items-center justify-center text-[var(--foreground-muted)] hover:bg-[var(--surface-2)] hover:text-foreground transition-colors"
       >
         <X className="h-3.5 w-3.5" />
       </button>
