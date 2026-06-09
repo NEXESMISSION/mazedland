@@ -47,6 +47,7 @@ export function SelectMenu({
   const selected = options.find((o) => o.value === value);
   const label = selected?.label ?? placeholder ?? "";
   const isPlaceholder = !selected || selected.value === "";
+  const optionId = (i: number) => `${listboxId}-opt-${i}`;
 
   // Close on outside click + Escape.
   useEffect(() => {
@@ -105,8 +106,11 @@ export function SelectMenu({
     <div ref={rootRef} className="relative">
       <button
         type="button"
+        role="combobox"
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-controls={open ? listboxId : undefined}
+        aria-activedescendant={open ? optionId(activeIdx) : undefined}
         aria-label={ariaLabel}
         onClick={() => setOpen((o) => !o)}
         onKeyDown={onTriggerKey}
@@ -144,6 +148,7 @@ export function SelectMenu({
             return (
               <button
                 key={o.value || "__all__"}
+                id={optionId(i)}
                 type="button"
                 role="option"
                 aria-selected={isSel}
