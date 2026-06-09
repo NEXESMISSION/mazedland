@@ -18,6 +18,7 @@ import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { LiveTimer } from "@/components/landing/LiveTimer";
 import { Pagination } from "@/components/ui/Pagination";
 import { SelectMenu, type SelectOption } from "@/components/ui/SelectMenu";
+import { useToast } from "@/components/ui/Toast";
 import {
   ArrowUpRight,
   Gavel,
@@ -135,6 +136,7 @@ export function ExploreGrid({
 }) {
   const t = useTranslations();
   const locale = useLocale();
+  const { toast } = useToast();
   const [filter, setFilter] = useState<ExploreFilter>(initialFilter);
   const [extra, setExtra] = useState<ExtraFilters>(initialExtra ?? EMPTY_FILTERS);
   const [search, setSearch] = useState(initialSearch ?? "");
@@ -208,11 +210,18 @@ export function ExploreGrid({
         // behavior matches the "page change → fresh top" expectation
         // the user flagged.
         window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch {
+        // Network / transient API failure. Without this the spinner just stops
+        // on a stale page with no feedback — surface it as a toast so the user
+        // knows to retry instead of staring at unchanged results.
+        if (requestToken.current === token) {
+          toast("Échec du chargement des annonces. Veuillez réessayer.", "error");
+        }
       } finally {
         if (requestToken.current === token) setLoading(false);
       }
     },
-    [extra, filter, search],
+    [extra, filter, search, toast],
   );
 
   // Debounced free-text search. Skips the initial mount so the SSR page
