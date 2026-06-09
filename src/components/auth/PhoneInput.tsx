@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
 import { DIAL_CODES } from "@/lib/tunisia";
 
@@ -38,7 +38,10 @@ export function PhoneInput({
   ariaLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const listboxId = useId();
+  const optionId = (i: number) => `${listboxId}-opt-${i}`;
 
   useEffect(() => {
     if (!open) return;
@@ -56,6 +59,41 @@ export function PhoneInput({
     };
   }, [open]);
 
+  // On open, point the active row at the current selection.
+  useEffect(() => {
+    if (!open) return;
+    const i = DIAL_CODES.findIndex((c) => c.code === dialCode);
+    setActiveIdx(i >= 0 ? i : 0);
+  }, [open, dialCode]);
+
+  function commit(idx: number) {
+    const c = DIAL_CODES[idx];
+    if (c) onDialCodeChange(c.code);
+    setOpen(false);
+  }
+
+  // Combobox keyboard nav: open on Down/Enter/Space, then arrows move the
+  // active option (announced via aria-activedescendant) and Enter selects.
+  function onTriggerKey(e: React.KeyboardEvent) {
+    if (!open) {
+      if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        setOpen(true);
+      }
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIdx((i) => Math.min(DIAL_CODES.length - 1, i + 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIdx((i) => Math.max(0, i - 1));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      commit(activeIdx);
+    }
+  }
+
   const selectedCountry =
     DIAL_CODES.find((c) => c.code === dialCode)?.label
       .replace(`${dialCode} `, "")
@@ -67,9 +105,13 @@ export function PhoneInput({
         {/* Compact dial-code chip — code + chevron, no country label */}
         <button
           type="button"
+          role="combobox"
           onClick={() => setOpen((v) => !v)}
+          onKeyDown={onTriggerKey}
           aria-haspopup="listbox"
           aria-expanded={open}
+          aria-controls={open ? listboxId : undefined}
+          aria-activedescendant={open ? optionId(activeIdx) : undefined}
           aria-label={`Indicatif pays — actuellement ${selectedCountry || dialCode}`}
           className="flex shrink-0 items-center gap-1 border-e border-batta-gold/15 px-3 py-2.5 text-sm font-bold text-batta-cream transition hover:bg-black/15 focus:outline-none"
         >
@@ -102,18 +144,22 @@ export function PhoneInput({
       {open && (
         <ul
           role="listbox"
+          id={listboxId}
           aria-label="Liste des indicatifs"
           className="absolute z-30 mt-1.5 max-h-72 w-full overflow-y-auto rounded-xl border border-batta-gold/25 bg-batta-surface-2 py-1 shadow-2xl shadow-black/40"
         >
-          {DIAL_CODES.map((c) => {
+          {DIAL_CODES.map((c, i) => {
             const active = c.code === dialCode;
+            const isActive = i === activeIdx;
             const country = c.label.replace(`${c.code} `, "").trim();
             return (
               <li key={c.code}>
                 <button
                   type="button"
                   role="option"
+                  id={optionId(i)}
                   aria-selected={active}
+                  onMouseEnter={() => setActiveIdx(i)}
                   onClick={() => {
                     onDialCodeChange(c.code);
                     setOpen(false);
@@ -121,7 +167,9 @@ export function PhoneInput({
                   className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-start text-[13px] transition ${
                     active
                       ? "bg-batta-gold/15 text-batta-gold"
-                      : "text-batta-cream hover:bg-black/20"
+                      : isActive
+                        ? "bg-black/20 text-batta-cream"
+                        : "text-batta-cream hover:bg-black/20"
                   }`}
                 >
                   <span className="flex items-baseline gap-2">
