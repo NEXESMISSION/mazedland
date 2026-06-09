@@ -31,6 +31,19 @@ const LEGACY_LOCALES = ["ar", "en"] as const;
  */
 const mwLog = log.scope("mw");
 
+// Pageview activity_log sampling — the single highest-volume write in the system
+// (one INSERT per non-prefetch navigation). Tunable via env so an operator can
+// dial it down under heavy load WITHOUT a redeploy. Defaults preserve prior
+// behavior: log EVERY authenticated view (the bounded "who's active" signal) and
+// 10% of anonymous views. Set ACTIVITY_PAGEVIEW_AUTH_SAMPLE=0.25 to keep ~a
+// quarter of authenticated views at thousands-of-users scale, etc.
+const clamp01 = (v: unknown, fb: number) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : fb;
+};
+const PAGEVIEW_AUTH_SAMPLE = clamp01(process.env.ACTIVITY_PAGEVIEW_AUTH_SAMPLE, 1);
+const PAGEVIEW_ANON_SAMPLE = clamp01(process.env.ACTIVITY_PAGEVIEW_ANON_SAMPLE, 0.1);
+
 export async function middleware(req: NextRequest) {
   const t0 = performance.now();
   const { pathname, search } = req.nextUrl;
@@ -184,8 +197,8 @@ export async function middleware(req: NextRequest) {
   // but SAMPLE anonymous views — those are the unbounded bulk and Vercel
   // Analytics already covers anonymous traffic. Cuts the write amplification
   // by ~an order of magnitude at scale.
-  const PAGEVIEW_ANON_SAMPLE = 0.1;
-  if (req.method === "GET" && (authUserId !== null || Math.random() < PAGEVIEW_ANON_SAMPLE)) {
+  const pvSample = authUserId !== null ? PAGEVIEW_AUTH_SAMPLE : PAGEVIEW_ANON_SAMPLE;
+  if (req.method === "GET" && Math.random() < pvSample) {
     logActivity({
       type: "page_view",
       userId: authUserId,
