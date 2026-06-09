@@ -85,6 +85,24 @@ describe("tick_auctions — settlement engine", () => {
     expect(Number(a.winner_amount)).toBe(120_000);
     expect(Number(a.current_price)).toBe(120_000);
     expect(a.sixth_offer_deadline).not.toBeNull();
+
+    // B3 regression guard: the close MUST enqueue the award notifications, not
+    // just flip status. 0052 once silently dropped these (winners never told
+    // they won); assert the winner + seller rows actually land. Scoped to this
+    // test's freshly-created users so parallel due rows can't pollute the count.
+    const { data: wonNotif } = await svc
+      .from("notifications")
+      .select("id")
+      .eq("user_id", bidder.id)
+      .eq("kind", "auction_won");
+    expect((wonNotif ?? []).length).toBeGreaterThan(0);
+
+    const { data: soldNotif } = await svc
+      .from("notifications")
+      .select("id")
+      .eq("user_id", seller.id)
+      .eq("kind", "auction_sold_seller");
+    expect((soldNotif ?? []).length).toBeGreaterThan(0);
   });
 
   it("reserve NOT met → ended_unsold + a relist is created (no winner)", async () => {

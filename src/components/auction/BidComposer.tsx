@@ -1214,6 +1214,7 @@ function AmountInput({
           {isSealed ? "Votre offre privée" : "Votre offre"}
         </span>
         <span
+          id="bid-amount-hint"
           className={cn(
             "batta-tabular font-bold text-[11px] lg:text-[12px]",
             amount < minBid
@@ -1263,7 +1264,9 @@ function AmountInput({
             setAmountStr(String(clamped));
           }}
           className="flex-1 bg-transparent text-center text-xl lg:text-2xl xl:text-3xl font-extrabold batta-tabular focus:outline-none"
-          aria-label="Votre offre"
+          aria-label={isSealed ? "Votre offre privée" : "Votre offre"}
+          aria-describedby="bid-amount-hint"
+          aria-invalid={amount < minBid}
         />
         {isEnglish && (
           <button
@@ -1283,7 +1286,9 @@ function AmountInput({
               key={p.key}
               onClick={() => onSetAmount(p.amount)}
               className={cn(
-                "h-8 lg:h-9 px-3 lg:px-4 rounded-full text-[11px] lg:text-[12px] font-bold batta-tabular transition-colors",
+                // ≥44px tap target on mobile (WCAG 2.5.5); desktop uses a mouse
+                // so the denser 36px is fine.
+                "h-11 lg:h-9 px-3 lg:px-4 rounded-full text-[11px] lg:text-[12px] font-bold batta-tabular transition-colors",
                 amount === p.amount
                   ? "bg-[var(--gold)] text-white shadow-[var(--shadow-gold)]"
                   : "bg-white border border-[var(--border-strong)] text-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]",

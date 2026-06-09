@@ -83,5 +83,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // 3) Drop the session.
   await supabase.auth.signOut();
 
-  return NextResponse.json({ ok: true });
+  // Surface the idempotency signal so a duplicate delete (e.g. a left-open tab
+  // re-submitting) is distinguishable from a fresh erasure instead of looking
+  // identical to the client.
+  return NextResponse.json({ ok: true, already: result.already === true });
 }
