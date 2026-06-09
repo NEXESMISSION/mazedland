@@ -57,16 +57,11 @@ const fetchExplore = unstable_cache(
     if (p.term) q = q.ilike("property.search_text", `%${stripAccents(p.term)}%`);
     if (p.minArea !== null) q = q.gte("property.area_sqm", p.minArea);
     if (p.minRooms !== null) q = q.gte("property.rooms", p.minRooms);
-    if (p.minPrice !== null) {
-      q = q.or(
-        `current_price.gte.${p.minPrice},sale_price.gte.${p.minPrice},opening_price.gte.${p.minPrice}`,
-      );
-    }
-    if (p.maxPrice !== null) {
-      q = q.or(
-        `current_price.lte.${p.maxPrice},sale_price.lte.${p.maxPrice},opening_price.lte.${p.maxPrice}`,
-      );
-    }
+    // Single coalesced, indexed effective price (0119) — the price actually
+    // shown on the card. Replaces the old or(current,sale,opening) which both
+    // defeated indexes and wrongly matched a bid-up lot via its low opening.
+    if (p.minPrice !== null) q = q.gte("effective_price", p.minPrice);
+    if (p.maxPrice !== null) q = q.lte("effective_price", p.maxPrice);
 
     const { data, error, count } = await q;
     if (error) {

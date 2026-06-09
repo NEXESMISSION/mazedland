@@ -87,16 +87,9 @@ const getExploreFeed = unstable_cache(
     }
     if (p.minArea !== null) q = q.gte("property.area_sqm", p.minArea);
     if (p.minRooms !== null) q = q.gte("property.rooms", p.minRooms);
-    if (p.minPrice !== null) {
-      q = q.or(
-        `current_price.gte.${p.minPrice},sale_price.gte.${p.minPrice},opening_price.gte.${p.minPrice}`,
-      );
-    }
-    if (p.maxPrice !== null) {
-      q = q.or(
-        `current_price.lte.${p.maxPrice},sale_price.lte.${p.maxPrice},opening_price.lte.${p.maxPrice}`,
-      );
-    }
+    // Single coalesced, indexed effective price (0119) — see the explore route.
+    if (p.minPrice !== null) q = q.gte("effective_price", p.minPrice);
+    if (p.maxPrice !== null) q = q.lte("effective_price", p.maxPrice);
 
     const res = await q;
     if (res.error) {
