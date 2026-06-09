@@ -146,6 +146,8 @@ export function LoginForm() {
         <Field
           label="Email"
           type="email"
+          invalid={!!error}
+          describedBy="login-error"
           value={email}
           onChange={setEmail}
           required
@@ -169,6 +171,8 @@ export function LoginForm() {
         value={password}
         onChange={setPassword}
         required
+        invalid={!!error}
+        describedBy="login-error"
       />
       <div className="-mt-1 flex justify-end">
         <Link
@@ -178,7 +182,7 @@ export function LoginForm() {
           Mot de passe oublié ?
         </Link>
       </div>
-      {error && <p role="alert" aria-live="assertive" className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>}
+      {error && <p id="login-error" role="alert" aria-live="assertive" className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>}
       <button
         type="submit"
         disabled={isPending}
@@ -221,13 +225,16 @@ function ModeTab({
 }
 
 function Field({
-  label, type, value, onChange, required,
+  label, type, value, onChange, required, invalid, describedBy,
 }: {
   label: string;
   type: string;
   value: string;
   onChange: (v: string) => void;
   required?: boolean;
+  /** Mark the field invalid + point AT to the error message (a11y). */
+  invalid?: boolean;
+  describedBy?: string;
 }) {
   return (
     <label className="block">
@@ -236,6 +243,8 @@ function Field({
         type={type}
         value={value}
         required={required}
+        aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? describedBy : undefined}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
       />
