@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { log } from "@/lib/log";
+import { getRequestId } from "@/lib/observability/requestContext";
 
 const apiLog = log.scope("api");
 
@@ -24,11 +25,12 @@ export function fail(
   err?: unknown,
   requestId?: string,
 ): NextResponse {
-  // Always attach a short correlation id. A user-reported failure ("I got
-  // `payout_failed`, requestId 3f9a1c0b") then maps to exactly one server
-  // log line — the only bridge across the redaction boundary, since the real
-  // cause never crosses to the client.
-  const rid = requestId ?? crypto.randomUUID().slice(0, 8);
+  // Always attach a short correlation id. Prefer the per-request id from the
+  // withRouteLogger AsyncLocalStorage (so the client-visible id matches EVERY
+  // server log line for that request), then an explicit arg, then a per-call
+  // fallback. A user-reported failure ("I got `payout_failed`, requestId
+  // 3f9a1c0b") maps to the server logs across the redaction boundary.
+  const rid = requestId ?? getRequestId() ?? crypto.randomUUID().slice(0, 8);
   if (err !== undefined) {
     const msg = err instanceof Error ? err.message : String(err);
     apiLog.error(code, { requestId: rid, msg });

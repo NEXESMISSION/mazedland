@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { log } from "./log";
+import { newRequestId, runWithRequestId } from "./observability/requestContext";
 
 const routeLog = log.scope("api");
 
@@ -29,24 +30,31 @@ export function withRouteLogger<Params = unknown>(
   ): Promise<NextResponse> {
     const t0 = performance.now();
     const tag = `${req.method} ${req.nextUrl.pathname}${req.nextUrl.search}`;
-    try {
-      const res = await handler(req, ctx);
-      const ms = Math.round(performance.now() - t0);
-      const line = `${tag} ${res.status}`;
-      if (res.status >= 500) routeLog.error(line, { ms });
-      else if (res.status >= 400) routeLog.warn(line, { ms });
-      else routeLog.info(line, { ms });
-      return res;
-    } catch (err) {
-      const ms = Math.round(performance.now() - t0);
-      routeLog.error(`${tag} threw`, { ms, err: err instanceof Error ? err.message : String(err) });
-      // Log the real message server-side (above) but DON'T leak it to the
-      // client — raw Postgres/PostgREST errors expose table/column/constraint
-      // names useful for schema recon.
-      return NextResponse.json(
-        { error: "internal_error" },
-        { status: 500 },
-      );
-    }
+    // One id per request, shared by every log line + the error body via
+    // AsyncLocalStorage — real cross-line correlation. Honor an inbound
+    // x-request-id (e.g. from an upstream proxy) so a trace spans tiers.
+    const requestId = req.headers.get("x-request-id")?.slice(0, 64) || newRequestId();
+    return runWithRequestId(requestId, async () => {
+      try {
+        const res = await handler(req, ctx);
+        const ms = Math.round(performance.now() - t0);
+        const line = `${tag} ${res.status}`;
+        if (res.status >= 500) routeLog.error(line, { ms, requestId });
+        else if (res.status >= 400) routeLog.warn(line, { ms, requestId });
+        else routeLog.info(line, { ms, requestId });
+        res.headers.set("x-request-id", requestId);
+        return res;
+      } catch (err) {
+        const ms = Math.round(performance.now() - t0);
+        routeLog.error(`${tag} threw`, { ms, requestId, err: err instanceof Error ? err.message : String(err) });
+        // Log the real message server-side (above) but DON'T leak it to the
+        // client — raw Postgres/PostgREST errors expose table/column/constraint
+        // names useful for schema recon.
+        return NextResponse.json(
+          { error: "internal_error", requestId },
+          { status: 500, headers: { "x-request-id": requestId } },
+        );
+      }
+    });
   };
 }
