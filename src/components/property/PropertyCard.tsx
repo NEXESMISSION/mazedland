@@ -134,7 +134,7 @@ export async function PropertyCard({
             {isEnded ? (
               <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-red-500 px-2.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-[0_0_18px_rgba(239,68,68,0.55)]">
                 <span className="size-1.5 rounded-full bg-white" />
-                {auction.status === "ended_sold" ? "Sold" : "Ended"}
+                {auction.status === "ended_sold" ? t("auction.sold") : t("auction.ended")}
               </span>
             ) : isLive ? (
               <span className="glass inline-flex h-7 items-center gap-1.5 rounded-full px-2.5">
