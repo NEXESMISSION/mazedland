@@ -37,18 +37,29 @@ export async function POST(
 
   const body = await req.json().catch(() => ({}));
   const provider = body.provider as PaymentProvider;
-  const receiptPath: string = body.receipt_path ?? "";
+  // Up to 3 receipt images. New clients send `receipt_paths: string[]`; keep
+  // `receipt_path` (single) for backward-compat. Cap at 3 SERVER-SIDE — never
+  // trust the client for the limit.
+  const rawPaths: unknown[] = Array.isArray(body.receipt_paths)
+    ? body.receipt_paths
+    : body.receipt_path != null
+      ? [body.receipt_path]
+      : [];
+  const receiptPaths = rawPaths
+    .filter((p): p is string => typeof p === "string" && p.length > 0)
+    .slice(0, 3);
   if (
-    !receiptPath
+    receiptPaths.length === 0
     || (provider !== "bank_transfer" && provider !== "d17")
   ) {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }
 
-  // Defence in depth: the upload bucket policy already constrains paths
-  // to the user's UID folder, but reject anything outside that here too
-  // so a forged client request can't reference a path it doesn't own.
-  if (!receiptPath.startsWith(`${user.id}/`)) {
+  // Defence in depth: the upload bucket policy already constrains paths to the
+  // user's UID folder, but reject anything outside that here too so a forged
+  // client request can't reference a path it doesn't own. EVERY path must be
+  // owner-scoped.
+  if (!receiptPaths.every((p) => p.startsWith(`${user.id}/`))) {
     return NextResponse.json({ error: "path_not_owned" }, { status: 403 });
   }
 
@@ -87,7 +98,10 @@ export async function POST(
     .from("payments")
     .update({
       provider,
-      receipt_url: receiptPath,
+      receipt_urls: receiptPaths,
+      // First image — keeps every existing single-image display (admin queue,
+      // reject page, account/payments, deposits, listing-fee) working unchanged.
+      receipt_url: receiptPaths[0],
       receipt_uploaded_at: new Date().toISOString(),
       status: "pending_review",
     })

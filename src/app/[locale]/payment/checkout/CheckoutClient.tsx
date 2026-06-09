@@ -100,7 +100,8 @@ export function CheckoutClient({
     instructions[0]?.value ?? "bank_transfer",
   );
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const MAX_RECEIPTS = 3;
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -151,30 +152,47 @@ export function CheckoutClient({
   }
 
   function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    // Some mobile pickers report empty `type` for HEIC files — fall
-    // back to extension matching so we don't reject a legitimate photo
-    // just because the OS didn't sniff its MIME.
-    const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
-    const looksImage =
-      f.type.startsWith("image/") ||
-      ["jpg", "jpeg", "png", "webp", "avif", "heic", "heif"].includes(ext);
-    const looksPdf = f.type === "application/pdf" || ext === "pdf";
-    if (!looksImage && !looksPdf && !ACCEPTED_TYPES.includes(f.type)) {
-      toast("Formats acceptés : JPG, PNG, WebP, HEIC, PDF.", "error");
+    const picked = Array.from(e.target.files ?? []);
+    if (picked.length === 0) return;
+    const remaining = MAX_RECEIPTS - files.length;
+    if (remaining <= 0) {
+      toast(`Maximum ${MAX_RECEIPTS} images.`, "warning");
       return;
     }
-    if (f.size > MAX_FILE_MB * 1024 * 1024) {
-      toast(`Fichier trop volumineux (max ${MAX_FILE_MB} Mo).`, "error");
-      return;
+    const accepted: File[] = [];
+    for (const f of picked) {
+      if (accepted.length >= remaining) {
+        toast(`Maximum ${MAX_RECEIPTS} images — fichiers en trop ignorés.`, "warning");
+        break;
+      }
+      // Some mobile pickers report empty `type` for HEIC files — fall back to
+      // extension matching so we don't reject a legitimate photo.
+      const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
+      const looksImage =
+        f.type.startsWith("image/") ||
+        ["jpg", "jpeg", "png", "webp", "avif", "heic", "heif"].includes(ext);
+      const looksPdf = f.type === "application/pdf" || ext === "pdf";
+      if (!looksImage && !looksPdf && !ACCEPTED_TYPES.includes(f.type)) {
+        toast(`${f.name} : format non accepté (JPG, PNG, WebP, HEIC, PDF).`, "error");
+        continue;
+      }
+      if (f.size > MAX_FILE_MB * 1024 * 1024) {
+        toast(`${f.name} : trop volumineux (max ${MAX_FILE_MB} Mo).`, "error");
+        continue;
+      }
+      accepted.push(f);
     }
-    setFile(f);
+    if (accepted.length > 0) setFiles((prev) => [...prev, ...accepted]);
+    // Reset so the same file can be re-picked after a removal.
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function submit() {
-    if (!file || submitting) return;
+    if (files.length === 0 || submitting) return;
     setSubmitting(true);
+    // Track every object we put in the bucket this attempt so we can clean them
+    // ALL up if a later upload or the attach call fails (no orphans).
+    const uploadedPaths: string[] = [];
     try {
       const supabase = getBrowserSupabase();
       const { data: auth } = await supabase.auth.getUser();
@@ -183,61 +201,48 @@ export function CheckoutClient({
         setSubmitting(false);
         return;
       }
-
-      // Compress image receipts before upload. Receipts are review-only
-      // (admin eyeballs them) so the document-tier WebP preset gives us
-      // tight files (~250-500 KB) while keeping bank-statement text
-      // crisp. PDFs and non-image files pass through unchanged.
-      // Always run it through compressImage: it converts HEIC→webp (even
-      // when the picker reports an EMPTY mime type, which is why iPhone
-      // receipts were uploading as raw, unviewable .heic), compresses real
-      // images, and returns PDFs/other files untouched.
-      let toUpload = file;
-      const ext0 = file.name.split(".").pop()?.toLowerCase() ?? "";
-      const isPdf = file.type === "application/pdf" || ext0 === "pdf";
-      if (!isPdf) {
-        try {
-          toUpload = await compressImage(file, {
-            maxEdge: 2000,
-            quality: 0.86,
-            format: "webp",
-          });
-        } catch {
-          toUpload = file;
-        }
-      }
-
-      // Path under the receipts bucket — owner-scoped per RLS in
-      // migration 0023.
-      const ext = toUpload.name.split(".").pop()?.toLowerCase() ?? "bin";
       const safePid = paymentId.replace(/[^a-z0-9-]/gi, "");
-      const path = `${auth.user.id}/${safePid}-${Date.now()}.${ext}`;
 
-      const { error: upErr } = await supabase.storage
-        .from("receipts")
-        .upload(path, toUpload, {
-          cacheControl: "3600",
-          upsert: false,
-          contentType: toUpload.type,
-        });
-      if (upErr) {
-        toast(`Échec du téléversement : ${upErr.message}`, "error");
-        setSubmitting(false);
-        return;
+      for (let i = 0; i < files.length; i++) {
+        const original = files[i];
+        // Compress image receipts before upload (review-only → document-tier
+        // WebP, ~250-500 KB, text stays crisp). compressImage also converts
+        // HEIC→webp even when the picker reports an empty mime; PDFs pass
+        // through untouched.
+        let toUpload = original;
+        const ext0 = original.name.split(".").pop()?.toLowerCase() ?? "";
+        const isPdf = original.type === "application/pdf" || ext0 === "pdf";
+        if (!isPdf) {
+          try {
+            toUpload = await compressImage(original, { maxEdge: 2000, quality: 0.86, format: "webp" });
+          } catch {
+            toUpload = original;
+          }
+        }
+        // Owner-scoped path per RLS (0023); index suffix keeps the 3 distinct.
+        const ext = toUpload.name.split(".").pop()?.toLowerCase() ?? "bin";
+        const path = `${auth.user.id}/${safePid}-${Date.now()}-${i}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("receipts")
+          .upload(path, toUpload, { cacheControl: "3600", upsert: false, contentType: toUpload.type });
+        if (upErr) {
+          if (uploadedPaths.length) void supabase.storage.from("receipts").remove(uploadedPaths);
+          toast(`Échec du téléversement : ${upErr.message}`, "error");
+          setSubmitting(false);
+          return;
+        }
+        uploadedPaths.push(path);
       }
 
       const res = await fetch(`/api/payments/${paymentId}/receipt`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ receipt_path: path, provider }),
+        body: JSON.stringify({ receipt_paths: uploadedPaths, provider }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        // We uploaded to storage but couldn't attach the receipt to
-        // the payment row. Best-effort cleanup so we don't leave an
-        // orphan file in the bucket; ignore errors because the
-        // periodic janitor will sweep it anyway.
-        void supabase.storage.from("receipts").remove([path]);
+        // Couldn't attach — clean up every uploaded object so we don't orphan.
+        void supabase.storage.from("receipts").remove(uploadedPaths);
         toast(data.error ?? "Échec de la soumission.", "error");
         setSubmitting(false);
         return;
@@ -520,52 +525,55 @@ export function CheckoutClient({
 
         {/* ── STEP 3: upload receipt ── */}
         <Step n={3} title="Téléversez le reçu du virement" />
-        {file ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-[var(--gold-soft)] bg-[var(--gold-faint)]/40 p-3.5">
-            <FileText className="size-5 shrink-0 text-[var(--gold)]" strokeWidth={2} />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[13px] font-semibold">{file.name}</div>
-              <div className="text-[11px] text-[var(--foreground-muted)]">
-                {(file.size / 1024).toFixed(0)} Ko
+        <div className="space-y-2.5">
+          {files.map((f, i) => (
+            <div key={`${f.name}-${i}`} className="flex items-center gap-3 rounded-2xl border border-[var(--gold-soft)] bg-[var(--gold-faint)]/40 p-3.5">
+              <FileText className="size-5 shrink-0 text-[var(--gold)]" strokeWidth={2} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] font-semibold">{f.name}</div>
+                <div className="text-[11px] text-[var(--foreground-muted)]">
+                  {(f.size / 1024).toFixed(0)} Ko
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:border-red-300 hover:text-red-600"
+                aria-label={`Retirer ${f.name}`}
+              >
+                <X className="size-4" strokeWidth={2} />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setFile(null);
-                if (fileInputRef.current) fileInputRef.current.value = "";
-              }}
-              className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:border-red-300 hover:text-red-600"
-              aria-label="Retirer le fichier"
-            >
-              <X className="size-4" strokeWidth={2} />
-            </button>
-          </div>
-        ) : (
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-[var(--gold-soft)] bg-[var(--gold-faint)]/30 p-7 text-center transition hover:border-[var(--gold)] hover:bg-[var(--gold-faint)]/60">
-            <Upload className="size-7 text-[var(--gold)]" strokeWidth={1.8} />
-            <span className="text-[14px] font-bold text-foreground">Choisir une photo ou un PDF</span>
-            <span className="text-[11px] text-[var(--foreground-muted)]">
-              JPG · PNG · HEIC · PDF · max {MAX_FILE_MB} Mo
-            </span>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ACCEPTED_TYPES.join(",")}
-              onChange={onPickFile}
-              className="sr-only"
-            />
-          </label>
-        )}
+          ))}
+          {files.length < MAX_RECEIPTS && (
+            <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-[var(--gold-soft)] bg-[var(--gold-faint)]/30 p-7 text-center transition hover:border-[var(--gold)] hover:bg-[var(--gold-faint)]/60">
+              <Upload className="size-7 text-[var(--gold)]" strokeWidth={1.8} />
+              <span className="text-[14px] font-bold text-foreground">
+                {files.length === 0 ? "Choisir une photo ou un PDF" : "Ajouter une autre image"}
+              </span>
+              <span className="text-[11px] text-[var(--foreground-muted)]">
+                JPG · PNG · HEIC · PDF · max {MAX_FILE_MB} Mo · jusqu&apos;à {MAX_RECEIPTS} images ({files.length}/{MAX_RECEIPTS})
+              </span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_TYPES.join(",")}
+                multiple
+                onChange={onPickFile}
+                className="sr-only"
+              />
+            </label>
+          )}
+        </div>
 
         {/* ── Big submit ── */}
         <button
           type="button"
           onClick={submit}
-          disabled={!file || submitting}
+          disabled={files.length === 0 || submitting}
           className={cn(
             "inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold transition-all",
-            !file || submitting
+            files.length === 0 || submitting
               ? "cursor-not-allowed bg-[var(--surface-2)] text-[var(--foreground-muted)]"
               : "bg-[var(--gold)] text-white shadow-[var(--shadow-gold)] hover:bg-[var(--gold-bright)]",
           )}
@@ -573,11 +581,11 @@ export function CheckoutClient({
           {submitting ? (
             <><Loader2 className="size-5 animate-spin" /> Envoi…</>
           ) : (
-            <><Upload className="size-5" strokeWidth={2.5} /> Envoyer le reçu</>
+            <><Upload className="size-5" strokeWidth={2.5} /> Envoyer {files.length > 1 ? `les ${files.length} reçus` : "le reçu"}</>
           )}
         </button>
         <p className="text-center text-[11px] text-[var(--foreground-muted)]">
-          {file ? "Validation sous 24 h — vous serez notifié(e)." : "Téléversez d'abord le reçu pour activer le bouton."}
+          {files.length > 0 ? "Validation sous 24 h — vous serez notifié(e)." : "Téléversez d'abord le reçu pour activer le bouton."}
         </p>
 
         {/* Cancel — small, out of the way */}

@@ -55,7 +55,7 @@ export default async function AdminAuctionView({
   const propTitle = a.property?.title ?? "—";
   const propGov = a.property?.governorate ?? "";
 
-  const PSEL = "id, user_id, kind, provider, amount, status, receipt_url, receipt_uploaded_at, admin_notes, reviewed_at, metadata, auction_id, property_id";
+  const PSEL = "id, user_id, kind, provider, amount, status, receipt_url, receipt_urls, receipt_uploaded_at, admin_notes, reviewed_at, metadata, auction_id, property_id";
   const [entryRes, feeRes, depRes] = await Promise.all([
     sb.from("payments").select(PSEL).eq("auction_id", id).order("receipt_uploaded_at", { ascending: false }),
     propId
@@ -68,7 +68,7 @@ export default async function AdminAuctionView({
 
   type Pay = {
     id: string; user_id: string; kind: string; provider: string; amount: number; status: string;
-    receipt_url: string | null; receipt_uploaded_at: string | null; admin_notes: string | null;
+    receipt_url: string | null; receipt_urls: string[] | null; receipt_uploaded_at: string | null; admin_notes: string | null;
     reviewed_at: string | null; metadata: Record<string, unknown> | null;
   };
   const entry = (entryRes.data ?? []) as Pay[];
@@ -87,20 +87,28 @@ export default async function AdminAuctionView({
 
   // signed receipts for ALL receipts (création + entrée)
   const signed = new Map<string, string>();
+  const allReceiptPaths = Array.from(new Set(
+    [...entry, ...fees].flatMap((p) =>
+      p.receipt_urls && p.receipt_urls.length ? p.receipt_urls : p.receipt_url ? [p.receipt_url] : [],
+    ),
+  ));
   await Promise.all(
-    [...entry, ...fees].map(async (p) => {
-      if (!p.receipt_url) return;
-      const { data: s } = await sb.storage.from("receipts").createSignedUrl(p.receipt_url, 3600);
-      if (s?.signedUrl) signed.set(p.receipt_url, s.signedUrl);
+    allReceiptPaths.map(async (path) => {
+      const { data: s } = await sb.storage.from("receipts").createSignedUrl(path, 3600);
+      if (s?.signedUrl) signed.set(path, s.signedUrl);
     }),
   );
 
   const toItem = (p: Pay): PaymentReviewItem => {
     const promosObj = (p.metadata as { promos?: Record<string, boolean> } | null)?.promos ?? null;
+    const receiptPaths = p.receipt_urls && p.receipt_urls.length ? p.receipt_urls : p.receipt_url ? [p.receipt_url] : [];
+    const receipts = receiptPaths
+      .map((path) => ({ url: signed.get(path), path }))
+      .filter((r): r is { url: string; path: string } => !!r.url);
     return {
       id: p.id, userId: p.user_id, buyerName: who(p.user_id), buyerPhone: info.get(p.user_id)?.phone ?? null,
       kind: p.kind, kindLabel: KIND_LABEL[p.kind] ?? p.kind, provider: p.provider, amount: Number(p.amount),
-      status: p.status, receiptUrl: p.receipt_url ? signed.get(p.receipt_url) ?? null : null, receiptPath: p.receipt_url,
+      status: p.status, receiptUrl: p.receipt_url ? signed.get(p.receipt_url) ?? null : null, receiptPath: p.receipt_url, receipts,
       receiptUploadedAt: p.receipt_uploaded_at, adminNotes: p.admin_notes, reviewedAt: p.reviewed_at,
       auctionId: id, propertyId: propId, propertyTitle: propTitle, propertyGovernorate: propGov,
       promos: promosObj ? { homeFeatured: !!promosObj.home_featured, topListed: !!promosObj.top_listed, banner: !!promosObj.banner } : null,

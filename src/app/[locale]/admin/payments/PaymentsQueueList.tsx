@@ -36,6 +36,9 @@ export type PaymentReviewItem = {
   status: string;
   receiptUrl: string | null;
   receiptPath: string | null;
+  /** All uploaded receipts (signed url + raw path), up to 3. receiptUrl stays
+   *  as the first for the has-receipt checks. */
+  receipts: { url: string; path: string }[];
   receiptUploadedAt: string | null;
   adminNotes: string | null;
   reviewedAt: string | null;
@@ -264,12 +267,16 @@ export function PaymentsQueueList({
             )}
 
             {/* Receipt preview */}
-            {item.receiptUrl ? (
+            {item.receipts.length > 0 ? (
               <div className="mt-3">
                 <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-[var(--foreground-muted)] mb-1.5">
-                  Reçu téléversé
+                  {item.receipts.length > 1 ? `${item.receipts.length} reçus téléversés` : "Reçu téléversé"}
                 </div>
-                <ReceiptPreview url={item.receiptUrl} path={item.receiptPath ?? ""} />
+                <div className={item.receipts.length > 1 ? "grid grid-cols-2 sm:grid-cols-3 gap-2" : "max-w-md"}>
+                  {item.receipts.map((r, i) => (
+                    <ReceiptPreview key={i} url={r.url} path={r.path} />
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="mt-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-[11.5px] text-amber-900 inline-flex items-center gap-1.5">
@@ -510,7 +517,7 @@ function ReceiptPreview({ url, path }: { url: string; path: string }) {
     <ImageLightbox
       src={url}
       alt="Reçu"
-      triggerClassName="relative block aspect-video w-full max-w-md overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-2)] hover:ring-2 hover:ring-[var(--gold-soft)]"
+      triggerClassName="relative block aspect-video w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-2)] hover:ring-2 hover:ring-[var(--gold-soft)]"
     >
       <Image
         src={url}
