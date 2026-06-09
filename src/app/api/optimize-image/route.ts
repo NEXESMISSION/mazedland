@@ -33,6 +33,19 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
 
+  // Cross-instance per-user throttle (0116): sharp/libvips decoding 30MB is a
+  // CPU denial-of-wallet vector. 120 / 5 min is generous for a real listing's
+  // photo burst but caps sustained abuse across all serverless instances.
+  // Fail-open (only block on an explicit true) — availability over strictness.
+  const { data: limited } = await supabase.rpc("check_rate_limit", {
+    p_key: `optimize-image:${user.id}`,
+    p_max: 120,
+    p_window_secs: 300,
+  });
+  if (limited === true) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
+
   // Reject an oversized body from its declared length BEFORE buffering it into
   // memory — otherwise a multi-GB upload OOMs the function before the cap below
   // ever runs. The post-buffer check stays as a backstop for chunked requests.
