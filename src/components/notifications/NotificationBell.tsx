@@ -175,7 +175,15 @@ export function NotificationBell() {
 
   useEffect(() => {
     void refresh();
-    const id = window.setInterval(() => void refresh(), POLL_MS);
+    const id = window.setInterval(() => {
+      // Skip the safety-net poll while the tab is hidden. This interval runs
+      // on EVERY logged-in tab 24/7; without this guard, idle background tabs
+      // hit /api/notifications (→ getUser()) every 5 min forever, and the
+      // parallel token-refresh storm risked session revocation. Realtime
+      // delivers live updates; we reconcile on the next visible tick.
+      if (typeof document !== "undefined" && document.hidden) return;
+      void refresh();
+    }, POLL_MS);
     return () => window.clearInterval(id);
   }, [refresh]);
 

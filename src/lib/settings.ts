@@ -3,8 +3,11 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import {
   parseMonetizationSettings,
   parseAntiSnipe,
+  parseAuctionTypes,
+  parseFinalPaymentDays,
   type MonetizationSettings,
   type AntiSnipeSettings,
+  type AuctionTypeSettings,
 } from "@/lib/pricing";
 
 /**
@@ -38,6 +41,8 @@ const ALL_KEYS = [
   "promo_banner",
   "deposit",
   "auction_antisnipe",
+  "auction_types",
+  "final_payment_days",
 ] as const;
 
 const getAppSettingsRecord = unstable_cache(
@@ -74,4 +79,16 @@ export async function getCachedMonetization(): Promise<MonetizationSettings> {
 export async function getCachedAntiSnipe(): Promise<AntiSnipeSettings> {
   const rec = await getAppSettingsRecord();
   return parseAntiSnipe(rec["auction_antisnipe"]);
+}
+
+/** Which auction formats (beyond always-on English) sellers may create — cached. */
+export async function getCachedAuctionTypes(): Promise<AuctionTypeSettings> {
+  const rec = await getAppSettingsRecord();
+  return parseAuctionTypes(rec["auction_types"]);
+}
+
+/** Days the winner has to pay the balance after a sale (admin-tunable) — cached. */
+export async function getCachedFinalPaymentDays(): Promise<number> {
+  const rec = await getAppSettingsRecord();
+  return parseFinalPaymentDays(rec["final_payment_days"]);
 }

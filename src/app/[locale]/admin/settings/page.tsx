@@ -1,5 +1,5 @@
 import { getServerSupabase } from "@/lib/supabase/server";
-import { parseMonetizationSettings, parseAntiSnipe } from "@/lib/pricing";
+import { parseMonetizationSettings, parseAntiSnipe, parseAuctionTypes, parseFinalPaymentDays } from "@/lib/pricing";
 import { SettingsForm, type SettingsValues } from "./SettingsForm";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 
@@ -14,6 +14,8 @@ const KEYS = [
   "promo_banner",
   "deposit",
   "auction_antisnipe",
+  "auction_types",
+  "final_payment_days",
   "payee_name",
   "payee_bank",
   "payee_rib",
@@ -33,6 +35,8 @@ export default async function AdminSettingsPage() {
 
   const mon = parseMonetizationSettings(map);
   const antiSnipe = parseAntiSnipe(map.get("auction_antisnipe"));
+  const auctionTypes = parseAuctionTypes(map.get("auction_types"));
+  const finalPaymentDays = parseFinalPaymentDays(map.get("final_payment_days"));
 
   const initial: SettingsValues = {
     // Auctions are restricted to free/fixed (no price at posting time).
@@ -51,6 +55,11 @@ export default async function AdminSettingsPage() {
       free_until: mon.deposit.free_until ? mon.deposit.free_until.slice(0, 10) : "",
     },
     antiSnipe: { window_min: antiSnipe.windowMin, extend_min: antiSnipe.extendMin },
+    auctionTypes: {
+      dutch_enabled: auctionTypes.dutchEnabled,
+      sealed_enabled: auctionTypes.sealedEnabled,
+    },
+    finalPaymentDays,
     payee_name: strFrom(map.get("payee_name")),
     payee_bank: strFrom(map.get("payee_bank")),
     payee_rib: strFrom(map.get("payee_rib")),

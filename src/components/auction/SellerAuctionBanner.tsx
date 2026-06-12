@@ -207,12 +207,12 @@ export function SellerAuctionBanner({
           </div>
         )}
 
-        {/* Action row — manage the listing + jump to payouts. We don't
-            link "voir mon annonce" when the property no longer exists
-            (cancelled keeps the row), but /sell/<id> handles the lookup. */}
+        {/* Action row — manage the listing + jump to payouts. The manage
+            link goes to the listing's edit page (the only per-listing route
+            that exists; bare /sell/<id> has no page and would 404). */}
         <div className="mt-4 grid grid-cols-2 gap-2">
           <Link
-            href={`/sell/${propertyId}` as never}
+            href={`/sell/${propertyId}/edit` as never}
             className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-surface-2 px-3 py-2.5 text-[11.5px] font-bold text-foreground ring-1 ring-gold/20 transition active:scale-[0.99]"
           >
             <Settings2 className="size-3.5" strokeWidth={2.2} />

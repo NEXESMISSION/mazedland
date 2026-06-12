@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { CheckCircle2, ArrowRight, ShieldCheck, Clock } from "lucide-react";
+import { getBrowserSupabase } from "@/lib/supabase/client";
 import { formatTND, cn } from "@/lib/utils";
 import type { AuctionWithProperty } from "@/lib/types";
 
@@ -31,6 +33,9 @@ interface Props {
   locale: string;
   /** Optional pricing-math block (deposit gate uses this). */
   priceContext?: PriceContext;
+  /** ISO start time — when set, the gate renders a live segmented
+   *  "ouverture dans" countdown (registered-but-scheduled state). */
+  startsAt?: string;
 }
 
 /**
@@ -54,6 +59,8 @@ export function PreBidGate({
   bullets,
   locale,
   priceContext,
+  startsAt,
+  auction,
 }: Props) {
   // Light-theme palette — white card with gold/amber accents. Each tone sets
   // the border ring + the icon-disc treatment.
@@ -118,6 +125,9 @@ export function PreBidGate({
             </p>
           )}
 
+          {/* Live "ouverture dans" countdown — registered-waiting state. */}
+          {startsAt && <OpensCountdown startsAt={startsAt} auctionId={auction.id} />}
+
           {/* Reassurance rows */}
           {bullets && bullets.length > 0 && (
             <ul className="mt-5 space-y-2">
@@ -171,4 +181,118 @@ export function PreBidGate({
       </div>
     </div>
   );
+}
+
+/**
+ * Big segmented "ouverture dans" countdown for the registered-waiting gate —
+ * J/H/MIN/SEC tiles plus the exact opening date underneath, so "when can I
+ * bid?" reads at a glance. Once the clock hits zero, a light 4s status poll
+ * watches for the cron flipping the auction live (≤1 min) and reloads the
+ * page the moment it does — the gate swaps into the real bid composer
+ * within seconds, without the user touching anything.
+ */
+function OpensCountdown({ startsAt, auctionId }: { startsAt: string; auctionId: string }) {
+  // SSR: render dashes so server/client markup matches; the first effect
+  // tick replaces them within ~16ms (same pattern as Countdown.tsx).
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const ms = now === null ? null : Math.max(0, new Date(startsAt).getTime() - now);
+  const opened = ms !== null && ms === 0;
+
+  useEffect(() => {
+    if (!opened) return;
+    let cancelled = false;
+    const supabase = getBrowserSupabase();
+    const startedAt = Date.now();
+    // The cron flips scheduled→live within ~1 min. Stop polling after 5 min
+    // so a page left open at countdown-zero (cron stalled, user walked away)
+    // doesn't hammer the auctions table forever.
+    const MAX_POLL_MS = 300_000;
+    const check = async () => {
+      if (cancelled || Date.now() - startedAt > MAX_POLL_MS) return;
+      // Don't poll a hidden tab — resumes on the next visible tick anyway.
+      if (typeof document !== "undefined" && document.hidden) return;
+      const { data } = await supabase
+        .from("auctions")
+        .select("status")
+        .eq("id", auctionId)
+        .maybeSingle();
+      if (!cancelled && (data?.status === "live" || data?.status === "extending")) {
+        window.location.reload();
+      }
+    };
+    void check();
+    const id = setInterval(check, 6000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [opened, auctionId]);
+
+  const d = ms === null ? null : Math.floor(ms / 86_400_000);
+  const h = ms === null ? null : Math.floor((ms % 86_400_000) / 3_600_000);
+  const m = ms === null ? null : Math.floor((ms % 3_600_000) / 60_000);
+  const s = ms === null ? null : Math.floor((ms % 60_000) / 1000);
+
+  const openDate = new Date(startsAt).toLocaleString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  // Day tile only when there's at least a day left — closer than that,
+  // three tiles read faster.
+  const tiles: { v: string; label: string }[] = [
+    ...(d === null || d > 0
+      ? [{ v: d === null ? "—" : String(d), label: d === 1 ? "jour" : "jours" }]
+      : []),
+    { v: h === null ? "—" : pad2(h), label: "heures" },
+    { v: m === null ? "—" : pad2(m), label: "min" },
+    { v: s === null ? "—" : pad2(s), label: "sec" },
+  ];
+
+  return (
+    <div className="mt-5 rounded-2xl bg-[var(--gold-faint)] p-5 ring-1 ring-[var(--gold-soft)]">
+      <div className="text-center text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-[var(--gold)]">
+        {opened ? "Ouverture en cours…" : "Ouverture dans"}
+      </div>
+      {opened ? (
+        <p className="mt-2 text-center text-[13px] font-semibold leading-relaxed text-foreground">
+          L&apos;enchère démarre — la page se met à jour automatiquement.
+        </p>
+      ) : (
+        <>
+          <div dir="ltr" className="mt-3 flex items-stretch justify-center gap-2">
+            {tiles.map((t) => (
+              <div
+                key={t.label}
+                className="min-w-[64px] rounded-xl bg-[var(--surface)] px-2 py-2.5 text-center ring-1 ring-[var(--border)]"
+              >
+                <div className="batta-tabular text-[26px] font-extrabold leading-none text-foreground">
+                  {t.v}
+                </div>
+                <div className="mt-1 text-[9.5px] font-bold uppercase tracking-[0.12em] text-[var(--foreground-muted)]">
+                  {t.label}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-center text-[11.5px] text-[var(--foreground-muted)]">
+            Ouvre le <span className="font-semibold text-foreground">{openDate}</span>
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+function pad2(n: number) {
+  return n.toString().padStart(2, "0");
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
@@ -218,6 +219,10 @@ export async function PUT(req: NextRequest) {
       .insert(rows);
     if (iErr) return fail("insert_failed", 500, iErr);
   }
+
+  // Bust the cached per-type catalog so auction-detail pages pick up the edit
+  // immediately instead of waiting out the 1h TTL (getCachedAttributeKinds).
+  revalidateTag("attribute-kinds", "max");
 
   logAction(req, user, "characteristics.update", {
     propertyType,

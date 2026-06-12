@@ -60,3 +60,38 @@ export const getPublicAuctionDetail = unstable_cache(
   ["auction-detail"],
   { revalidate: 15, tags: ["auction-detail"] },
 );
+
+/** One row of the per-type characteristics catalog (drives the spec tiles). */
+export type AttributeKind = {
+  field_key: string;
+  label: string;
+  data_type: string;
+  options: { value: string; label: string }[] | null;
+  unit: string | null;
+  sort_order: number;
+};
+
+/**
+ * Per-type characteristics catalog (property_attribute_kinds), cached 1h per
+ * type. This near-static table was read LIVE on every auction-detail view —
+ * one DB round-trip per page on the hottest surface, for a catalog that only
+ * changes when an admin edits it in /admin/characteristics. There are a handful
+ * of types, so the cache is tiny and almost always warm. The admin
+ * characteristics route busts `attribute-kinds` on save, so edits show at once.
+ * Service-role read on purpose: the catalog is public, cookieless, and shared.
+ */
+export const getCachedAttributeKinds = unstable_cache(
+  async (propertyType: string): Promise<AttributeKind[]> => {
+    const sb = getServiceSupabase();
+    if (!sb) return [];
+    const { data } = await sb
+      .from("property_attribute_kinds")
+      .select("field_key, label, data_type, options, unit, sort_order")
+      .eq("property_type", propertyType)
+      .order("sort_order")
+      .order("label");
+    return (data ?? []) as AttributeKind[];
+  },
+  ["attribute-kinds"],
+  { revalidate: 3600, tags: ["attribute-kinds"] },
+);

@@ -31,19 +31,8 @@ export async function POST(
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
 
-  // Cross-instance abuse cap (0116) BEFORE place_bid takes the auction's
-  // FOR UPDATE row lock — a KYC+deposit user could otherwise hammer the hot lot
-  // and drive lock contention even though the in-RPC 2s cooldown rejects each.
-  // 90/min per IP is well above any legitimate bidding war; fail-open on error.
-  const { data: limited } = await supabase.rpc("check_rate_limit", {
-    p_key: `bid:${ip ?? "anon"}`,
-    p_max: 90,
-    p_window_secs: 60,
-  });
-  if (limited === true) {
-    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
-  }
-
+  // The per-IP abuse cap lives INSIDE place_bid since 0125 (checked before
+  // the FOR UPDATE lock) — one PostgREST round trip per bid instead of two.
   const { data, error } = await supabase.rpc("place_bid", {
     p_auction_id: auctionId,
     p_amount: amount,
@@ -70,6 +59,7 @@ export async function POST(
       msg.includes("deposit_required") ? ["deposit_required", 402] :
       msg.includes("self_bid_forbidden") ? ["self_bid_forbidden", 403] :
       msg.includes("bid_too_fast") ? ["bid_too_fast", 429] :
+      msg.includes("rate_limited") ? ["rate_limited", 429] :
       msg.includes("below_min_increment") ? ["below_min_increment", 409] :
       msg.includes("below_opening") ? ["below_opening", 409] :
       msg.includes("below_current") ? ["below_current", 409] :

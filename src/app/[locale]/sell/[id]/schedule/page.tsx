@@ -3,7 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { ScheduleForm } from "@/components/sell/ScheduleForm";
-import { parseAntiSnipe } from "@/lib/pricing";
+import { parseAntiSnipe, parseAuctionTypes, parseFinalPaymentDays } from "@/lib/pricing";
 import { Clock } from "lucide-react";
 
 // Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
@@ -68,9 +68,12 @@ export default async function ScheduleAuctionPage({
 
   // Admin-controlled anti-snipe defaults — baked onto the new auction so
   // the platform-wide setting governs it (see /admin/settings).
-  const { data: snipeRow } = await supabase
-    .from("app_settings").select("value").eq("key", "auction_antisnipe").maybeSingle();
-  const antiSnipe = parseAntiSnipe(snipeRow?.value);
+  const { data: settingRows } = await supabase
+    .from("app_settings").select("key, value").in("key", ["auction_antisnipe", "auction_types", "final_payment_days"]);
+  const settingMap = new Map((settingRows ?? []).map((r) => [r.key as string, r.value]));
+  const antiSnipe = parseAntiSnipe(settingMap.get("auction_antisnipe"));
+  const auctionTypes = parseAuctionTypes(settingMap.get("auction_types"));
+  const finalPaymentDays = parseFinalPaymentDays(settingMap.get("final_payment_days"));
 
   const { data: existing } = await supabase
     .from("auctions")
@@ -128,6 +131,9 @@ export default async function ScheduleAuctionPage({
           propertyId={property!.id}
           extendWindowSec={antiSnipe.windowMin * 60}
           extendBySec={antiSnipe.extendMin * 60}
+          dutchEnabled={auctionTypes.dutchEnabled}
+          sealedEnabled={auctionTypes.sealedEnabled}
+          finalPaymentDays={finalPaymentDays}
         />
       </div>
     </div>

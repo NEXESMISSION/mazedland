@@ -105,6 +105,33 @@ export async function PUT(req: NextRequest) {
     }
   }
 
+  // ── Auction formats available to sellers ─────────────────────────────
+  // English is always available (not stored). Only the optional extras are
+  // toggled; anything missing defaults to OFF (English-only marketplace).
+  {
+    const v = body.auction_types as { dutch_enabled?: unknown; sealed_enabled?: unknown } | undefined;
+    if (v && typeof v === "object") {
+      rows.push({
+        key: "auction_types",
+        value: {
+          dutch_enabled: v.dutch_enabled === true,
+          sealed_enabled: v.sealed_enabled === true,
+        },
+        updated_by: user.id,
+      });
+    }
+  }
+
+  // ── Winner's final-payment deadline (days, 1..90) ────────────────────
+  {
+    const v = body.final_payment_days as { days?: unknown } | undefined;
+    if (v && typeof v === "object") {
+      const n = Math.round(Number(v.days));
+      const days = Number.isFinite(n) && n >= 1 ? Math.min(90, n) : 14;
+      rows.push({ key: "final_payment_days", value: { days }, updated_by: user.id });
+    }
+  }
+
   // ── Payee text ───────────────────────────────────────────────────────
   for (const key of TEXT_KEYS) {
     if (!(key in body)) continue;

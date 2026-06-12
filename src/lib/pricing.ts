@@ -111,6 +111,41 @@ export function parseAntiSnipe(raw: unknown): AntiSnipeSettings {
 }
 
 /**
+ * Which auction FORMATS the admin has switched on for sellers. English is the
+ * always-available standard, so it isn't stored — only the optional extras
+ * (Dégressive / dutch, Cachetée / sealed) are toggled. Default: both OFF, i.e.
+ * an English-only marketplace until the admin opts in. The DB guard trigger
+ * (migration 0130) enforces the same defaults server-side.
+ */
+export type AuctionTypeSettings = { dutchEnabled: boolean; sealedEnabled: boolean };
+export const DEFAULT_AUCTION_TYPES: AuctionTypeSettings = {
+  dutchEnabled: false,
+  sealedEnabled: false,
+};
+
+export function parseAuctionTypes(raw: unknown): AuctionTypeSettings {
+  const o = (raw ?? {}) as Record<string, unknown>;
+  return {
+    dutchEnabled: o.dutch_enabled === true,
+    sealedEnabled: o.sealed_enabled === true,
+  };
+}
+
+/**
+ * Number of days the winning bidder has to settle the balance after a sale.
+ * Admin-tunable; clamped to a sane 1..90. Default 14. The DB helper
+ * final_payment_interval() (migration 0131) reads the same setting so the cron
+ * state machine and the UI explainer always agree.
+ */
+export const DEFAULT_FINAL_PAYMENT_DAYS = 14;
+
+export function parseFinalPaymentDays(raw: unknown): number {
+  const o = (raw ?? {}) as Record<string, unknown>;
+  const n = Math.round(num(o.days, DEFAULT_FINAL_PAYMENT_DAYS));
+  return Number.isFinite(n) && n >= 1 ? Math.min(90, n) : DEFAULT_FINAL_PAYMENT_DAYS;
+}
+
+/**
  * Listing fee in TND. `declaredPrice` is the seller's sale price (direct
  * offers) — required for percent mode. Auctions have no price at posting
  * time, so percent there resolves to 0 (the admin UI restricts auctions to

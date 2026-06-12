@@ -179,7 +179,10 @@ export function BidHistoryRealtime({
     async function pollOnce() {
       if (cancelled) return;
       if (typeof document !== "undefined" && document.hidden) {
-        schedule();
+        // STOP — don't re-arm while hidden. This poll runs TWO queries
+        // (bids + a profiles name join), so re-scheduling it on every
+        // background tab was the heaviest idle DB load on the page. The
+        // visibility listener restarts it when the tab returns.
         return;
       }
       try {

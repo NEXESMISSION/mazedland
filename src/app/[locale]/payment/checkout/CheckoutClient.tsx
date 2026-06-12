@@ -354,12 +354,24 @@ export function CheckoutClient({
             </ol>
 
             <div className="flex flex-col gap-2 border-t border-[var(--border)] p-4">
-              <a
-                href={`/${locale}`}
-                className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] px-5 text-[13px] font-bold text-white hover:bg-[var(--gold-bright)]"
-              >
-                Accueil <ArrowRight className="ml-1.5 h-4 w-4" />
-              </a>
+              {kind === "deposit" && auction ? (
+                // The caution path's next surface is the bid page — it shows
+                // the "receipt under review" gate now and flips to the live
+                // composer the moment the caution is validated.
+                <a
+                  href={`/${locale}/auctions/${auction.id}/bid`}
+                  className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] px-5 text-[13px] font-bold text-white hover:bg-[var(--gold-bright)]"
+                >
+                  Accéder à la page d&apos;enchères <ArrowRight className="ml-1.5 h-4 w-4" />
+                </a>
+              ) : (
+                <a
+                  href={`/${locale}`}
+                  className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] px-5 text-[13px] font-bold text-white hover:bg-[var(--gold-bright)]"
+                >
+                  Accueil <ArrowRight className="ml-1.5 h-4 w-4" />
+                </a>
+              )}
               {auction && (
                 <a
                   href={

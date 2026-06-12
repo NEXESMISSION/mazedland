@@ -181,6 +181,14 @@ export function normalizeLink(link: string): string {
     return KYC_SUBROUTES.has(link.split(/[?#]/)[0]) ? link : "/kyc";
   }
   if (link.startsWith("/properties/")) return "/sell";
+  // There is no /sell/<id> detail page — only /sell/<id>/edit and
+  // /sell/<id>/schedule exist. A bare or unknown /sell/<id> (baked by listing
+  // approval / submission / cancellation notifications) would 404, so collapse
+  // it to the seller dashboard while letting the real subroutes through.
+  if (link.startsWith("/sell/")) {
+    const sub = link.split(/[?#]/)[0].split("/")[3];
+    return sub === "edit" || sub === "schedule" ? link : "/sell";
+  }
   // /inspections/<id> has no public route — handled per-kind in resolve;
   // this is the catch-all for any that slip through to the explicit-link tier.
   if (link.startsWith("/inspections/")) return "/account/inspections";

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { parseRejection } from "@/lib/rejection";
@@ -56,6 +57,14 @@ export async function PATCH(
     .eq("id", id);
 
   if (error) return fail("property_update_failed", 500, error);
+
+  // A newly-approved listing must appear on the home + explore feeds right
+  // away, not after the 60s cache window. (Both feeds are unstable_cache'd
+  // under these tags; nothing else invalidated them proactively.)
+  if (status === "ready") {
+    revalidateTag("home-feed", "max");
+    revalidateTag("explore-feed", "max");
+  }
 
   if (prop?.owner_id) {
     const admin = getServiceSupabase();

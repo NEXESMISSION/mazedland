@@ -17,6 +17,8 @@ import {
   Eye,
   Trophy,
   Clock,
+  Zap,
+  X,
 } from "lucide-react";
 import { Modal, ModalFooter } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
@@ -327,7 +329,8 @@ export function BidComposer({
         tone="gold"
         icon={<Clock className="h-7 w-7" />}
         title="Vous êtes inscrit(e) ✓"
-        body={`Votre place est réservée. L'enchère ouvre ${formatStartsIn(auction.starts_at)} — vous pourrez enchérir dès le démarrage.`}
+        body="Votre place est réservée — vous recevrez une notification dès l'ouverture pour placer votre première offre."
+        startsAt={auction.starts_at ?? undefined}
         ctaLabel="Voir l'annonce"
         onCta={() => router.push(`/auctions/${auction.id}` as never)}
         auction={auction}
@@ -556,6 +559,13 @@ function ActiveComposer({
   const [showRules, setShowRules] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Integrated bid-failure state — rendered as a panel INSIDE the composer
+  // instead of a top-of-screen toast (too small / too far from the action
+  // to explain a lost bidding race). Carries the amount we tried so the
+  // panel can narrate "your X was beaten, price is now Y" with live numbers
+  // and a one-tap re-bid at the fresh minimum.
+  const [bidError, setBidError] = useState<{ code: string; attempted: number } | null>(null);
+
   // Live bid count — seeded from the server-rendered totalBids, bumped
   // by the realtime bids INSERT subscription below. Without this the
   // composer's "X offres" label stayed stuck on its initial value even
@@ -735,9 +745,12 @@ function ActiveComposer({
     async function pollOnce() {
       if (cancelled) return;
       if (typeof document !== "undefined" && document.hidden) {
-        // Re-arm anyway — when the tab returns the visibility handler
-        // fires pollOnce(), which restarts the chain.
-        schedule();
+        // STOP — do not re-arm while hidden. Re-scheduling here kept idle
+        // background tabs querying the auctions table every 12–45 s forever
+        // (and every 4 s when realtime degraded), which at thousands of
+        // open-but-hidden tabs is pure wasted DB load. The visibility
+        // listener below calls pollOnce() the moment the tab returns,
+        // restarting the chain — so nothing is lost.
         return;
       }
       try {
@@ -852,7 +865,10 @@ function ActiveComposer({
     setShowConfirm(true);
   }
 
-  async function placeBid() {
+  // amountOverride: the race panel's one-tap re-bid posts the fresh minimum
+  // directly, without waiting for the input state to settle.
+  async function placeBid(amountOverride?: number) {
+    const bidAmount = amountOverride ?? submitAmount;
     // Offline guard. The fetch() below would throw a generic
     // TypeError("Failed to fetch") on a dropped connection and the
     // user would see "Échec de l'enchère" with no hint that it was
@@ -880,7 +896,7 @@ function ActiveComposer({
           return fetch(`/api/auctions/${auction.id}/bid`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ amount: submitAmount }),
+            body: JSON.stringify({ amount: bidAmount }),
             signal: ctrl.signal,
           }).finally(() => clearTimeout(tid));
         };
@@ -925,27 +941,53 @@ function ActiveComposer({
           ) {
             router.refresh();
           }
-          toast(bidErrorLabel(data.error), "error");
+          // Price-shaped rejections (lost a race, too low, too fast) render
+          // as an integrated panel inside the composer — with live numbers
+          // and a one-tap re-bid — instead of a missable top-of-screen
+          // toast. Everything else (session, KYC, closed…) keeps the toast;
+          // those states reshape the page anyway.
+          const code = (data.error as string | undefined) ?? "bid_failed";
+          const raceCodes = [
+            "below_min_increment",
+            "below_current",
+            "below_opening",
+            "bid_too_fast",
+          ];
+          if (!isDutch && raceCodes.includes(code)) {
+            setBidError({ code, attempted: bidAmount });
+            setShowConfirm(false);
+          } else {
+            toast(bidErrorLabel(code), "error");
+          }
           return;
         }
         const data = (await res.json()) as {
           ok: boolean;
           current_price?: number | null;
+          extended?: boolean;
         };
+        // Authoritative price straight from the ack (0125). Fallback for an
+        // older engine: our own accepted English bid IS the new current
+        // price — update instantly instead of waiting for the realtime echo.
         const newPrice = isSealed
           ? currentPrice
-          : Number(data.current_price ?? currentPrice);
+          : Number(data.current_price ?? (isEnglish ? bidAmount : currentPrice));
         setCurrentPrice(newPrice);
+        setBidError(null);
         if (isEnglish) setAmount(nextMinBid(auction, newPrice));
         toast(
           isDutch
-            ? `Adjugé à ${formatTND(submitAmount, locale)}`
-            : `Offre envoyée : ${formatTND(submitAmount, locale)}`,
+            ? `Adjugé à ${formatTND(bidAmount, locale)}`
+            : `Offre envoyée : ${formatTND(bidAmount, locale)}`,
           "success",
         );
-        // For Dutch the auction is now ended_sold server-side. For English
-        // a refresh keeps the bid history / countdown in sync.
-        router.refresh();
+        // No blanket router.refresh() here — it re-rendered the WHOLE server
+        // page after every bid (auction + gates + history queries) and made
+        // bidding feel slow. Realtime already streams the price, count and
+        // history rows. Refresh only when the page SHAPE changes: a Dutch
+        // hammer (auction just ended) or an anti-snipe extension (new
+        // ends_at for the countdown).
+        if (isDutch || data.extended === true) router.refresh();
       } finally {
         setSubmitting(false);
         setShowConfirm(false);
@@ -1037,6 +1079,29 @@ function ActiveComposer({
           onSetAmount={setAmount}
           currentPrice={currentPrice}
           locale={locale}
+        />
+      )}
+
+      {/* Integrated bid-failure panel — sits right above the CTA where the
+          user is looking, with live numbers and a one-tap re-bid. */}
+      {bidError && (
+        <BidRacePanel
+          code={bidError.code}
+          attempted={bidError.attempted}
+          currentPrice={currentPrice}
+          minNext={isSealed ? Math.max(auction.opening_price, minNext) : minNext}
+          increment={inc}
+          submitting={submitting}
+          locale={locale}
+          onRebid={() => {
+            const target = isSealed
+              ? Math.max(auction.opening_price, minNext)
+              : minNext;
+            setAmount(target);
+            setBidError(null);
+            void placeBid(target);
+          }}
+          onDismiss={() => setBidError(null)}
         />
       )}
 
@@ -1135,7 +1200,7 @@ function ActiveComposer({
           <Button variant="ghost" size="md" onClick={() => setShowConfirm(false)}>
             Annuler
           </Button>
-          <Button size="md" onClick={placeBid} disabled={submitting}>
+          <Button size="md" onClick={() => placeBid()} disabled={submitting}>
             <CheckCircle2 className="h-4 w-4" />
             {submitting ? "Envoi…" : `Confirmer ${formatTND(submitAmount, locale)}`}
           </Button>
@@ -1176,6 +1241,94 @@ function ActiveComposer({
         </ul>
       </Modal>
 
+    </div>
+  );
+}
+
+/**
+ * Integrated bid-rejection panel — replaces the old top-of-screen toast for
+ * price-shaped failures. During a bidding war the race loser needs to see,
+ * IN the composer: what happened, the live price, and a one-tap way back
+ * in. currentPrice/minNext arrive from the composer's realtime state, so
+ * the numbers keep updating while the panel is on screen.
+ */
+function BidRacePanel({
+  code,
+  attempted,
+  currentPrice,
+  minNext,
+  increment,
+  submitting,
+  locale,
+  onRebid,
+  onDismiss,
+}: {
+  code: string;
+  attempted: number;
+  currentPrice: number;
+  minNext: number;
+  increment: number;
+  submitting: boolean;
+  locale: string;
+  onRebid: () => void;
+  onDismiss: () => void;
+}) {
+  // "Beaten in flight": the live price caught up to (or passed) what the
+  // user tried to bid — the classic two-bidders-at-once race.
+  const beaten = code === "below_min_increment" && currentPrice >= attempted;
+  const title =
+    code === "bid_too_fast"
+      ? "Un instant…"
+      : code === "below_current"
+        ? "Vous êtes déjà le meilleur enchérisseur"
+        : beaten
+          ? "Quelqu'un a enchéri juste avant vous"
+          : "Offre trop basse";
+  const message =
+    code === "bid_too_fast"
+      ? "Vous enchérissez très vite — patientez deux secondes puis réessayez."
+      : code === "below_current"
+        ? `Pour augmenter votre propre offre, dépassez ${formatTND(currentPrice, locale)}.`
+        : beaten
+          ? `Votre offre de ${formatTND(attempted, locale)} a été dépassée pendant l'envoi — le prix est maintenant ${formatTND(currentPrice, locale)}.`
+          : `Le minimum requis est ${formatTND(minNext, locale)} (incrément de ${formatTND(increment, locale)}).`;
+  const showRebid = code !== "bid_too_fast";
+  return (
+    <div role="alert" className="rounded-2xl border border-amber-300 bg-amber-50 p-4">
+      <div className="flex items-start gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+          <Zap className="h-4 w-4" strokeWidth={2.4} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-[13.5px] font-extrabold leading-snug text-amber-900">
+            {title}
+          </div>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-amber-900/85">
+            {message}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Fermer"
+          className="-m-1 shrink-0 rounded-full p-1 text-amber-700/70 transition hover:bg-amber-100 hover:text-amber-900"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      {showRebid && (
+        <button
+          type="button"
+          onClick={onRebid}
+          disabled={submitting}
+          className="batta-gradient-gold mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full text-[13.5px] font-extrabold text-white shadow-[var(--shadow-gold)] transition active:scale-[0.99] disabled:opacity-60"
+        >
+          <Gavel className="h-4 w-4" strokeWidth={2.4} />
+          {submitting
+            ? "Envoi…"
+            : `${beaten ? "Surenchérir" : "Enchérir"} à ${formatTND(minNext, locale)}`}
+        </button>
+      )}
     </div>
   );
 }

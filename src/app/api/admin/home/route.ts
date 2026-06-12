@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
@@ -48,6 +49,10 @@ export async function POST(req: NextRequest) {
     .eq("id", propertyId)
     .eq("status", "ready");
   if (error) return fail("home_feature_failed", 500, error);
+
+  // Promo flags drive home/explore feed ordering — refresh both immediately.
+  revalidateTag("home-feed", "max");
+  revalidateTag("explore-feed", "max");
 
   logAction(req, user, "home.feature", { propertyId, home, top, banner });
   return NextResponse.json({ ok: true });

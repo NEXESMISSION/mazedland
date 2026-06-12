@@ -88,10 +88,23 @@ export default async function PaymentSuccess({
     KIND_SUBLABEL[payment.kind as string] ??
     "Nous avons enregistré votre paiement.";
   const isCaptured = payment.status === "captured";
+  // When the initiator didn't pass ?return=, derive the destination from
+  // the payment itself: a caution unlocks bidding → the bid page (same
+  // deep-link as the "payment accepted" notification; while the receipt is
+  // still under review that page shows the "we're checking" gate). Other
+  // auction-tied payments land on the lot.
+  const isDeposit = payment.kind === "deposit_lock";
+  const dest = (returnUrl && returnUrl.startsWith("/")
+    ? returnUrl
+    : payment.auction_id
+      ? isDeposit
+        ? `/auctions/${payment.auction_id}/bid`
+        : `/auctions/${payment.auction_id}`
+      : safeReturn) as `/${string}`;
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-var(--desktop-nav-h))] w-full max-w-md flex-col items-center justify-center px-4 py-10">
-      <SuccessAutoRedirect to={safeReturn} delayMs={1800} enabled={isCaptured} />
+      <SuccessAutoRedirect to={dest} delayMs={1800} enabled={isCaptured} />
       <div className="w-full rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-7 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]">
         {/* Big tick */}
         <div className="relative mx-auto h-16 w-16">
@@ -167,19 +180,19 @@ export default async function PaymentSuccess({
               Redirection automatique…
             </p>
             <Link
-              href={safeReturn as `/${string}`}
+              href={dest}
               className="mt-3 inline-flex items-center justify-center gap-2 w-full h-12 rounded-[var(--radius)] bg-gradient-to-b from-[var(--gold-bright)] to-[var(--gold)] text-black font-bold text-[14px] shadow-[var(--shadow-gold)] active:scale-[0.99] transition-all"
             >
-              Continuer
+              {isDeposit ? "Enchérir maintenant" : "Continuer"}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </>
         ) : (
           <Link
-            href={safeReturn as `/${string}`}
+            href={dest}
             className="mt-5 inline-flex items-center justify-center gap-2 w-full h-12 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] text-foreground font-semibold text-[14px] hover:border-[var(--gold-soft)] transition-colors"
           >
-            Retour
+            {isDeposit ? "Accéder à la page d'enchères" : "Retour"}
           </Link>
         )}
       </div>

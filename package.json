@@ -13,7 +13,8 @@
     "test:watch": "vitest --project unit",
     "test:rpc": "vitest run --project rpc",
     "test:security": "node scripts/security-regression.mjs",
-    "seed": "node scripts/seed.mjs"
+    "seed": "node scripts/seed.mjs",
+    "drift": "node scripts/drift-check.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",

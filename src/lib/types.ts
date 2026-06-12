@@ -107,9 +107,15 @@ export type Auction = {
   status: AuctionStatus;
   current_price: number | null;
   sixth_offer_deadline: string | null;
+  // Seller opt-in: when true, a won auction opens the 8-day legal 1/6 overbid
+  // window; when false it awards immediately with the 14-day payment deadline
+  // (migration 0130).
+  sixth_offer_enabled: boolean;
   winner_user_id: string | null;
   winner_amount: number | null;
   hammer_at: string | null;
+  // Final-payment deadline (now + 14 days), stamped when an auction is awarded.
+  final_payment_due_at: string | null;
   // Two-path purchase (migration 0018):
   //  - 'auction'  → standard bidding flow
   //  - 'direct'   → fixed-price sale, no bidding

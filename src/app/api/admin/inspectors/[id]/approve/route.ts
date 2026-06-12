@@ -10,27 +10,21 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const { user, supabase } = gate;
   const { id } = await ctx.params;
 
-  const now = new Date().toISOString();
-
-  // 1. Flip the inspector record to approved.
-  const { error: e1 } = await supabase
-    .from("inspectors")
-    .update({ approved: true, approved_at: now })
-    .eq("id", id);
-  if (e1) return fail("inspector_approve_failed", 500, e1);
-
-  // 2. Elevate the profile role so the inspector passes role-gated
-  //    queries (RLS policies, admin/inspector router checks). Without
-  //    this the user is "approved" in the inspectors table but still
-  //    has role='individual' everywhere else and can't act.
-  //    Works because is_admin() (migration 0016) now recognises
-  //    profiles.role='admin' for the caller, so the profile-guard
-  //    trigger lets the change through.
-  const { error: e2 } = await supabase
-    .from("profiles")
-    .update({ role: "inspector" })
-    .eq("id", id);
-  if (e2) return fail("inspector_role_update_failed", 500, e2);
+  // Approve atomically: the RPC flips inspectors.approved AND profiles.role
+  // in one transaction (migration 0128). Doing them as two separate updates
+  // risked a half-elevated inspector (approved in the table but still
+  // role='individual' everywhere RLS/guards check) if the second write failed.
+  // Runs on the user client so auth.uid() is the admin and is_admin() resolves.
+  const { error } = await supabase.rpc("admin_approve_inspector", { p_id: id });
+  if (error) {
+    const msg = error.message || "";
+    const [code, st] =
+      msg.includes("inspector_not_found") ? ["inspector_not_found", 404] as const
+      : msg.includes("profile_not_found") ? ["profile_not_found", 404] as const
+      : msg.includes("forbidden") ? ["forbidden", 403] as const
+      : ["inspector_approve_failed", 500] as const;
+    return fail(code, st, error);
+  }
 
   // Notify the new inspector.
   const admin = getServiceSupabase();

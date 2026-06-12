@@ -15,6 +15,8 @@ export type SettingsValues = {
   promoBanner: { enabled: boolean; value: number; duration_days: number };
   deposit: { mode: ListingMode; value: number; free_until: string };
   antiSnipe: { window_min: number; extend_min: number };
+  auctionTypes: { dutch_enabled: boolean; sealed_enabled: boolean };
+  finalPaymentDays: number;
   payee_name: string;
   payee_bank: string;
   payee_rib: string;
@@ -45,6 +47,8 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
         promo_banner: v.promoBanner,
         deposit: { ...v.deposit, free_until: v.deposit.free_until || null },
         auction_antisnipe: v.antiSnipe,
+        auction_types: v.auctionTypes,
+        final_payment_days: { days: v.finalPaymentDays },
         payee_name: v.payee_name,
         payee_bank: v.payee_bank,
         payee_rib: v.payee_rib,
@@ -142,6 +146,32 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
         </label>
       </Section>
 
+      {/* ── Auction formats available to sellers ── */}
+      <Section
+        title="Formats d'enchère proposés"
+        hint="Choisissez les formats que les vendeurs peuvent utiliser. L'enchère anglaise (le prix monte, la plus haute offre gagne) est toujours active — c'est le format standard."
+      >
+        <div className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3.5 py-3 opacity-80">
+          <div>
+            <div className="text-[13px] font-bold text-foreground">Anglaise <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gold)]">· standard</span></div>
+            <div className="text-[11px] text-[var(--foreground-muted)]">Le prix monte à chaque offre. Toujours disponible.</div>
+          </div>
+          <span className="text-[11px] font-bold text-[var(--gold)]">Activée</span>
+        </div>
+        <FormatToggle
+          label="Dégressive (Dutch)"
+          sub="Le prix baisse avec le temps ; le premier à accepter gagne."
+          on={v.auctionTypes.dutch_enabled}
+          onChange={(b) => patch("auctionTypes", { ...v.auctionTypes, dutch_enabled: b })}
+        />
+        <FormatToggle
+          label="Cachetée (Sealed)"
+          sub="Offres secrètes, révélées à la clôture ; la plus élevée gagne."
+          on={v.auctionTypes.sealed_enabled}
+          onChange={(b) => patch("auctionTypes", { ...v.auctionTypes, sealed_enabled: b })}
+        />
+      </Section>
+
       {/* ── Anti-sniping (auction time extension) ── */}
       <Section
         title="Prolongation d'enchère (anti-snipe)"
@@ -165,6 +195,19 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
           Mettez les deux à 0 pour désactiver la prolongation (l&apos;enchère se
           termine à l&apos;heure pile).
         </p>
+      </Section>
+
+      {/* ── Winner's final-payment deadline ── */}
+      <Section
+        title="Délai de paiement du gagnant"
+        hint="Temps laissé à l'adjudicataire pour régler le solde après la vente. S'applique aux ventes finalisées après la modification ; affiché à l'acheteur sur la page de l'enchère."
+      >
+        <DaysField
+          label="Délai de paiement final"
+          sub="Au-delà, la caution est saisie et le compte banni. Défaut : 14 jours."
+          value={v.finalPaymentDays}
+          onChange={(n) => patch("finalPaymentDays", n)}
+        />
       </Section>
 
       {/* ── Payee ── */}
@@ -198,6 +241,40 @@ const MODE_LABEL: Record<ListingMode, string> = {
   fixed: "Montant fixe",
   percent: "Pourcentage",
 };
+
+function FormatToggle({
+  label, sub, on, onChange,
+}: {
+  label: string;
+  sub: string;
+  on: boolean;
+  onChange: (b: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-surface px-3.5 py-3">
+      <div className="min-w-0">
+        <div className="text-[13px] font-bold text-foreground">{label}</div>
+        <div className="text-[11px] text-[var(--foreground-muted)]">{sub}</div>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={label}
+        onClick={() => onChange(!on)}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+          on ? "bg-[var(--gold)]" : "bg-[var(--surface-2)] ring-1 ring-[var(--border)]"
+        }`}
+      >
+        <span
+          className={`inline-block size-5 transform rounded-full bg-white shadow transition-transform ${
+            on ? "translate-x-[22px]" : "translate-x-0.5"
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
 
 function FeeRow({
   label, modes, mode, value, percentHint, onMode, onValue,
@@ -331,6 +408,37 @@ function MinutesField({
         />
         <span className="inline-flex items-center px-3 text-[11px] font-bold text-[var(--foreground-muted)]">
           min
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function DaysField({
+  label, sub, value, onChange,
+}: {
+  label: string;
+  sub?: string;
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-batta-gold/20 bg-batta-surface-2 p-3">
+      <div className="text-[12px] font-bold text-batta-cream">{label}</div>
+      {sub && <p className="mt-0.5 text-[10.5px] text-[var(--foreground-muted)]">{sub}</p>}
+      <div className="mt-2 flex items-stretch overflow-hidden rounded-lg border border-batta-gold/25 bg-batta-surface focus-within:border-batta-gold">
+        <input
+          type="number"
+          step="1"
+          min={1}
+          max={90}
+          value={Number.isFinite(value) ? value : 14}
+          onChange={(e) => onChange(Math.max(1, Math.min(90, Math.floor(Number(e.target.value) || 1))))}
+          className="batta-tabular flex-1 bg-transparent px-3 py-2 text-sm text-batta-cream focus:outline-none"
+          aria-label={label}
+        />
+        <span className="inline-flex items-center px-3 text-[11px] font-bold text-[var(--foreground-muted)]">
+          jours
         </span>
       </div>
     </div>

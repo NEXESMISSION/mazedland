@@ -75,7 +75,10 @@ const fetchExplore = unstable_cache(
     };
   },
   ["explore-feed"],
-  { revalidate: 30 },
+  // Tag it so admin moderation/curation can revalidateTag("explore-feed") and
+  // a newly-approved listing shows up here at once — not only after 30s. The
+  // /properties page caches the same data under the same tag.
+  { revalidate: 30, tags: ["explore-feed"] },
 );
 
 /**
