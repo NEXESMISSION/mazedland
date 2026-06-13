@@ -59,3 +59,17 @@ jobs:
             -H "Authorization: Bearer $CRON_SECRET")
           echo "tick HTTP $code"; cat /tmp/tick.json 2>/dev/null || true
           if [ "$code" != "200" ]; then echo "::error::tick returned $code"; exit 1; fi
+
+      # Email digest drain. Was a Vercel cron (*/10), removed from vercel.json
+      # because a sub-daily schedule isn't allowed on Vercel's Hobby plan and
+      # failed the deploy. This backstop (~5 min) keeps notification emails
+      # flowing. Warn-only — a transient email hiccup shouldn't fail the run.
+      - name: Drain notification email queue (HTTP backstop)
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          code=$(curl -s -o /tmp/email.json -w "%{http_code}" \
+            "$SITE_URL/api/cron/notify-email?key=$CRON_SECRET")
+          echo "notify-email HTTP $code"; cat /tmp/email.json 2>/dev/null || true
+          if [ "$code" != "200" ]; then echo "::warning::notify-email returned $code"; fi
