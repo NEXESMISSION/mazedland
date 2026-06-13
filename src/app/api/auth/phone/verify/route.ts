@@ -71,7 +71,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "wrong_code" }, { status: 400 });
   }
 
-  // Correct — single-use, so consume it.
-  await admin.from("phone_otps").delete().eq("phone", phone);
+  // Correct — stamp a short-lived verification proof that the signup route
+  // checks (audit #2: signup must fail closed when SMS is on), and clear the
+  // code so it can't be re-verified. The signup route deletes the row once it
+  // consumes the proof; a fresh /phone/send upserts a new code + nulls this.
+  await admin
+    .from("phone_otps")
+    .update({ verified_at: new Date().toISOString(), code_hash: "", attempts: 0 })
+    .eq("phone", phone);
   return NextResponse.json({ ok: true });
 }

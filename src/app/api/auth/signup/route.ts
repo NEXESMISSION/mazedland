@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { assertSupabaseRef } from "@/lib/supabase/guard";
+import { isSmsConfigured } from "@/lib/winsms";
 
 /**
  * Phone-only signup — fully server-side.
@@ -103,6 +104,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "phone_taken" }, { status: 409 });
   }
 
+  // Fail CLOSED when SMS is configured: require a recent phone-verification
+  // proof (audit #2 — the OTP gate was client-only + fail-open, so a script
+  // could POST here and register any phone). When SMS is OFF (today), skip —
+  // accounts are unverified by design until SMS is wired, which is acceptable.
+  if (isSmsConfigured()) {
+    const { data: otp } = await admin
+      .from("phone_otps")
+      .select("verified_at")
+      .eq("phone", phone)
+      .maybeSingle();
+    const verifiedMs = otp?.verified_at ? new Date(otp.verified_at as string).getTime() : 0;
+    if (!verifiedMs || Date.now() - verifiedMs > 15 * 60 * 1000) {
+      return NextResponse.json({ ok: false, error: "phone_not_verified" }, { status: 403 });
+    }
+  }
+
   const email = `${phone.replace(/\D/g, "")}@${PHONE_EMAIL_DOMAIN}`;
   const { error: createErr } = await admin.auth.admin.createUser({
     email,
@@ -132,5 +149,7 @@ export async function POST(req: NextRequest) {
     // The account exists; the client can fall back to logging in by phone.
     return NextResponse.json({ ok: false, error: "signin_failed" }, { status: 500 });
   }
+  // Consume the verification proof so it can't be reused for another signup.
+  await admin.from("phone_otps").delete().eq("phone", phone);
   return NextResponse.json({ ok: true });
 }
