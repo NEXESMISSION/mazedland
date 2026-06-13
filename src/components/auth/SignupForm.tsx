@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
-import { Link } from "@/i18n/navigation";
-import { getBrowserSupabase } from "@/lib/supabase/client";
-import { MailCheck, Loader2, Smartphone } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { PhoneInput } from "./PhoneInput";
+import { Loader2, Smartphone } from "lucide-react";
 import { TUNISIAN_GOVERNORATES, normalizeE164, validatePhone } from "@/lib/tunisia";
 import { Modal } from "@/components/ui/Modal";
 import { TermsContent, PrivacyContent } from "@/components/legal/LegalContent";
@@ -17,20 +14,21 @@ import { TermsContent, PrivacyContent } from "@/components/legal/LegalContent";
 // trigger ignores any client-set role and pins new profiles to
 // 'individual' regardless.
 //
-// Required fields (audit: we lost too many KYC-eligible users to optional
-// phone + no ville on signup):
+// PHONE-ONLY: there is no email field. Account creation runs server-side
+// (/api/auth/signup) which mints a synthetic, pre-confirmed email from the
+// phone so Supabase still has an identifier — the user never sees or needs an
+// email. Required fields:
 //   - full name
-//   - email + password
 //   - dial code + phone (split fields → composed to E.164 on submit)
 //   - ville / gouvernorat (24-item native select)
+//   - password (min 8)
 //
-// All four metadata keys (full_name, phone, governorate, language) are
-// passed via `options.data` and picked up by `_on_auth_user_created`
-// (migration 0045) when the auth.users row is inserted.
+// The metadata keys (full_name, phone, governorate, language) are passed to
+// admin.createUser and picked up by `_on_auth_user_created` (migration 0045)
+// when the auth.users row is inserted.
 export function SignupForm() {
   const t = useTranslations();
-  const router = useRouter();
-  const [email, setEmail] = useState("");
+  const locale = useLocale();
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [dialCode, setDialCode] = useState("+216");
@@ -39,7 +37,6 @@ export function SignupForm() {
   const [accepted, setAccepted] = useState(false);
   const [legalModal, setLegalModal] = useState<null | "terms" | "privacy">(null);
   const [error, setError] = useState<string | null>(null);
-  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   // Phone-OTP gate (active only when WinSMS is configured server-side).
   const [otpPhase, setOtpPhase] = useState(false);
@@ -56,31 +53,42 @@ export function SignupForm() {
   }, [otpCooldown]);
 
   // The real account creation — runs after phone verification (or directly
-  // when SMS isn't configured).
+  // when SMS isn't configured). Server-side: /api/auth/signup creates the
+  // account with a synthetic pre-confirmed email AND signs the user in (sets
+  // the auth cookie on its response), so on success we just hard-navigate.
   async function performSignup(normalizedPhone: string) {
-    const supabase = getBrowserSupabase();
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           phone: normalizedPhone,
+          password,
+          full_name: fullName,
           governorate,
-        },
-      },
-    });
-    if (error) {
-      setError(error.message);
+        }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok || !j.ok) {
+        const map: Record<string, string> = {
+          phone_taken: "Ce numéro est déjà associé à un compte. Connectez-vous.",
+          weak_password: "Mot de passe trop court (8 caractères minimum).",
+          invalid_phone: "Numéro de téléphone invalide.",
+          rate_limited: "Trop de tentatives. Réessayez dans un instant.",
+        };
+        setError(map[j.error ?? ""] ?? "Impossible de créer le compte. Réessayez.");
+        setOtpPhase(false);
+        return;
+      }
+    } catch {
+      setError("Impossible de joindre le serveur. Réessayez.");
       setOtpPhase(false);
       return;
     }
-    if (data.user && !data.user.email_confirmed_at) {
-      setPendingEmail(email);
-      return;
-    }
-    router.replace("/kyc");
-    router.refresh();
+    // Hard navigation (not router.replace+refresh): the auth cookie was just
+    // written by the signup response; a soft refresh can prefetch the
+    // destination before the cookie propagates, leaving the render anonymous.
+    window.location.assign(`/${locale}/kyc`);
   }
 
   function onSubmit(e: React.FormEvent) {
@@ -222,7 +230,7 @@ export function SignupForm() {
     });
   }
 
-  if (otpPhase && !pendingEmail) {
+  if (otpPhase) {
     return (
       <PhoneVerify
         phone={verifiedPhone ?? ""}
@@ -242,22 +250,9 @@ export function SignupForm() {
     );
   }
 
-  if (pendingEmail) {
-    return (
-      <ConfirmationSent
-        email={pendingEmail}
-        backToLoginLabel={t("signup.backToLogin")}
-        openInboxLabel={t("signup.openInbox")}
-        title={t("signup.checkEmailTitle")}
-        body={t("signup.checkEmailBody", { email: pendingEmail })}
-      />
-    );
-  }
-
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <Field label="Nom complet" value={fullName} onChange={setFullName} required />
-      <Field label="Email" type="email" value={email} onChange={setEmail} required />
 
       <label className="block">
         <span className="batta-eyebrow text-[10px]">Téléphone</span>
@@ -465,112 +460,5 @@ function Field({
         className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
       />
     </label>
-  );
-}
-
-/**
- * "Check your email" card with a resend button. We rate-limit on the
- * client (30s between attempts) to avoid hammering Supabase's resend
- * endpoint, which itself rate-limits per-user.
- */
-function ConfirmationSent({
-  email, title, body, openInboxLabel, backToLoginLabel,
-}: {
-  email: string;
-  title: string;
-  body: string;
-  openInboxLabel: string;
-  backToLoginLabel: string;
-}) {
-  const [resentAt, setResentAt] = useState<number | null>(null);
-  const [resending, setResending] = useState(false);
-  const [resendError, setResendError] = useState<string | null>(null);
-  const [cooldown, setCooldown] = useState(0);
-
-  // Tick the cooldown counter once per second while it's > 0 so the
-  // button label updates live.
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const t = setInterval(() => {
-      setCooldown((c) => Math.max(0, c - 1));
-    }, 1000);
-    return () => clearInterval(t);
-  }, [cooldown]);
-
-  const domain = email.split("@")[1] ?? "";
-  const inboxUrl =
-    domain === "gmail.com" ? "https://mail.google.com" :
-    domain === "outlook.com" || domain === "hotmail.com" || domain === "live.com"
-      ? "https://outlook.live.com" :
-    domain === "yahoo.com" || domain === "yahoo.fr"
-      ? "https://mail.yahoo.com" :
-    null;
-
-  async function resend() {
-    if (cooldown > 0 || resending) return;
-    setResendError(null);
-    setResending(true);
-    try {
-      const supabase = getBrowserSupabase();
-      const { error } = await supabase.auth.resend({ type: "signup", email });
-      if (error) {
-        setResendError(error.message);
-        return;
-      }
-      setResentAt(Date.now());
-      setCooldown(30);
-    } finally {
-      setResending(false);
-    }
-  }
-
-  return (
-    <div className="batta-frame-gold relative p-6 text-center">
-      <div className="relative">
-        <span className="batta-monogram batta-monogram-filled mx-auto mb-3 size-12 text-[18px]">
-          <MailCheck className="size-5" strokeWidth={1.75} />
-        </span>
-        <h2 className="batta-serif text-[18px] font-semibold text-batta-cream">{title}</h2>
-        <p className="mt-2 text-sm text-batta-cream/75">{body}</p>
-        {resentAt && !resendError && (
-          <p className="batta-tone-ok mt-3 rounded-lg px-3 py-1.5 text-[11px] inline-block">
-            Email renvoyé.
-          </p>
-        )}
-        {resendError && (
-          <p className="batta-tone-bad mt-3 rounded-lg px-3 py-1.5 text-[11px]">
-            {resendError}
-          </p>
-        )}
-        <div className="mt-5 flex flex-col gap-2">
-          {inboxUrl && (
-            <a
-              href={inboxUrl} target="_blank" rel="noopener noreferrer"
-              className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13px]"
-            >
-              {openInboxLabel}
-            </a>
-          )}
-          <button
-            type="button"
-            onClick={resend}
-            disabled={cooldown > 0 || resending}
-            className="batta-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
-          >
-            {resending
-              ? "Envoi…"
-              : cooldown > 0
-                ? `Renvoyer (${cooldown}s)`
-                : "Renvoyer l'email"}
-          </button>
-          <Link
-            href="/login"
-            className="text-[12px] text-batta-cream/70 hover:text-gold-bright"
-          >
-            {backToLoginLabel}
-          </Link>
-        </div>
-      </div>
-    </div>
   );
 }
