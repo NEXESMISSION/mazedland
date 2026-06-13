@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { clientIp } from "@/lib/clientIp";
 import { assertSupabaseRef } from "@/lib/supabase/guard";
 
 /**
@@ -22,7 +23,7 @@ import { assertSupabaseRef } from "@/lib/supabase/guard";
  */
 const BUCKET = new Map<string, number[]>();
 const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 8;
+const MAX_PER_WINDOW = 5;
 function rateLimited(ip: string): boolean {
   const now = Date.now();
   const hits = (BUCKET.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
@@ -38,10 +39,7 @@ export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ ok: false, error: "cross_origin_blocked" }, { status: 403 });
   }
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "anonymous";
+  const ip = clientIp(req);
   if (rateLimited(ip)) {
     return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
   }
@@ -70,6 +68,17 @@ export async function POST(req: NextRequest) {
   // Cross-instance rate limit (per-IP) — hardens against enumeration.
   const { data: blocked } = await admin.rpc("check_auth_ratelimit", { p_ip: ip });
   if (blocked === true) {
+    return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+  }
+
+  // Per-PHONE cap — protects a specific account from brute-force spread across
+  // many IPs (the per-IP cap alone can't). 10 attempts / 15 min per number.
+  const { data: phoneBlocked } = await admin.rpc("check_rate_limit", {
+    p_key: `login:${phone}`,
+    p_max: 10,
+    p_window_secs: 900,
+  });
+  if (phoneBlocked === true) {
     return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
   }
 

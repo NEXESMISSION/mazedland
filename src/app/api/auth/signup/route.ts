@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { assertSupabaseRef } from "@/lib/supabase/guard";
+import { clientIp } from "@/lib/clientIp";
 import { isSmsConfigured } from "@/lib/winsms";
 
 /**
@@ -49,10 +50,7 @@ export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ ok: false, error: "cross_origin_blocked" }, { status: 403 });
   }
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "anonymous";
+  const ip = clientIp(req);
   if (rateLimited(ip)) {
     return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
   }

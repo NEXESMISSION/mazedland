@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomInt } from "crypto";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { clientIp } from "@/lib/clientIp";
 import { sendSms, isSmsConfigured } from "@/lib/winsms";
 import { hashCode } from "@/lib/otp";
 import { log } from "@/lib/log";
@@ -29,10 +30,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
   }
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "anonymous";
+  const ip = clientIp(req);
 
   // SMS off → tell the client to proceed without verification.
   if (!isSmsConfigured()) {
@@ -108,7 +106,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "store_failed" }, { status: 500 });
   }
 
-  const message = `Votre code de vérification Batta.tn est : ${code}. Valable 10 minutes.`;
+  const message = `Votre code de vérification Mazed Auto est : ${code}. Valable 10 minutes.`;
   const sent = await sendSms({ to: phone, sms: message });
   if (!sent.ok) {
     return NextResponse.json({ error: "send_failed" }, { status: 502 });

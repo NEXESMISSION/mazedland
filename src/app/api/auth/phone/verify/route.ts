@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { clientIp } from "@/lib/clientIp";
 import { hashCode } from "@/lib/otp";
 
 const MAX_ATTEMPTS = 5;
@@ -18,10 +19,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
   }
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "anonymous";
+  const ip = clientIp(req);
 
   let phone = "";
   let code = "";
