@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { assertSupabaseRef } from "./guard";
 
 /**
  * Server-side Supabase client bound to the request's cookie jar so RLS
@@ -14,6 +15,7 @@ export async function getServerSupabase() {
       "Supabase env missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local.",
     );
   }
+  assertSupabaseRef(url); // refuse to act against a sibling app's DB
   const cookieStore = await cookies();
   return createServerClient(url, key, {
     cookies: {

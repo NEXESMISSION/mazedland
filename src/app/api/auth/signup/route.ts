@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { assertSupabaseRef } from "@/lib/supabase/guard";
 
 /**
  * Phone-only signup — fully server-side.
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
   if (!url || !key) {
     return NextResponse.json({ ok: false, error: "server_misconfigured" }, { status: 500 });
   }
+  assertSupabaseRef(url); // refuse to act against a sibling app's DB
   const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 
   // Cross-instance rate limit (per-IP) — hardens against abuse.

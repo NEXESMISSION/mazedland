@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { assertSupabaseRef } from "./guard";
 
 let cached: ReturnType<typeof createBrowserClient> | null = null;
 
@@ -11,6 +12,7 @@ export function getBrowserSupabase() {
       "Supabase env missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local.",
     );
   }
+  assertSupabaseRef(url); // refuse to act against a sibling app's DB
   cached = createBrowserClient(url, key);
   return cached;
 }

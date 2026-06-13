@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { assertSupabaseRef } from "./guard";
 
 let cached: SupabaseClient | null = null;
 
@@ -13,6 +14,7 @@ export function getServiceSupabase(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
+  assertSupabaseRef(url); // refuse to act against a sibling app's DB
   cached = createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
   });

@@ -1,7 +1,19 @@
 import { log } from "@/lib/log";
 import { logError } from "@/lib/activity";
+import { checkSupabaseRef } from "@/lib/supabase/guard";
 
 const errLog = log.scope("err");
+
+/**
+ * Boot hook — Next.js calls this once per server instance. We use it to surface
+ * a WRONG-DATABASE misconfig (a deploy wired to a sibling app's Supabase project)
+ * loudly and immediately in the log. The Supabase client factories ALSO hard-throw
+ * on use (see lib/supabase/guard.ts); this is the early, can't-miss signal.
+ */
+export function register(): void {
+  const problem = checkSupabaseRef(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  if (problem) errLog.error(`[db-guard] ${problem}`);
+}
 
 /**
  * Next.js server-side error hook. Fires for every uncaught error in a Server
