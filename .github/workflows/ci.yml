@@ -120,18 +120,23 @@ jobs:
       - name: Start local Supabase stack
         run: supabase start
 
-      # `supabase status -o env` prints the stack's connection vars. We override
-      # the variable names so it emits EXACTLY what the suite reads, then append
-      # to $GITHUB_ENV for the test step. This avoids brittle parsing and stays
-      # version-safe. (The local stack mints its own keys — nothing secret.)
+      # Map the stack's connection vars into the names the suite reads. We use
+      # the DEFAULT `-o env` output (API_URL / ANON_KEY / SERVICE_ROLE_KEY /
+      # DB_URL — stable across CLI versions) and remap, instead of the
+      # `--override-name` flag whose dotted keys drift between CLI releases and
+      # silently emitted nothing (→ "Invalid supabaseUrl" in every test). The
+      # `cat` keeps the resolved values visible in the log for debugging.
+      # (The local stack mints its own keys — nothing secret.)
       - name: Export stack connection env
         run: |
-          supabase status -o env \
-            --override-name api.url=SUPABASE_URL \
-            --override-name auth.anon_key=SUPABASE_ANON_KEY \
-            --override-name auth.service_role_key=SUPABASE_SERVICE_ROLE_KEY \
-            --override-name db.url=SUPABASE_DB_URL \
-            >> "$GITHUB_ENV"
+          supabase status -o env | tee stack.env
+          set -a; . ./stack.env; set +a
+          {
+            echo "SUPABASE_URL=${API_URL}"
+            echo "SUPABASE_ANON_KEY=${ANON_KEY}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
+            echo "SUPABASE_DB_URL=${DB_URL}"
+          } >> "$GITHUB_ENV"
 
       - name: RPC integration tests
         run: pnpm test:rpc

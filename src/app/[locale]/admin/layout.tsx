@@ -2,6 +2,13 @@ import { redirect } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminSidebar, AdminMobileBar } from "@/components/admin/AdminSidebar";
 
+// Admin is auth-gated and per-request — never static. Forcing dynamic here
+// covers EVERY admin route (so a new page can't accidentally be prerendered,
+// which would run this layout's getServerSupabase() at build and fail when
+// no Supabase env is present, e.g. CI without secrets). Most admin pages also
+// declare this individually; the layout makes it impossible to forget.
+export const dynamic = "force-dynamic";
+
 /**
  * Admin console — gated to role=admin. Responsive shell: a sticky left rail on
  * desktop (lg+), a top bar + slide-over drawer on mobile/tablet. The consumer

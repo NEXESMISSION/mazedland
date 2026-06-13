@@ -139,6 +139,11 @@ export type SeedAuctionOpts = {
   endsInSeconds?: number;
   extendWindowSeconds?: number;
   extendBySeconds?: number;
+  /** 1/6 surenchère window (migration 0130). Production default is FALSE
+   *  (seller opt-in), but the suite was written as the executable spec of the
+   *  WINDOW behavior, so fixtures default to TRUE here. The no-window path is
+   *  exercised by setting this false explicitly. */
+  sixthOfferEnabled?: boolean;
 };
 
 export type SeededAuction = {
@@ -187,6 +192,7 @@ export async function seedAuction(
     winner_amount: opts.winnerAmount ?? null,
     extend_window_seconds: opts.extendWindowSeconds ?? 300,
     extend_by_seconds: opts.extendBySeconds ?? 600,
+    sixth_offer_enabled: opts.sixthOfferEnabled ?? true,
   };
   // Honor the listing_type CHECK constraints: direct needs sale_price + no
   // buy_now; auction must have sale_price NULL.
