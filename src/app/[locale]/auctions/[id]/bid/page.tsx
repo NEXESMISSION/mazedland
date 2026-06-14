@@ -2,6 +2,7 @@ import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { resolveDeposit } from "@/lib/pricing";
 import { getCachedMonetization } from "@/lib/settings";
 import { AUCTION_DETAIL_SELECT } from "@/lib/auction/detail";
@@ -42,16 +43,18 @@ export default async function BidPage({
   const locale = await getLocale();
   const t = await getTranslations();
   const supabase = await getServerSupabase();
-
+  // Auction display data via the SERVICE-ROLE client: AUCTION_DETAIL_SELECT
+  // includes columns revoked from `authenticated` (reserve_price + now
+  // winner_user_id) — selecting them as authenticated 500s the whole query. The
+  // auction is public data (status<>cancelled); the actual bid re-reads fresh
+  // server-side via place_bid, so the brief cache-free read here is display-only.
+  const admin = getServiceSupabase();
   const [auctionRes, initialBidsRes, userRes] = await Promise.all([
-    // Explicit columns (AUCTION_DETAIL_SELECT), NOT `*`: a `select *` from the
-    // authenticated role hits the ungranted reserve_price (0112 lockdown) and
-    // fails "permission denied for table auctions" → notFound() → every
-    // logged-in user gets "Page introuvable" on /bid (bidding unreachable).
-    supabase
+    (admin ?? supabase)
       .from("auctions")
       .select(AUCTION_DETAIL_SELECT)
       .eq("id", id)
+      .neq("status", "cancelled")
       .single(),
     // Seed the history list — RLS hides sealed-bid amounts from non-self
     // rows during live phase, but rows still come through so the count

@@ -95,7 +95,10 @@ export default async function CheckoutEntry({
   if (!auctionId) notFound();
   const kind = type as CheckoutKind;
 
-  const { data: auctionRow } = await supabase
+  // Service-role read: winner_user_id is revoked from `authenticated` (audit #4),
+  // so selecting it as the user 500s the query. The auction is public data; the
+  // winner-only gate below still compares winner_user_id === user.id.
+  const { data: auctionRow } = await (getServiceSupabase() ?? supabase)
     .from("auctions")
     .select(
       `id, status, listing_type, opening_price, sale_price, buy_now_price, winner_user_id, winner_amount,

@@ -62,7 +62,7 @@ export default async function ActivityPage({
     supabase
       .from("watchlist")
       .select(`auction:auctions!inner (
-        id, status, opening_price, current_price, winner_amount, winner_user_id, ends_at, starts_at,
+        id, status, opening_price, current_price, winner_amount, ends_at, starts_at,
         property:properties!inner ( title, governorate, status, photos:property_photos (storage_path, sort_order) )
       )`)
       .eq("user_id", user!.id),
@@ -134,11 +134,28 @@ export default async function ActivityPage({
     const { data } = await supabase
       .from("auctions")
       .select(`
-        id, status, opening_price, current_price, winner_amount, winner_user_id, ends_at, starts_at,
+        id, status, opening_price, current_price, winner_amount, ends_at, starts_at,
         property:properties ( title, governorate, status, photos:property_photos (storage_path, sort_order) )
       `)
       .in("id", allIds);
     participated = (data ?? []) as unknown as RawAuction[];
+  }
+
+  // Which of these auctions did I WIN? winner_user_id is no longer a client-
+  // readable column (audit #4) — resolve own-wins via the is_winner_of batch
+  // helper instead of reading the raw column.
+  const wonCheckIds = Array.from(
+    new Set<string>([
+      ...participated.map((a) => a.id),
+      ...((watchRes.data ?? []) as unknown as Array<{ auction: RawAuction | null }>)
+        .map((w) => w.auction?.id)
+        .filter((x): x is string => Boolean(x)),
+    ]),
+  );
+  let wonIds = new Set<string>();
+  if (wonCheckIds.length > 0) {
+    const { data: wonData } = await supabase.rpc("is_winner_of", { p_ids: wonCheckIds });
+    wonIds = new Set((wonData ?? []) as string[]);
   }
 
   const map = (a: RawAuction, won: boolean): ActivityItem => {
@@ -171,7 +188,7 @@ export default async function ActivityPage({
       enAttente.push(item);
       continue;
     }
-    const won = a.winner_user_id === user!.id && WON.includes(a.status);
+    const won = wonIds.has(a.id) && WON.includes(a.status);
     if (won) gagnees.push(map(a, true));
     else if (LIVE.includes(a.status)) enCours.push(map(a, false));
     else participees.push(map(a, false));
@@ -182,7 +199,7 @@ export default async function ActivityPage({
   )
     .map((w) => w.auction)
     .filter((a) => a && !HIDDEN_PROPERTY.includes(a.property?.status ?? ""))
-    .map((a) => map(a, a.winner_user_id === user!.id && WON.includes(a.status)));
+    .map((a) => map(a, wonIds.has(a.id) && WON.includes(a.status)));
 
   const isRTL = locale === "ar";
   const ChevronEnd = isRTL ? ChevronLeft : ChevronRight;

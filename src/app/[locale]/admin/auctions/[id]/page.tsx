@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { formatTND } from "@/lib/utils";
 import { PaymentsQueueList, type PaymentReviewItem } from "../../payments/PaymentsQueueList";
 import { CautionActions, type CautionRow } from "./CautionActions";
@@ -39,7 +40,7 @@ export default async function AdminAuctionView({
   const { id } = await params;
   const sb = await getServerSupabase();
 
-  const { data: aRaw } = await sb
+  const { data: aRaw } = await (getServiceSupabase() ?? sb)
     .from("auctions")
     .select(`id, type, listing_type, status, opening_price, current_price, winner_user_id, winner_amount, ends_at,
       property:properties ( id, title, governorate, owner_id, status )`)

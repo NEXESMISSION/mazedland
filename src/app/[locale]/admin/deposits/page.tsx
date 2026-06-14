@@ -1,4 +1,5 @@
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { DepositsClient, type DepositRow, type PrepareRow, type HeldRow } from "./DepositsClient";
 import { AdminPager } from "@/components/admin/AdminPager";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
@@ -129,7 +130,7 @@ export default async function AdminDepositsPage({
 
   // ─── 5. auctions that ended but still hold locked non-winner deposits
   //     → "prepare refunds" pass. Bounded scan, grouped by auction. ───
-  const { data: lockedRows } = await supabase
+  const { data: lockedRows } = await (getServiceSupabase() ?? supabase)
     .from("auction_deposits")
     .select(`auction_id, user_id, auction:auctions!auction_deposits_auction_id_fkey ( id, status, winner_user_id, sixth_offer_deadline, property:properties ( title ) )`)
     .is("released_at", null)
