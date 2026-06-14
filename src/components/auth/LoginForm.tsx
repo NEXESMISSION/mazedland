@@ -59,22 +59,23 @@ export function LoginForm() {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    // Validate BEFORE the transition so plainly-invalid input doesn't flash the
+    // pending spinner (audit #26).
+    const check = validatePhone(dialCode, phoneNumber);
+    if (!check.ok) {
+      setError(check.reason);
+      return;
+    }
+    const phone = normalizeE164(dialCode, phoneNumber);
+    if (!phone) {
+      setError("Numéro invalide.");
+      return;
+    }
     startTransition(async () => {
       // Hard navigation (not router.replace+refresh): the @supabase/ssr auth
       // cookie is written synchronously, but a soft refresh can prefetch the
       // destination before the cookie propagates, leaving the render anonymous.
       const destination = next === "/" ? `/${locale}` : `/${locale}${next}`;
-
-      const check = validatePhone(dialCode, phoneNumber);
-      if (!check.ok) {
-        setError(check.reason);
-        return;
-      }
-      const phone = normalizeE164(dialCode, phoneNumber);
-      if (!phone) {
-        setError("Numéro invalide.");
-        return;
-      }
       try {
         const res = await fetch("/api/auth/login-by-phone", {
           method: "POST",
