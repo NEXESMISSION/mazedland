@@ -9,8 +9,11 @@ name: External cron backstop
 # precise minute clock — pg_cron remains primary.
 #
 # Required repo config: secret CRON_SECRET (matches the deploy's CRON_SECRET)
-# and variable SITE_URL (e.g. https://batta.tn). Without them the job no-ops
-# loudly rather than silently passing.
+# and variable SITE_URL (e.g. https://batta.tn). WITHOUT them this workflow now
+# SKIPS cleanly (job stays green) instead of FAILING every 5 min — so it no
+# longer spams failure emails before it's been configured. Set both (Settings →
+# Secrets and variables → Actions) to actually enable the backstop + the
+# notification-email drain.
 
 on:
   schedule:
@@ -26,13 +29,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Config check
+        id: cfg
         env:
           SITE_URL: ${{ vars.SITE_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           if [ -z "$SITE_URL" ] || [ -z "$CRON_SECRET" ]; then
-            echo "::error::Set repo variable SITE_URL and secret CRON_SECRET to enable the backstop."
-            exit 1
+            echo "::warning::Backstop idle — set repo variable SITE_URL + secret CRON_SECRET to enable it. pg_cron is the primary scheduler; this workflow is only the safety net + the notification-email drain. Skipping (not failing)."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
 
       # Probe health BEFORE the tick so a stale heartbeat (pg_cron stalled) is
@@ -42,6 +48,7 @@ jobs:
       # its own cadence (see README) — this in-run probe is a smoke test, not
       # the stall detector.
       - name: Health probe (pre-tick, warn-only)
+        if: steps.cfg.outputs.configured == 'true'
         env:
           SITE_URL: ${{ vars.SITE_URL }}
         run: |
@@ -50,6 +57,7 @@ jobs:
           if [ "$code" != "200" ]; then echo "::warning::/api/health $code — a scheduler heartbeat is stale; recovering via tick below"; fi
 
       - name: Tick auctions + drain bid queue (HTTP backstop)
+        if: steps.cfg.outputs.configured == 'true'
         env:
           SITE_URL: ${{ vars.SITE_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
@@ -65,6 +73,7 @@ jobs:
       # failed the deploy. This backstop (~5 min) keeps notification emails
       # flowing. Warn-only — a transient email hiccup shouldn't fail the run.
       - name: Drain notification email queue (HTTP backstop)
+        if: steps.cfg.outputs.configured == 'true'
         env:
           SITE_URL: ${{ vars.SITE_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
