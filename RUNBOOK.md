@@ -16,16 +16,20 @@ freshness budget, **200** otherwise.
 
 - **Public:** `GET /api/health` → `{ ok, stale_count }` (no detail).
 - **Detailed:** add `Authorization: Bearer $CRON_SECRET` (or `?key=`) → per-job
-  `{ job, last_run_at, max_age_seconds, stale }`.
+  `{ job, last_run, age, stale }` (the table is `(job, last_run)`; the freshness
+  budget is applied by the health check / launch-check, not a stored column).
 - **DO THIS BEFORE LAUNCH:** point an external uptime monitor (UptimeRobot,
   Better Stack, Pingdom) at `/api/health` with a 2–5 min interval and alert on
   non-200. This is the single most important production alarm — it catches a
   pg_cron stall (auctions stop closing) before customers do.
 
-The 10 prod pg_cron jobs (verify with `select * from cron.job;` or
+The prod pg_cron jobs (verify with `select * from public.list_cron_jobs();` or
 `scripts/launch-check.mjs`): `tick_auctions` + `process_bid_events` (every
-minute), `batta-ending-soon`, `batta-final-payment-due`, plus nightly cleanup
-jobs. notify-email runs on the **Vercel** cron (`vercel.json`), not pg_cron.
+minute), `notify_auctions_ending_soon`, `notify_final_payment_due`, plus nightly
+cleanup. **notify-email is NOT on a Vercel cron** — `vercel.json` carries no crons
+(Vercel Hobby caps crons at daily). The email-outbox drain + the tick backstop
+ride `.github/workflows/cron.yml` (~every 5 min); set the repo **`CRON_SECRET`**
+secret + **`SITE_URL`** variable or neither runs (the 4-day-stale-email symptom).
 
 ## 2. Finding an incident — logs & tracing
 

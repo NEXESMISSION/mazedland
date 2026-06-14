@@ -28,9 +28,12 @@ import { isSmsConfigured } from "@/lib/winsms";
  * still runs in front of this when configured.
  */
 
-// Synthetic email domain for phone accounts. Non-routable by design — nothing
-// is ever sent here; the address only exists so Supabase has a unique handle.
-const PHONE_EMAIL_DOMAIN = "phone.mazedland.app";
+// Synthetic email domain for phone accounts. Nothing is ever sent here; the
+// address only exists so Supabase has a unique handle. Per-app default, but
+// override with SIGNUP_EMAIL_DOMAIN to point at a domain you actually OWN
+// (audit #16/#19 — the hardcoded default isn't owned, a latent recovery/
+// takeover vector if email-based recovery is ever turned on).
+const PHONE_EMAIL_DOMAIN = process.env.SIGNUP_EMAIL_DOMAIN || "phone.mazedland.app";
 
 const BUCKET = new Map<string, number[]>();
 const WINDOW_MS = 60_000;
