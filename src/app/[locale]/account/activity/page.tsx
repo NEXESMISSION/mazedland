@@ -52,7 +52,9 @@ export default async function ActivityPage({
   // What the user is involved in: auctions they bid on, hold a deposit on,
   // or have a caution payment still awaiting validation.
   const [bidsRes, depRes, watchRes, pendRes] = await Promise.all([
-    supabase.from("bids").select("auction_id, amount").eq("bidder_id", user!.id),
+    // Read own bids via the gated view (is_mine) — bidder_id is no longer a
+    // client-readable column (audit #4). is_mine=true returns only the caller's.
+    supabase.from("auction_bids_public").select("auction_id, amount").eq("is_mine", true),
     supabase
       .from("auction_deposits")
       .select("auction_id, amount, released_at, refunded_at, forfeited_at")

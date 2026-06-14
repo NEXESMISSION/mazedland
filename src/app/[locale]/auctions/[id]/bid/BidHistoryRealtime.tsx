@@ -1,30 +1,34 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Trophy, TrendingUp, Lock, Eye } from "lucide-react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { formatTND } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import type { Bid } from "@/lib/types";
 
 /**
- * `Bid` from the server may carry an embedded `bidder` profile when the
- * query joined on profiles. The shape is whatever Supabase's join
- * returns — single object for a `to-one` FK, or null if the profile is
- * missing.
+ * A bid as served by the `auction_bids_public` view (audit #4): amount + time +
+ * a relationship-scoped masked-able name + an is_mine flag, and crucially NO raw
+ * bidder_id (which is no longer column-readable). The view also encodes the
+ * sealed-bid gate, so we only ever receive rows the caller is allowed to see.
  */
-type EnrichedBid = Bid & {
-  bidder?: { full_name: string | null } | null;
+export type PublicBid = {
+  id: string;
+  auction_id: string;
+  amount: number;
+  is_proxy: boolean;
+  is_winning: boolean;
+  placed_at: string;
+  bidder_name: string | null;
+  is_mine: boolean;
 };
 
 interface Props {
   auctionId: string;
-  /** SSR seed — avoids a "..." flash. Newest first. */
-  initialBids: EnrichedBid[];
-  /** Total bid count incl. sealed rows hidden by RLS. */
+  /** SSR seed (from auction_bids_public) — avoids a "..." flash. Newest first. */
+  initialBids: PublicBid[];
+  /** Total bid count incl. sealed rows hidden by the view. */
   totalBids: number;
-  /** Current user — bids by this id render as "Vous". */
-  userId: string | null;
   /** Mask non-self bid amounts during live phase (sealed-bid only). */
   isSealedLive: boolean;
   locale: string;
@@ -32,112 +36,82 @@ interface Props {
 
 /**
  * Privacy-respectful display name. "Ahmed Ben Salem" → "Ahmed B.";
- * a single name passes through unchanged; missing name → a stable
- * "Enchérisseur" placeholder. Beats showing the raw UUID slice
- * ("ec0043…") on every row, which leaks ids and reads as a bug.
+ * a single name passes through; missing → a stable "Enchérisseur".
  */
 function maskName(full: string | null | undefined): string {
   const s = (full ?? "").trim();
   if (!s) return "Enchérisseur";
   const parts = s.split(/\s+/);
   if (parts.length === 1) return parts[0];
-  const first = parts[0];
-  const last = parts[parts.length - 1];
-  const initial = last.charAt(0);
-  return `${first} ${initial}.`;
+  return `${parts[0]} ${parts[parts.length - 1].charAt(0)}.`;
 }
 
 /**
- * Realtime leaderboard of bids on a single auction. Subscribes to bids
- * INSERT events for this auction. Newest first; rank-1 gets a gold pill
- * and gradient amount. The current user's row is labelled "Vous".
- *
- * For sealed-bid auctions in the live phase, RLS already hides other
- * bidders' amounts at the server. We still receive their `id` rows
- * (count is public) so the leaderboard renders "X autres offres ·
- * révélées à la clôture" instead of looking empty.
+ * Realtime leaderboard of bids on one auction. Reads exclusively from the gated
+ * `auction_bids_public` view — names + is_mine come from the server, so there's
+ * no client-side bidder_id → name resolution (and no bidder_id leaves the DB).
+ * A realtime INSERT subscription just triggers an immediate re-fetch of the
+ * view; an adaptive poll heals any dropped events. (Realtime payloads no longer
+ * carry the name/is_mine, so re-fetching the view is the single source of truth.)
  */
 export function BidHistoryRealtime({
   auctionId,
   initialBids,
   totalBids,
-  userId,
   isSealedLive,
   locale,
 }: Props) {
-  const [bids, setBids] = useState<EnrichedBid[]>(initialBids);
+  const [bids, setBids] = useState<PublicBid[]>(initialBids);
   const [recentId, setRecentId] = useState<string | null>(null);
 
-  // Cache of bidder_id → display name. Seeded from the SSR bids' joined
-  // profile, kept hot by the poll, and queried-on-demand when a
-  // realtime INSERT arrives for a bidder we haven't seen yet. Avoids
-  // re-fetching the same profile every tick.
-  const nameCacheRef = useRef<Map<string, string>>(
-    new Map(
-      initialBids
-        .filter((b) => b.bidder?.full_name)
-        .map((b) => [b.bidder_id, b.bidder!.full_name as string]),
-    ),
-  );
-  // Bump this counter when the cache grows, so the rendered list
-  // re-renders with the freshly resolved names (Map mutations alone
-  // don't trigger React).
-  // Only the setter matters — bumping it forces the list to re-render with
-  // freshly-resolved names; the counter value itself is never read.
-  const [, setNameVersion] = useState(0);
-
-  // Shared activity timestamp — bumped by the realtime INSERT handler
-  // AND by the poll when it spots a new bid id. The adaptive poll
-  // downstream reads this to switch between HOT (1 s) and COLD (4 s)
-  // cadence so quiet auctions don't pay the bidding-feel price.
   const lastActivityRef = useRef<number>(0);
+  // Holds the latest re-fetch fn so the realtime effect can call it without
+  // re-subscribing on every render.
+  const refetchRef = useRef<() => void>(() => {});
+  const topIdRef = useRef<string | null>(initialBids[0]?.id ?? null);
 
-  // Subscribe to INSERT events on bids for this auction. Dedup by id so
-  // an optimistic local insert + the realtime echo don't double-render.
+  // Fetch the top-8 from the gated view, reconcile, and flag a fresh top row.
+  const fetchTop = useCallback(async () => {
+    const supabase = getBrowserSupabase();
+    const { data, error } = await supabase
+      .from("auction_bids_public")
+      .select("id, auction_id, amount, is_proxy, is_winning, placed_at, bidder_name, is_mine")
+      .eq("auction_id", auctionId)
+      .order("placed_at", { ascending: false })
+      .limit(8);
+    if (error || !data) return;
+    const next = data as unknown as PublicBid[];
+    setBids((prev) => {
+      if (prev.length === next.length && prev.every((b, i) => b.id === next[i].id)) {
+        return prev; // unchanged
+      }
+      const newTop = next[0]?.id ?? null;
+      if (newTop && newTop !== topIdRef.current) {
+        topIdRef.current = newTop;
+        setRecentId(newTop);
+        lastActivityRef.current = Date.now();
+      }
+      return next;
+    });
+  }, [auctionId]);
+
+  useEffect(() => {
+    refetchRef.current = () => void fetchTop();
+  }, [fetchTop]);
+
+  // Realtime: an INSERT on bids for this auction → refetch the view. The payload
+  // itself no longer carries name/is_mine (bidder_id is revoked), so the view is
+  // the authority; this just makes the refresh instant instead of poll-latency.
   useEffect(() => {
     const supabase = getBrowserSupabase();
     const channel = supabase
       .channel(`auction-history:${auctionId}`)
       .on(
         "postgres_changes" as unknown as never,
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "bids",
-          filter: `auction_id=eq.${auctionId}`,
-        } as never,
-        (payload: { new: Bid }) => {
+        { event: "INSERT", schema: "public", table: "bids", filter: `auction_id=eq.${auctionId}` } as never,
+        () => {
           lastActivityRef.current = Date.now();
-          const incoming = payload.new;
-          setBids((prev) => {
-            if (prev.some((b) => b.id === incoming.id)) return prev;
-            // Realtime INSERT payloads don't carry the joined profile,
-            // so we attach the cached name (if known); the on-demand
-            // fetch below fills it in for a brand-new bidder.
-            const cachedName = nameCacheRef.current.get(incoming.bidder_id);
-            const enriched: EnrichedBid = cachedName
-              ? { ...incoming, bidder: { full_name: cachedName } }
-              : { ...incoming, bidder: null };
-            return [enriched, ...prev].slice(0, 8);
-          });
-          setRecentId(incoming.id);
-
-          // First time we've seen this bidder? Look up their profile
-          // once and cache the name — every subsequent bid from them
-          // (this session) resolves instantly.
-          if (!nameCacheRef.current.has(incoming.bidder_id)) {
-            void supabase
-              .from("public_profiles")
-              .select("full_name")
-              .eq("id", incoming.bidder_id)
-              .maybeSingle()
-              .then((res: { data: { full_name: string | null } | null }) => {
-                const name = res.data?.full_name ?? null;
-                if (!name) return;
-                nameCacheRef.current.set(incoming.bidder_id, name);
-                setNameVersion((v) => v + 1);
-              });
-          }
+          refetchRef.current();
         },
       )
       .subscribe();
@@ -146,112 +120,25 @@ export function BidHistoryRealtime({
     };
   }, [auctionId]);
 
-  // Polling fallback — a SAFETY NET, not the live channel. The realtime
-  // INSERT subscription above is the primary path and pushes new bids
-  // instantly; this poll only reconciles the top-8 leaderboard for the
-  // rare INSERT event Supabase Realtime drops. The query here is heavier
-  // (a join to profiles), so at tens of thousands of concurrent viewers
-  // a 1 s cadence was the single biggest DB-load source. Slowed on
-  // purpose — realtime keeps the feed instant, the poll just heals gaps.
-  //
-  //   HOT  (7 s)  — bid landed in the last 30 s, OR the poll itself
-  //                 detected a new row id (means realtime missed it).
-  //   COLD (30 s) — quiet for 30 s. Idle auctions drop here.
-  //
-  // Without this poll, two clients could each see *themselves* as the
-  // leader because their local bid was the only one their realtime
-  // channel ever received. Order matches the bid page's SSR query:
-  // placed_at DESC LIMIT 8. Pauses while the tab is hidden.
+  // Adaptive poll — safety net for dropped realtime events. HOT 7s within 30s of
+  // activity, COLD 30s when quiet. Pauses while the tab is hidden.
   useEffect(() => {
-    const supabase = getBrowserSupabase();
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
-
-    const HOT_INTERVAL_MS = 7_000;
-    const COLD_INTERVAL_MS = 30_000;
-    const HOT_WINDOW_MS = 30_000;
-
-    function nextInterval(): number {
-      const age = Date.now() - lastActivityRef.current;
-      return age < HOT_WINDOW_MS ? HOT_INTERVAL_MS : COLD_INTERVAL_MS;
-    }
+    const HOT = 7_000, COLD = 30_000, HOT_WINDOW = 30_000;
+    const nextInterval = () => (Date.now() - lastActivityRef.current < HOT_WINDOW ? HOT : COLD);
 
     async function pollOnce() {
       if (cancelled) return;
-      if (typeof document !== "undefined" && document.hidden) {
-        // STOP — don't re-arm while hidden. This poll runs TWO queries
-        // (bids + a profiles name join), so re-scheduling it on every
-        // background tab was the heaviest idle DB load on the page. The
-        // visibility listener restarts it when the tab returns.
-        return;
-      }
-      try {
-        const { data, error } = await supabase
-          .from("bids")
-          // Explicit columns — never ship ip_address / max_amount to the client
-          // (bidder IP + proxy ceiling are not the UI's business).
-          .select("id, auction_id, bidder_id, amount, is_proxy, is_winning, placed_at")
-          .eq("auction_id", auctionId)
-          .order("placed_at", { ascending: false })
-          .limit(8);
-        if (error || !data || cancelled) {
-          schedule();
-          return;
-        }
-        // Resolve display names via the safe public_profiles view (profiles is
-        // self/admin-only since 0080 — no FK embed possible on a view).
-        const rows = data as unknown as Bid[];
-        const ids = Array.from(new Set(rows.map((b) => b.bidder_id).filter(Boolean)));
-        const nameMap = new Map<string, string | null>();
-        if (ids.length > 0) {
-          const { data: profs } = await supabase
-            .from("public_profiles").select("id, full_name").in("id", ids);
-          for (const p of (profs ?? []) as { id: string; full_name: string | null }[]) {
-            nameMap.set(p.id, p.full_name);
-          }
-        }
-        if (cancelled) return;
-        const next: EnrichedBid[] = rows.map((b) => ({
-          ...b,
-          bidder: { full_name: nameMap.get(b.bidder_id) ?? null },
-        }));
-        // Refresh the name cache from whatever the poll just brought
-        // back — keeps "Ahmed B." correct even if the user changed
-        // their profile name mid-auction.
-        let cacheGrew = false;
-        for (const b of next) {
-          const n = b.bidder?.full_name;
-          if (n && nameCacheRef.current.get(b.bidder_id) !== n) {
-            nameCacheRef.current.set(b.bidder_id, n);
-            cacheGrew = true;
-          }
-        }
-        if (cacheGrew) setNameVersion((v) => v + 1);
-        setBids((prev) => {
-          if (
-            prev.length === next.length &&
-            prev.every((b, i) => b.id === next[i].id)
-          ) {
-            return prev;
-          }
-          // List changed — realtime may have missed an INSERT, or our
-          // optimistic state is stale. Either way, bump activity so
-          // the cadence stays hot for the next 30 s.
-          lastActivityRef.current = Date.now();
-          return next;
-        });
-      } catch {
-        /* transient — next tick will reconcile */
-      }
+      if (typeof document !== "undefined" && document.hidden) return; // re-armed by visibility listener
+      await fetchTop();
       schedule();
     }
-
     function schedule() {
       if (cancelled) return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(pollOnce, nextInterval());
     }
-
     pollOnce();
     function onVis() {
       if (!document.hidden) pollOnce();
@@ -262,14 +149,12 @@ export function BidHistoryRealtime({
       if (timer) clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [auctionId]);
+  }, [fetchTop]);
 
   // Clear the "fresh" highlight ~3s after the latest bid arrives.
   useEffect(() => {
     if (!recentId) return;
-    const t = setTimeout(() => {
-      setRecentId((v) => (v === recentId ? null : v));
-    }, 3000);
+    const t = setTimeout(() => setRecentId((v) => (v === recentId ? null : v)), 3000);
     return () => clearTimeout(t);
   }, [recentId]);
 
@@ -287,7 +172,6 @@ export function BidHistoryRealtime({
         </span>
       </div>
 
-      {/* Sealed-bid live banner — explains the "X autres" hidden rows */}
       {hiddenSealedCount > 0 && (
         <div className="flex items-center gap-2 rounded-lg border border-[var(--gold-soft)]/40 bg-[var(--gold-faint)] px-3 py-2 text-[11px] text-[var(--foreground-muted)]">
           <Eye className="h-3.5 w-3.5 text-[var(--gold)] shrink-0" />
@@ -309,7 +193,7 @@ export function BidHistoryRealtime({
       ) : (
         <ul className="divide-y divide-[var(--border)] lg:divide-y-0 lg:space-y-1.5">
           {bids.map((b, i) => {
-            const isMine = b.bidder_id === userId;
+            const isMine = b.is_mine;
             const isLeader = i === 0;
             const isFresh = b.id === recentId;
             const maskedAmount = isSealedLive && !isMine;
@@ -327,15 +211,11 @@ export function BidHistoryRealtime({
                     className={cn(
                       "h-7 w-7 lg:h-9 lg:w-9 rounded-full flex items-center justify-center text-[10px] lg:text-[12px] font-bold shrink-0 batta-tabular",
                       isLeader
-                        ? "bg-[var(--gold)] text-black shadow-[var(--shadow-gold)]"
+                        ? "bg-[var(--gold)] text-foreground shadow-[var(--shadow-gold)]"
                         : "bg-[var(--surface-2)] text-[var(--foreground-muted)]",
                     )}
                   >
-                    {isLeader ? (
-                      <Trophy className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
-                    ) : (
-                      i + 1
-                    )}
+                    {isLeader ? <Trophy className="h-3.5 w-3.5 lg:h-4 lg:w-4" /> : i + 1}
                   </span>
                   <div className="min-w-0">
                     <div className="text-[12px] lg:text-sm font-bold truncate flex items-center gap-1.5">
@@ -343,15 +223,7 @@ export function BidHistoryRealtime({
                         <span className="text-[var(--gold)]">Vous</span>
                       ) : (
                         <span className="text-[11px] lg:text-[12px] text-[var(--foreground-muted)]">
-                          {/* Read from cache first (covers realtime
-                              inserts that haven't been re-polled yet),
-                              fall back to the joined profile, finally
-                              "Enchérisseur" if nothing's available. */}
-                          {maskName(
-                            nameCacheRef.current.get(b.bidder_id)
-                              ?? b.bidder?.full_name
-                              ?? null,
-                          )}
+                          {maskName(b.bidder_name)}
                         </span>
                       )}
                       {isLeader && !isSealedLive && (
@@ -362,11 +234,6 @@ export function BidHistoryRealtime({
                     </div>
                     <div
                       className="text-[10px] lg:text-[11px] text-[var(--foreground-subtle)] batta-tabular"
-                      // Server renders this at request time, client hydrates
-                      // ~1 s later — `formatRelativeTime` reads `Date.now()`
-                      // so the strings drift ("7 min" vs "8 min") and React
-                      // throws #418. Live-clock components are the canonical
-                      // case for suppressHydrationWarning.
                       suppressHydrationWarning
                     >
                       {formatRelativeTime(b.placed_at)}

@@ -15,7 +15,8 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
 import { MapPin } from "lucide-react";
 import { BidHistoryRealtime } from "./BidHistoryRealtime";
-import type { AuctionWithProperty, Bid } from "@/lib/types";
+import type { AuctionWithProperty } from "@/lib/types";
+import type { PublicBid } from "./BidHistoryRealtime";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -58,11 +59,10 @@ export default async function BidPage({
     // Join profiles for `full_name` so the history can show "Ahmed B."
     // instead of the truncated UUID slice "ec0043…" the audit flagged.
     supabase
-      .from("bids")
-      // Explicit columns — keep ip_address / max_amount off the wire. Names are
-      // resolved below via the safe public_profiles view (profiles is
-      // self/admin-only since 0080; a view can't be FK-embedded).
-      .select("id, auction_id, bidder_id, amount, is_proxy, is_winning, placed_at")
+      // Gated bid-history view (audit #4): amount/time + relationship-scoped
+      // name + is_mine, never the raw bidder_id; encodes the sealed gate.
+      .from("auction_bids_public")
+      .select("id, auction_id, amount, is_proxy, is_winning, placed_at, bidder_name, is_mine")
       .eq("auction_id", id)
       .order("placed_at", { ascending: false })
       .limit(8),
@@ -83,26 +83,9 @@ export default async function BidPage({
   }
   // Denormalized counter (0098) — no per-viewer count() on the bids table.
   const totalBids = auction.bid_count ?? 0;
-  // Cast through unknown: we deliberately omit ip_address/max_amount from the
-  // select (privacy), so the row shape is a subset of Bid. The composer/history
-  // never read those fields.
-  const rawBids = (initialBidsRes.data ?? []) as unknown as Bid[];
-  // Resolve bidder display names via the safe public_profiles view (profiles is
-  // self/admin-only since 0080), then attach as the embedded `bidder` shape the
-  // history component expects.
-  const bidderIds = Array.from(new Set(rawBids.map((b) => b.bidder_id).filter(Boolean)));
-  const bidderNames = new Map<string, string | null>();
-  if (bidderIds.length > 0) {
-    const { data: profs } = await supabase
-      .from("public_profiles").select("id, full_name").in("id", bidderIds);
-    for (const p of (profs ?? []) as { id: string; full_name: string | null }[]) {
-      bidderNames.set(p.id, p.full_name);
-    }
-  }
-  const initialBids = rawBids.map((b) => ({
-    ...b,
-    bidder: { full_name: bidderNames.get(b.bidder_id) ?? null },
-  }));
+  // The auction_bids_public view already returns bidder_name + is_mine and no
+  // raw bidder_id, so no separate name resolution is needed.
+  const initialBids = (initialBidsRes.data ?? []) as unknown as PublicBid[];
   const userId = userRes.data.user?.id ?? null;
 
   // Server-truth pre-flight: KYC + deposit. The composer needs these
@@ -361,7 +344,6 @@ export default async function BidPage({
                 auctionId={auction.id}
                 initialBids={initialBids}
                 totalBids={totalBids}
-                userId={userId}
                 isSealedLive={isSealedLive}
                 locale={locale}
               />
