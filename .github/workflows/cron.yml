@@ -82,3 +82,16 @@ jobs:
             "$SITE_URL/api/cron/notify-email?key=$CRON_SECRET")
           echo "notify-email HTTP $code"; cat /tmp/email.json 2>/dev/null || true
           if [ "$code" != "200" ]; then echo "::warning::notify-email returned $code"; fi
+
+      # Important-notification SMS drain (WinSMS). Additive channel — warn-only,
+      # so an SMS hiccup never fails the run (email + in-app remain the baseline).
+      - name: Drain notification SMS queue (HTTP backstop)
+        if: steps.cfg.outputs.configured == 'true'
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          code=$(curl -s -o /tmp/sms.json -w "%{http_code}" \
+            "$SITE_URL/api/cron/notify-sms?key=$CRON_SECRET")
+          echo "notify-sms HTTP $code"; cat /tmp/sms.json 2>/dev/null || true
+          if [ "$code" != "200" ]; then echo "::warning::notify-sms returned $code"; fi

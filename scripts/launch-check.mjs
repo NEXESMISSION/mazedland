@@ -67,7 +67,7 @@ async function checkCron() {
   // whole check was a no-op. Read the real column and apply the budget HERE:
   // the every-minute engine jobs must be fresh within 5 min; less-frequent
   // jobs (notifications, prune, email drain) get a generous default.
-  const STALE_BUDGET = { tick_auctions: 300, process_bid_events: 300 };
+  const STALE_BUDGET = { tick_auctions: 300, process_bid_events: 300, notify_sms: 1800 };
   const DEFAULT_BUDGET = 3600;
   try {
     const { data } = await sb.from("cron_heartbeat").select("job, last_run");

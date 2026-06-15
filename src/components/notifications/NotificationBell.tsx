@@ -114,6 +114,14 @@ export function NotificationBell() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [, setTick] = useState(0);
   const loadingMoreRef = useRef(false);
+  // Current loaded count, read by `refresh` without making it a dependency —
+  // a dep would rebuild `refresh` on every list change, tearing down and
+  // rebuilding the poll interval AND the realtime subscription below (both
+  // keyed on `refresh`) each time.
+  const itemsLenRef = useRef(0);
+  // Single-flight guards for `refresh` (see its definition).
+  const refreshingRef = useRef(false);
+  const refreshPendingRef = useRef(false);
   const { toast } = useToast();
 
   const PAGE_SIZE = 20;
@@ -122,30 +130,52 @@ export function NotificationBell() {
     setMounted(true);
   }, []);
 
+  // Keep the latest loaded count in a ref so `refresh` can stay dependency-free.
+  useEffect(() => {
+    itemsLenRef.current = items.length;
+  }, [items.length]);
+
   // Refresh the head of the list. Re-fetches as many rows as are already
   // shown (so a poll doesn't shrink an expanded list back to one page),
   // capped at the API's max.
+  //
+  // Single-flight: mount, realtime (SIGNED_IN / TOKEN_REFRESHED /
+  // INSERT|UPDATE|DELETE) and the safety-net poll can all request a refresh at
+  // once. On a cold DB connection those identical requests pile up and each
+  // races the 10s abort — the "signal timed out" burst. Run at most one at a
+  // time; if more arrive mid-flight, do exactly one trailing refresh so the
+  // latest state is still fetched (no missed updates, no stampede).
   const refresh = useCallback(async () => {
-    try {
-      const want = Math.min(50, Math.max(PAGE_SIZE, items.length));
-      const res = await fetch(`/api/notifications?limit=${want}`, {
-        cache: "no-store",
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!res.ok) return;
-      const data = (await res.json()) as {
-        items: NotificationRow[];
-        unreadCount: number;
-        hasMore?: boolean;
-      };
-      setItems(data.items);
-      setUnread(data.unreadCount);
-      setHasMore(Boolean(data.hasMore));
-      setLoaded(true);
-    } catch {
-      // Network error — silently skip; next poll will retry.
+    if (refreshingRef.current) {
+      refreshPendingRef.current = true;
+      return;
     }
-  }, [items.length]);
+    refreshingRef.current = true;
+    try {
+      do {
+        refreshPendingRef.current = false;
+        const want = Math.min(50, Math.max(PAGE_SIZE, itemsLenRef.current));
+        const res = await fetch(`/api/notifications?limit=${want}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!res.ok) break;
+        const data = (await res.json()) as {
+          items: NotificationRow[];
+          unreadCount: number;
+          hasMore?: boolean;
+        };
+        setItems(data.items);
+        setUnread(data.unreadCount);
+        setHasMore(Boolean(data.hasMore));
+        setLoaded(true);
+      } while (refreshPendingRef.current);
+    } catch {
+      // Network error / timeout — silently skip; next poll or event retries.
+    } finally {
+      refreshingRef.current = false;
+    }
+  }, []);
 
   // Append the next page when the user scrolls to the end of the list.
   const loadMore = useCallback(async () => {

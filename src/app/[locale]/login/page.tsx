@@ -51,6 +51,14 @@ export default async function LoginPage() {
               <div className="mt-7">
                 <LoginForm />
               </div>
+              <p className="mt-4 text-center text-[12.5px]">
+                <Link
+                  href="/forgot-password"
+                  className="font-semibold text-muted transition hover:text-gold-bright"
+                >
+                  Mot de passe oublié ?
+                </Link>
+              </p>
             </div>
 
             <div className="border-t border-border bg-surface-2 px-7 py-4 text-center sm:px-8">
@@ -92,6 +100,14 @@ export default async function LoginPage() {
             <div className="mt-8">
               <LoginForm />
             </div>
+            <p className="mt-4 text-center text-[13px]">
+              <Link
+                href="/forgot-password"
+                className="font-semibold text-muted transition hover:text-gold-bright"
+              >
+                Mot de passe oublié ?
+              </Link>
+            </p>
 
             <p className="mt-6 text-center text-[13px] text-muted">
               Pas encore de compte ?{" "}

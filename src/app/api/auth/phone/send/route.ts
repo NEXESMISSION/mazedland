@@ -106,7 +106,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "store_failed" }, { status: 500 });
   }
 
-  const message = `Votre code de vérification Mazed Auto est : ${code}. Valable 10 minutes.`;
+  const message = `Votre code de vérification Batta est : ${code}. Valable 10 minutes.`;
   const sent = await sendSms({ to: phone, sms: message });
   if (!sent.ok) {
     return NextResponse.json({ error: "send_failed" }, { status: 502 });

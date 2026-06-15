@@ -75,6 +75,7 @@ export function SignupForm() {
           weak_password: "Mot de passe trop court (8 caractères minimum).",
           invalid_phone: "Numéro de téléphone invalide.",
           rate_limited: "Trop de tentatives. Réessayez dans un instant.",
+          phone_not_verified: "Vérification du numéro requise. Réessayez.",
         };
         setError(map[j.error ?? ""] ?? "Impossible de créer le compte. Réessayez.");
         setOtpPhase(false);
@@ -161,13 +162,17 @@ export function SignupForm() {
           setError("Numéro de téléphone invalide.");
           return;
         }
-        // Anything else (provider down, no SMS credit, DB hiccup) is on us —
-        // don't strand the user; create the account (phone stays unverified).
-        await performSignup(normalizedPhone);
+        // SMS IS configured (we didn't get configured:false) but the send
+        // failed (provider/DB hiccup, no credit, cold start). Do NOT fall
+        // through to performSignup: with SMS on, /api/auth/signup fails CLOSED
+        // (phone_not_verified) so the account can't be created without a code,
+        // and the user would just see the confusing generic error. Surface the
+        // real problem and let them retry.
+        setError("Impossible d'envoyer le code SMS. Réessayez dans un instant.");
       } catch {
-        // Couldn't even reach our API — fall back to direct signup rather than
-        // blocking. performSignup surfaces its own error if it also fails.
-        await performSignup(normalizedPhone);
+        // Couldn't even reach our API — surface it. performSignup would also
+        // fail to reach it, and with SMS on it couldn't create the account.
+        setError("Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.");
       }
     });
   }

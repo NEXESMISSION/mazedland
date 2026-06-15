@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
+import { SmsNotificationsToggle } from "@/components/account/SmsNotificationsToggle";
 import {
   ShieldCheck,
   ClipboardCheck,
@@ -41,6 +42,7 @@ export default async function AccountPage() {
   let fullName: string | null = null;
   let kycStatus: string = "none";
   let role: string = "individual";
+  let smsEnabled = true;
 
   try {
     const supabase = await getServerSupabase();
@@ -50,12 +52,13 @@ export default async function AccountPage() {
       userEmail = user.email ?? null;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, kyc_status, role")
+        .select("full_name, kyc_status, role, sms_notifications_enabled")
         .eq("id", user.id)
         .single();
       fullName = profile?.full_name ?? null;
       kycStatus = profile?.kyc_status ?? "none";
       role = profile?.role ?? "individual";
+      smsEnabled = profile?.sms_notifications_enabled ?? true;
     }
   } catch {
     // env missing — fall through to guest UI.
@@ -211,6 +214,12 @@ export default async function AccountPage() {
             </div>
           </section>
         ))}
+        <section className="mt-5">
+          <p className="batta-eyebrow mb-2">Notifications</p>
+          <div className="overflow-hidden rounded-xl bg-surface ring-1 ring-border">
+            <SmsNotificationsToggle initial={smsEnabled} />
+          </div>
+        </section>
         <div className="mt-6">
           <SignOutButton label="Se déconnecter" />
         </div>
@@ -252,6 +261,12 @@ export default async function AccountPage() {
             </div>
           </div>
         ))}
+        <div className="mt-8">
+          <p className="batta-eyebrow mb-4">Notifications</p>
+          <div className="max-w-xl overflow-hidden rounded-2xl bg-surface ring-1 ring-border">
+            <SmsNotificationsToggle initial={smsEnabled} />
+          </div>
+        </div>
         <div className="mt-10 max-w-sm">
           <DeleteAccountButton label="Supprimer mon compte" />
         </div>

@@ -16,6 +16,16 @@ import { log } from "@/lib/log";
 const WINSMS_BASE = "https://www.winsmspro.com/sms/sms/api";
 const sLog = log.scope("winsms");
 
+// WinSMS sits behind a WAF (mod_security) that returns 406 to tool/default
+// User-Agents (curl, and Node's default fetch UA). Present a browser UA + a
+// permissive Accept so our server-side requests are not blocked.
+const WINSMS_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
+const WINSMS_HEADERS = {
+  Accept: "application/json, text/plain, */*",
+  "User-Agent": WINSMS_UA,
+} as const;
+
 export function isSmsConfigured(): boolean {
   return Boolean(process.env.WINSMS_API_KEY);
 }
@@ -27,6 +37,42 @@ export type WinSMSSendResult =
 /** Digits only, as WinSMS expects (e.g. 216XXXXXXXX). */
 export function phoneToWinSMS(phone: string): string {
   return phone.replace(/\D/g, "");
+}
+
+// WinSMS PLAIN charset — anything outside it flips the whole message to costly
+// UNICODE segments (70 chars vs 160). Keep accented French (è é à ù); drop
+// everything else (emoji, other accents, Arabic) rather than pay for UNICODE.
+// (Newlines are added structurally below, after this strip — LF is GSM-7/PLAIN.)
+const SMS_PLAIN = /[^A-Za-z0-9èéàù %@"'()_\-.\/:,;<=>?!&$]/g;
+
+/**
+ * Build a readable, PLAIN-charset SMS for a notification. Four lines so it's
+ * easy to scan and — crucially — identify which app sent it:
+ *
+ *   {brand}            ← "Mazed Auto" / "Batta" (sender ID is MAZED for both)
+ *   {title}            ← the headline ("Identité vérifiée")
+ *   {body}             ← the detail (truncated to fit)
+ *   {url}              ← deep link (always kept; body is trimmed first)
+ *
+ * Length-capped so a long body can't balloon the paid segment count.
+ */
+export function toSmsText(opts: {
+  brand: string;
+  title: string;
+  body?: string | null;
+  url?: string | null;
+  maxLen?: number;
+}): string {
+  const { brand, title, body, url, maxLen = 300 } = opts;
+  const clean = (s: string) => (s || "").replace(SMS_PLAIN, "").replace(/\s+/g, " ").trim();
+  const tail = url ? `\n${clean(url)}` : "";
+  let msg = `${clean(brand)}\n${clean(title)}`;
+  const b = clean(body ?? "");
+  if (b) {
+    const room = maxLen - msg.length - tail.length - 1; // -1 for the body's leading newline
+    if (room > 12) msg += `\n${b.length > room ? b.slice(0, room).trim() : b}`;
+  }
+  return (msg + tail).trim();
 }
 
 /** Send one SMS via WinSMS. Returns {ok:false} on any provider error. */
@@ -53,7 +99,7 @@ export async function sendSms(params: {
   try {
     const res = await fetch(`${WINSMS_BASE}?${search.toString()}`, {
       method: "GET",
-      headers: { Accept: "application/json" },
+      headers: WINSMS_HEADERS,
       signal: AbortSignal.timeout(10_000),
     });
     const text = await res.text();
@@ -87,7 +133,7 @@ export async function checkBalance(): Promise<{ ok: true; balance: number } | { 
   try {
     const res = await fetch(
       `${WINSMS_BASE}?action=check-balance&api_key=${encodeURIComponent(apiKey)}&response=json`,
-      { method: "GET", headers: { Accept: "application/json" }, signal: AbortSignal.timeout(10_000) },
+      { method: "GET", headers: WINSMS_HEADERS, signal: AbortSignal.timeout(10_000) },
     );
     const text = await res.text();
     let data: Record<string, unknown> = {};

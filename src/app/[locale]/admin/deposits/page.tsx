@@ -22,7 +22,6 @@ type RawDeposit = {
   auction: {
     id: string;
     status: string;
-    winner_user_id: string | null;
     property: { title: string; governorate: string } | null;
   } | null;
 };
@@ -30,7 +29,7 @@ type RawDeposit = {
 const SELECT = `
   id, amount, refunded_at, refund_ref, created_at, user_id, payment_id,
   auction:auctions!auction_deposits_auction_id_fkey (
-    id, status, winner_user_id,
+    id, status,
     property:properties ( title, governorate )
   )
 `;
@@ -39,7 +38,7 @@ const SELECT = `
 const SELECT_INNER = `
   id, amount, refunded_at, refund_ref, created_at, user_id, payment_id,
   auction:auctions!auction_deposits_auction_id_fkey!inner (
-    id, status, winner_user_id,
+    id, status,
     property:properties!inner ( title, governorate )
   )
 `;

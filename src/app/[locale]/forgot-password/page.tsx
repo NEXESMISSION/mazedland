@@ -38,7 +38,7 @@ export default async function ForgotPasswordPage() {
             <span className="gradient-gold-text">Mot de passe oublié</span>
           </h1>
           <p className="mt-2 text-[12.5px] text-muted">
-            Entrez l&apos;adresse de votre compte — nous vous enverrons un lien pour le réinitialiser.
+            Entrez votre numéro — nous vous enverrons un code SMS pour réinitialiser votre mot de passe.
           </p>
         </div>
 
