@@ -17,7 +17,11 @@ name: External cron backstop
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    # pg_cron (inside Supabase) now drives the SMS/email drains every 5 min at
+    # zero GitHub cost. This GitHub run is just a dead-man's-switch backstop, so
+    # every 6 h is plenty — and keeps us well within the free Actions minutes
+    # (was */5, which burned ~8,600 min/month per repo).
+    - cron: "0 */6 * * *"
   workflow_dispatch: {}
 
 concurrency:
