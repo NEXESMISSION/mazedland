@@ -120,6 +120,7 @@ export function LoginForm() {
         required
         invalid={!!error}
         describedBy="login-error"
+        autoComplete="current-password"
       />
       {error && <p id="login-error" role="alert" aria-live="assertive" className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>}
       <button
@@ -138,7 +139,7 @@ export function LoginForm() {
 }
 
 function Field({
-  label, type, value, onChange, required, invalid, describedBy,
+  label, type, value, onChange, required, invalid, describedBy, autoComplete,
 }: {
   label: string;
   type: string;
@@ -148,6 +149,7 @@ function Field({
   /** Mark the field invalid + point AT to the error message (a11y). */
   invalid?: boolean;
   describedBy?: string;
+  autoComplete?: string;
 }) {
   return (
     <label className="block">
@@ -158,6 +160,7 @@ function Field({
         required={required}
         aria-invalid={invalid || undefined}
         aria-describedby={invalid ? describedBy : undefined}
+        autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
       />

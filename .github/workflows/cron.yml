@@ -31,7 +31,7 @@ jobs:
       - name: Config check
         id: cfg
         env:
-          SITE_URL: ${{ vars.SITE_URL }}
+          SITE_URL: "${{ vars.SITE_URL || 'https://mazedland.vercel.app' }}"
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           if [ -z "$SITE_URL" ] || [ -z "$CRON_SECRET" ]; then
@@ -50,7 +50,7 @@ jobs:
       - name: Health probe (pre-tick, warn-only)
         if: steps.cfg.outputs.configured == 'true'
         env:
-          SITE_URL: ${{ vars.SITE_URL }}
+          SITE_URL: "${{ vars.SITE_URL || 'https://mazedland.vercel.app' }}"
         run: |
           code=$(curl -s -o /tmp/health.json -w "%{http_code}" "$SITE_URL/api/health")
           echo "health HTTP $code"; cat /tmp/health.json 2>/dev/null || true
@@ -59,7 +59,7 @@ jobs:
       - name: Tick auctions + drain bid queue (HTTP backstop)
         if: steps.cfg.outputs.configured == 'true'
         env:
-          SITE_URL: ${{ vars.SITE_URL }}
+          SITE_URL: "${{ vars.SITE_URL || 'https://mazedland.vercel.app' }}"
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           code=$(curl -s -o /tmp/tick.json -w "%{http_code}" -X POST \
@@ -75,7 +75,7 @@ jobs:
       - name: Drain notification email queue (HTTP backstop)
         if: steps.cfg.outputs.configured == 'true'
         env:
-          SITE_URL: ${{ vars.SITE_URL }}
+          SITE_URL: "${{ vars.SITE_URL || 'https://mazedland.vercel.app' }}"
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           code=$(curl -s -o /tmp/email.json -w "%{http_code}" \
@@ -88,7 +88,7 @@ jobs:
       - name: Drain notification SMS queue (HTTP backstop)
         if: steps.cfg.outputs.configured == 'true'
         env:
-          SITE_URL: ${{ vars.SITE_URL }}
+          SITE_URL: "${{ vars.SITE_URL || 'https://mazedland.vercel.app' }}"
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           code=$(curl -s -o /tmp/sms.json -w "%{http_code}" \

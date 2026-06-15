@@ -257,7 +257,7 @@ export function SignupForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Field label="Nom complet" value={fullName} onChange={setFullName} required />
+      <Field label="Nom complet" value={fullName} onChange={setFullName} required autoComplete="name" />
 
       <label className="block">
         <span className="batta-eyebrow text-[10px]">Téléphone</span>
@@ -296,6 +296,7 @@ export function SignupForm() {
         onChange={setPassword}
         required
         minLength={8}
+        autoComplete="new-password"
       />
       {/* Terms + privacy consent — required. The documents open in a modal
           so the user can read them without leaving signup. The legal links
@@ -442,7 +443,7 @@ function PhoneVerify({
 }
 
 function Field({
-  label, type = "text", value, onChange, required, minLength, placeholder,
+  label, type = "text", value, onChange, required, minLength, placeholder, autoComplete,
 }: {
   label: string;
   type?: string;
@@ -451,6 +452,7 @@ function Field({
   required?: boolean;
   minLength?: number;
   placeholder?: string;
+  autoComplete?: string;
 }) {
   return (
     <label className="block">
@@ -461,6 +463,7 @@ function Field({
         required={required}
         minLength={minLength}
         placeholder={placeholder}
+        autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
       />
