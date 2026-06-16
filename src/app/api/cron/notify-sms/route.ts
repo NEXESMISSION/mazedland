@@ -73,6 +73,15 @@ const PER_USER_DAILY = 6; // cap SMS per user / 24h (anti-spam + cost)
 // is MAZED for both apps, so the body must carry the brand).
 const BRAND = "Batta";
 
+// The per-user daily cap applies ONLY to these higher-frequency kinds (so an
+// "outbid storm" can't burn credit). Every other kind — the money/outcome/
+// account-critical ones (won, payment/KYC/payout verdicts, final-payment,
+// deposit refunded, …) — BYPASSES the cap and is never suppressed.
+const CAPPED_KINDS = new Set([
+  "outbid", "auction_outbid", "sixth_offer_outbid",
+  "auction_ending_soon", "auction_live", "auction_live_seller",
+]);
+
 function siteUrl(): string {
   return (
     process.env.NEXT_PUBLIC_SITE_URL ||
@@ -163,25 +172,26 @@ async function run(req: NextRequest) {
       return "skipped";
     }
 
-    // Per-user daily cap (anti-spam + cost). check_rate_limit records a hit when
+    // Per-user daily cap — applies ONLY to high-frequency kinds (CAPPED_KINDS),
+    // so a critical "you won" / payment / KYC SMS is NEVER suppressed because an
+    // earlier outbid storm used up the quota. check_rate_limit records a hit when
     // under the cap and returns true once over it. On cap-hit we SUPPRESS (stamp
-    // sms_sent_at) rather than retry: the user still has the in-app bell + email,
-    // and an outbid storm can't burn the SMS credit.
-    const { data: capped } = await db.rpc("check_rate_limit", {
-      p_key: `sms:${row.user_id}`,
-      p_max: PER_USER_DAILY,
-      p_window_secs: 86400,
-    });
-    if (capped === true) {
-      await db.from("notifications").update({ sms_sent_at: new Date().toISOString() }).eq("id", row.id);
-      return "skipped";
+    // sms_sent_at): the user still has the in-app bell + email.
+    if (CAPPED_KINDS.has(row.kind)) {
+      const { data: capped } = await db.rpc("check_rate_limit", {
+        p_key: `sms:${row.user_id}`,
+        p_max: PER_USER_DAILY,
+        p_window_secs: 86400,
+      });
+      if (capped === true) {
+        await db.from("notifications").update({ sms_sent_at: new Date().toISOString() }).eq("id", row.id);
+        return "skipped";
+      }
     }
 
     const url = row.link ? `${base}/fr${row.link.startsWith("/") ? "" : "/"}${row.link}` : null;
-    const result = await sendSms({
-      to: phone,
-      sms: toSmsText({ brand: BRAND, title: row.title ?? BRAND, body: row.body, url }),
-    });
+    const { text, unicode } = toSmsText({ brand: BRAND, title: row.title ?? BRAND, body: row.body, url });
+    const result = await sendSms({ to: phone, sms: text, unicode });
 
     if (result.ok) {
       await db.from("notifications").update({ sms_sent_at: new Date().toISOString() }).eq("id", row.id);

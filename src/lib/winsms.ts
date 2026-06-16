@@ -39,22 +39,21 @@ export function phoneToWinSMS(phone: string): string {
   return phone.replace(/\D/g, "");
 }
 
-// WinSMS PLAIN charset — anything outside it flips the whole message to costly
-// UNICODE segments (70 chars vs 160). Keep accented French (è é à ù); drop
-// everything else (emoji, other accents, Arabic) rather than pay for UNICODE.
-// (Newlines are added structurally below, after this strip — LF is GSM-7/PLAIN.)
-const SMS_PLAIN = /[^A-Za-z0-9èéàù %@"'()_\-.\/:,;<=>?!&$]/g;
+// WinSMS "PLAIN" (GSM-7) charset — accented French (è é à ù) stays 1 segment /
+// 160 chars. Anything OUTSIDE this set (Arabic, emoji) forces UNICODE (70-char
+// segments). We do NOT strip those chars (that silently dropped Arabic property
+// titles from outbid/won SMS); instead we detect them and tell the caller to
+// send as unicode so the content survives. `\n` is GSM-7, so it's allowed.
+const HAS_NON_PLAIN = /[^A-Za-z0-9èéàù \n%@"'()_\-.\/:,;<=>?!&$]/;
 
 /**
- * Build a readable, PLAIN-charset SMS for a notification. Four lines so it's
- * easy to scan and — crucially — identify which app sent it:
- *
- *   {brand}            ← "Mazed Auto" / "Batta" (sender ID is MAZED for both)
- *   {title}            ← the headline ("Identité vérifiée")
- *   {body}             ← the detail (truncated to fit)
- *   {url}              ← deep link (always kept; body is trimmed first)
- *
- * Length-capped so a long body can't balloon the paid segment count.
+ * Build a readable, 4-line SMS for a notification and report whether it must be
+ * sent as UNICODE:
+ *   {brand}  ← "Mazed Auto" / "Batta" (sender ID is MAZED for both)
+ *   {title}  ← headline ("Identité vérifiée")
+ *   {body}   ← detail (truncated to fit; content preserved verbatim, incl. Arabic)
+ *   {url}    ← deep link (kept; body is trimmed first)
+ * Length-capped — tighter for unicode, since those bill in 70-char segments.
  */
 export function toSmsText(opts: {
   brand: string;
@@ -62,17 +61,21 @@ export function toSmsText(opts: {
   body?: string | null;
   url?: string | null;
   maxLen?: number;
-}): string {
+}): { text: string; unicode: boolean } {
   const { brand, title, body, url, maxLen = 300 } = opts;
-  const clean = (s: string) => (s || "").replace(SMS_PLAIN, "").replace(/\s+/g, " ").trim();
+  const clean = (s: string) => (s || "").replace(/\s+/g, " ").trim();
   const tail = url ? `\n${clean(url)}` : "";
   let msg = `${clean(brand)}\n${clean(title)}`;
   const b = clean(body ?? "");
+  const unicode = HAS_NON_PLAIN.test(`${msg}\n${b}${tail}`);
+  const cap = unicode ? Math.min(maxLen, 210) : maxLen;
   if (b) {
-    const room = maxLen - msg.length - tail.length - 1; // -1 for the body's leading newline
+    const room = cap - msg.length - tail.length - 1; // -1 for the body's leading newline
     if (room > 12) msg += `\n${b.length > room ? b.slice(0, room).trim() : b}`;
   }
-  return (msg + tail).trim();
+  let out = (msg + tail).trim();
+  if (out.length > cap) out = out.slice(0, cap).trim();
+  return { text: out, unicode };
 }
 
 /** Send one SMS via WinSMS. Returns {ok:false} on any provider error. */
