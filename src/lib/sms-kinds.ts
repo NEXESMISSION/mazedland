@@ -10,7 +10,12 @@
 // seller_sixth_offer_received, sixth_offer_placed) — they'd spam; the `welcome`
 // kind (the signup OTP SMS already reached them); admin-queue alerts (admin_*,
 // the operator dashboard's job); and broadcasts (announcement/promo/maintenance/
-// system_alert — a mass campaign is a deliberate action, not a per-user step).
+// system_alert — a mass campaign is a deliberate action, not a per-user step);
+// and on-site ACKNOWLEDGEMENTS of an action the user just performed on the site
+// (payment_receipt_received, listing_submitted, inspector_application_received) —
+// each is shortly followed by a real verdict (accepted / approved / rejected), so
+// SMSing the ack too made the user get TWO SMS for one thing. Acks stay in-app +
+// email; SMS carries the verdict only.
 // The per-user daily cap (CAPPED_KINDS) still bounds an outbid storm.
 export const SMS_KINDS = new Set<string>([
   // KYC / identity
@@ -23,15 +28,15 @@ export const SMS_KINDS = new Set<string>([
   // Auction outcome (seller)
   "auction_sold_seller", "auction_finalized_seller", "reserve_not_met",
   "auction_ended_unsold", "auction_cancelled",
-  // Payments (buyer)
-  "payment_accepted", "payment_rejected", "payment_receipt_received",
+  // Payments (buyer) — verdicts only; "payment_receipt_received" is an on-site ack.
+  "payment_accepted", "payment_rejected",
   "deposit_refunded",
   // Final payment (buyer + seller)
   "final_payment_due_soon", "final_payment_due_tomorrow",
   "final_payment_overdue", "final_payment_overdue_seller",
   "final_payment_defaulted",
-  // Listings (seller)
-  "listing_submitted", "listing_published", "listing_approved",
+  // Listings (seller) — outcomes only; "listing_submitted" is an on-site ack.
+  "listing_published", "listing_approved",
   "listing_rejected", "listing_payment_rejected", "listing_expired",
   "listing_unscheduled_reminder",
   // Payouts (seller)
@@ -39,8 +44,8 @@ export const SMS_KINDS = new Set<string>([
   // Inspections
   "inspection_requested", "inspection_assigned", "inspection_scheduled",
   "inspection_completed",
-  // Inspector onboarding
-  "inspector_application_received", "inspector_approved",
+  // Inspector onboarding — approval only; "inspector_application_received" is an on-site ack.
+  "inspector_approved",
 ]);
 
 // The per-user daily cap applies ONLY to these higher-frequency kinds (so an

@@ -18,6 +18,9 @@ describe("SMS_KINDS", () => {
       "bid_placed", "watched_new_bid", "seller_received_bid",
       "seller_sixth_offer_received", "sixth_offer_placed", "welcome",
       "announcement", "promo", "maintenance", "system_alert",
+      // on-site acknowledgements — each is followed by a real verdict SMS, so
+      // SMSing the ack too = two SMS for one thing. Kept in-app + email only.
+      "payment_receipt_received", "listing_submitted", "inspector_application_received",
     ];
     for (const k of mustNotSms) expect(SMS_KINDS.has(k)).toBe(false);
   });
