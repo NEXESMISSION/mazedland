@@ -30,6 +30,45 @@ const sb = createClient(URL, SVC, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
+// ─── Production guard ────────────────────────────────────────────────────────
+// This seeds demo accounts (all sharing one weak password) + demo listings into
+// whatever .env.local points at — which, for this project, IS the live Supabase
+// database. Two gates stop an accidental `pnpm seed` from polluting real data:
+//   1) --yes is mandatory (never seed on a bare invocation).
+//   2) if the target DB already shows real money movement (a captured payment),
+//      only an explicit --force lets it through.
+{
+  const argv = process.argv.slice(2);
+  const has = (f) => argv.includes(f);
+  if (!has("--yes") && !has("--force")) {
+    console.error(
+      "Refusing to seed without --yes.\n" +
+      "  This writes demo users (shared password) + demo listings into the DB\n" +
+      `  that .env.local points at:\n    ${URL}\n` +
+      "  If that is your production project you will pollute live data.\n" +
+      "  Re-run with --yes once you are sure.",
+    );
+    process.exit(1);
+  }
+  // Live-data tripwire: a captured payment means real money has moved here.
+  try {
+    const { count } = await sb
+      .from("payments")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "captured");
+    if ((count ?? 0) > 0 && !has("--force")) {
+      console.error(
+        `Refusing: target DB has ${count} captured payment(s) — this looks like a\n` +
+        "  LIVE production database. Seeding would inject demo data next to real\n" +
+        "  users. If you truly intend this, re-run with: --yes --force",
+      );
+      process.exit(1);
+    }
+  } catch {
+    // payments table absent (bare DB) → nothing to protect; let the seed run.
+  }
+}
+
 const PASSWORD = "Batta!2026";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

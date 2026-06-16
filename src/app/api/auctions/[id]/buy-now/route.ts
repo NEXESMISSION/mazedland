@@ -115,6 +115,38 @@ export async function POST(
     return NextResponse.json({ error: "kyc_required" }, { status: 403 });
   }
 
+  // Rare (audit #22): the buyer's locked caution already covers the full price,
+  // so there is nothing left to charge — and a 0-amount payment row is rejected
+  // (payments.amount > 0), which used to 500 here. Hand it to an admin to
+  // finalise instead: the caution must be split into the sale price (seller
+  // earnings) + any excess refunded, which the automated payment path doesn't
+  // model. This returns a clean, actionable response rather than a 500.
+  if (amount === 0) {
+    const sb = getServiceSupabase();
+    if (sb) {
+      await sb
+        .rpc("_notify_admins", {
+          p_kind: "admin_refund_due",
+          p_title: "Achat couvert par la caution — à finaliser",
+          p_body: `Un acheteur veut un achat immédiat dont la caution (${credit.toFixed(
+            2,
+          )} TND) couvre déjà le prix (${fullPrice.toFixed(
+            2,
+          )} TND). Finalisez la vente et remboursez l'excédent manuellement.`,
+          p_link: `/admin/auctions/${auctionId}`,
+        })
+        .then(() => {}, () => {});
+    }
+    return NextResponse.json(
+      {
+        error: "deposit_covers_price",
+        detail:
+          "Votre caution couvre déjà le prix. Notre équipe finalise votre achat — vous serez contacté.",
+      },
+      { status: 409 },
+    );
+  }
+
   // Idempotency: already captured.
   const { data: existing } = await supabase
     .from("payments")

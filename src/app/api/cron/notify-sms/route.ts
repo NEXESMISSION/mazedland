@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { sendSms, isSmsConfigured, toSmsText } from "@/lib/winsms";
 import { log } from "@/lib/log";
 import { fail } from "@/lib/http/errors";
+import { SMS_KINDS, CAPPED_KINDS } from "@/lib/sms-kinds";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -23,45 +24,6 @@ const cLog = log.scope("cron-sms");
  * recent backlog (LOOKBACK_DAYS), never the whole history.
  */
 
-// SMS the full user lifecycle — every step a user would want to hear about even
-// when not on the site (good news + bad). DELIBERATELY EXCLUDED: high-frequency
-// per-bid pings (bid_placed, watched_new_bid, seller_received_bid,
-// seller_sixth_offer_received, sixth_offer_placed) — they'd spam; the `welcome`
-// kind (the signup OTP SMS already reached them); admin-queue alerts (admin_*,
-// the operator dashboard's job); and broadcasts (announcement/promo/maintenance/
-// system_alert — a mass campaign is a deliberate action, not a per-user step).
-// The per-user daily cap below still bounds an outbid storm.
-const SMS_KINDS = new Set([
-  // KYC / identity
-  "kyc_verified", "kyc_rejected", "kyc_pending_reminder",
-  // Auction went live (watchers/depositors + the seller)
-  "auction_live", "auction_live_seller",
-  // Bidding & buy-now (buyer)
-  "outbid", "auction_outbid", "sixth_offer_outbid", "auction_ending_soon",
-  "auction_won", "sixth_offer_awarded", "buy_now_initiated",
-  // Auction outcome (seller)
-  "auction_sold_seller", "auction_finalized_seller", "reserve_not_met",
-  "auction_ended_unsold", "auction_cancelled",
-  // Payments (buyer)
-  "payment_accepted", "payment_rejected", "payment_receipt_received",
-  "deposit_refunded",
-  // Final payment (buyer + seller)
-  "final_payment_due_soon", "final_payment_due_tomorrow",
-  "final_payment_overdue", "final_payment_overdue_seller",
-  "final_payment_defaulted",
-  // Listings (seller)
-  "listing_submitted", "listing_published", "listing_approved",
-  "listing_rejected", "listing_payment_rejected", "listing_expired",
-  "listing_unscheduled_reminder",
-  // Payouts (seller)
-  "payout_processing", "payout_paid", "payout_rejected",
-  // Inspections
-  "inspection_requested", "inspection_assigned", "inspection_scheduled",
-  "inspection_completed",
-  // Inspector onboarding
-  "inspector_application_received", "inspector_approved",
-]);
-
 // SMS-tuned, tighter than email (each message costs real operator money).
 const MAX_PER_RUN = 100;
 const MAX_ATTEMPTS = 3;
@@ -72,15 +34,6 @@ const PER_USER_DAILY = 6; // cap SMS per user / 24h (anti-spam + cost)
 // First line of every SMS so the user can tell which app sent it (the sender ID
 // is MAZED for both apps, so the body must carry the brand).
 const BRAND = "Batta";
-
-// The per-user daily cap applies ONLY to these higher-frequency kinds (so an
-// "outbid storm" can't burn credit). Every other kind — the money/outcome/
-// account-critical ones (won, payment/KYC/payout verdicts, final-payment,
-// deposit refunded, …) — BYPASSES the cap and is never suppressed.
-const CAPPED_KINDS = new Set([
-  "outbid", "auction_outbid", "sixth_offer_outbid",
-  "auction_ending_soon", "auction_live", "auction_live_seller",
-]);
 
 function siteUrl(): string {
   return (
