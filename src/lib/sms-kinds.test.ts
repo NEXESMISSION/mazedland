@@ -30,7 +30,7 @@ describe("SMS_KINDS", () => {
     // user stops getting an SMS for something they must act on quickly.
     const mustSms = [
       "kyc_verified", "kyc_rejected",
-      "auction_won", "sixth_offer_awarded",
+      "auction_won", "auction_lost", "sixth_offer_awarded",
       "payment_accepted", "payment_rejected", "deposit_refunded",
       "final_payment_due_soon", "final_payment_overdue", "final_payment_defaulted",
       "payout_paid", "payout_rejected",
@@ -50,7 +50,7 @@ describe("SMS_KINDS", () => {
     // The cap is only allowed to throttle high-frequency noise. If a critical
     // kind ever ends up capped, an outbid storm could swallow a "you won" SMS.
     const critical = [
-      "auction_won", "sixth_offer_awarded", "payment_accepted",
+      "auction_won", "auction_lost", "sixth_offer_awarded", "payment_accepted",
       "payment_rejected", "deposit_refunded", "kyc_verified", "kyc_rejected",
       "payout_paid", "final_payment_due_soon", "final_payment_overdue",
     ];

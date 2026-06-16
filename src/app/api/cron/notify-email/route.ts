@@ -32,6 +32,7 @@ const cLog = log.scope("cron-mail");
 // `outbid` (would spam) and admin broadcast kinds.
 const EMAILABLE = new Set([
   "auction_won",
+  "auction_lost",
   "auction_sold_seller",
   "final_payment_due_soon",
   "final_payment_due_tomorrow",

@@ -24,7 +24,7 @@ export const SMS_KINDS = new Set<string>([
   "auction_live", "auction_live_seller",
   // Bidding & buy-now (buyer)
   "outbid", "auction_outbid", "sixth_offer_outbid", "auction_ending_soon",
-  "auction_won", "sixth_offer_awarded", "buy_now_initiated",
+  "auction_won", "auction_lost", "sixth_offer_awarded", "buy_now_initiated",
   // Auction outcome (seller)
   "auction_sold_seller", "auction_finalized_seller", "reserve_not_met",
   "auction_ended_unsold", "auction_cancelled",

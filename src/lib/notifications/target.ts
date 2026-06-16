@@ -17,7 +17,7 @@
 
 export const NOTIFICATION_KINDS = [
   // Auctions — buyer
-  "bid_placed", "outbid", "watched_new_bid", "auction_won", "auction_live",
+  "bid_placed", "outbid", "watched_new_bid", "auction_won", "auction_lost", "auction_live",
   "auction_ending_soon", "auction_ended_unsold", "reserve_not_met",
   "buy_now_initiated", "sixth_offer_placed", "sixth_offer_outbid",
   "sixth_offer_awarded",
@@ -83,6 +83,8 @@ const KIND_FALLBACK: Record<NotificationKind, FallbackRoute> = {
   outbid: "/account/activity",
   watched_new_bid: "/account/activity",
   auction_won: "/account/activity",
+  // Loser at close → their caution-refund page (where the refund status shows).
+  auction_lost: "/account/payments",
   auction_live: "/account/activity",
   auction_ending_soon: "/account/activity",
   auction_ended_unsold: "/account/activity",
@@ -200,6 +202,7 @@ export function normalizeLink(link: string): string {
  *  fallbacks (a wizard, the seller dashboard) don't have a row to find. */
 const FALLBACK_SUPPORTS_FOCUS: Record<NotificationKind, boolean> = {
   bid_placed: false, outbid: false, watched_new_bid: false, auction_won: false,
+  auction_lost: false,
   auction_live: false, auction_ending_soon: false, auction_ended_unsold: false,
   reserve_not_met: false, buy_now_initiated: false, sixth_offer_placed: false,
   sixth_offer_outbid: false, sixth_offer_awarded: false,
