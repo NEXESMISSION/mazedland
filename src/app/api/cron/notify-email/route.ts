@@ -63,10 +63,17 @@ const CONCURRENCY = 8;
 const LOOKBACK_DAYS = 7;
 
 function siteUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://batta.tn")
-  ).replace(/\/$/, "");
+  // Prefer an explicit, NON-localhost site URL; else the Vercel deployment URL,
+  // else the production domain. A stale `NEXT_PUBLIC_SITE_URL=localhost` on
+  // Vercel was putting localhost links into email — skip any localhost value.
+  for (const c of [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`,
+    process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+  ]) {
+    if (c && !/localhost|127\.0\.0\.1/i.test(c)) return c.replace(/\/$/, "");
+  }
+  return "https://batta.tn";
 }
 
 function escapeHtml(s: string): string {

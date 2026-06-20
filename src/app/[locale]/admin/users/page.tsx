@@ -3,7 +3,8 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { ShieldCheck, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
+import { UserRowActions } from "@/components/admin/UserRowActions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,10 +20,6 @@ const ROLES = [
   { key: "inspector", label: "Inspecteurs" },
   { key: "admin", label: "Admins" },
 ] as const;
-const ROLE_LABEL: Record<string, string> = {
-  individual: "Particulier", bank: "Banque", agency: "Agence",
-  bailiff: "Huissier", inspector: "Inspecteur", admin: "Admin",
-};
 const KYC = [
   { key: "all", label: "Tous KYC" },
   { key: "verified", label: "Vérifiés" },
@@ -30,14 +27,6 @@ const KYC = [
   { key: "rejected", label: "Rejetés" },
   { key: "none", label: "Non vérifiés" },
 ] as const;
-const KYC_TONE: Record<string, { label: string; tone: string }> = {
-  verified: { label: "Vérifié", tone: "batta-tone-ok" },
-  submitted: { label: "En vérif.", tone: "batta-tone-warn" },
-  pending: { label: "En attente", tone: "batta-tone-warn" },
-  rejected: { label: "Rejeté", tone: "batta-tone-bad" },
-  none: { label: "Non vérifié", tone: "bg-surface-2 text-muted ring-1 ring-border" },
-};
-
 /**
  * Real user directory (was a duplicate KYC list). Browse/search every
  * profile by name or phone, filter by role + KYC status, server-paginated.
@@ -50,6 +39,7 @@ export default async function AdminUsers({
 }) {
   const { q: qP, role: roleP, kyc: kycP, range: rangeP, page: pageP } = await searchParams;
   const sb = await getServerSupabase();
+  const { data: { user: me } } = await sb.auth.getUser();
 
   const q = (qP ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
   const role = ROLES.some((r) => r.key === roleP) ? roleP! : "all";
@@ -136,7 +126,6 @@ export default async function AdminUsers({
         <div className="mt-5 overflow-hidden rounded-2xl bg-surface ring-1 ring-border">
           <ul className="divide-y divide-border">
             {rows.map((u) => {
-              const k = KYC_TONE[u.kyc_status] ?? KYC_TONE.none;
               const initials = (u.full_name ?? "?").split(" ").map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
               return (
                 <li key={u.id} className="flex items-center gap-3 px-4 py-3">
@@ -155,13 +144,12 @@ export default async function AdminUsers({
                       <span>Inscrit {new Date(u.created_at).toLocaleDateString("fr-FR")}</span>
                     </div>
                   </div>
-                  {u.role !== "individual" && (
-                    <span className="batta-pill-gold shrink-0">{ROLE_LABEL[u.role] ?? u.role}</span>
-                  )}
-                  <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[9.5px] font-extrabold uppercase tracking-[0.12em] ${k.tone}`}>
-                    {u.kyc_status === "verified" && <ShieldCheck className="size-3" strokeWidth={2.5} />}
-                    {k.label}
-                  </span>
+                  <UserRowActions
+                    id={u.id}
+                    role={u.role}
+                    kycStatus={u.kyc_status}
+                    isSelf={u.id === me?.id}
+                  />
                 </li>
               );
             })}

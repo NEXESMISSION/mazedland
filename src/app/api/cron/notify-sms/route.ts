@@ -39,10 +39,17 @@ const CLOSING_WINDOW_MS = 15 * 60 * 1000; // 15 min
 const BRAND = "Batta";
 
 function siteUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://batta.tn")
-  ).replace(/\/$/, "");
+  // Prefer an explicit, NON-localhost site URL; else the Vercel deployment URL,
+  // else the production domain. A stale `NEXT_PUBLIC_SITE_URL=localhost` on
+  // Vercel was putting localhost links into SMS — skip any localhost value.
+  for (const c of [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`,
+    process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+  ]) {
+    if (c && !/localhost|127\.0\.0\.1/i.test(c)) return c.replace(/\/$/, "");
+  }
+  return "https://batta.tn";
 }
 
 async function run(req: NextRequest) {
