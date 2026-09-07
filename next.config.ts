@@ -59,29 +59,49 @@ const nextConfig: NextConfig = {
    * this 404" support ticket all outlive the menu. These send them somewhere
    * useful instead.
    *
-   * Two screens are deliberately NOT in `gone`:
-   *
-   *   /admin/deposits         still settles bidder money we are holding. It
-   *                           leaves the rail on its own when the last caution
-   *                           clears (see AdminShell), and until then it must
-   *                           stay reachable.
-   *   /admin/auctions/[id]    is where a caution is actually prepared,
-   *                           refunded or forfeited — /admin/deposits only
-   *                           lists them and links here. Retiring it would have
-   *                           turned the settlement screen into a dead end,
-   *                           which is the opposite of the point.
-   *   /admin/characteristics  still edits `property_attribute_kinds`, which the
-   *                           seller-facing form reads today. It goes when the
-   *                           public auction surfaces do, not before.
+   * An earlier pass kept /admin/deposits, /admin/auctions/[id] and
+   * /admin/characteristics alive, on the grounds that cautions were still
+   * holding bidder money and the auction sell form still read
+   * `property_attribute_kinds`. Measuring the database settled it: there has
+   * never been a single bid, and the only three "bidders" were the operator's
+   * own accounts. There is no money to settle and no seller to strand, so all
+   * three are gone with the rest.
    *
    * `renamed` is permanent (301) because those screens moved and the new URL is
    * the answer forever. `gone` is temporary (302): the product decision behind
    * it is recent, and a 301 is cached in browsers essentially forever.
    */
   async redirects() {
+    /**
+     * PUBLIC routes retired with the auction product.
+     *
+     * Deleting a page does not delete the links to it. These URLs are in
+     * notification e-mails, SMS, browser history, bookmarks and whatever
+     * Google has indexed, and every one of them would now be a 404. They go
+     * to the nearest surface that still answers the same intent.
+     *
+     * Temporary (302), not permanent: the decision is days old, and a 301 is
+     * cached in browsers essentially forever.
+     */
+    const publicGone: [string, string][] = [
+      // Browsing a lot -> browsing the catalogue.
+      ["auctions", "annonces"],
+      ["properties", "annonces"],
+      // Putting a lot up for auction -> publishing an annonce.
+      ["sell", "annonces/nouvelle"],
+      // Identity verification, the inspector network and the partner portal
+      // all existed to make an auction safe to run. Nothing replaces them;
+      // the account page is where someone landing on one should end up.
+      ["kyc", "account"],
+      ["inspector", "account"],
+      ["inspectors", "account"],
+      ["partners", "account"],
+      ["account/inspections", "account"],
+    ];
+
     const gone = [
-      "properties", "payouts",
-      "manual-payment", "inspectors", "fraud", "waitlist", "kyc-queue",
+      "properties", "payouts", "manual-payment", "inspectors", "fraud",
+      "waitlist", "kyc-queue", "auctions", "deposits", "characteristics",
     ];
     const renamed: [string, string][] = [
       ["users", "vendeurs"],
@@ -89,6 +109,10 @@ const nextConfig: NextConfig = {
       ["pricing", "offres"],
     ];
     return [
+      ...publicGone.flatMap(([from, to]) => [
+        { source: `/:locale/${from}`, destination: `/:locale/${to}`, permanent: false },
+        { source: `/:locale/${from}/:path*`, destination: `/:locale/${to}`, permanent: false },
+      ]),
       // `/admin/payments` the LIST is replaced by `/admin/paiements`. Its
       // sub-paths are not: `/admin/payments/[id]/reject` is still the surface
       // that refuses a caution receipt, reached from the auction settlement

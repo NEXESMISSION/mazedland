@@ -1,19 +1,23 @@
 "use client";
 
 /**
- * Module-level client store for the signed-in user's watchlist + auth state.
+ * Module-level client store for the signed-in user's favourites + auth state.
  *
  * Why: the home page is now statically rendered (served from the edge CDN for
  * a ~20ms TTFB), which means the server can't know who you are or what you've
- * saved at request time. So PropertyCards render with `loggedIn=false` /
+ * saved at request time. So AnnonceCards render with `loggedIn=false` /
  * `saved=false`, and this store fills in the truth on the client right after
  * hydration — one `/api/watchlist` fetch per page load, shared by every
- * WatchlistButton via subscription (no React context/provider needed, same
+ * FavoriteButton via subscription (no React context/provider needed, same
  * pattern as sharedTick).
  *
- * Dynamic pages (e.g. /properties) still pass real server props; once the
- * store hydrates it simply confirms the same values, so behaviour is
- * unchanged there.
+ * Dynamic pages (e.g. `/annonces/[id]`) still pass real server props; once the
+ * store hydrates it simply confirms the same values, so behaviour is unchanged
+ * there.
+ *
+ * The ids were auction ids until the auction product was deleted. The store
+ * itself never cared — it holds a set of strings — so only the endpoint and
+ * these words changed.
  */
 
 export type WatchlistState = {
@@ -51,7 +55,7 @@ export function subscribeWatchlist(fn: () => void): () => void {
 }
 
 /**
- * Fetch the user's saved auction ids + login state exactly once per page
+ * Fetch the user's saved annonce ids + login state exactly once per page
  * load. No-ops on the server, if already hydrated, or while a fetch is in
  * flight. Off the critical path — called from an effect after first paint.
  */
@@ -79,14 +83,14 @@ export function ensureWatchlistHydrated(): void {
 }
 
 /**
- * Optimistic local toggle so every heart for the same auction (it can appear
+ * Optimistic local toggle so every heart for the same annonce (it can appear
  * in several rails) flips together and survives a remount. The network call
  * is fired by the button; on failure it calls this again to revert.
  */
-export function setWatchlistLocal(auctionId: string, saved: boolean): void {
+export function setWatchlistLocal(listingId: string, saved: boolean): void {
   const ids = new Set(state.ids);
-  if (saved) ids.add(auctionId);
-  else ids.delete(auctionId);
+  if (saved) ids.add(listingId);
+  else ids.delete(listingId);
   state = { ...state, ids };
   emit();
 }

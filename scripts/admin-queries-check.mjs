@@ -84,9 +84,6 @@ await check("dashboard", "expiring within 7 days", () =>
   head("listings").eq("status", "published").not("expires_at", "is", null)
     .gte("expires_at", now).lte("expires_at", now));
 await check("dashboard", "expired", () => head("listings").eq("status", "expired"));
-await check("dashboard", "cautions outstanding", () =>
-  head("auction_deposits").not("released_at", "is", null)
-    .is("refunded_at", null).is("forfeited_at", null));
 await check("dashboard", "recent gestures", () =>
   sb.from("activity_log").select("id, created_at, action, user_email")
     .not("action", "is", null).not("action", "like", "client.%")
@@ -159,11 +156,6 @@ await check("catalogue", "category attributes", () =>
   ).order("sort_order"));
 await check("catalogue", "attribute usage source", () =>
   sb.from("listings").select("category_id, attributes"));
-
-// ── /admin/deposits (the auction remnant) ───────────────────────────────────
-await check("deposits", "outstanding cautions", () =>
-  sb.from("auction_deposits").select("id, auction_id, user_id, released_at, refunded_at, forfeited_at")
-    .not("released_at", "is", null).is("refunded_at", null).is("forfeited_at", null));
 
 // ── /annonces and /annonces/[id] (public) ─────────────────────────────
 // Not an admin screen, but the same failure mode and the same blindness: the

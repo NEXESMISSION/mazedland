@@ -23,3 +23,6 @@ supabase/.temp/
 # public repo. Tracked once by mistake; untracked in this commit.
 DEEP-AUDIT-*.md
 verify-*.log
+
+# KYC export (identity documents — never commit)
+kyc-export-*/

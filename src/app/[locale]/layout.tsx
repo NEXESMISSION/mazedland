@@ -7,7 +7,7 @@ import { MobileShell } from "@/components/layout/MobileShell";
 import { NetworkStatus } from "@/components/layout/NetworkStatus";
 import { ToastProvider } from "@/components/ui/Toast";
 import { PopupManagerLazy } from "@/components/popups/PopupManagerLazy";
-import { WatchlistSync } from "@/components/watchlist/WatchlistSync";
+import { FavoritesSync } from "@/components/listing/FavoritesSync";
 import type { Metadata } from "next";
 
 export function generateStaticParams() {
@@ -58,7 +58,7 @@ export default async function LocaleLayout({
     <NextIntlClientProvider locale={locale} messages={messages}>
       <ToastProvider>
         <NetworkStatus />
-        <WatchlistSync />
+        <FavoritesSync />
         <MobileShell>{children}</MobileShell>
         {/* Site-wide admin-managed popup surface. Lazy-loaded (ssr:false)
             so its JS + /api/popups/match fetch stay off the critical path.
