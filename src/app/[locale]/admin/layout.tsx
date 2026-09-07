@@ -35,6 +35,7 @@ export default async function AdminLayout({
 
   // Started, not awaited — these run while the gate below resolves.
   const countsPromise = Promise.all([
+    head("listings")?.eq("status", "pending_review") ?? Promise.resolve({ count: 0 }),
     head("payments")?.eq("status", "pending_review") ?? Promise.resolve({ count: 0 }),
     // Cautions waiting to be returned: released to us, not yet refunded or
     // forfeited. This is the queue that is holding other people's money.
@@ -50,8 +51,9 @@ export default async function AdminLayout({
   if (!user) redirect({ href: "/login", locale: locale as "fr" });
   if (!isAdmin) redirect({ href: "/", locale: locale as "fr" });
 
-  const [paiements, cautions, kyc, lots] = await countsPromise;
+  const [annonces, paiements, cautions, kyc, lots] = await countsPromise;
   const counts: AdminCounts = {
+    annonces: annonces.count ?? 0,
     paiements: paiements.count ?? 0,
     cautions: cautions.count ?? 0,
     kyc: kyc.count ?? 0,

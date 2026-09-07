@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
   LayoutDashboard, Receipt, Users, SlidersHorizontal, ExternalLink,
-  Menu, X, Building2, Gavel, Banknote, UserCheck, ShieldCheck, Home, Tag,
+  Menu, X, Building2, Gavel, Banknote, UserCheck, ShieldCheck, Home, Tag, Inbox,
   type LucideIcon,
 } from "lucide-react";
 import { NavIcon } from "./kit/LinkPending";
@@ -25,7 +25,7 @@ import { NavIcon } from "./kit/LinkPending";
  * resolved — not before, and not on a date. Removing it early would strand a
  * bidder and hide money we are holding.
  *
- * Destinations that do not exist yet (Annonces, Catalogue) are absent rather
+ * Destinations that do not exist yet (Catalogue) are absent rather
  * than present-and-broken: a menu that leads somewhere empty is how you teach
  * an operator to distrust the menu. They are added as their phase lands.
  */
@@ -38,7 +38,7 @@ type Item = {
   countKey?: CountKey;
 };
 
-export type CountKey = "paiements" | "cautions" | "kyc" | "lots";
+export type CountKey = "annonces" | "paiements" | "cautions" | "kyc" | "lots";
 export type AdminCounts = Partial<Record<CountKey, number>>;
 
 /** The classifieds console. Grows as the pivot lands. */
@@ -48,6 +48,13 @@ const CONSOLE: Item[] = [
     href: "/admin",
     Icon: LayoutDashboard,
     hint: "Ce qui attend une décision",
+  },
+  {
+    label: "Annonces",
+    href: "/admin/annonces",
+    Icon: Inbox,
+    hint: "Modérer le catalogue à prix affiché",
+    countKey: "annonces",
   },
   {
     label: "Paiements",
