@@ -225,7 +225,7 @@ export async function HomeDesktop({
                 <ArrowUpRight className="size-4" strokeWidth={2.5} />
               </Link>
               <Link
-                href="/sell"
+                href="/annonces/nouvelle"
                 className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-6 py-3.5 text-[13px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-gold-faint"
               >
                 Vendre un bien
@@ -483,7 +483,7 @@ export async function HomeDesktop({
                   <ArrowUpRight className="size-4" strokeWidth={2.5} />
                 </Link>
                 <Link
-                  href="/sell"
+                  href="/annonces/nouvelle"
                   className="inline-flex items-center gap-2 rounded-full border border-gold/30 px-5 py-3 text-[12.5px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-gold-faint"
                 >
                   Vendre

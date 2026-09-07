@@ -5,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import {
-  User, Activity, Receipt, Heart, ClipboardCheck, ShieldCheck, Plus,
+  User, Activity, Receipt, Heart, ShieldCheck, Plus, FileText,
   LogOut, Loader2,
 } from "lucide-react";
 
@@ -16,10 +16,18 @@ const ITEMS: Item[] = [
   { href: "/account/activity", label: "Mon activité", Icon: Activity },
   { href: "/account/payments", label: "Mes paiements", Icon: Receipt },
   { href: "/watchlist", label: "Favoris", Icon: Heart },
-  { href: "/account/inspections", label: "Inspections", Icon: ClipboardCheck },
-  { href: "/kyc/status", label: "Vérification (KYC)", Icon: ShieldCheck },
-  { href: "/sell", label: "Vendre un bien", Icon: Plus },
+  { href: "/account/listings", label: "Mes annonces", Icon: FileText },
+  { href: "/annonces/nouvelle", label: "Vendre un bien", Icon: Plus },
 ];
+
+/*
+ * Inspections and KYC used to sit in this list. Both belong to the auction
+ * product: an inspector visits a LOT, and the identity check existed so a
+ * bidder could be held to a bid. Publishing a fixed-price annonce needs
+ * neither, and a menu entry for a flow the account can no longer start is a
+ * dead end. The routes still answer for anyone finishing an auction — they
+ * are simply not advertised here any more.
+ */
 
 /**
  * Desktop account control in the header. For signed-in users the avatar

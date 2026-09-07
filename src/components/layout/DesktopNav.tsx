@@ -129,7 +129,7 @@ export function DesktopNav() {
           <NotificationBell />
           <AccountMenu />
           <Link
-            href="/sell"
+            href="/annonces/nouvelle"
             className="batta-gold-fill inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[13px] font-bold shadow-[var(--shadow-gold)] transition active:scale-[0.98]"
           >
             <Plus className="size-4" strokeWidth={2.5} />

@@ -778,7 +778,7 @@ export default async function LandingPage({
                     <ArrowUpRight className="size-4" strokeWidth={2.5} />
                   </Link>
                   <Link
-                    href="/sell"
+                    href="/annonces/nouvelle"
                     className="inline-flex items-center gap-2 rounded-full border border-gold/30 px-5 py-3 text-[12.5px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-gold-faint"
                   >
                     Vendre
@@ -791,9 +791,14 @@ export default async function LandingPage({
                   no matter which intent they came in with. */}
               <div className="col-span-5 flex flex-col gap-3">
                 {[
-                  { num: "01", href: "/properties" as const, title: t("nav.properties"), body: t("home.step1Body") },
-                  { num: "02", href: "/kyc"        as const, title: t("home.step2Title"), body: t("home.step2Body") },
-                  { num: "03", href: "/sell"       as const, title: "Vendre",            body: t("home.step3Body") },
+                  // The classifieds journey, not the auction one. This read
+                  // « parcourir les lots → vérifier votre identité → mettre en
+                  // vente aux enchères »; the middle step is a KYC flow that
+                  // buying at a fixed price does not require, and the last one
+                  // led to the auction form.
+                  { num: "01", href: "/annonces" as const, title: "Parcourir", body: "Des biens à prix affiché, partout en Tunisie." },
+                  { num: "02", href: "/annonces/nouvelle" as const, title: "Publier", body: "Vos photos, votre prix, votre numéro. En quelques minutes." },
+                  { num: "03", href: "/account/listings" as const, title: "Suivre", body: "Vos annonces, leur statut, ce qui attend une action." },
                 ].map((s) => (
                   <Link
                     key={s.num}

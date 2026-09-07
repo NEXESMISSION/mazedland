@@ -19,7 +19,7 @@ import { Home, Search, Plus, LayoutGrid, User } from "lucide-react";
  */
 
 type Tab = {
-  href: "/" | "/properties" | "/sell" | "/account/activity" | "/account";
+  href: "/" | "/annonces" | "/annonces/nouvelle" | "/account/activity" | "/account";
   labelKey: "home" | "browse" | "sell" | "activity" | "account";
   Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   match: (p: string) => boolean;
@@ -35,20 +35,29 @@ const TABS: Tab[] = [
     match: (p) => p === "/",
   },
   {
-    href: "/properties",
+    // The catalogue, not the auction list. `/properties` and `/auctions` still
+    // exist while the auction product winds down, so they keep lighting this
+    // tab up — a bidder who lands there from a notification should not see an
+    // unlit navigation bar.
+    href: "/annonces",
     labelKey: "browse",
     Icon: Search,
     match: (p) =>
+      p === "/annonces" ||
+      (p.startsWith("/annonces/") && p !== "/annonces/nouvelle") ||
       p === "/properties" ||
       p.startsWith("/properties/") ||
-      p.startsWith("/auctions") ||
-      p.startsWith("/inspectors"),
+      p.startsWith("/auctions"),
   },
   {
-    href: "/sell",
+    // The centre button publishes a fixed-price annonce. `/sell` submits a lot
+    // to an auction: a different product, and one that is being retired. It
+    // still matches here so the auction wind-down keeps a lit tab.
+    href: "/annonces/nouvelle",
     labelKey: "sell",
     Icon: Plus,
-    match: (p) => p === "/sell" || p.startsWith("/sell/"),
+    match: (p) =>
+      p === "/annonces/nouvelle" || p === "/sell" || p.startsWith("/sell/"),
     isCenter: true,
   },
   {
