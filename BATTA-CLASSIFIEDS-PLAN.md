@@ -70,7 +70,7 @@ the other. Two tables for one thing is a source of truth waiting to disagree.
 
 ## 3. What is left, in order
 
-### Phase 1 — The home page stops selling auctions ⟵ *next*
+### ~~Phase 1 — The home page stops selling auctions~~ ✅ `2ec8d26`
 
 This is the first thing anybody sees, and today it says **"Première plateforme tunisienne
 dédiée aux enchères immobilières"**, **"Explorer les enchères"**, and shows a live-auction
@@ -86,7 +86,7 @@ countdown rail.
 **Design is not touched.** Batta's navy-on-white palette, type and layout stay exactly as
 they are — only what the page is *about* changes.
 
-### Phase 2 — The catalogue becomes searchable
+### Phase 2 — The catalogue becomes searchable ⟵ *next*
 
 `/annonces` (293 l) is a bare grid: category chips, governorate chips, a sort. Auto has
 `CatalogFilters` — price range, per-category attribute filters, debounced search with
@@ -97,7 +97,7 @@ Also missing versus Auto: `/account/favoris` (the heart on a card now writes to
 `watchlist.listing_id`, but there is no page listing them), `/account/settings`,
 `/account/notifications`.
 
-### Phase 3 — Delete the auction product
+### ~~Phase 3 — Delete the auction product~~ ✅ `936c913`, `248c0bd`
 
 Now unblocked by §1. Mirrors what Auto did.
 
@@ -115,18 +115,48 @@ rendering an empty page.
 
 ---
 
+### What Phase 3 actually turned up
+
+Three bugs the deletion exposed, none of which a build or a type-check could
+see:
+
+| | |
+|---|---|
+| **`_listing_fee_captured` was never ported** | `/api/admin/paiements` came from Auto, whose comments say "the trigger does the cascade". Validating a receipt would have captured the payment and left the annonce in `pending_payment` **forever**. Nobody had hit it because Batta has no fee payments yet — it would have failed on the first one. Fixed in `0155`, then tested end to end: draft → payment → receipt → capture → `pending_review` → seller notified. |
+| **`drop function if exists f(a,b)` silently drops nothing** | It matches on the argument list, and `if exists` turns a wrong signature into a no-op rather than an error. Six functions reported success and survived. `0154` drops them by `oid::regprocedure` selected by name, which takes every overload. |
+| **A view over a *surviving* table blocked the drop** | `auction_watcher_counts` reads `watchlist.auction_id`, so it never appeared in a dependency scan of the doomed tables. Only enumerating every view in the schema found it. |
+
+The KYC purge ran as authorised: 50 rows and all 20 real files exported to a
+gitignored local directory, then 99 objects removed from the `kyc` bucket and
+50 rows deleted. 45 of the 50 were `[STRESS]` seed rows naming `mock/*` paths
+that were never uploaded — the export script classifies those separately from a
+genuine missing file, because only the second kind should be allowed to block a
+purge.
+
+### Known gaps, deliberately not half-built
+
+- **Promos are sold but not applied.** `products` still sells *promo accueil*,
+  *top de la recherche* and *bannière*. `expire_listing_promotions` drove
+  `properties.promo_*` and went with that table, so nothing now applies a
+  purchased promo to a listing or expires it. Wiring it to `listings` is a
+  feature, and inventing it inside a DROP migration is how a drop migration
+  becomes a bug.
+- **`/account/activity` is still auction-shaped** — its tabs are "En cours" and
+  "Participées". Phase 2.
+
+---
+
 ## 4. What I need from you
 
 | # | Question | My recommendation |
 |---|---|---|
-| **D1** | Given zero bids and zero real deposits — **delete the auction product outright?** | **Yes.** §1 removes every reason not to. It is ~9 000 lines of code and 10 tables describing a product that never sold anything. Keeping it means every future change has to keep working in two shapes at once. |
-| **D2** | The 50 KYC dossiers — CIN photographs and selfies. | **Export, then purge.** They were collected so a bidder could be held to a bid; nothing in a classifieds product needs them. Holding ID images for a flow that no longer exists is a liability that only grows. Needs your explicit word before I touch it. |
+| ~~**D1**~~ | ~~Delete the auction product outright?~~ | **Answered: yes. Done.** 20 001 lines and 16 tables removed. |
+| ~~**D2**~~ | ~~The 50 KYC dossiers.~~ | **Answered: export then purge. Done.** Export kept at `kyc-export-2026-09-07/`, gitignored. |
 | **D3** | The 60 seeded accounts and 295 seeded auctions. | **Delete the auctions, keep the accounts.** The accounts cost nothing and make the admin screens look real while you evaluate them. |
 | **D4** | Should `/annonces` become the site root (`/`), or stay a section under a marketing home page? | **Keep the marketing home.** Auto does, and a classifieds home page that is only a grid has nowhere to say what the site is. |
 | **D5** | The 17 draft listings from the 0147 backfill. | **Leave them as drafts.** They are properties that were never live; pushing them public without a moderation pass is how a catalogue fills with rubbish. They go through the queue like anything else. |
 
-**Nothing in Phase 3 or D2 happens until you answer.** Phase 1 and Phase 2 need no
-decision from you, so unless you say otherwise I am starting on the home page now.
+**D3–D5 still stand.** None of them blocks Phase 2, so that is what I am on.
 
 ---
 
