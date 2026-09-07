@@ -22,7 +22,9 @@ export type ShowcaseSlide = {
   priceLabel: string;
   /** ISO deadline for the live countdown pill. */
   endsAt: string | null;
-  /** Drives the red LIVE chip vs a neutral "Enchère" chip. */
+  /** Auction-era: drove a red LIVE chip. Always false now — see the note
+   *  in HomeDesktop's showcase builder. Kept so the chip logic reads plainly
+   *  rather than being deleted and half-remembered. */
   isLive: boolean;
 };
 
@@ -33,7 +35,7 @@ export type ShowcaseSlide = {
  * own watermarks + a colliding corner badge) with a single framed lot
  * card: cover photo under a strong bottom gradient, a glass info panel
  * with type/LIVE chips, a live countdown, the title, the price, and a
- * dedicated "Enchérir" action. Auto-advances every 3s (never pauses on
+ * dedicated "Voir" action. Auto-advances every 3s (never pauses on
  * hover), crossfades between lots, offers prev/next arrows + dots, and
  * falls back to a brand panel when the DB has nothing live so the hero
  * never renders empty.
@@ -176,13 +178,15 @@ function SlideBody({
           burned into the source photo near its lower edge. */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/5" />
 
-      {/* Top chips — LIVE / Enchère on the start side, countdown on the end. */}
+      {/* Top chips — status on the start side, countdown on the end. The
+          countdown only renders when `endsAt` is set, which a fixed-price
+          annonce never sets. */}
       <div className="absolute inset-x-0 top-4 z-10 flex items-start justify-between px-5">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-white backdrop-blur-sm">
           {slide.isLive && (
             <span className="batta-pulse-dot size-1.5 rounded-full bg-red-500 text-red-500/40" />
           )}
-          {slide.isLive ? "En direct" : "Enchère"}
+          {slide.isLive ? "En direct" : "À vendre"}
         </span>
         {slide.endsAt && (
           <span className="shrink-0 drop-shadow">
@@ -209,7 +213,7 @@ function SlideBody({
         <div className="mt-3 flex items-end justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55">
-              Prix actuel
+              Prix
             </div>
             <div className="batta-tabular mt-0.5 text-[26px] font-black leading-none text-white">
               {slide.priceLabel}
@@ -219,7 +223,7 @@ function SlideBody({
             </div>
           </div>
           <span className="batta-gold-fill inline-flex shrink-0 items-center gap-1.5 rounded-full px-5 py-2.5 text-[12px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition group-hover/showcase:scale-[1.03]">
-            Enchérir
+            Voir
             <ArrowUpRight className="size-4" strokeWidth={2.5} />
           </span>
         </div>

@@ -457,14 +457,14 @@ function BrandSlide({
                 {slide.liveCount}
               </span>
               <span className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.32em] text-white/65">
-                Enchères
+                Annonces
               </span>
             </div>
           )}
 
           {/* Headline — gold for the last word so the eye lands. */}
           <h2 className="mt-3 max-w-[18ch] text-balance text-[20px] font-extrabold leading-[1.1] tracking-tight text-white md:text-[24px]">
-            La maison des enchères{" "}
+            L&apos;immobilier{" "}
             <span
               style={{
                 background:
@@ -474,7 +474,7 @@ function BrandSlide({
                 color: "transparent",
               }}
             >
-              tunisiennes
+              tunisien
             </span>
           </h2>
 

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -9,10 +8,10 @@ import { CoverageStrip } from "@/components/landing/CoverageStrip";
 import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeDesktop } from "@/components/landing/HomeDesktop";
-import { PropertyCard } from "@/components/property/PropertyCard";
-import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
+import { AnnonceCard } from "@/components/listing/AnnonceCard";
+import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
-import { getHomeFeed, type HammeredRow } from "@/lib/home/feed";
+import { getHomeFeed, type HomeListingRow } from "@/lib/home/feed";
 import { log } from "@/lib/log";
 import { PerfProbe } from "@/components/dev/PerfProbe";
 
@@ -22,7 +21,6 @@ import { PerfProbe } from "@/components/dev/PerfProbe";
 // lets Vercel serve the page straight from the edge CDN — ~20ms TTFB and no
 // serverless cold start — instead of rendering ~200 cards on every request.
 export const revalidate = 60;
-import type { AuctionWithProperty } from "@/lib/types";
 import {
   ArrowUpRight,
   ChevronRight,
@@ -32,8 +30,8 @@ import {
   Trees,
   Store,
   Briefcase,
-  Gavel,
-  MapPin,
+  Phone,
+  Plus,
   Search,
   ShieldCheck,
   ClipboardCheck,
@@ -85,33 +83,38 @@ const HOW_IT_WORKS: {
   {
     key: "browse", eyebrowKey: "home.step1Eyebrow",
     titleKey: "home.step1Title", bodyKey: "home.step1Body",
-    href: "/properties", Icon: Search,
+    href: "/annonces", Icon: Search,
   },
   {
     key: "verify", eyebrowKey: "home.step2Eyebrow",
     titleKey: "home.step2Title", bodyKey: "home.step2Body",
-    href: "/kyc", Icon: ShieldCheck,
+    href: "/annonces", Icon: Phone,
   },
   {
     key: "bid", eyebrowKey: "home.step3Eyebrow",
     titleKey: "home.step3Title", bodyKey: "home.step3Body",
-    href: "/properties", Icon: Gavel,
+    href: "/annonces/nouvelle", Icon: Plus,
   },
 ];
 
-// Trust pillars — what protects the user. Anchored to the four platform
-// guarantees already enforced by the server code (escrow, KYC gate,
-// inspection workflow, Tunisian-law surenchère + delays).
+// Trust pillars — what protects the user.
+//
+// These were the four AUCTION guarantees: escrow, the KYC gate, the inspection
+// workflow, and Tunisian-law surenchère delays. Not one of them describes what
+// a classifieds site promises, and three no longer exist as code. They are now
+// the four things Batta actually does: it checks every annonce before it goes
+// up, it never publishes a phone number, it verifies sellers who ask to be,
+// and it takes no cut of the sale.
 const TRUST_PILLARS: {
   key: string;
   titleKey: string;
   bodyKey: string;
   Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
 }[] = [
-  { key: "escrow",     titleKey: "home.trustEscrowTitle",     bodyKey: "home.trustEscrowBody",     Icon: Lock },
-  { key: "kyc",        titleKey: "home.trustKycTitle",        bodyKey: "home.trustKycBody",        Icon: ShieldCheck },
-  { key: "inspection", titleKey: "home.trustInspectionTitle", bodyKey: "home.trustInspectionBody", Icon: ClipboardCheck },
-  { key: "legal",      titleKey: "home.trustLegalTitle",      bodyKey: "home.trustLegalBody",      Icon: Scale },
+  { key: "checked",  titleKey: "home.trustEscrowTitle",     bodyKey: "home.trustEscrowBody",     Icon: ClipboardCheck },
+  { key: "privacy",  titleKey: "home.trustKycTitle",        bodyKey: "home.trustKycBody",        Icon: Lock },
+  { key: "verified", titleKey: "home.trustInspectionTitle", bodyKey: "home.trustInspectionBody", Icon: ShieldCheck },
+  { key: "nofee",    titleKey: "home.trustLegalTitle",      bodyKey: "home.trustLegalBody",      Icon: Scale },
 ];
 
 // `Sparkles` is imported for a planned featured-tag pass and isn't
@@ -139,29 +142,27 @@ export default async function LandingPage({
   // One round-trip for the listing surfaces. The smaller widgets
   // (LiveTicker, RecentBidsFeed, CoverageStrip, EndingSoonBanner) each
   // own their own queries — cheap, parallelizable, fail-soft.
-  let trending: AuctionWithProperty[] = [];
-  let recent: AuctionWithProperty[] = [];
-  // "Offres directes" rail — fixed-price (listing_type='direct') listings,
-  // surfaced on their own so buyers can browse buy-now stock apart from the
-  // bidding lots.
-  let offers: AuctionWithProperty[] = [];
-  let hammered: HammeredRow[] = [];
-  // "Nouveautés" rail — newest listings (by auction created_at), distinct
-  // from trending which sorts by ends_at + paid placement. Renders as the
-  // same horizontal property-card scroller so it visually parallels "Les
-  // plus suivis" but answers a different intent ("what's new").
-  let nouveautes: AuctionWithProperty[] = [];
-  // Always empty / false at static render time — the client watchlist store
-  // (WatchlistButton) fills in the real saved set + login state post-hydration.
+  let trending: HomeListingRow[] = [];
+  let recent: HomeListingRow[] = [];
+  // "Bonnes affaires" rail — the cheapest published annonces per square
+  // metre. This slot used to hold "Offres directes", which separated
+  // fixed-price lots from bidding lots; every annonce is fixed-price now, so
+  // that split says nothing. Price per m² is what a property buyer actually
+  // scans a home page for, and no other surface answers it.
+  let bestValue: HomeListingRow[] = [];
+  // "Nouveautés" rail — newest by created_at, distinct from trending which
+  // leads with the most recently published. Same horizontal scroller, a
+  // different question: "what is new" rather than "what is worth seeing".
+  let nouveautes: HomeListingRow[] = [];
+  // Always empty / false at static render time — the client favourites store
+  // fills in the real saved set + login state post-hydration.
   const savedIds = new Set<string>();
   const loggedIn = false;
+  // Hero + stat-strip figures. `liveCount` is now the number of annonces
+  // ONLINE, not lots mid-auction; the name is kept because every consumer
+  // down the tree reads it, and renaming it would be a diff about nothing.
   let liveCount = 0;
-  // Desktop stat-strip figures — fetched best-effort alongside the
-  // listing surfaces. Each one is just a head:exact count, so the cost
-  // is one row across the wire; failure falls back to 0 silently and
-  // the strip degrades to placeholders the eye glides past.
-  let scheduledCount = 0;
-  let soldThisMonthCount = 0;
+  let newThisWeek = 0;
   let coverageGovs = 0;
 
   // Perf instrumentation — logs to the server terminal under scope `home`.
@@ -172,80 +173,46 @@ export default async function LandingPage({
   const endData = perf.time("data-phase total");
   try {
     await withTimeout((async () => {
-    // Stat-strip helper: first day of the current month, used to count
-    // the "vendu ce mois-ci" tile. Bucketed to the day so the cache key
-    // is stable within a day (the count only needs day-granularity).
-    const monthStart = (() => {
+    // Bucketed to the day so the cache key is stable within a day — the
+    // "new this week" figure only needs day granularity.
+    const weekStart = (() => {
       const d = new Date();
-      d.setUTCDate(1);
+      d.setUTCDate(d.getUTCDate() - 7);
       d.setUTCHours(0, 0, 0, 0);
       return d.toISOString();
     })();
 
     // SHARED public data — cookieless service-role client, cached 60s. No
     // per-user work happens here: the page is statically rendered, so saved
-    // hearts + login state are filled client-side after hydration. That's
+    // hearts + login state are filled client-side after hydration. That is
     // what lets this whole page be CDN-cached instead of rendered per request.
-    const endFeed = perf.time("getHomeFeed (hit≈0ms, miss=6 queries)");
-    const feed = await getHomeFeed(monthStart);
+    const endFeed = perf.time("getHomeFeed (hit≈0ms, miss=4 queries)");
+    const feed = await getHomeFeed(weekStart);
     endFeed();
 
-    const rows = (feed?.live.rows ?? []) as unknown as AuctionWithProperty[];
-    liveCount = feed?.live.count ?? rows.length;
-
-    // Paid placements bubble to the top. promo_banner outranks
-    // promo_home_featured so banner-paying sellers get the carousel
-    // slot AND the trending lead. Stable in PG sort order otherwise so
-    // ends_at ordering is preserved within each tier.
-    rows.sort((a, b) => {
-      const ap = (a.property ?? {}) as {
-        promo_banner?: boolean;
-        promo_home_featured?: boolean;
-      };
-      const bp = (b.property ?? {}) as {
-        promo_banner?: boolean;
-        promo_home_featured?: boolean;
-      };
-      const aScore = (ap.promo_banner ? 2 : 0) + (ap.promo_home_featured ? 1 : 0);
-      const bScore = (bp.promo_banner ? 2 : 0) + (bp.promo_home_featured ? 1 : 0);
-      return bScore - aScore;
-    });
-
-    // Surfaces:
-    //   - trending rail (horizontal scroller — now self-sized to the
-    //     dataset rather than capped at 8)
-    //   - "More to explore" grid (rest of the dataset, 2-up)
-    //
-    // When there are fewer than ~12 listings we deliberately let the
-    // rail and the grid OVERLAP so neither section renders empty.
-    // A dev DB with 9 rows used to leave the grid showing 1 lonely
-    // card; now it shows all 9 even though the rail covers the first 8.
-    // Split bidding lots from fixed-price offers so each gets its own rail.
-    const auctionRows = rows.filter((r) => r.listing_type !== "direct");
-    // Each home rail used to cap at ~10 rows: 6 visible + a couple to
-    // scroll. The user asked for "more per slider, not a fixed number" —
-    // so we hand the rails the full available slice (bounded by the
-    // server-side limit above) and let the snap-rail scroll absorb it.
-    offers = rows.filter((r) => r.listing_type === "direct");
-    // Trending shows enchères (auctions). "More to explore" stays mixed so
-    // a small catalogue never renders an empty grid.
-    trending = (auctionRows.length > 0 ? auctionRows : rows).slice(0, 18);
-    // Reuse anything past the trending tail as the "More to explore"
-    // grid. With the trimmed feed (≤18 rows) the rail covers most of it,
-    // so the grid shows the back half; fall back to the last few when the
-    // catalogue is small so the grid never renders a single lonely card.
-    recent = rows.length >= 16 ? rows.slice(12) : rows.slice(Math.min(rows.length, 8));
-    hammered = (feed?.hammered ?? []) as unknown as HammeredRow[];
-    nouveautes = (feed?.nouveautes ?? []) as unknown as AuctionWithProperty[];
-    scheduledCount = feed?.scheduledCount ?? 0;
-    soldThisMonthCount = feed?.soldThisMonthCount ?? 0;
+    const rows = feed?.published.rows ?? [];
+    liveCount = feed?.published.count ?? rows.length;
+    newThisWeek = feed?.newThisWeek ?? 0;
+    bestValue = feed?.bestValue ?? [];
+    nouveautes = feed?.nouveautes ?? [];
     coverageGovs = new Set(feed?.govs ?? []).size;
 
+    // Two surfaces over one slice:
+    //   - the trending rail (horizontal scroller, self-sized to the dataset)
+    //   - the "plus à explorer" grid underneath
+    //
+    // Below ~16 rows they deliberately OVERLAP, so neither renders empty. A
+    // catalogue with 12 published annonces used to leave the grid showing one
+    // lonely card; now the rail covers the front and the grid shows the back
+    // half of the same set.
+    trending = rows.slice(0, 18);
+    recent = rows.length >= 16 ? rows.slice(12) : rows.slice(Math.min(rows.length, 8));
+
     perf.debug("data ready", {
-      live: rows.length,
+      published: rows.length,
       trending: trending.length,
       nouv: nouveautes.length,
-      hammered: hammered.length,
+      bestValue: bestValue.length,
     });
     })(), 2500);
   } catch (err) {
@@ -330,7 +297,7 @@ export default async function LandingPage({
           eyebrow={t("home.trendingEyebrow")}
           title={t("home.trendingTitle")}
           countLabel={trending.length}
-          ctaHref="/properties"
+          ctaHref="/annonces"
           ChevronEnd={ChevronEnd}
           isRTL={isRTL}
           seeAllLabel={t("home.seeAll")}
@@ -346,8 +313,8 @@ export default async function LandingPage({
             <TrendingRail>
               {trending.map((a, i) => (
                 <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                  <PropertyCard
-                    auction={a}
+                  <AnnonceCard
+                    listing={a}
                     saved={savedIds.has(a.id)}
                     loggedIn={loggedIn}
                     priority={i < 3}
@@ -367,9 +334,9 @@ export default async function LandingPage({
         {trending.length > 0 && (
           <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
             {trending.slice(0, 8).map((a, i) => (
-              <PropertyCard
+              <AnnonceCard
                 key={a.id}
-                auction={a}
+                listing={a}
                 saved={savedIds.has(a.id)}
                 loggedIn={loggedIn}
                 priority={i < 4}
@@ -379,16 +346,22 @@ export default async function LandingPage({
         )}
       </section>
 
-      {/* ─── "Offres directes" rail — fixed-price (buy-now) listings, kept
-          separate from the bidding lots so buyers can browse them on their
-          own. Only shown when there's direct stock. */}
-      {offers.length > 0 && (
+      {/* ─── "Bonnes affaires" rail — the cheapest published annonces per
+          square metre.
+
+          This slot held "Offres directes": fixed-price stock, kept apart from
+          the bidding lots. Every annonce is fixed-price now, so that split
+          distinguished nothing. Price per m² is the comparison a property
+          buyer is actually making, and no other surface on the site answers
+          it. Listings with no surface are excluded rather than sorted to the
+          bottom with an invented number — see `pricePerSqm` in the feed. */}
+      {bestValue.length > 0 && (
         <section className="mt-7">
           <RailHeader
-            eyebrow="Achat immédiat"
-            title="Offres directes"
-            countLabel={offers.length}
-            ctaHref="/properties"
+            eyebrow="Le meilleur rapport"
+            title="Bonnes affaires"
+            countLabel={bestValue.length}
+            ctaHref="/annonces"
             ChevronEnd={ChevronEnd}
             isRTL={isRTL}
             seeAllLabel={t("home.seeAll")}
@@ -396,10 +369,10 @@ export default async function LandingPage({
           />
           <div className="lg:hidden">
             <TrendingRail>
-              {offers.map((a, i) => (
+              {bestValue.map((a, i) => (
                 <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                  <PropertyCard
-                    auction={a}
+                  <AnnonceCard
+                    listing={a}
                     saved={savedIds.has(a.id)}
                     loggedIn={loggedIn}
                     priority={i < 3}
@@ -410,10 +383,10 @@ export default async function LandingPage({
             </TrendingRail>
           </div>
           <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
-            {offers.slice(0, 8).map((a, i) => (
-              <PropertyCard
+            {bestValue.slice(0, 8).map((a, i) => (
+              <AnnonceCard
                 key={a.id}
-                auction={a}
+                listing={a}
                 saved={savedIds.has(a.id)}
                 loggedIn={loggedIn}
                 priority={i < 4}
@@ -437,7 +410,7 @@ export default async function LandingPage({
             eyebrow={t("home.nouveautesEyebrow")}
             title={t("home.nouveautesTitle")}
             countLabel={nouveautes.length}
-            ctaHref="/properties"
+            ctaHref="/annonces"
             ChevronEnd={ChevronEnd}
             isRTL={isRTL}
             seeAllLabel={t("home.seeAll")}
@@ -447,8 +420,8 @@ export default async function LandingPage({
             <TrendingRail>
               {nouveautes.map((a, i) => (
                 <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                  <PropertyCard
-                    auction={a}
+                  <AnnonceCard
+                    listing={a}
                     saved={savedIds.has(a.id)}
                     loggedIn={loggedIn}
                     priority={i < 3}
@@ -460,9 +433,9 @@ export default async function LandingPage({
           </div>
           <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
             {nouveautes.slice(0, 8).map((a, i) => (
-              <PropertyCard
+              <AnnonceCard
                 key={a.id}
-                auction={a}
+                listing={a}
                 saved={savedIds.has(a.id)}
                 loggedIn={loggedIn}
                 priority={i < 4}
@@ -513,7 +486,7 @@ export default async function LandingPage({
         <section className="mt-9 px-4">
           <RailHeader
             title={t("home.moreToExplore")}
-            ctaHref="/properties"
+            ctaHref="/annonces"
             ChevronEnd={ChevronEnd}
             isRTL={isRTL}
             seeAllLabel={t("home.seeAll")}
@@ -521,9 +494,9 @@ export default async function LandingPage({
           />
           <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
             {recent.map((a, i) => (
-              <PropertyCard
+              <AnnonceCard
                 key={a.id}
-                auction={a}
+                listing={a}
                 saved={savedIds.has(a.id)}
                 loggedIn={loggedIn}
                 priority={i < 4}
@@ -580,45 +553,12 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* Recently hammered — actual sold prices. Horizontal scroll rail
-          so any count of real cards looks intentional (1 card scrolls,
-          12 cards scroll). No padded placeholders: a "Coming soon"
-          tile alongside a real sold listing reads as filler and makes
-          the page feel emptier than just hiding the section would. */}
-      {hammered.length > 0 && (
-        <section className="mt-10">
-          <div className="flex items-baseline justify-between px-4">
-            <h3 className={`inline-flex items-center gap-1.5 text-[15px] font-bold leading-tight ${isRTL ? "font-arabic" : ""}`}>
-              <Gavel className="size-3.5 text-gold" strokeWidth={2.5} />
-              {t("home.recentlyHammered")}
-            </h3>
-            <span className="text-[11px] text-muted">{t("home.realPrices")}</span>
-          </div>
-          <div className="snap-rail hide-scrollbar mt-3 flex gap-3 overflow-x-auto px-4 pb-1 lg:hidden">
-            {hammered.map((h) => (
-              <div key={h.id} className="w-[200px] shrink-0 snap-start">
-                <HammeredCard row={h} locale={locale} isRTL={isRTL} soldLabel={t("home.soldChip")} tnd={t("common.tnd")} />
-              </div>
-            ))}
-            <div className="w-1 shrink-0" />
-          </div>
-          {/* Desktop: 4-col grid of the latest 8 sold lots — proof points
-              read at a glance, no horizontal scroll required when the
-              hardware can show eight cards at once. */}
-          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
-            {hammered.slice(0, 8).map((h) => (
-              <HammeredCard
-                key={h.id}
-                row={h}
-                locale={locale}
-                isRTL={isRTL}
-                soldLabel={t("home.soldChip")}
-                tnd={t("common.tnd")}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* The "Récemment adjugés" rail stood here — real hammer prices, as
+          social proof. There is no honest equivalent for a classifieds site:
+          we publish what a seller ASKS, and what a property finally sold for
+          is between the buyer, the seller and their notary. A "sold" rail
+          built from asking prices would be a claim we cannot support, so the
+          section is gone rather than reworded. */}
 
       {/* ─── "Comment ça marche" — 3-step buyer journey strip ───
               Sits below the social-proof hammered rail because that's
@@ -850,15 +790,13 @@ export default async function LandingPage({
     <HomeDesktop
       endingSoonSlides={endingSoonSlides}
       trending={trending}
-      offers={offers}
+      bestValue={bestValue}
       nouveautes={nouveautes}
       recent={recent}
-      hammered={hammered}
       savedIds={savedIds}
       loggedIn={loggedIn}
       liveCount={liveCount}
-      scheduledCount={scheduledCount}
-      soldThisMonthCount={soldThisMonthCount}
+      newThisWeek={newThisWeek}
       coverageGovs={coverageGovs}
     />
     </>
@@ -893,7 +831,7 @@ function RailHeader({
       surface (Reels + Grid + numbered pagination). The /auctions
       index was removed (it was a duplicate of /properties); the
       detail route /auctions/[id] still exists for individual lots. */
-  ctaHref: "/properties";
+  ctaHref: "/annonces";
   ChevronEnd: React.ComponentType<{ className?: string }>;
   isRTL: boolean;
   /** Pre-translated "See all" label. Server component callers pass
@@ -948,16 +886,19 @@ function RailHeader({
 }
 
 /**
- * Build the hero carousel's slide list from the top trending auctions.
+ * Build the hero carousel's slide list from the top annonces.
  *
- * Each real slide uses the listing's first photo as the background, the
- * city as a chip on top, and the price + locale-formatted TND as the
- * headline. When `trending` is empty we fall through to brand-themed
- * fallback slides so the carousel never renders empty (fresh dev clone,
- * empty DB, etc.).
+ * Each real slide uses the listing's first photo as the background, the place
+ * as a chip on top, and the price as the headline. When the catalogue is empty
+ * we fall through to a brand slide so the carousel never renders blank on a
+ * fresh clone.
+ *
+ * The eyebrow used to read "En direct · Sfax" and the CTA "Enchérir". Neither
+ * is true of a fixed price, so the eyebrow carries the place and the surface
+ * instead — which is what a buyer scanning a hero is reading for.
  */
 function buildHeroSlides(
-  trending: AuctionWithProperty[],
+  trending: HomeListingRow[],
   locale: string,
   liveCount: number,
   labels: {
@@ -967,43 +908,40 @@ function buildHeroSlides(
     browseCta: string;
     brandTitle: string;
     brandSlogan: string;
-    /** "Live · {n}" — the server caller resolves the ICU placeholder. */
+    /** The eyebrow on the brand slide — the caller resolves the placeholder. */
     brandEyebrow: string;
   },
 ): HeroSlide[] {
   const slides: HeroSlide[] = [];
-  for (const a of trending.slice(0, 5)) {
-    const property = a.property;
-    const photo = property.photos
-      ?.sort((p, q) => p.sort_order - q.sort_order)[0];
+  for (const l of trending.slice(0, 5)) {
+    const photo = (l.photos ?? []).slice().sort((p, q) => p.sort_order - q.sort_order)[0];
     if (!photo) continue;
-    const price = a.current_price ?? a.opening_price;
-    const isLive = a.status === "live" || a.status === "extending";
+    const area = Number((l.attributes ?? {}).area_sqm);
+    const where = l.delegation?.trim() || l.governorate;
     slides.push({
-      id: a.id,
+      id: l.id,
       imageUrl: propertyPhotoUrl(photo.storage_path),
-      eyebrow: isLive
-        ? `${labels.liveWord} · ${property.governorate}`
-        : property.governorate,
-      title: property.title,
-      subtitle: `${formatTND(price, locale)} ${labels.tnd}`,
-      href: `/auctions/${a.id}`,
+      eyebrow: Number.isFinite(area) && area > 0 ? `${where} · ${area} m²` : where,
+      title: l.title,
+      subtitle:
+        l.price_on_request || l.price == null
+          ? "Prix sur demande"
+          : `${formatTND(Number(l.price), locale)} ${labels.tnd}`,
+      href: `/annonces/${l.id}`,
       ctaLabel: labels.bidCta,
     });
   }
 
-  // Brand-pitch slide closes the carousel. Marked `kind: "brand"` so
-  // SlideCard renders the dedicated luxe composition (navy gradient,
-  // gold concentric arcs, live-count hero stat) instead of treating
-  // it as another photo overlay. `imageUrl` is null because the slide
-  // paints its own CSS background.
+  // Brand-pitch slide closes the carousel. `kind: "brand"` makes SlideCard
+  // render the navy/gold composition instead of treating it as a photo
+  // overlay, so `imageUrl` is null — it paints its own background.
   slides.push({
     id: "brand-pitch",
     imageUrl: null,
     eyebrow: "",
     title: labels.brandTitle,
     subtitle: labels.brandSlogan,
-    href: "/properties",
+    href: "/annonces",
     ctaLabel: labels.browseCta,
     kind: "brand",
     liveCount,
@@ -1013,36 +951,35 @@ function buildHeroSlides(
 }
 
 /**
- * Slides for the second-tier hero — the items closest to closing after
- * the top hero's headliners. Same shape as `buildHeroSlides` but the
- * eyebrow leads with "Bientôt clos" instead of "En direct", so the
- * surface reads as urgency-on-urgency rather than a duplicate of the
- * top hero. No brand-pitch slide — this carousel is purely listings.
+ * Slides for the second-tier hero. Same shape as `buildHeroSlides`, a
+ * different lead: it opens on the newest arrivals rather than repeating the
+ * headliners. No brand slide — this carousel is purely annonces.
  */
 function buildEndingSoonSlides(
-  rows: AuctionWithProperty[],
+  rows: HomeListingRow[],
   locale: string,
   labels: { endingSoonWord: string; tnd: string; bidCta: string },
 ): HeroSlide[] {
   const slides: HeroSlide[] = [];
-  for (const a of rows) {
-    const property = a.property;
-    const photo = property.photos
-      ?.sort((p, q) => p.sort_order - q.sort_order)[0];
+  for (const l of rows) {
+    const photo = (l.photos ?? []).slice().sort((p, q) => p.sort_order - q.sort_order)[0];
     if (!photo) continue;
-    const price = a.current_price ?? a.opening_price;
     slides.push({
-      id: a.id,
+      id: l.id,
       imageUrl: propertyPhotoUrl(photo.storage_path),
-      eyebrow: `${labels.endingSoonWord} · ${property.governorate}`,
-      title: property.title,
-      subtitle: `${formatTND(price, locale)} ${labels.tnd}`,
-      href: `/auctions/${a.id}`,
+      eyebrow: `${labels.endingSoonWord} · ${l.delegation?.trim() || l.governorate}`,
+      title: l.title,
+      subtitle:
+        l.price_on_request || l.price == null
+          ? "Prix sur demande"
+          : `${formatTND(Number(l.price), locale)} ${labels.tnd}`,
+      href: `/annonces/${l.id}`,
       ctaLabel: labels.bidCta,
     });
   }
   return slides;
 }
+
 
 // ──────────────────────────────────────────────────────────────────────
 // Browse-by-type / browse-by-price tables.
@@ -1084,71 +1021,9 @@ const PRICE_BUCKETS: {
 // ──────────────────────────────────────────────────────────────────────
 // "Recently hammered" — compact card for the closed-auction strip.
 // (HammeredRow type is hoisted to the top of the file.)
-// ──────────────────────────────────────────────────────────────────────
-
-function HammeredCard({
-  row,
-  locale,
-  isRTL,
-  soldLabel,
-  tnd,
-}: {
-  row: HammeredRow;
-  locale: string;
-  isRTL: boolean;
-  soldLabel: string;
-  tnd: string;
-}) {
-  const photo = row.property.photos
-    ?.slice()
-    .sort((a, b) => a.sort_order - b.sort_order)[0];
-  const price = Number(row.winner_amount ?? 0);
-  return (
-    <Link
-      href={`/auctions/${row.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl bg-surface-2 transition active:scale-[0.98] hover:bg-surface"
-    >
-      <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
-        {photo ? (
-          (() => {
-            const src = propertyPhotoUrl(photo.storage_path);
-            return (
-              <Image
-                src={src}
-                alt=""
-                fill
-                sizes="(min-width: 1024px) 220px, 200px"
-                unoptimized={isStaticSeedPath(src)}
-                className="object-cover transition duration-500 group-hover:scale-105"
-              />
-            );
-          })()
-        ) : (
-          <div className="flex h-full items-center justify-center text-3xl text-foreground/15">🏛️</div>
-        )}
-        <span className="batta-gold-fill absolute top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.14em] ltr:left-2 rtl:right-2">
-          <Gavel className="size-2.5" strokeWidth={2.5} />
-          {soldLabel}
-        </span>
-      </div>
-      <div className="p-3">
-        <div className="batta-tabular gradient-gold-text text-[18px] font-extrabold leading-none">
-          {formatTND(price, locale)}
-          <span className="ms-1 text-[9px] font-bold uppercase tracking-[0.14em] text-muted">
-            {tnd}
-          </span>
-        </div>
-        <div className={`mt-1.5 line-clamp-1 text-[12px] font-bold text-foreground ${isRTL ? "font-arabic" : ""}`}>
-          {row.property.title}
-        </div>
-        <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted">
-          <MapPin className="size-2.5" strokeWidth={2} />
-          <span className="truncate">{row.property.governorate}</span>
-        </div>
-      </div>
-    </Link>
-  );
-}
+// The "Récemment adjugés" card lived here. It rendered `winner_amount` —
+// a hammer price — which a classifieds catalogue does not have and should
+// not invent. Removed with the rail it served.
 
 function CardSkeleton() {
   return (

@@ -7,20 +7,19 @@ import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
 import { HeroShowcase, type ShowcaseSlide } from "@/components/landing/HeroShowcase";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeSearch } from "@/components/landing/HomeSearch";
-import { PropertyCard } from "@/components/property/PropertyCard";
+import { AnnonceCard } from "@/components/listing/AnnonceCard";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
-import type { AuctionWithProperty } from "@/lib/types";
+import type { HomeListingRow } from "@/lib/home/feed";
 import {
   ArrowUpRight,
   ChevronRight,
   ChevronLeft,
-  Gavel,
+  Home,
   ShieldCheck,
   ClipboardCheck,
   Scale,
   Lock,
-  CheckCircle2,
   CalendarClock,
   MapPin,
   Zap,
@@ -41,18 +40,6 @@ import {
  *   - Editorial bands (how-it-works, trust, activity, closing spread)
  *     close the page.
  */
-
-type HammeredRow = {
-  id: string;
-  winner_amount: number | string | null;
-  hammer_at: string | null;
-  type: string;
-  property: {
-    title: string;
-    governorate: string;
-    photos?: { id: string; storage_path: string; sort_order: number }[];
-  };
-};
 
 // Labels come from i18n (`property.types.<key>`); the tile art is a
 // pre-optimized illustration at /icons/<key>.{avif,webp}.
@@ -86,28 +73,25 @@ const TRUST_PILLARS: {
 
 export async function HomeDesktop({
   trending,
-  offers,
+  bestValue,
   nouveautes,
   recent,
   savedIds,
   loggedIn,
   liveCount,
-  scheduledCount,
-  soldThisMonthCount,
+  newThisWeek,
   coverageGovs,
   endingSoonSlides = [],
   alwaysVisible = false,
 }: {
-  trending: AuctionWithProperty[];
-  offers: AuctionWithProperty[];
-  nouveautes: AuctionWithProperty[];
-  recent: AuctionWithProperty[];
-  hammered: HammeredRow[];
+  trending: HomeListingRow[];
+  bestValue: HomeListingRow[];
+  nouveautes: HomeListingRow[];
+  recent: HomeListingRow[];
   savedIds: Set<string>;
   loggedIn: boolean;
   liveCount: number;
-  scheduledCount: number;
-  soldThisMonthCount: number;
+  newThisWeek: number;
   coverageGovs: number;
   /** "Ending soon" hero carousel slides — the second hero that used to be
    *  mobile-only. Empty array hides it. */
@@ -122,44 +106,49 @@ export async function HomeDesktop({
   const isRTL = locale === "ar";
   const ChevronEnd = isRTL ? ChevronLeft : ChevronRight;
 
-  // Live-stats strip. Cohesive navy/gold treatment (no more red/green/violet)
-  // and — critically — never surfaces a sad "0": the middle slot degrades from
-  // "sold this month" → "upcoming auctions" → a qualitative "100% verified" so
-  // a fresh marketplace still reads as alive and trustworthy.
+  // Stats strip. Cohesive navy/gold treatment, and — critically — it never
+  // surfaces a sad "0": the middle slot degrades from "new this week" to a
+  // qualitative "100% vérifiées" so a young catalogue still reads as alive.
+  //
+  // These counted auctions: lots live now, lots coming, lots sold this month.
+  // A fixed-price catalogue has no clock, so the figures are the ones a buyer
+  // can actually use — how much is on offer, how fresh it is, and how far it
+  // reaches.
   const fmt = (n: number) => n.toLocaleString("fr-FR");
   const secondStat =
-    soldThisMonthCount > 0
-      ? { display: fmt(soldThisMonthCount), label: "Vendues ce mois-ci", sub: "Biens attribués", Icon: CheckCircle2, live: false }
-      : scheduledCount > 0
-        ? { display: fmt(scheduledCount), label: "Enchères à venir", sub: "Bientôt en ligne", Icon: CalendarClock, live: false }
-        : { display: "100%", label: "Transactions vérifiées", sub: "KYC + caution", Icon: ShieldCheck, live: false };
+    newThisWeek > 0
+      ? { display: fmt(newThisWeek), label: "Nouvelles cette semaine", sub: "Fraîchement publiées", Icon: CalendarClock, live: false }
+      : { display: "100%", label: "Annonces vérifiées", sub: "Contrôlées avant publication", Icon: ShieldCheck, live: false };
   const stats: { display: string; label: string; sub: string; Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; live: boolean }[] = [
-    { display: fmt(liveCount), label: "Enchères en cours", sub: "En temps réel", Icon: Gavel, live: true },
+    { display: fmt(liveCount), label: liveCount > 1 ? "Annonces en ligne" : "Annonce en ligne", sub: "À prix affiché", Icon: Home, live: true },
     secondStat,
     { display: fmt(coverageGovs), label: coverageGovs > 1 ? "Gouvernorats" : "Gouvernorat", sub: "Couverture nationale", Icon: MapPin, live: false },
   ];
 
-  // Featured showcase — the top trending lots, rendered as a single
-  // auto-advancing lot card on the hero's right. Built from the rich
-  // auction rows (price / deadline) so the panel can show a structured
-  // info overlay + live countdown instead of a raw photo.
+  // Featured showcase — the newest annonces, as a single auto-advancing card
+  // on the hero's right.
+  //
+  // `endsAt`/`isLive` drove a countdown chip on the panel. A fixed price has
+  // no deadline, so both are null/false and HeroShowcase simply does not paint
+  // the chip. Deliberate: a clock that counts down to nothing is worse than
+  // an empty corner.
   const showcaseSlides: ShowcaseSlide[] = trending
     .slice(0, 5)
-    .map((a): ShowcaseSlide | null => {
-      const photo = a.property.photos
-        ?.slice()
-        .sort((p, q) => p.sort_order - q.sort_order)[0];
+    .map((l): ShowcaseSlide | null => {
+      const photo = (l.photos ?? []).slice().sort((p, q) => p.sort_order - q.sort_order)[0];
       if (!photo) return null;
-      const price = a.current_price ?? a.opening_price;
       return {
-        id: a.id,
+        id: l.id,
         imageUrl: propertyPhotoUrl(photo.storage_path),
-        href: `/auctions/${a.id}`,
-        governorate: a.property.governorate,
-        title: a.property.title,
-        priceLabel: formatTND(price, locale),
-        endsAt: a.ends_at ?? null,
-        isLive: a.status === "live" || a.status === "extending",
+        href: `/annonces/${l.id}`,
+        governorate: l.delegation?.trim() || l.governorate,
+        title: l.title,
+        priceLabel:
+          l.price_on_request || l.price == null
+            ? "Prix sur demande"
+            : formatTND(Number(l.price), locale),
+        endsAt: null,
+        isLive: false,
       };
     })
     .filter((s): s is ShowcaseSlide => s !== null);
@@ -188,8 +177,10 @@ export async function HomeDesktop({
                 aria-hidden
                 className="batta-pulse-dot size-2 rounded-full bg-[var(--accent)] text-[var(--accent)]/40"
               />
-              <span className="uppercase tracking-[0.08em] text-[var(--accent)]">En direct</span>
-              <span className="text-muted">· {liveCount} enchères en cours</span>
+              <span className="uppercase tracking-[0.08em] text-[var(--accent)]">En ligne</span>
+              <span className="text-muted">
+                · {liveCount} annonce{liveCount > 1 ? "s" : ""} à prix affiché
+              </span>
             </span>
 
             <h1
@@ -218,10 +209,10 @@ export async function HomeDesktop({
                 button lived inside the showcase card. */}
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
-                href="/properties"
+                href="/annonces"
                 className="batta-gold-fill inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[13px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
               >
-                Explorer les enchères
+                Explorer les annonces
                 <ArrowUpRight className="size-4" strokeWidth={2.5} />
               </Link>
               <Link
@@ -337,18 +328,18 @@ export async function HomeDesktop({
         </section>
       )}
 
-      {/* OFFRES DIRECTES — auto-sliding carousel */}
-      {offers.length > 0 && (
+      {/* BONNES AFFAIRES — cheapest per m², auto-sliding carousel */}
+      {bestValue.length > 0 && (
         <section className="mt-12">
           <RailHeader
-            eyebrow="Achat immédiat"
-            title="Offres directes"
-            countLabel={offers.length}
+            eyebrow="Le meilleur rapport"
+            title="Bonnes affaires"
+            countLabel={bestValue.length}
             ChevronEnd={ChevronEnd}
             isRTL={isRTL}
             seeAllLabel={t("home.seeAll")}
           />
-          <CardSlider items={offers} savedIds={savedIds} loggedIn={loggedIn} />
+          <CardSlider items={bestValue} savedIds={savedIds} loggedIn={loggedIn} />
         </section>
       )}
 
@@ -587,7 +578,7 @@ function CardSlider({
   loggedIn,
   priorityCount = 0,
 }: {
-  items: AuctionWithProperty[];
+  items: HomeListingRow[];
   savedIds: Set<string>;
   loggedIn: boolean;
   priorityCount?: number;
@@ -596,8 +587,8 @@ function CardSlider({
     <TrendingRail arrows>
       {items.map((a, i) => (
         <div key={a.id} className="w-[300px] shrink-0 snap-start">
-          <PropertyCard
-            auction={a}
+          <AnnonceCard
+            listing={a}
             saved={savedIds.has(a.id)}
             loggedIn={loggedIn}
             priority={i < priorityCount}
