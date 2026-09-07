@@ -891,3 +891,81 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
     animation: none !important;
   }
 }
+
+/* ── Admin kit tokens ───────────────────────────────────────────────────────
+   The console is shared with Mazed Auto: the same components, the same class
+   names, different values. Auto is metallic gold on near-black; Batta is navy
+   on white, and these are Batta's own colours — the ones `.batta-tone-*` has
+   used all along — so the ported console comes out looking like this product
+   rather than like the other one.
+
+   Contrast is why they cannot simply be copied. Auto's `--tone-ok` is #5cc98a,
+   chosen to glow on #0a0a0a; on white it is a washed-out green that fails
+   contrast outright. Batta's emerald-700 is the same meaning at the other end
+   of the scale. */
+:root {
+  --tone-ok:        #047857;                  /* emerald-700 */
+  --tone-ok-bg:     rgba(16, 185, 129, 0.08);
+  --tone-ok-ring:   rgba(16, 185, 129, 0.25);
+  --tone-warn:      #b45309;                  /* amber-700 */
+  --tone-warn-bg:   rgba(245, 158, 11, 0.10);
+  --tone-warn-ring: rgba(245, 158, 11, 0.30);
+  --tone-warn-edge: rgba(180, 83, 9, 0.80);
+  --tone-bad:       var(--accent-deep);       /* red-800 */
+  --tone-bad-bg:    var(--accent-faint);
+  --tone-bad-ring:  rgba(220, 38, 38, 0.25);
+  --tone-bad-edge:  rgba(153, 27, 27, 0.85);
+  --tone-info-ring: rgba(30, 58, 138, 0.28);  /* navy, matching --gold here */
+
+  /* Row states. Auto washes rows with white over black; over white that is
+     invisible, so Batta washes with black. */
+  --row-hover:    rgba(0, 0, 0, 0.025);
+  --row-focus:    rgba(0, 0, 0, 0.045);
+  --row-selected: var(--gold-faint);
+
+  /* Which way a pressed surface moves. Lifting off black reads as a press on
+     Auto; on white the same lift washes the surface out, so Batta dims. */
+  --press-brightness: 0.96;
+}
+
+/* Anything that navigates should acknowledge the press immediately, before the
+   server has said anything at all. */
+.press {
+  transition: transform 130ms cubic-bezier(.2, .8, .2, 1), filter 130ms ease-out;
+}
+.press:active {
+  transform: scale(0.968);
+  filter: brightness(var(--press-brightness));
+}
+
+/* ── Pending navigation ────────────────────────────────────────────────────
+   Marks the card you tapped until its page arrives. Fades in over 90ms, so a
+   navigation that resolves faster than that never flashes. */
+.link-busy-overlay {
+  background: color-mix(in srgb, var(--background) 55%, transparent);
+  backdrop-filter: blur(1px);
+  animation: link-busy-in 90ms ease-out both;
+}
+
+.link-busy-ring {
+  border-radius: 9999px;
+  border: 2px solid color-mix(in srgb, var(--gold) 22%, transparent);
+  border-top-color: var(--gold);
+  animation: link-busy-in 90ms ease-out both, link-busy-spin 620ms linear 90ms infinite;
+}
+
+@keyframes link-busy-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes link-busy-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .press { transition: none; }
+  .press:active { transform: none; filter: brightness(var(--press-brightness)); }
+  .link-busy-ring { animation: link-busy-in 90ms ease-out both; }
+  .link-busy-overlay { backdrop-filter: none; }
+}
