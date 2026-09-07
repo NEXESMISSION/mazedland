@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
   LayoutDashboard, Receipt, Users, SlidersHorizontal, ExternalLink,
-  Menu, X, Building2, Gavel, Banknote, UserCheck, ShieldCheck, Home,
+  Menu, X, Building2, Gavel, Banknote, UserCheck, ShieldCheck, Home, Tag,
   type LucideIcon,
 } from "lucide-react";
 import { NavIcon } from "./kit/LinkPending";
@@ -25,9 +25,9 @@ import { NavIcon } from "./kit/LinkPending";
  * resolved — not before, and not on a date. Removing it early would strand a
  * bidder and hide money we are holding.
  *
- * Destinations that do not exist yet (Annonces, Offres & prix, Catalogue) are
- * absent rather than present-and-broken: a menu that leads somewhere empty is
- * how you teach an operator to distrust the menu.
+ * Destinations that do not exist yet (Annonces, Catalogue) are absent rather
+ * than present-and-broken: a menu that leads somewhere empty is how you teach
+ * an operator to distrust the menu. They are added as their phase lands.
  */
 
 type Item = {
@@ -55,6 +55,12 @@ const CONSOLE: Item[] = [
     Icon: Receipt,
     hint: "Reçus à valider",
     countKey: "paiements",
+  },
+  {
+    label: "Offres & prix",
+    href: "/admin/offres",
+    Icon: Tag,
+    hint: "Publication, packs, mises en avant, badge",
   },
   {
     label: "Vendeurs",
