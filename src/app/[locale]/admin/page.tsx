@@ -2,7 +2,7 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { actionLabel } from "@/lib/admin/actions";
-import { AlertTriangle, ArrowRight, Gavel } from "lucide-react";
+import { AlertTriangle, ArrowRight, Banknote } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,49 +10,67 @@ export const revalidate = 0;
 /**
  * The triage dashboard — what is waiting on a decision, right now.
  *
- * Ported from Mazed Auto, with one difference that is the whole story of where
- * Land currently is. Auto's dashboard counts four classifieds queues because
- * its auction tables read zero. Land's auction product is **live** — measured
- * 2026-09-07: 18 lots running, 6 scheduled, and cautions held against them —
- * so those queues are counted first, and the classifieds pivot is reported
- * underneath as progress rather than pretended into the main figures.
+ * This used to lead with the auction product: lots to validate, cautions to
+ * refund, identities to verify, with the classifieds catalogue reported
+ * underneath as "bascule en cours". That ordering was honest while auctions
+ * were the business. They are not any more, so the four figures are the
+ * classifieds ones and the auction remnant has moved to a single strip at the
+ * bottom that removes itself when the last caution is settled.
  *
- * Every number is a head-only COUNT. Nothing here fetches a list except the
+ * It is deliberately not a grid of cards. Bordered rounded tiles give every
+ * number equal weight and equal decoration; a figure with a label under it and
+ * a rule between reads faster and says more, because nothing competes with the
+ * number.
+ *
+ * Every count is head-only — nothing on this page fetches a list except the
  * audit strip at the bottom.
  */
 
 const OVERDUE_MS = 48 * 3_600_000;
+const EXPIRING_MS = 7 * 24 * 3_600_000;
+
+/** The kinds `/admin/paiements` can settle. See the note in `layout.tsx`. */
+const CONSOLE_PAYMENT_KINDS = [
+  "listing_fee", "listing_pack", "subscription", "promo", "badge", "renewal",
+];
 
 export default async function AdminDashboard() {
   const sb = await getServerSupabase();
-  const overdue = new Date(Date.now() - OVERDUE_MS).toISOString();
+
+  const now = Date.now();
+  const overdue = new Date(now - OVERDUE_MS).toISOString();
+  const soon = new Date(now + EXPIRING_MS).toISOString();
+  const nowIso = new Date().toISOString();
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const today = dayStart.toISOString();
 
   const head = (t: string) => sb.from(t).select("*", { count: "exact", head: true });
+  const payments = () => head("payments").in("kind", CONSOLE_PAYMENT_KINDS);
 
   const [
-    lots, lotsOverdue,
+    listingsPending, listingsOverdue, listingsToday,
     paymentsPending, paymentsOverdue,
-    cautions, cautionsOverdue,
-    kyc,
-    liveLots, scheduledLots,
-    listingsDraft, listingsPublished,
+    expiringSoon, expired,
+    cautions,
     recent,
   ] = await Promise.all([
-    head("properties").eq("status", "pending_review"),
-    head("properties").eq("status", "pending_review").lt("created_at", overdue),
-    head("payments").eq("status", "pending_review"),
-    head("payments").eq("status", "pending_review").lt("created_at", overdue),
-    // Released to us, not yet refunded or forfeited: the queue that is holding
-    // other people's money.
-    head("auction_deposits").not("released_at", "is", null).is("refunded_at", null).is("forfeited_at", null),
-    head("auction_deposits").not("released_at", "is", null).is("refunded_at", null).is("forfeited_at", null).lt("released_at", overdue),
-    head("kyc_submissions").eq("status", "submitted"),
-    head("auctions").eq("status", "live"),
-    head("auctions").eq("status", "scheduled"),
-    head("listings").eq("status", "draft"),
-    head("listings").eq("status", "published"),
-    // `action is not null`, minus the telemetry namespaces: an admin opens
-    // "Derniers gestes" to see who decided what, not to read render traces.
+    head("listings").eq("status", "pending_review"),
+    head("listings").eq("status", "pending_review").lt("created_at", overdue),
+    head("listings").eq("status", "published").gte("published_at", today),
+    payments().eq("status", "pending_review"),
+    payments().eq("status", "pending_review").lt("created_at", overdue),
+    head("listings").eq("status", "published").not("expires_at", "is", null)
+      .gte("expires_at", nowIso).lte("expires_at", soon),
+    head("listings").eq("status", "expired"),
+    // The auction remnant: released to us, neither refunded nor forfeited.
+    // Bidder money we are still holding.
+    head("auction_deposits").not("released_at", "is", null)
+      .is("refunded_at", null).is("forfeited_at", null),
+    // `action is not null`, minus the telemetry namespaces. An admin opens
+    // "Derniers gestes" to see who decided what, not to read render traces —
+    // `client.` and `server.` are observability, everything else
+    // (listing.*, payment.*, home.*, user.*) is a decision somebody made.
     sb.from("activity_log")
       .select("id, created_at, action, user_email")
       .not("action", "is", null)
@@ -66,37 +84,37 @@ export default async function AdminDashboard() {
 
   const queues = [
     {
-      label: "Biens à valider",
-      sub: "Soumis par un vendeur",
-      href: "/admin/properties",
-      count: n(lots),
-      overdue: n(lotsOverdue),
+      label: "Annonces à valider",
+      sub: "Soumises par un vendeur",
+      href: "/admin/annonces?status=pending_review",
+      count: n(listingsPending),
+      overdue: n(listingsOverdue),
     },
     {
       label: "Reçus à valider",
-      sub: "Cautions et frais de mise en vente",
-      href: "/admin/payments",
+      sub: "Publication, packs, mises en avant",
+      href: "/admin/paiements",
       count: n(paymentsPending),
       overdue: n(paymentsOverdue),
     },
     {
-      label: "Cautions à rembourser",
-      sub: "Enchérisseurs non retenus",
-      href: "/admin/deposits",
-      count: n(cautions),
-      overdue: n(cautionsOverdue),
+      label: "Expirent sous 7 jours",
+      sub: "À relancer pour un renouvellement",
+      href: "/admin/annonces?status=expiring",
+      count: n(expiringSoon),
+      overdue: 0,
     },
     {
-      label: "Identités à vérifier",
-      sub: "KYC en attente",
-      href: "/admin/kyc-queue",
-      count: n(kyc),
+      label: "Expirées",
+      sub: "Hors ligne, renouvelables",
+      href: "/admin/annonces?status=expired",
+      count: n(expired),
       overdue: 0,
     },
   ];
 
-  const totalPending = queues.reduce((s, q) => s + q.count, 0);
-  const totalOverdue = queues.reduce((s, q) => s + q.overdue, 0);
+  const totalPending = n(listingsPending) + n(paymentsPending);
+  const totalOverdue = n(listingsOverdue) + n(paymentsOverdue);
 
   return (
     <AdminPage>
@@ -107,6 +125,7 @@ export default async function AdminDashboard() {
         </h1>
       </header>
 
+      {/* Three figures, separated by rules. No tiles. */}
       <div className="mt-7 grid grid-cols-3 border-y border-border">
         <Figure label="En attente" value={totalPending} accent={totalPending > 0} />
         <Figure
@@ -116,8 +135,8 @@ export default async function AdminDashboard() {
           className="border-s border-border"
         />
         <Figure
-          label="Lots en cours"
-          value={n(liveLots) + n(scheduledLots)}
+          label="Publiées aujourd'hui"
+          value={n(listingsToday)}
           className="border-s border-border"
         />
       </div>
@@ -128,7 +147,7 @@ export default async function AdminDashboard() {
           {queues.map((qq) => (
             <li key={qq.href}>
               <Link
-                href={qq.href as "/admin/properties"}
+                href={qq.href as "/admin/annonces"}
                 className="group flex items-center gap-4 border-b border-border py-3 transition hover:bg-[var(--row-hover)]"
               >
                 <span
@@ -160,29 +179,6 @@ export default async function AdminDashboard() {
         </ul>
       </section>
 
-      {/* The pivot's own progress, on the screen that gets opened every day.
-          The fixed-price catalogue exists but nothing publishes into it yet —
-          saying so here beats discovering it from an empty page. */}
-      <section className="mt-9 border-s-2 border-[var(--gold)] ps-4">
-        <h2 className={`${EYEBROW} text-[var(--gold)]`}>Bascule en cours</h2>
-        <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
-          Le catalogue à prix affiché existe :{" "}
-          <span className="font-semibold text-foreground">
-            {n(listingsPublished)} publiée(s)
-          </span>{" "}
-          et{" "}
-          <span className="font-semibold text-foreground">
-            {n(listingsDraft)} en brouillon
-          </span>
-          . La file de modération et le moteur de prix arrivent aux phases suivantes ; jusque-là
-          les enchères ci-dessus restent le produit vivant.
-        </p>
-        <p className="mt-2 inline-flex items-center gap-1.5 text-[11.5px] text-subtle">
-          <Gavel className="size-3" strokeWidth={2.2} />
-          {n(liveLots)} en cours · {n(scheduledLots)} programmés · {n(cautions)} caution(s) à solder
-        </p>
-      </section>
-
       <section className="mt-9">
         <div className="flex items-baseline justify-between gap-4">
           <h2 className={EYEBROW}>Derniers gestes</h2>
@@ -206,6 +202,10 @@ export default async function AdminDashboard() {
                 <span className="min-w-0 flex-1 truncate text-[12.5px] text-foreground">
                   {actionLabel(r.action as string)}
                 </span>
+                {/* Auto runs this through `accountLabelFromEmail` because its
+                    accounts are phone signups carrying a synthetic address that
+                    must never be shown. Batta's accounts are real e-mails, so
+                    the raw column IS the readable label. */}
                 <span className="hidden shrink-0 text-[11.5px] text-subtle sm:block">
                   {(r.user_email as string | null) ?? "—"}
                 </span>
@@ -214,10 +214,38 @@ export default async function AdminDashboard() {
           </ul>
         ) : (
           <p className="mt-3 border-t border-border pt-3 text-[12.5px] text-subtle">
-            Aucune action enregistrée pour le moment.
+            Aucune action enregistrée pour l&apos;instant.
           </p>
         )}
       </section>
+
+      {/*
+        The auction product, winding down. This whole section vanishes once the
+        last caution is refunded or forfeited — it is not a permanent fixture
+        and nobody has to remember to delete it. While it is here, it is the
+        only place in the console that admits we are still holding bidders'
+        money.
+      */}
+      {n(cautions) > 0 && (
+        <section className="mt-9 border-s-2 border-[var(--tone-warn)] ps-4">
+          <h2 className={`${EYEBROW} text-[var(--tone-warn)]`}>Reliquat des enchères</h2>
+          <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
+            Les enchères ne font plus partie du produit, mais{" "}
+            <span className="font-semibold text-foreground">
+              {n(cautions)} caution(s)
+            </span>{" "}
+            n&apos;ont été ni remboursées ni saisies. Tant qu&apos;il en reste une, l&apos;écran de
+            remboursement reste accessible.
+          </p>
+          <Link
+            href={"/admin/deposits" as "/admin"}
+            className="mt-2 inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-[var(--gold)] hover:underline"
+          >
+            <Banknote className="size-3" strokeWidth={2.4} />
+            Solder les cautions
+          </Link>
+        </section>
+      )}
     </AdminPage>
   );
 }

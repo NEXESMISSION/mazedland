@@ -3,6 +3,7 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { HomeControlClient, type HomeRow } from "./HomeControlClient";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Search } from "lucide-react";
+import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -64,6 +65,7 @@ export default async function AdminHomePage({
 
   return (
     <div>
+      <SiteTabs />
       <AdminPageHeader
         eyebrow="Vitrine d'accueil"
         title="Accueil"

@@ -4,6 +4,7 @@ import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Activity, Eye, Zap } from "lucide-react";
+import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -172,6 +173,7 @@ export default async function AdminActivity({
 
   return (
     <div>
+      <SiteTabs />
       <AdminPageHeader
         eyebrow="Système · Surveillance"
         title="Journal d'activité"

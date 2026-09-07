@@ -50,6 +50,62 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
     ],
   },
+  /**
+   * Admin routes retired by the pivot.
+   *
+   * Batta is a classifieds platform now, and the console lists six
+   * destinations. The auction screens are unlinked from the rail, but an
+   * unlinked page is still a page: bookmarks, browser history and the "why is
+   * this 404" support ticket all outlive the menu. These send them somewhere
+   * useful instead.
+   *
+   * Two screens are deliberately NOT in `gone`:
+   *
+   *   /admin/deposits         still settles bidder money we are holding. It
+   *                           leaves the rail on its own when the last caution
+   *                           clears (see AdminShell), and until then it must
+   *                           stay reachable.
+   *   /admin/auctions/[id]    is where a caution is actually prepared,
+   *                           refunded or forfeited — /admin/deposits only
+   *                           lists them and links here. Retiring it would have
+   *                           turned the settlement screen into a dead end,
+   *                           which is the opposite of the point.
+   *   /admin/characteristics  still edits `property_attribute_kinds`, which the
+   *                           seller-facing form reads today. It goes when the
+   *                           public auction surfaces do, not before.
+   *
+   * `renamed` is permanent (301) because those screens moved and the new URL is
+   * the answer forever. `gone` is temporary (302): the product decision behind
+   * it is recent, and a 301 is cached in browsers essentially forever.
+   */
+  async redirects() {
+    const gone = [
+      "properties", "payouts",
+      "manual-payment", "inspectors", "fraud", "waitlist", "kyc-queue",
+    ];
+    const renamed: [string, string][] = [
+      ["users", "vendeurs"],
+      ["sellers", "vendeurs"],
+      ["pricing", "offres"],
+    ];
+    return [
+      // `/admin/payments` the LIST is replaced by `/admin/paiements`. Its
+      // sub-paths are not: `/admin/payments/[id]/reject` is still the surface
+      // that refuses a caution receipt, reached from the auction settlement
+      // screen. Redirecting `:path*` here would have quietly broken the one
+      // flow this pivot is careful to keep alive.
+      { source: "/:locale/admin/payments", destination: "/:locale/admin/paiements", permanent: true },
+      ...renamed.flatMap(([from, to]) => [
+        { source: `/:locale/admin/${from}`, destination: `/:locale/admin/${to}`, permanent: true },
+        { source: `/:locale/admin/${from}/:path*`, destination: `/:locale/admin/${to}`, permanent: true },
+      ]),
+      ...gone.flatMap((from) => [
+        { source: `/:locale/admin/${from}`, destination: "/:locale/admin", permanent: false },
+        { source: `/:locale/admin/${from}/:path*`, destination: "/:locale/admin", permanent: false },
+      ]),
+    ];
+  },
+
   async headers() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
     const supabaseHost = supabaseUrl.replace(/^https?:\/\//, "");

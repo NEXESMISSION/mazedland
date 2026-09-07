@@ -223,11 +223,10 @@ export function PaymentsQueueList({
             {item.propertyTitle && (
               <a
                 href={
-                  item.propertyId
-                    ? `/admin/properties/${item.propertyId}`
-                    : item.auctionId
-                      ? `/auctions/${item.auctionId}`
-                      : "#"
+                  // `/admin/properties/[id]` is retired. The public lot page
+                  // still shows what the caution was placed against, which is
+                  // all this link was ever for.
+                  item.auctionId ? `/auctions/${item.auctionId}` : "#"
                 }
                 target="_blank"
                 rel="noreferrer"

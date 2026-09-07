@@ -70,7 +70,9 @@ export function RejectPaymentForm({
       // Mirror the property-reject flow: keep the just-refused row
       // visible by landing on the "Refusés" view rather than bouncing
       // back to pending_review where it would disappear.
-      router.replace("/admin/payments?view=failed");
+      // The list this used to return to is retired. Cautions are settled
+      // from /admin/deposits now, so that is where "done" leads.
+      router.replace("/admin/deposits");
     });
   }
 
@@ -127,7 +129,7 @@ export function RejectPaymentForm({
 
       <div className="sticky bottom-3 z-10 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Link
-          href={"/admin/payments?view=pending_review" as `/admin/payments${string}`}
+          href="/admin/deposits"
           className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[var(--radius)] border border-border bg-surface-2 px-5 text-[13px] font-semibold text-foreground hover:bg-[var(--surface-3,#1a1a1a)]"
         >
           <ArrowLeft className="size-3.5" /> Annuler

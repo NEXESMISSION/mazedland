@@ -3,31 +3,32 @@
 import { useEffect, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
-  LayoutDashboard, Receipt, Users, SlidersHorizontal, ExternalLink,
-  Menu, X, Building2, Gavel, Banknote, UserCheck, ShieldCheck, Home, Tag, Inbox,
+  LayoutDashboard, Inbox, Receipt, Tag, Users, FolderTree,
+  SlidersHorizontal, ExternalLink, Menu, X, Home, Banknote,
   type LucideIcon,
 } from "lucide-react";
 import { NavIcon } from "./kit/LinkPending";
 
 /**
- * Console navigation — the same shell Mazed Auto uses, with one structural
- * difference that is not cosmetic.
+ * Console navigation.
  *
- * Auto could delete its auction console outright: every auction table there
- * read zero rows, so the screens had no users and no money behind them. Land
- * cannot. Measured 2026-09-07: **18 live auctions, 6 scheduled, 24 ending in
- * the future, and 17 deposit payments of which 8 are captured** — money held
- * against lots that have not settled, plus 50 KYC submissions and 4 inspectors.
+ * Batta was an auction house. It is a classifieds platform now, and this rail
+ * is where that decision becomes visible: the console is the same six
+ * destinations Mazed Auto has, in the same order, plus Site.
  *
- * So the rail is deliberately two things at once: the classifieds console
- * being built, and the auction console that is still running a live product.
- * The second group disappears when the last lot settles and the deposits are
- * resolved — not before, and not on a date. Removing it early would strand a
- * bidder and hide money we are holding.
+ * The auction screens are not linked from here any more — Biens & lots,
+ * Cautions, KYC, Inspecteurs, Caractéristiques. They are not deleted either,
+ * and that distinction is the whole reason this comment exists. Measured
+ * 2026-09-07, the auction tables still hold **295 auctions, 7 cautions of
+ * which 8 payments were captured, 50 KYC dossiers and 4 inspectors**. Deleting
+ * a screen is reversible; deleting the money it settles is not.
  *
- * Destinations that do not exist yet (Catalogue) are absent rather
- * than present-and-broken: a menu that leads somewhere empty is how you teach
- * an operator to distrust the menu. They are added as their phase lands.
+ * So there is exactly one auction remnant in this file: `SETTLEMENT`, which
+ * appears ONLY while cautions are still outstanding and removes itself the
+ * moment that count reaches zero. It is not a section, it has no group header,
+ * and nobody has to decide when to take it out — it leaves on its own. A
+ * console that hides money we are holding would be worse than a console with
+ * one extra line in it.
  */
 
 type Item = {
@@ -35,14 +36,14 @@ type Item = {
   href: string;
   Icon: LucideIcon;
   hint: string;
+  /** Key into the `counts` map — a badge for work that is waiting. */
   countKey?: CountKey;
 };
 
-export type CountKey = "annonces" | "paiements" | "cautions" | "kyc" | "lots";
+export type CountKey = "annonces" | "paiements" | "cautions";
 export type AdminCounts = Partial<Record<CountKey, number>>;
 
-/** The classifieds console. Grows as the pivot lands. */
-const CONSOLE: Item[] = [
+const NAV: Item[] = [
   {
     label: "Tableau de bord",
     href: "/admin",
@@ -53,12 +54,12 @@ const CONSOLE: Item[] = [
     label: "Annonces",
     href: "/admin/annonces",
     Icon: Inbox,
-    hint: "Modérer le catalogue à prix affiché",
+    hint: "Modérer, créer, mettre en avant",
     countKey: "annonces",
   },
   {
     label: "Paiements",
-    href: "/admin/payments",
+    href: "/admin/paiements",
     Icon: Receipt,
     hint: "Reçus à valider",
     countKey: "paiements",
@@ -67,48 +68,33 @@ const CONSOLE: Item[] = [
     label: "Offres & prix",
     href: "/admin/offres",
     Icon: Tag,
-    hint: "Publication, packs, mises en avant, badge",
+    hint: "Annonces, packs, mises en avant, badge",
   },
   {
     label: "Vendeurs",
-    href: "/admin/users",
+    href: "/admin/vendeurs",
     Icon: Users,
-    hint: "Comptes, rôles",
+    hint: "Comptes, rôles, badges",
+  },
+  {
+    label: "Catalogue",
+    href: "/admin/catalogue",
+    Icon: FolderTree,
+    hint: "Catégories et caractéristiques",
   },
 ];
 
 /**
- * The auction product, still live. Temporary by design — see the note above.
+ * The last auction link standing. Rendered only while `counts.cautions > 0`,
+ * so it disappears for good once every caution is refunded or forfeited.
  */
-const AUCTION: Item[] = [
-  {
-    label: "Biens & lots",
-    href: "/admin/properties",
-    Icon: Building2,
-    hint: "Annonces immobilières à valider",
-    countKey: "lots",
-  },
-  {
-    label: "Cautions",
-    href: "/admin/deposits",
-    Icon: Banknote,
-    hint: "Cautions à rembourser",
-    countKey: "cautions",
-  },
-  {
-    label: "KYC",
-    href: "/admin/kyc-queue",
-    Icon: UserCheck,
-    hint: "Identités à vérifier",
-    countKey: "kyc",
-  },
-  {
-    label: "Inspecteurs",
-    href: "/admin/inspectors",
-    Icon: ShieldCheck,
-    hint: "Réseau d'experts",
-  },
-];
+const SETTLEMENT: Item = {
+  label: "Cautions à solder",
+  href: "/admin/deposits",
+  Icon: Banknote,
+  hint: "Reliquat des enchères — disparaît une fois tout remboursé",
+  countKey: "cautions",
+};
 
 const SITE: Item = {
   label: "Site",
@@ -178,17 +164,12 @@ function NavList({
 
   return (
     <nav className="min-h-0 flex-1 overflow-y-auto py-3">
-      <ul>{CONSOLE.map(render)}</ul>
+      <ul>{NAV.map(render)}</ul>
 
-      <div className="mt-4 border-t border-border pt-3">
-        <div className="flex items-center gap-1.5 px-4 pb-1 text-[10px] font-bold uppercase tracking-[0.15em] text-subtle">
-          <Gavel className="size-3" strokeWidth={2.2} />
-          Enchères
-        </div>
-        <ul>{AUCTION.map(render)}</ul>
-      </div>
-
-      <ul className="mt-4 border-t border-border pt-3">{render(SITE)}</ul>
+      <ul className="mt-4 border-t border-border pt-3">
+        {(counts.cautions ?? 0) > 0 && render(SETTLEMENT)}
+        {render(SITE)}
+      </ul>
     </nav>
   );
 }

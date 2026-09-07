@@ -2,6 +2,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { parseMonetizationSettings, parseAntiSnipe, parseAuctionTypes, parseFinalPaymentDays } from "@/lib/pricing";
 import { SettingsForm, type SettingsValues } from "./SettingsForm";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -69,6 +70,7 @@ export default async function AdminSettingsPage() {
 
   return (
     <div>
+      <SiteTabs />
       <AdminPageHeader
         eyebrow="Monétisation & paiement"
         title="Réglages"

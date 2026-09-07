@@ -9,8 +9,18 @@ import { AdminRail, AdminMobileBar, type AdminCounts } from "@/components/admin/
 // Supabase env is present, e.g. CI without secrets).
 export const dynamic = "force-dynamic";
 
+/** The kinds `/admin/paiements` can actually settle — the classifieds line. */
+const CONSOLE_PAYMENT_KINDS = [
+  "listing_fee", "listing_pack", "subscription", "promo", "badge", "renewal",
+];
+
 /**
  * Admin console shell — ported from Mazed Auto, in Batta's colours.
+ *
+ * The console is the classifieds console: the auction screens are no longer
+ * linked from the rail (see AdminShell). The one exception is the caution
+ * settlement count below, which keeps a single link alive only while there is
+ * still bidder money to return.
  *
  * The console is an **application viewport**, not a document: it fills the
  * window once and scrolling happens inside panes, which is what lets a
@@ -34,15 +44,25 @@ export default async function AdminLayout({
     service ? service.from(t).select("*", { count: "exact", head: true }) : null;
 
   // Started, not awaited — these run while the gate below resolves.
+  // Started, not awaited — these run while the gate below resolves.
+  //
+  // The payments badge filters on kind. Every payment row Batta holds today is
+  // a `deposit_lock` from the auction product, and `/admin/paiements` cannot
+  // settle those — counting them would put a permanent "1" on a queue that is
+  // permanently empty, which teaches an admin to ignore the badge.
   const countsPromise = Promise.all([
     head("listings")?.eq("status", "pending_review") ?? Promise.resolve({ count: 0 }),
-    head("payments")?.eq("status", "pending_review") ?? Promise.resolve({ count: 0 }),
-    // Cautions waiting to be returned: released to us, not yet refunded or
-    // forfeited. This is the queue that is holding other people's money.
-    head("auction_deposits")?.not("released_at", "is", null).is("refunded_at", null).is("forfeited_at", null)
-      ?? Promise.resolve({ count: 0 }),
-    head("kyc_submissions")?.eq("status", "submitted") ?? Promise.resolve({ count: 0 }),
-    head("properties")?.eq("status", "pending_review") ?? Promise.resolve({ count: 0 }),
+    head("payments")
+      ?.in("kind", CONSOLE_PAYMENT_KINDS)
+      .eq("status", "pending_review") ?? Promise.resolve({ count: 0 }),
+    // Cautions released to us and neither refunded nor forfeited: money we are
+    // holding on behalf of bidders in a product that is being retired. This is
+    // the count that keeps the settlement link in the rail; when it hits zero
+    // the link disappears and the auction console is done.
+    head("auction_deposits")
+      ?.not("released_at", "is", null)
+      .is("refunded_at", null)
+      .is("forfeited_at", null) ?? Promise.resolve({ count: 0 }),
   ]);
 
   const { locale } = await params;
@@ -51,13 +71,11 @@ export default async function AdminLayout({
   if (!user) redirect({ href: "/login", locale: locale as "fr" });
   if (!isAdmin) redirect({ href: "/", locale: locale as "fr" });
 
-  const [annonces, paiements, cautions, kyc, lots] = await countsPromise;
+  const [annonces, paiements, cautions] = await countsPromise;
   const counts: AdminCounts = {
     annonces: annonces.count ?? 0,
     paiements: paiements.count ?? 0,
     cautions: cautions.count ?? 0,
-    kyc: kyc.count ?? 0,
-    lots: lots.count ?? 0,
   };
 
   return (

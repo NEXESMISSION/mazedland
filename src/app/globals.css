@@ -969,3 +969,36 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
   .link-busy-ring { animation: link-busy-in 90ms ease-out both; }
   .link-busy-overlay { backdrop-filter: none; }
 }
+
+/* ── Console skeleton shimmer ───────────────────────────────────────────────
+   `.skel` is the admin console's placeholder, and it is deliberately NOT
+   `.batta-skeleton`: that class is switched off at lg+ (a full page load shows
+   one centred spinner there instead), and the console is a desktop surface
+   where a route change must visibly move something.
+
+   Auto lays a translucent WHITE highlight over its near-black base. That is
+   invisible here — white on white is nothing — so Batta's travelling highlight
+   is a translucent BLACK one. Same motion, opposite direction, which is the
+   same trade the `--press-brightness` token makes. */
+.skel {
+  background-color: var(--surface-2);
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0) 20%,
+      rgba(0, 0, 0, 0.055) 48%,
+      rgba(0, 0, 0, 0) 76%
+    );
+  background-size: 280% 100%;
+  background-repeat: no-repeat;
+  animation: console-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes console-shimmer {
+  0%   { background-position: 120% 0; }
+  100% { background-position: -40% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel { animation: none; background-image: none; }
+}

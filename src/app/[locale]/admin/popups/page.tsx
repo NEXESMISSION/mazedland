@@ -6,6 +6,7 @@ import {
   MessageSquare, PlusCircle, Eye, MousePointerClick,
   Calendar, ShieldAlert, ChevronRight,
 } from "lucide-react";
+import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -58,6 +59,7 @@ export default async function AdminPopupsPage() {
 
   return (
     <div>
+      <SiteTabs />
       <AdminPageHeader
         eyebrow="Diffusion"
         title="Popups"

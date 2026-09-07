@@ -1,5 +1,6 @@
 import { AdminNotificationsClient } from "./AdminNotificationsClient";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 
 /**
  * Admin notification control center.
@@ -17,6 +18,7 @@ import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 export default function AdminNotificationsPage() {
   return (
     <div>
+      <SiteTabs />
       <AdminPageHeader
         eyebrow="Outils admin"
         title="Notifications"

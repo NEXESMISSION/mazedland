@@ -2,6 +2,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import type { PropertyType } from "@/lib/types";
 import { LegalDocsEditor, type LegalDocKindRow } from "./LegalDocsEditor";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -32,6 +33,7 @@ export default async function AdminLegalDocsPage() {
 
   return (
     <div>
+      <SiteTabs />
       <AdminPageHeader
         eyebrow="Documents légaux"
         title="Catalogue par type de bien"
