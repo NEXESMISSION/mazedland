@@ -165,6 +165,34 @@ await check("deposits", "outstanding cautions", () =>
   sb.from("auction_deposits").select("id, auction_id, user_id, released_at, refunded_at, forfeited_at")
     .not("released_at", "is", null).is("refunded_at", null).is("forfeited_at", null));
 
+// ── /annonces and /annonces/[id] (public) ─────────────────────────────
+// Not an admin screen, but the same failure mode and the same blindness: the
+// detail page is a Server Component, so a broken select renders a 200 with an
+// empty shell.
+await check("annonce detail", "listing + category + photos", () =>
+  sb.from("listings").select(`
+    id, title, description, price, price_on_request, negotiable,
+    governorate, delegation, attributes, contact_name, show_phone, status,
+    published_at, expires_at, seller_id, reference,
+    category:categories (id, label_fr, kind),
+    photos:listing_photos (storage_path, sort_order)
+  `).eq("status", "published").limit(1));
+await check("annonce detail", "category attributes for specs", () =>
+  sb.from("category_attributes").select("field_key, label, unit, options, sort_order")
+    .order("sort_order").limit(1));
+await check("annonce detail", "has_verified_badge rpc", async () => {
+  const { error } = await sb.rpc("has_verified_badge", {
+    p_seller: "00000000-0000-0000-0000-000000000000",
+  });
+  return error ? { error } : { data: true };
+});
+await check("annonce detail", "favourite lookup", () =>
+  sb.from("watchlist").select("id").not("listing_id", "is", null).limit(1));
+await check("annonce detail", "reveal log", () =>
+  sb.from("contact_reveals").select("listing_id, user_id, ip_hash").limit(1));
+await check("annonce detail", "view analytics", () =>
+  sb.from("listing_analytics").select("*").limit(1));
+
 // ── Storage buckets the detail panes sign URLs from ─────────────────────────
 await check("storage", "buckets", async () => {
   const { data, error } = await sb.storage.listBuckets();
