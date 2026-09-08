@@ -17,11 +17,17 @@
  * mark plus dark shadow is the one combination that survives both an
  * overexposed white survey plan and a dark photo.
  *
+ * WHAT IT SAYS. Both halves of what a stolen photo needs to carry — the
+ * business and where to find it — are already in the wordmark itself, because
+ * the wordmark IS « Batta.tn ». Mazed Auto had to grow a caption under its
+ * monogram to say the same thing; here the logo does it unaided, so there is
+ * nothing to add and adding it would only repeat the domain twice.
+ *
  * WHY THIS STRENGTH. The mark has to survive being stolen, not dominate the
- * photo a seller paid to publish. 30% opacity over 38% of the width reads
- * clearly at full size, stays quiet on a card-sized thumbnail, and is large
- * enough that cropping it out takes the subject with it. Same numbers as Mazed
- * Auto, deliberately: the two sites are judged side by side.
+ * photo a seller paid to publish. 45% opacity over 38% of the width reads at
+ * full size, stays quiet on a card-sized thumbnail, and is large enough that
+ * cropping it out takes the subject with it. Same numbers as Mazed Auto,
+ * deliberately: the two sites are judged side by side.
  *
  * WHY IT IS DRAWN, NOT COMPOSITED SERVER-SIDE. Photos go straight from the
  * browser to storage on a signed URL — the bytes never pass through our
@@ -35,9 +41,9 @@
 /** Fraction of the image's WIDTH the mark spans. */
 const MARK_WIDTH_RATIO = 0.38;
 /** Never smaller than this, or it vanishes on a small upload. */
-const MIN_MARK_PX = 120;
-/** How present the mark is. 0.30 reads at full size, hides on a thumbnail. */
-const MARK_OPACITY = 0.3;
+const MIN_MARK_PX = 160;
+/** How present the mark is. 0.45 reads at full size, hides on a thumbnail. */
+const MARK_OPACITY = 0.45;
 /** The trimmed wordmark — white on transparent, ~3.3:1. */
 const MARK_SRC = "/logo-mark.webp";
 
