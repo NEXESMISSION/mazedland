@@ -69,11 +69,18 @@ export function SelectMenu({
   }, [open]);
 
   // When opening, point the active row at the current selection.
-  useEffect(() => {
-    if (!open) return;
-    const i = options.findIndex((o) => o.value === value);
-    setActiveIdx(i >= 0 ? i : 0);
-  }, [open, options, value]);
+  //
+  // On the OPEN transition during render, not in an effect: the highlight is
+  // correct on the menu's first paint rather than jumping from row 0 to the
+  // selected row a frame later.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (wasOpen !== open) {
+    setWasOpen(open);
+    if (open) {
+      const i = options.findIndex((o) => o.value === value);
+      setActiveIdx(i >= 0 ? i : 0);
+    }
+  }
 
   function commit(idx: number) {
     const opt = options[idx];

@@ -60,6 +60,22 @@ async function check(screen, what, thunk) {
     res = { error: { message: String(e?.message ?? e) } };
   }
   const label = `${screen} — ${what}`;
+
+  // A HEAD-only count against a table that does not exist is the quietest
+  // failure PostgREST has: it answers 204 No Content with `error: null` and
+  // `count: null`. `count ?? 0` then reads zero, so a dashboard figure or a
+  // rail badge shows "0" for a table that was DROPPED — indistinguishable from
+  // an empty one, and invisible to an error check.
+  //
+  // Found the hard way: a `head("auction_deposits")` survived a migration that
+  // dropped the table, and this file's own error check waved it through.
+  if (!res?.error && res?.count === null && !Array.isArray(res?.data)) {
+    failures.push({ label, message: "head-count returned null (table missing?) — 204 with no error" });
+    console.log(`FAIL  ${label}
+      head-count returned null; the table may not exist`);
+    return;
+  }
+
   if (res?.error) {
     failures.push({ label, message: res.error.message });
     console.log(`FAIL  ${label}\n      ${res.error.message}`);

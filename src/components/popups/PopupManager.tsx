@@ -63,6 +63,7 @@ export function PopupManager() {
     // Don't run in admin — admins are previewing their own popups via
     // the admin form, surfacing live ones on top would be confusing.
     if (rawPath.startsWith("/admin") || rawPath.match(/^\/(fr|ar|en)\/admin/)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronising with an external system, which is what an effect is for.
       setActive(null);
       return;
     }

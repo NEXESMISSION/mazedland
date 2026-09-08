@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { AdminButton } from "@/components/admin/AdminButton";
@@ -58,10 +58,17 @@ export function QueueList({
 
   // A selection that outlives the rows it was made from would act on rows the
   // operator can no longer see, so it clears whenever the page's rows change.
+  //
+  // Adjusted during render rather than in an effect, which is what React
+  // documents for resetting state on a changed input: the cleared selection is
+  // used by the very first render of the new rows, so the bulk bar cannot show
+  // a count for rows that are no longer on screen.
   const key = rows.map((r) => r.id).join(",");
-  useEffect(() => {
+  const [prevKey, setPrevKey] = useState(key);
+  if (prevKey !== key) {
+    setPrevKey(key);
     setSelected(new Set());
-  }, [key]);
+  }
 
   const toggle = (id: string) =>
     setSelected((prev) => {

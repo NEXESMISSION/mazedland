@@ -44,6 +44,7 @@ export function Confirm({
 
   useEffect(() => {
     if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronising with an external system, which is what an effect is for.
     setText("");
     // Focus the motif when there is one, otherwise Cancel — never the
     // destructive button, so Enter can't destroy anything by reflex.

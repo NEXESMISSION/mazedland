@@ -98,6 +98,7 @@ export function PhotoCarousel({
   }
 
   function jumpTo(i: number) {
+    // eslint-disable-next-line react-hooks/purity -- synchronising with an external system, which is what an effect is for.
     pauseUntil.current = Date.now() + USER_NAV_PAUSE_MS;
     setAnim(true);
     setIndex(i);

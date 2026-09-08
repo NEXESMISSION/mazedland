@@ -17,6 +17,10 @@ export default function NotFound() {
       <p className="mt-2 text-[13px] leading-relaxed text-[var(--foreground-muted)]">
         Le lien que vous avez suivi n&apos;existe pas ou a été déplacé.
       </p>
+      {/* A real navigation, not a client-side <Link>. This renders on a 404,
+          where the router is already in an error state — a hard load is what
+          resets it, and the middleware rewrites "/" to the visitor's locale. */}
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a
         href="/"
         className="tap-target mt-6 inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-[var(--gold)] px-6 text-[13px] font-bold text-white shadow-[var(--shadow-gold)] transition-all hover:bg-[var(--gold-bright)] active:scale-[0.98]"

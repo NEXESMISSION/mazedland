@@ -1,3 +1,9 @@
+/* eslint-disable react-hooks/purity -- Server Component.
+ * The react-hooks v7 purity rule governs the CLIENT render path: it forbids
+ * impure reads (Date.now(), Math.random()) during a render React may replay.
+ * This module is an async Server Component — it runs once, per request, on the
+ * server, and reading the clock is the correct way to answer "what is overdue"
+ * or "which badge has lapsed". There is no render to replay. */
 import { redirect } from "next/navigation";
 import { coverPhoto } from "@/lib/listingCover";
 import { getLocale } from "next-intl/server";

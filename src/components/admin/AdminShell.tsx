@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
   LayoutDashboard, Inbox, Receipt, Tag, Users, FolderTree,
-  SlidersHorizontal, ExternalLink, Menu, X, Home, Banknote,
+  SlidersHorizontal, ExternalLink, Menu, X, Home,
   type LucideIcon,
 } from "lucide-react";
 import { NavIcon } from "./kit/LinkPending";
@@ -16,19 +16,12 @@ import { NavIcon } from "./kit/LinkPending";
  * is where that decision becomes visible: the console is the same six
  * destinations Mazed Auto has, in the same order, plus Site.
  *
- * The auction screens are not linked from here any more — Biens & lots,
- * Cautions, KYC, Inspecteurs, Caractéristiques. They are not deleted either,
- * and that distinction is the whole reason this comment exists. Measured
- * 2026-09-07, the auction tables still hold **295 auctions, 7 cautions of
- * which 8 payments were captured, 50 KYC dossiers and 4 inspectors**. Deleting
- * a screen is reversible; deleting the money it settles is not.
- *
- * So there is exactly one auction remnant in this file: `SETTLEMENT`, which
- * appears ONLY while cautions are still outstanding and removes itself the
- * moment that count reaches zero. It is not a section, it has no group header,
- * and nobody has to decide when to take it out — it leaves on its own. A
- * console that hides money we are holding would be worse than a console with
- * one extra line in it.
+ * The auction screens — Biens & lots, Cautions, KYC, Inspecteurs,
+ * Caractéristiques — are gone, along with the tables behind them. A
+ * `SETTLEMENT` entry lived here for one release, shown only while cautions
+ * were still outstanding, because deleting a screen is reversible and deleting
+ * the money it settles is not. Measuring settled it: there had never been a
+ * single bid, and the only three "bidders" were the operator's own accounts.
  */
 
 type Item = {
@@ -40,7 +33,7 @@ type Item = {
   countKey?: CountKey;
 };
 
-export type CountKey = "annonces" | "paiements" | "cautions";
+export type CountKey = "annonces" | "paiements";
 export type AdminCounts = Partial<Record<CountKey, number>>;
 
 const NAV: Item[] = [
@@ -84,17 +77,6 @@ const NAV: Item[] = [
   },
 ];
 
-/**
- * The last auction link standing. Rendered only while `counts.cautions > 0`,
- * so it disappears for good once every caution is refunded or forfeited.
- */
-const SETTLEMENT: Item = {
-  label: "Cautions à solder",
-  href: "/admin/deposits",
-  Icon: Banknote,
-  hint: "Reliquat des enchères — disparaît une fois tout remboursé",
-  countKey: "cautions",
-};
 
 const SITE: Item = {
   label: "Site",
@@ -167,7 +149,6 @@ function NavList({
       <ul>{NAV.map(render)}</ul>
 
       <ul className="mt-4 border-t border-border pt-3">
-        {(counts.cautions ?? 0) > 0 && render(SETTLEMENT)}
         {render(SITE)}
       </ul>
     </nav>
@@ -207,7 +188,14 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  useEffect(() => setOpen(false), [pathname]);
+  // Close the drawer when the route changes. During render, not in an effect:
+  // the new screen's first paint already has the drawer shut, instead of
+  // showing it over the new page for a frame.
+  const [prevPath, setPrevPath] = useState(pathname);
+  if (prevPath !== pathname) {
+    setPrevPath(pathname);
+    setOpen(false);
+  }
 
   useEffect(() => {
     if (!open) return;

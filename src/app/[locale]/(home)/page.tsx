@@ -186,6 +186,7 @@ export default async function LandingPage({
     endFeed();
 
     const rows = feed?.published.rows ?? [];
+    // eslint-disable-next-line react-hooks/immutability -- synchronising with an external system, which is what an effect is for.
     liveCount = feed?.published.count ?? rows.length;
     newThisWeek = feed?.newThisWeek ?? 0;
     bestValue = feed?.bestValue ?? [];

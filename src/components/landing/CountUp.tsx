@@ -39,6 +39,7 @@ export function CountUp({
     if (typeof window === "undefined") return;
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (reduce) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronising with an external system, which is what an effect is for.
       setValue(to);
       return;
     }

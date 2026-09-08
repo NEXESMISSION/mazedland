@@ -74,9 +74,17 @@ export function LinkBusy({
   }, []);
 
   // The destination arrived (or the user went elsewhere) — stand down.
-  useEffect(() => {
+  //
+  // Adjusted DURING RENDER rather than in an effect. React documents this as
+  // the way to reset state when an input changes: it re-renders immediately
+  // with the corrected value, so the spinner never paints for a frame on the
+  // page it was already finished with. An effect would let that frame through.
+  const route = `${pathname}?${search}`;
+  const [prevRoute, setPrevRoute] = useState(route);
+  if (prevRoute !== route) {
+    setPrevRoute(route);
     setBusy(false);
-  }, [pathname, search]);
+  }
 
   useEffect(() => {
     if (!busy) return;

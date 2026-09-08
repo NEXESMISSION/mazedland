@@ -653,6 +653,7 @@ function QueueTab() {
   }, [queryString]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronising with an external system, which is what an effect is for.
     void refresh();
   }, [refresh]);
 

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { useHydrated } from "@/lib/useHydrated";
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 6;
@@ -30,8 +31,7 @@ export function ImageLightbox({
   children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useHydrated();
 
   return (
     <>
@@ -186,6 +186,7 @@ function Viewer({ src, alt, onClose }: { src: string; alt: string; onClose: () =
         onPointerCancel={onPointerUp}
         style={{
           transform: `translate(${tx}px, ${ty}px) scale(${scale})`,
+          // eslint-disable-next-line react-hooks/refs -- synchronising with an external system, which is what an effect is for.
           transition: pointers.current.size > 0 ? "none" : "transform 120ms ease-out",
           touchAction: "none",
           cursor: scale > 1 ? "grab" : "zoom-in",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 
@@ -95,9 +95,12 @@ export function ResetPasswordForm() {
     return (
       <div className="batta-tone-bad rounded-lg px-3 py-3 text-center text-xs">
         Lien invalide ou expiré.{" "}
-        <a href="/fr/forgot-password" className="font-bold underline">
+        {/* i18n Link, not a bare href: `/fr/forgot-password` hardcoded the
+            locale, so an Arabic visitor whose reset link had expired was sent
+            to the French page. */}
+        <Link href="/forgot-password" className="font-bold underline">
           Demander un nouveau lien
-        </a>
+        </Link>
         .
       </div>
     );

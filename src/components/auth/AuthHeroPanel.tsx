@@ -20,7 +20,6 @@ export function AuthHeroPanel() {
       <picture>
         <source srcSet="/auth-hero.avif" type="image/avif" />
         <source srcSet="/auth-hero.webp" type="image/webp" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/auth-hero.webp"
           alt=""

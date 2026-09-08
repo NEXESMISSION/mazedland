@@ -60,11 +60,17 @@ export function PhoneInput({
   }, [open]);
 
   // On open, point the active row at the current selection.
-  useEffect(() => {
-    if (!open) return;
-    const i = DIAL_CODES.findIndex((c) => c.code === dialCode);
-    setActiveIdx(i >= 0 ? i : 0);
-  }, [open, dialCode]);
+  //
+  // On the OPEN transition during render, not in an effect: the highlight is
+  // right on the list's first paint instead of jumping a frame later.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (wasOpen !== open) {
+    setWasOpen(open);
+    if (open) {
+      const i = DIAL_CODES.findIndex((c) => c.code === dialCode);
+      setActiveIdx(i >= 0 ? i : 0);
+    }
+  }
 
   function commit(idx: number) {
     const c = DIAL_CODES[idx];

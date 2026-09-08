@@ -49,6 +49,7 @@ import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { resolveNotificationLink } from "@/lib/notifications/target";
+import { useHydrated } from "@/lib/useHydrated";
 
 type NotificationRow = {
   id: string;
@@ -106,7 +107,7 @@ export function NotificationBell() {
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [loaded, setLoaded] = useState(false);
   const [confirmingDeleteAll, setConfirmingDeleteAll] = useState(false);
   const [filter, setFilter] = useState<"all" | "unread">("all");
@@ -126,9 +127,6 @@ export function NotificationBell() {
 
   const PAGE_SIZE = 20;
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Keep the latest loaded count in a ref so `refresh` can stay dependency-free.
   useEffect(() => {
@@ -319,6 +317,7 @@ export function NotificationBell() {
 
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronising with an external system, which is what an effect is for.
       setConfirmingDeleteAll(false);
       setFilter("all");
       return;
@@ -348,6 +347,7 @@ export function NotificationBell() {
   // marks everything read (the badge + bold rows clear). markAllRead is a
   // no-op when there's nothing unread, so reopening doesn't re-fire writes.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability -- synchronising with an external system, which is what an effect is for.
     if (open) void markAllRead();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);

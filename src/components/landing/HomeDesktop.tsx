@@ -385,7 +385,6 @@ export async function HomeDesktop({
               <picture>
                 <source srcSet={`/icons/${pt.key}.avif`} type="image/avif" />
                 <source srcSet={`/icons/${pt.key}.webp`} type="image/webp" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`/icons/${pt.key}.webp`}
                   alt=""

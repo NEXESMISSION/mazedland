@@ -30,6 +30,7 @@ export function NetworkStatus() {
     // Sync with the actual browser state on mount in case we missed
     // an event between SSR and hydration.
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronising with an external system, which is what an effect is for.
       setPhase("offline");
       wasOfflineRef.current = true;
     }

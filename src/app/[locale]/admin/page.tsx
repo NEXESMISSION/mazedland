@@ -1,8 +1,14 @@
+/* eslint-disable react-hooks/purity -- Server Component.
+ * The react-hooks v7 purity rule governs the CLIENT render path: it forbids
+ * impure reads (Date.now(), Math.random()) during a render React may replay.
+ * This module is an async Server Component — it runs once, per request, on the
+ * server, and reading the clock is the correct way to answer "what is overdue"
+ * or "which badge has lapsed". There is no render to replay. */
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { actionLabel } from "@/lib/admin/actions";
-import { AlertTriangle, ArrowRight, Banknote } from "lucide-react";
+import { AlertTriangle, ArrowRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -52,7 +58,6 @@ export default async function AdminDashboard() {
     listingsPending, listingsOverdue, listingsToday,
     paymentsPending, paymentsOverdue,
     expiringSoon, expired,
-    cautions,
     recent,
   ] = await Promise.all([
     head("listings").eq("status", "pending_review"),
@@ -63,10 +68,6 @@ export default async function AdminDashboard() {
     head("listings").eq("status", "published").not("expires_at", "is", null)
       .gte("expires_at", nowIso).lte("expires_at", soon),
     head("listings").eq("status", "expired"),
-    // The auction remnant: released to us, neither refunded nor forfeited.
-    // Bidder money we are still holding.
-    head("auction_deposits").not("released_at", "is", null)
-      .is("refunded_at", null).is("forfeited_at", null),
     // `action is not null`, minus the telemetry namespaces. An admin opens
     // "Derniers gestes" to see who decided what, not to read render traces —
     // `client.` and `server.` are observability, everything else
@@ -219,33 +220,13 @@ export default async function AdminDashboard() {
         )}
       </section>
 
-      {/*
-        The auction product, winding down. This whole section vanishes once the
-        last caution is refunded or forfeited — it is not a permanent fixture
-        and nobody has to remember to delete it. While it is here, it is the
-        only place in the console that admits we are still holding bidders'
-        money.
-      */}
-      {n(cautions) > 0 && (
-        <section className="mt-9 border-s-2 border-[var(--tone-warn)] ps-4">
-          <h2 className={`${EYEBROW} text-[var(--tone-warn)]`}>Reliquat des enchères</h2>
-          <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
-            Les enchères ne font plus partie du produit, mais{" "}
-            <span className="font-semibold text-foreground">
-              {n(cautions)} caution(s)
-            </span>{" "}
-            n&apos;ont été ni remboursées ni saisies. Tant qu&apos;il en reste une, l&apos;écran de
-            remboursement reste accessible.
-          </p>
-          <Link
-            href={"/admin/deposits" as "/admin"}
-            className="mt-2 inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-[var(--gold)] hover:underline"
-          >
-            <Banknote className="size-3" strokeWidth={2.4} />
-            Solder les cautions
-          </Link>
-        </section>
-      )}
+      {/* A "Reliquat des enchères" strip stood here, counting cautions still
+          owed back to bidders. `auction_deposits` was dropped in 0153, and a
+          HEAD-only count against a missing table is the quietest failure
+          PostgREST has: it answers 204 No Content with `error: null` and
+          `count: null`, so `count ?? 0` read zero and the strip simply never
+          rendered. Correct outcome, entirely by accident. */}
+
     </AdminPage>
   );
 }

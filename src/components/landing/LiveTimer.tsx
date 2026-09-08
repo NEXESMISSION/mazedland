@@ -39,6 +39,7 @@ export function LiveTimer({
   useEffect(() => {
     // Re-sync on prop change so a parent that swaps auctions doesn't
     // keep counting from the previous one.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronising with an external system, which is what an effect is for.
     setRemaining(secondsUntil(endsAt));
     // Subscribe to the ONE page-wide ticker instead of spinning up our own
     // interval — on a card-heavy page that turns ~370 timers into 1. We also

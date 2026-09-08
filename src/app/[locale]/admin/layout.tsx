@@ -55,14 +55,6 @@ export default async function AdminLayout({
     head("payments")
       ?.in("kind", CONSOLE_PAYMENT_KINDS)
       .eq("status", "pending_review") ?? Promise.resolve({ count: 0 }),
-    // Cautions released to us and neither refunded nor forfeited: money we are
-    // holding on behalf of bidders in a product that is being retired. This is
-    // the count that keeps the settlement link in the rail; when it hits zero
-    // the link disappears and the auction console is done.
-    head("auction_deposits")
-      ?.not("released_at", "is", null)
-      .is("refunded_at", null)
-      .is("forfeited_at", null) ?? Promise.resolve({ count: 0 }),
   ]);
 
   const { locale } = await params;
@@ -71,11 +63,10 @@ export default async function AdminLayout({
   if (!user) redirect({ href: "/login", locale: locale as "fr" });
   if (!isAdmin) redirect({ href: "/", locale: locale as "fr" });
 
-  const [annonces, paiements, cautions] = await countsPromise;
+  const [annonces, paiements] = await countsPromise;
   const counts: AdminCounts = {
     annonces: annonces.count ?? 0,
     paiements: paiements.count ?? 0,
-    cautions: cautions.count ?? 0,
   };
 
   return (
