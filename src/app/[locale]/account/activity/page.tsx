@@ -1,308 +1,241 @@
-import { redirect, Link } from "@/i18n/navigation";
+import { redirect } from "next/navigation";
+import { coverPhoto } from "@/lib/listingCover";
+import { getLocale } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { propertyPhotoUrl } from "@/lib/imageUrl";
-import { Building2, ChevronRight, ChevronLeft, Gavel, History, Heart, ArrowUpRight } from "lucide-react";
-import { ActivityTabs, type ActivityItem } from "./ActivityTabs";
-import { FocusRowHighlight } from "@/components/ui/FocusRowHighlight";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { ListingImage } from "@/components/media/ListingImage";
+import { formatTND } from "@/lib/utils";
+import { FavoriteButton } from "@/components/property/FavoriteButton";
+import { Heart, ImageOff, MapPin, Search } from "lucide-react";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
-type RawAuction = {
-  id: string;
-  status: string;
-  opening_price: number;
-  current_price: number | null;
-  winner_amount: number | null;
-  winner_user_id: string | null;
-  ends_at: string;
-  starts_at: string | null;
-  property: {
-    title: string;
-    governorate: string;
-    status: string;
-    photos: { storage_path: string; sort_order: number }[];
-  } | null;
+/**
+ * Mes activités — the annonces this buyer saved.
+ *
+ * WHAT STOOD HERE. Five tabs of auction activity: lots you were bidding on,
+ * cautions awaiting validation, lots you won, lots you took part in, and
+ * favourites. It read `auction_bids_public`, `auction_deposits`, `auctions`
+ * and `payments.auction_id` — every one of which was dropped with the auction
+ * product. The page kept answering 200 and showed nothing, which is how a
+ * Server Component fails.
+ *
+ * That mattered more than most: this route is a BOTTOM TAB, one of five
+ * primary destinations, and `/watchlist`, `/account/bids` and `/account/wins`
+ * all redirect into it. Five entry points into a dead page.
+ *
+ * Of the five tabs, exactly one survives the pivot — favourites — because it
+ * is the only one whose subject still exists. So that is the page now, and
+ * every one of those links keeps working without a new redirect.
+ *
+ * Expired and archived listings are kept in the list rather than hidden. If
+ * someone saved a bien and it came down, "plus disponible" is the answer they
+ * came for — silently dropping it looks like we lost their favourite.
+ */
+
+type ListingRow = {
+    id: string; title: string; price: number | null; price_on_request: boolean;
+    governorate: string; status: string;
+    category: { label_fr: string } | { label_fr: string }[] | null;
+    photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
 };
 
-const LIVE = ["live", "extending", "scheduled"];
-const WON = ["ended_sold", "awarded", "sixth_offer_window"];
-// Pre-publication property states never belong in a buyer's favourites.
-const HIDDEN_PROPERTY = ["pending_review", "rejected", "draft"];
+type Row = { listing_id: string; listing: ListingRow | ListingRow[] | null };
 
-const TAB_KEYS = ["enCours", "enAttente", "gagnees", "participees", "favoris"] as const;
-type TabKey = (typeof TAB_KEYS)[number];
+const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
 
-export default async function ActivityPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ locale: string }>;
-  searchParams: Promise<{ tab?: string }>;
-}) {
-  const { locale } = await params;
-  const { tab } = await searchParams;
-  const initialTab = (TAB_KEYS as readonly string[]).includes(tab ?? "")
-    ? (tab as TabKey)
-    : undefined;
+export default async function ActivityPage() {
+  const locale = await getLocale();
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect({ href: "/login", locale: locale as "ar" | "fr" | "en" });
-
-  // What the user is involved in: auctions they bid on, hold a deposit on,
-  // or have a caution payment still awaiting validation.
-  const [bidsRes, depRes, watchRes, pendRes] = await Promise.all([
-    // Read own bids via the gated view (is_mine) — bidder_id is no longer a
-    // client-readable column (audit #4). is_mine=true returns only the caller's.
-    supabase.from("auction_bids_public").select("auction_id, amount").eq("is_mine", true),
-    supabase
-      .from("auction_deposits")
-      .select("auction_id, amount, released_at, refunded_at, forfeited_at")
-      .eq("user_id", user!.id),
-    supabase
-      .from("watchlist")
-      .select(`auction:auctions!inner (
-        id, status, opening_price, current_price, winner_amount, ends_at, starts_at,
-        property:properties!inner ( title, governorate, status, photos:property_photos (storage_path, sort_order) )
-      )`)
-      .eq("user_id", user!.id),
-    // Caution payments the user started but that aren't captured yet —
-    // these are the "waiting to be accepted" auctions.
-    supabase
-      .from("payments")
-      .select("id, auction_id, status")
-      .eq("user_id", user!.id)
-      .eq("kind", "deposit_lock")
-      .in("status", ["pending", "pending_review"])
-      .not("auction_id", "is", null),
-  ]);
-
-  // Highest bid per auction.
-  const myBid = new Map<string, number>();
-  for (const b of bidsRes.data ?? []) {
-    const id = b.auction_id as string;
-    const amt = Number(b.amount);
-    if (!myBid.has(id) || amt > (myBid.get(id) ?? 0)) myBid.set(id, amt);
-  }
-  const participatedIds = Array.from(
-    new Set<string>([
-      ...(bidsRes.data ?? []).map((b) => b.auction_id as string),
-      ...(depRes.data ?? []).map((d) => d.auction_id as string),
-    ]),
-  );
-
-  // Per-auction caution lifecycle, so a participant can see where their
-  // money is (locked → flagged for refund → refunded). Free entries are
-  // zero-amount rows; surface them as "gratuite", not a money chip.
-  type DepStatus = "free" | "locked" | "to_refund" | "refunded" | "forfeited";
-  const depByAuction = new Map<string, { amount: number; status: DepStatus }>();
-  for (const d of depRes.data ?? []) {
-    const amount = Number(d.amount);
-    const status: DepStatus =
-      amount === 0 ? "free"
-      : d.refunded_at ? "refunded"
-      : d.forfeited_at ? "forfeited"
-      : d.released_at ? "to_refund"
-      : "locked";
-    depByAuction.set(d.auction_id as string, { amount, status });
+  if (!user) {
+    redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/account/activity`)}`);
   }
 
-  // Auctions whose caution is still in flight (no captured deposit yet).
-  // "receipt" = the buyer still has to upload the receipt; "review" = it's
-  // uploaded and waiting on an admin.
-  const pendingByAuction = new Map<
-    string,
-    { kind: "receipt" | "review"; paymentId: string }
-  >();
-  for (const p of pendRes.data ?? []) {
-    const aid = p.auction_id as string | null;
-    if (!aid || depByAuction.has(aid)) continue;
-    const kind = p.status === "pending_review" ? "review" : "receipt";
-    const existing = pendingByAuction.get(aid);
-    // Prefer the further-along "review" state if duplicate rows exist.
-    if (!existing || kind === "review") {
-      pendingByAuction.set(aid, { kind, paymentId: p.id as string });
-    }
-  }
+  // Read through the service role for the join (listing columns are
+  // column-granted), but scoped to this user's own watchlist rows.
+  const db = getServiceSupabase() ?? supabase;
+  const { data } = await db
+    .from("watchlist")
+    .select(
+      `listing_id,
+       listing:listings (
+         id, title, price, price_on_request, governorate, status,
+         category:categories (label_fr),
+         photos:listing_photos (storage_path, sort_order, is_cover)
+       )`,
+    )
+    .eq("user_id", user.id)
+    .not("listing_id", "is", null)
+    .order("created_at", { ascending: false });
 
-  const allIds = Array.from(
-    new Set<string>([...participatedIds, ...pendingByAuction.keys()]),
-  );
-
-  let participated: RawAuction[] = [];
-  if (allIds.length > 0) {
-    const { data } = await supabase
-      .from("auctions")
-      .select(`
-        id, status, opening_price, current_price, winner_amount, ends_at, starts_at,
-        property:properties ( title, governorate, status, photos:property_photos (storage_path, sort_order) )
-      `)
-      .in("id", allIds);
-    participated = (data ?? []) as unknown as RawAuction[];
-  }
-
-  // Which of these auctions did I WIN? winner_user_id is no longer a client-
-  // readable column (audit #4) — resolve own-wins via the is_winner_of batch
-  // helper instead of reading the raw column.
-  const wonCheckIds = Array.from(
-    new Set<string>([
-      ...participated.map((a) => a.id),
-      ...((watchRes.data ?? []) as unknown as Array<{ auction: RawAuction | null }>)
-        .map((w) => w.auction?.id)
-        .filter((x): x is string => Boolean(x)),
-    ]),
-  );
-  let wonIds = new Set<string>();
-  if (wonCheckIds.length > 0) {
-    const { data: wonData } = await supabase.rpc("is_winner_of", { p_ids: wonCheckIds });
-    wonIds = new Set((wonData ?? []) as string[]);
-  }
-
-  const map = (a: RawAuction, won: boolean): ActivityItem => {
-    const cover = (a.property?.photos ?? []).slice().sort((x, y) => x.sort_order - y.sort_order)[0];
-    return {
-      auctionId: a.id,
-      title: a.property?.title ?? "—",
-      governorate: a.property?.governorate ?? "",
-      coverUrl: cover ? propertyPhotoUrl(cover.storage_path) : null,
-      status: a.status,
-      price: won
-        ? Number(a.winner_amount ?? a.current_price ?? a.opening_price)
-        : Number(a.current_price ?? a.opening_price),
-      myBid: myBid.get(a.id) ?? null,
-      startsAt: a.starts_at,
-      endsAt: a.ends_at,
-      deposit: depByAuction.get(a.id) ?? null,
-    };
-  };
-
-  const enCours: ActivityItem[] = [];
-  const enAttente: ActivityItem[] = [];
-  const gagnees: ActivityItem[] = [];
-  const participees: ActivityItem[] = [];
-  for (const a of participated) {
-    const pending = pendingByAuction.get(a.id);
-    if (pending) {
-      const item = map(a, false);
-      item.pending = pending;
-      enAttente.push(item);
-      continue;
-    }
-    const won = wonIds.has(a.id) && WON.includes(a.status);
-    if (won) gagnees.push(map(a, true));
-    else if (LIVE.includes(a.status)) enCours.push(map(a, false));
-    else participees.push(map(a, false));
-  }
-
-  const favoris: ActivityItem[] = (
-    (watchRes.data ?? []) as unknown as Array<{ auction: RawAuction }>
-  )
-    .map((w) => w.auction)
-    .filter((a) => a && !HIDDEN_PROPERTY.includes(a.property?.status ?? ""))
-    .map((a) => map(a, wonIds.has(a.id) && WON.includes(a.status)));
-
-  const isRTL = locale === "ar";
-  const ChevronEnd = isRTL ? ChevronLeft : ChevronRight;
-
-  // Tab counts for the desktop summary strip (mirror ActivityTabs' merge).
-  const enCoursCount = enCours.length + enAttente.length;
-  const termineesCount = gagnees.length + participees.length;
-  const favorisCount = favoris.length;
+  const rows = ((data ?? []) as unknown as Row[])
+    .map((r) => ({ listing: one<ListingRow>(r.listing) }))
+    .filter((r): r is { listing: ListingRow } => r.listing !== null);
 
   return (
-    <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-16 lg:max-w-4xl lg:px-6 lg:pt-9 lg:pb-24">
-      <FocusRowHighlight idPrefix="act-" />
+    // Narrow on a phone, wide on a desktop. It was max-w-2xl at every width:
+    // on a monitor that is a thin column of 80px thumbnails down the middle of
+    // an empty screen — a phone list stretched, not a page.
+    <main className="mx-auto max-w-2xl px-4 py-6 lg:max-w-6xl lg:px-6 lg:py-10">
+      <header>
+        <h1 className="inline-flex items-center gap-2 text-[24px] font-extrabold tracking-tight">
+          <Heart className="size-5 text-gold" strokeWidth={2.4} /> Mes favoris
+        </h1>
+        <p className="mt-1 text-[13px] text-muted">
+          {rows.length === 0
+            ? "Vous n'avez rien enregistré pour l'instant."
+            : `${rows.length} annonce${rows.length > 1 ? "s" : ""} enregistrée${
+                rows.length > 1 ? "s" : ""
+              }.`}
+        </p>
+      </header>
 
-      {/* ── Header — compact on mobile, a proper page masthead on desktop
-          with the seller-space action pulled up to the top-right. ── */}
-      <div className="lg:flex lg:items-end lg:justify-between lg:gap-6">
-        <div>
-          <span className="batta-eyebrow">Côté acheteur</span>
-          <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight lg:text-[36px]">
-            Mes achats
-          </h1>
-          <p className="mt-1.5 text-[12px] text-muted lg:text-[14px]">
-            Enchères, acquisitions et favoris.
+      {rows.length === 0 ? (
+        <div className="mt-6 rounded-2xl border border-dashed border-border bg-surface-2/40 p-8 text-center">
+          <p className="text-[13px] text-muted">
+            Touchez le cœur sur une annonce pour la retrouver ici.
           </p>
+          <Link
+            href={"/annonces" as never}
+            className="batta-btn-luxe tap-target mt-4 inline-flex px-5 py-2.5 text-[13px]"
+          >
+            <Search className="size-4" /> Parcourir les annonces
+          </Link>
         </div>
-        <Link
-          href="/sell"
-          className="hidden shrink-0 items-center gap-2.5 rounded-2xl bg-surface px-4 py-3 ring-1 ring-border transition hover:ring-gold-soft/50 lg:inline-flex"
-        >
-          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/30">
-            <Building2 className="size-4" strokeWidth={2} />
-          </span>
-          <span className="text-start">
-            <span className="block text-[13px] font-bold leading-tight text-foreground">
-              Espace vendeur
-            </span>
-            <span className="block text-[11px] text-muted">Annonces · revenus · retraits</span>
-          </span>
-          <ArrowUpRight className="size-4 text-muted" strokeWidth={2.2} />
-        </Link>
-      </div>
+      ) : (
+        <>
+          {/* Phone: a list. A saved annonce is scanned by name and price, and a
+              row puts both on one line at a readable size. */}
+          <div className="mt-5 space-y-3 lg:hidden">
+            {rows.map((r) => {
+              const l = r.listing;
+              const cat = one(l.category);
+              const cover = coverPhoto(l.photos);
+              const gone = l.status !== "published";
+              return (
+                <article
+                  key={l.id}
+                  className={
+                    "flex gap-3 rounded-2xl border border-border bg-surface p-3 " +
+                    (gone ? "opacity-70" : "")
+                  }
+                >
+                  <Link
+                    href={`/annonces/${l.id}` as never}
+                    className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-[#0f0f0f] ring-1 ring-border"
+                  >
+                    {cover ? (
+                      <ListingImage path={cover.storage_path} alt="" sizes="80px" fit="cover" />
+                    ) : (
+                      <span className="grid size-full place-items-center text-muted">
+                        <ImageOff className="size-5" />
+                      </span>
+                    )}
+                  </Link>
 
-      {/* ── Desktop summary strip — three at-a-glance counts. Gives the wide
-          viewport substance instead of a lonely narrow column. ── */}
-      <div className="mt-7 hidden grid-cols-3 gap-4 lg:grid">
-        <StatCard label="En cours" value={enCoursCount} Icon={Gavel} tone="text-gold" />
-        <StatCard label="Terminées" value={termineesCount} Icon={History} tone="text-foreground/70" />
-        <StatCard label="Favoris" value={favorisCount} Icon={Heart} tone="text-red-500" />
-      </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted">
+                      {cat?.label_fr ?? ""}
+                    </span>
+                    <Link href={`/annonces/${l.id}` as never} className="block">
+                      <h2 className="mt-0.5 truncate text-[14.5px] font-bold text-foreground hover:text-gold">
+                        {l.title}
+                      </h2>
+                    </Link>
+                    <p className="batta-tabular mt-0.5 text-[13.5px] font-extrabold text-foreground">
+                      {l.price_on_request || l.price == null
+                        ? "Prix sur demande"
+                        : `${formatTND(Number(l.price), locale)} TND`}
+                    </p>
+                    <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
+                      <MapPin className="size-3" /> {l.governorate}
+                      {gone && (
+                        <span className="ms-2 font-bold text-[var(--accent-deep)]">
+                          · plus disponible
+                        </span>
+                      )}
+                    </p>
+                  </div>
 
-      <ActivityTabs
-        enCours={enCours}
-        enAttente={enAttente}
-        gagnees={gagnees}
-        participees={participees}
-        favoris={favoris}
-        locale={locale}
-        initialTab={initialTab}
-      />
-
-      {/* Mobile-only seller nudge (desktop shows the header action instead). */}
-      <Link
-        href="/sell"
-        className="mt-2 flex items-center gap-3 rounded-xl bg-surface p-4 ring-1 ring-border transition hover:ring-gold-soft/40 lg:hidden"
-      >
-        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/30">
-          <Building2 className="size-5" strokeWidth={2} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-bold text-foreground">Vous vendez aussi ?</div>
-          <div className="mt-0.5 text-[11.5px] text-muted">
-            Annonces, revenus et retraits.
+                  <div className="self-start">
+                    <FavoriteButton listingId={l.id} initialSaved loggedIn size="sm" />
+                  </div>
+                </article>
+              );
+            })}
           </div>
-        </div>
-        <ChevronEnd className="size-5 text-muted" />
-      </Link>
-    </div>
-  );
-}
 
-/** Desktop summary tile — icon + big count + label. */
-function StatCard({
-  label,
-  value,
-  Icon,
-  tone,
-}: {
-  label: string;
-  value: number;
-  Icon: typeof Gavel;
-  tone: string;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-2xl bg-surface p-5 ring-1 ring-border">
-      <span className={`inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-surface-2 ring-1 ring-border ${tone}`}>
-        <Icon className="size-5" strokeWidth={2.2} />
-      </span>
-      <div>
-        <div className="batta-tabular text-[26px] font-extrabold leading-none text-foreground">
-          {value}
-        </div>
-        <div className="mt-1 text-[12px] font-semibold text-muted">{label}</div>
-      </div>
-    </div>
+          {/* Desktop: the cards the catalogue uses, so a saved annonce looks
+              like the thing that was saved. */}
+          <div className="mt-6 hidden gap-5 lg:grid lg:grid-cols-3 xl:grid-cols-4">
+            {rows.map((r) => {
+              const l = r.listing;
+              const cat = one(l.category);
+              const cover = coverPhoto(l.photos);
+              const gone = l.status !== "published";
+              return (
+                <article
+                  key={l.id}
+                  className={
+                    "group relative overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-gold-soft " +
+                    (gone ? "opacity-70" : "")
+                  }
+                >
+                  <Link href={`/annonces/${l.id}` as never} className="block">
+                    <div className="relative aspect-[4/3] bg-[#0f0f0f]">
+                      {cover ? (
+                        <ListingImage
+                          path={cover.storage_path}
+                          alt={l.title}
+                          sizes="(min-width:1280px) 22vw, 30vw"
+                          fit="cover"
+                        />
+                      ) : (
+                        <span className="grid size-full place-items-center text-muted">
+                          <ImageOff className="size-6" />
+                        </span>
+                      )}
+                      {gone && (
+                        <span className="absolute inset-x-0 bottom-0 bg-black/75 py-1 text-center text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-white">
+                          plus disponible
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+
+                  {/* The heart stays on the card: this page is where people come
+                      to REMOVE things, and hunting for that control is the one
+                      thing it must not make you do. */}
+                  <div className="absolute end-2 top-2">
+                    <FavoriteButton listingId={l.id} initialSaved loggedIn size="sm" />
+                  </div>
+
+                  <div className="p-3">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
+                      {cat?.label_fr ?? ""}
+                    </span>
+                    <Link href={`/annonces/${l.id}` as never} className="block">
+                      <h2 className="mt-0.5 line-clamp-2 min-h-[2.5em] text-[13.5px] font-bold leading-snug text-foreground hover:text-gold">
+                        {l.title}
+                      </h2>
+                    </Link>
+                    <p className="batta-tabular mt-1 text-[15px] font-extrabold text-foreground">
+                      {l.price_on_request || l.price == null
+                        ? "Sur demande"
+                        : `${formatTND(Number(l.price), locale)} TND`}
+                    </p>
+                    <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
+                      <MapPin className="size-3" /> {l.governorate}
+                    </p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </main>
   );
 }

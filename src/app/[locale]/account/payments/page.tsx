@@ -8,7 +8,6 @@ import {
   PaymentsClient,
   type PaymentVM,
   type PaymentsSummary,
-  type DepositLifecycle,
 } from "./PaymentsClient";
 
 export const dynamic = "force-dynamic";
@@ -22,8 +21,7 @@ type PaymentRow = {
   status: string;
   receipt_url: string | null;
   created_at: string;
-  auction_id: string | null;
-  property_id: string | null;
+  metadata: { listing_id?: string } | null;
   admin_notes: string | null;
 };
 
@@ -57,7 +55,7 @@ export default async function MyPaymentsPage({
   const { data } = await supabase
     .from("payments")
     .select(
-      "id, kind, provider, amount, status, receipt_url, created_at, auction_id, property_id, admin_notes",
+      "id, kind, provider, amount, status, receipt_url, created_at, metadata, admin_notes",
     )
     .eq("user_id", user!.id)
     .order("created_at", { ascending: false })
@@ -71,97 +69,59 @@ export default async function MyPaymentsPage({
         <span className="batta-eyebrow">Historique</span>
         <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">Mes paiements</h1>
         <p className="mt-1.5 text-[12px] text-muted">
-          Cautions, frais d&apos;annonce, achats et remboursements.
+          Vos frais de publication et leur statut.
         </p>
         <div className="batta-frame-gold relative mt-6 px-6 py-10 text-center">
           <Wallet className="mx-auto size-8 text-gold" strokeWidth={2} />
           <p className="mt-3 text-[13px] text-muted">Aucun paiement pour le moment.</p>
           <Link
-            href="/properties"
+            href="/annonces"
             className="batta-btn-luxe tap-target mt-5 inline-flex px-5 py-2.5 text-[12.5px]"
           >
-            Parcourir les enchères
+            Parcourir les annonces
           </Link>
         </div>
       </div>
     );
   }
 
-  // ── Enrich with the linked auction / property (title, location, cover). ──
-  const auctionIds = [
-    ...new Set(payments.filter((p) => p.auction_id).map((p) => p.auction_id as string)),
-  ];
-  const propertyIds = [
+  // ── Enrich each payment with the annonce it bought ────────────────────────
+  //
+  // Through `metadata.listing_id`, not a foreign key. This block used to read
+  // `auctions`, `properties`, `property_photos` and `auction_deposits` — all
+  // four dropped by migration 0153 — and the select above named
+  // `payments.auction_id` and `payments.property_id`, which went with them.
+  //
+  // PostgREST refuses a whole request when a select names a missing column, so
+  // `data` came back null, `payments` coerced to `[]`, and every user saw
+  // "Aucun paiement pour le moment" no matter what they held. HTTP 200, full
+  // layout, zero rows — the failure mode a Server Component makes invisible.
+  const listingIds = [
     ...new Set(
-      payments.filter((p) => p.property_id && !p.auction_id).map((p) => p.property_id as string),
+      payments
+        .map((p) => p.metadata?.listing_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
     ),
   ];
 
-  const entityByAuction = new Map<string, Entity>();
-  const entityByProperty = new Map<string, Entity>();
-
-  const [aucsRes, propsRes, depsRes] = await Promise.all([
-    auctionIds.length
-      ? supabase
-          .from("auctions")
-          .select(
-            `id, property:properties ( title, governorate, photos:property_photos (storage_path, sort_order) )`,
-          )
-          .in("id", auctionIds)
-      : Promise.resolve({ data: [] as unknown[] }),
-    propertyIds.length
-      ? supabase
-          .from("properties")
-          .select(`id, title, governorate, photos:property_photos (storage_path, sort_order)`)
-          .in("id", propertyIds)
-      : Promise.resolve({ data: [] as unknown[] }),
-    // Caution lifecycle, keyed by the payment row that created the deposit.
-    supabase
-      .from("auction_deposits")
-      .select("payment_id, amount, released_at, refunded_at, forfeited_at")
-      .eq("user_id", user!.id),
-  ]);
-
-  for (const a of (aucsRes.data ?? []) as Array<{
-    id: string;
-    property: { title: string; governorate: string; photos: Photo[] } | null;
-  }>) {
-    entityByAuction.set(a.id, {
-      title: a.property?.title ?? null,
-      governorate: a.property?.governorate ?? null,
-      coverUrl: coverFrom(a.property?.photos),
-    });
-  }
-  for (const pr of (propsRes.data ?? []) as Array<{
-    id: string;
-    title: string;
-    governorate: string;
-    photos: Photo[];
-  }>) {
-    entityByProperty.set(pr.id, {
-      title: pr.title ?? null,
-      governorate: pr.governorate ?? null,
-      coverUrl: coverFrom(pr.photos),
-    });
-  }
-
-  const depByPayment = new Map<string, { amount: number; status: DepositLifecycle }>();
-  for (const d of (depsRes.data ?? []) as Array<{
-    payment_id: string | null;
-    amount: number;
-    released_at: string | null;
-    refunded_at: string | null;
-    forfeited_at: string | null;
-  }>) {
-    if (!d.payment_id) continue;
-    const status: DepositLifecycle = d.refunded_at
-      ? "refunded"
-      : d.forfeited_at
-        ? "forfeited"
-        : d.released_at
-          ? "to_refund"
-          : "locked";
-    depByPayment.set(d.payment_id, { amount: Number(d.amount), status });
+  const entityByListing = new Map<string, Entity>();
+  if (listingIds.length) {
+    const { data: rows } = await supabase
+      .from("listings")
+      .select("id, title, governorate, photos:listing_photos (storage_path, sort_order)")
+      .in("id", listingIds);
+    for (const l of (rows ?? []) as Array<{
+      id: string;
+      title: string;
+      governorate: string;
+      photos: Photo[] | null;
+    }>) {
+      entityByListing.set(l.id, {
+        title: l.title ?? null,
+        governorate: l.governorate ?? null,
+        coverUrl: coverFrom(l.photos ?? []),
+      });
+    }
   }
 
   // ── Sign receipts (private bucket). ──
@@ -179,12 +139,8 @@ export default async function MyPaymentsPage({
 
   // ── Build view-models + summary. ──
   const vms: PaymentVM[] = payments.map((p) => {
-    const entity = p.auction_id
-      ? entityByAuction.get(p.auction_id)
-      : p.property_id
-        ? entityByProperty.get(p.property_id)
-        : undefined;
-    const dep = depByPayment.get(p.id);
+    const listingId = p.metadata?.listing_id ?? null;
+    const entity = listingId ? entityByListing.get(listingId) : undefined;
     return {
       id: p.id,
       kind: p.kind,
@@ -194,11 +150,12 @@ export default async function MyPaymentsPage({
       createdAt: p.created_at,
       adminNotes: p.admin_notes ?? null,
       receiptUrl: signed.get(p.id) ?? null,
-      auctionId: p.auction_id ?? null,
+      auctionId: null,
       title: entity?.title ?? null,
       governorate: entity?.governorate ?? null,
       coverUrl: entity?.coverUrl ?? null,
-      depositStatus: p.kind === "deposit_lock" ? (dep?.status ?? null) : null,
+      // No payment kind carries a caution lifecycle any more.
+      depositStatus: null,
     };
   });
 
@@ -214,12 +171,13 @@ export default async function MyPaymentsPage({
     if (p.status === "pending_review") reviewCount += 1;
     if (p.status === "captured" && SPEND_KINDS.has(p.kind)) spentTotal += Number(p.amount);
   }
-  let lockedTotal = 0;
-  let refundedTotal = 0;
-  for (const d of depByPayment.values()) {
-    if (d.status === "locked") lockedTotal += d.amount;
-    if (d.status === "refunded") refundedTotal += d.amount;
-  }
+  // Cautions were the only thing that could be "locked" or "refunded", and
+  // they went with the auction product. Kept at zero rather than removed from
+  // `PaymentsSummary`: the client renders these tiles conditionally on > 0, so
+  // they simply stop appearing, and the shape stays stable for the day a
+  // refundable payment kind exists again.
+  const lockedTotal = 0;
+  const refundedTotal = 0;
 
   const summary: PaymentsSummary = {
     actionCount,

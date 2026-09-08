@@ -33,7 +33,6 @@ export default async function PaymentFailed({
     id: string;
     amount: number;
     kind: string;
-    auction_id: string | null;
   };
   let payment: PaymentRow | null = null;
   if (id) {
@@ -42,7 +41,7 @@ export default async function PaymentFailed({
     if (user) {
       const { data } = await supabase
         .from("payments")
-        .select("id, amount, kind, auction_id")
+        .select("id, amount, kind")
         .eq("id", id)
         .eq("user_id", user.id)
         .maybeSingle();

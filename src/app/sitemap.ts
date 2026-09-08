@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { log } from "@/lib/log";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
@@ -34,22 +35,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!sb || !base) return staticRoutes;
 
   try {
-    const { data } = await sb
-      .from("auctions")
-      .select("id, updated_at, created_at, status, property:properties!inner(status)")
-      .eq("property.status", "ready")
-      .in("status", ["scheduled", "live", "extending", "ended_sold", "awarded", "sixth_offer_window"])
-      .order("created_at", { ascending: false })
+    // `auctions` joined to `properties`, filtered to `status = 'ready'`, until
+    // migration 0153 dropped both. The catch below swallowed the resulting
+    // error and returned only the static routes — so since that migration, not
+    // one annonce has been in the sitemap. Silent, and exactly the shape of
+    // failure a try/catch around a whole query produces.
+    const { data, error } = await sb
+      .from("listings")
+      .select("id, updated_at, created_at, published_at")
+      .eq("status", "published")
+      .order("published_at", { ascending: false, nullsFirst: false })
       .limit(5000);
 
+    // Logged rather than swallowed. A sitemap that quietly shrinks to six
+    // static URLs is worse than one that fails loudly, because nothing
+    // downstream notices for weeks.
+    if (error) {
+      log.scope("sitemap").error("listing query failed", { msg: error.message });
+      return staticRoutes;
+    }
+
     const listingRoutes: MetadataRoute.Sitemap = (data ?? []).map((row) => {
-      const r = row as { id: string; updated_at: string | null; created_at: string | null; status: string };
-      const live = r.status === "live" || r.status === "extending";
+      const r = row as {
+        id: string;
+        updated_at: string | null;
+        created_at: string | null;
+        published_at: string | null;
+      };
       return {
-        url: `${base}/fr/auctions/${r.id}`,
-        lastModified: r.updated_at ?? r.created_at ?? undefined,
-        changeFrequency: live ? "hourly" : "daily",
-        priority: live ? 0.8 : 0.6,
+        url: `${base}/fr/annonces/${r.id}`,
+        lastModified: r.updated_at ?? r.published_at ?? r.created_at ?? undefined,
+        // A fixed price does not tick. Daily is honest for a catalogue where a
+        // seller edits a price or takes an annonce down.
+        changeFrequency: "daily" as const,
+        priority: 0.7,
       };
     });
 

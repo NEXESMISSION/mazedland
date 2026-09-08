@@ -30,9 +30,6 @@ const MAX_ATTEMPTS = 3;
 const CONCURRENCY = 4;
 const LOOKBACK_DAYS = 2; // stale SMS is pointless; never blast old rows
 const PER_USER_DAILY = 6; // cap SMS per user / 24h (anti-spam + cost)
-// The daily cap is BYPASSED for a capped ping whose auction ends within this
-// window, so the decisive last-minute outbid / ending-soon SMS always sends.
-const CLOSING_WINDOW_MS = 15 * 60 * 1000; // 15 min
 
 // First line of every SMS so the user can tell which app sent it (the sender ID
 // is MAZED for both apps, so the body must carry the brand).
@@ -126,21 +123,12 @@ async function run(req: NextRequest) {
   let skipped = 0;
   let deadLettered = 0;
 
-  // True when a notification's linked auction is live and ends within
-  // CLOSING_WINDOW_MS — lets time-critical capped SMS (the final outbid, the T-1h
-  // ending-soon) bypass the per-user daily cap so the decisive end-of-auction
-  // ping always sends even after an earlier outbid storm burned the quota.
-  async function inClosingWindow(link: string | null): Promise<boolean> {
-    if (!link) return false;
-    const m = link.match(/\/auctions\/([0-9a-f-]{36})/i);
-    if (!m) return false;
-    const { data } = await db
-      .from("auctions").select("status, ends_at").eq("id", m[1]).maybeSingle();
-    const endsAt = data?.ends_at as string | null | undefined;
-    if (!data || (data.status !== "live" && data.status !== "extending") || !endsAt) return false;
-    const msLeft = new Date(endsAt).getTime() - Date.now();
-    return msLeft > 0 && msLeft <= CLOSING_WINDOW_MS;
-  }
+  // `inClosingWindow` stood here. It parsed an auction id out of the
+  // notification link and asked whether that lot was about to close, so a
+  // decisive last-minute ping could jump the daily SMS cap. Both the link shape
+  // and the `auctions` table went in 0153, and every SMS that remains is a
+  // moderation or payment notice with no deadline attached — so the cap is now
+  // simply the cap.
 
   async function processRow(row: Row): Promise<"sent" | "failed" | "skipped" | "deadletter"> {
     const phone = phoneByUser.get(row.user_id);
@@ -162,11 +150,10 @@ async function run(req: NextRequest) {
         p_max: PER_USER_DAILY,
         p_window_secs: 86400,
       });
-      // Over the daily cap → suppress (the user still has the bell + email) —
-      // UNLESS this is a time-critical ping in the auction's CLOSING window, so an
-      // earlier outbid storm can't swallow the decisive last-minute outbid /
-      // ending-soon SMS.
-      if (capped === true && !(await inClosingWindow(row.link))) {
+      // Over the daily cap → suppress. The user still has the bell and the
+      // e-mail. The auction-closing exemption that used to override this is
+      // gone with the product it served.
+      if (capped === true) {
         await db.from("notifications").update({ sms_sent_at: new Date().toISOString() }).eq("id", row.id);
         return "skipped";
       }

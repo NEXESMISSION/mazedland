@@ -28,14 +28,17 @@ export default async function AdminHomePage({
   const { q: qParam } = await searchParams;
   const q = (qParam ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
   const supabase = await getServerSupabase();
+  // `properties` / `property_photos` / `status = 'ready'` until migration 0153
+  // dropped all three with the auction product. The promo columns moved to
+  // `listings` in 0156; `published` is the classifieds equivalent of `ready`.
   let pq = supabase
-    .from("properties")
+    .from("listings")
     .select(`
       id, title, governorate,
       promo_home_featured, promo_top_listed, promo_banner, promo_expires_at, promo_manual,
-      photos:property_photos ( storage_path, sort_order )
+      photos:listing_photos ( storage_path, sort_order )
     `)
-    .eq("status", "ready");
+    .eq("status", "published");
   if (q) pq = pq.or(`title.ilike.%${q}%,governorate.ilike.%${q}%`);
   const { data } = await pq.order("created_at", { ascending: false }).limit(150);
 

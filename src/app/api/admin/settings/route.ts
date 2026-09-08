@@ -86,7 +86,6 @@ export async function PUT(req: NextRequest) {
   }
 
   // ── Anti-snipe (auction time extension), stored in minutes ───────────
-  let antiSnipeSec: { window: number; by: number } | null = null;
   {
     const v = body.auction_antisnipe as { window_min?: unknown; extend_min?: unknown } | undefined;
     if (v && typeof v === "object") {
@@ -101,7 +100,6 @@ export async function PUT(req: NextRequest) {
         value: { window_min: windowMin, extend_min: extendMin },
         updated_by: user.id,
       });
-      antiSnipeSec = { window: windowMin * 60, by: extendMin * 60 };
     }
   }
 
@@ -156,18 +154,9 @@ export async function PUT(req: NextRequest) {
   // Next 16 requires the cache-life profile arg; "max" fully purges the tag.
   revalidateTag(APP_SETTINGS_TAG, "max");
 
-  // Push the anti-snipe change onto auctions that are still open, so the
-  // setting governs live + scheduled lots immediately — not just ones
-  // created afterwards. (New auctions also read these values at creation.)
-  if (antiSnipeSec) {
-    await admin
-      .from("auctions")
-      .update({
-        extend_window_seconds: antiSnipeSec.window,
-        extend_by_seconds: antiSnipeSec.by,
-      })
-      .in("status", ["scheduled", "live", "extending"]);
-  }
+  // An anti-snipe push onto still-open auctions stood here. Anti-snipe is an
+  // auction concept and `auctions` was dropped in 0153; the update threw on
+  // every settings save that touched the window.
 
   logAction(req, user, "settings.update", { keys: rows.map((r) => r.key) });
   return NextResponse.json({ ok: true, updated: rows.length });

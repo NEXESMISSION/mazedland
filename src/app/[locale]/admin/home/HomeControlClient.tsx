@@ -46,7 +46,7 @@ export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          propertyId: id,
+          listingId: id,
           home_featured: cur.home,
           top_listed: cur.top,
           banner: cur.banner,
