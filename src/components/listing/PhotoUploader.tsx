@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { compressImage } from "@/lib/imageCompress";
+import { watermarkImage } from "@/lib/watermark";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -133,6 +134,13 @@ export function PhotoUploader({
       } catch {
         out = file; // compression is an optimisation, not a gate
       }
+
+      // Stamp the wordmark in the middle. AFTER compression, not inside it:
+      // `compressImage` returns the input untouched on several paths (an
+      // already-small modern format, an input over its byte ceiling), so a
+      // watermark folded into that function would silently skip exactly the
+      // photos most worth protecting — the big clean ones.
+      out = await watermarkImage(out);
 
       mark({ phase: "sending" });
 
