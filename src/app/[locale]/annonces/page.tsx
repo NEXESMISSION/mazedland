@@ -135,18 +135,13 @@ export default async function AnnoncesPage({
   };
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 lg:px-6 lg:py-10">
-      <header>
-        <span className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-gold">
-          À vendre
-        </span>
-        <h1 className="mt-1 text-[26px] font-extrabold tracking-tight text-foreground lg:text-[32px]">
-          Biens à prix fixe
-        </h1>
-        <p className="mt-1.5 text-[13.5px] text-muted">
-          Le prix est affiché. Vous appelez le vendeur directement.
-        </p>
-      </header>
+    <main className="mx-auto max-w-6xl px-4 pb-6 pt-4 lg:px-6 lg:pb-10 lg:pt-6">
+      {/* No visible title. An eyebrow, a 32px headline and a strapline took
+          180px — a third of a phone screen — to tell a visitor who tapped
+          « Explorer » that they are looking at things for sale. The filters
+          and the first row of results are the heading. The h1 stays for
+          assistive tech and search engines. */}
+      <h1 className="sr-only">Biens à prix fixe — annonces immobilières</h1>
 
       {/* Filters. Property is filtered by what it IS and where it is — the two
           questions a buyer actually starts from. */}
@@ -154,9 +149,9 @@ export default async function AnnoncesPage({
         <Link
           href={qs({ cat: undefined }) as never}
           className={
-            "rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition " +
+            "whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition " +
             (!active
-              ? "bg-gold text-white"
+              ? "bg-foreground text-[var(--background)]"
               : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
           }
         >
@@ -167,9 +162,9 @@ export default async function AnnoncesPage({
             key={c.id}
             href={qs({ cat: c.slug }) as never}
             className={
-              "rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition " +
+              "whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition " +
               (active?.slug === c.slug
-                ? "bg-gold text-white"
+                ? "bg-foreground text-[var(--background)]"
                 : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
             }
           >
@@ -182,8 +177,10 @@ export default async function AnnoncesPage({
         <Link
           href={qs({ gov: undefined }) as never}
           className={
-            "rounded-full px-3 py-1 text-[11.5px] font-semibold transition " +
-            (!sp.gov ? "bg-gold-faint text-gold ring-1 ring-gold-soft" : "text-muted hover:text-foreground")
+"whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
+            (!sp.gov
+              ? "bg-foreground text-[var(--background)]"
+              : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
           }
         >
           Toute la Tunisie
@@ -193,22 +190,29 @@ export default async function AnnoncesPage({
             key={g}
             href={qs({ gov: g }) as never}
             className={
-              "rounded-full px-3 py-1 text-[11.5px] font-semibold transition " +
-              (sp.gov === g ? "bg-gold-faint text-gold ring-1 ring-gold-soft" : "text-muted hover:text-foreground")
+"whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
+              (sp.gov === g
+                ? "bg-foreground text-[var(--background)]"
+                : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
             }
           >
             {g}
           </Link>
         ))}
 
-        <span className="ms-auto inline-flex items-center gap-1.5">
+        {/* `flex-wrap`, not `inline-flex`. As bare text these four fitted a
+            phone row; as chips they do not, and an `inline-flex` cannot break —
+            so « Surface » was cut off at the right edge with no way to reach it. */}
+        <span className="ms-auto flex flex-wrap items-center gap-1.5">
           {SORTS.map((s) => (
             <Link
               key={s.key}
               href={qs({ sort: s.key }) as never}
               className={
-                "rounded-full px-3 py-1 text-[11.5px] font-semibold transition " +
-                (sort === s.key ? "bg-gold-faint text-gold ring-1 ring-gold-soft" : "text-muted hover:text-foreground")
+"whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
+                (sort === s.key
+                  ? "bg-foreground text-[var(--background)]"
+                  : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
               }
             >
               {s.label}

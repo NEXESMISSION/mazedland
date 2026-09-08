@@ -2,9 +2,16 @@
 
 /* ============================================
    Mazed Immo — Design Tokens
-   Theme: Light · Blue + Red accents · Clean modern.
-   Inspired by Linear / Stripe / Vercel — minimal
-   chrome, subtle borders, generous whitespace.
+   Theme: White · metallic gold + red accents.
+
+   The design system is Mazed Auto's, inverted. Auto is gold on
+   near-black; this is the same system — the same tokens, the same
+   utilities, the same layout math — read on white paper, because
+   the two products are judged side by side and should look like
+   one company with two catalogues.
+
+   Gold is not decoration here: it is the logo's own metal, and it
+   means money. Everything else is white, a hairline, and type.
    ============================================ */
 
 :root {
@@ -24,18 +31,70 @@
   --foreground-muted: #52525b;
   --foreground-subtle: #71717a;
 
-  /* Primary — DEEP NAVY BLUE. Sophisticated luxury feel (think
-     Hermès packaging blue, BNP Paribas, the navy of a banker's
-     suit). Replaces what was the "gold" accent across the
-     codebase — we keep the `--gold-*` variable names so every
-     existing `bg-gold` / `text-gold-bright` / `border-gold-soft`
-     class keeps working without a sweep, they just render navy now. */
-  --gold:        #1e3a8a;  /* blue-900 — primary fill, deep navy */
-  --gold-bright: #2563eb;  /* blue-600 — hover lift */
-  --gold-soft:   #c7d2fe;  /* indigo-200 — soft borders / tints */
-  --gold-deep:   #172554;  /* blue-950 — pressed, almost black */
-  --gold-faint:  rgba(30, 58, 138, 0.06);
-  --gold-glow:   rgba(30, 58, 138, 0.22);
+  /* Primary — INK, not gold.
+     ------------------------------------------------------------------
+     The mark is gold and stays gold. The interface is not: on a white
+     page a gold accent lands as mustard or tan, and it was carrying
+     every button, every heading accent, every price and every badge at
+     once — so nothing on the page could be more important than anything
+     else, and the one gold thing that should stand out (the logo) was
+     lost among a dozen imitations of it.
+
+     Ink does the job a primary has to do: it is the highest contrast
+     available on white, so it needs no glow to be found, and it leaves
+     the gold to mean the brand.
+
+     The names are still `--gold-*`. Renaming them would mean editing
+     every file that spends them, and the values are what the page
+     actually sees. Read them as "the accent ramp". */
+  --gold:        #27272a;  /* 14:1 on white — type, icons, hairlines */
+  --gold-bright: #18181b;  /* hover — deeper, as it was */
+  --gold-soft:   #d4d4d8;  /* soft borders / tints on white */
+  --gold-deep:   #09090b;  /* pressed; type on a tinted ground */
+  --gold-faint:  rgba(24, 24, 27, 0.06);
+  --gold-glow:   rgba(24, 24, 27, 0.16);
+
+  /* ── The ramp ────────────────────────────────────────────
+     Was nine stops sampled off the logo's own pixels: a specular
+     highlight, a lit face, a shadow band and a second bounce, so a flat
+     fill would read as curved metal. It was accurate, and it was the
+     problem — a button that simulates a lit metal surface is a button
+     that asks to be looked at before it is read.
+
+     Simple gradients now, as asked: two stops, a few percent apart, top
+     to bottom. Enough to give a surface a direction of light; not enough
+     to become the subject. */
+  --gold-lum:   #fafafa;
+  --gold-pale:  #f4f4f5;
+  --gold-lit:   #52525b;
+  --gold-mid:   #3f3f46;
+  --gold-amber: #27272a;
+  --gold-shade: #1f1f23;
+  --gold-dark:  #18181b;
+
+  /* Filled surfaces — buttons, monograms, branded blocks. */
+  --gold-metal: linear-gradient(
+    180deg,
+    var(--gold-mid)  0%,
+    var(--gold-dark) 100%
+  );
+
+  /* Same idea, angled, for wide surfaces where a horizontal band would
+     land as a stripe across the middle. */
+  --gold-metal-angled: linear-gradient(
+    115deg,
+    var(--gold-lit)  0%,
+    var(--gold-mid) 45%,
+    var(--gold-dark) 100%
+  );
+
+  /* Gradient-clipped TYPE on white. It has to stay in the dark half or
+     the letters wash out; two stops is plenty for a headline word. */
+  --gold-metal-text: linear-gradient(
+    115deg,
+    var(--gold-mid)  0%,
+    var(--gold-dark) 100%
+  );
 
   /* Accent — RED. The second accent the user asked for. Used
      sparingly: live-now pulse, sale badges, the "Live · X auctions"
@@ -66,7 +125,7 @@
   --shadow-sm:   0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-md:   0 4px 12px rgba(15, 23, 42, 0.06);
   --shadow-lg:   0 16px 40px -8px rgba(15, 23, 42, 0.10);
-  --shadow-gold: 0 6px 20px -6px rgba(30, 58, 138, 0.20), 0 2px 6px rgba(30, 58, 138, 0.10);
+  --shadow-gold: 0 6px 20px -6px rgba(168, 111, 34, 0.30), 0 2px 6px rgba(168, 111, 34, 0.16);
 
   /* Mobile-app shell. Unchanged — pure layout math. */
   --topbar-h: 56px;
@@ -276,35 +335,26 @@ html, body { overscroll-behavior-y: contain; }
    Brand accents — blue (primary) + red (secondary)
    ============================================ */
 
-/* The elegant 3-stop blue gradient — diagonal, from primary to
-   bright to deep. Used as the signature brand surface across
-   hero blocks, primary CTAs, monograms, and any "branded fill"
-   slot. The favorites empty-state pioneered this; everything
-   downstream pulls from this single utility so the look stays
-   consistent. */
+/* The signature brand surface — the metal itself, not a three-stop
+   approximation of it. Used across hero blocks, primary CTAs, monograms
+   and any "branded fill" slot; everything downstream pulls from this one
+   utility so the look stays consistent. */
 .mazed-gradient-gold,
 .gradient-gold {
-  background-image: linear-gradient(
-    135deg,
-    var(--gold) 0%,
-    var(--gold-bright) 50%,
-    var(--gold-deep) 100%
-  );
-  background-color: var(--gold); /* fallback */
+  background-image: var(--gold-metal);
+  background-color: var(--gold-mid); /* fallback */
 }
 
-/* Gradient-clipped text — for the brand wordmark and headline
-   prices we want metallic weight without losing legibility. The
-   `-webkit-` prefix is needed for Safari/iOS support. */
+/* Gradient-clipped text — for the brand wordmark and headline prices we
+   want metallic weight without losing legibility. Angled, and off the
+   TEXT ramp: a vertical band lands across the middle of every letter and
+   reads as a stripe, and the fill ramp's specular would punch a white
+   hole through the word on a white page. The `-webkit-` prefix is needed
+   for Safari/iOS support. */
 .gradient-gold-text,
 .mazed-gold-text,
 .mazed-gradient-gold-text {
-  background-image: linear-gradient(
-    135deg,
-    var(--gold) 0%,
-    var(--gold-bright) 50%,
-    var(--gold-deep) 100%
-  );
+  background-image: var(--gold-metal-text);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -312,17 +362,39 @@ html, body { overscroll-behavior-y: contain; }
   letter-spacing: -0.01em;
 }
 
-/* Block-fill primary — for buttons / pills where we want the
-   gradient surface with white ink. */
+/* The rim that makes a gold fill read as a stamped metal blank: a lit top
+   edge, a shadowed bottom one, and a hairline all round.
+
+   A real class, not an arbitrary Tailwind `shadow-[...]`. The value is a
+   COMMA-SEPARATED list of shadows, and Tailwind cannot parse that inside
+   square brackets — it silently emits a transparent reset instead, so every
+   pill using it would have no rim at all and nothing would say so. */
+.gold-rim {
+  box-shadow:
+    inset 0 1px 0 rgba(253, 243, 220, 0.85),
+    inset 0 -1px 0 rgba(109, 71, 18, 0.55),
+    inset 0 0 0 1px rgba(140, 92, 26, 0.35),
+    var(--shadow-gold);
+}
+.gold-rim-flat {                     /* same rim, no outer glow — for badges */
+  box-shadow:
+    inset 0 1px 0 rgba(253, 243, 220, 0.8),
+    inset 0 -1px 0 rgba(109, 71, 18, 0.5),
+    inset 0 0 0 1px rgba(140, 92, 26, 0.3);
+}
+
+/* Block-fill primary — buttons / pills that want the metal surface.
+   The ink is a near-black umber, not white: white on a mid-gold fill is a
+   2.8:1 contrast at the ramp's darkest band and vanishes entirely under its
+   lit one. Dark ink is the opposite — 6:1 at the worst point, 13:1 at the
+   best — and the hairline highlight under it is what keeps the letters from
+   looking pasted on. */
 .mazed-gold-fill {
-  background-image: linear-gradient(
-    135deg,
-    var(--gold) 0%,
-    var(--gold-bright) 50%,
-    var(--gold-deep) 100%
-  );
-  background-color: var(--gold);
-  color: #ffffff;
+  background-image: var(--gold-metal);
+  background-color: var(--gold-mid);
+  /* Light ink now the fill is dark. It was a near-black umber, correct on
+     the old mid-gold and invisible on this. */
+  color: #fafafa;
 }
 
 /* Decorative gradient halo — drop two of these inside a relative
@@ -333,12 +405,14 @@ html, body { overscroll-behavior-y: contain; }
   position: absolute;
   pointer-events: none;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.15);
+  /* Gold, not white. A white halo on a white page is nothing at all —
+     the class rendered but could not be seen. */
+  background: rgba(184, 130, 54, 0.16);
   filter: blur(60px);
   z-index: 0;
 }
 .mazed-gradient-blob-sm { width: 14rem; height: 14rem; }
-.mazed-gradient-blob-lg { width: 18rem; height: 18rem; background: rgba(255, 255, 255, 0.10); }
+.mazed-gradient-blob-lg { width: 18rem; height: 18rem; background: rgba(184, 130, 54, 0.10); }
 
 /* Glass — translucent white over blurred content, for the BottomTabBar
    and any chrome that hovers over the page. */
@@ -407,15 +481,10 @@ html, body { overscroll-behavior-y: contain; }
   background: var(--gold-faint);
 }
 .mazed-monogram-filled {
-  background-image: linear-gradient(
-    135deg,
-    var(--gold) 0%,
-    var(--gold-bright) 50%,
-    var(--gold-deep) 100%
-  );
-  background-color: var(--gold);
-  color: #ffffff;
-  border-color: var(--gold-deep);
+  background-image: var(--gold-metal);
+  background-color: var(--gold-mid);
+  color: #fafafa;
+  border-color: var(--gold-dark);
 }
 
 /* ============================================
@@ -463,7 +532,7 @@ textarea.mazed-input {
 .mazed-frame-gold {
   position: relative;
   background: var(--surface);
-  border: 1px solid rgba(30, 58, 138, 0.15);
+  border: 1px solid rgba(168, 111, 34, 0.22);
   border-radius: var(--radius-lg);
   color: var(--foreground);
 }
@@ -498,7 +567,7 @@ textarea.mazed-input {
   border-radius: 9999px;
   background: var(--gold-faint);
   color: var(--gold-deep);
-  border: 1px solid rgba(37, 99, 235, 0.25);
+  border: 1px solid rgba(168, 111, 34, 0.28);
 }
 .mazed-pill-gold-on-navy { /* alias retained */ }
 
@@ -506,39 +575,69 @@ textarea.mazed-input {
    Buttons
    ============================================ */
 
-/* Primary CTA — flat blue with subtle shadow + smooth hover.
-   Was the metallic gradient gold; now a clean solid in the
-   Linear / Stripe style. */
+/* Primary CTA.
+   It was a metallic ramp with a gold outer glow, and Auto reached the same
+   conclusion about its own: every primary action lit up like a warning, the
+   gold competed with the prices — the only thing on a classifieds page that
+   has earned a colour — and the sheen read as decoration rather than as
+   something to press.
+
+   Plain dark-on-white instead. It is the highest contrast available on this
+   page, so it needs no glow to be found, and it leaves gold to mean one
+   thing: money. The interest lives in the press, not in the resting state. */
 .mazed-btn-luxe {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background-image: linear-gradient(
-    135deg,
-    var(--gold) 0%,
-    var(--gold-bright) 50%,
-    var(--gold-deep) 100%
-  );
-  background-color: var(--gold);
-  background-size: 200% 200%;
-  background-position: 0% 0%;
-  color: #ffffff;
-  border: 1px solid var(--gold-deep);
-  font-weight: 600;
+  background: var(--foreground);
+  color: var(--background);
+  border: 0;
+  box-shadow: var(--shadow-md);
+  font-weight: 700;
   letter-spacing: 0;
   border-radius: var(--radius);
-  transition: background-position 320ms ease, box-shadow 220ms ease, transform 160ms ease;
-  box-shadow: var(--shadow-gold);
+  transition: background 160ms ease, box-shadow 220ms ease, transform 160ms ease;
 }
 .mazed-btn-luxe:active {
   transform: scale(0.985);
-  background-position: 100% 100%;
+  background: #3f3f46;
+  box-shadow: none;
 }
 @media (hover: hover) {
   .mazed-btn-luxe:hover {
-    background-position: 100% 100%;
-    box-shadow: var(--shadow-md), var(--shadow-gold);
+    background: #000000;
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+/* Secondary CTA — the same button, unfilled.
+   Paired with the primary rather than styled independently: same height, same
+   radius, same weight, so the two read as one control with two destinations
+   and the only difference is which one is filled. Auto washes white over
+   black here; on white paper that is invisible, so this washes black. */
+.mazed-btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--foreground);
+  border: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  font-weight: 700;
+  letter-spacing: 0;
+  border-radius: var(--radius);
+  transition: background 160ms ease, box-shadow 220ms ease, transform 160ms ease;
+}
+.mazed-btn-quiet:active {
+  transform: scale(0.985);
+  background: rgba(0, 0, 0, 0.06);
+}
+@media (hover: hover) {
+  .mazed-btn-quiet:hover {
+    background: rgba(0, 0, 0, 0.05);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
   }
 }
 
@@ -721,12 +820,16 @@ textarea.mazed-input {
   100% { opacity: 0; transform: scale(1.15); }
 }
 
-/* Splash-screen — pure-white wordmark filter and a thin progress
-   sliver that sweeps left → right under the logo. Cleaner than
-   bouncing dots and on-brand with the linear/stripe loader pattern. */
+/* Splash-screen — the lockup as drawn, plus a thin progress sliver that
+   sweeps left → right under it. Cleaner than bouncing dots and on-brand with
+   the linear/stripe loader pattern.
+
+   No filter on the mark any more. It used to be `brightness(0) invert(1)`,
+   which flattened the logo to a white silhouette so it could sit on a coloured
+   splash — on a white splash that renders the logo invisible. The metal is the
+   brand; it gets shown, over a soft warm drop shadow to lift it off the page. */
 .mazed-splash-logo {
-  filter: brightness(0) invert(1)
-          drop-shadow(0 4px 16px rgba(0, 0, 0, 0.18));
+  filter: drop-shadow(0 8px 24px rgba(168, 111, 34, 0.28));
 }
 @keyframes mazed-splash-sweep {
   0%   { transform: translate3d(-100%, 0, 0); }
@@ -737,11 +840,13 @@ textarea.mazed-input {
   width: 25%;
   height: 100%;
   border-radius: 9999px;
+  /* Gold, for the same reason the logo lost its invert filter: a white
+     sliver travelling across a white bar is nothing to watch. */
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.95) 50%,
-    rgba(255, 255, 255, 0) 100%
+    rgba(184, 130, 54, 0) 0%,
+    rgba(168, 111, 34, 0.95) 50%,
+    rgba(184, 130, 54, 0) 100%
   );
   animation: mazed-splash-sweep 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   will-change: transform;
@@ -837,8 +942,8 @@ html[dir="rtl"] .mazed-marquee-reverse { animation-name: mazed-marquee; }
    keyframe finishes. Kept short so the row settles back into the list
    instead of competing with other UI for attention. */
 @keyframes mazed-focus-ring-pulse {
-  0%   { box-shadow: 0 0 0 0 var(--gold-glow), 0 0 0 0 rgba(30,58,138,0); }
-  35%  { box-shadow: 0 0 0 4px var(--gold-glow), 0 0 0 10px rgba(30,58,138,0.18); }
+  0%   { box-shadow: 0 0 0 0 var(--gold-glow), 0 0 0 0 rgba(168,111,34,0); }
+  35%  { box-shadow: 0 0 0 4px var(--gold-glow), 0 0 0 10px rgba(168,111,34,0.18); }
   100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; }
 }
 .mazed-focus-ring {
@@ -915,17 +1020,97 @@ html[dir="rtl"] .mazed-marquee-reverse { animation-name: mazed-marquee; }
   --tone-bad-bg:    var(--accent-faint);
   --tone-bad-ring:  rgba(220, 38, 38, 0.25);
   --tone-bad-edge:  rgba(153, 27, 27, 0.85);
-  --tone-info-ring: rgba(30, 58, 138, 0.28);  /* navy, matching --gold here */
+  --tone-info-ring: rgba(168, 111, 34, 0.28); /* gold, matching --gold here */
 
   /* Row states. Auto washes rows with white over black; over white that is
      invisible, so Mazed Immo washes with black. */
   --row-hover:    rgba(0, 0, 0, 0.025);
   --row-focus:    rgba(0, 0, 0, 0.045);
-  --row-selected: var(--gold-faint);
+  --row-selected: rgba(184, 130, 54, 0.07);
 
   /* Which way a pressed surface moves. Lifting off black reads as a press on
      Auto; on white the same lift washes the surface out, so Mazed Immo dims. */
   --press-brightness: 0.96;
+}
+
+/* ── Page enter ─────────────────────────────────────────────
+   [locale]/template.tsx wraps every route in `.mazed-page-enter` and has done
+   since it was written — but the class was never defined anywhere here, so
+   every navigation simply snapped. A short rise + fade is the difference
+   between a page that appears and a page that arrives.
+
+   Deliberately quick (180ms): this runs on EVERY navigation, and anything
+   slower becomes a tax paid for the rest of the session. */
+@keyframes mazed-page-enter {
+  from { opacity: 0; transform: translate3d(0, 6px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+.mazed-page-enter {
+  animation: mazed-page-enter 180ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+/* ── Search in flight ─────────────────────────────────────────
+   HomeSearch has asked for this class since it was written, and it was never
+   defined either — so a submitted search gave no sign it had been heard: the
+   text sat there, the icon sat there, and the results arrived whenever they
+   arrived. Deliberately loud — a gold bar sweeping the width of the field,
+   not a 3px tint — because "did that register?" is the question it answers. */
+@keyframes search-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+.search-sweep::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 2px;
+  width: 40%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: search-sweep 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mazed-page-enter { animation: none; }
+  .search-sweep::after {
+    animation: none;
+    width: 100%;
+    background: var(--gold);
+    opacity: 0.7;
+  }
+}
+
+/* ── Touch devices ────────────────────────────────────────────
+   Scoped to a real touch screen — `hover: none` AND `pointer: coarse` — so a
+   desktop keeps its denser controls untouched.
+
+   THE LONG PRESS. Holding a photo pops up the iOS callout ("Copy", "Save
+   Image"…) and selects it with a blue wash. On a page where holding is how
+   you inspect a terrain or read a survey plan, that reads as the page
+   misbehaving. Photos here are not text to be selected or files to be saved.
+
+   THE DOUBLE-TAP. `touch-action: manipulation` drops double-tap-to-zoom on
+   controls, which also removes the ~300ms delay browsers keep in order to wait
+   and see whether a second tap is coming. Taps land immediately.
+
+   (The 16px input floor iOS needs to stop it zooming on focus is already set
+   globally near the top of this file, so it is not repeated here.) */
+@media (hover: none) and (pointer: coarse) {
+  img {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  button,
+  a,
+  [role="button"],
+  label {
+    touch-action: manipulation;
+  }
 }
 
 /* Anything that navigates should acknowledge the press immediately, before the
