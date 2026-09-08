@@ -82,8 +82,19 @@ export function drawWatermark(
   width: number,
   height: number,
 ): void {
-  const markW = Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO));
-  const markH = Math.round(markW * (mark.naturalHeight / mark.naturalWidth));
+  const aspect = mark.naturalHeight / mark.naturalWidth;
+
+  // Fit, then centre. `MIN_MARK_PX` is a floor on legibility, not a promise
+  // that the photo is big enough to hold it: the catalogue contains a 120x120
+  // thumbnail, and asking for a 160px mark on it drew a stamp wider than the
+  // image. The canvas does not complain — it just crops the mark and produces
+  // a photo branded with a fragment of a logo.
+  let markW = Math.min(Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO)), width);
+  let markH = Math.round(markW * aspect);
+  if (markH > height) {
+    markH = height;
+    markW = Math.round(markH / aspect);
+  }
   const x = Math.round((width - markW) / 2);
   const y = Math.round((height - markH) / 2);
 

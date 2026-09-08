@@ -89,9 +89,25 @@ async function markAt(width) {
   return cache;
 }
 
+/**
+ * The mark's width, clamped so it always fits inside the photo.
+ *
+ * `MIN_MARK_PX` is a floor on legibility, not a promise that the photo is big
+ * enough to hold it. The catalogue contains a 120x120 thumbnail; asking for a
+ * 160px mark on it made sharp refuse the whole composite ("Image to composite
+ * must have same dimensions or smaller") and the browser, which does not
+ * refuse, would have branded it with a cropped fragment of a logo.
+ */
+async function fittedWidth(width, height) {
+  const meta = await sharp(MARK).metadata();
+  const aspect = meta.height / meta.width;
+  const w = Math.min(Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO)), width);
+  return Math.round(w * aspect) > height ? Math.round(height / aspect) : w;
+}
+
 async function stamp(buf) {
   const meta = await sharp(buf).metadata();
-  const markW = Math.max(MIN_MARK_PX, Math.round(meta.width * MARK_WIDTH_RATIO));
+  const markW = await fittedWidth(meta.width, meta.height);
   const { mark, shadow, height: markH } = await markAt(markW);
   return sharp(buf)
     .composite([
