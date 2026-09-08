@@ -1,9 +1,6 @@
-import { Suspense } from "react";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { LiveTicker } from "@/components/landing/LiveTicker";
 import { TrendingRail } from "@/components/landing/TrendingRail";
-import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
 import { HeroShowcase, type ShowcaseSlide } from "@/components/landing/HeroShowcase";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeSearch } from "@/components/landing/HomeSearch";
@@ -301,13 +298,6 @@ export async function HomeDesktop({
         </div>
       </section>
 
-      {/* LIVE TICKER — streamed so it never blocks the desktop shell. */}
-      <section className="mt-10">
-        <Suspense fallback={<div className="h-9 rounded-full bg-surface-2" />}>
-          <LiveTicker />
-        </Suspense>
-      </section>
-
       {/* TRENDING — auto-sliding carousel */}
       {trending.length > 0 && (
         <section className="mt-12">
@@ -365,12 +355,6 @@ export async function HomeDesktop({
         </section>
       )}
 
-      {/* ENDING SOON band */}
-      <section className="mt-12">
-        <Suspense fallback={null}>
-          <EndingSoonBanner />
-        </Suspense>
-      </section>
 
       {/* PARCOURIR — category tiles (one row) + price pills */}
       <section className="mt-14">

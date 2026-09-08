@@ -1,11 +1,6 @@
-import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { LiveTicker } from "@/components/landing/LiveTicker";
 import { TrendingRail } from "@/components/landing/TrendingRail";
-import { RecentBidsFeed } from "@/components/landing/RecentBidsFeed";
-import { CoverageStrip } from "@/components/landing/CoverageStrip";
-import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeDesktop } from "@/components/landing/HomeDesktop";
 import { AnnonceCard } from "@/components/listing/AnnonceCard";
@@ -269,19 +264,6 @@ export default async function LandingPage({
           live so the carousel never renders empty. */}
       <HeroBanner slides={heroSlides} isRTL={isRTL} />
 
-      {/* LIVE TICKER — streamed in its own Suspense boundary so the page
-          shell + hero paint immediately instead of blocking on this query. */}
-      <section className="mt-5">
-        <Suspense fallback={<TickerSkeleton />}>
-          <LiveTicker />
-        </Suspense>
-      </section>
-
-      <div className="mt-4">
-        <Suspense fallback={null}>
-          <EndingSoonBanner />
-        </Suspense>
-      </div>
 
       {/* ══════════════════════════════════════════════════════════════
           BROWSE — the page's center of gravity. Trending rail on top
@@ -462,21 +444,7 @@ export default async function LandingPage({
         </div>
       )}
 
-      {/* Live activity feed — header-less, runs as a quiet tape under
-          the trending rail. The vertical marquee says "this place is
-          alive" without needing a label. */}
-      <section className="mt-6 px-4">
-        <Suspense fallback={null}>
-          <RecentBidsFeed />
-        </Suspense>
-      </section>
 
-      {/* Compact coverage strip — only lit wilayas + a "+N more" pill. */}
-      <section className="mt-7">
-        <Suspense fallback={null}>
-          <CoverageStrip />
-        </Suspense>
-      </section>
 
       {/* More auctions — second batch on a 2-up grid. Replaces the
           old "Featured estates" + "Recently added" duplicate sections
@@ -1003,7 +971,7 @@ const PRICE_BUCKETS: {
   key: string;
   labelEn: string;
   labelAr: string;
-  /** Maps to the params /properties actually reads (min_price/max_price). */
+  /** Maps to the params the catalogue actually reads (min_price/max_price). */
   query: string;
 }[] = [
   { key: "under-100k",  labelEn: "Moins de 100k", labelAr: "أقل من 100 ألف",   query: "max_price=100000" },
@@ -1012,19 +980,16 @@ const PRICE_BUCKETS: {
   { key: "1m-plus",     labelEn: "1M+ TND",       labelAr: "أكثر من مليون",     query: "min_price=1000000" },
 ];
 
-// HOW_IT_WORKS + TRUST_PILLARS used to live here at the bottom of
-// the file. They were hoisted above LandingPage (alongside StatTile's
-// past placement) to dodge the Turbopack-RSC hoister bug — module
-// `const` declarations defined AFTER the long LandingPage body
-// occasionally fail to resolve at server-render time in dev.
+// StatTile lives near the top of the file as a const expression so
+// Turbopack-RSC's bundle hoister can see it before LandingPage. Same
+// quirk that bit the HammeredRow type alias (see the comment at the
+// top of the file).
 
-// ──────────────────────────────────────────────────────────────────────
-// "Recently hammered" — compact card for the closed-auction strip.
-// (HammeredRow type is hoisted to the top of the file.)
-// The "Récemment adjugés" card lived here. It rendered `winner_amount` —
-// a hammer price — which a classifieds catalogue does not have and should
-// not invent. Removed with the rail it served.
-
+/**
+ * Rail placeholders. These were collateral: they sat just past the ticker's
+ * fallback, and removing that took them too. `TrendingSkeleton` is still what
+ * the trending rail renders while the catalogue query is in flight.
+ */
 function CardSkeleton() {
   return (
     <div className="block">
@@ -1044,14 +1009,3 @@ function TrendingSkeleton() {
     </div>
   );
 }
-
-// Suspense fallback for the LiveTicker — a single thin tape row, matching
-// the ticker's own height so the swap doesn't shift layout.
-function TickerSkeleton() {
-  return <div className="mx-4 h-9 rounded-full bg-surface-2" />;
-}
-
-// StatTile lives near the top of the file as a const expression so
-// Turbopack-RSC's bundle hoister can see it before LandingPage. Same
-// quirk that bit the HammeredRow type alias (see the comment at the
-// top of the file).
