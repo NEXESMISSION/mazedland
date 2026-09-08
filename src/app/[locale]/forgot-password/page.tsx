@@ -19,7 +19,7 @@ export default async function ForgotPasswordPage() {
 
   const Card = (
     <div className="relative overflow-hidden rounded-3xl bg-surface ring-1 ring-border shadow-[var(--shadow-md)]">
-      <div aria-hidden className="batta-gradient-gold h-[2px] w-full" />
+      <div aria-hidden className="mazed-gradient-gold h-[2px] w-full" />
       <div className="p-7 sm:p-8">
         <div className="flex flex-col items-center text-center">
           <Image
@@ -68,7 +68,7 @@ export default async function ForgotPasswordPage() {
         <div className="relative w-full max-w-sm">
           <div
             aria-hidden
-            className="batta-gradient-blob batta-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
+            className="mazed-gradient-blob mazed-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
           />
           {Card}
         </div>

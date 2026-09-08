@@ -1,4 +1,4 @@
-// Batta PWA service worker. Minimal hand-rolled (no Workbox) so we can
+// Mazed Immo PWA service worker. Minimal hand-rolled (no Workbox) so we can
 // reason about every line. Strategy:
 //   - Navigations    : network-first, fall back to cached offline shell.
 //   - Hashed assets  : cache-first (immutable, /_next/static/).
@@ -8,7 +8,7 @@
 //   - Other GETs     : stale-while-revalidate into RUNTIME_CACHE.
 //   - Cross-origin & non-GET: passthrough, never cached.
 
-const VERSION = "batta-v4";
+const VERSION = "mazed-v4";
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const IMAGE_CACHE = `${VERSION}-images`;

@@ -154,7 +154,7 @@ export function PullToRefresh({
       <div
         ref={indicatorRef}
         aria-hidden
-        className="pointer-events-none fixed left-1/2 top-[calc(var(--batta-topbar-h)+var(--batta-safe-top))] z-[60] flex size-12 items-center justify-center rounded-full bg-batta-surface shadow-lg shadow-black/50 ring-1 ring-batta-gold/30"
+        className="pointer-events-none fixed left-1/2 top-[calc(var(--mazed-topbar-h)+var(--mazed-safe-top))] z-[60] flex size-12 items-center justify-center rounded-full bg-mazed-surface shadow-lg shadow-black/50 ring-1 ring-mazed-gold/30"
         style={{
           transform: "translate3d(-50%, -60px, 0)",
           opacity: 0,
@@ -162,7 +162,7 @@ export function PullToRefresh({
         }}
       >
         <RefreshCw
-          className={`size-5 text-batta-gold-bright ${refreshing ? "animate-spin" : ""}`}
+          className={`size-5 text-mazed-gold-bright ${refreshing ? "animate-spin" : ""}`}
           strokeWidth={2.4}
         />
       </div>

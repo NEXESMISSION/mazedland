@@ -26,9 +26,9 @@ const TYPES = [
 
 type Tone = "ok" | "bad" | "warn" | "info" | "neutral";
 const TONE_CLASS: Record<Tone, string> = {
-  ok: "batta-tone-ok",
-  bad: "batta-tone-bad",
-  warn: "batta-tone-warn",
+  ok: "mazed-tone-ok",
+  bad: "mazed-tone-bad",
+  warn: "mazed-tone-warn",
   info: "bg-gold-faint text-gold ring-1 ring-gold/30",
   neutral: "bg-surface-2 text-muted ring-1 ring-border",
 };
@@ -191,19 +191,19 @@ export default async function AdminActivity({
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
             <Eye className="size-3.5" /> Pages vues · 24h
           </div>
-          <div className="batta-tabular mt-1 text-[22px] font-extrabold">{(viewsRes.count ?? 0).toLocaleString("fr-FR")}</div>
+          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{(viewsRes.count ?? 0).toLocaleString("fr-FR")}</div>
         </div>
         <div className="rounded-xl bg-surface px-4 py-3 ring-1 ring-border">
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
             <Zap className="size-3.5" /> Actions · 24h
           </div>
-          <div className="batta-tabular mt-1 text-[22px] font-extrabold">{(actionsRes.count ?? 0).toLocaleString("fr-FR")}</div>
+          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{(actionsRes.count ?? 0).toLocaleString("fr-FR")}</div>
         </div>
         <div className="rounded-xl bg-surface px-4 py-3 ring-1 ring-border">
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
             <Activity className="size-3.5" /> Total évènements
           </div>
-          <div className="batta-tabular mt-1 text-[22px] font-extrabold">{total.toLocaleString("fr-FR")}</div>
+          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{total.toLocaleString("fr-FR")}</div>
         </div>
       </div>
 
@@ -224,7 +224,7 @@ export default async function AdminActivity({
       <AdminQueryBar total={total} placeholder="E-mail, page ou action…" />
 
       {rows.length === 0 ? (
-        <div className="batta-frame-gold relative mt-5 px-6 py-10 text-center text-[13px] text-muted">
+        <div className="mazed-frame-gold relative mt-5 px-6 py-10 text-center text-[13px] text-muted">
           Aucune activité enregistrée.
         </div>
       ) : (
@@ -246,7 +246,7 @@ export default async function AdminActivity({
                 const isAction = e.type === "action";
                 return (
                   <tr key={e.id} className="hover:bg-surface-2">
-                    <td className="batta-tabular whitespace-nowrap px-4 py-2.5 text-muted">
+                    <td className="mazed-tabular whitespace-nowrap px-4 py-2.5 text-muted">
                       {new Date(e.created_at).toLocaleString("fr-FR", {
                         day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
                       })}
@@ -277,7 +277,7 @@ export default async function AdminActivity({
                     <td className="max-w-[280px] truncate px-4 py-2.5 text-foreground/80" title={e.path || ""}>
                       {e.path || "—"}
                     </td>
-                    <td className="batta-tabular whitespace-nowrap px-4 py-2.5 text-muted">{e.ip || "—"}</td>
+                    <td className="mazed-tabular whitespace-nowrap px-4 py-2.5 text-muted">{e.ip || "—"}</td>
                     <td className="whitespace-nowrap px-4 py-2.5 text-muted">{deviceLabel(e.user_agent)}</td>
                   </tr>
                 );

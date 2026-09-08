@@ -163,7 +163,7 @@ export function NumberField({
             const raw = e.target.value;
             onChange(raw === "" ? null : Number(raw));
           }}
-          className={`batta-tabular ${BASE} ${H} ${suffix ? "pe-14" : ""}`}
+          className={`mazed-tabular ${BASE} ${H} ${suffix ? "pe-14" : ""}`}
         />
         {suffix && (
           <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[11.5px] font-semibold text-muted">

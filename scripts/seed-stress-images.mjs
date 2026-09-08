@@ -1,5 +1,5 @@
 // ============================================================================
-// Batta.tn — attach seed photos to image-less [STRESS] auction properties.
+// Mazed Immo — attach seed photos to image-less [STRESS] auction properties.
 //
 // The admin-stress seeder creates auctions whose properties have NO
 // property_photos rows, so those auctions render with no image. This script

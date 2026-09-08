@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Stamp the Batta wordmark into the middle of a listing photo.
+ * Stamp the Mazed Immo wordmark into the middle of a listing photo.
  *
  * WHY THE MIDDLE. A corner watermark is removed with one crop, and on a
  * classifieds site the photos ARE the product — a terrain photo or a survey
@@ -19,15 +19,18 @@
  *
  * WHAT IT SAYS. Both halves of what a stolen photo needs to carry — the
  * business and where to find it — are already in the wordmark itself, because
- * the wordmark IS « Batta.tn ». Mazed Auto had to grow a caption under its
+ * the wordmark IS « Mazed Immo ». Mazed Auto had to grow a caption under its
  * monogram to say the same thing; here the logo does it unaided, so there is
  * nothing to add and adding it would only repeat the domain twice.
  *
- * WHY THIS STRENGTH. The mark has to survive being stolen, not dominate the
- * photo a seller paid to publish. 45% opacity over 38% of the width reads at
- * full size, stays quiet on a card-sized thumbnail, and is large enough that
- * cropping it out takes the subject with it. Same numbers as Mazed Auto,
- * deliberately: the two sites are judged side by side.
+ * WHY IT IS FAINT. The mark has to survive being stolen, not be the first
+ * thing anybody sees. It was 45% over 38% of the width, which made the logo
+ * the loudest object in a photograph the seller took of their own land. 18%
+ * over 30% is enough: a watermark does not have to be read at a glance to
+ * work, it has to be impossible to remove without cropping the subject, and
+ * that is a property of WHERE it sits rather than how bright it is. Same
+ * numbers as Mazed Auto, deliberately — the two sites are judged side by
+ * side.
  *
  * WHY IT IS DRAWN, NOT COMPOSITED SERVER-SIDE. Photos go straight from the
  * browser to storage on a signed URL — the bytes never pass through our
@@ -39,11 +42,11 @@
  */
 
 /** Fraction of the image's WIDTH the mark spans. */
-const MARK_WIDTH_RATIO = 0.38;
-/** Never smaller than this, or it vanishes on a small upload. */
-const MIN_MARK_PX = 160;
-/** How present the mark is. 0.45 reads at full size, hides on a thumbnail. */
-const MARK_OPACITY = 0.45;
+const MARK_WIDTH_RATIO = 0.3;
+/** A floor so the mark does not vanish entirely on a tiny upload. */
+const MIN_MARK_PX = 96;
+/** How present the mark is. Deliberately low — see the note above. */
+const MARK_OPACITY = 0.18;
 /** The trimmed wordmark — white on transparent, ~3.3:1. */
 const MARK_SRC = "/logo-mark.webp";
 

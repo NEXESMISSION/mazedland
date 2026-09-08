@@ -260,7 +260,7 @@ export function SignupForm() {
       <Field label="Nom complet" value={fullName} onChange={setFullName} required autoComplete="name" />
 
       <label className="block">
-        <span className="batta-eyebrow text-[10px]">Téléphone</span>
+        <span className="mazed-eyebrow text-[10px]">Téléphone</span>
         <PhoneInput
           dialCode={dialCode}
           onDialCodeChange={setDialCode}
@@ -271,18 +271,18 @@ export function SignupForm() {
       </label>
 
       <label className="block">
-        <span className="batta-eyebrow text-[10px]">Gouvernorat</span>
+        <span className="mazed-eyebrow text-[10px]">Gouvernorat</span>
         <select
           value={governorate}
           onChange={(e) => setGovernorate(e.target.value)}
           required
-          className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+          className="mt-1.5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-2.5 text-sm text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
         >
-          <option value="" disabled className="bg-batta-surface-2">
+          <option value="" disabled className="bg-mazed-surface-2">
             Choisir votre gouvernorat…
           </option>
           {TUNISIAN_GOVERNORATES.map((g) => (
-            <option key={g} value={g} className="bg-batta-surface-2">
+            <option key={g} value={g} className="bg-mazed-surface-2">
               {g}
             </option>
           ))}
@@ -302,7 +302,7 @@ export function SignupForm() {
           so the user can read them without leaving signup. The legal links
           are NOT wrapped in the <label> (a label would steal their clicks and
           toggle the checkbox instead of opening the modal). */}
-      <div className="flex items-start gap-2.5 text-[12px] leading-relaxed text-batta-cream/80">
+      <div className="flex items-start gap-2.5 text-[12px] leading-relaxed text-mazed-cream/80">
         <input
           id="signup-accept"
           type="checkbox"
@@ -315,7 +315,7 @@ export function SignupForm() {
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); setLegalModal("terms"); }}
-            className="font-bold text-batta-cream underline transition hover:text-gold-bright"
+            className="font-bold text-mazed-cream underline transition hover:text-gold-bright"
           >
             conditions d&apos;utilisation
           </button>{" "}
@@ -323,7 +323,7 @@ export function SignupForm() {
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); setLegalModal("privacy"); }}
-            className="font-bold text-batta-cream underline transition hover:text-gold-bright"
+            className="font-bold text-mazed-cream underline transition hover:text-gold-bright"
           >
             politique de confidentialité
           </button>
@@ -332,13 +332,13 @@ export function SignupForm() {
       </div>
 
       {error && (
-        <p role="alert" aria-live="assertive" className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
+        <p role="alert" aria-live="assertive" className="mazed-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
       )}
       <button
         type="submit"
         disabled={isPending || !accepted}
         title={!accepted && !isPending ? "Acceptez les conditions d'utilisation" : undefined}
-        className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
+        className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
         {isPending ? (
           <><Loader2 className="inline size-4 animate-spin" /> Création du compte…</>
@@ -355,9 +355,9 @@ export function SignupForm() {
       >
         {legalModal === "privacy" ? <PrivacyContent /> : <TermsContent />}
       </Modal>
-      <p className="text-center text-[11px] text-batta-muted">
+      <p className="text-center text-[11px] text-mazed-muted">
         Compte partenaire (agence, expert, banque) ? Créez un compte ici puis
-        candidatez depuis <span className="text-batta-cream">Compte</span>.
+        candidatez depuis <span className="text-mazed-cream">Compte</span>.
       </p>
     </form>
   );
@@ -382,16 +382,16 @@ function PhoneVerify({
   pending: boolean;
 }) {
   return (
-    <form onSubmit={onVerify} className="batta-frame-gold relative p-6 text-center">
-      <span className="batta-monogram batta-monogram-filled mx-auto mb-3 size-12 text-[18px]">
+    <form onSubmit={onVerify} className="mazed-frame-gold relative p-6 text-center">
+      <span className="mazed-monogram mazed-monogram-filled mx-auto mb-3 size-12 text-[18px]">
         <Smartphone className="size-5" strokeWidth={1.75} />
       </span>
-      <h2 className="batta-serif text-[18px] font-semibold text-batta-cream">
+      <h2 className="mazed-serif text-[18px] font-semibold text-mazed-cream">
         Vérifiez votre numéro
       </h2>
-      <p className="mt-2 text-sm text-batta-cream/75">
+      <p className="mt-2 text-sm text-mazed-cream/75">
         Entrez le code à 6 chiffres envoyé par SMS au{" "}
-        <span className="font-bold text-batta-cream">{phone}</span>.
+        <span className="font-bold text-mazed-cream">{phone}</span>.
       </p>
 
       <input
@@ -403,18 +403,18 @@ function PhoneVerify({
         onChange={(e) => onCodeChange(e.target.value.replace(/\D/g, ""))}
         placeholder="••••••"
         aria-label="Code de vérification à 6 chiffres"
-        className="mt-5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-3 text-center text-[22px] font-bold tracking-[0.4em] text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+        className="mt-5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-3 text-center text-[22px] font-bold tracking-[0.4em] text-mazed-cream placeholder:text-mazed-muted focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
       />
 
       {error && (
-        <p role="alert" aria-live="assertive" className="batta-tone-bad mt-3 rounded-lg px-3 py-2 text-xs">{error}</p>
+        <p role="alert" aria-live="assertive" className="mazed-tone-bad mt-3 rounded-lg px-3 py-2 text-xs">{error}</p>
       )}
 
       <div className="mt-5 flex flex-col gap-2">
         <button
           type="submit"
           disabled={pending || code.replace(/\D/g, "").length !== 6}
-          className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
+          className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
         >
           {pending ? (
             <><Loader2 className="inline size-4 animate-spin" /> Vérification…</>
@@ -426,14 +426,14 @@ function PhoneVerify({
           type="button"
           onClick={onResend}
           disabled={cooldown > 0 || pending}
-          className="batta-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
+          className="mazed-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
         >
           {cooldown > 0 ? `Renvoyer le code (${cooldown}s)` : "Renvoyer le code"}
         </button>
         <button
           type="button"
           onClick={onBack}
-          className="text-[12px] text-batta-cream/70 hover:text-gold-bright"
+          className="text-[12px] text-mazed-cream/70 hover:text-gold-bright"
         >
           Modifier mes informations
         </button>
@@ -456,7 +456,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="batta-eyebrow text-[10px]">{label}</span>
+      <span className="mazed-eyebrow text-[10px]">{label}</span>
       <input
         type={type}
         value={value}
@@ -465,7 +465,7 @@ function Field({
         placeholder={placeholder}
         autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+        className="mt-1.5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-2.5 text-sm text-mazed-cream placeholder:text-mazed-muted focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
       />
     </label>
   );

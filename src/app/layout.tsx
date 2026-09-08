@@ -27,17 +27,17 @@ const SITE_URL =
 
 export const metadata: Metadata = {
   metadataBase: SITE_URL ? new URL(SITE_URL) : undefined,
-  applicationName: "Batta",
+  applicationName: "Mazed Immo",
   title: {
-    default: "Batta — Real Estate Auctions",
-    template: "%s · Batta",
+    default: "Mazed Immo — Petites annonces immobilières en Tunisie",
+    template: "%s · Mazed Immo",
   },
   description:
-    "Tunisia's first dedicated real-estate auction platform. Transparency. Speed. Trust.",
+    "Terrains, maisons, appartements et locaux partout en Tunisie. Le prix affiché, le vendeur au bout du fil.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "Batta",
+    title: "Mazed Immo",
     statusBarStyle: "default",
     startupImage: ["/logo-square.png"],
   },
@@ -47,24 +47,24 @@ export const metadata: Metadata = {
     shortcut: ["/logo-square.png"],
   },
   openGraph: {
-    title: "Batta — Real Estate Auctions",
+    title: "Mazed Immo — Petites annonces immobilières en Tunisie",
     description:
-      "Tunisia's first dedicated real-estate auction platform. Transparency. Speed. Trust.",
+      "Terrains, maisons, appartements et locaux partout en Tunisie. Le prix affiché, le vendeur au bout du fil.",
     type: "website",
-    siteName: "Batta",
+    siteName: "Mazed Immo",
     images: [
       {
         url: "/logo-square.png",
         width: 1104,
         height: 1104,
-        alt: "Batta — Real Estate Auctions",
+        alt: "Mazed Immo — Petites annonces immobilières en Tunisie",
       },
     ],
   },
   twitter: {
     card: "summary",
-    title: "Batta — Real Estate Auctions",
-    description: "Tunisia's first dedicated real-estate auction platform.",
+    title: "Mazed Immo — Petites annonces immobilières en Tunisie",
+    description: "Terrains, maisons, appartements et locaux partout en Tunisie.",
     images: ["/logo-square.png"],
   },
   formatDetection: { telephone: false },

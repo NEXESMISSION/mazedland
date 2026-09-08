@@ -184,7 +184,7 @@ function SlideBody({
       <div className="absolute inset-x-0 top-4 z-10 flex items-start justify-between px-5">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-white backdrop-blur-sm">
           {slide.isLive && (
-            <span className="batta-pulse-dot size-1.5 rounded-full bg-red-500 text-red-500/40" />
+            <span className="mazed-pulse-dot size-1.5 rounded-full bg-red-500 text-red-500/40" />
           )}
           {slide.isLive ? "En direct" : "À vendre"}
         </span>
@@ -215,14 +215,14 @@ function SlideBody({
             <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55">
               Prix
             </div>
-            <div className="batta-tabular mt-0.5 text-[26px] font-black leading-none text-white">
+            <div className="mazed-tabular mt-0.5 text-[26px] font-black leading-none text-white">
               {slide.priceLabel}
               <span className="ms-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/60">
                 TND
               </span>
             </div>
           </div>
-          <span className="batta-gold-fill inline-flex shrink-0 items-center gap-1.5 rounded-full px-5 py-2.5 text-[12px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition group-hover/showcase:scale-[1.03]">
+          <span className="mazed-gold-fill inline-flex shrink-0 items-center gap-1.5 rounded-full px-5 py-2.5 text-[12px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition group-hover/showcase:scale-[1.03]">
             Voir
             <ArrowUpRight className="size-4" strokeWidth={2.5} />
           </span>
@@ -257,7 +257,7 @@ function BrandPanel({
         {brand.title}
       </h3>
       <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-white/65">{brand.slogan}</p>
-      <span className="batta-gold-fill mt-6 inline-flex items-center gap-1.5 rounded-full px-6 py-3 text-[12px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] ring-1 ring-black/10">
+      <span className="mazed-gold-fill mt-6 inline-flex items-center gap-1.5 rounded-full px-6 py-3 text-[12px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] ring-1 ring-black/10">
         {brand.cta}
         <ArrowUpRight className="size-4" strokeWidth={2.5} />
       </span>

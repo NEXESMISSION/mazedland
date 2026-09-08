@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============================================
-   Batta.tn — Design Tokens
+   Mazed Immo — Design Tokens
    Theme: Light · Blue + Red accents · Clean modern.
    Inspired by Linear / Stripe / Vercel — minimal
    chrome, subtle borders, generous whitespace.
@@ -80,11 +80,11 @@
   --max-w-app: 960px;
   --max-w-wide: 1280px;
 
-  --batta-topbar-h: var(--topbar-h);
-  --batta-bottombar-h: var(--bottombar-h);
-  --batta-bottombar-total: calc(var(--bottombar-h) + 16px);
-  --batta-safe-top: env(safe-area-inset-top, 0px);
-  --batta-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mazed-topbar-h: var(--topbar-h);
+  --mazed-bottombar-h: var(--bottombar-h);
+  --mazed-bottombar-total: calc(var(--bottombar-h) + 16px);
+  --mazed-safe-top: env(safe-area-inset-top, 0px);
+  --mazed-safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @theme inline {
@@ -117,33 +117,33 @@
   --color-danger: var(--danger);
   --color-info: var(--info);
 
-  /* Legacy `batta-*` aliases — every component that hard-coded
-     `bg-batta-surface` / `text-batta-cream` / `border-batta-gold/25`
+  /* Legacy `mazed-*` aliases — every component that hard-coded
+     `bg-mazed-surface` / `text-mazed-cream` / `border-mazed-gold/25`
      keeps rendering. Mapped to the new light values. */
-  --color-batta-paper: var(--background);
-  --color-batta-paper-deep: #fafafa;
-  --color-batta-surface: var(--surface);
-  --color-batta-surface-2: var(--surface-2);
-  --color-batta-surface-3: var(--surface-3);
+  --color-mazed-paper: var(--background);
+  --color-mazed-paper-deep: #fafafa;
+  --color-mazed-surface: var(--surface);
+  --color-mazed-surface-2: var(--surface-2);
+  --color-mazed-surface-3: var(--surface-3);
 
-  --color-batta-navy: var(--surface-2);
-  --color-batta-navy-deep: var(--surface);
-  --color-batta-blue: var(--gold);
-  --color-batta-blue-soft: var(--gold-soft);
+  --color-mazed-navy: var(--surface-2);
+  --color-mazed-navy-deep: var(--surface);
+  --color-mazed-blue: var(--gold);
+  --color-mazed-blue-soft: var(--gold-soft);
 
-  --color-batta-cream: var(--foreground);
-  --color-batta-cream-soft: var(--foreground-muted);
-  --color-batta-ink: var(--foreground);
-  --color-batta-ivory: var(--surface);
-  --color-batta-ivory-warm: var(--surface-2);
-  --color-batta-muted: var(--foreground-muted);
-  --color-batta-line: var(--border);
+  --color-mazed-cream: var(--foreground);
+  --color-mazed-cream-soft: var(--foreground-muted);
+  --color-mazed-ink: var(--foreground);
+  --color-mazed-ivory: var(--surface);
+  --color-mazed-ivory-warm: var(--surface-2);
+  --color-mazed-muted: var(--foreground-muted);
+  --color-mazed-line: var(--border);
 
-  --color-batta-gold: var(--gold);
-  --color-batta-gold-bright: var(--gold-bright);
-  --color-batta-gold-soft: var(--gold-soft);
-  --color-batta-gold-deep: var(--gold-deep);
-  --color-batta-gold-dark: var(--gold-deep);
+  --color-mazed-gold: var(--gold);
+  --color-mazed-gold-bright: var(--gold-bright);
+  --color-mazed-gold-soft: var(--gold-soft);
+  --color-mazed-gold-deep: var(--gold-deep);
+  --color-mazed-gold-dark: var(--gold-deep);
 
   --font-sans: var(--font-jakarta), "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
   --font-display: var(--font-jakarta), "Plus Jakarta Sans", system-ui, sans-serif;
@@ -184,15 +184,15 @@ body {
 
 html[dir="rtl"] body { font-family: var(--font-arabic); }
 
-.batta-serif {
+.mazed-serif {
   font-family: var(--font-sans);
   font-weight: 700;
   letter-spacing: -0.015em;
 }
-html[dir="rtl"] .batta-serif { font-family: var(--font-arabic); }
+html[dir="rtl"] .mazed-serif { font-family: var(--font-arabic); }
 
 .tabular-nums,
-.batta-tabular {
+.mazed-tabular {
   font-variant-numeric: lining-nums tabular-nums;
   font-feature-settings: "lnum" 1, "tnum" 1;
 }
@@ -222,30 +222,30 @@ button, a {
    Container & shell
    ============================================ */
 
-.container-batta {
+.container-mazed {
   width: 100%;
   max-width: var(--max-w-wide);
   margin-inline: auto;
   padding-inline: 1.25rem;
 }
 @media (min-width: 768px) {
-  .container-batta { padding-inline: 2rem; }
+  .container-mazed { padding-inline: 2rem; }
 }
 
-.pt-safe { padding-top: var(--batta-safe-top); }
-.pb-safe { padding-bottom: var(--batta-safe-bottom); }
+.pt-safe { padding-top: var(--mazed-safe-top); }
+.pb-safe { padding-bottom: var(--mazed-safe-bottom); }
 
-.batta-shell-main {
+.mazed-shell-main {
   min-height: 100dvh;
-  padding-top: calc(var(--batta-topbar-h) + var(--batta-safe-top));
-  padding-bottom: calc(var(--batta-bottombar-total) + var(--batta-safe-bottom));
+  padding-top: calc(var(--mazed-topbar-h) + var(--mazed-safe-top));
+  padding-bottom: calc(var(--mazed-bottombar-total) + var(--mazed-safe-bottom));
 }
 /* Desktop shell: the mobile TopBar + BottomTabBar are hidden at lg and
    the DesktopNav (fixed, --desktop-nav-h tall) takes over. Clear the
    nav at the top; drop the bottom-tab-bar reservation since there's no
    bottom bar on desktop. Mobile values above are left untouched. */
 @media (min-width: 1024px) {
-  .batta-shell-main {
+  .mazed-shell-main {
     padding-top: var(--desktop-nav-h);
     padding-bottom: 0;
   }
@@ -282,7 +282,7 @@ html, body { overscroll-behavior-y: contain; }
    slot. The favorites empty-state pioneered this; everything
    downstream pulls from this single utility so the look stays
    consistent. */
-.batta-gradient-gold,
+.mazed-gradient-gold,
 .gradient-gold {
   background-image: linear-gradient(
     135deg,
@@ -297,8 +297,8 @@ html, body { overscroll-behavior-y: contain; }
    prices we want metallic weight without losing legibility. The
    `-webkit-` prefix is needed for Safari/iOS support. */
 .gradient-gold-text,
-.batta-gold-text,
-.batta-gradient-gold-text {
+.mazed-gold-text,
+.mazed-gradient-gold-text {
   background-image: linear-gradient(
     135deg,
     var(--gold) 0%,
@@ -314,7 +314,7 @@ html, body { overscroll-behavior-y: contain; }
 
 /* Block-fill primary — for buttons / pills where we want the
    gradient surface with white ink. */
-.batta-gold-fill {
+.mazed-gold-fill {
   background-image: linear-gradient(
     135deg,
     var(--gold) 0%,
@@ -329,7 +329,7 @@ html, body { overscroll-behavior-y: contain; }
    container with `overflow-hidden` for the soft-bubble depth
    effect from the favorites empty-state. Pair with `-translate`
    classes to position them. */
-.batta-gradient-blob {
+.mazed-gradient-blob {
   position: absolute;
   pointer-events: none;
   border-radius: 9999px;
@@ -337,13 +337,13 @@ html, body { overscroll-behavior-y: contain; }
   filter: blur(60px);
   z-index: 0;
 }
-.batta-gradient-blob-sm { width: 14rem; height: 14rem; }
-.batta-gradient-blob-lg { width: 18rem; height: 18rem; background: rgba(255, 255, 255, 0.10); }
+.mazed-gradient-blob-sm { width: 14rem; height: 14rem; }
+.mazed-gradient-blob-lg { width: 18rem; height: 18rem; background: rgba(255, 255, 255, 0.10); }
 
 /* Glass — translucent white over blurred content, for the BottomTabBar
    and any chrome that hovers over the page. */
 .glass,
-.batta-glass {
+.mazed-glass {
   background: rgba(255, 255, 255, 0.85);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
@@ -352,36 +352,36 @@ html, body { overscroll-behavior-y: contain; }
 }
 
 .gold-shadow,
-.batta-shadow-luxe,
-.batta-shadow-chrome,
-.batta-shadow-elev {
+.mazed-shadow-luxe,
+.mazed-shadow-chrome,
+.mazed-shadow-elev {
   box-shadow: var(--shadow-md);
 }
 
 /* Eyebrow — small uppercase label above section titles. Was gold;
    now zinc-muted so it reads as a quiet category tag, not as a
    competing accent. */
-.batta-eyebrow {
+.mazed-eyebrow {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--foreground-muted);
 }
-.batta-eyebrow-on-navy { color: var(--gold); }
-.batta-eyebrow-muted   { color: var(--foreground-subtle); letter-spacing: 0.16em; }
+.mazed-eyebrow-on-navy { color: var(--gold); }
+.mazed-eyebrow-muted   { color: var(--foreground-subtle); letter-spacing: 0.16em; }
 
 /* Hairline rules — neutral; the old gold-rule keeps the name but
    uses the blue accent for a subtle decorative dash. */
-.batta-hairline {
+.mazed-hairline {
   height: 1px;
   background: var(--border);
 }
-.batta-gold-rule {
+.mazed-gold-rule {
   height: 1px;
   background: var(--border);
 }
-.batta-gold-rule-short {
+.mazed-gold-rule-short {
   display: inline-block;
   width: 24px;
   height: 2px;
@@ -392,7 +392,7 @@ html, body { overscroll-behavior-y: contain; }
 
 /* Monogram dot — used as a small initial / step bullet. Now uses the
    primary blue on a tinted background. */
-.batta-monogram {
+.mazed-monogram {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -406,7 +406,7 @@ html, body { overscroll-behavior-y: contain; }
   line-height: 1;
   background: var(--gold-faint);
 }
-.batta-monogram-filled {
+.mazed-monogram-filled {
   background-image: linear-gradient(
     135deg,
     var(--gold) 0%,
@@ -423,7 +423,7 @@ html, body { overscroll-behavior-y: contain; }
    ============================================ */
 
 /* Editorial frame — white card with a single neutral hairline. */
-.batta-frame {
+.mazed-frame {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -432,7 +432,7 @@ html, body { overscroll-behavior-y: contain; }
 /* Form-field base — used by every admin form (settings, popups, etc.).
    Matches the visual rhythm of FilterPanel / SettingsForm inputs so
    form pages share the same control surface. */
-.batta-input {
+.mazed-input {
   width: 100%;
   display: block;
   padding: 0.625rem 0.875rem;
@@ -444,23 +444,23 @@ html, body { overscroll-behavior-y: contain; }
   color: var(--foreground);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.batta-input:focus {
+.mazed-input:focus {
   outline: none;
   border-color: var(--gold);
   box-shadow: 0 0 0 3px var(--gold-faint);
 }
-.batta-input:disabled {
+.mazed-input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-textarea.batta-input {
+textarea.mazed-input {
   resize: vertical;
   min-height: 80px;
 }
 /* `-gold` variant: the same white card with a subtle navy-tinted
    border so it reads as a "branded" empty-state slot. No inset
    pseudo-border (the old double-border was overdesigned). */
-.batta-frame-gold {
+.mazed-frame-gold {
   position: relative;
   background: var(--surface);
   border: 1px solid rgba(30, 58, 138, 0.15);
@@ -470,8 +470,8 @@ textarea.batta-input {
 
 /* Was the dark gradient hero card. Now a clean white card with a
    subtle blue tint shadow — the focal point on the home page. */
-.batta-surface-navy,
-.batta-surface-navy-luxe {
+.mazed-surface-navy,
+.mazed-surface-navy-luxe {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -479,14 +479,14 @@ textarea.batta-input {
   color: var(--foreground);
 }
 
-.batta-surface-ivory {
+.mazed-surface-ivory {
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--foreground);
 }
 
 /* Primary pill — small uppercase chip in blue. */
-.batta-pill-gold {
+.mazed-pill-gold {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -500,7 +500,7 @@ textarea.batta-input {
   color: var(--gold-deep);
   border: 1px solid rgba(37, 99, 235, 0.25);
 }
-.batta-pill-gold-on-navy { /* alias retained */ }
+.mazed-pill-gold-on-navy { /* alias retained */ }
 
 /* ============================================
    Buttons
@@ -509,7 +509,7 @@ textarea.batta-input {
 /* Primary CTA — flat blue with subtle shadow + smooth hover.
    Was the metallic gradient gold; now a clean solid in the
    Linear / Stripe style. */
-.batta-btn-luxe {
+.mazed-btn-luxe {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -531,19 +531,19 @@ textarea.batta-input {
   transition: background-position 320ms ease, box-shadow 220ms ease, transform 160ms ease;
   box-shadow: var(--shadow-gold);
 }
-.batta-btn-luxe:active {
+.mazed-btn-luxe:active {
   transform: scale(0.985);
   background-position: 100% 100%;
 }
 @media (hover: hover) {
-  .batta-btn-luxe:hover {
+  .mazed-btn-luxe:hover {
     background-position: 100% 100%;
     box-shadow: var(--shadow-md), var(--shadow-gold);
   }
 }
 
 /* Ghost / outlined CTA — primary blue, transparent fill. */
-.batta-btn-ghost-gold {
+.mazed-btn-ghost-gold {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -555,52 +555,52 @@ textarea.batta-input {
   border-radius: var(--radius);
   transition: background 160ms ease, border-color 160ms ease;
 }
-.batta-btn-ghost-gold:active {
+.mazed-btn-ghost-gold:active {
   background: var(--gold-faint);
   border-color: var(--gold);
 }
 @media (hover: hover) {
-  .batta-btn-ghost-gold:hover {
+  .mazed-btn-ghost-gold:hover {
     background: var(--gold-faint);
     border-color: var(--gold);
   }
 }
 
 /* Card lift — subtle hover transform for clickable cards. */
-.batta-card-lift,
-.batta-card-luxe {
+.mazed-card-lift,
+.mazed-card-luxe {
   transition:
     transform 200ms cubic-bezier(0.2, 0.9, 0.3, 1),
     box-shadow 220ms ease-out;
 }
 @media (hover: hover) {
-  .batta-card-lift:hover,
-  .batta-card-luxe:hover {
+  .mazed-card-lift:hover,
+  .mazed-card-luxe:hover {
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
   }
 }
-.batta-card-lift:active,
-.batta-card-luxe:active { transform: scale(0.99); }
+.mazed-card-lift:active,
+.mazed-card-luxe:active { transform: scale(0.99); }
 
-.batta-section-head { display: flex; flex-direction: column; gap: 0.5rem; }
-.batta-section-head-center { align-items: center; text-align: center; }
+.mazed-section-head { display: flex; flex-direction: column; gap: 0.5rem; }
+.mazed-section-head-center { align-items: center; text-align: center; }
 
 /* ============================================
    Status tones — semantic colors over white
    ============================================ */
 
-.batta-tone-ok {
+.mazed-tone-ok {
   background: rgba(16, 185, 129, 0.08);
   color: #047857;
   border: 1px solid rgba(16, 185, 129, 0.25);
 }
-.batta-tone-warn {
+.mazed-tone-warn {
   background: rgba(245, 158, 11, 0.10);
   color: #b45309;
   border: 1px solid rgba(245, 158, 11, 0.30);
 }
-.batta-tone-bad {
+.mazed-tone-bad {
   background: var(--accent-faint);
   color: var(--accent-deep);
   border: 1px solid rgba(220, 38, 38, 0.25);
@@ -608,7 +608,7 @@ textarea.batta-input {
 
 /* Photo-card overlay — soft scrim so floating badges stay legible
    on bright photos. Stronger bottom band where the title sits. */
-.batta-photo-overlay::after {
+.mazed-photo-overlay::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -628,41 +628,41 @@ textarea.batta-input {
    Animations
    ============================================ */
 
-@keyframes batta-blob {
+@keyframes mazed-blob {
   0%, 100% { transform: translate3d(0,0,0) scale(1); }
   33%      { transform: translate3d(20px, -16px, 0) scale(1.08); }
   66%      { transform: translate3d(-14px, 18px, 0) scale(0.94); }
 }
-@keyframes batta-marquee {
+@keyframes mazed-marquee {
   from { transform: translate3d(0, 0, 0); }
   to   { transform: translate3d(-50%, 0, 0); }
 }
-@keyframes batta-marquee-rtl {
+@keyframes mazed-marquee-rtl {
   from { transform: translate3d(-50%, 0, 0); }
   to   { transform: translate3d(0, 0, 0); }
 }
-@keyframes batta-shimmer {
+@keyframes mazed-shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-@keyframes batta-pulse-ring {
+@keyframes mazed-pulse-ring {
   0%   { transform: scale(0.85); opacity: 0.55; }
   80%  { transform: scale(1.6);  opacity: 0; }
   100% { transform: scale(1.6);  opacity: 0; }
 }
-@keyframes batta-float-up {
+@keyframes mazed-float-up {
   from { opacity: 0; transform: translate3d(0, 8px, 0); }
   to   { opacity: 1; transform: translate3d(0, 0, 0); }
 }
-@keyframes batta-marquee-y {
+@keyframes mazed-marquee-y {
   from { transform: translate3d(0, 0, 0); }
   to   { transform: translate3d(0, -50%, 0); }
 }
-@keyframes batta-conic-spin {
+@keyframes mazed-conic-spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
-@keyframes batta-marquee-reverse {
+@keyframes mazed-marquee-reverse {
   from { transform: translate3d(-50%, 0, 0); }
   to   { transform: translate3d(0, 0, 0); }
 }
@@ -675,24 +675,24 @@ textarea.batta-input {
    ring of small dots fan out around it once. Auto-stops after one
    pass so the page settles instead of throbbing forever (the user
    called this out: animations that "stay on the whole page"). */
-@keyframes batta-celebrate-pop {
+@keyframes mazed-celebrate-pop {
   0%   { transform: scale(0.6); opacity: 0; }
   55%  { transform: scale(1.12); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
-.batta-celebrate-pop {
-  animation: batta-celebrate-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+.mazed-celebrate-pop {
+  animation: mazed-celebrate-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
-@keyframes batta-celebrate-dot {
+@keyframes mazed-celebrate-dot {
   0%   { transform: translate(-50%, -50%) translate(0, 0) scale(0); opacity: 1; }
   60%  { opacity: 1; }
   100% { transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(1); opacity: 0; }
 }
-.batta-celebrate-burst {
+.mazed-celebrate-burst {
   /* No background — just hosts the absolutely-positioned dots below. */
 }
-.batta-celebrate-burst::before,
-.batta-celebrate-burst::after {
+.mazed-celebrate-burst::before,
+.mazed-celebrate-burst::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -708,14 +708,14 @@ textarea.batta-input {
   background-position:
     18% 22%, 80% 18%, 12% 70%, 88% 60%, 30% 88%, 70% 82%;
   opacity: 0;
-  animation: batta-celebrate-fade 1.2s ease-out 0.1s both;
+  animation: mazed-celebrate-fade 1.2s ease-out 0.1s both;
 }
-.batta-celebrate-burst::after {
+.mazed-celebrate-burst::after {
   background-position:
     8% 40%, 92% 38%, 22% 12%, 78% 88%, 50% 8%, 50% 92%;
   animation-delay: 0.35s;
 }
-@keyframes batta-celebrate-fade {
+@keyframes mazed-celebrate-fade {
   0%   { opacity: 0; transform: scale(0.8); }
   40%  { opacity: 0.95; }
   100% { opacity: 0; transform: scale(1.15); }
@@ -724,15 +724,15 @@ textarea.batta-input {
 /* Splash-screen — pure-white wordmark filter and a thin progress
    sliver that sweeps left → right under the logo. Cleaner than
    bouncing dots and on-brand with the linear/stripe loader pattern. */
-.batta-splash-logo {
+.mazed-splash-logo {
   filter: brightness(0) invert(1)
           drop-shadow(0 4px 16px rgba(0, 0, 0, 0.18));
 }
-@keyframes batta-splash-sweep {
+@keyframes mazed-splash-sweep {
   0%   { transform: translate3d(-100%, 0, 0); }
   100% { transform: translate3d(400%, 0, 0); }
 }
-.batta-splash-bar {
+.mazed-splash-bar {
   display: block;
   width: 25%;
   height: 100%;
@@ -743,67 +743,67 @@ textarea.batta-input {
     rgba(255, 255, 255, 0.95) 50%,
     rgba(255, 255, 255, 0) 100%
   );
-  animation: batta-splash-sweep 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: mazed-splash-sweep 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   will-change: transform;
 }
 
-.batta-blob {
-  animation: batta-blob 14s ease-in-out infinite;
+.mazed-blob {
+  animation: mazed-blob 14s ease-in-out infinite;
   will-change: transform;
 }
-.batta-blob-slow { animation-duration: 22s; }
-.batta-blob-delay { animation-delay: -7s; }
+.mazed-blob-slow { animation-duration: 22s; }
+.mazed-blob-delay { animation-delay: -7s; }
 
-.batta-marquee {
+.mazed-marquee {
   display: flex;
   width: max-content;
-  animation: batta-marquee 40s linear infinite;
+  animation: mazed-marquee 40s linear infinite;
   will-change: transform;
 }
-html[dir="rtl"] .batta-marquee { animation-name: batta-marquee-rtl; }
-.batta-marquee:hover, .batta-marquee:active { animation-play-state: paused; }
+html[dir="rtl"] .mazed-marquee { animation-name: mazed-marquee-rtl; }
+.mazed-marquee:hover, .mazed-marquee:active { animation-play-state: paused; }
 
-.batta-shimmer-text {
+.mazed-shimmer-text {
   color: var(--gold);
 }
 
-.batta-pulse-dot {
+.mazed-pulse-dot {
   position: relative;
   display: inline-block;
 }
-.batta-pulse-dot::after {
+.mazed-pulse-dot::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: 9999px;
   background: currentColor;
-  animation: batta-pulse-ring 1.6s ease-out infinite;
+  animation: mazed-pulse-ring 1.6s ease-out infinite;
 }
 
-.batta-fade-up {
-  animation: batta-float-up 600ms ease-out both;
+.mazed-fade-up {
+  animation: mazed-float-up 600ms ease-out both;
 }
 
-.batta-marquee-y {
+.mazed-marquee-y {
   display: flex;
   flex-direction: column;
   height: max-content;
-  animation: batta-marquee-y 22s linear infinite;
+  animation: mazed-marquee-y 22s linear infinite;
   will-change: transform;
 }
-.batta-marquee-y:hover, .batta-marquee-y:active { animation-play-state: paused; }
+.mazed-marquee-y:hover, .mazed-marquee-y:active { animation-play-state: paused; }
 
-.batta-marquee-reverse {
+.mazed-marquee-reverse {
   display: flex;
   width: max-content;
-  animation: batta-marquee-reverse 32s linear infinite;
+  animation: mazed-marquee-reverse 32s linear infinite;
   will-change: transform;
 }
-html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
-.batta-marquee-reverse:hover, .batta-marquee-reverse:active { animation-play-state: paused; }
+html[dir="rtl"] .mazed-marquee-reverse { animation-name: mazed-marquee; }
+.mazed-marquee-reverse:hover, .mazed-marquee-reverse:active { animation-play-state: paused; }
 
-.batta-conic-spin {
-  animation: batta-conic-spin 28s linear infinite;
+.mazed-conic-spin {
+  animation: mazed-conic-spin 28s linear infinite;
   will-change: transform;
 }
 
@@ -812,23 +812,23 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
 }
 
 /* Slow cinematic zoom for featured-banner imagery (desktop hero). */
-@keyframes batta-kenburns {
+@keyframes mazed-kenburns {
   from { transform: scale(1.05); }
   to   { transform: scale(1.16); }
 }
-.batta-kenburns {
-  animation: batta-kenburns 18s ease-in-out infinite alternate;
+.mazed-kenburns {
+  animation: mazed-kenburns 18s ease-in-out infinite alternate;
   will-change: transform;
 }
 
 /* Soft drifting glow behind the desktop hero — pure CSS, no image. */
-@keyframes batta-glow-drift {
+@keyframes mazed-glow-drift {
   0%   { transform: translate3d(-4%, -2%, 0) scale(1);    opacity: 0.65; }
   50%  { transform: translate3d(4%, 3%, 0)  scale(1.08); opacity: 0.95; }
   100% { transform: translate3d(-4%, -2%, 0) scale(1);    opacity: 0.65; }
 }
-.batta-hero-glow {
-  animation: batta-glow-drift 14s ease-in-out infinite;
+.mazed-hero-glow {
+  animation: mazed-glow-drift 14s ease-in-out infinite;
   will-change: transform, opacity;
 }
 
@@ -836,13 +836,13 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
    FocusRowHighlight stamps this class on mount and removes it after the
    keyframe finishes. Kept short so the row settles back into the list
    instead of competing with other UI for attention. */
-@keyframes batta-focus-ring-pulse {
+@keyframes mazed-focus-ring-pulse {
   0%   { box-shadow: 0 0 0 0 var(--gold-glow), 0 0 0 0 rgba(30,58,138,0); }
   35%  { box-shadow: 0 0 0 4px var(--gold-glow), 0 0 0 10px rgba(30,58,138,0.18); }
   100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; }
 }
-.batta-focus-ring {
-  animation: batta-focus-ring-pulse 2.4s ease-out;
+.mazed-focus-ring {
+  animation: mazed-focus-ring-pulse 2.4s ease-out;
   border-radius: var(--radius);
 }
 
@@ -852,8 +852,8 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
   50%      { opacity: 0.55; }
 }
 .skeleton,
-.batta-skeleton,
-.batta-skeleton-luxe {
+.mazed-skeleton,
+.mazed-skeleton-luxe {
   background: var(--surface-2);
   border-radius: var(--radius);
   animation: skeleton-pulse 1.6s ease-in-out infinite;
@@ -866,42 +866,42 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
    circle. Mobile keeps its detailed animated skeletons. */
 @media (min-width: 1024px) {
   .skeleton,
-  .batta-skeleton,
-  .batta-skeleton-luxe {
+  .mazed-skeleton,
+  .mazed-skeleton-luxe {
     animation: none !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .batta-blob,
-  .batta-marquee,
-  .batta-marquee-y,
-  .batta-marquee-reverse,
-  .batta-shimmer-text,
-  .batta-pulse-dot::after,
-  .batta-fade-up,
-  .batta-conic-spin,
-  .batta-kenburns,
-  .batta-hero-glow,
+  .mazed-blob,
+  .mazed-marquee,
+  .mazed-marquee-y,
+  .mazed-marquee-reverse,
+  .mazed-shimmer-text,
+  .mazed-pulse-dot::after,
+  .mazed-fade-up,
+  .mazed-conic-spin,
+  .mazed-kenburns,
+  .mazed-hero-glow,
   .pulse-gold,
-  .batta-splash-bar,
+  .mazed-splash-bar,
   .skeleton,
-  .batta-skeleton,
-  .batta-skeleton-luxe {
+  .mazed-skeleton,
+  .mazed-skeleton-luxe {
     animation: none !important;
   }
 }
 
 /* ── Admin kit tokens ───────────────────────────────────────────────────────
    The console is shared with Mazed Auto: the same components, the same class
-   names, different values. Auto is metallic gold on near-black; Batta is navy
-   on white, and these are Batta's own colours — the ones `.batta-tone-*` has
+   names, different values. Auto is metallic gold on near-black; Mazed Immo is navy
+   on white, and these are Mazed Immo's own colours — the ones `.mazed-tone-*` has
    used all along — so the ported console comes out looking like this product
    rather than like the other one.
 
    Contrast is why they cannot simply be copied. Auto's `--tone-ok` is #5cc98a,
    chosen to glow on #0a0a0a; on white it is a washed-out green that fails
-   contrast outright. Batta's emerald-700 is the same meaning at the other end
+   contrast outright. Mazed Immo's emerald-700 is the same meaning at the other end
    of the scale. */
 :root {
   --tone-ok:        #047857;                  /* emerald-700 */
@@ -918,13 +918,13 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
   --tone-info-ring: rgba(30, 58, 138, 0.28);  /* navy, matching --gold here */
 
   /* Row states. Auto washes rows with white over black; over white that is
-     invisible, so Batta washes with black. */
+     invisible, so Mazed Immo washes with black. */
   --row-hover:    rgba(0, 0, 0, 0.025);
   --row-focus:    rgba(0, 0, 0, 0.045);
   --row-selected: var(--gold-faint);
 
   /* Which way a pressed surface moves. Lifting off black reads as a press on
-     Auto; on white the same lift washes the surface out, so Batta dims. */
+     Auto; on white the same lift washes the surface out, so Mazed Immo dims. */
   --press-brightness: 0.96;
 }
 
@@ -972,12 +972,12 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
 
 /* ── Console skeleton shimmer ───────────────────────────────────────────────
    `.skel` is the admin console's placeholder, and it is deliberately NOT
-   `.batta-skeleton`: that class is switched off at lg+ (a full page load shows
+   `.mazed-skeleton`: that class is switched off at lg+ (a full page load shows
    one centred spinner there instead), and the console is a desktop surface
    where a route change must visibly move something.
 
    Auto lays a translucent WHITE highlight over its near-black base. That is
-   invisible here — white on white is nothing — so Batta's travelling highlight
+   invisible here — white on white is nothing — so Mazed Immo's travelling highlight
    is a translucent BLACK one. Same motion, opposite direction, which is the
    same trade the `--press-brightness` token makes. */
 .skel {

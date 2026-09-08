@@ -122,7 +122,7 @@ export async function AnnonceCard({
           {/* Top-leading — the category. Same pill the auction type used. */}
           {category && (
             <div className="absolute top-2.5 start-2.5">
-              <span className="batta-gold-fill inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
+              <span className="mazed-gold-fill inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
                 {category.label_fr}
               </span>
             </div>
@@ -136,7 +136,7 @@ export async function AnnonceCard({
 
           {/* Bottom-trailing — polished-brass arrow chip, rotates on hover. */}
           <div className="absolute bottom-2.5 end-2.5">
-            <span className="batta-gradient-gold inline-flex h-9 w-9 items-center justify-center rounded-full text-white ring-1 ring-black/5 shadow-[var(--shadow-gold)] transition-transform group-hover:scale-110 group-hover:rotate-45">
+            <span className="mazed-gradient-gold inline-flex h-9 w-9 items-center justify-center rounded-full text-white ring-1 ring-black/5 shadow-[var(--shadow-gold)] transition-transform group-hover:scale-110 group-hover:rotate-45">
               <ArrowUpRight className="size-4" strokeWidth={2.5} />
             </span>
           </div>
@@ -157,7 +157,7 @@ export async function AnnonceCard({
               {listing.title}
             </h3>
             {listing.reference && (
-              <span className="batta-tabular mt-0.5 shrink-0 font-mono text-[9px] font-bold tracking-[0.05em] text-subtle">
+              <span className="mazed-tabular mt-0.5 shrink-0 font-mono text-[9px] font-bold tracking-[0.05em] text-subtle">
                 {listing.reference}
               </span>
             )}
@@ -171,7 +171,7 @@ export async function AnnonceCard({
             ) : (
               <span
                 dir="ltr"
-                className="batta-tabular gradient-gold-text inline-flex items-baseline gap-1 text-base font-extrabold"
+                className="mazed-tabular gradient-gold-text inline-flex items-baseline gap-1 text-base font-extrabold"
               >
                 {formatTND(Number(listing.price), locale)}
                 <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
@@ -193,13 +193,13 @@ export async function AnnonceCard({
               <span className="truncate">{where}</span>
             </span>
             {Number.isFinite(area) && area > 0 && (
-              <span className="batta-tabular inline-flex shrink-0 items-center gap-1">
+              <span className="mazed-tabular inline-flex shrink-0 items-center gap-1">
                 <Ruler className="size-3" strokeWidth={2} />
                 {area} m²
               </span>
             )}
             {Number.isFinite(rooms) && rooms > 0 && (
-              <span className="batta-tabular inline-flex shrink-0 items-center gap-1">
+              <span className="mazed-tabular inline-flex shrink-0 items-center gap-1">
                 <BedDouble className="size-3" strokeWidth={2} />
                 S+{rooms}
               </span>

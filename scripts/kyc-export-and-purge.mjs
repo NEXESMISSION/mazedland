@@ -7,7 +7,7 @@
 // WHY. `kyc_submissions` holds 50 dossiers — CIN photographs, selfies, selfie
 // videos and financial proofs of 50 people. They were collected for one
 // purpose: an auction bidder had to be identifiable before they could be held
-// to a bid. Batta does not run auctions any more, and publishing or answering
+// to a bid. Mazed Immo does not run auctions any more, and publishing or answering
 // a fixed-price annonce requires no identity check.
 //
 // Holding government ID images for a flow that no longer exists is a liability

@@ -1,16 +1,16 @@
 /**
  * One status-pill vocabulary for the admin console. Replaces the
  * copy-pasted `inline-flex … rounded-full px-2.5 py-1 text-[9.5px]…`
- * blocks and the ad-hoc `batta-tone-*` lookups scattered across queues.
+ * blocks and the ad-hoc `mazed-tone-*` lookups scattered across queues.
  * Tones map to the semantic tokens so a "Payé" pill looks identical
  * whether it's on the payouts list or the deposits ledger.
  */
 export type BadgeTone = "ok" | "warn" | "bad" | "info" | "neutral";
 
 const TONES: Record<BadgeTone, string> = {
-  ok: "batta-tone-ok",
-  warn: "batta-tone-warn",
-  bad: "batta-tone-bad",
+  ok: "mazed-tone-ok",
+  warn: "mazed-tone-warn",
+  bad: "mazed-tone-bad",
   info: "bg-[var(--gold-faint)] text-[var(--gold)] ring-1 ring-[var(--gold)]/25",
   neutral: "bg-surface-2 text-muted ring-1 ring-border",
 };

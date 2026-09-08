@@ -12,7 +12,7 @@ import { log } from "@/lib/log";
  *
  * WHAT CHANGED. Every query here used to read `auctions` joined to
  * `properties`: live lots by `ends_at`, a "recently hammered" rail of
- * `winner_amount`, a count of scheduled lots. Batta does not sell at auction
+ * `winner_amount`, a count of scheduled lots. Mazed Immo does not sell at auction
  * any more, so a home page built on that data describes a product the visitor
  * cannot buy from. It now reads `listings` — the fixed-price catalogue — and
  * the rails above it render annonces.

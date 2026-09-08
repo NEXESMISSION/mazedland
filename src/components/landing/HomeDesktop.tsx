@@ -172,7 +172,7 @@ export async function HomeDesktop({
             <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[12px] font-bold shadow-sm">
               <span
                 aria-hidden
-                className="batta-pulse-dot size-2 rounded-full bg-[var(--accent)] text-[var(--accent)]/40"
+                className="mazed-pulse-dot size-2 rounded-full bg-[var(--accent)] text-[var(--accent)]/40"
               />
               <span className="uppercase tracking-[0.08em] text-[var(--accent)]">En ligne</span>
               <span className="text-muted">
@@ -207,7 +207,7 @@ export async function HomeDesktop({
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 href="/annonces"
-                className="batta-gold-fill inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[13px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
+                className="mazed-gold-fill inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[13px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
               >
                 Explorer les annonces
                 <ArrowUpRight className="size-4" strokeWidth={2.5} />
@@ -279,13 +279,13 @@ export async function HomeDesktop({
                 </span>
                 <div className="min-w-0">
                   <div className="flex items-baseline gap-1.5">
-                    <span className="batta-tabular gradient-gold-text text-[28px] font-extrabold leading-none">
+                    <span className="mazed-tabular gradient-gold-text text-[28px] font-extrabold leading-none">
                       {display}
                     </span>
                     {live && (
                       <span
                         aria-hidden
-                        className="batta-pulse-dot size-2 rounded-full bg-[var(--accent)] text-[var(--accent)]/40"
+                        className="mazed-pulse-dot size-2 rounded-full bg-[var(--accent)] text-[var(--accent)]/40"
                       />
                     )}
                   </div>
@@ -360,7 +360,7 @@ export async function HomeDesktop({
       <section className="mt-14">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <span className="batta-eyebrow">Parcourir</span>
+            <span className="mazed-eyebrow">Parcourir</span>
             <h3 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
               Trouvez votre bien
             </h3>
@@ -433,15 +433,15 @@ export async function HomeDesktop({
         </section>
       )}
 
-      {/* ─── POURQUOI BATTA — one consolidated trust + CTA band ───
+      {/* ─── POURQUOI MAZED IMMO — one consolidated trust + CTA band ───
               Replaces the old how-it-works / trust / activity / closing
               stack: a single navy value panel + the four trust pillars. */}
       <section className="mt-16">
         <div className="overflow-hidden rounded-3xl ring-1 ring-gold/25">
           <div className="grid grid-cols-12">
             {/* Value prop + CTA */}
-            <div className="batta-surface-navy-luxe relative col-span-5 flex flex-col justify-center p-10">
-              <span className="batta-eyebrow">{t("home.trustEyebrow")}</span>
+            <div className="mazed-surface-navy-luxe relative col-span-5 flex flex-col justify-center p-10">
+              <span className="mazed-eyebrow">{t("home.trustEyebrow")}</span>
               <h2 className="mt-3 text-[28px] font-extrabold leading-[1.12] tracking-tight">
                 {t("home.trustTitle")}
               </h2>
@@ -451,7 +451,7 @@ export async function HomeDesktop({
               <div className="mt-7 flex items-center gap-3">
                 <Link
                   href="/properties"
-                  className="batta-gold-fill inline-flex items-center gap-2 rounded-full px-5 py-3 text-[12.5px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
+                  className="mazed-gold-fill inline-flex items-center gap-2 rounded-full px-5 py-3 text-[12.5px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
                 >
                   {t("home.heroBrowseCta")}
                   <ArrowUpRight className="size-4" strokeWidth={2.5} />
@@ -469,7 +469,7 @@ export async function HomeDesktop({
             <div className="col-span-7 grid grid-cols-2 gap-px bg-border">
               {TRUST_PILLARS.map((p) => (
                 <div key={p.key} className="flex flex-col gap-2.5 bg-surface p-7">
-                  <span className="batta-monogram batta-monogram-filled size-11 text-gold">
+                  <span className="mazed-monogram mazed-monogram-filled size-11 text-gold">
                     <p.Icon className="size-4" strokeWidth={2.2} />
                   </span>
                   <div className="text-[14.5px] font-bold leading-tight text-foreground">
@@ -528,8 +528,8 @@ function RailHeader({
       <div className="min-w-0">
         {eyebrow && (
           <div className="mb-1.5 flex items-center gap-2">
-            <span className="batta-gold-rule-short" />
-            <span className={`batta-eyebrow ${isRTL ? "font-arabic tracking-[0.18em]" : ""}`}>
+            <span className="mazed-gold-rule-short" />
+            <span className={`mazed-eyebrow ${isRTL ? "font-arabic tracking-[0.18em]" : ""}`}>
               {eyebrow}
             </span>
           </div>

@@ -28,12 +28,12 @@ export default async function EditPopupPage({
 
   return (
     <div>
-      <span className="batta-eyebrow">Diffusion</span>
+      <span className="mazed-eyebrow">Diffusion</span>
       <h2 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">
         Modifier le popup
       </h2>
       <p className="mt-1.5 text-[12px] text-muted">
-        Slug : <span className="batta-tabular font-mono">{popup.slug}</span>
+        Slug : <span className="mazed-tabular font-mono">{popup.slug}</span>
       </p>
       <div className="mt-5">
         <PopupForm initial={popup} />

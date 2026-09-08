@@ -26,7 +26,7 @@ export const COLHEAD =
   "text-[10px] font-bold uppercase tracking-[0.13em] text-subtle";
 
 /** Numbers that line up in columns. */
-export const NUM = "batta-tabular tabular-nums";
+export const NUM = "mazed-tabular tabular-nums";
 
 /**
  * Row states. `selected` is the only place a filled background is allowed,

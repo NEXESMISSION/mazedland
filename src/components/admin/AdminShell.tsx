@@ -12,7 +12,7 @@ import { NavIcon } from "./kit/LinkPending";
 /**
  * Console navigation.
  *
- * Batta was an auction house. It is a classifieds platform now, and this rail
+ * Mazed Immo was an auction house. It is a classifieds platform now, and this rail
  * is where that decision becomes visible: the console is the same six
  * destinations Mazed Auto has, in the same order, plus Site.
  *
@@ -90,7 +90,7 @@ function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
     <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2.5">
       <Home className="size-4 text-[var(--gold)]" strokeWidth={2.2} />
       <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-foreground">
-        Batta<span className="text-[var(--gold)]"> Console</span>
+        Mazed Immo<span className="text-[var(--gold)]"> Console</span>
       </span>
     </Link>
   );
@@ -132,7 +132,7 @@ function NavList({
           <span className="truncate">{item.label}</span>
           {count > 0 && (
             <span
-              className={`batta-tabular ms-auto text-[11px] font-bold ${
+              className={`mazed-tabular ms-auto text-[11px] font-bold ${
                 active ? "text-[var(--gold)]" : "text-[var(--tone-warn)]"
               }`}
             >

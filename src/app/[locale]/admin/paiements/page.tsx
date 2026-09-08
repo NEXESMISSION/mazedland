@@ -155,11 +155,11 @@ export default async function AdminPaiementsPage({
         />
         <div className="hidden shrink-0 items-baseline gap-4 xl:flex">
           <span className={EYEBROW}>Ce mois</span>
-          <span className="batta-tabular text-[13px] font-semibold text-[var(--gold)]">
+          <span className="mazed-tabular text-[13px] font-semibold text-[var(--gold)]">
             {formatTND(revenueMonth, "fr")} TND
           </span>
           <span className={EYEBROW}>Total</span>
-          <span className="batta-tabular text-[13px] font-medium text-foreground">
+          <span className="mazed-tabular text-[13px] font-medium text-foreground">
             {formatTND(revenueTotal, "fr")} TND
           </span>
         </div>
@@ -220,10 +220,10 @@ export default async function AdminPaiementsPage({
                         </span>
                       </span>
                       <span className="shrink-0 text-end">
-                        <span className="batta-tabular block text-[12.5px] text-foreground/90">
+                        <span className="mazed-tabular block text-[12.5px] text-foreground/90">
                           {formatTND(Number(r.amount) || 0, "fr")} TND
                         </span>
-                        <span className="batta-tabular mt-0.5 block text-[11px] text-subtle">
+                        <span className="mazed-tabular mt-0.5 block text-[11px] text-subtle">
                           {age(r.receipt_uploaded_at ?? r.created_at)}
                         </span>
                       </span>

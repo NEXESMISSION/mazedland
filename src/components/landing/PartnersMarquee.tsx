@@ -25,10 +25,10 @@ export function PartnersMarquee() {
     <section>
       <div className="relative overflow-hidden py-2">
         {/* Edge fades shared across both rows. */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-batta-paper to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-batta-paper to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-mazed-paper to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-mazed-paper to-transparent" />
 
-        <ul className="batta-marquee">
+        <ul className="mazed-marquee">
           {top.map((s, i) => (
             <SegmentChip key={`top-a-${i}`} {...s} />
           ))}
@@ -37,7 +37,7 @@ export function PartnersMarquee() {
           ))}
         </ul>
 
-        <ul className="batta-marquee-reverse mt-1.5">
+        <ul className="mazed-marquee-reverse mt-1.5">
           {bottom.map((s, i) => (
             <SegmentChip key={`btm-a-${i}`} {...s} />
           ))}
@@ -61,13 +61,13 @@ function SegmentChip({
 }) {
   return (
     <li
-      className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-2xl border border-batta-gold/20 bg-batta-surface px-3 py-2 ltr:me-2.5 rtl:ms-2.5"
+      className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-2xl border border-mazed-gold/20 bg-mazed-surface px-3 py-2 ltr:me-2.5 rtl:ms-2.5"
       aria-hidden={ariaHidden}
     >
-      <span className="inline-flex size-7 items-center justify-center rounded-lg border border-batta-gold/30 bg-batta-surface-2 text-batta-gold">
+      <span className="inline-flex size-7 items-center justify-center rounded-lg border border-mazed-gold/30 bg-mazed-surface-2 text-mazed-gold">
         <Icon className="size-3.5" />
       </span>
-      <span className="text-xs font-semibold text-batta-cream">{label}</span>
+      <span className="text-xs font-semibold text-mazed-cream">{label}</span>
     </li>
   );
 }

@@ -167,7 +167,7 @@ export async function RelatedListings({
     <section className="mt-10 border-t border-border pt-7">
       <div className="flex items-end justify-between gap-3 px-4 lg:px-6">
         <div>
-          <span className="batta-eyebrow">Ça pourrait vous intéresser</span>
+          <span className="mazed-eyebrow">Ça pourrait vous intéresser</span>
           <h2 className="mt-1 text-[19px] font-extrabold tracking-tight text-foreground lg:text-[22px]">
             Annonces similaires
           </h2>
@@ -246,7 +246,7 @@ function Card({
         <h3 className="mt-0.5 line-clamp-2 break-words text-[13px] font-bold leading-snug text-foreground">
           {listing.title}
         </h3>
-        <p className="batta-tabular mt-1 text-[14px] font-extrabold text-foreground">
+        <p className="mazed-tabular mt-1 text-[14px] font-extrabold text-foreground">
           {listing.price_on_request || listing.price == null
             ? "Sur demande"
             : `${formatTND(Number(listing.price), locale)} TND`}

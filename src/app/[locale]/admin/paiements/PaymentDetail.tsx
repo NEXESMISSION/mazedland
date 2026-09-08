@@ -90,7 +90,7 @@ export function PaymentDetail({
           File
         </Link>
         <div className="flex items-baseline gap-3">
-          <h1 className="batta-tabular text-[19px] font-semibold tracking-tight text-foreground">
+          <h1 className="mazed-tabular text-[19px] font-semibold tracking-tight text-foreground">
             {formatTND(p.amount, "fr")} TND
           </h1>
           <StatusPill status={p.status} />
@@ -133,7 +133,7 @@ export function PaymentDetail({
           <h2 className={EYEBROW}>Le paiement</h2>
           <dl className="mt-2">
             <Row label="Montant">
-              <span className="batta-tabular">{formatTND(p.amount, "fr")} TND</span>
+              <span className="mazed-tabular">{formatTND(p.amount, "fr")} TND</span>
             </Row>
             <Row label="Pour">{p.productName ?? paymentKindLabel(p.kind)}</Row>
             <Row label="Méthode">{PROVIDER_LABEL[p.provider] ?? p.provider}</Row>

@@ -82,7 +82,7 @@ export function AdminQueryBar({
         ))}
       </div>
 
-      <span className="batta-tabular ms-auto text-[12px] text-muted">
+      <span className="mazed-tabular ms-auto text-[12px] text-muted">
         {total.toLocaleString("fr-FR")} résultat{total > 1 ? "s" : ""}
       </span>
     </div>

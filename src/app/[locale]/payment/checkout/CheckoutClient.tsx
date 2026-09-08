@@ -387,7 +387,7 @@ export function CheckoutClient({
               {listing.title}
             </div>
           )}
-          <div className="batta-tabular gradient-gold-text mt-3 text-[40px] font-extrabold leading-none">
+          <div className="mazed-tabular gradient-gold-text mt-3 text-[40px] font-extrabold leading-none">
             {formatTND(amount, locale)}
             <span className="ms-1 text-[12px] font-bold uppercase text-[var(--foreground-muted)]">
               TND
@@ -475,7 +475,7 @@ export function CheckoutClient({
                     <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-[var(--foreground-muted)]">
                       {field.label}
                     </div>
-                    <div className={cn("mt-0.5 text-[14px] font-bold text-foreground break-words", field.mono && "batta-tabular")}>
+                    <div className={cn("mt-0.5 text-[14px] font-bold text-foreground break-words", field.mono && "mazed-tabular")}>
                       {field.value}
                     </div>
                   </div>

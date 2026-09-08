@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { checkSupabaseRef, assertSupabaseRef } from "./guard";
 
 // Audit #11 — a regression gate for the DB-identity guard (the fix for the
-// "batta served the car database" incident). If the guard is ever weakened or
+// "immo served the car database" incident). If the guard is ever weakened or
 // the committed expected-ref is blanked, these fail in CI.
 
 const urlFor = (ref: string) => `https://${ref}.supabase.co`;

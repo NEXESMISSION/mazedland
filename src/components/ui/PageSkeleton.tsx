@@ -10,7 +10,7 @@
  * a click sat there doing nothing until the server had rendered the whole next
  * page.
  *
- * This is a deliberate slice of Auto's file, not the whole thing. Batta already
+ * This is a deliberate slice of Auto's file, not the whole thing. Mazed Immo already
  * has richer public-page skeletons in `Skeleton.tsx` (`AdminTableSkeleton`,
  * `SkeletonDetailPage`, …); what it lacked was the console shape the ported
  * admin uses. Porting the public ones too would have given the repo two

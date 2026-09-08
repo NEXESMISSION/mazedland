@@ -3,7 +3,7 @@ import { LegalPage } from "@/components/legal/LegalPage";
 import { PrivacyContent } from "@/components/legal/LegalContent";
 
 export const metadata: Metadata = {
-  title: "Politique de confidentialité — Batta.tn",
+  title: "Politique de confidentialité — Mazed Immo",
 };
 
 // Pure static content — prerender at build and serve from the edge CDN.

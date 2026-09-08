@@ -35,7 +35,7 @@ export function WaitlistForm() {
 
   if (status === "success") {
     return (
-      <div className="batta-tone-ok rounded-xl px-4 py-6">
+      <div className="mazed-tone-ok rounded-xl px-4 py-6">
         <CheckCircle2 className="size-7" strokeWidth={2.2} />
         <p className="mt-2 font-semibold">
           {locale === "ar"
@@ -70,12 +70,12 @@ export function WaitlistForm() {
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="batta-btn-luxe tap-target px-6 py-3 text-[13px] disabled:opacity-50"
+        className="mazed-btn-luxe tap-target px-6 py-3 text-[13px] disabled:opacity-50"
       >
         {status === "submitting" ? "…" : t("joinWaitlist")}
       </button>
       {status === "error" && (
-        <p className="batta-tone-bad sm:col-span-3 rounded-lg px-3 py-2 text-sm">
+        <p className="mazed-tone-bad sm:col-span-3 rounded-lg px-3 py-2 text-sm">
           {locale === "ar"
             ? "حدث خطأ. حاول مرة أخرى."
             : locale === "fr"

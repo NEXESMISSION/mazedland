@@ -46,10 +46,10 @@ export function ContactReveal({ listingId }: { listingId: string }) {
       <div className="space-y-2">
         <a
           href={`tel:${contact.phone}`}
-          className="batta-btn-luxe tap-target flex w-full items-center justify-center gap-2 px-5 py-3.5 text-[15px]"
+          className="mazed-btn-luxe tap-target flex w-full items-center justify-center gap-2 px-5 py-3.5 text-[15px]"
         >
           <Phone className="size-4" strokeWidth={2.5} />
-          <span className="batta-tabular">{contact.phone}</span>
+          <span className="mazed-tabular">{contact.phone}</span>
         </a>
         <a
           href={`https://wa.me/${wa}`}
@@ -61,7 +61,7 @@ export function ContactReveal({ listingId }: { listingId: string }) {
           WhatsApp
         </a>
         <p className="text-center text-[11px] text-muted">
-          Batta met en relation, sans intervenir dans la vente. Visitez le bien et vérifiez le
+          Mazed Immo met en relation, sans intervenir dans la vente. Visitez le bien et vérifiez le
           titre de propriété avant tout versement.
         </p>
       </div>
@@ -74,7 +74,7 @@ export function ContactReveal({ listingId }: { listingId: string }) {
         type="button"
         onClick={reveal}
         disabled={busy}
-        className="batta-btn-luxe tap-target flex w-full items-center justify-center gap-2 px-5 py-3.5 text-[15px] disabled:opacity-60"
+        className="mazed-btn-luxe tap-target flex w-full items-center justify-center gap-2 px-5 py-3.5 text-[15px] disabled:opacity-60"
       >
         {busy ? <Loader2 className="size-4 animate-spin" /> : <Phone className="size-4" strokeWidth={2.5} />}
         Afficher le numéro

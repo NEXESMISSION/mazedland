@@ -145,7 +145,7 @@ export async function POST(
   }
 
   // ── 2a. Priced at zero: free on purpose ───────────────────────────────────
-  // Nothing is priced at zero on Batta today, but the case must be handled
+  // Nothing is priced at zero on Mazed Immo today, but the case must be handled
   // before it is: a payment row for 0 TND would send the seller to a checkout
   // to upload a receipt for nothing, and leave the annonce stuck in
   // `pending_payment` waiting for an admin to capture an empty payment. A free

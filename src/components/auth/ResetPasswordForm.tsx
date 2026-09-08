@@ -93,7 +93,7 @@ export function ResetPasswordForm() {
 
   if (ready === "invalid") {
     return (
-      <div className="batta-tone-bad rounded-lg px-3 py-3 text-center text-xs">
+      <div className="mazed-tone-bad rounded-lg px-3 py-3 text-center text-xs">
         Lien invalide ou expiré.{" "}
         {/* i18n Link, not a bare href: `/fr/forgot-password` hardcoded the
             locale, so an Arabic visitor whose reset link had expired was sent
@@ -108,14 +108,14 @@ export function ResetPasswordForm() {
 
   if (done) {
     return (
-      <div className="batta-frame-gold p-6 text-center">
-        <span className="batta-monogram batta-monogram-filled mx-auto mb-3 size-12 text-[18px]">
+      <div className="mazed-frame-gold p-6 text-center">
+        <span className="mazed-monogram mazed-monogram-filled mx-auto mb-3 size-12 text-[18px]">
           <CheckCircle2 className="size-5" strokeWidth={1.75} />
         </span>
-        <h2 className="batta-serif text-[16px] font-semibold text-batta-cream">
+        <h2 className="mazed-serif text-[16px] font-semibold text-mazed-cream">
           Mot de passe mis à jour
         </h2>
-        <p className="mt-2 text-[12.5px] text-batta-cream/75">
+        <p className="mt-2 text-[12.5px] text-mazed-cream/75">
           Redirection vers la page de connexion…
         </p>
       </div>
@@ -125,7 +125,7 @@ export function ResetPasswordForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <label className="block">
-        <span className="batta-eyebrow text-[10px]">Nouveau mot de passe (min 8)</span>
+        <span className="mazed-eyebrow text-[10px]">Nouveau mot de passe (min 8)</span>
         <input
           type="password"
           required
@@ -133,27 +133,27 @@ export function ResetPasswordForm() {
           autoFocus
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+          className="mt-1.5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-2.5 text-sm text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
         />
       </label>
       <label className="block">
-        <span className="batta-eyebrow text-[10px]">Confirmer</span>
+        <span className="mazed-eyebrow text-[10px]">Confirmer</span>
         <input
           type="password"
           required
           minLength={8}
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+          className="mt-1.5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-2.5 text-sm text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
         />
       </label>
       {error && (
-        <p role="alert" aria-live="assertive" className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
+        <p role="alert" aria-live="assertive" className="mazed-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
       )}
       <button
         type="submit"
         disabled={isPending}
-        className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
+        className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
         {isPending ? "Mise à jour…" : "Mettre à jour le mot de passe"}
       </button>

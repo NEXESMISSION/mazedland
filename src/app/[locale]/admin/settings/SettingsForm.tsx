@@ -129,7 +129,7 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
             type="date"
             value={v.deposit.free_until}
             onChange={(e) => patch("deposit", { ...v.deposit, free_until: e.target.value })}
-            className="mt-1 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-3 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+            className="mt-1 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-3 py-2.5 text-sm text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
           />
           <span className="mt-1 block text-[10.5px] text-[var(--foreground-muted)]">
             Pendant cette période, enchérir est gratuit pour tout le monde.
@@ -137,7 +137,7 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
               <button
                 type="button"
                 onClick={() => patch("deposit", { ...v.deposit, free_until: "" })}
-                className="ms-1 font-bold text-batta-gold-bright underline"
+                className="ms-1 font-bold text-mazed-gold-bright underline"
               >
                 Effacer
               </button>
@@ -226,7 +226,7 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
         <button
           type="submit"
           disabled={isPending}
-          className="batta-btn-luxe tap-target inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-[13.5px] disabled:opacity-50"
+          className="mazed-btn-luxe tap-target inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-[13.5px] disabled:opacity-50"
         >
           {isPending ? <Loader2 className="size-4 animate-spin" /> : saved ? <Check className="size-4" strokeWidth={2.5} /> : <Save className="size-4" strokeWidth={2.5} />}
           {isPending ? "Enregistrement…" : saved ? "Enregistré" : "Enregistrer"}
@@ -288,9 +288,9 @@ function FeeRow({
   onValue: (n: number) => void;
 }) {
   return (
-    <div className="rounded-xl border border-batta-gold/20 bg-batta-surface-2 p-3">
-      <div className="text-[12px] font-bold text-batta-cream">{label}</div>
-      <div className="mt-2 inline-flex rounded-lg bg-batta-surface p-0.5 ring-1 ring-batta-gold/20">
+    <div className="rounded-xl border border-mazed-gold/20 bg-mazed-surface-2 p-3">
+      <div className="text-[12px] font-bold text-mazed-cream">{label}</div>
+      <div className="mt-2 inline-flex rounded-lg bg-mazed-surface p-0.5 ring-1 ring-mazed-gold/20">
         {modes.map((m) => (
           <button
             key={m}
@@ -299,8 +299,8 @@ function FeeRow({
             className={
               "rounded-md px-3 py-1.5 text-[11px] font-bold transition " +
               (mode === m
-                ? "bg-batta-gold text-white"
-                : "text-foreground/70 hover:text-batta-gold-bright")
+                ? "bg-mazed-gold text-white"
+                : "text-foreground/70 hover:text-mazed-gold-bright")
             }
           >
             {MODE_LABEL[m]}
@@ -308,7 +308,7 @@ function FeeRow({
         ))}
       </div>
       {mode !== "free" && (
-        <div className="mt-2 flex items-stretch overflow-hidden rounded-lg border border-batta-gold/25 bg-batta-surface focus-within:border-batta-gold">
+        <div className="mt-2 flex items-stretch overflow-hidden rounded-lg border border-mazed-gold/25 bg-mazed-surface focus-within:border-mazed-gold">
           <input
             type="number"
             step={mode === "percent" ? "0.5" : "0.01"}
@@ -316,7 +316,7 @@ function FeeRow({
             max={mode === "percent" ? 100 : undefined}
             value={Number.isFinite(value) ? value : 0}
             onChange={(e) => onValue(Number(e.target.value) || 0)}
-            className="batta-tabular flex-1 bg-transparent px-3 py-2 text-sm text-batta-cream focus:outline-none"
+            className="mazed-tabular flex-1 bg-transparent px-3 py-2 text-sm text-mazed-cream focus:outline-none"
           />
           <span className="inline-flex items-center px-3 text-[11px] font-bold text-[var(--foreground-muted)]">
             {mode === "percent" ? "%" : "TND"}
@@ -338,19 +338,19 @@ function PromoRow({
   onChange: (c: { enabled: boolean; value: number; duration_days: number }) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-batta-gold/20 bg-batta-surface-2 p-3">
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-mazed-gold/20 bg-mazed-surface-2 p-3">
       <label className="inline-flex cursor-pointer items-center gap-2">
         <input
           type="checkbox"
           checked={cfg.enabled}
           onChange={(e) => onChange({ ...cfg, enabled: e.target.checked })}
-          className="size-4 accent-batta-gold-bright"
+          className="size-4 accent-mazed-gold-bright"
         />
-        <span className="text-[12px] font-semibold text-batta-cream">{label}</span>
+        <span className="text-[12px] font-semibold text-mazed-cream">{label}</span>
       </label>
       <div className="ms-auto flex items-center gap-2">
         {/* Price */}
-        <div className="flex items-stretch overflow-hidden rounded-lg border border-batta-gold/25 bg-batta-surface focus-within:border-batta-gold">
+        <div className="flex items-stretch overflow-hidden rounded-lg border border-mazed-gold/25 bg-mazed-surface focus-within:border-mazed-gold">
           <input
             type="number"
             step="0.01"
@@ -358,13 +358,13 @@ function PromoRow({
             disabled={!cfg.enabled}
             value={Number.isFinite(cfg.value) ? cfg.value : 0}
             onChange={(e) => onChange({ ...cfg, value: Number(e.target.value) || 0 })}
-            className="batta-tabular w-20 bg-transparent px-3 py-2 text-sm text-batta-cream focus:outline-none disabled:opacity-40"
+            className="mazed-tabular w-20 bg-transparent px-3 py-2 text-sm text-mazed-cream focus:outline-none disabled:opacity-40"
             aria-label={`${label} — prix`}
           />
           <span className="inline-flex items-center px-2.5 text-[11px] font-bold text-[var(--foreground-muted)]">TND</span>
         </div>
         {/* Active duration in days */}
-        <div className="flex items-stretch overflow-hidden rounded-lg border border-batta-gold/25 bg-batta-surface focus-within:border-batta-gold">
+        <div className="flex items-stretch overflow-hidden rounded-lg border border-mazed-gold/25 bg-mazed-surface focus-within:border-mazed-gold">
           <input
             type="number"
             step="1"
@@ -373,7 +373,7 @@ function PromoRow({
             disabled={!cfg.enabled}
             value={Number.isFinite(cfg.duration_days) ? cfg.duration_days : 30}
             onChange={(e) => onChange({ ...cfg, duration_days: Math.max(1, Math.min(365, Math.floor(Number(e.target.value) || 0))) })}
-            className="batta-tabular w-16 bg-transparent px-3 py-2 text-sm text-batta-cream focus:outline-none disabled:opacity-40"
+            className="mazed-tabular w-16 bg-transparent px-3 py-2 text-sm text-mazed-cream focus:outline-none disabled:opacity-40"
             aria-label={`${label} — durée en jours`}
           />
           <span className="inline-flex items-center px-2.5 text-[11px] font-bold text-[var(--foreground-muted)]">jours</span>
@@ -392,10 +392,10 @@ function MinutesField({
   onChange: (n: number) => void;
 }) {
   return (
-    <div className="rounded-xl border border-batta-gold/20 bg-batta-surface-2 p-3">
-      <div className="text-[12px] font-bold text-batta-cream">{label}</div>
+    <div className="rounded-xl border border-mazed-gold/20 bg-mazed-surface-2 p-3">
+      <div className="text-[12px] font-bold text-mazed-cream">{label}</div>
       {sub && <p className="mt-0.5 text-[10.5px] text-[var(--foreground-muted)]">{sub}</p>}
-      <div className="mt-2 flex items-stretch overflow-hidden rounded-lg border border-batta-gold/25 bg-batta-surface focus-within:border-batta-gold">
+      <div className="mt-2 flex items-stretch overflow-hidden rounded-lg border border-mazed-gold/25 bg-mazed-surface focus-within:border-mazed-gold">
         <input
           type="number"
           step="1"
@@ -403,7 +403,7 @@ function MinutesField({
           max={120}
           value={Number.isFinite(value) ? value : 0}
           onChange={(e) => onChange(Math.max(0, Math.min(120, Math.floor(Number(e.target.value) || 0))))}
-          className="batta-tabular flex-1 bg-transparent px-3 py-2 text-sm text-batta-cream focus:outline-none"
+          className="mazed-tabular flex-1 bg-transparent px-3 py-2 text-sm text-mazed-cream focus:outline-none"
           aria-label={label}
         />
         <span className="inline-flex items-center px-3 text-[11px] font-bold text-[var(--foreground-muted)]">
@@ -423,10 +423,10 @@ function DaysField({
   onChange: (n: number) => void;
 }) {
   return (
-    <div className="rounded-xl border border-batta-gold/20 bg-batta-surface-2 p-3">
-      <div className="text-[12px] font-bold text-batta-cream">{label}</div>
+    <div className="rounded-xl border border-mazed-gold/20 bg-mazed-surface-2 p-3">
+      <div className="text-[12px] font-bold text-mazed-cream">{label}</div>
       {sub && <p className="mt-0.5 text-[10.5px] text-[var(--foreground-muted)]">{sub}</p>}
-      <div className="mt-2 flex items-stretch overflow-hidden rounded-lg border border-batta-gold/25 bg-batta-surface focus-within:border-batta-gold">
+      <div className="mt-2 flex items-stretch overflow-hidden rounded-lg border border-mazed-gold/25 bg-mazed-surface focus-within:border-mazed-gold">
         <input
           type="number"
           step="1"
@@ -434,7 +434,7 @@ function DaysField({
           max={90}
           value={Number.isFinite(value) ? value : 14}
           onChange={(e) => onChange(Math.max(1, Math.min(90, Math.floor(Number(e.target.value) || 1))))}
-          className="batta-tabular flex-1 bg-transparent px-3 py-2 text-sm text-batta-cream focus:outline-none"
+          className="mazed-tabular flex-1 bg-transparent px-3 py-2 text-sm text-mazed-cream focus:outline-none"
           aria-label={label}
         />
         <span className="inline-flex items-center px-3 text-[11px] font-bold text-[var(--foreground-muted)]">
@@ -476,7 +476,7 @@ function TextField({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={(mono ? "font-mono " : "") + "mt-1 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-3 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"}
+        className={(mono ? "font-mono " : "") + "mt-1 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-3 py-2.5 text-sm text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"}
       />
     </label>
   );

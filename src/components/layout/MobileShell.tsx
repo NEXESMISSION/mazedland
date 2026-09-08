@@ -59,7 +59,7 @@ export function MobileShell({ children }: { children: React.ReactNode }) {
       <TopBar />
       <DesktopNav />
       <PullToRefresh>
-        <main id="main-content" tabIndex={-1} className="batta-shell-main">{children}</main>
+        <main id="main-content" tabIndex={-1} className="mazed-shell-main">{children}</main>
       </PullToRefresh>
       <BottomTabBar />
       {/* The KYC nudge stood here. It pushed the visitor towards identity

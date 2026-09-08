@@ -73,7 +73,7 @@ export default async function AdminPopupsPage() {
         actions={
           <Link
             href={"/admin/popups/new" as never}
-            className="batta-btn-luxe tap-target inline-flex shrink-0 items-center gap-1.5 px-4 py-2 text-[12px]"
+            className="mazed-btn-luxe tap-target inline-flex shrink-0 items-center gap-1.5 px-4 py-2 text-[12px]"
           >
             <PlusCircle className="size-4" strokeWidth={2.2} />
             Nouveau popup
@@ -126,7 +126,7 @@ function StatTile({
   return (
     <div className="relative overflow-hidden rounded-2xl bg-surface p-4 ring-1 ring-border">
       <span aria-hidden className={`absolute left-3 top-3 size-1.5 rounded-full ${accent}`} />
-      <div className="batta-tabular mt-3 text-[28px] font-extrabold leading-none">
+      <div className="mazed-tabular mt-3 text-[28px] font-extrabold leading-none">
         {value.toLocaleString("fr-FR")}
       </div>
       <div className="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted">
@@ -155,7 +155,7 @@ function PopupRow({
         href={{ pathname: "/admin/popups/[id]/edit", params: { id: popup.id } } as never}
         className="flex items-center gap-3 rounded-2xl bg-surface p-4 ring-1 ring-border transition hover:ring-gold-soft/50"
       >
-        <span className="batta-monogram size-10 shrink-0">
+        <span className="mazed-monogram size-10 shrink-0">
           <MessageSquare className="size-4" strokeWidth={2.2} />
         </span>
         <div className="min-w-0 flex-1">
@@ -180,7 +180,7 @@ function PopupRow({
               </>
             )}
           </div>
-          <div className="batta-tabular mt-1.5 flex flex-wrap items-center gap-3 text-[10.5px] text-muted">
+          <div className="mazed-tabular mt-1.5 flex flex-wrap items-center gap-3 text-[10.5px] text-muted">
             <span className="inline-flex items-center gap-1">
               <Eye className="size-3" strokeWidth={2.2} />
               {stats.impressions.toLocaleString("fr-FR")}
@@ -228,9 +228,9 @@ function VariantPill({ variant }: { variant: PopupVariant }) {
 
 function EmptyState() {
   return (
-    <div className="batta-frame-gold relative mt-2 px-6 py-10 text-center">
+    <div className="mazed-frame-gold relative mt-2 px-6 py-10 text-center">
       <div className="relative">
-        <span className="batta-monogram batta-monogram-filled mx-auto mb-4 size-12 text-[20px]">
+        <span className="mazed-monogram mazed-monogram-filled mx-auto mb-4 size-12 text-[20px]">
           <MessageSquare className="size-5" strokeWidth={2} />
         </span>
         <p className="text-[18px] font-bold text-foreground">Aucun popup configuré.</p>
@@ -240,7 +240,7 @@ function EmptyState() {
         </p>
         <Link
           href={"/admin/popups/new" as never}
-          className="batta-btn-luxe tap-target mt-5 inline-flex items-center gap-1.5 px-5 py-2.5 text-[12.5px]"
+          className="mazed-btn-luxe tap-target mt-5 inline-flex items-center gap-1.5 px-5 py-2.5 text-[12.5px]"
         >
           <PlusCircle className="size-4" strokeWidth={2.2} />
           Nouveau popup

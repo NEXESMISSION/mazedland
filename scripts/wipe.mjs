@@ -1,5 +1,5 @@
 // ============================================================================
-// Batta.tn — destructive DB wipe for testing.
+// Mazed Immo — destructive DB wipe for testing.
 //
 // Clears listing / auction / payment / notification / KYC data across ALL
 // users. Keeps auth.users + the profiles row, but resets each profile's
@@ -106,8 +106,8 @@ for (const [t, col] of tables) {
 // as the seed admin (app_metadata.role='admin') and run the update
 // through that authed session.
 console.log("→ Resetting profiles KYC…");
-const ADMIN_EMAIL = "admin@batta.tn";
-const ADMIN_PASSWORD = "Batta!2026";
+const ADMIN_EMAIL = "admin@mazedimmo.tn";
+const ADMIN_PASSWORD = "Mazed Immo!2026";
 
 // Make sure the admin exists with admin app_metadata + the known
 // password. If a prior run set a different password, reset it here.
@@ -119,7 +119,7 @@ if (!admin) {
     password: ADMIN_PASSWORD,
     email_confirm: true,
     app_metadata: { role: "admin" },
-    user_metadata: { full_name: "Batta Admin", role: "admin" },
+    user_metadata: { full_name: "Mazed Immo Admin", role: "admin" },
   });
   if (error) {
     console.error(`  ! could not create admin user: ${error.message}`);

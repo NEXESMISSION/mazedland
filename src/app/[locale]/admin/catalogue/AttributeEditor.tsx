@@ -117,7 +117,7 @@ export function AttributeEditor({
                     </span>
                   </span>
                   {a.usedBy > 0 && (
-                    <span className="batta-tabular shrink-0 text-[11px] text-subtle">
+                    <span className="mazed-tabular shrink-0 text-[11px] text-subtle">
                       {a.usedBy} annonce{a.usedBy === 1 ? "" : "s"}
                     </span>
                   )}

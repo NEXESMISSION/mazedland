@@ -75,7 +75,7 @@ export const KIND_CONFIG: KindDef[] = [
       { key: "link", label: "Lien", type: "url", maxLength: 500, placeholder: "/auctions/abc" },
       { key: "cta_label", label: "Libellé du bouton", type: "text", maxLength: 60, placeholder: "Voir l'offre" },
       { key: "expires_at", label: "Expire le", type: "datetime", helper: "L'offre n'est plus valable après cette date." },
-      { key: "promo_code", label: "Code promo", type: "text", maxLength: 40, placeholder: "BATTA2026" },
+      { key: "promo_code", label: "Code promo", type: "text", maxLength: 40, placeholder: "MAZED2026" },
     ],
   },
   {

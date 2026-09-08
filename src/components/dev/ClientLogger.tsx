@@ -39,9 +39,9 @@ export function ClientLogger() {
   // fetch() patch — single completion line per call.
   useEffect(() => {
     const l = log.scope("cli");
-    type Patched = Window & { __batta_fetch_patched?: boolean };
-    if ((window as Patched).__batta_fetch_patched) return;
-    (window as Patched).__batta_fetch_patched = true;
+    type Patched = Window & { __mazed_fetch_patched?: boolean };
+    if ((window as Patched).__mazed_fetch_patched) return;
+    (window as Patched).__mazed_fetch_patched = true;
 
     const original = window.fetch.bind(window);
     window.fetch = async (input, init) => {

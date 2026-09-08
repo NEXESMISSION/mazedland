@@ -1,7 +1,7 @@
 {
   "brand": {
-    "name": "Batta",
-    "domain": "Batta.tn",
+    "name": "Mazed Immo",
+    "domain": "Mazed Immo",
     "tagline": "Petites annonces immobilières — terrains, maisons et locaux partout en Tunisie",
     "slogan": "Le prix affiché. Le vendeur au bout du fil."
   },
@@ -52,7 +52,7 @@
     "browseCta": "Explorer les biens"
   },
   "accountPage": {
-    "guestTitle": "Bienvenue sur Batta",
+    "guestTitle": "Bienvenue sur Mazed Immo",
     "guestBody": "Connectez-vous pour continuer.",
     "login": "Se connecter",
     "signup": "Créer un compte",
@@ -105,7 +105,7 @@
     "inspectorTitle": "Un réseau d'experts dans chaque gouvernorat",
     "inspectorBody": "Un expert vérifie chaque bien avant l'enchère.",
     "inspectorCta": "Rejoindre comme expert agréé",
-    "audienceTitle": "À qui s'adresse Batta ?",
+    "audienceTitle": "À qui s'adresse Mazed Immo ?",
     "audience": {
       "buyersTitle": "Aux acheteurs",
       "buyersBody": "Des biens sous le marché, depuis votre mobile.",
@@ -121,7 +121,7 @@
     "emailPlaceholder": "Votre email",
     "phonePlaceholder": "Téléphone (optionnel)",
     "joinWaitlist": "Je m'inscris",
-    "footerLegal": "© 2026 Batta. Tous droits réservés.",
+    "footerLegal": "© 2026 Mazed Immo. Tous droits réservés.",
     "footerLinks": {
       "terms": "Conditions d'utilisation",
       "privacy": "Politique de confidentialité",
@@ -203,7 +203,7 @@
     "step3Eyebrow": "Publier",
     "step3Title": "Vendez votre bien",
     "step3Body": "Vos photos, votre prix. En ligne après vérification.",
-    "trustEyebrow": "Pourquoi Batta",
+    "trustEyebrow": "Pourquoi Mazed Immo",
     "trustTitle": "Une plateforme pensée pour vous protéger",
     "trustEscrowTitle": "Annonces vérifiées",
     "trustEscrowBody": "Chaque annonce est contrôlée avant publication.",

@@ -264,7 +264,7 @@ export default async function AnnoncesPage({
                       {r.title}
                     </h2>
 
-                    <p className="batta-tabular mt-1.5 text-[15px] font-extrabold text-foreground">
+                    <p className="mazed-tabular mt-1.5 text-[15px] font-extrabold text-foreground">
                       {r.price_on_request || r.price == null
                         ? "Prix sur demande"
                         : `${formatTND(Number(r.price), locale)} TND`}

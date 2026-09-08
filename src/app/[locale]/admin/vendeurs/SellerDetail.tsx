@@ -122,12 +122,12 @@ export function SellerDetail({
             </Row>
             <Row label="Paiements">
               {s.payments.captured} validé{s.payments.captured === 1 ? "" : "s"} ·{" "}
-              <span className="batta-tabular">{s.payments.amount.toFixed(2)} TND</span>
+              <span className="mazed-tabular">{s.payments.amount.toFixed(2)} TND</span>
             </Row>
             <Row label="Publications restantes">
               {s.credits.total > 0 ? (
                 <>
-                  <span className="batta-tabular">
+                  <span className="mazed-tabular">
                     {s.credits.remaining} / {s.credits.total}
                   </span>
                   {s.credits.expiresAt && (

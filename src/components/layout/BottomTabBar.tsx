@@ -94,7 +94,7 @@ export function BottomTabBar() {
       aria-label="Navigation principale"
       className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-center border-t border-border bg-white/90 backdrop-blur-xl shadow-[0_-4px_20px_-8px_rgba(15,23,42,0.06)] lg:hidden"
       style={{
-        height: "calc(var(--batta-bottombar-h) + env(safe-area-inset-bottom))",
+        height: "calc(var(--mazed-bottombar-h) + env(safe-area-inset-bottom))",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
@@ -115,7 +115,7 @@ export function BottomTabBar() {
               aria-current={active ? "page" : undefined}
             >
               <span
-                className={`batta-gradient-gold relative inline-flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full text-white shadow-[var(--shadow-gold)] ring-4 ring-white transition-transform active:scale-95 ${
+                className={`mazed-gradient-gold relative inline-flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full text-white shadow-[var(--shadow-gold)] ring-4 ring-white transition-transform active:scale-95 ${
                   active ? "scale-105" : "hover:scale-[1.03]"
                 }`}
               >

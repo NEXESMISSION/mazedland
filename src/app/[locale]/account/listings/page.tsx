@@ -39,12 +39,12 @@ export const dynamic = "force-dynamic";
 
 const STATUS: Record<string, { label: string; tone: string; hint?: string }> = {
   draft:           { label: "Brouillon",    tone: "bg-surface-2 text-muted ring-1 ring-border", hint: "Pas encore envoyée." },
-  pending_payment: { label: "À payer",      tone: "batta-tone-warn", hint: "Réglez les frais pour lancer la vérification." },
-  pending_review:  { label: "Vérification", tone: "batta-tone-warn", hint: "Notre équipe la contrôle — moins de 24 h." },
-  published:       { label: "En ligne",     tone: "batta-tone-ok" },
-  rejected:        { label: "À corriger",   tone: "batta-tone-bad" },
+  pending_payment: { label: "À payer",      tone: "mazed-tone-warn", hint: "Réglez les frais pour lancer la vérification." },
+  pending_review:  { label: "Vérification", tone: "mazed-tone-warn", hint: "Notre équipe la contrôle — moins de 24 h." },
+  published:       { label: "En ligne",     tone: "mazed-tone-ok" },
+  rejected:        { label: "À corriger",   tone: "mazed-tone-bad" },
   expired:         { label: "Expirée",      tone: "bg-surface-2 text-muted ring-1 ring-border", hint: "Renouvelez-la pour la remettre en ligne." },
-  sold:            { label: "Vendue",       tone: "batta-tone-ok" },
+  sold:            { label: "Vendue",       tone: "mazed-tone-ok" },
   archived:        { label: "Retirée",      tone: "bg-surface-2 text-muted ring-1 ring-border" },
 };
 
@@ -183,8 +183,8 @@ export default async function MyListingsPage({
    */
   function Action({ l, block = false }: { l: Row; block?: boolean }) {
     const cls = block
-      ? "batta-btn-luxe tap-target mt-2.5 flex w-full justify-center px-3 py-2.5 text-[12.5px]"
-      : "batta-btn-luxe tap-target inline-flex px-3 py-1.5 text-[12px]";
+      ? "mazed-btn-luxe tap-target mt-2.5 flex w-full justify-center px-3 py-2.5 text-[12.5px]"
+      : "mazed-btn-luxe tap-target inline-flex px-3 py-1.5 text-[12px]";
 
     if (l.status === "pending_payment" && payFor.has(l.id)) {
       return (
@@ -236,7 +236,7 @@ export default async function MyListingsPage({
               {creditsLeft} restante{creditsLeft > 1 ? "s" : ""}
             </span>
           )}
-          <Link href={"/annonces/nouvelle" as never} className="batta-btn-luxe tap-target px-4 py-2.5 text-[13px]">
+          <Link href={"/annonces/nouvelle" as never} className="mazed-btn-luxe tap-target px-4 py-2.5 text-[13px]">
             <Plus className="size-4" /> Publier
           </Link>
         </div>
@@ -267,7 +267,7 @@ export default async function MyListingsPage({
                   ].join(" ")}
                 >
                   {t.label}
-                  <span className={`batta-tabular text-[13px] font-extrabold ${on ? "text-gold" : t.tone}`}>
+                  <span className={`mazed-tabular text-[13px] font-extrabold ${on ? "text-gold" : t.tone}`}>
                     {n}
                   </span>
                 </Link>
@@ -307,7 +307,7 @@ export default async function MyListingsPage({
                   <Link href={`/annonces/${l.id}` as never} className="mt-1 block truncate text-[14.5px] font-bold text-foreground">
                     {l.title}
                   </Link>
-                  <p className="batta-tabular mt-0.5 text-[14px] font-extrabold text-gold">{priceOf(l)}</p>
+                  <p className="mazed-tabular mt-0.5 text-[14px] font-extrabold text-gold">{priceOf(l)}</p>
                 </div>
               </div>
 
@@ -392,7 +392,7 @@ export default async function MyListingsPage({
                       <div className="mt-1 max-w-[26ch] text-[11px] leading-snug text-muted">{st.hint}</div>
                     ) : null}
                   </td>
-                  <td className="batta-tabular whitespace-nowrap px-3 py-3.5 text-end font-extrabold text-gold">
+                  <td className="mazed-tabular whitespace-nowrap px-3 py-3.5 text-end font-extrabold text-gold">
                     {priceOf(l)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3.5 text-[12.5px] text-muted">{date(l.published_at)}</td>
@@ -430,7 +430,7 @@ export default async function MyListingsPage({
               <p className="mx-auto mt-1 max-w-sm text-[13px] leading-relaxed text-muted">
                 Publiez votre première annonce — appartement, terrain ou local.
               </p>
-              <Link href={"/annonces/nouvelle" as never} className="batta-btn-luxe tap-target mt-5 inline-flex px-5 py-2.5 text-[13px]">
+              <Link href={"/annonces/nouvelle" as never} className="mazed-btn-luxe tap-target mt-5 inline-flex px-5 py-2.5 text-[13px]">
                 <Plus className="size-4" /> Publier une annonce
               </Link>
             </>

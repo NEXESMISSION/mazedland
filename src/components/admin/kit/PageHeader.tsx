@@ -35,7 +35,7 @@ export function PageHeader({
               {title}
             </h1>
             {stat && (
-              <span className="batta-tabular text-[13px] font-bold text-muted">
+              <span className="mazed-tabular text-[13px] font-bold text-muted">
                 {stat.value}{" "}
                 <span className="font-semibold text-subtle">{stat.label}</span>
               </span>

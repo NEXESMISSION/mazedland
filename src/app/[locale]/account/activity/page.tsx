@@ -99,7 +99,7 @@ export default async function ActivityPage() {
           </p>
           <Link
             href={"/annonces" as never}
-            className="batta-btn-luxe tap-target mt-4 inline-flex px-5 py-2.5 text-[13px]"
+            className="mazed-btn-luxe tap-target mt-4 inline-flex px-5 py-2.5 text-[13px]"
           >
             <Search className="size-4" /> Parcourir les annonces
           </Link>
@@ -144,7 +144,7 @@ export default async function ActivityPage() {
                         {l.title}
                       </h2>
                     </Link>
-                    <p className="batta-tabular mt-0.5 text-[13.5px] font-extrabold text-foreground">
+                    <p className="mazed-tabular mt-0.5 text-[13.5px] font-extrabold text-foreground">
                       {l.price_on_request || l.price == null
                         ? "Prix sur demande"
                         : `${formatTND(Number(l.price), locale)} TND`}
@@ -221,7 +221,7 @@ export default async function ActivityPage() {
                         {l.title}
                       </h2>
                     </Link>
-                    <p className="batta-tabular mt-1 text-[15px] font-extrabold text-foreground">
+                    <p className="mazed-tabular mt-1 text-[15px] font-extrabold text-foreground">
                       {l.price_on_request || l.price == null
                         ? "Sur demande"
                         : `${formatTND(Number(l.price), locale)} TND`}

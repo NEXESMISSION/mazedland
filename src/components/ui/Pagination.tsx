@@ -113,7 +113,7 @@ function PageButton({
         aria-current="page"
         aria-label={`Page ${page}`}
         disabled
-        className="batta-gradient-gold tap-target inline-flex h-9 min-w-9 items-center justify-center rounded-full px-3 text-[13px] font-extrabold text-white shadow-[var(--shadow-gold)]"
+        className="mazed-gradient-gold tap-target inline-flex h-9 min-w-9 items-center justify-center rounded-full px-3 text-[13px] font-extrabold text-white shadow-[var(--shadow-gold)]"
       >
         {page}
       </button>

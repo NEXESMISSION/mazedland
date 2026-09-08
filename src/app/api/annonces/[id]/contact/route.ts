@@ -29,7 +29,7 @@ const MAX_REVEALS_PER_IP_PER_HOUR = 40;
 function hashIp(ip: string): string {
   // Salted with a server secret so the table cannot be reversed into a list of
   // IP addresses by anyone who gets a copy of it.
-  const salt = process.env.CRON_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? "batta";
+  const salt = process.env.CRON_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? "mazed-immo";
   return createHash("sha256").update(`${salt}:${ip}`).digest("hex").slice(0, 32);
 }
 

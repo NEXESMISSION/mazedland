@@ -106,7 +106,7 @@ export function PhotoCarousel({
 
   return (
     <div>
-      <div className="batta-photo-overlay relative">
+      <div className="mazed-photo-overlay relative">
         <div
           className="relative aspect-[4/5] overflow-hidden bg-surface-2 sm:aspect-[4/3]"
           style={{ touchAction: "pan-y" }}

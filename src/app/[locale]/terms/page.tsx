@@ -3,7 +3,7 @@ import { LegalPage } from "@/components/legal/LegalPage";
 import { TermsContent } from "@/components/legal/LegalContent";
 
 export const metadata: Metadata = {
-  title: "Conditions d'utilisation — Batta.tn",
+  title: "Conditions d'utilisation — Mazed Immo",
 };
 
 // Pure static content — prerender at build and serve from the edge CDN so

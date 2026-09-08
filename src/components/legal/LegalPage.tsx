@@ -25,7 +25,7 @@ export function LegalPage({
       >
         <ChevronLeft className="size-4" /> Accueil
       </Link>
-      <span className="batta-eyebrow mt-5 block">{eyebrow}</span>
+      <span className="mazed-eyebrow mt-5 block">{eyebrow}</span>
       <h1 className="mt-1.5 text-[26px] font-extrabold leading-tight tracking-tight lg:text-[30px]">
         {title}
       </h1>

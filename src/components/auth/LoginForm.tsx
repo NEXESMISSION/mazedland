@@ -102,7 +102,7 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <label className="block">
-        <span className="batta-eyebrow text-[10px]">Téléphone</span>
+        <span className="mazed-eyebrow text-[10px]">Téléphone</span>
         <PhoneInput
           dialCode={dialCode}
           onDialCodeChange={setDialCode}
@@ -122,11 +122,11 @@ export function LoginForm() {
         describedBy="login-error"
         autoComplete="current-password"
       />
-      {error && <p id="login-error" role="alert" aria-live="assertive" className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>}
+      {error && <p id="login-error" role="alert" aria-live="assertive" className="mazed-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>}
       <button
         type="submit"
         disabled={isPending}
-        className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
+        className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
         {isPending ? (
           <><Loader2 className="inline size-4 animate-spin" /> Connexion…</>
@@ -153,7 +153,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="batta-eyebrow text-[10px]">{label}</span>
+      <span className="mazed-eyebrow text-[10px]">{label}</span>
       <input
         type={type}
         value={value}
@@ -162,7 +162,7 @@ function Field({
         aria-describedby={invalid ? describedBy : undefined}
         autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+        className="mt-1.5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-2.5 text-sm text-mazed-cream placeholder:text-mazed-muted focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
       />
     </label>
   );

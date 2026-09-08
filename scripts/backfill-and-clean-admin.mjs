@@ -1,5 +1,5 @@
 // ============================================================================
-// Batta.tn — one-off: backfill the 30 reset properties + clean stale admin data.
+// Mazed Immo — one-off: backfill the 30 reset properties + clean stale admin data.
 //
 // The reset script created the 30 properties without lat/lng (a field bug), so
 // the map section won't render a pin. Backfill coords/area/address from

@@ -1,5 +1,5 @@
 // ============================================================================
-// Batta.tn — full reset to 30 clean live auctions.
+// Mazed Immo — full reset to 30 clean live auctions.
 //
 // DESTRUCTIVE. Deletes ALL marketplace activity, then seeds exactly 30 fresh
 // auctions from the real Sfax listings (with /public/properties photos), each

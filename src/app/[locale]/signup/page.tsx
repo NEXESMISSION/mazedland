@@ -23,11 +23,11 @@ export default async function SignupPage() {
         <div className="relative w-full max-w-sm">
           <div
             aria-hidden
-            className="batta-gradient-blob batta-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
+            className="mazed-gradient-blob mazed-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
           />
 
           <div className="relative overflow-hidden rounded-3xl bg-surface ring-1 ring-border shadow-[var(--shadow-md)]">
-            <div aria-hidden className="batta-gradient-gold h-[2px] w-full" />
+            <div aria-hidden className="mazed-gradient-gold h-[2px] w-full" />
 
             <div className="p-7 sm:p-8">
               <div className="flex flex-col items-center text-center">
@@ -74,7 +74,7 @@ export default async function SignupPage() {
 
         <div className="relative flex h-[100dvh] items-center justify-center overflow-y-auto bg-surface-2 px-8 py-10">
           <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-surface p-8 shadow-[0_36px_90px_-34px_rgba(15,23,42,0.4)] ring-1 ring-border">
-            <div aria-hidden className="batta-gradient-gold absolute inset-x-0 top-0 h-[3px]" />
+            <div aria-hidden className="mazed-gradient-gold absolute inset-x-0 top-0 h-[3px]" />
 
             <div className="flex flex-col items-center text-center">
               <span className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--gold)] to-[var(--gold-bright)] text-white shadow-[0_14px_34px_-12px_rgba(30,58,138,0.65)]">

@@ -29,7 +29,7 @@ export function AdminPager({ page, totalPages }: { page: number; totalPages: num
       >
         <ChevronLeft className="size-4" /> Précédent
       </button>
-      <span className="batta-tabular text-[12.5px] font-semibold text-muted">
+      <span className="mazed-tabular text-[12.5px] font-semibold text-muted">
         Page {page} / {totalPages}
       </span>
       <button

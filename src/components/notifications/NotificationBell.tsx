@@ -477,7 +477,7 @@ export function NotificationBell() {
         />
         {unread > 0 && (
           <span
-            className="absolute -top-0.5 -end-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--accent)] px-[5px] text-[10px] font-bold leading-none text-white ring-2 ring-[var(--surface)] batta-tabular"
+            className="absolute -top-0.5 -end-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--accent)] px-[5px] text-[10px] font-bold leading-none text-white ring-2 ring-[var(--surface)] mazed-tabular"
             aria-label={`${unread} non lues`}
           >
             {unread > 99 ? "99+" : unread}
@@ -497,19 +497,19 @@ export function NotificationBell() {
                 (just a click-catcher) so the panel reads as a header dropdown,
                 not a modal over a dimmed page. */}
             <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-[batta-float-up_180ms_ease-out_both] lg:bg-transparent lg:backdrop-blur-none lg:animate-none"
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-[mazed-float-up_180ms_ease-out_both] lg:bg-transparent lg:backdrop-blur-none lg:animate-none"
               onClick={() => setOpen(false)}
             />
 
             <div
-              className="relative flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-[var(--surface)] shadow-[var(--shadow-lg)] ring-1 ring-[var(--border)] focus:outline-none animate-[batta-float-up_240ms_ease-out_both] lg:absolute lg:end-[calc((100vw_-_min(100vw,var(--max-w-wide)))_/_2_+_2rem)] lg:top-[calc(var(--desktop-nav-h)+0.5rem)] lg:max-h-[min(620px,78vh)] lg:w-[420px] lg:max-w-[420px] lg:rounded-[22px] lg:shadow-[0_30px_80px_-24px_rgba(15,23,42,0.35)] lg:ring-1 lg:ring-black/[0.06]"
+              className="relative flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-[var(--surface)] shadow-[var(--shadow-lg)] ring-1 ring-[var(--border)] focus:outline-none animate-[mazed-float-up_240ms_ease-out_both] lg:absolute lg:end-[calc((100vw_-_min(100vw,var(--max-w-wide)))_/_2_+_2rem)] lg:top-[calc(var(--desktop-nav-h)+0.5rem)] lg:max-h-[min(620px,78vh)] lg:w-[420px] lg:max-w-[420px] lg:rounded-[22px] lg:shadow-[0_30px_80px_-24px_rgba(15,23,42,0.35)] lg:ring-1 lg:ring-black/[0.06]"
             >
               {/* Header — title + inline unread count, "Supprimer tout", close. */}
               <div className="flex items-center gap-3 px-5 pt-4 pb-3">
                 <h3 className="flex items-center gap-2 text-[16px] font-extrabold tracking-tight text-foreground leading-none">
                   Notifications
                   {unread > 0 && (
-                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-[11px] font-extrabold leading-none text-white batta-tabular">
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-[11px] font-extrabold leading-none text-white mazed-tabular">
                       {unread > 99 ? "99+" : unread}
                     </span>
                   )}
@@ -603,7 +603,7 @@ export function NotificationBell() {
                   <Link
                     href="/properties"
                     onClick={() => setOpen(false)}
-                    className="mt-5 inline-flex items-center gap-1.5 rounded-full batta-gold-fill px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]"
+                    className="mt-5 inline-flex items-center gap-1.5 rounded-full mazed-gold-fill px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]"
                   >
                     Explorer les enchères
                   </Link>

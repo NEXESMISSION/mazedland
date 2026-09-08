@@ -34,8 +34,8 @@ export function FocusRowHighlight({ idPrefix }: Props) {
     // Wait a tick so the layout settles (some lists virtualize / lazy-mount).
     const t = window.setTimeout(() => {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.classList.add("batta-focus-ring");
-      window.setTimeout(() => el.classList.remove("batta-focus-ring"), 2400);
+      el.classList.add("mazed-focus-ring");
+      window.setTimeout(() => el.classList.remove("mazed-focus-ring"), 2400);
     }, 60);
     return () => window.clearTimeout(t);
   }, [focus, idPrefix]);

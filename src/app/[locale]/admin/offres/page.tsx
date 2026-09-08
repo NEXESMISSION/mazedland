@@ -184,7 +184,7 @@ export default async function AdminOffresPage({
                               </span>
                               <span className="shrink-0 text-end">
                                 <span
-                                  className={`batta-tabular block text-[12.5px] ${
+                                  className={`mazed-tabular block text-[12.5px] ${
                                     p.price == null
                                       ? "text-[var(--tone-warn)]"
                                       : p.price === 0

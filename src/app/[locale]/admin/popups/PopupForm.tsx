@@ -180,7 +180,7 @@ export function PopupForm({
             type="button"
             onClick={onSave}
             disabled={saving}
-            className="batta-btn-luxe tap-target inline-flex items-center gap-1.5 px-4 py-2 text-[12px] disabled:opacity-50"
+            className="mazed-btn-luxe tap-target inline-flex items-center gap-1.5 px-4 py-2 text-[12px] disabled:opacity-50"
           >
             <Save className="size-4" strokeWidth={2.2} />
             {saving ? "Enregistrement…" : "Enregistrer"}
@@ -203,14 +203,14 @@ export function PopupForm({
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               placeholder="ex. welcome-2026 ou kyc-nudge"
-              className="batta-input"
+              className="mazed-input"
             />
           </Field>
           <Field label="Statut">
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as PopupStatus)}
-              className="batta-input"
+              className="mazed-input"
             >
               <option value="draft">Brouillon</option>
               <option value="live">En ligne</option>
@@ -225,7 +225,7 @@ export function PopupForm({
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value as PopupMode)}
-              className="batta-input"
+              className="mazed-input"
             >
               <option value="broadcast">Diffusion (one-shot)</option>
               <option value="rule">Règle permanente</option>
@@ -235,7 +235,7 @@ export function PopupForm({
             <select
               value={variant}
               onChange={(e) => setVariant(e.target.value as PopupVariant)}
-              className="batta-input"
+              className="mazed-input"
             >
               <option value="modal">Modale</option>
               <option value="banner">Bannière (à venir)</option>
@@ -249,7 +249,7 @@ export function PopupForm({
               max={100}
               value={priority}
               onChange={(e) => setPriority(Number(e.target.value) || 0)}
-              className="batta-input"
+              className="mazed-input"
             />
           </Field>
         </div>
@@ -279,7 +279,7 @@ export function PopupForm({
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               placeholder="https://…"
-              className="batta-input"
+              className="mazed-input"
             />
           </Field>
           <Field label="Icône (Lucide)" hint="ex. Sparkles, ShieldCheck — laissé vide = pas d'icône.">
@@ -287,7 +287,7 @@ export function PopupForm({
               value={icon}
               onChange={(e) => setIcon(e.target.value)}
               placeholder="Sparkles"
-              className="batta-input"
+              className="mazed-input"
             />
           </Field>
         </div>
@@ -301,7 +301,7 @@ export function PopupForm({
               value={ctaPrimaryLabelFr}
               onChange={(e) => setCtaPrimaryLabelFr(e.target.value)}
               placeholder="Continuer"
-              className="batta-input"
+              className="mazed-input"
             />
           </Field>
           <Field label="Lien principal">
@@ -309,7 +309,7 @@ export function PopupForm({
               value={ctaPrimaryHref}
               onChange={(e) => setCtaPrimaryHref(e.target.value)}
               placeholder="/properties"
-              className="batta-input"
+              className="mazed-input"
             />
           </Field>
         </div>
@@ -319,7 +319,7 @@ export function PopupForm({
               value={ctaSecondaryLabelFr}
               onChange={(e) => setCtaSecondaryLabelFr(e.target.value)}
               placeholder="Plus tard"
-              className="batta-input"
+              className="mazed-input"
             />
           </Field>
           <Field label="Lien secondaire — facultatif">
@@ -327,7 +327,7 @@ export function PopupForm({
               value={ctaSecondaryHref}
               onChange={(e) => setCtaSecondaryHref(e.target.value)}
               placeholder="/help"
-              className="batta-input"
+              className="mazed-input"
             />
           </Field>
         </div>
@@ -340,7 +340,7 @@ export function PopupForm({
             <select
               value={audienceScope}
               onChange={(e) => setAudienceScope(e.target.value as PopupAudience["scope"])}
-              className="batta-input"
+              className="mazed-input"
             >
               <option value="all">Tout le monde</option>
               <option value="anon">Visiteurs anonymes</option>
@@ -362,7 +362,7 @@ export function PopupForm({
             value={pagesRaw}
             onChange={(e) => setPagesRaw(e.target.value)}
             placeholder="/, /auctions/*"
-            className="batta-input"
+            className="mazed-input"
           />
         </Field>
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
@@ -388,7 +388,7 @@ export function PopupForm({
             <select
               value={devices}
               onChange={(e) => setDevices(e.target.value as PopupDevices)}
-              className="batta-input"
+              className="mazed-input"
             >
               <option value="both">Mobile + Desktop</option>
               <option value="mobile">Mobile uniquement</option>
@@ -407,7 +407,7 @@ export function PopupForm({
                 type="datetime-local"
                 value={startsAt}
                 onChange={(e) => setStartsAt(e.target.value)}
-                className="batta-input"
+                className="mazed-input"
               />
             </Field>
             <Field label="Se termine le">
@@ -415,7 +415,7 @@ export function PopupForm({
                 type="datetime-local"
                 value={endsAt}
                 onChange={(e) => setEndsAt(e.target.value)}
-                className="batta-input"
+                className="mazed-input"
               />
             </Field>
           </div>
@@ -429,7 +429,7 @@ export function PopupForm({
             <select
               value={frequency}
               onChange={(e) => setFrequency(e.target.value as PopupFrequency)}
-              className="batta-input"
+              className="mazed-input"
             >
               <option value="once_per_user">Une fois par utilisateur</option>
               <option value="once_per_session">Une fois par session</option>
@@ -445,7 +445,7 @@ export function PopupForm({
                 max={365}
                 value={frequencyN}
                 onChange={(e) => setFrequencyN(Math.max(1, Number(e.target.value) || 1))}
-                className="batta-input"
+                className="mazed-input"
               />
             </Field>
           )}
@@ -593,7 +593,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="batta-frame mt-5 p-5">
+    <section className="mazed-frame mt-5 p-5">
       <h3 className="text-[14px] font-extrabold leading-tight text-foreground">{title}</h3>
       {subtitle && <p className="mt-1 text-[11.5px] text-muted">{subtitle}</p>}
       <div className="mt-4">{children}</div>
@@ -649,7 +649,7 @@ function LocalisedInputs({
               onClick={() => setActive(l)}
               className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider transition ${
                 active === l
-                  ? "batta-gold-fill text-foreground"
+                  ? "mazed-gold-fill text-foreground"
                   : "bg-surface-2 text-muted hover:text-foreground"
               }`}
             >
@@ -663,7 +663,7 @@ function LocalisedInputs({
         onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
           setter(e.target.value)
         }
-        className={`batta-input ${multiline ? "min-h-[100px]" : ""}`}
+        className={`mazed-input ${multiline ? "min-h-[100px]" : ""}`}
         placeholder={`Texte en ${active.toUpperCase()}…`}
       />
     </div>
@@ -762,7 +762,7 @@ function PreviewOverlay({
           {(ctaPrimary || ctaSecondary) && (
             <div className="mt-5 flex flex-col gap-2">
               {ctaPrimary && (
-                <span className="batta-btn-luxe tap-target inline-flex w-full items-center justify-center gap-1.5 px-4 py-2.5 text-[12.5px]">
+                <span className="mazed-btn-luxe tap-target inline-flex w-full items-center justify-center gap-1.5 px-4 py-2.5 text-[12.5px]">
                   {ctaPrimary.label}
                 </span>
               )}

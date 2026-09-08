@@ -109,7 +109,7 @@ export default async function AdminSiteHub() {
                 <span className="mt-0.5 block text-[11.5px] text-subtle">{c.description}</span>
               </span>
               {c.count != null && (
-                <span className="batta-tabular hidden shrink-0 text-[11.5px] text-subtle sm:block">
+                <span className="mazed-tabular hidden shrink-0 text-[11.5px] text-subtle sm:block">
                   {c.count.toLocaleString("fr-FR")} {c.unit}
                 </span>
               )}

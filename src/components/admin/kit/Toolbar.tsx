@@ -88,7 +88,7 @@ export function Toolbar({
               >
                 {t.label}
                 {t.count != null && t.count > 0 && (
-                  <span className="batta-tabular ms-1.5 text-[11px] opacity-70">{t.count}</span>
+                  <span className="mazed-tabular ms-1.5 text-[11px] opacity-70">{t.count}</span>
                 )}
               </button>
             );

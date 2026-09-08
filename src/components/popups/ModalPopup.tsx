@@ -111,7 +111,7 @@ export function ModalPopup({
                 <button
                   type="button"
                   onClick={() => onClick(primary.href)}
-                  className="batta-btn-luxe tap-target inline-flex w-full items-center justify-center gap-1.5 px-4 py-3 text-[13px]"
+                  className="mazed-btn-luxe tap-target inline-flex w-full items-center justify-center gap-1.5 px-4 py-3 text-[13px]"
                 >
                   {primary.label}
                 </button>

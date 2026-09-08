@@ -1,5 +1,5 @@
 // ============================================================================
-// Batta.tn — ADMIN STRESS seeder
+// Mazed Immo — ADMIN STRESS seeder
 //
 // Floods every admin queue (Création, Paiements, Remboursements, Paiements
 // vendeurs, KYC) with realistic volume so the admin UX can be evaluated at
@@ -8,7 +8,7 @@
 // Everything it writes is identifiable for cleanup:
 //   · properties.title starts with "[STRESS]"
 //   · payments.metadata.stress = true
-//   · profiles via emails stress.buyerN@batta.tn
+//   · profiles via emails stress.buyerN@mazedimmo.tn
 //   · seller_payouts.payment_method = "stress"
 //   · kyc_submissions.full_name starts with "[STRESS]"
 //
@@ -39,7 +39,7 @@ const TYPES = ["apartment", "villa", "house", "land", "commercial", "office"];
 const FNAMES = ["Ahmed", "Sami", "Leila", "Fatma", "Mohamed", "Nour", "Yassine", "Sonia", "Karim", "Rania", "Hatem", "Ines", "Bilel", "Maha", "Walid"];
 const LNAMES = ["Ben Ali", "Trabelsi", "Gharbi", "Jelassi", "Mansour", "Khelifi", "Bouzid", "Sassi", "Ferchichi", "Aouadi"];
 
-const PASSWORD = "Batta!2026";
+const PASSWORD = "Mazed Immo!2026";
 const N_BUYERS = 60;
 
 // ─── wipe mode ──────────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ const { data: list } = await sb.auth.admin.listUsers({ perPage: 1000 });
 const byEmail = new Map((list?.users ?? []).map((u) => [u.email, u.id]));
 const pool = [];
 for (let i = 0; i < N_BUYERS; i++) {
-  const email = `stress.buyer${i}@batta.tn`;
+  const email = `stress.buyer${i}@mazedimmo.tn`;
   let id = byEmail.get(email);
   if (!id) {
     const name = `${pick(FNAMES)} ${pick(LNAMES)}`;

@@ -49,7 +49,7 @@ const HAS_NON_PLAIN = /[^A-Za-z0-9èéàù \n%@"'()_\-.\/:,;<=>?!&$]/;
 /**
  * Build a readable, 4-line SMS for a notification and report whether it must be
  * sent as UNICODE:
- *   {brand}  ← "Mazed Auto" / "Batta" (sender ID is MAZED for both)
+ *   {brand}  ← "Mazed Auto" / "Mazed Immo" (sender ID is MAZED for both)
  *   {title}  ← headline ("Identité vérifiée")
  *   {body}   ← detail (truncated to fit; content preserved verbatim, incl. Arabic)
  *   {url}    ← deep link (kept; body is trimmed first)

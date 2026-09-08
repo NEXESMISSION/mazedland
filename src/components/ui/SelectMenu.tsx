@@ -144,7 +144,7 @@ export function SelectMenu({
           id={listboxId}
           tabIndex={-1}
           className={
-            "absolute z-50 mt-2 max-h-72 min-w-[12rem] overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface p-1.5 shadow-[0_24px_60px_-20px_rgba(15,23,42,0.35)] ring-1 ring-black/[0.04] animate-[batta-float-up_140ms_ease-out_both] " +
+            "absolute z-50 mt-2 max-h-72 min-w-[12rem] overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface p-1.5 shadow-[0_24px_60px_-20px_rgba(15,23,42,0.35)] ring-1 ring-black/[0.04] animate-[mazed-float-up_140ms_ease-out_both] " +
             (align === "end" ? "end-0 " : "start-0 ") +
             menuClassName
           }

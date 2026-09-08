@@ -202,14 +202,14 @@ export function ForgotPasswordForm() {
 
   if (phase === "done") {
     return (
-      <div className="batta-frame-gold p-6 text-center">
-        <span className="batta-monogram batta-monogram-filled mx-auto mb-3 size-12 text-[18px]">
+      <div className="mazed-frame-gold p-6 text-center">
+        <span className="mazed-monogram mazed-monogram-filled mx-auto mb-3 size-12 text-[18px]">
           <CheckCircle2 className="size-5" strokeWidth={1.75} />
         </span>
-        <h2 className="batta-serif text-[16px] font-semibold text-batta-cream">
+        <h2 className="mazed-serif text-[16px] font-semibold text-mazed-cream">
           Mot de passe mis à jour
         </h2>
-        <p className="mt-2 text-[12.5px] text-batta-cream/75">
+        <p className="mt-2 text-[12.5px] text-mazed-cream/75">
           Redirection vers la page de connexion…
         </p>
       </div>
@@ -218,16 +218,16 @@ export function ForgotPasswordForm() {
 
   if (phase === "otp") {
     return (
-      <form onSubmit={onVerify} className="batta-frame-gold relative p-6 text-center">
-        <span className="batta-monogram batta-monogram-filled mx-auto mb-3 size-12 text-[18px]">
+      <form onSubmit={onVerify} className="mazed-frame-gold relative p-6 text-center">
+        <span className="mazed-monogram mazed-monogram-filled mx-auto mb-3 size-12 text-[18px]">
           <Smartphone className="size-5" strokeWidth={1.75} />
         </span>
-        <h2 className="batta-serif text-[18px] font-semibold text-batta-cream">
+        <h2 className="mazed-serif text-[18px] font-semibold text-mazed-cream">
           Vérifiez votre numéro
         </h2>
-        <p className="mt-2 text-sm text-batta-cream/75">
+        <p className="mt-2 text-sm text-mazed-cream/75">
           Entrez le code à 6 chiffres envoyé par SMS au{" "}
-          <span className="font-bold text-batta-cream">{phone}</span>.
+          <span className="font-bold text-mazed-cream">{phone}</span>.
         </p>
 
         <input
@@ -239,18 +239,18 @@ export function ForgotPasswordForm() {
           onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
           placeholder="••••••"
           aria-label="Code de vérification à 6 chiffres"
-          className="mt-5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-3 text-center text-[22px] font-bold tracking-[0.4em] text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+          className="mt-5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-3 text-center text-[22px] font-bold tracking-[0.4em] text-mazed-cream placeholder:text-mazed-muted focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
         />
 
         {error && (
-          <p role="alert" aria-live="assertive" className="batta-tone-bad mt-3 rounded-lg px-3 py-2 text-xs">{error}</p>
+          <p role="alert" aria-live="assertive" className="mazed-tone-bad mt-3 rounded-lg px-3 py-2 text-xs">{error}</p>
         )}
 
         <div className="mt-5 flex flex-col gap-2">
           <button
             type="submit"
             disabled={isPending || otpCode.replace(/\D/g, "").length !== 6}
-            className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
+            className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
           >
             {isPending ? (
               <><Loader2 className="inline size-4 animate-spin" /> Vérification…</>
@@ -262,14 +262,14 @@ export function ForgotPasswordForm() {
             type="button"
             onClick={resend}
             disabled={cooldown > 0 || isPending}
-            className="batta-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
+            className="mazed-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
           >
             {cooldown > 0 ? `Renvoyer le code (${cooldown}s)` : "Renvoyer le code"}
           </button>
           <button
             type="button"
             onClick={() => { setPhase("phone"); setError(null); setOtpCode(""); }}
-            className="text-[12px] text-batta-cream/70 hover:text-gold-bright"
+            className="text-[12px] text-mazed-cream/70 hover:text-gold-bright"
           >
             Changer de numéro
           </button>
@@ -282,7 +282,7 @@ export function ForgotPasswordForm() {
     return (
       <form onSubmit={onSetPassword} className="space-y-4">
         <label className="block">
-          <span className="batta-eyebrow text-[10px]">Nouveau mot de passe (min 8)</span>
+          <span className="mazed-eyebrow text-[10px]">Nouveau mot de passe (min 8)</span>
           <input
             type="password"
             required
@@ -291,11 +291,11 @@ export function ForgotPasswordForm() {
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+            className="mt-1.5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-2.5 text-sm text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
           />
         </label>
         <label className="block">
-          <span className="batta-eyebrow text-[10px]">Confirmer</span>
+          <span className="mazed-eyebrow text-[10px]">Confirmer</span>
           <input
             type="password"
             required
@@ -303,16 +303,16 @@ export function ForgotPasswordForm() {
             autoComplete="new-password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+            className="mt-1.5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-2.5 text-sm text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
           />
         </label>
         {error && (
-          <p role="alert" aria-live="assertive" className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
+          <p role="alert" aria-live="assertive" className="mazed-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
         )}
         <button
           type="submit"
           disabled={isPending}
-          className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
+          className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
         >
           {isPending ? (
             <><Loader2 className="inline size-4 animate-spin" /> Mise à jour…</>
@@ -328,7 +328,7 @@ export function ForgotPasswordForm() {
   return (
     <form onSubmit={onSendCode} className="space-y-4">
       <label className="block">
-        <span className="batta-eyebrow text-[10px]">Téléphone</span>
+        <span className="mazed-eyebrow text-[10px]">Téléphone</span>
         <PhoneInput
           dialCode={dialCode}
           onDialCodeChange={setDialCode}
@@ -338,12 +338,12 @@ export function ForgotPasswordForm() {
         />
       </label>
       {error && (
-        <p role="alert" aria-live="assertive" className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
+        <p role="alert" aria-live="assertive" className="mazed-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
       )}
       <button
         type="submit"
         disabled={isPending}
-        className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
+        className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
         {isPending ? (
           <><Loader2 className="inline size-4 animate-spin" /> Envoi…</>

@@ -92,7 +92,7 @@ export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
                       {r.home && <Chip icon={<Star className="size-2.5" />} label="Accueil" />}
                       {r.top && <Chip icon={<ArrowUpToLine className="size-2.5" />} label="Top" />}
                       {r.banner && <Chip icon={<Megaphone className="size-2.5" />} label="Bannière" />}
-                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.12em] ${r.manual ? "bg-sky-50 text-sky-700" : "batta-tone-ok"}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.12em] ${r.manual ? "bg-sky-50 text-sky-700" : "mazed-tone-ok"}`}>
                         {r.manual ? "Manuel" : "Payé"}
                       </span>
                       {r.expiresAt && (
@@ -120,7 +120,7 @@ export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
                 <button
                   type="button"
                   onClick={() => setOpen(isOpen ? null : r.id)}
-                  className="inline-flex items-center gap-1 rounded-lg bg-batta-gold/12 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-batta-gold-bright ring-1 ring-batta-gold/30 hover:bg-batta-gold/20"
+                  className="inline-flex items-center gap-1 rounded-lg bg-mazed-gold/12 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-mazed-gold-bright ring-1 ring-mazed-gold/30 hover:bg-mazed-gold/20"
                 >
                   {r.featured ? "Modifier" : "Mettre en vedette"}
                 </button>
@@ -153,7 +153,7 @@ export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
                     type="button"
                     disabled={busy === r.id}
                     onClick={() => apply(r.id)}
-                    className="batta-btn-luxe tap-target ms-auto inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] disabled:opacity-50"
+                    className="mazed-btn-luxe tap-target ms-auto inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] disabled:opacity-50"
                   >
                     {busy === r.id ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" strokeWidth={2.5} />}
                     Appliquer

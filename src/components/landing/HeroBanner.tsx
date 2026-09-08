@@ -329,7 +329,7 @@ function PhotoSlide({
         }`}
       >
         {slide.eyebrow && (
-          <span className="batta-eyebrow inline-flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 backdrop-blur-sm">
+          <span className="mazed-eyebrow inline-flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 backdrop-blur-sm">
             <span aria-hidden className="size-1.5 rounded-full bg-gold pulse-gold" />
             {slide.eyebrow}
           </span>
@@ -348,7 +348,7 @@ function PhotoSlide({
         )}
       </div>
 
-      <span className="batta-gold-fill absolute top-3 z-[1] inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)] ltr:right-3 rtl:left-3">
+      <span className="mazed-gold-fill absolute top-3 z-[1] inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)] ltr:right-3 rtl:left-3">
         {slide.ctaLabel ?? "Voir"}
       </span>
     </Link>
@@ -433,7 +433,7 @@ function BrandSlide({
               style={{ boxShadow: "0 0 8px rgba(239,68,68,0.6)" }}
             />
           )}
-          {hasLiveCount ? "En direct" : "Batta · Tunisie"}
+          {hasLiveCount ? "En direct" : "Mazed Immo · Tunisie"}
         </span>
 
         {/* Middle — stretches to fill, centers its content vertically. */}
@@ -444,7 +444,7 @@ function BrandSlide({
           {hasLiveCount && (
             <div className="flex flex-col items-center leading-none">
               <span
-                className="batta-tabular text-[56px] font-black leading-[0.95] tracking-tight md:text-[64px]"
+                className="mazed-tabular text-[56px] font-black leading-[0.95] tracking-tight md:text-[64px]"
                 style={{
                   background:
                     "linear-gradient(180deg, #f7e4a3 0%, #d4af37 55%, #b08a1f 100%)",

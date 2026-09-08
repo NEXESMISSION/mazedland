@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default function NewPopupPage() {
   return (
     <div>
-      <span className="batta-eyebrow">Diffusion</span>
+      <span className="mazed-eyebrow">Diffusion</span>
       <h2 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">
         Nouveau popup
       </h2>

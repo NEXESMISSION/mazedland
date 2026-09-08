@@ -74,7 +74,7 @@ export default async function PaymentFailed({
               <dt className="text-[10px] uppercase tracking-[0.14em] font-bold text-[var(--foreground-muted)]">
                 Montant tenté
               </dt>
-              <dd className="batta-tabular font-bold text-foreground">
+              <dd className="mazed-tabular font-bold text-foreground">
                 {formatTND(Number(payment.amount), locale)} TND
               </dd>
             </div>

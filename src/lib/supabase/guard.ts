@@ -2,7 +2,7 @@
  * DB-identity guard — prevents the "wrong database" incident.
  *
  * A deploy whose NEXT_PUBLIC_SUPABASE_URL points at a SIBLING app's Supabase
- * project already happened in production: the batta (real-estate) deploy was
+ * project already happened in production: the immo (real-estate) deploy was
  * wired to the car project's database and served car listings. Nothing caught
  * it because the URL and keys are mutually consistent — they were just the
  * WRONG project.
@@ -10,7 +10,7 @@
  * The fix: commit the project ref this app is built for, HERE, as an
  * independent source of truth from the runtime env. The ref is not secret (it
  * is already in the public NEXT_PUBLIC_SUPABASE_URL), so committing it is safe,
- * and it differs per app (a skin value: auto vs batta). If the env URL's ref
+ * and it differs per app (a skin value: auto vs immo). If the env URL's ref
  * doesn't match, the Supabase client factories THROW — we refuse to serve
  * rather than read/write another tenant's auth cookies, payments, KYC and bids.
  *
@@ -19,8 +19,8 @@
  * guard no-ops (with a warning) so dev forks / fresh clones aren't bricked.
  */
 
-// The Supabase project ref this codebase is built for. AUTO (cars).
-// The batta repo commits "sajxoovrsoacfnytiijv".
+// The Supabase project ref this codebase is built for. IMMO (real estate).
+// The mazed-auto repo commits "jxwsbmniubiuujeblwbt".
 const EXPECTED_REF_DEFAULT = "sajxoovrsoacfnytiijv";
 
 /** Extract the `<ref>` from https://<ref>.supabase.co (or .in/.net). */

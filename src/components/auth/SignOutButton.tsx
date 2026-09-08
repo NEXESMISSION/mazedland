@@ -24,7 +24,7 @@ export function SignOutButton({ label }: { label: string }) {
       // user's CIN photos) before the cookie clear, so the next sign-in
       // on this browser starts the wizard from scratch.
       try {
-        sessionStorage.removeItem("batta_kyc_draft");
+        sessionStorage.removeItem("mazed_kyc_draft");
       } catch {
         /* sessionStorage unavailable — nothing to clean. */
       }
@@ -48,7 +48,7 @@ export function SignOutButton({ label }: { label: string }) {
       type="button"
       onClick={onClick}
       disabled={pending}
-      className="batta-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
+      className="mazed-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
     >
       <LogOut className="size-4" strokeWidth={2} />
       {pending ? "…" : label}

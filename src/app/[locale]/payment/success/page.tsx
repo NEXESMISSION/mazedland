@@ -142,7 +142,7 @@ export default async function PaymentSuccess({
         {/* TX details */}
         <dl className="mt-6 space-y-2 rounded-[var(--radius)] bg-[var(--surface-2)] p-4 text-start">
           <Row label="Montant">
-            <span className="batta-tabular font-bold gradient-gold-text">
+            <span className="mazed-tabular font-bold gradient-gold-text">
               {formatTND(Number(payment.amount), locale)} {payment.currency}
             </span>
           </Row>

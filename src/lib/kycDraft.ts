@@ -5,7 +5,7 @@
 // saves the resulting storage path here; the processing step picks
 // them all up to insert a single kyc_submissions row.
 
-const KEY = "batta_kyc_draft";
+const KEY = "mazed_kyc_draft";
 const TAG = "[KYC/draft]";
 
 function log(...args: unknown[]) {

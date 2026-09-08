@@ -197,7 +197,7 @@ export function LegalDocsEditor({
               className={
                 "tap-target inline-flex shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition active:scale-[0.97] " +
                 (isActive
-                  ? "border-batta-gold/60 bg-batta-gold/12 text-batta-gold-bright"
+                  ? "border-mazed-gold/60 bg-mazed-gold/12 text-mazed-gold-bright"
                   : "border-border bg-surface text-foreground hover:border-gold/40 hover:text-gold-bright")
               }
             >
@@ -232,7 +232,7 @@ export function LegalDocsEditor({
           <button
             type="button"
             onClick={add}
-            className="tap-target inline-flex items-center gap-1 rounded-lg bg-batta-gold/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-batta-gold-bright ring-1 ring-batta-gold/30 hover:bg-batta-gold/20"
+            className="tap-target inline-flex items-center gap-1 rounded-lg bg-mazed-gold/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-mazed-gold-bright ring-1 ring-mazed-gold/30 hover:bg-mazed-gold/20"
           >
             <Plus className="size-3.5" strokeWidth={2.5} />
             Ajouter
@@ -240,7 +240,7 @@ export function LegalDocsEditor({
         </header>
 
         {list.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-batta-gold/25 bg-batta-surface-2 p-6 text-center">
+          <div className="rounded-xl border border-dashed border-mazed-gold/25 bg-mazed-surface-2 p-6 text-center">
             <p className="text-[12px] text-[var(--foreground-muted)]">
               Cliquez sur <b>Ajouter</b> pour créer un document à fournir.
             </p>
@@ -250,7 +250,7 @@ export function LegalDocsEditor({
             {list.map((row, i) => (
               <li
                 key={row.localId}
-                className="rounded-xl border border-batta-gold/20 bg-batta-surface-2 p-3"
+                className="rounded-xl border border-mazed-gold/20 bg-mazed-surface-2 p-3"
               >
                 <div className="flex items-start gap-2">
                   {/* Reorder controls */}
@@ -259,7 +259,7 @@ export function LegalDocsEditor({
                       type="button"
                       onClick={() => move(i, -1)}
                       disabled={i === 0}
-                      className="tap-target inline-flex size-6 items-center justify-center rounded-md text-foreground/70 hover:bg-batta-gold/10 hover:text-batta-gold-bright disabled:opacity-30"
+                      className="tap-target inline-flex size-6 items-center justify-center rounded-md text-foreground/70 hover:bg-mazed-gold/10 hover:text-mazed-gold-bright disabled:opacity-30"
                       aria-label="Monter"
                     >
                       <ChevronUp className="size-3.5" strokeWidth={2.5} />
@@ -268,7 +268,7 @@ export function LegalDocsEditor({
                       type="button"
                       onClick={() => move(i, +1)}
                       disabled={i === list.length - 1}
-                      className="tap-target inline-flex size-6 items-center justify-center rounded-md text-foreground/70 hover:bg-batta-gold/10 hover:text-batta-gold-bright disabled:opacity-30"
+                      className="tap-target inline-flex size-6 items-center justify-center rounded-md text-foreground/70 hover:bg-mazed-gold/10 hover:text-mazed-gold-bright disabled:opacity-30"
                       aria-label="Descendre"
                     >
                       <ChevronDown className="size-3.5" strokeWidth={2.5} />
@@ -281,14 +281,14 @@ export function LegalDocsEditor({
                       value={row.label}
                       placeholder="Titre du document (ex. Titre foncier)"
                       onChange={(e) => update(i, { label: e.target.value })}
-                      className="w-full rounded-lg border border-batta-gold/25 bg-batta-surface px-3 py-2 text-sm font-semibold text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+                      className="w-full rounded-lg border border-mazed-gold/25 bg-mazed-surface px-3 py-2 text-sm font-semibold text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
                     />
                     <textarea
                       rows={2}
                       value={row.description}
                       placeholder="Aide affichée au vendeur (optionnel)"
                       onChange={(e) => update(i, { description: e.target.value })}
-                      className="w-full rounded-lg border border-batta-gold/25 bg-batta-surface px-3 py-2 text-[12px] text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
+                      className="w-full rounded-lg border border-mazed-gold/25 bg-mazed-surface px-3 py-2 text-[12px] text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
                     />
                     <div className="flex items-center justify-between gap-2">
                       <label className="inline-flex cursor-pointer items-center gap-2 text-[12px] text-foreground">
@@ -296,7 +296,7 @@ export function LegalDocsEditor({
                           type="checkbox"
                           checked={row.required}
                           onChange={(e) => update(i, { required: e.target.checked })}
-                          className="size-4 accent-batta-gold-bright"
+                          className="size-4 accent-mazed-gold-bright"
                         />
                         <span className="font-semibold">Requis</span>
                         <span className="text-[10.5px] text-[var(--foreground-muted)]">
@@ -325,7 +325,7 @@ export function LegalDocsEditor({
           type="button"
           onClick={onSave}
           disabled={isPending || !dirty.has(activeType)}
-          className="batta-btn-luxe tap-target inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-[13.5px] disabled:opacity-50"
+          className="mazed-btn-luxe tap-target inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-[13.5px] disabled:opacity-50"
         >
           {savingType === activeType ? (
             <Loader2 className="size-4 animate-spin" />

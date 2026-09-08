@@ -97,7 +97,7 @@ const HOW_IT_WORKS: {
 // These were the four AUCTION guarantees: escrow, the KYC gate, the inspection
 // workflow, and Tunisian-law surenchère delays. Not one of them describes what
 // a classifieds site promises, and three no longer exist as code. They are now
-// the four things Batta actually does: it checks every annonce before it goes
+// the four things Mazed Immo actually does: it checks every annonce before it goes
 // up, it never publishes a phone number, it verifies sellers who ask to be,
 // and it takes no cut of the sale.
 const TRUST_PILLARS: {
@@ -540,7 +540,7 @@ export default async function LandingPage({
               reads at a glance on desktop. */}
       <section className="mt-10">
         <div className="px-4">
-          <span className="batta-eyebrow">{t("home.howItWorksEyebrow")}</span>
+          <span className="mazed-eyebrow">{t("home.howItWorksEyebrow")}</span>
           <h3
             className={`mt-1.5 text-[19px] font-extrabold leading-tight tracking-tight ${
               isRTL ? "font-arabic" : ""
@@ -554,13 +554,13 @@ export default async function LandingPage({
             <Link
               key={step.key}
               href={step.href as never}
-              className="batta-frame group flex w-[260px] shrink-0 snap-start flex-col gap-3 rounded-2xl p-5 transition active:scale-[0.99] hover:ring-gold-soft/50 lg:w-auto"
+              className="mazed-frame group flex w-[260px] shrink-0 snap-start flex-col gap-3 rounded-2xl p-5 transition active:scale-[0.99] hover:ring-gold-soft/50 lg:w-auto"
             >
               <div className="flex items-center gap-3">
-                <span className="batta-monogram batta-monogram-filled size-10 text-[15px]">
+                <span className="mazed-monogram mazed-monogram-filled size-10 text-[15px]">
                   <step.Icon className="size-4" strokeWidth={2.2} />
                 </span>
-                <span className="batta-tabular text-[10px] font-extrabold uppercase tracking-[0.18em] text-gold">
+                <span className="mazed-tabular text-[10px] font-extrabold uppercase tracking-[0.18em] text-gold">
                   {String(i + 1).padStart(2, "0")} · {t(step.eyebrowKey)}
                 </span>
               </div>
@@ -593,7 +593,7 @@ export default async function LandingPage({
               same ones already enforced by the platform code. */}
       <section className="mt-10">
         <div className="px-4">
-          <span className="batta-eyebrow">{t("home.trustEyebrow")}</span>
+          <span className="mazed-eyebrow">{t("home.trustEyebrow")}</span>
           <h3
             className={`mt-1.5 text-[19px] font-extrabold leading-tight tracking-tight ${
               isRTL ? "font-arabic" : ""
@@ -606,9 +606,9 @@ export default async function LandingPage({
           {TRUST_PILLARS.map((p) => (
             <div
               key={p.key}
-              className="batta-surface-navy-luxe relative flex w-[230px] shrink-0 snap-start flex-col gap-2.5 overflow-hidden rounded-2xl p-5 ring-1 ring-gold/25 lg:w-auto"
+              className="mazed-surface-navy-luxe relative flex w-[230px] shrink-0 snap-start flex-col gap-2.5 overflow-hidden rounded-2xl p-5 ring-1 ring-gold/25 lg:w-auto"
             >
-              <span className="batta-monogram size-10 shrink-0 text-gold">
+              <span className="mazed-monogram size-10 shrink-0 text-gold">
                 <p.Icon className="size-4" strokeWidth={2.2} />
               </span>
               <div
@@ -641,10 +641,10 @@ export default async function LandingPage({
       <section className="mt-10 px-4 lg:px-6">
         <Link
           href="/properties"
-          className="batta-surface-navy-luxe tap-target relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25 transition active:scale-[0.99] lg:hidden"
+          className="mazed-surface-navy-luxe tap-target relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25 transition active:scale-[0.99] lg:hidden"
         >
           <div className="relative min-w-0">
-            <span className="batta-eyebrow">Parcourir le catalogue</span>
+            <span className="mazed-eyebrow">Parcourir le catalogue</span>
             <div
               className={`mt-2 text-[22px] font-extrabold leading-tight tracking-tight ${
                 isRTL ? "font-arabic" : ""
@@ -654,7 +654,7 @@ export default async function LandingPage({
             </div>
             <div className="mt-1 text-[12px] text-muted">{t("brand.slogan")}</div>
           </div>
-          <span className="batta-gold-fill inline-flex size-10 shrink-0 items-center justify-center rounded-full ring-1 ring-black/10 shadow-[var(--shadow-gold)]">
+          <span className="mazed-gold-fill inline-flex size-10 shrink-0 items-center justify-center rounded-full ring-1 ring-black/10 shadow-[var(--shadow-gold)]">
             <ArrowUpRight className="size-5" strokeWidth={2.5} />
           </span>
         </Link>
@@ -664,10 +664,10 @@ export default async function LandingPage({
             column gives the user three concrete next-action shortcuts so
             the page doesn't bottom-out on a single link. */}
         <div className="hidden lg:block">
-          <div className="batta-surface-navy-luxe relative overflow-hidden rounded-3xl ring-1 ring-gold/25">
+          <div className="mazed-surface-navy-luxe relative overflow-hidden rounded-3xl ring-1 ring-gold/25">
             <div className="relative grid grid-cols-12 gap-8 px-10 py-12">
               <div className="col-span-7">
-                <span className="batta-eyebrow text-[10.5px]">
+                <span className="mazed-eyebrow text-[10.5px]">
                   {t("brand.slogan")}
                 </span>
                 <h2 className="mt-3 text-[48px] font-extrabold leading-[1.05] tracking-tight">
@@ -681,7 +681,7 @@ export default async function LandingPage({
                 <div className="mt-7 flex items-center gap-3">
                   <Link
                     href="/properties"
-                    className="batta-gold-fill inline-flex items-center gap-2 rounded-full px-5 py-3 text-[12.5px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
+                    className="mazed-gold-fill inline-flex items-center gap-2 rounded-full px-5 py-3 text-[12.5px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
                   >
                     {t("home.heroBrowseCta")}
                     <ArrowUpRight className="size-4" strokeWidth={2.5} />
@@ -714,7 +714,7 @@ export default async function LandingPage({
                     href={s.href as never}
                     className="group flex items-start gap-4 rounded-2xl bg-surface/40 p-4 ring-1 ring-gold/15 backdrop-blur-sm transition hover:bg-surface/70 hover:ring-gold-soft/40"
                   >
-                    <span className="batta-tabular text-[20px] font-extrabold leading-none text-gold">
+                    <span className="mazed-tabular text-[20px] font-extrabold leading-none text-gold">
                       {s.num}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -814,9 +814,9 @@ function RailHeader({
       <div className="min-w-0">
         {eyebrow && (
           <div className="mb-1.5 flex items-center gap-2">
-            <span className="batta-gold-rule-short" />
+            <span className="mazed-gold-rule-short" />
             <span
-              className={`batta-eyebrow ${isRTL ? "font-arabic tracking-[0.18em]" : ""}`}
+              className={`mazed-eyebrow ${isRTL ? "font-arabic tracking-[0.18em]" : ""}`}
             >
               {eyebrow}
             </span>

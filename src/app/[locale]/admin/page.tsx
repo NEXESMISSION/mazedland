@@ -152,7 +152,7 @@ export default async function AdminDashboard() {
                 className="group flex items-center gap-4 border-b border-border py-3 transition hover:bg-[var(--row-hover)]"
               >
                 <span
-                  className={`batta-tabular w-10 shrink-0 text-end text-[19px] font-semibold ${
+                  className={`mazed-tabular w-10 shrink-0 text-end text-[19px] font-semibold ${
                     qq.count > 0 ? "text-foreground" : "text-subtle"
                   }`}
                 >
@@ -197,7 +197,7 @@ export default async function AdminDashboard() {
                 key={r.id as string}
                 className="flex items-baseline gap-4 border-b border-border py-2"
               >
-                <span className="batta-tabular w-24 shrink-0 text-[11.5px] text-subtle">
+                <span className="mazed-tabular w-24 shrink-0 text-[11.5px] text-subtle">
                   {relative(r.created_at as string)}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-[12.5px] text-foreground">
@@ -205,7 +205,7 @@ export default async function AdminDashboard() {
                 </span>
                 {/* Auto runs this through `accountLabelFromEmail` because its
                     accounts are phone signups carrying a synthetic address that
-                    must never be shown. Batta's accounts are real e-mails, so
+                    must never be shown. Mazed Immo's accounts are real e-mails, so
                     the raw column IS the readable label. */}
                 <span className="hidden shrink-0 text-[11.5px] text-subtle sm:block">
                   {(r.user_email as string | null) ?? "—"}
@@ -248,7 +248,7 @@ function Figure({
     <div className={`py-4 ps-4 first:ps-0 ${className}`}>
       <div className={EYEBROW}>{label}</div>
       <div
-        className={`batta-tabular mt-1.5 text-[30px] font-semibold leading-none ${
+        className={`mazed-tabular mt-1.5 text-[30px] font-semibold leading-none ${
           danger ? "text-[var(--tone-bad)]" : accent ? "text-[var(--gold)]" : "text-foreground"
         }`}
       >

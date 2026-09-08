@@ -65,7 +65,7 @@ export function DeleteAccountButton({ label }: { label: string }) {
 
         // Success — drop any local auth/KYC state and hard-navigate home.
         try {
-          sessionStorage.removeItem("batta_kyc_draft");
+          sessionStorage.removeItem("mazed_kyc_draft");
         } catch {
           /* sessionStorage unavailable */
         }
@@ -130,7 +130,7 @@ export function DeleteAccountButton({ label }: { label: string }) {
             setConfirmText("");
           }}
           disabled={pending}
-          className="batta-btn-ghost-gold tap-target flex-1 px-4 py-2.5 text-[13px] disabled:opacity-50"
+          className="mazed-btn-ghost-gold tap-target flex-1 px-4 py-2.5 text-[13px] disabled:opacity-50"
         >
           Annuler
         </button>

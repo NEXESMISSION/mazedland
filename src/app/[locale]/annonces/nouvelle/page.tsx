@@ -26,7 +26,7 @@ export const dynamic = "force-dynamic";
 /**
  * Publier une annonce — the sell flow for the fixed-price catalogue.
  *
- * Batta's existing `/sell` submits a lot to an AUCTION: it schedules, it takes
+ * Mazed Immo's existing `/sell` submits a lot to an AUCTION: it schedules, it takes
  * a caution, it waits for an inspector. That product is being retired, and it
  * was never the right shape for the seller who simply wants to put a price on
  * a flat and answer the telephone.
@@ -40,7 +40,7 @@ export const dynamic = "force-dynamic";
  * make and model from a picker, fuel and gearbox as chips — because free text
  * in those columns is what breaks a car filter. Property is the opposite case:
  * the questions genuinely differ per category (a terrain has no bathrooms, a
- * dépôt has no floor), Batta already defines 32 of them in
+ * dépôt has no floor), Mazed Immo already defines 32 of them in
  * `category_attributes`, and `/admin/catalogue` now edits them. Rendering that
  * table is not laziness here — it is what lets an admin add "piscine" to
  * Villas without a deploy.

@@ -1,9 +1,9 @@
 // ============================================================================
-// Batta.tn — mock data seeder
+// Mazed Immo — mock data seeder
 //
 // Idempotent: safe to re-run. Uses the service-role key to bypass RLS so
 // it can write across every table. All mock users share the password
-// `Batta!2026` so you can log in as any of them from the UI.
+// `Mazed Immo!2026` so you can log in as any of them from the UI.
 //
 // Usage:
 //   pnpm seed
@@ -69,7 +69,7 @@ const sb = createClient(URL, SVC, {
   }
 }
 
-const PASSWORD = "Batta!2026";
+const PASSWORD = "Mazed Immo!2026";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -111,46 +111,46 @@ function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 console.log("→ Creating users…");
 const admin = await ensureUser({
-  email: "admin@batta.tn", fullName: "محمد الإداري", phone: "+216 71 000 001",
+  email: "admin@mazedimmo.tn", fullName: "محمد الإداري", phone: "+216 71 000 001",
   role: "admin", governorate: "Tunis",
 });
 const ahmed = await ensureUser({
-  email: "ahmed@batta.tn", fullName: "أحمد بن صالح", phone: "+216 22 111 222",
+  email: "ahmed@mazedimmo.tn", fullName: "أحمد بن صالح", phone: "+216 22 111 222",
   role: "individual", governorate: "Tunis",
 });
 const sami = await ensureUser({
-  email: "sami@batta.tn", fullName: "سامي التريكي", phone: "+216 50 333 444",
+  email: "sami@mazedimmo.tn", fullName: "سامي التريكي", phone: "+216 50 333 444",
   role: "individual", governorate: "Sousse",
 });
 const leila = await ensureUser({
-  email: "leila@batta.tn", fullName: "ليلى المهيري", phone: "+216 95 555 666",
+  email: "leila@mazedimmo.tn", fullName: "ليلى المهيري", phone: "+216 95 555 666",
   role: "individual", governorate: "Sfax",
 });
 const diaspora = await ensureUser({
-  email: "fatma.paris@batta.tn", fullName: "فاطمة من باريس", phone: "+33 6 12 34 56 78",
+  email: "fatma.paris@mazedimmo.tn", fullName: "فاطمة من باريس", phone: "+33 6 12 34 56 78",
   role: "individual", governorate: "Tunis",
 });
 await sb.from("profiles").update({ is_diaspora: true, language: "fr" }).eq("id", diaspora);
 
 const agency = await ensureUser({
-  email: "agency@batta.tn", fullName: "Tecnocasa Tunis Centre", phone: "+216 71 100 100",
+  email: "agency@mazedimmo.tn", fullName: "Tecnocasa Tunis Centre", phone: "+216 71 100 100",
   role: "agency", governorate: "Tunis",
 });
 const bank = await ensureUser({
-  email: "stb@batta.tn", fullName: "STB · Direction des Recouvrements", phone: "+216 71 340 000",
+  email: "stb@mazedimmo.tn", fullName: "STB · Direction des Recouvrements", phone: "+216 71 340 000",
   role: "bank", governorate: "Tunis",
 });
 const bailiff = await ensureUser({
-  email: "bailiff@batta.tn", fullName: "العدل المنفذ منير الحمدوني", phone: "+216 71 555 777",
+  email: "bailiff@mazedimmo.tn", fullName: "العدل المنفذ منير الحمدوني", phone: "+216 71 555 777",
   role: "bailiff", governorate: "Tunis",
 });
 
 const inspectorIds = [];
 for (const i of [
-  { email: "insp.tunis@batta.tn", name: "هاجر الزواري", spec: "architect", govs: ["Tunis","Ariana","Ben Arous","Manouba"] },
-  { email: "insp.sousse@batta.tn", name: "Karim Ben Salem", spec: "civil_engineer", govs: ["Sousse","Monastir","Mahdia"] },
-  { email: "insp.sfax@batta.tn", name: "Mohamed Trabelsi", spec: "real_estate_expert", govs: ["Sfax","Gabès","Médenine"] },
-  { email: "insp.nabeul@batta.tn", name: "Mehrez Karoui", spec: "property_lawyer", govs: ["Nabeul","Bizerte","Zaghouan"] },
+  { email: "insp.tunis@mazedimmo.tn", name: "هاجر الزواري", spec: "architect", govs: ["Tunis","Ariana","Ben Arous","Manouba"] },
+  { email: "insp.sousse@mazedimmo.tn", name: "Karim Ben Salem", spec: "civil_engineer", govs: ["Sousse","Monastir","Mahdia"] },
+  { email: "insp.sfax@mazedimmo.tn", name: "Mohamed Trabelsi", spec: "real_estate_expert", govs: ["Sfax","Gabès","Médenine"] },
+  { email: "insp.nabeul@mazedimmo.tn", name: "Mehrez Karoui", spec: "property_lawyer", govs: ["Nabeul","Bizerte","Zaghouan"] },
 ]) {
   const uid = await ensureUser({
     email: i.email, fullName: i.name, phone: "+216 99 000 " + Math.floor(Math.random() * 900),
@@ -797,13 +797,13 @@ console.log("");
 console.log("✅ Seed complete.");
 console.log("");
 console.log("Login credentials (password for everyone): " + PASSWORD);
-console.log("  admin@batta.tn         — admin dashboard");
-console.log("  ahmed@batta.tn         — bidder/seller (Tunis)");
-console.log("  sami@batta.tn          — bidder/seller (Sousse)");
-console.log("  leila@batta.tn         — bidder/seller (Sfax)");
-console.log("  fatma.paris@batta.tn   — diaspora bidder (FR)");
-console.log("  agency@batta.tn        — Tecnocasa agency");
-console.log("  stb@batta.tn           — STB bank (distressed assets)");
-console.log("  bailiff@batta.tn       — court bailiff");
-console.log("  insp.tunis@batta.tn    — inspector (Tunis area)");
+console.log("  admin@mazedimmo.tn         — admin dashboard");
+console.log("  ahmed@mazedimmo.tn         — bidder/seller (Tunis)");
+console.log("  sami@mazedimmo.tn          — bidder/seller (Sousse)");
+console.log("  leila@mazedimmo.tn         — bidder/seller (Sfax)");
+console.log("  fatma.paris@mazedimmo.tn   — diaspora bidder (FR)");
+console.log("  agency@mazedimmo.tn        — Tecnocasa agency");
+console.log("  stb@mazedimmo.tn           — STB bank (distressed assets)");
+console.log("  bailiff@mazedimmo.tn       — court bailiff");
+console.log("  insp.tunis@mazedimmo.tn    — inspector (Tunis area)");
 console.log("");

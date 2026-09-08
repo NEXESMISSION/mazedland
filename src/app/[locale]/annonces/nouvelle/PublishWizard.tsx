@@ -49,7 +49,7 @@ const ATTESTATION_TEXT =
   "fournis sont exacts, complets et concernent bien ce bien. Je déclare être " +
   "propriétaire ou mandaté pour le vendre. Je suis seul responsable de toute " +
   "information fausse, inexacte ou trompeuse. En cas de fausse déclaration, " +
-  "Batta peut refuser ou retirer l'annonce et conserver les frais déjà réglés.";
+  "Mazed Immo peut refuser ou retirer l'annonce et conserver les frais déjà réglés.";
 
 export type WizardCategory = {
   id: string;
@@ -422,7 +422,7 @@ export function PublishWizard({
         </p>
         <button
           onClick={() => router.push("/account/listings" as never)}
-          className="batta-btn-luxe tap-target mt-7 inline-flex px-6 py-3 text-[13.5px]"
+          className="mazed-btn-luxe tap-target mt-7 inline-flex px-6 py-3 text-[13.5px]"
         >
           Voir mes annonces
         </button>
@@ -747,7 +747,7 @@ export function PublishWizard({
                     <h3 className="mt-0.5 line-clamp-2 text-[12.5px] font-bold leading-snug">
                       {title || "—"}
                     </h3>
-                    <p className="batta-tabular mt-1 text-[13px] font-extrabold">
+                    <p className="mazed-tabular mt-1 text-[13px] font-extrabold">
                       {onRequest || !(Number(price) > 0)
                         ? "Sur demande"
                         : `${formatTND(Number(price), locale)} TND`}
@@ -778,7 +778,7 @@ export function PublishWizard({
                         ? "Publication"
                         : "Frais de publication"}
                   </span>
-                  <span className="batta-tabular text-[18px] font-extrabold text-foreground">
+                  <span className="mazed-tabular text-[18px] font-extrabold text-foreground">
                     {usingCredit
                       ? `1 / ${creditsLeft}`
                       : fee == null
@@ -825,7 +825,7 @@ export function PublishWizard({
                   convenience.
 
                   `hidden` sits on this WRAPPER, not on the button:
-                  `.batta-btn-luxe` sets `display: inline-flex` from globals.css,
+                  `.mazed-btn-luxe` sets `display: inline-flex` from globals.css,
                   which is unlayered CSS and outranks anything in
                   `@layer utilities` — so `hidden` on the button itself loses the
                   cascade and both buttons show at every width. */}
@@ -834,7 +834,7 @@ export function PublishWizard({
                   type="button"
                   onClick={publishNow}
                   disabled={busy || photosUploading > 0}
-                  className="batta-btn-luxe tap-target h-11 shrink-0 items-center justify-center gap-1.5 px-7 text-[13.5px] disabled:opacity-60"
+                  className="mazed-btn-luxe tap-target h-11 shrink-0 items-center justify-center gap-1.5 px-7 text-[13.5px] disabled:opacity-60"
                 >
                   {busy ? (
                     <><Loader2 className="size-4 animate-spin" /> Un instant…</>
@@ -877,12 +877,12 @@ export function PublishWizard({
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-[calc(var(--batta-bottombar-h,64px)+env(safe-area-inset-bottom))] z-20 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-md lg:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(var(--mazed-bottombar-h,64px)+env(safe-area-inset-bottom))] z-20 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-md lg:hidden">
         <button
           type="button"
           onClick={publishNow}
           disabled={busy || photosUploading > 0}
-          className="batta-btn-luxe tap-target inline-flex h-12 w-full items-center justify-center gap-1.5 text-[14px] disabled:opacity-60"
+          className="mazed-btn-luxe tap-target inline-flex h-12 w-full items-center justify-center gap-1.5 text-[14px] disabled:opacity-60"
         >
           {busy ? (
             <><Loader2 className="size-4 animate-spin" /> Un instant…</>

@@ -71,12 +71,12 @@ export default async function AccountPage() {
           {/* Ambient gold blob behind the card, very low opacity. */}
           <div
             aria-hidden
-            className="batta-gradient-blob batta-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
+            className="mazed-gradient-blob mazed-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
           />
 
           <div className="relative overflow-hidden rounded-3xl bg-surface ring-1 ring-border shadow-[var(--shadow-md)]">
             {/* Top gold accent strip. */}
-            <div aria-hidden className="batta-gradient-gold h-[2px] w-full" />
+            <div aria-hidden className="mazed-gradient-gold h-[2px] w-full" />
 
             <div className="p-7 sm:p-8">
               <div className="flex flex-col items-center text-center">
@@ -95,13 +95,13 @@ export default async function AccountPage() {
               <div className="mt-7 flex flex-col gap-2.5">
                 <Link
                   href="/signup"
-                  className="batta-btn-luxe tap-target w-full px-6 py-3 text-[14px]"
+                  className="mazed-btn-luxe tap-target w-full px-6 py-3 text-[14px]"
                 >
                   {t("signup")}
                 </Link>
                 <Link
                   href="/login"
-                  className="batta-btn-ghost-gold tap-target w-full px-6 py-3 text-[14px]"
+                  className="mazed-btn-ghost-gold tap-target w-full px-6 py-3 text-[14px]"
                 >
                   {t("login")}
                 </Link>
@@ -171,9 +171,9 @@ export default async function AccountPage() {
   ];
 
   const identity = (
-    <section className="batta-surface-navy-luxe relative overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25">
+    <section className="mazed-surface-navy-luxe relative overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25">
       <div className="flex items-start gap-3">
-        <span className="batta-monogram batta-monogram-filled size-12 shrink-0 text-[20px] font-extrabold">
+        <span className="mazed-monogram mazed-monogram-filled size-12 shrink-0 text-[20px] font-extrabold">
           {(fullName ?? userEmail ?? "?").charAt(0).toUpperCase()}
         </span>
         <div className="min-w-0 flex-1">
@@ -189,7 +189,7 @@ export default async function AccountPage() {
           )}
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <KycPill status={kycStatus} />
-            {role !== "individual" && <span className="batta-pill-gold">{role}</span>}
+            {role !== "individual" && <span className="mazed-pill-gold">{role}</span>}
           </div>
         </div>
       </div>
@@ -203,7 +203,7 @@ export default async function AccountPage() {
         {identity}
         {groups.map((g) => (
           <section key={g.label} className="mt-5">
-            <p className="batta-eyebrow mb-2">{g.label}</p>
+            <p className="mazed-eyebrow mb-2">{g.label}</p>
             <div className="overflow-hidden rounded-xl bg-surface ring-1 ring-border">
               {g.items.map((a, i) => (
                 <Fragment key={a.href}>
@@ -215,7 +215,7 @@ export default async function AccountPage() {
           </section>
         ))}
         <section className="mt-5">
-          <p className="batta-eyebrow mb-2">Notifications</p>
+          <p className="mazed-eyebrow mb-2">Notifications</p>
           <div className="overflow-hidden rounded-xl bg-surface ring-1 ring-border">
             <SmsNotificationsToggle initial={smsEnabled} />
           </div>
@@ -240,7 +240,7 @@ export default async function AccountPage() {
                 {fullName ?? userEmail ?? ""}
               </h1>
               <KycPill status={kycStatus} />
-              {role !== "individual" && <span className="batta-pill-gold">{role}</span>}
+              {role !== "individual" && <span className="mazed-pill-gold">{role}</span>}
             </div>
             {fullName && userEmail && (
               <p className="mt-1 text-[13.5px] text-muted">{userEmail}</p>
@@ -253,7 +253,7 @@ export default async function AccountPage() {
 
         {groups.map((g) => (
           <div key={g.label} className="mt-8">
-            <p className="batta-eyebrow mb-4">{g.label}</p>
+            <p className="mazed-eyebrow mb-4">{g.label}</p>
             <div className="grid grid-cols-3 gap-4">
               {g.items.map((a) => (
                 <ActionTile key={a.href} {...a} isRTL={isRTL} />
@@ -262,7 +262,7 @@ export default async function AccountPage() {
           </div>
         ))}
         <div className="mt-8">
-          <p className="batta-eyebrow mb-4">Notifications</p>
+          <p className="mazed-eyebrow mb-4">Notifications</p>
           <div className="max-w-xl overflow-hidden rounded-2xl bg-surface ring-1 ring-border">
             <SmsNotificationsToggle initial={smsEnabled} />
           </div>
@@ -306,9 +306,9 @@ function ActionTile({ href, Icon, title, body, isRTL }: ActionItem & { isRTL: bo
 
 function KycPill({ status }: { status: string }) {
   const tone =
-    status === "verified" ? "batta-tone-ok"
-    : status === "submitted" || status === "pending" ? "batta-tone-warn"
-    : status === "rejected" ? "batta-tone-bad"
+    status === "verified" ? "mazed-tone-ok"
+    : status === "submitted" || status === "pending" ? "mazed-tone-warn"
+    : status === "rejected" ? "mazed-tone-bad"
     : "bg-surface-2 text-muted border border-border";
   const label =
     status === "verified" ? "Identité vérifiée"

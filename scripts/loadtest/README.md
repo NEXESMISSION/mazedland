@@ -1,6 +1,6 @@
 # Scale / load testing
 
-The two scenarios that decide whether Batta survives "thousands of users in the
+The two scenarios that decide whether Mazed Immo survives "thousands of users in the
 final minute" — the hot-lot **bid** path (#2) and the realtime **fan-out** (#3).
 Both run with plain `node` (no Docker) against a **throwaway staging** Supabase
 project, and both hard-refuse the prod ref unless `FORCE_PROD=1`.

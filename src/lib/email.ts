@@ -9,7 +9,7 @@ import { log } from "@/lib/log";
  * Set both env vars (and verify the sender domain in Resend) to go live.
  *
  *   RESEND_API_KEY = re_...               (server-only secret)
- *   EMAIL_FROM     = "Batta.tn <no-reply@batta.tn>"
+ *   EMAIL_FROM     = "Mazed Immo <no-reply@mazedimmo.tn>"
  */
 
 const eLog = log.scope("email");

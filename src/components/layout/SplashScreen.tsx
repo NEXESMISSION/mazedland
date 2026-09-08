@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-const SHOWN_KEY = "batta:splash-shown";
+const SHOWN_KEY = "mazed:splash-shown";
 
 /**
- * First-load splash — centered Batta wordmark on the brand gradient
+ * First-load splash — centered Mazed Immo wordmark on the brand gradient
  * with a soft loading-dots animation underneath. Plays once per
  * browser session (sessionStorage flag); in-app navigation never
  * re-triggers it.
@@ -57,32 +57,32 @@ export function SplashScreen() {
       aria-hidden
       className={cn(
         "fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden",
-        "batta-gradient-gold",
+        "mazed-gradient-gold",
         "transition-opacity duration-200 ease-out",
         fadeOut ? "opacity-0 pointer-events-none" : "opacity-100",
       )}
     >
       {/* Soft white halos for depth — same recipe as the favorites
           empty-state and the notification modal header. */}
-      <div className="batta-gradient-blob batta-gradient-blob-lg -top-20 -right-12" />
-      <div className="batta-gradient-blob batta-gradient-blob-lg -bottom-24 -left-16" />
+      <div className="mazed-gradient-blob mazed-gradient-blob-lg -top-20 -right-12" />
+      <div className="mazed-gradient-blob mazed-gradient-blob-lg -bottom-24 -left-16" />
 
       {/* Logo — preloaded in <head>, served via <picture> so AVIF
           (4 KB) wins where supported, with WebP fallback. The CSS
           filter (`brightness(0) invert(1)`) flips the dark wordmark
           to pure white so it reads directly on the gradient without
           any backing plate. */}
-      <picture className="relative animate-[batta-float-up_220ms_ease-out_both]">
+      <picture className="relative animate-[mazed-float-up_220ms_ease-out_both]">
         <source srcSet="/logo.avif" type="image/avif" />
         <source srcSet="/logo.webp" type="image/webp" />
         <img
           src="/logo.png"
-          alt="Batta"
+          alt="Mazed Immo"
           width={528}
           height={164}
           decoding="async"
           fetchPriority="high"
-          className="batta-splash-logo h-14 w-auto sm:h-16"
+          className="mazed-splash-logo h-14 w-auto sm:h-16"
         />
       </picture>
 
@@ -94,7 +94,7 @@ export function SplashScreen() {
         role="status"
         aria-label="Chargement"
       >
-        <span className="batta-splash-bar" />
+        <span className="mazed-splash-bar" />
       </div>
     </div>
   );

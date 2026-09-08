@@ -146,7 +146,7 @@ export function QueueList({
           </button>
         )}
 
-        <span className="batta-tabular ms-auto text-[11px] text-subtle">
+        <span className="mazed-tabular ms-auto text-[11px] text-subtle">
           {rows.length} ligne{rows.length === 1 ? "" : "s"}
         </span>
       </div>
@@ -227,10 +227,10 @@ export function QueueList({
                     </span>
                     <span className="truncate text-[11.5px] text-subtle">{r.seller}</span>
                     <span className="truncate text-[11.5px] text-subtle">{r.category}</span>
-                    <span className="batta-tabular truncate text-end text-[12.5px] text-foreground/90">
+                    <span className="mazed-tabular truncate text-end text-[12.5px] text-foreground/90">
                       {r.value}
                     </span>
-                    <span className="batta-tabular truncate text-end text-[11px] text-subtle">
+                    <span className="mazed-tabular truncate text-end text-[11px] text-subtle">
                       {r.hint}
                     </span>
                   </span>
@@ -250,10 +250,10 @@ export function QueueList({
                     </span>
 
                     <span className="shrink-0 text-end">
-                      <span className="batta-tabular block text-[12.5px] text-foreground/90">
+                      <span className="mazed-tabular block text-[12.5px] text-foreground/90">
                         {r.value}
                       </span>
-                      <span className="batta-tabular mt-0.5 block text-[11px] text-subtle">
+                      <span className="mazed-tabular mt-0.5 block text-[11px] text-subtle">
                         {r.hint}
                       </span>
                     </span>
@@ -268,7 +268,7 @@ export function QueueList({
       {/* Bulk bar — only while something is ticked. */}
       {selected.size > 0 && (
         <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-t border-[var(--gold-soft)] bg-[var(--row-selected)] px-4 py-2.5">
-          <span className="batta-tabular text-[12px] font-semibold text-foreground">
+          <span className="mazed-tabular text-[12px] font-semibold text-foreground">
             {selected.size} sélectionnée{selected.size === 1 ? "" : "s"}
           </span>
           <div className="ms-auto flex items-center gap-1.5">

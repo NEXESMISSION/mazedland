@@ -1,7 +1,7 @@
 {
-  "name": "Batta — Tunisia Real Estate Auctions",
-  "short_name": "Batta",
-  "description": "Tunisia's first dedicated real-estate auction platform. Transparency. Speed. Trust.",
+  "name": "Mazed Immo — Petites annonces immobilières",
+  "short_name": "Mazed Immo",
+  "description": "Terrains, maisons, appartements et locaux partout en Tunisie.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

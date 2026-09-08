@@ -19,7 +19,7 @@ export function SkeletonBar({
   height?: string;
   width?: string;
 }) {
-  return <div className={`batta-skeleton ${height} ${width} ${className}`} />;
+  return <div className={`mazed-skeleton ${height} ${width} ${className}`} />;
 }
 
 /**
@@ -28,9 +28,9 @@ export function SkeletonBar({
  */
 export function SkeletonPropertyCard() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-batta-line bg-batta-surface">
-      <div className="batta-skeleton-luxe aspect-[4/5] rounded-none" />
-      <div aria-hidden className="batta-gold-rule" />
+    <div className="overflow-hidden rounded-2xl border border-mazed-line bg-mazed-surface">
+      <div className="mazed-skeleton-luxe aspect-[4/5] rounded-none" />
+      <div aria-hidden className="mazed-gold-rule" />
       <div className="space-y-2 p-3.5">
         <SkeletonBar height="h-3.5" width="w-11/12" />
         <SkeletonBar height="h-3" width="w-1/2" />
@@ -64,10 +64,10 @@ export function AuthFormSkeleton({
   const card = (
     <div className="relative w-full max-w-sm">
       <div className="relative overflow-hidden rounded-3xl bg-surface ring-1 ring-border shadow-[var(--shadow-md)]">
-        <div aria-hidden className="batta-gradient-gold h-[2px] w-full" />
+        <div aria-hidden className="mazed-gradient-gold h-[2px] w-full" />
         <div className="p-7 sm:p-8">
           <div className="flex flex-col items-center text-center">
-            <div className="batta-skeleton size-20 rounded-2xl" />
+            <div className="mazed-skeleton size-20 rounded-2xl" />
             <div className="mt-5 w-2/3">
               <SkeletonBar height="h-6" width="w-full" />
             </div>
@@ -108,7 +108,7 @@ export function AuthFormSkeleton({
           signup don't tear into a different shape while loading. */}
       <div className="hidden h-[100dvh] overflow-hidden lg:grid lg:grid-cols-[1.05fr_0.95fr]">
         {/* Hero side — solid navy block (the real AuthHeroPanel photo). */}
-        <div className="batta-surface-navy-luxe h-full w-full" />
+        <div className="mazed-surface-navy-luxe h-full w-full" />
         {/* Form side */}
         <div className="flex h-[100dvh] items-center justify-center bg-surface-2 px-8 py-10">
           <div className="w-full max-w-md">{card}</div>
@@ -129,12 +129,12 @@ export function SkeletonDetailPage() {
       <DesktopLoadingSpinner />
       {/* MOBILE / tablet (< lg) — single column, matches the mobile tree. */}
       <div className="mx-auto max-w-xl pb-6 lg:hidden">
-        <div className="batta-skeleton aspect-[4/3] rounded-none" />
+        <div className="mazed-skeleton aspect-[4/3] rounded-none" />
         <div className="space-y-3 px-4 pt-4">
           <SkeletonBar height="h-5" width="w-3/4" />
           <SkeletonBar height="h-3" width="w-1/2" />
         </div>
-        <div className="mx-4 mt-4 rounded-2xl batta-surface-navy p-5">
+        <div className="mx-4 mt-4 rounded-2xl mazed-surface-navy p-5">
           <SkeletonBar height="h-3" width="w-1/3" />
           <div className="mt-2">
             <SkeletonBar height="h-8" width="w-2/3" />
@@ -144,7 +144,7 @@ export function SkeletonDetailPage() {
             <SkeletonBar height="h-12" />
           </div>
         </div>
-        <div className="batta-frame mx-4 mt-3 p-4">
+        <div className="mazed-frame mx-4 mt-3 p-4">
           <SkeletonBar height="h-10" />
         </div>
       </div>
@@ -162,7 +162,7 @@ export function SkeletonDetailPage() {
         <div className="mt-5 grid grid-cols-12 items-start gap-8">
           {/* Left — gallery */}
           <div className="col-span-7">
-            <div className="batta-skeleton-luxe aspect-[4/3] rounded-2xl" />
+            <div className="mazed-skeleton-luxe aspect-[4/3] rounded-2xl" />
           </div>
 
           {/* Right — buy box (identity + price card) */}
@@ -194,7 +194,7 @@ export function SkeletonDetailPage() {
         </div>
 
         {/* Full-width specifications */}
-        <div className="batta-frame mt-10 p-6">
+        <div className="mazed-frame mt-10 p-6">
           <SkeletonBar height="h-3" width="w-32" />
           <div className="mt-4 grid grid-cols-4 gap-2.5">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -204,7 +204,7 @@ export function SkeletonDetailPage() {
         </div>
 
         {/* Full-width description */}
-        <div className="batta-frame mt-6 space-y-2.5 p-6">
+        <div className="mazed-frame mt-6 space-y-2.5 p-6">
           <SkeletonBar height="h-3" width="w-24" />
           <SkeletonBar height="h-3" width="w-full" />
           <SkeletonBar height="h-3" width="w-11/12" />
@@ -264,7 +264,7 @@ export function ListRowsSkeleton({
         <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {Array.from({ length: cards }).map((_, i) => (
             <div key={i} className="rounded-2xl bg-surface p-4 ring-1 ring-border">
-              <div className="batta-skeleton size-9 rounded-xl" />
+              <div className="mazed-skeleton size-9 rounded-xl" />
               <div className="mt-3">
                 <SkeletonBar height="h-5" width="w-1/2" />
               </div>
@@ -280,7 +280,7 @@ export function ListRowsSkeleton({
           {Array.from({ length: tabs }).map((_, i) => (
             <div
               key={i}
-              className="batta-skeleton h-8 shrink-0 rounded-full"
+              className="mazed-skeleton h-8 shrink-0 rounded-full"
               style={{ width: 80 + ((i * 17) % 40) }}
             />
           ))}
@@ -293,13 +293,13 @@ export function ListRowsSkeleton({
             className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border"
           >
             {withThumb && (
-              <div className="batta-skeleton-luxe size-14 shrink-0 rounded-xl" />
+              <div className="mazed-skeleton-luxe size-14 shrink-0 rounded-xl" />
             )}
             <div className="flex-1 space-y-1.5">
               <SkeletonBar height="h-3.5" width="w-2/3" />
               <SkeletonBar height="h-2.5" width="w-1/2" />
             </div>
-            <div className="batta-skeleton h-6 w-16 shrink-0 rounded-full" />
+            <div className="mazed-skeleton h-6 w-16 shrink-0 rounded-full" />
           </div>
         ))}
       </section>
@@ -359,7 +359,7 @@ export function AdminTableSkeleton({
           {Array.from({ length: tabs }).map((_, i) => (
             <div
               key={i}
-              className="batta-skeleton h-8 shrink-0 rounded-full"
+              className="mazed-skeleton h-8 shrink-0 rounded-full"
               style={{ width: 80 + ((i * 13) % 40) }}
             />
           ))}
@@ -401,16 +401,16 @@ export function AdminTableSkeleton({
             className="rounded-2xl bg-surface p-3 ring-1 ring-border"
           >
             <div className="flex items-center gap-3">
-              <div className="batta-skeleton-luxe size-12 shrink-0 rounded-xl" />
+              <div className="mazed-skeleton-luxe size-12 shrink-0 rounded-xl" />
               <div className="flex-1 space-y-1.5">
                 <SkeletonBar height="h-3.5" width="w-3/4" />
                 <SkeletonBar height="h-2.5" width="w-1/2" />
               </div>
-              <div className="batta-skeleton h-6 w-16 shrink-0 rounded-full" />
+              <div className="mazed-skeleton h-6 w-16 shrink-0 rounded-full" />
             </div>
             <div className="mt-3 flex gap-2">
-              <div className="batta-skeleton h-8 flex-1 rounded-full" />
-              <div className="batta-skeleton h-8 flex-1 rounded-full" />
+              <div className="mazed-skeleton h-8 flex-1 rounded-full" />
+              <div className="mazed-skeleton h-8 flex-1 rounded-full" />
             </div>
           </div>
         ))}
@@ -443,9 +443,9 @@ export function KycStepSkeleton({
       className="mx-auto max-w-md px-4 py-8"
     >
       {variant === "intro" ? (
-        <div className="mx-auto batta-skeleton-luxe size-20 rounded-full" />
+        <div className="mx-auto mazed-skeleton-luxe size-20 rounded-full" />
       ) : variant !== "processing" ? (
-        <div className="mx-auto batta-skeleton h-6 w-20 rounded-full" />
+        <div className="mx-auto mazed-skeleton h-6 w-20 rounded-full" />
       ) : null}
 
       <div className="mt-5 space-y-2 text-center">
@@ -455,32 +455,32 @@ export function KycStepSkeleton({
 
       {variant === "upload" && (
         <>
-          <div className="batta-skeleton-luxe mt-6 aspect-[4/3] w-full rounded-2xl" />
+          <div className="mazed-skeleton-luxe mt-6 aspect-[4/3] w-full rounded-2xl" />
           <div className="mt-5 space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="batta-skeleton size-6 shrink-0 rounded-full" />
+                <div className="mazed-skeleton size-6 shrink-0 rounded-full" />
                 <SkeletonBar height="h-3" width="w-2/3" />
               </div>
             ))}
           </div>
           <div className="mt-6 grid grid-cols-2 gap-3">
-            <div className="batta-skeleton h-11 rounded-2xl" />
-            <div className="batta-skeleton-luxe h-11 rounded-2xl" />
+            <div className="mazed-skeleton h-11 rounded-2xl" />
+            <div className="mazed-skeleton-luxe h-11 rounded-2xl" />
           </div>
         </>
       )}
 
       {variant === "processing" && (
         <div className="mt-8 flex flex-col items-center gap-5">
-          <div className="batta-skeleton-luxe size-16 rounded-full" />
+          <div className="mazed-skeleton-luxe size-16 rounded-full" />
           <div className="w-full space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
                 className="flex items-center gap-3 rounded-xl bg-surface p-3 ring-1 ring-border"
               >
-                <div className="batta-skeleton size-5 shrink-0 rounded-full" />
+                <div className="mazed-skeleton size-5 shrink-0 rounded-full" />
                 <SkeletonBar height="h-3" width="w-2/3" />
               </div>
             ))}
@@ -490,32 +490,32 @@ export function KycStepSkeleton({
 
       {variant === "status" && (
         <>
-          <div className="mx-auto batta-skeleton-luxe mt-6 size-16 rounded-full" />
+          <div className="mx-auto mazed-skeleton-luxe mt-6 size-16 rounded-full" />
           <div className="mt-5 rounded-2xl bg-surface p-4 ring-1 ring-border">
             <div className="flex items-center gap-3">
-              <div className="batta-skeleton size-5 shrink-0 rounded-full" />
+              <div className="mazed-skeleton size-5 shrink-0 rounded-full" />
               <SkeletonBar height="h-3" width="w-3/4" />
             </div>
             <div className="mt-3 flex items-center gap-3">
-              <div className="batta-skeleton size-5 shrink-0 rounded-full" />
+              <div className="mazed-skeleton size-5 shrink-0 rounded-full" />
               <SkeletonBar height="h-3" width="w-2/3" />
             </div>
           </div>
           <div className="mt-5 space-y-2">
-            <div className="batta-skeleton-luxe h-11 w-full rounded-2xl" />
-            <div className="batta-skeleton h-11 w-full rounded-2xl" />
+            <div className="mazed-skeleton-luxe h-11 w-full rounded-2xl" />
+            <div className="mazed-skeleton h-11 w-full rounded-2xl" />
           </div>
         </>
       )}
 
       {variant === "intro" && (
         <>
-          <div className="mx-auto batta-skeleton mt-5 h-7 w-40 rounded-full" />
+          <div className="mx-auto mazed-skeleton mt-5 h-7 w-40 rounded-full" />
           <div className="mt-6">
-            <div className="batta-skeleton-luxe h-12 w-full rounded-2xl" />
+            <div className="mazed-skeleton-luxe h-12 w-full rounded-2xl" />
           </div>
           <div className="mt-4 flex items-center justify-center gap-2">
-            <div className="batta-skeleton size-4 rounded-full" />
+            <div className="mazed-skeleton size-4 rounded-full" />
             <SkeletonBar height="h-3" width="w-1/2" />
           </div>
         </>
@@ -559,15 +559,15 @@ export function FormPageSkeleton({
             {Array.from({ length: fieldsPerSection }).map((_, i) => (
               <div key={i} className="space-y-1.5">
                 <SkeletonBar height="h-2.5" width="w-1/4" />
-                <div className="batta-skeleton h-11 w-full rounded-xl" />
+                <div className="mazed-skeleton h-11 w-full rounded-xl" />
               </div>
             ))}
           </div>
         </section>
       ))}
       <div className="mt-6 flex justify-end gap-2">
-        <div className="batta-skeleton h-11 w-24 rounded-2xl" />
-        <div className="batta-skeleton-luxe h-11 w-32 rounded-2xl" />
+        <div className="mazed-skeleton h-11 w-24 rounded-2xl" />
+        <div className="mazed-skeleton-luxe h-11 w-32 rounded-2xl" />
       </div>
       <DesktopLoadingSpinner />
       <span className="sr-only">Chargement…</span>
@@ -592,7 +592,7 @@ export function HeroWithGridSkeleton({
       aria-live="polite"
       className="mx-auto max-w-[var(--max-w-wide)]"
     >
-      <div className="batta-surface-navy-luxe relative mx-4 mt-4 overflow-hidden rounded-3xl p-7 ring-1 ring-gold/25">
+      <div className="mazed-surface-navy-luxe relative mx-4 mt-4 overflow-hidden rounded-3xl p-7 ring-1 ring-gold/25">
         <SkeletonBar height="h-2.5" width="w-24" />
         <div className="mt-3">
           <SkeletonBar height="h-8" width="w-3/4" />
@@ -601,8 +601,8 @@ export function HeroWithGridSkeleton({
           <SkeletonBar height="h-3" width="w-4/5" />
         </div>
         <div className="mt-5 flex gap-2">
-          <div className="batta-skeleton-luxe h-10 w-32 rounded-full" />
-          <div className="batta-skeleton h-10 w-28 rounded-full" />
+          <div className="mazed-skeleton-luxe h-10 w-32 rounded-full" />
+          <div className="mazed-skeleton h-10 w-28 rounded-full" />
         </div>
       </div>
       <section className="mt-7 px-4">
@@ -621,7 +621,7 @@ export function HeroWithGridSkeleton({
               className="rounded-2xl bg-surface p-5 ring-1 ring-border"
             >
               <div className="flex items-center gap-3">
-                <div className="batta-skeleton size-12 shrink-0 rounded-2xl" />
+                <div className="mazed-skeleton size-12 shrink-0 rounded-2xl" />
                 <div className="flex-1 space-y-1.5">
                   <SkeletonBar height="h-3.5" width="w-3/4" />
                   <SkeletonBar height="h-2.5" width="w-1/2" />
@@ -632,7 +632,7 @@ export function HeroWithGridSkeleton({
                 <SkeletonBar height="h-3" width="w-5/6" />
               </div>
               <div className="mt-4">
-                <div className="batta-skeleton h-10 w-full rounded-full" />
+                <div className="mazed-skeleton h-10 w-full rounded-full" />
               </div>
             </div>
           ))}
@@ -655,7 +655,7 @@ export function CenteredStatusSkeleton() {
       aria-live="polite"
       className="mx-auto flex max-w-md flex-col items-center px-5 pt-10"
     >
-      <div className="batta-skeleton-luxe size-20 rounded-full" />
+      <div className="mazed-skeleton-luxe size-20 rounded-full" />
       <div className="mt-5 w-full space-y-2 text-center">
         <SkeletonBar height="h-6" width="w-2/3" className="mx-auto" />
         <SkeletonBar height="h-3" width="w-4/5" className="mx-auto" />
@@ -672,8 +672,8 @@ export function CenteredStatusSkeleton() {
         ))}
       </div>
       <div className="mt-6 w-full space-y-2">
-        <div className="batta-skeleton-luxe h-11 w-full rounded-2xl" />
-        <div className="batta-skeleton h-11 w-full rounded-2xl" />
+        <div className="mazed-skeleton-luxe h-11 w-full rounded-2xl" />
+        <div className="mazed-skeleton h-11 w-full rounded-2xl" />
       </div>
       <DesktopLoadingSpinner />
       <span className="sr-only">Chargement…</span>
@@ -699,21 +699,21 @@ export function BidPageSkeleton() {
           <SkeletonBar height="h-5" width="w-56" />
           <SkeletonBar height="h-2.5" width="w-32" />
         </div>
-        <div className="batta-skeleton-luxe h-10 w-28 rounded-full" />
+        <div className="mazed-skeleton-luxe h-10 w-28 rounded-full" />
       </div>
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
-        <section className="batta-surface-navy-luxe rounded-2xl p-5 ring-1 ring-gold/25">
+        <section className="mazed-surface-navy-luxe rounded-2xl p-5 ring-1 ring-gold/25">
           <SkeletonBar height="h-3" width="w-1/3" />
           <div className="mt-2">
             <SkeletonBar height="h-10" width="w-2/3" />
           </div>
           <div className="mt-5 grid grid-cols-3 gap-2">
-            <div className="batta-skeleton h-12 rounded-xl" />
-            <div className="batta-skeleton h-12 rounded-xl" />
-            <div className="batta-skeleton h-12 rounded-xl" />
+            <div className="mazed-skeleton h-12 rounded-xl" />
+            <div className="mazed-skeleton h-12 rounded-xl" />
+            <div className="mazed-skeleton h-12 rounded-xl" />
           </div>
           <div className="mt-4">
-            <div className="batta-skeleton-luxe h-12 w-full rounded-2xl" />
+            <div className="mazed-skeleton-luxe h-12 w-full rounded-2xl" />
           </div>
         </section>
         <section className="rounded-2xl bg-surface p-4 ring-1 ring-border">
@@ -725,7 +725,7 @@ export function BidPageSkeleton() {
                 className="flex items-center justify-between border-b border-border py-2 last:border-b-0"
               >
                 <div className="flex items-center gap-2">
-                  <div className="batta-skeleton size-7 rounded-full" />
+                  <div className="mazed-skeleton size-7 rounded-full" />
                   <SkeletonBar height="h-3" width="w-20" />
                 </div>
                 <SkeletonBar height="h-3" width="w-16" />
@@ -755,7 +755,7 @@ export function PaymentCheckoutSkeleton() {
       {/* Lot summary card */}
       <div className="overflow-hidden rounded-2xl bg-surface ring-1 ring-border">
         <div className="flex gap-3 p-3">
-          <div className="batta-skeleton-luxe size-16 shrink-0 rounded-xl" />
+          <div className="mazed-skeleton-luxe size-16 shrink-0 rounded-xl" />
           <div className="flex-1 space-y-2 pt-1">
             <SkeletonBar height="h-3.5" width="w-3/4" />
             <SkeletonBar height="h-2.5" width="w-1/3" />
@@ -769,8 +769,8 @@ export function PaymentCheckoutSkeleton() {
 
       {/* Provider tabs */}
       <div className="mt-4 grid grid-cols-2 gap-2.5">
-        <div className="batta-skeleton-luxe h-14 rounded-2xl" />
-        <div className="batta-skeleton h-14 rounded-2xl" />
+        <div className="mazed-skeleton-luxe h-14 rounded-2xl" />
+        <div className="mazed-skeleton h-14 rounded-2xl" />
       </div>
 
       {/* Payee details card */}
@@ -792,9 +792,9 @@ export function PaymentCheckoutSkeleton() {
       {/* Receipt upload */}
       <section className="mt-4">
         <SkeletonBar height="h-3" width="w-1/3" />
-        <div className="batta-skeleton-luxe mt-3 h-36 w-full rounded-2xl" />
+        <div className="mazed-skeleton-luxe mt-3 h-36 w-full rounded-2xl" />
         <div className="mt-3">
-          <div className="batta-skeleton-luxe h-12 w-full rounded-full" />
+          <div className="mazed-skeleton-luxe h-12 w-full rounded-full" />
         </div>
       </section>
       <DesktopLoadingSpinner />
@@ -813,9 +813,9 @@ export function AccountSkeleton() {
     <div role="status" aria-live="polite">
       {/* MOBILE / tablet */}
       <div className="lg:hidden mx-auto max-w-[var(--max-w)] px-4 py-6">
-        <section className="batta-surface-navy-luxe rounded-2xl p-6 ring-1 ring-gold/25">
+        <section className="mazed-surface-navy-luxe rounded-2xl p-6 ring-1 ring-gold/25">
           <div className="flex items-center gap-3">
-            <div className="batta-skeleton size-14 shrink-0 rounded-full" />
+            <div className="mazed-skeleton size-14 shrink-0 rounded-full" />
             <div className="flex-1 space-y-2">
               <SkeletonBar height="h-4" width="w-1/2" />
               <SkeletonBar height="h-3" width="w-1/3" />
@@ -825,7 +825,7 @@ export function AccountSkeleton() {
         <section className="mt-5 space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 rounded-2xl bg-surface p-4 ring-1 ring-border">
-              <div className="batta-skeleton size-10 shrink-0 rounded-xl" />
+              <div className="mazed-skeleton size-10 shrink-0 rounded-xl" />
               <div className="flex-1 space-y-1.5">
                 <SkeletonBar height="h-3.5" width="w-2/3" />
                 <SkeletonBar height="h-2.5" width="w-1/2" />
@@ -837,20 +837,20 @@ export function AccountSkeleton() {
 
       {/* DESKTOP */}
       <div className="hidden lg:block mx-auto max-w-6xl px-8 py-8">
-        <section className="batta-surface-navy-luxe flex items-center justify-between gap-4 rounded-3xl p-7 ring-1 ring-gold/25">
+        <section className="mazed-surface-navy-luxe flex items-center justify-between gap-4 rounded-3xl p-7 ring-1 ring-gold/25">
           <div className="flex items-center gap-4">
-            <div className="batta-skeleton size-16 shrink-0 rounded-full" />
+            <div className="mazed-skeleton size-16 shrink-0 rounded-full" />
             <div className="space-y-2">
               <SkeletonBar height="h-5" width="w-48" />
               <SkeletonBar height="h-3" width="w-32" />
             </div>
           </div>
-          <div className="batta-skeleton h-10 w-32 rounded-full" />
+          <div className="mazed-skeleton h-10 w-32 rounded-full" />
         </section>
         <div className="mt-6 grid grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="rounded-2xl bg-surface p-5 ring-1 ring-border">
-              <div className="batta-skeleton size-11 rounded-2xl" />
+              <div className="mazed-skeleton size-11 rounded-2xl" />
               <div className="mt-4 space-y-2">
                 <SkeletonBar height="h-4" width="w-1/2" />
                 <SkeletonBar height="h-3" width="w-3/4" />

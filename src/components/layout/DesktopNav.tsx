@@ -32,7 +32,7 @@ const NotificationBell = dynamic(
  *   - Right: notification bell, account, and a saturated "Vendre" CTA.
  *
  * Height is pinned to --desktop-nav-h; the shell's top padding switches
- * to the same value at lg (see .batta-shell-main in globals.css).
+ * to the same value at lg (see .mazed-shell-main in globals.css).
  */
 
 const LINKS: { href: "/" | "/properties" | "/account/activity"; key: "home" | "browse" | "activity" }[] = [
@@ -73,10 +73,10 @@ export function DesktopNav() {
       <div className="mx-auto flex h-full w-full max-w-[var(--max-w-wide)] items-center gap-6 px-8">
         {/* ── Left zone: brand + primary links ── */}
         <div className="flex shrink-0 items-center gap-7">
-          <Link href="/" className="flex shrink-0 items-center" aria-label="Batta">
+          <Link href="/" className="flex shrink-0 items-center" aria-label="Mazed Immo">
             <Image
               src="/logo.png"
-              alt="Batta"
+              alt="Mazed Immo"
               width={257}
               height={80}
               priority
@@ -130,7 +130,7 @@ export function DesktopNav() {
           <AccountMenu />
           <Link
             href="/annonces/nouvelle"
-            className="batta-gold-fill inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[13px] font-bold shadow-[var(--shadow-gold)] transition active:scale-[0.98]"
+            className="mazed-gold-fill inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[13px] font-bold shadow-[var(--shadow-gold)] transition active:scale-[0.98]"
           >
             <Plus className="size-4" strokeWidth={2.5} />
             {t("sell")}

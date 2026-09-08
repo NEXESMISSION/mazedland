@@ -1,5 +1,5 @@
 // ============================================================================
-// Batta.tn — GO-TO-MARKET readiness check (READ-ONLY).
+// Mazed Immo — GO-TO-MARKET readiness check (READ-ONLY).
 //
 // Answers "what actually blocks a real launch" against the LIVE prod DB:
 //   1. Is pg_cron scheduled + firing?  (else auctions never close)
@@ -31,7 +31,7 @@ const sb = createClient(URL, SVC, { auth: { autoRefreshToken: false, persistSess
 // The placeholder/test payee values baked into lib/payments/index.ts. If the
 // live app_settings match these (or are absent), buyers wire to a fake account.
 const PLACEHOLDER_PAYEE = {
-  payee_name: "Batta Tunisia SARL",
+  payee_name: "Mazed Immo Tunisia SARL",
   payee_bank: "Société Tunisienne de Banque (STB)",
   payee_rib: "07 003 0001234567890 78",
   payee_iban: "TN59 0700 3000 0123 4567 8907 8",
@@ -101,7 +101,7 @@ async function checkPayee() {
     console.log(`  • ${k}: ${isMissing ? "(MISSING → falls back to placeholder)" : v} ${isPlaceholder ? "✗ PLACEHOLDER" : isMissing ? "✗" : "✓"}`);
   }
   if (anyPlaceholder || anyMissing) {
-    blockers.push("Payee bank details are placeholder/missing — buyers would wire real money to a FAKE account. Set payee_rib/iban/d17/name/bank in /admin/settings to the real Batta company account BEFORE launch.");
+    blockers.push("Payee bank details are placeholder/missing — buyers would wire real money to a FAKE account. Set payee_rib/iban/d17/name/bank in /admin/settings to the real Mazed Immo company account BEFORE launch.");
   } else {
     ok.push("Payee bank details look real (no placeholders).");
   }
@@ -141,7 +141,7 @@ async function checkContent() {
   console.log(`  • auctions live/scheduled: ${live ?? 0}`);
 }
 
-console.log("BATTA.TN — GO-TO-MARKET READINESS CHECK");
+console.log("MAZED IMMO — GO-TO-MARKET READINESS CHECK");
 console.log(`Project: ${URL}`);
 line();
 await checkCron();

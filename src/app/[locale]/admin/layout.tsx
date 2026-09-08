@@ -15,7 +15,7 @@ const CONSOLE_PAYMENT_KINDS = [
 ];
 
 /**
- * Admin console shell — ported from Mazed Auto, in Batta's colours.
+ * Admin console shell — ported from Mazed Auto, in Mazed Immo's colours.
  *
  * The console is the classifieds console: the auction screens are no longer
  * linked from the rail (see AdminShell). The one exception is the caution
@@ -46,7 +46,7 @@ export default async function AdminLayout({
   // Started, not awaited — these run while the gate below resolves.
   // Started, not awaited — these run while the gate below resolves.
   //
-  // The payments badge filters on kind. Every payment row Batta holds today is
+  // The payments badge filters on kind. Every payment row Mazed Immo holds today is
   // a `deposit_lock` from the auction product, and `/admin/paiements` cannot
   // settle those — counting them would put a permanent "1" on a queue that is
   // permanently empty, which teaches an admin to ignore the badge.

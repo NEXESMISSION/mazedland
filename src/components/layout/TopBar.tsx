@@ -63,9 +63,9 @@ export function TopBar() {
   return (
     <header
       className="fixed inset-x-0 top-0 z-40 bg-white border-b border-border pt-safe lg:hidden"
-      style={{ height: "calc(var(--batta-topbar-h) + var(--batta-safe-top))" }}
+      style={{ height: "calc(var(--mazed-topbar-h) + var(--mazed-safe-top))" }}
     >
-      <div className="mx-auto flex h-[var(--batta-topbar-h)] max-w-[var(--max-w-wide)] items-center gap-2 px-4">
+      <div className="mx-auto flex h-[var(--mazed-topbar-h)] max-w-[var(--max-w-wide)] items-center gap-2 px-4">
         {/* LEADING — back on inner pages, brand on root.
             BackButton lives in its own component so the parent-path
             mapping (which avoids redirect loops on routes like

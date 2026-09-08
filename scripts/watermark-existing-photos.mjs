@@ -15,7 +15,11 @@
  *
  * IDEMPOTENCE. There is nothing in a stamped file that says so, and running
  * this twice would stamp the stamp. `scripts/watermarked-photos.json` records
- * what has been done and is committed alongside the images.
+ * what has been done, keyed by the strength it was done at, and is committed
+ * alongside the images. Changing the strength means restoring the originals
+ * (`git checkout <commit-before> -- public/properties`) and running again —
+ * the ledger's `settings` line is what tells you the files on disk no longer
+ * match the constants above.
  *
  * WHY THE ALPHA IS SCALED BY HAND. The browser draws the mark under
  * `ctx.globalAlpha`. The obvious equivalent here is sharp's
@@ -41,9 +45,9 @@ const MARK = path.join(ROOT, "public", "logo-mark.png");
 const LEDGER = path.join(ROOT, "scripts", "watermarked-photos.json");
 
 // Must match src/lib/watermark.ts.
-const MARK_WIDTH_RATIO = 0.38;
-const MIN_MARK_PX = 160;
-const MARK_OPACITY = 0.45;
+const MARK_WIDTH_RATIO = 0.3;
+const MIN_MARK_PX = 96;
+const MARK_OPACITY = 0.18;
 
 const COMMIT = process.argv.includes("--commit");
 
@@ -132,7 +136,11 @@ const res = await fetch(`${SB_URL}/rest/v1/listing_photos?select=id,storage_path
 if (!res.ok) throw new Error(`listing_photos read failed: ${res.status} ${await res.text()}`);
 const rows = await res.json();
 
-const ledger = fs.existsSync(LEDGER) ? JSON.parse(fs.readFileSync(LEDGER, "utf8")) : { done: [] };
+const SETTINGS = `r${MARK_WIDTH_RATIO}-o${MARK_OPACITY}`;
+const saved = fs.existsSync(LEDGER) ? JSON.parse(fs.readFileSync(LEDGER, "utf8")) : { done: [] };
+// A ledger written at a different strength describes files that have since
+// been restored from git; it must not be read as "already done".
+const ledger = saved.settings === SETTINGS ? saved : { done: [] };
 const already = new Set(ledger.done);
 
 // Several rows can point at the same file; stamp each file once.
@@ -166,6 +174,7 @@ for (const rel of todo) {
 }
 
 if (COMMIT) {
+  ledger.settings = SETTINGS;
   ledger.updatedAt = new Date().toISOString();
   fs.writeFileSync(LEDGER, `${JSON.stringify(ledger, null, 2)}\n`);
 }

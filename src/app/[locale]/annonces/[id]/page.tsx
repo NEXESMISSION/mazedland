@@ -33,9 +33,9 @@ export const dynamic = "force-dynamic";
  *   • No `condition`. Neuf / occasion does not describe a building; a property
  *     carries `year_built` and its category attributes instead.
  *   • No fitments. A part fits a car; a villa fits nothing.
- *   • No seller avatar. Batta has no avatars bucket, so the contact card shows
+ *   • No seller avatar. Mazed Immo has no avatars bucket, so the contact card shows
  *     an initial rather than a broken image frame.
- *   • No inspection sheet. Batta's inspection reports belong to the auction
+ *   • No inspection sheet. Mazed Immo's inspection reports belong to the auction
  *     product, which is being retired; wiring them in here would tie the new
  *     catalogue to the old one.
  */
@@ -86,7 +86,7 @@ export async function generateMetadata({
       ? `${Number(l.price).toLocaleString("fr-FR")} TND`
       : "Prix sur demande";
   return {
-    title: `${l.title} · ${price} · Batta`,
+    title: `${l.title} · ${price} · Mazed Immo`,
     description: l.description?.slice(0, 160) ?? `${l.title} à ${l.governorate}.`,
   };
 }
@@ -163,7 +163,7 @@ export default async function AnnoncePage({
   // in the markup.
   const siteUrl = (
     process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://batta.tn")
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://mazedimmo.tn")
   ).replace(/\/$/, "");
   const jsonLd = {
     "@context": "https://schema.org",
@@ -194,7 +194,7 @@ export default async function AnnoncePage({
   // is ever visible (the other is display:none at that width).
   const priceBlock = (
     <div>
-      <div className="batta-tabular gradient-gold-text text-[34px] font-extrabold leading-none">
+      <div className="mazed-tabular gradient-gold-text text-[34px] font-extrabold leading-none">
         {l.price_on_request || l.price == null
           ? "Prix sur demande"
           : `${formatTND(Number(l.price), locale)} `}
@@ -211,7 +211,7 @@ export default async function AnnoncePage({
   const sellerCard = (
     <section className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center gap-3">
-        {/* An initial, not a photo: Batta has no avatars bucket, and an empty
+        {/* An initial, not a photo: Mazed Immo has no avatars bucket, and an empty
             frame reads as a broken page rather than as "no picture". */}
         <span className="grid size-11 shrink-0 place-items-center rounded-full bg-surface-2 text-[15px] font-extrabold text-muted ring-1 ring-border">
           {(l.contact_name ?? "?").trim().charAt(0).toUpperCase() || "?"}
@@ -251,7 +251,7 @@ export default async function AnnoncePage({
     <section className="flex items-start gap-2.5 rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
       <ShieldAlert className="mt-0.5 size-4 shrink-0 text-muted" />
       <p className="text-[11.5px] leading-relaxed text-muted">
-        Batta publie et vérifie les annonces, mais n&apos;intervient pas dans la transaction :
+        Mazed Immo publie et vérifie les annonces, mais n&apos;intervient pas dans la transaction :
         le paiement et la signature se font directement entre vous et le vendeur. Visitez le
         bien, demandez le titre de propriété et passez par un notaire avant tout versement.
       </p>
@@ -313,7 +313,7 @@ export default async function AnnoncePage({
                   line, and property here is sold by telephone. */}
               {l.reference && (
                 <span
-                  className="batta-tabular inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 font-semibold tracking-wide text-foreground ring-1 ring-border"
+                  className="mazed-tabular inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 font-semibold tracking-wide text-foreground ring-1 ring-border"
                   title="Référence de l'annonce"
                 >
                   <Hash className="size-3" />
@@ -329,7 +329,7 @@ export default async function AnnoncePage({
 
             {specs.length > 0 && (
               <section className="mt-6">
-                <h2 className="batta-eyebrow">Caractéristiques</h2>
+                <h2 className="mazed-eyebrow">Caractéristiques</h2>
                 <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {specs.map((s) => (
                     <div
@@ -350,7 +350,7 @@ export default async function AnnoncePage({
 
             {l.description && (
               <section className="mt-6">
-                <h2 className="batta-eyebrow">Description</h2>
+                <h2 className="mazed-eyebrow">Description</h2>
                 {/* Sellers paste links, and a URL is one unbreakable word. With
                     nothing to break it, the paragraph sets its own minimum
                     width and pushes the whole page sideways. `anywhere` breaks

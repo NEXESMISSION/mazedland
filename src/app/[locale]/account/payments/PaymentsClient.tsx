@@ -69,20 +69,20 @@ const KIND_LABELS: Record<string, string> = {
 };
 
 const STATUS: Record<string, { label: string; tone: string }> = {
-  pending: { label: "Reçu à téléverser", tone: "batta-tone-warn" },
-  pending_review: { label: "Reçu en vérification", tone: "batta-tone-warn" },
-  captured: { label: "Payé", tone: "batta-tone-ok" },
+  pending: { label: "Reçu à téléverser", tone: "mazed-tone-warn" },
+  pending_review: { label: "Reçu en vérification", tone: "mazed-tone-warn" },
+  captured: { label: "Payé", tone: "mazed-tone-ok" },
   refunded: { label: "Remboursé", tone: "bg-surface-2 text-muted ring-1 ring-border" },
-  failed: { label: "Refusé", tone: "batta-tone-bad" },
+  failed: { label: "Refusé", tone: "mazed-tone-bad" },
 };
 
 /** For a `deposit_lock`, the right-hand badge reflects where the money
  *  actually is, not the flat payment status. */
 const DEPOSIT_BADGE: Record<DepositLifecycle, { label: string; tone: string }> = {
   locked: { label: "Caution bloquée", tone: "bg-gold-faint text-gold-bright ring-1 ring-gold/30" },
-  to_refund: { label: "Remb. en cours", tone: "batta-tone-warn" },
-  refunded: { label: "Remboursée", tone: "batta-tone-ok" },
-  forfeited: { label: "Caution saisie", tone: "batta-tone-bad" },
+  to_refund: { label: "Remb. en cours", tone: "mazed-tone-warn" },
+  refunded: { label: "Remboursée", tone: "mazed-tone-ok" },
+  forfeited: { label: "Caution saisie", tone: "mazed-tone-bad" },
 };
 
 /** db kind → checkout `type` param, so a rejected payment can be redone
@@ -255,7 +255,7 @@ export function PaymentsClient({
             <span className="text-[11.5px] font-extrabold uppercase tracking-[0.12em] text-amber-700">
               À traiter
             </span>
-            <span className="batta-tabular ml-0.5 rounded-full bg-amber-500/20 px-1.5 text-[10px] font-extrabold text-amber-700">
+            <span className="mazed-tabular ml-0.5 rounded-full bg-amber-500/20 px-1.5 text-[10px] font-extrabold text-amber-700">
               {todo.length}
             </span>
           </div>
@@ -278,7 +278,7 @@ export function PaymentsClient({
                     <div className="truncate text-[13px] font-bold text-foreground">
                       {KIND_LABELS[p.kind] ?? p.kind}
                       {" · "}
-                      <span className="batta-tabular">{formatTND(p.amount, locale)} TND</span>
+                      <span className="mazed-tabular">{formatTND(p.amount, locale)} TND</span>
                     </div>
                     <div className="truncate text-[11px] font-semibold text-amber-700">
                       {p.status === "pending"
@@ -317,7 +317,7 @@ export function PaymentsClient({
               onClick={() => setFilter(key)}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-all lg:text-[13px] ${
                 on
-                  ? "batta-gradient-gold text-white shadow-[var(--shadow-gold)]"
+                  ? "mazed-gradient-gold text-white shadow-[var(--shadow-gold)]"
                   : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground"
               }`}
             >
@@ -325,7 +325,7 @@ export function PaymentsClient({
               {label}
               {count > 0 && (
                 <span
-                  className={`batta-tabular ml-0.5 rounded-full px-1.5 text-[10px] font-extrabold ${
+                  className={`mazed-tabular ml-0.5 rounded-full px-1.5 text-[10px] font-extrabold ${
                     on ? "bg-white/25" : "bg-surface text-foreground/70"
                   }`}
                 >
@@ -339,7 +339,7 @@ export function PaymentsClient({
 
       {/* ── Rows ── */}
       {visible.length === 0 ? (
-        <div className="batta-frame-gold relative mt-5 px-6 py-10 text-center">
+        <div className="mazed-frame-gold relative mt-5 px-6 py-10 text-center">
           <Wallet className="mx-auto size-8 text-gold" strokeWidth={2} />
           <p className="mt-3 text-[13px] text-muted">Aucun paiement dans cette catégorie.</p>
         </div>
@@ -382,7 +382,7 @@ function StatCard({
       >
         <Icon className="size-4 lg:size-5" strokeWidth={2.2} />
       </span>
-      <div className="batta-tabular mt-3 flex items-baseline gap-1 text-[20px] font-extrabold leading-none text-foreground lg:text-[24px]">
+      <div className="mazed-tabular mt-3 flex items-baseline gap-1 text-[20px] font-extrabold leading-none text-foreground lg:text-[24px]">
         {value}
         {suffix && <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted">{suffix}</span>}
       </div>
@@ -457,7 +457,7 @@ function PaymentRow({
               <span className="truncate">{p.title}</span>
             </div>
           )}
-          <div className="batta-tabular mt-1 text-[18px] font-extrabold text-foreground">
+          <div className="mazed-tabular mt-1 text-[18px] font-extrabold text-foreground">
             {formatTND(p.amount, locale)}{" "}
             <span className="text-[10px] font-bold uppercase text-muted">TND</span>
           </div>
@@ -520,7 +520,7 @@ function PaymentRow({
           {canResume && aHref && (
             <Link
               href={aHref as "/payment/checkout"}
-              className="batta-gold-fill tap-target inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)]"
+              className="mazed-gold-fill tap-target inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)]"
             >
               {actionLabel(p)}
               <ArrowRight className="size-3" strokeWidth={2.5} />

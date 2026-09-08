@@ -33,7 +33,7 @@ const PER_USER_DAILY = 6; // cap SMS per user / 24h (anti-spam + cost)
 
 // First line of every SMS so the user can tell which app sent it (the sender ID
 // is MAZED for both apps, so the body must carry the brand).
-const BRAND = "Batta";
+const BRAND = "Mazed Immo";
 
 function siteUrl(): string {
   // Prefer an explicit, NON-localhost site URL; else the Vercel deployment URL,
@@ -46,7 +46,7 @@ function siteUrl(): string {
   ]) {
     if (c && !/localhost|127\.0\.0\.1/i.test(c)) return c.replace(/\/$/, "");
   }
-  return "https://batta.tn";
+  return "https://mazedimmo.tn";
 }
 
 async function run(req: NextRequest) {

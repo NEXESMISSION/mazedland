@@ -111,7 +111,7 @@ export function HomeSearch({
         />
         <button
           type="submit"
-          className="batta-gold-fill inline-flex shrink-0 items-center gap-2 rounded-xl px-7 text-[13px] font-extrabold shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition active:scale-[0.98]"
+          className="mazed-gold-fill inline-flex shrink-0 items-center gap-2 rounded-xl px-7 text-[13px] font-extrabold shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition active:scale-[0.98]"
         >
           <Search className="size-4" strokeWidth={2.5} />
           {t("search.submit")}
@@ -145,7 +145,7 @@ export function HomeSearch({
           </div>
           <button
             type="submit"
-            className="batta-gold-fill tap-target inline-flex size-11 shrink-0 items-center justify-center rounded-full shadow-[var(--shadow-gold)] ring-1 ring-black/10"
+            className="mazed-gold-fill tap-target inline-flex size-11 shrink-0 items-center justify-center rounded-full shadow-[var(--shadow-gold)] ring-1 ring-black/10"
             aria-label={t("search.submit")}
           >
             <Search className="size-4" strokeWidth={2.5} />

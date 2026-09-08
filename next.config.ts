@@ -53,7 +53,7 @@ const nextConfig: NextConfig = {
   /**
    * Admin routes retired by the pivot.
    *
-   * Batta is a classifieds platform now, and the console lists six
+   * Mazed Immo is a classifieds platform now, and the console lists six
    * destinations. The auction screens are unlinked from the rail, but an
    * unlinked page is still a page: bookmarks, browser history and the "why is
    * this 404" support ticket all outlive the menu. These send them somewhere

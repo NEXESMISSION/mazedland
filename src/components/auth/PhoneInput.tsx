@@ -107,7 +107,7 @@ export function PhoneInput({
 
   return (
     <div ref={rootRef} className="relative mt-1.5">
-      <div className="flex items-stretch overflow-hidden rounded-xl border border-batta-gold/25 bg-batta-surface-2 transition focus-within:border-batta-gold focus-within:ring-1 focus-within:ring-batta-gold/40">
+      <div className="flex items-stretch overflow-hidden rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 transition focus-within:border-mazed-gold focus-within:ring-1 focus-within:ring-mazed-gold/40">
         {/* Compact dial-code chip — code + chevron, no country label */}
         <button
           type="button"
@@ -119,9 +119,9 @@ export function PhoneInput({
           aria-controls={open ? listboxId : undefined}
           aria-activedescendant={open ? optionId(activeIdx) : undefined}
           aria-label={`Indicatif pays — actuellement ${selectedCountry || dialCode}`}
-          className="flex shrink-0 items-center gap-1 border-e border-batta-gold/15 px-3 py-2.5 text-sm font-bold text-batta-cream transition hover:bg-black/15 focus:outline-none"
+          className="flex shrink-0 items-center gap-1 border-e border-mazed-gold/15 px-3 py-2.5 text-sm font-bold text-mazed-cream transition hover:bg-black/15 focus:outline-none"
         >
-          <span className="batta-tabular">{dialCode}</span>
+          <span className="mazed-tabular">{dialCode}</span>
           <ChevronDown
             className={`size-3.5 opacity-70 transition-transform ${
               open ? "rotate-180" : ""
@@ -140,7 +140,7 @@ export function PhoneInput({
           onChange={(e) =>
             onNumberChange(e.target.value.replace(/\D/g, ""))
           }
-          className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-batta-cream placeholder:text-batta-muted focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-mazed-cream placeholder:text-mazed-muted focus:outline-none"
         />
       </div>
 
@@ -152,7 +152,7 @@ export function PhoneInput({
           role="listbox"
           id={listboxId}
           aria-label="Liste des indicatifs"
-          className="absolute z-30 mt-1.5 max-h-72 w-full overflow-y-auto rounded-xl border border-batta-gold/25 bg-batta-surface-2 py-1 shadow-2xl shadow-black/40"
+          className="absolute z-30 mt-1.5 max-h-72 w-full overflow-y-auto rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 py-1 shadow-2xl shadow-black/40"
         >
           {DIAL_CODES.map((c, i) => {
             const active = c.code === dialCode;
@@ -172,17 +172,17 @@ export function PhoneInput({
                   }}
                   className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-start text-[13px] transition ${
                     active
-                      ? "bg-batta-gold/15 text-batta-gold"
+                      ? "bg-mazed-gold/15 text-mazed-gold"
                       : isActive
-                        ? "bg-black/20 text-batta-cream"
-                        : "text-batta-cream hover:bg-black/20"
+                        ? "bg-black/20 text-mazed-cream"
+                        : "text-mazed-cream hover:bg-black/20"
                   }`}
                 >
                   <span className="flex items-baseline gap-2">
-                    <span className="batta-tabular font-bold">{c.code}</span>
+                    <span className="mazed-tabular font-bold">{c.code}</span>
                     <span
                       className={`text-[11.5px] ${
-                        active ? "text-batta-gold/80" : "text-batta-muted"
+                        active ? "text-mazed-gold/80" : "text-mazed-muted"
                       }`}
                     >
                       {country}

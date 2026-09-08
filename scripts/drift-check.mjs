@@ -1,5 +1,5 @@
 // drift-check — sync guard for the twin repos
-//   "mazed land"     (real-estate auctions, Batta)
+//   "mazed land"     (real-estate auctions, Mazed Immo)
 //   "mazed auto v2"  (car auctions, Mazed Auto)
 //
 // Both projects share one baseline: the auction/payment/KYC core must stay
@@ -170,7 +170,7 @@ function applyFixesAndAccepted(baseline, auto, land, rels) {
 // other project's domain wording or branding bleeding into this one.
 const LEAK_EXT = new Set([".ts", ".tsx", ".js", ".mjs", ".json", ".css", ".md", ".sql", ".svg", ".html"]);
 const LEAKS = [
-  { root: AUTO, label: "mazed auto v2", re: /(batta\.tn|batta tunisia|immobili|appartement|apartment|\bvilla\b)/i },
+  { root: AUTO, label: "mazed auto v2", re: /(mazedimmo.tn|mazed immo|immobili|appartement|apartment|\bvilla\b)/i },
   { root: LAND, label: "mazed land", re: /(mazed\.tn|mazed auto|automobile|\bsedan\b|\bvoiture\b|kilom[ée]trage)/i },
 ];
 

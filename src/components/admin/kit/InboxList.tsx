@@ -81,12 +81,12 @@ export function InboxList({
               {(r.value != null || r.hint != null) && (
                 <span className="shrink-0 text-end">
                   {r.value != null && (
-                    <span className="batta-tabular block text-[12.5px] font-medium text-foreground/90">
+                    <span className="mazed-tabular block text-[12.5px] font-medium text-foreground/90">
                       {r.value}
                     </span>
                   )}
                   {r.hint != null && (
-                    <span className="batta-tabular mt-0.5 block text-[11px] text-subtle">
+                    <span className="mazed-tabular mt-0.5 block text-[11px] text-subtle">
                       {r.hint}
                     </span>
                   )}

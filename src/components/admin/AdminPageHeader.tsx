@@ -20,7 +20,7 @@ export function AdminPageHeader({
     <header className="border-b border-border pb-6">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          {eyebrow && <span className="batta-eyebrow">{eyebrow}</span>}
+          {eyebrow && <span className="mazed-eyebrow">{eyebrow}</span>}
           <h1 className="mt-2 text-[28px] font-extrabold leading-[1.1] tracking-tight text-foreground">
             {title}
           </h1>

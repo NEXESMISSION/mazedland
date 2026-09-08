@@ -108,7 +108,7 @@ export default async function AdminHomePage({
           />
         </div>
         {q && (
-          <span className="batta-tabular text-[12px] text-muted">
+          <span className="mazed-tabular text-[12px] text-muted">
             {rows.length} résultat{rows.length > 1 ? "s" : ""}
           </span>
         )}

@@ -26,8 +26,8 @@ import { ModalPopup } from "./ModalPopup";
  * shape → render nothing rather than blocking the page.
  */
 
-const SESSION_KEY = "batta_popup_session";        // sessionStorage — once_per_session cache
-const ANON_DISMISS_KEY = "batta_popup_anon_dismissed"; // localStorage — anon dismissals
+const SESSION_KEY = "mazed_popup_session";        // sessionStorage — once_per_session cache
+const ANON_DISMISS_KEY = "mazed_popup_anon_dismissed"; // localStorage — anon dismissals
 
 /**
  * Strip the leading /:locale segment from a Next-internal path so the
