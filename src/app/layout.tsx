@@ -42,9 +42,13 @@ export const metadata: Metadata = {
     startupImage: ["/logo-square.png"],
   },
   icons: {
-    icon: [{ url: "/logo-square.png", type: "image/png" }],
-    apple: [{ url: "/logo-square.png", sizes: "180x180", type: "image/png" }],
-    shortcut: ["/logo-square.png"],
+    icon: [
+      { url: "/favicon-64.png", sizes: "64x64", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon-180.png", sizes: "180x180", type: "image/png" }],
+    shortcut: ["/favicon-64.png"],
   },
   openGraph: {
     title: "Mazed Immo — Petites annonces immobilières en Tunisie",
@@ -54,18 +58,20 @@ export const metadata: Metadata = {
     siteName: "Mazed Immo",
     images: [
       {
-        url: "/logo-square.png",
-        width: 1104,
-        height: 1104,
+        // 1200x630 — the ratio every social preview crops to. A square was
+        // being letterboxed by each of them into a different accidental crop.
+        url: "/og.png",
+        width: 1200,
+        height: 630,
         alt: "Mazed Immo — Petites annonces immobilières en Tunisie",
       },
     ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Mazed Immo — Petites annonces immobilières en Tunisie",
     description: "Terrains, maisons, appartements et locaux partout en Tunisie.",
-    images: ["/logo-square.png"],
+    images: ["/og.png"],
   },
   formatDetection: { telephone: false },
 };

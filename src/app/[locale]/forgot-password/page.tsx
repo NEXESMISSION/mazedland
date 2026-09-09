@@ -23,10 +23,10 @@ export default async function ForgotPasswordPage() {
       <div className="p-7 sm:p-8">
         <div className="flex flex-col items-center text-center">
           <Image
-            src="/logo-square.png"
+            src="/logo.webp"
             alt={t("brand.name")}
-            width={96}
-            height={96}
+            width={357}
+            height={480}
             priority
             className="h-20 w-auto"
           />

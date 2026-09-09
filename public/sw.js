@@ -22,9 +22,10 @@ const MAX_IMAGE_ENTRIES = 400;
 const MAX_RUNTIME_ENTRIES = 80;
 
 const PRECACHE = [
-  "/icons/icon.svg",
-  "/icons/icon-maskable.svg",
-  "/icons/apple-touch-icon.svg",
+  // Only what the DOCUMENT asks for. The 512px PWA icons are fetched by the
+  // OS at install time, not by the page, and precaching both cost 160 KB of
+  // download on every first visit for bytes the browser never used.
+  "/icons/icon-192.png",
   "/manifest.webmanifest",
 ];
 

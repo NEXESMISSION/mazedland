@@ -124,7 +124,7 @@ export default async function ActivityPage() {
                 >
                   <Link
                     href={`/annonces/${l.id}` as never}
-                    className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-[#0f0f0f] ring-1 ring-border"
+                    className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
                   >
                     {cover ? (
                       <ListingImage path={cover.storage_path} alt="" sizes="80px" fit="cover" />
@@ -184,7 +184,7 @@ export default async function ActivityPage() {
                   }
                 >
                   <Link href={`/annonces/${l.id}` as never} className="block">
-                    <div className="relative aspect-[4/3] bg-[#0f0f0f]">
+                    <div className="relative aspect-[4/3] bg-surface-2">
                       {cover ? (
                         <ListingImage
                           path={cover.storage_path}

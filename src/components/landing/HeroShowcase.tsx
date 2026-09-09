@@ -154,8 +154,10 @@ function SlideBody({
 
   return (
     <>
-      {/* Base wash so a missing / broken photo still reads as a brand tile. */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0d1b3d] to-[#08122a]" />
+      {/* Base wash so a missing / broken photo still reads as a brand tile.
+          Warm paper, not the old navy: with no photo on top this IS the tile,
+          and a navy slab is the one colour the brand does not contain. */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#fffdf7] to-[#efe5d2]" />
 
       {showImage && (
         <Image
@@ -243,20 +245,20 @@ function BrandPanel({
   return (
     <Link
       href={brand.href as `/${string}`}
-      className="relative flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-3xl p-8 text-center ring-1 ring-gold/25 shadow-[0_28px_60px_-26px_rgba(15,23,42,0.45)]"
+      className="relative flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-3xl p-8 text-center ring-1 ring-gold/25 shadow-[var(--shadow-lg)]"
       style={{
         background:
-          "radial-gradient(70% 60% at 50% 25%, rgba(30,58,138,0.30) 0%, rgba(8,18,42,0) 60%), linear-gradient(180deg, #0d1b3d 0%, #08122a 100%)",
+          "radial-gradient(70% 60% at 50% 25%, rgba(184,130,54,0.18) 0%, rgba(184,130,54,0) 62%), linear-gradient(180deg, #fffdf7 0%, #f4ecdd 100%)",
       }}
     >
       <h3
-        className={`max-w-[18ch] text-balance text-[26px] font-extrabold leading-[1.12] tracking-tight text-white ${
+        className={`max-w-[18ch] text-balance text-[26px] font-extrabold leading-[1.12] tracking-tight text-foreground ${
           isRTL ? "font-arabic" : ""
         }`}
       >
         {brand.title}
       </h3>
-      <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-white/65">{brand.slogan}</p>
+      <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-muted">{brand.slogan}</p>
       <span className="mazed-gold-fill mt-6 inline-flex items-center gap-1.5 rounded-full px-6 py-3 text-[12px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] ring-1 ring-black/10">
         {brand.cta}
         <ArrowUpRight className="size-4" strokeWidth={2.5} />

@@ -79,22 +79,7 @@
     var(--gold-dark) 100%
   );
 
-  /* Same idea, angled, for wide surfaces where a horizontal band would
-     land as a stripe across the middle. */
-  --gold-metal-angled: linear-gradient(
-    115deg,
-    var(--gold-lit)  0%,
-    var(--gold-mid) 45%,
-    var(--gold-dark) 100%
-  );
 
-  /* Gradient-clipped TYPE on white. It has to stay in the dark half or
-     the letters wash out; two stops is plenty for a headline word. */
-  --gold-metal-text: linear-gradient(
-    115deg,
-    var(--gold-mid)  0%,
-    var(--gold-dark) 100%
-  );
 
   /* Accent — RED. The second accent the user asked for. Used
      sparingly: live-now pulse, sale badges, the "Live · X auctions"
@@ -345,20 +330,17 @@ html, body { overscroll-behavior-y: contain; }
   background-color: var(--gold-mid); /* fallback */
 }
 
-/* Gradient-clipped text — for the brand wordmark and headline prices we
-   want metallic weight without losing legibility. Angled, and off the
-   TEXT ramp: a vertical band lands across the middle of every letter and
-   reads as a stripe, and the fill ramp's specular would punch a white
-   hole through the word on a white page. The `-webkit-` prefix is needed
-   for Safari/iOS support. */
+/* Gold TYPE is FLAT. Not a gradient clipped to text.
+   A ramp clipped to a glyph is not the same object as a ramp on a surface:
+   over 20px of digit it lands a pale band across the waist of every number and
+   a dark one at its foot, and at that size it stops reading as metal and
+   starts reading as a rendering fault. The price is the one thing on a
+   classifieds page that has to be crisp, so it gets one solid colour.
+   The gradient still belongs on FILLS — see .gold-rim / mazed-gold-fill. */
 .gradient-gold-text,
 .mazed-gold-text,
 .mazed-gradient-gold-text {
-  background-image: var(--gold-metal-text);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: var(--gold-deep); /* fallback for browsers that can't clip */
+  color: var(--gold);
   letter-spacing: -0.01em;
 }
 

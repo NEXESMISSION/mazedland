@@ -9,8 +9,21 @@ export const metadata: Metadata = {
 // Pure static content — prerender at build and serve from the edge CDN.
 export const dynamic = "force-static";
 
+/**
+ * The e-mail row is env-driven and DISAPPEARS when unset.
+ *
+ * It used to be a literal, contact@batta.tn, on a domain the business owned.
+ * The rebrand has no domain behind it yet, and the honest options were an
+ * address that bounces or no address at all — a support page whose first line
+ * is a dead mailbox is worse than one that only offers a phone number. Set
+ * NEXT_PUBLIC_CONTACT_EMAIL and the row comes back.
+ */
+const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim();
+
 const ITEMS = [
-  { Icon: Mail, label: "E-mail", value: "contact@mazedimmo.tn", href: "mailto:contact@mazedimmo.tn" },
+  ...(CONTACT_EMAIL
+    ? [{ Icon: Mail, label: "E-mail", value: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` }]
+    : []),
   { Icon: Phone, label: "Téléphone", value: "+216 70 000 000", href: "tel:+21670000000" },
   { Icon: MapPin, label: "Adresse", value: "Sfax, Tunisie", href: null },
   { Icon: Clock, label: "Horaires", value: "Lun – Ven, 9h – 17h", href: null },

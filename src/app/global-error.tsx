@@ -56,8 +56,8 @@ export default function GlobalError({
           padding: "1.5rem",
           textAlign: "center",
           fontFamily: "system-ui, sans-serif",
-          background: "#0a0a0a",
-          color: "#f5f5f5",
+          background: "#ffffff",
+          color: "#18181b",
         }}
       >
         <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>
@@ -80,7 +80,7 @@ export default function GlobalError({
             padding: "0 24px",
             borderRadius: 999,
             border: "none",
-            background: "#c9a227",
+            background: "#18181b",
             color: "#fff",
             fontSize: 13,
             fontWeight: 700,

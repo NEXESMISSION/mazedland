@@ -9,28 +9,34 @@
  * hours. Centred, the only way to remove it is to crop away the subject, which
  * is exactly the trade we want to force.
  *
- * WHY A WHITE MARK, NOT THE NAVY ONE. `logo.webp` is dark navy on transparent,
- * which is correct on our own light chrome and useless over a photo: at any
- * opacity that stays polite it disappears into a ploughed field or an evening
- * shot. `logo-mark.webp` is the same wordmark with the navy thrown away and the
- * alpha kept, filled white, and it is drawn over a soft dark shadow — light
+ * WHY A WHITE MARK, NOT THE GOLD ONE. `logo.webp` is metallic gold on
+ * transparent, which is correct on our own white chrome and useless over a
+ * photo: at any opacity that stays polite the gold disappears into a ploughed
+ * field or an evening shot, and the two ends of its own ramp fight each other.
+ * `logo-watermark.webp` is the same lockup with the gold thrown away and the
+ * alpha kept, flooded white, and it is drawn over a soft dark shadow — light
  * mark plus dark shadow is the one combination that survives both an
  * overexposed white survey plan and a dark photo.
  *
  * WHAT IT SAYS. Both halves of what a stolen photo needs to carry — the
- * business and where to find it — are already in the wordmark itself, because
- * the wordmark IS « Mazed Immo ». Mazed Auto had to grow a caption under its
- * monogram to say the same thing; here the logo does it unaided, so there is
- * nothing to add and adding it would only repeat the domain twice.
+ * business and where to find it — are in the lockup itself: the tower reads as
+ * a mark and MAZED sits under it in type. The stamp is the whole lockup rather
+ * than the tower alone for exactly that reason; a bare monogram on a stolen
+ * photo says nothing to anyone who has not already learnt it.
  *
  * WHY IT IS FAINT. The mark has to survive being stolen, not be the first
- * thing anybody sees. It was 45% over 38% of the width, which made the logo
- * the loudest object in a photograph the seller took of their own land. 18%
- * over 30% is enough: a watermark does not have to be read at a glance to
- * work, it has to be impossible to remove without cropping the subject, and
- * that is a property of WHERE it sits rather than how bright it is. Same
- * numbers as Mazed Auto, deliberately — the two sites are judged side by
- * side.
+ * thing anybody sees. A watermark does not have to be read at a glance to
+ * work; it has to be impossible to remove without cropping the subject, and
+ * that is a property of WHERE it sits rather than how loud it is.
+ *
+ * 15% opacity over 22% of the HEIGHT. Mazed Auto uses 18% over 30% of the
+ * width, and neither number ports directly: its mark is a wide monogram and
+ * this one is a portrait lockup, so matching Auto span-for-span would put
+ * three times as much ink on the photo. The SPAN is matched on area instead
+ * — about 2% of the frame on both sites. The OPACITY is lower than Auto's
+ * because a solid tower is a denser shape than a monogram at the same alpha:
+ * it has no interior counters for the photograph to show through, so the same
+ * 18% that reads as a faint mark over a car reads as a smudge over a field.
  *
  * WHY IT IS DRAWN, NOT COMPOSITED SERVER-SIDE. Photos go straight from the
  * browser to storage on a signed URL — the bytes never pass through our
@@ -41,14 +47,25 @@
  * exactly the property we need.
  */
 
-/** Fraction of the image's WIDTH the mark spans. */
-const MARK_WIDTH_RATIO = 0.3;
+/**
+ * Fraction of the image's HEIGHT the mark spans.
+ *
+ * It used to be a fraction of the WIDTH, which was right while the mark was a
+ * 3.3:1 wordmark and is wrong now that it is a portrait lockup: 30% of the
+ * width of a landscape photo makes a stamp 40% of its height, and the clamp
+ * below would then shrink it back on anything squarer. Driving off the height
+ * gives the same visual weight on a landscape photo, a portrait one and a
+ * square thumbnail without the clamp ever firing.
+ */
+const MARK_HEIGHT_RATIO = 0.22;
+/** Never wider than this fraction of the image, for very tall crops. */
+const MAX_MARK_WIDTH_RATIO = 0.32;
 /** A floor so the mark does not vanish entirely on a tiny upload. */
 const MIN_MARK_PX = 96;
 /** How present the mark is. Deliberately low — see the note above. */
-const MARK_OPACITY = 0.18;
-/** The trimmed wordmark — white on transparent, ~3.3:1. */
-const MARK_SRC = "/logo-mark.webp";
+const MARK_OPACITY = 0.15;
+/** The trimmed lockup — white on transparent, ~0.74:1 (portrait). */
+const MARK_SRC = "/logo-watermark.webp";
 
 /**
  * The decoded mark, fetched once per page rather than per photo.
@@ -92,11 +109,12 @@ export function drawWatermark(
   // thumbnail, and asking for a 160px mark on it drew a stamp wider than the
   // image. The canvas does not complain — it just crops the mark and produces
   // a photo branded with a fragment of a logo.
-  let markW = Math.min(Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO)), width);
-  let markH = Math.round(markW * aspect);
-  if (markH > height) {
-    markH = height;
-    markW = Math.round(markH / aspect);
+  let markH = Math.min(Math.max(MIN_MARK_PX, Math.round(height * MARK_HEIGHT_RATIO)), height);
+  let markW = Math.round(markH / aspect);
+  const maxW = Math.round(width * MAX_MARK_WIDTH_RATIO);
+  if (markW > maxW) {
+    markW = maxW;
+    markH = Math.round(markW * aspect);
   }
   const x = Math.round((width - markW) / 2);
   const y = Math.round((height - markH) / 2);

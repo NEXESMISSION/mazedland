@@ -382,18 +382,18 @@ function BrandSlide({
       href={slide.href as `/${string}`}
       aria-hidden={!active}
       tabIndex={active ? 0 : -1}
-      className="group relative block aspect-[16/11] w-full shrink-0 overflow-hidden bg-[#0a1530]"
+      className="group relative block aspect-[16/11] w-full shrink-0 overflow-hidden bg-surface-2"
       style={{ minWidth: "100%" }}
       draggable={false}
     >
-      {/* Deep navy base with a warm gold bloom up top — sets the luxe
-          stage without an external image. */}
+      {/* Warm paper base with a gold bloom up top — sets the stage without
+          an external image. */}
       <div
         aria-hidden
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(70% 60% at 50% 20%, rgba(212, 175, 55, 0.22) 0%, rgba(30, 58, 138, 0.0) 60%), linear-gradient(180deg, #0d1b3d 0%, #08122a 100%)",
+            "radial-gradient(70% 60% at 50% 20%, rgba(184, 130, 54, 0.20) 0%, rgba(184, 130, 54, 0) 62%), linear-gradient(180deg, #fffdf7 0%, #f4ecdd 100%)",
         }}
       />
       {/* Concentric gold arcs behind the headline — pure CSS, no asset. */}
@@ -402,16 +402,16 @@ function BrandSlide({
         className="absolute inset-0 opacity-70"
         style={{
           backgroundImage: [
-            "radial-gradient(circle at 50% 32%, transparent 96px, rgba(212,175,55,0.18) 97px, transparent 99px)",
-            "radial-gradient(circle at 50% 32%, transparent 138px, rgba(212,175,55,0.12) 139px, transparent 141px)",
-            "radial-gradient(circle at 50% 32%, transparent 188px, rgba(212,175,55,0.07) 189px, transparent 191px)",
+            "radial-gradient(circle at 50% 32%, transparent 96px, rgba(168,111,34,0.28) 97px, transparent 99px)",
+            "radial-gradient(circle at 50% 32%, transparent 138px, rgba(168,111,34,0.20) 139px, transparent 141px)",
+            "radial-gradient(circle at 50% 32%, transparent 188px, rgba(168,111,34,0.12) 189px, transparent 191px)",
           ].join(", "),
         }}
       />
       {/* Gold hairline along the bottom — finishing accent. */}
       <span
         aria-hidden
-        className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-transparent via-[#d4af37] to-transparent"
+        className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-transparent via-[var(--gold-shade)] to-transparent"
       />
 
       {/* Three-row vertical layout: eyebrow up top, hero stat + headline
@@ -425,7 +425,7 @@ function BrandSlide({
         }`}
       >
         {/* Top — eyebrow. */}
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/35 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gold-soft)] bg-white/70 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--gold-deep)] backdrop-blur-sm">
           {hasLiveCount && (
             <span
               aria-hidden
@@ -443,47 +443,30 @@ function BrandSlide({
               word floating next to it on the baseline. */}
           {hasLiveCount && (
             <div className="flex flex-col items-center leading-none">
-              <span
-                className="mazed-tabular text-[56px] font-black leading-[0.95] tracking-tight md:text-[64px]"
-                style={{
-                  background:
-                    "linear-gradient(180deg, #f7e4a3 0%, #d4af37 55%, #b08a1f 100%)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  color: "transparent",
-                  textShadow: "0 4px 24px rgba(212,175,55,0.25)",
-                }}
-              >
+              {/* Flat gold — see the note on .gradient-gold-text in globals.css. */}
+              <span className="mazed-tabular text-[56px] font-black leading-[0.95] tracking-tight text-gold md:text-[64px]">
                 {slide.liveCount}
               </span>
-              <span className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.32em] text-white/65">
+              <span className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.32em] text-muted">
                 Annonces
               </span>
             </div>
           )}
 
           {/* Headline — gold for the last word so the eye lands. */}
-          <h2 className="mt-3 max-w-[18ch] text-balance text-[20px] font-extrabold leading-[1.1] tracking-tight text-white md:text-[24px]">
+          <h2 className="mt-3 max-w-[18ch] text-balance text-[20px] font-extrabold leading-[1.1] tracking-tight text-foreground md:text-[24px]">
             L&apos;immobilier{" "}
-            <span
-              style={{
-                background:
-                  "linear-gradient(180deg, #f7e4a3 0%, #d4af37 60%, #b08a1f 100%)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-              }}
-            >
+            <span className="text-gold">
               tunisien
             </span>
           </h2>
 
           {/* Trust line — three values with gold dot separators. */}
-          <div className="mt-2 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">
+          <div className="mt-2 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
             Transparence
-            <span aria-hidden className="size-1 rounded-full bg-[#d4af37]" />
+            <span aria-hidden className="size-1 rounded-full bg-[var(--gold)]" />
             Rapidité
-            <span aria-hidden className="size-1 rounded-full bg-[#d4af37]" />
+            <span aria-hidden className="size-1 rounded-full bg-[var(--gold)]" />
             Confiance
           </div>
         </div>
@@ -493,11 +476,7 @@ function BrandSlide({
             (positioned at bottom-3 inside the track) no longer overlap
             the button. */}
         <span
-          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full px-6 text-[11.5px] font-extrabold uppercase tracking-[0.16em] text-[#0a1530] shadow-[0_12px_28px_-8px_rgba(212,175,55,0.65)] ring-1 ring-black/10 transition group-hover:scale-[1.03]"
-          style={{
-            background:
-              "linear-gradient(180deg, #f7e4a3 0%, #d4af37 55%, #a8841e 100%)",
-          }}
+          className="mazed-gold-fill gold-rim inline-flex h-10 items-center justify-center gap-1.5 rounded-full px-6 text-[11.5px] font-extrabold uppercase tracking-[0.16em] transition group-hover:scale-[1.03]"
         >
           {slide.ctaLabel ?? "Explorer"}
           <span aria-hidden className="text-[14px] leading-none">→</span>

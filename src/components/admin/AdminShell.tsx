@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
   LayoutDashboard, Inbox, Receipt, Tag, Users, FolderTree,
-  SlidersHorizontal, ExternalLink, Menu, X, Home,
+  SlidersHorizontal, ExternalLink, Menu, X,
   type LucideIcon,
 } from "lucide-react";
 import { NavIcon } from "./kit/LinkPending";
@@ -88,7 +89,10 @@ const SITE: Item = {
 function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2.5">
-      <Home className="size-4 text-[var(--gold)]" strokeWidth={2.2} />
+      {/* The mark, not a house glyph. The glyph was standing in for a logo
+          the product had no usable file of; it has one now, and the console
+          should be recognisably the same product as the site. */}
+      <Image src="/logo-mark.webp" alt="" width={127} height={160} className="h-5 w-auto" />
       <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-foreground">
         Mazed Immo<span className="text-[var(--gold)]"> Console</span>
       </span>

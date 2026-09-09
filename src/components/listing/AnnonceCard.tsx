@@ -136,7 +136,7 @@ export async function AnnonceCard({
 
           {/* Bottom-trailing — polished-brass arrow chip, rotates on hover. */}
           <div className="absolute bottom-2.5 end-2.5">
-            <span className="mazed-gradient-gold inline-flex h-9 w-9 items-center justify-center rounded-full text-white ring-1 ring-black/5 shadow-[var(--shadow-gold)] transition-transform group-hover:scale-110 group-hover:rotate-45">
+            <span className="mazed-gold-fill gold-rim inline-flex h-9 w-9 items-center justify-center rounded-full transition-transform group-hover:scale-110 group-hover:rotate-45">
               <ArrowUpRight className="size-4" strokeWidth={2.5} />
             </span>
           </div>

@@ -1,7 +1,7 @@
 {
   "brand": {
     "name": "Mazed Immo",
-    "domain": "Mazed Immo",
+    "titleSuffix": "Petites annonces immobilières en Tunisie",
     "tagline": "Petites annonces immobilières — terrains, maisons et locaux partout en Tunisie",
     "slogan": "Le prix affiché. Le vendeur au bout du fil."
   },
@@ -31,6 +31,8 @@
       "account": "Compte"
     },
     "pageTitles": {
+      "annonces": "Annonce",
+      "annoncesNew": "Publier une annonce",
       "properties": "Biens",
       "auctions": "Annonces",
       "inspectors": "Experts",

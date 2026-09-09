@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 const SHOWN_KEY = "mazed:splash-shown";
 
 /**
- * First-load splash — centered Mazed Immo wordmark on the brand gradient
+ * First-load splash — the Mazed lockup centred on white
  * with a soft loading-dots animation underneath. Plays once per
  * browser session (sessionStorage flag); in-app navigation never
  * re-triggers it.
@@ -57,40 +57,46 @@ export function SplashScreen() {
       aria-hidden
       className={cn(
         "fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden",
-        "mazed-gradient-gold",
+        // White, not the gold gradient. A full-bleed metal fill behind a metal
+        // logo leaves the mark nowhere to sit, and the first thing the app
+        // shows should be the surface the rest of it is made of.
+        "bg-background",
         "transition-opacity duration-200 ease-out",
         fadeOut ? "opacity-0 pointer-events-none" : "opacity-100",
       )}
     >
-      {/* Soft white halos for depth — same recipe as the favorites
+      {/* Soft gold halos for depth — same recipe as the favorites
           empty-state and the notification modal header. */}
       <div className="mazed-gradient-blob mazed-gradient-blob-lg -top-20 -right-12" />
       <div className="mazed-gradient-blob mazed-gradient-blob-lg -bottom-24 -left-16" />
 
-      {/* Logo — preloaded in <head>, served via <picture> so AVIF
-          (4 KB) wins where supported, with WebP fallback. The CSS
-          filter (`brightness(0) invert(1)`) flips the dark wordmark
-          to pure white so it reads directly on the gradient without
-          any backing plate. */}
+      {/* Logo — preloaded in <head>, served via <picture> so AVIF wins where
+          supported, with a WebP fallback.
+
+          `.mazed-splash-logo` used to carry `brightness(0) invert(1)`, which
+          flattened the old navy wordmark to a white silhouette so it could sit
+          on the gold gradient. Both halves of that are gone: the ground is
+          white and the mark is metal, so the filter would erase the logo
+          entirely. It must not come back. */}
       <picture className="relative animate-[mazed-float-up_220ms_ease-out_both]">
         <source srcSet="/logo.avif" type="image/avif" />
         <source srcSet="/logo.webp" type="image/webp" />
         <img
           src="/logo.png"
           alt="Mazed Immo"
-          width={528}
-          height={164}
+          width={913}
+          height={1228}
           decoding="async"
           fetchPriority="high"
-          className="mazed-splash-logo h-14 w-auto sm:h-16"
+          className="mazed-splash-logo h-28 w-auto sm:h-32"
         />
       </picture>
 
-      {/* Thin progress bar — a single white sliver runs left to right
-          under the logo. Cleaner than bouncing dots and on-brand with
-          the linear/stripe-style premium loaders. */}
+      {/* Thin progress bar — a single gold sliver runs left to right under
+          the logo. Cleaner than bouncing dots and on-brand with the
+          linear/stripe-style premium loaders. */}
       <div
-        className="relative mt-10 h-[2px] w-40 overflow-hidden rounded-full bg-white/20"
+        className="relative mt-10 h-[2px] w-40 overflow-hidden rounded-full bg-surface-3"
         role="status"
         aria-label="Chargement"
       >

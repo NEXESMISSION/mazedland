@@ -35,16 +35,27 @@ const NotificationBell = dynamic(
  * to the same value at lg (see .mazed-shell-main in globals.css).
  */
 
-const LINKS: { href: "/" | "/properties" | "/account/activity"; key: "home" | "browse" | "activity" }[] = [
+/**
+ * "Explorer" points at /annonces, not /properties.
+ *
+ * /properties has 302'd to /annonces since the pivot, so the link cost every
+ * desktop visitor a redirect — and, worse, `isActive` matched only the path
+ * being redirected AWAY from, so the tab you had just clicked never lit up.
+ * The old paths still match below: an auction-era bookmark or notification
+ * should not land on an unlit nav either.
+ */
+const LINKS: { href: "/" | "/annonces" | "/account/activity"; key: "home" | "browse" | "activity" }[] = [
   { href: "/", key: "home" },
-  { href: "/properties", key: "browse" },
+  { href: "/annonces", key: "browse" },
   { href: "/account/activity", key: "activity" },
 ];
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
-  if (href === "/properties") {
+  if (href === "/annonces") {
     return (
+      pathname === "/annonces" ||
+      pathname.startsWith("/annonces/") ||
       pathname === "/properties" ||
       pathname.startsWith("/properties/") ||
       pathname.startsWith("/auctions")
@@ -63,8 +74,10 @@ export function DesktopNav() {
   function submitSearch(e: React.FormEvent) {
     e.preventDefault();
     const clean = normalizeSearchQuery(q);
+    // Straight to the catalogue. It reads `q` itself; going via /properties
+    // only added a redirect between pressing Enter and seeing results.
     router.push(
-      (clean ? `/properties?q=${encodeURIComponent(clean)}` : "/properties") as `/properties`,
+      (clean ? `/annonces?q=${encodeURIComponent(clean)}` : "/annonces") as `/annonces`,
     );
   }
 
@@ -73,16 +86,22 @@ export function DesktopNav() {
       <div className="mx-auto flex h-full w-full max-w-[var(--max-w-wide)] items-center gap-6 px-8">
         {/* ── Left zone: brand + primary links ── */}
         <div className="flex shrink-0 items-center gap-7">
-          <Link href="/" className="flex shrink-0 items-center" aria-label="Mazed Immo">
+          {/* Mark + name, matching the mobile TopBar. The logo file is a
+              portrait lockup whose wordmark is illegible at nav height — see
+              the note in TopBar.tsx. */}
+          <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Mazed Immo">
             <Image
-              src="/logo.png"
-              alt="Mazed Immo"
-              width={257}
-              height={80}
+              src="/logo-mark.webp"
+              alt=""
+              width={745}
+              height={936}
               priority
-              sizes="128px"
-              className="h-9 w-auto"
+              sizes="36px"
+              className="h-10 w-auto"
             />
+            <span className="text-[17px] font-extrabold tracking-tight text-foreground">
+              Mazed Immo
+            </span>
           </Link>
 
           <nav className="flex items-center gap-1" aria-label="Navigation principale">

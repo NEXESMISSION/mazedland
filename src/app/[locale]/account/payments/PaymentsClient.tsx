@@ -317,7 +317,7 @@ export function PaymentsClient({
               onClick={() => setFilter(key)}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-all lg:text-[13px] ${
                 on
-                  ? "mazed-gradient-gold text-white shadow-[var(--shadow-gold)]"
+                  ? "mazed-gold-fill gold-rim-flat"
                   : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground"
               }`}
             >

@@ -1,5 +1,5 @@
 /**
- * Stamp the wordmark into every listing photo published before
+ * Stamp the lockup into every listing photo published before
  * `src/lib/watermark.ts` existed.
  *
  * New uploads are stamped in the browser on their way to storage. The 29
@@ -41,13 +41,14 @@ import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const MARK = path.join(ROOT, "public", "logo-mark.png");
+const MARK = path.join(ROOT, "public", "logo-watermark.png");
 const LEDGER = path.join(ROOT, "scripts", "watermarked-photos.json");
 
 // Must match src/lib/watermark.ts.
-const MARK_WIDTH_RATIO = 0.3;
+const MARK_HEIGHT_RATIO = 0.22;
+const MAX_MARK_WIDTH_RATIO = 0.32;
 const MIN_MARK_PX = 96;
-const MARK_OPACITY = 0.18;
+const MARK_OPACITY = 0.15;
 
 const COMMIT = process.argv.includes("--commit");
 
@@ -96,6 +97,10 @@ async function markAt(width) {
 /**
  * The mark's width, clamped so it always fits inside the photo.
  *
+ * Driven off the photo's HEIGHT, like the browser path: the lockup is a
+ * portrait 0.74:1, so sizing it on the width would give a landscape photo a
+ * stamp 40% of its height and a portrait one a stamp barely a fifth.
+ *
  * `MIN_MARK_PX` is a floor on legibility, not a promise that the photo is big
  * enough to hold it. The catalogue contains a 120x120 thumbnail; asking for a
  * 160px mark on it made sharp refuse the whole composite ("Image to composite
@@ -104,9 +109,9 @@ async function markAt(width) {
  */
 async function fittedWidth(width, height) {
   const meta = await sharp(MARK).metadata();
-  const aspect = meta.height / meta.width;
-  const w = Math.min(Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO)), width);
-  return Math.round(w * aspect) > height ? Math.round(height / aspect) : w;
+  const aspect = meta.height / meta.width;               // h / w, > 1 here
+  const h = Math.min(Math.max(MIN_MARK_PX, Math.round(height * MARK_HEIGHT_RATIO)), height);
+  return Math.min(Math.round(h / aspect), Math.round(width * MAX_MARK_WIDTH_RATIO), width);
 }
 
 async function stamp(buf) {
@@ -136,7 +141,7 @@ const res = await fetch(`${SB_URL}/rest/v1/listing_photos?select=id,storage_path
 if (!res.ok) throw new Error(`listing_photos read failed: ${res.status} ${await res.text()}`);
 const rows = await res.json();
 
-const SETTINGS = `r${MARK_WIDTH_RATIO}-o${MARK_OPACITY}`;
+const SETTINGS = `h${MARK_HEIGHT_RATIO}-o${MARK_OPACITY}-mazed`;
 const saved = fs.existsSync(LEDGER) ? JSON.parse(fs.readFileSync(LEDGER, "utf8")) : { done: [] };
 // A ledger written at a different strength describes files that have since
 // been restored from git; it must not be read as "already done".

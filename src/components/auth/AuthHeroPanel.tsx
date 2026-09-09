@@ -2,7 +2,7 @@ import { ShieldCheck, Eye, Zap, Star } from "lucide-react";
 
 /**
  * Desktop-only split-screen hero for the auth pages. A full-height
- * property photo under a deep-navy scrim, with the brand promise, three
+ * property photo under a warm near-black scrim, with the brand promise, three
  * trust points, and a slim social-proof line set directly on the image
  * (no stacked cards) — kept compact so the whole auth screen fits in one
  * viewport without scrolling. Rendered only inside the `hidden lg:grid`
@@ -16,7 +16,7 @@ const FEATURES = [
 
 export function AuthHeroPanel() {
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#0d1b3d]">
+    <div className="relative h-full w-full overflow-hidden bg-[#1a1206]">
       <picture>
         <source srcSet="/auth-hero.avif" type="image/avif" />
         <source srcSet="/auth-hero.webp" type="image/webp" />
@@ -29,7 +29,7 @@ export function AuthHeroPanel() {
         />
       </picture>
       {/* Deep scrim so white text + icons read on any photo. */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0a1530]/95 via-[#0a1530]/55 to-[#0a1530]/35" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#140d04]/95 via-[#140d04]/55 to-[#140d04]/35" />
 
       <div className="relative flex h-full flex-col justify-between p-12">
         {/* Top — one brand pill */}
@@ -60,11 +60,11 @@ export function AuthHeroPanel() {
 
           <div className="mt-8 flex items-center gap-3">
             <div className="flex -space-x-2.5">
-              {["#3b82f6", "#6366f1", "#0ea5e9", "#8b5cf6"].map((c, i) => (
+              {["#dfae55", "#cc902e", "#a86f22", "#e8d5a3"].map((c, i) => (
                 <span
                   key={i}
                   aria-hidden
-                  className="size-8 rounded-full ring-2 ring-[#0d1b3d]"
+                  className="size-8 rounded-full ring-2 ring-[#1a1206]"
                   style={{ background: c }}
                 />
               ))}

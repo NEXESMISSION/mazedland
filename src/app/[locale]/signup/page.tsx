@@ -3,7 +3,6 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { SignupForm } from "@/components/auth/SignupForm";
 import { AuthHeroPanel } from "@/components/auth/AuthHeroPanel";
 import { Link } from "@/i18n/navigation";
-import { Home } from "lucide-react";
 
 /**
  * Signup surface.
@@ -32,10 +31,10 @@ export default async function SignupPage() {
             <div className="p-7 sm:p-8">
               <div className="flex flex-col items-center text-center">
                 <Image
-                  src="/logo-square.png"
+                  src="/logo.webp"
                   alt={t("brand.name")}
-                  width={96}
-                  height={96}
+                  width={357}
+                  height={480}
                   priority
                   className="h-20 w-auto"
                 />
@@ -77,9 +76,17 @@ export default async function SignupPage() {
             <div aria-hidden className="mazed-gradient-gold absolute inset-x-0 top-0 h-[3px]" />
 
             <div className="flex flex-col items-center text-center">
-              <span className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--gold)] to-[var(--gold-bright)] text-white shadow-[0_14px_34px_-12px_rgba(30,58,138,0.65)]">
-                <Home className="size-8" strokeWidth={2} />
-              </span>
+              {/* The mark itself, not a generic house glyph in a gold tile.
+                  The tile was standing in for a logo the product did not have
+                  a usable file of; it does now. */}
+              <Image
+                src="/logo.webp"
+                alt=""
+                width={357}
+                height={480}
+                priority
+                className="h-20 w-auto"
+              />
               <h1
                 className={`mt-5 text-[28px] font-extrabold leading-[1.1] tracking-tight ${
                   isRTL ? "font-arabic" : ""

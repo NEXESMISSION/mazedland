@@ -10,10 +10,10 @@ import { Home, Search, Plus, LayoutGrid, User } from "lucide-react";
  *   - Frosted white background that lets the page peek through subtly,
  *     anchored to the bottom edge. A single hairline top border keeps
  *     it crisp without competing with content.
- *   - Five cells. Cell 3 is the navy "Sell" FAB — a saturated disc
- *     that lifts above the bar's top edge so it pops as the action.
- *   - Active tab: navy icon + label + small underline pip below the
- *     label. Inactive: muted zinc. Hover lightly darkens.
+ *   - Five cells. Cell 3 is the "Sell" FAB — a dark disc that lifts above
+ *     the bar's top edge so it pops as the action.
+ *   - Active tab: full-contrast icon + label + a pin hanging from the bar's
+ *     top edge. Inactive: muted zinc. Hover lightly darkens.
  *   - Safe-area aware: the visible icon row is `--bottombar-h` tall;
  *     the bar background extends below it for the iPhone home indicator.
  */
@@ -114,8 +114,13 @@ export function BottomTabBar() {
               aria-label={t(tab.labelKey)}
               aria-current={active ? "page" : undefined}
             >
+              {/* Dark, not gold. It was a gold gradient under a gold glow —
+                  the single loudest object on the page, for an action most
+                  visitors never take. Same trade as .mazed-btn-luxe: the
+                  highest contrast available needs no glow to be found, and it
+                  leaves gold to mean one thing, which is money. */}
               <span
-                className={`mazed-gradient-gold relative inline-flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full text-white shadow-[var(--shadow-gold)] ring-4 ring-white transition-transform active:scale-95 ${
+                className={`relative inline-flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full bg-foreground text-[var(--background)] shadow-[var(--shadow-lg)] ring-4 ring-[var(--background)] transition-transform active:scale-95 ${
                   active ? "scale-105" : "hover:scale-[1.03]"
                 }`}
               >
@@ -131,7 +136,7 @@ export function BottomTabBar() {
             href={tab.href}
             className={`relative flex h-full min-w-0 flex-col items-center justify-center gap-1 px-1 transition-colors ${
               active
-                ? "text-[var(--gold)]"
+                ? "text-foreground"
                 : "text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
             }`}
             aria-label={t(tab.labelKey)}
@@ -144,11 +149,11 @@ export function BottomTabBar() {
             <span className="max-w-full truncate text-[10px] font-semibold leading-tight">
               {t(tab.labelKey)}
             </span>
-            {/* Active indicator — a tiny navy dot below the label
-                instead of the old glowing top pin. Cleaner, doesn't
-                compete with the FAB above. */}
+            {/* Active indicator — a pin hanging from the bar's top edge.
+                A 4px dot under a 10px label is below the threshold of
+                noticing, and it sat where the FAB already draws the eye. */}
             {active && (
-              <span className="absolute bottom-1.5 h-1 w-1 rounded-full bg-[var(--gold)]" />
+              <span className="absolute top-0 h-1 w-10 rounded-b-full bg-foreground" />
             )}
           </Link>
         );

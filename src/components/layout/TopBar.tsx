@@ -20,11 +20,25 @@ const NotificationBell = dynamic(
   { ssr: false, loading: () => <span className="inline-block h-9 w-9" /> },
 );
 
-const ROOT_TAB_PATHS = new Set(["/", "/properties", "/account/activity", "/account"]);
+/**
+ * Where the bottom tab bar can put you. On these the bar shows the brand; on
+ * anything else it shows a back button and the page title.
+ *
+ * `/properties` was listed here and `/annonces` was not — but `/properties`
+ * has 302'd to `/annonces` since the pivot, so the set described a page
+ * nobody lands on and omitted the one the "Explorer" tab actually opens. The
+ * result was a root tab that greeted you with a bare back arrow and no title.
+ */
+const ROOT_TAB_PATHS = new Set(["/", "/annonces", "/account/activity", "/account"]);
 
 // Map the first path segment to the i18n key under shell.pageTitles.
 // Anything not in here falls back to the brand mark.
 const TITLE_BY_SEGMENT: Record<string, string> = {
+  // Inner annonce pages. The list itself is a root tab (above) and never
+  // reaches this map; /annonces/nouvelle is special-cased below, because the
+  // map keys off the FIRST segment and "Annonce" is the wrong heading for the
+  // publish wizard.
+  annonces: "annonces",
   properties: "properties",
   auctions: "auctions",
   inspectors: "inspectors",
@@ -42,13 +56,11 @@ const TITLE_BY_SEGMENT: Record<string, string> = {
 /**
  * Mobile-app top bar — ported from the mazed-auto pattern.
  *
- *   - Pure `#0a0a0a` background with a soft black drop, no glass
- *     or hairline gold rule. The chrome stays out of the way so the
- *     page content carries the design weight.
- *   - Brand wordmark on the root pages renders in `gradient-gold-text`
- *     (the same recipe auto uses for "Mazed Auto").
- *   - Inner pages get a back button + plain Jakarta page title, gold
- *     accents only on the active state.
+ *   - Plain white with a hairline border, no glass and no gold rule. The
+ *     chrome stays out of the way so the page content carries the design
+ *     weight.
+ *   - Root pages get the tower mark plus the name in plain Jakarta.
+ *   - Inner pages get a back button + page title instead.
  */
 export function TopBar() {
   const t = useTranslations();
@@ -58,7 +70,12 @@ export function TopBar() {
 
   const isRoot = ROOT_TAB_PATHS.has(pathname) || pathname === "/";
   const segment = pathname.split("/").filter(Boolean)[0];
-  const titleKey = segment ? TITLE_BY_SEGMENT[segment] : undefined;
+  const titleKey =
+    pathname === "/annonces/nouvelle"
+      ? "annoncesNew"
+      : segment
+        ? TITLE_BY_SEGMENT[segment]
+        : undefined;
 
   return (
     <header
@@ -102,23 +119,32 @@ export function TopBar() {
 
 function BrandMark() {
   const t = useTranslations("brand");
-  // Wordmark sized to read clearly in the top bar — `h-8` (32px) on
-  // mobile, `h-9` (36px) on desktop. The ~3.2:1 wordmark auto-scales
-  // its width via `w-auto`. `priority` skips the lazy-load — this is
-  // above-the-fold on every page that shows the bar. The asset is
-  // also `<link rel="preload">`-ed in the root layout, so by the
-  // time this paints it's already in cache.
+  // The tower, then the name — the same lockup Mazed Auto uses in its bar.
+  //
+  // It was the full logo file at `h-8`. That file is a PORTRAIT lockup: the
+  // tower, a rule, and MAZED underneath. Scaled to fit a 56px bar the whole
+  // wordmark lands at about nine pixels tall, which is a grey smudge, and the
+  // tower loses most of its height paying for it. Splitting the two — the mark
+  // as an image, the name as live type — gives the tower the full 36px and the
+  // name renders at a size somebody can actually read.
+  //
+  // `priority` skips the lazy-load: this is above-the-fold on every page that
+  // shows the bar, and the asset is `<link rel="preload">`-ed in the root
+  // layout, so by the time this paints it is already in cache.
   return (
-    <Link href="/" className="flex items-center" aria-label={t("name")}>
+    <Link href="/" className="flex items-center gap-2" aria-label={t("name")}>
       <Image
-        src="/logo.png"
-        alt={t("name")}
-        width={257}
-        height={80}
+        src="/logo-mark.webp"
+        alt=""
+        width={745}
+        height={936}
         priority
-        sizes="116px"
-        className="h-8 w-auto shrink-0 lg:h-9"
+        sizes="30px"
+        className="h-9 w-auto shrink-0"
       />
+      <span className="truncate text-[15px] font-bold tracking-tight text-foreground">
+        {t("name")}
+      </span>
     </Link>
   );
 }

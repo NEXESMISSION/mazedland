@@ -84,17 +84,32 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/**
+ * The notification e-mail, on white.
+ *
+ * It was dark: #0e0e10 page, #17171b card, near-white type. That matched the
+ * app when the app was dark, and the app is white now — but the stronger
+ * reason to change it is that a dark e-mail is a bet on the client. Gmail and
+ * Outlook both re-colour mail they judge to be dark-mode, and neither asks:
+ * a hand-set near-white body over a card colour they have decided to invert
+ * lands as grey-on-grey. White with dark type is the one combination no
+ * client rewrites into something unreadable.
+ *
+ * Colours are literals, not tokens, because an e-mail has no stylesheet. They
+ * are the same values globals.css resolves to: --gold-deep for the wordmark,
+ * --foreground for the heading, --border for the hairline.
+ */
 function renderHtml(title: string, body: string, href: string | null): string {
   const cta = href
-    ? `<a href="${href}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#c9a227;color:#111;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px">Voir sur Mazed Immo</a>`
+    ? `<a href="${href}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#18181b;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px">Voir sur Mazed Immo</a>`
     : "";
-  return `<!doctype html><html lang="fr"><body style="margin:0;background:#0e0e10;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
-    <div style="max-width:520px;margin:0 auto;background:#17171b;border:1px solid #2a2a30;border-radius:16px;padding:28px">
-      <div style="font-size:18px;font-weight:800;color:#c9a227;letter-spacing:.5px">Mazed Immo</div>
-      <h1 style="font-size:18px;color:#f5f5f5;margin:18px 0 8px">${escapeHtml(title)}</h1>
-      <p style="font-size:14px;line-height:1.6;color:#c8c8cc;margin:0">${escapeHtml(body)}</p>
+  return `<!doctype html><html lang="fr"><body style="margin:0;background:#f4f4f5;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+    <div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e4e4e7;border-radius:16px;padding:28px">
+      <div style="font-size:18px;font-weight:800;color:#5d420b;letter-spacing:.5px">Mazed Immo</div>
+      <h1 style="font-size:18px;color:#18181b;margin:18px 0 8px">${escapeHtml(title)}</h1>
+      <p style="font-size:14px;line-height:1.6;color:#52525b;margin:0">${escapeHtml(body)}</p>
       ${cta}
-      <p style="font-size:11px;color:#75757c;margin:24px 0 0">Vous recevez cet e-mail car vous avez un compte sur Mazed Immo.</p>
+      <p style="font-size:11px;color:#71717a;margin:24px 0 0">Vous recevez cet e-mail car vous avez un compte sur Mazed Immo.</p>
     </div></body></html>`;
 }
 

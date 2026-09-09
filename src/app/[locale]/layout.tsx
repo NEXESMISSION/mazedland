@@ -22,14 +22,26 @@ export async function generateMetadata({
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) return {};
   const t = await getTranslations({ locale, namespace: "brand" });
+  // `title.absolute`, not `title.default`.
+  //
+  // A child segment's `default` still has the PARENT's `template` applied to
+  // it, and the root layout's template is "%s · Mazed Immo" — so the home tab
+  // read "Mazed Immo — Petites annonces immobilières en Tunisie · Mazed Immo",
+  // with the brand said twice. `absolute` is the documented escape hatch and
+  // is what a segment's own landing title wants. Inner pages are unaffected:
+  // they set a plain string title and keep inheriting the root's template.
+  //
+  // These used to be built out of `brand.domain`, which held "Batta.tn". There
+  // is no Mazed Immo domain registered yet, so the strings are built from the
+  // name and a title suffix instead of inventing one.
   return {
-    title: { default: `${t("name")} — ${t("domain")}`, template: `%s · ${t("domain")}` },
+    title: { absolute: `${t("name")} — ${t("titleSuffix")}` },
     description: t("tagline"),
     openGraph: {
-      title: `${t("name")} — ${t("domain")}`,
+      title: `${t("name")} — ${t("titleSuffix")}`,
       description: t("tagline"),
       type: "website",
-      siteName: t("domain"),
+      siteName: t("name"),
     },
     alternates: {
       languages: {
