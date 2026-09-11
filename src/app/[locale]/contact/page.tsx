@@ -33,7 +33,7 @@ export default function ContactPage() {
   return (
     <LegalPage eyebrow="Aide" title="Contactez-nous">
       <p className="text-[13.5px] leading-relaxed text-foreground/80">
-        Une question sur une enchère, un paiement ou votre compte ? Notre équipe
+        Une question sur une annonce, un paiement ou votre compte ? Notre équipe
         est là pour vous aider.
       </p>
       <ul className="mt-5 space-y-2.5">

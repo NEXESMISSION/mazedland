@@ -22,16 +22,3 @@ export function formatTND(
   }).format(amount);
 }
 
-/**
- * Bid increment ladder from the plan §8 (in TND):
- *   <100k          → 1,000
- *   100k–500k      → 5,000
- *   500k–1M        → 10,000
- *   ≥1M            → 25,000
- */
-export function minBidIncrement(currentBid: number): number {
-  if (currentBid < 100_000) return 1_000;
-  if (currentBid < 500_000) return 5_000;
-  if (currentBid < 1_000_000) return 10_000;
-  return 25_000;
-}

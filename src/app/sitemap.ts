@@ -13,19 +13,20 @@ export const revalidate = 3600;
 
 /**
  * Dynamic sitemap. Public, crawlable surfaces only:
- *   - the static marketing/legal pages
- *   - every auction/listing whose property is `ready` and that is in a
- *     publicly-visible state (upcoming, live, or recently concluded)
+ *   - the static pages and the catalogue
+ *   - every published annonce
  *
- * Authenticated areas (admin/account/kyc/payment/sell) are excluded here and
- * in robots.ts. Uses the cookieless service-role client like the home feed.
+ * Authenticated areas (admin / account / payment) are excluded here and in
+ * robots.ts. Uses the cookieless service-role client like the home feed.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = SITE_URL?.replace(/\/$/, "") ?? "";
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${base}/fr`, changeFrequency: "hourly", priority: 1 },
-    { url: `${base}/fr/properties`, changeFrequency: "hourly", priority: 0.9 },
+    // /fr/annonces, not /fr/properties: /properties 302s to /annonces since the
+    // pivot, and a sitemap that lists a redirect wastes crawl budget on it.
+    { url: `${base}/fr/annonces`, changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/fr/terms`, changeFrequency: "yearly", priority: 0.2 },
     { url: `${base}/fr/privacy`, changeFrequency: "yearly", priority: 0.2 },
     { url: `${base}/fr/contact`, changeFrequency: "monthly", priority: 0.3 },

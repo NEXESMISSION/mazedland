@@ -4,26 +4,29 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { coverPhoto } from "@/lib/listingCover";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND } from "@/lib/utils";
-import { Home, ImageOff, MapPin, Ruler, SearchX } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, SearchX, X } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Annonces — the fixed-price catalogue.
+ * Annonces — the fixed-price catalogue: a price is shown and the buyer
+ * telephones the seller.
  *
- * The first surface of the pivot: Mazed Land stops being only an auction house
- * and starts being a place where a price is shown and the buyer telephones the
- * seller. The auction pages are untouched and keep running beside this.
+ * It reads `listings` (0146). Filters are category, governorate, keyword and a
+ * price range; the page is written against the shared design tokens, so it
+ * takes whichever palette the site defines.
  *
- * The catalogue reads `listings` (0146) rather than `properties`, so it shows
- * what the seller is ASKING rather than what a lot is currently bid to. The 29
- * properties already in the system were carried across in 0147.
- *
- * It is written in Land's own colours. That works without a single override
- * because Land maps the same token NAMES to its palette — `--gold` is navy
- * here and old gold on Mazed Auto — so a component written against the tokens
- * comes out blue on this site and gold on the other.
+ * PAGINATION. This used to `.limit(60)` and print `rows.length` as the total.
+ * Harmless at a dozen annonces, and two bugs the day there are sixty-one: the
+ * count under-reports, and everything past the 60th is unreachable because
+ * nothing links to it.
  */
+
+/** Annonces per page — four rows of the desktop grid. */
+const PAGE_SIZE = 24;
+
+/** "Surface" sorts in JS (the area lives in jsonb), over at most this many. */
+const SURFACE_SORT_WINDOW = 500;
 
 type Row = {
   id: string;
@@ -69,13 +72,29 @@ function specLine(r: Row): string[] {
 export default async function AnnoncesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cat?: string; gov?: string; sort?: string; q?: string }>;
+  searchParams: Promise<{
+    cat?: string; gov?: string; sort?: string; q?: string;
+    min?: string; max?: string; page?: string;
+    /** Pre-rename price params — see `min` below. */
+    min_price?: string; max_price?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const locale = await getLocale();
   const admin = getServiceSupabase();
 
   const sort = (SORTS.find((s) => s.key === sp.sort)?.key ?? "recent") as string;
+
+  // Price range, in TND. `min_price` / `max_price` are the names the home
+  // page's price tiles sent before they pointed here; they are still read so a
+  // shared or bookmarked link filters instead of silently showing everything.
+  const positive = (v: string | undefined) => {
+    const n = Math.floor(Number(v));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const min = positive(sp.min ?? sp.min_price);
+  const max = positive(sp.max ?? sp.max_price);
+  const requestedPage = Math.max(1, Math.floor(Number(sp.page)) || 1);
 
   if (!admin) {
     return (
@@ -100,25 +119,44 @@ export default async function AnnoncesPage({
       `id, title, price, price_on_request, negotiable, governorate, attributes, published_at,
        category:categories (label_fr, kind),
        photos:listing_photos (storage_path, sort_order)`,
+      { count: "exact" },
     )
     .eq("status", "published");
 
   if (active) q = q.eq("category_id", active.id);
   if (sp.gov) q = q.eq("governorate", sp.gov);
   if (sp.q?.trim()) q = q.ilike("search_text", `%${sp.q.trim().toLowerCase()}%`);
+  if (min) q = q.gte("price", min);
+  if (max) q = q.lte("price", max);
 
   if (sort === "cheap") q = q.order("price", { ascending: true, nullsFirst: false });
   else if (sort === "dear") q = q.order("price", { ascending: false, nullsFirst: false });
   else q = q.order("published_at", { ascending: false });
 
-  const { data } = await q.limit(60);
-  let rows = (data ?? []) as unknown as Row[];
+  let rows: Row[];
+  let total: number;
+  let page = requestedPage;
 
-  // Surface lives in the jsonb, so it is sorted here rather than in SQL — at
-  // catalogue size that is cheaper than an expression index nothing else uses.
   if (sort === "big") {
-    rows = rows.slice().sort((a, b) => (surfaceOf(b.attributes) ?? 0) - (surfaceOf(a.attributes) ?? 0));
+    // Surface lives in the jsonb, so it is sorted here rather than in SQL — at
+    // catalogue size that is cheaper than an expression index nothing else
+    // uses. The whole (bounded) set is sorted first and THEN paged; sorting one
+    // page at a time would put the largest bien of page 2 below the smallest of
+    // page 1.
+    const { data, count } = await q.limit(SURFACE_SORT_WINDOW);
+    const all = ((data ?? []) as unknown as Row[])
+      .slice()
+      .sort((a, b) => (surfaceOf(b.attributes) ?? 0) - (surfaceOf(a.attributes) ?? 0));
+    total = count ?? all.length;
+    page = Math.min(page, Math.max(1, Math.ceil(all.length / PAGE_SIZE)));
+    rows = all.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  } else {
+    const from = (page - 1) * PAGE_SIZE;
+    const { data, count } = await q.range(from, from + PAGE_SIZE - 1);
+    rows = (data ?? []) as unknown as Row[];
+    total = count ?? rows.length;
   }
+  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const { data: govRows } = await admin
     .from("listings")
@@ -128,7 +166,13 @@ export default async function AnnoncesPage({
 
   const qs = (next: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
-    const merged = { cat: sp.cat, gov: sp.gov, sort: sp.sort, q: sp.q, ...next };
+    // `page` is deliberately absent from the defaults: changing any filter
+    // returns to page 1, and only the pager passes a page explicitly.
+    const merged = {
+      cat: sp.cat, gov: sp.gov, sort: sp.sort, q: sp.q,
+      min: min ? String(min) : undefined, max: max ? String(max) : undefined,
+      ...next,
+    };
     for (const [k, v] of Object.entries(merged)) if (v) p.set(k, v);
     const s = p.toString();
     return `/annonces${s ? `?${s}` : ""}`;
@@ -185,6 +229,20 @@ export default async function AnnoncesPage({
         >
           Toute la Tunisie
         </Link>
+        {(min || max) && (
+          <Link
+            href={qs({ min: undefined, max: undefined }) as never}
+            aria-label="Retirer le filtre de prix"
+            className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-foreground px-3 py-1.5 text-[11.5px] font-semibold text-[var(--background)] transition"
+          >
+            {min && max
+              ? `${formatTND(min, locale)} – ${formatTND(max, locale)} TND`
+              : min
+                ? `À partir de ${formatTND(min, locale)} TND`
+                : `Jusqu'à ${formatTND(max!, locale)} TND`}
+            <X className="size-3" strokeWidth={2.5} />
+          </Link>
+        )}
         {govs.map((g) => (
           <Link
             key={g}
@@ -222,7 +280,7 @@ export default async function AnnoncesPage({
       </div>
 
       <p className="mt-4 text-[12.5px] text-muted">
-        {rows.length} bien{rows.length > 1 ? "s" : ""}
+        {total} bien{total > 1 ? "s" : ""}
         {active ? ` · ${active.label_fr}` : ""}
         {sp.gov ? ` · ${sp.gov}` : ""}
       </p>
@@ -231,7 +289,9 @@ export default async function AnnoncesPage({
         <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface-2/40 p-10 text-center">
           <SearchX className="mx-auto size-6 text-muted" />
           <p className="mt-3 text-[13.5px] font-bold text-foreground">Aucun bien ne correspond.</p>
-          <p className="mt-1 text-[12.5px] text-muted">Élargissez la recherche ou changez de gouvernorat.</p>
+          <p className="mt-1 text-[12.5px] text-muted">
+            Élargissez la recherche, le budget ou le gouvernorat.
+          </p>
         </div>
       ) : (
         <ul className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
@@ -291,6 +351,34 @@ export default async function AnnoncesPage({
             );
           })}
         </ul>
+      )}
+
+      {lastPage > 1 && (
+        <nav className="mt-8 flex items-center justify-center gap-2" aria-label="Pagination">
+          {page > 1 ? (
+            <Link
+              href={qs({ page: page - 1 > 1 ? String(page - 1) : undefined }) as never}
+              className="tap-target inline-flex items-center gap-1 rounded-full bg-surface-2 px-4 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-border transition hover:ring-foreground/30"
+            >
+              <ChevronLeft className="size-4" /> Précédent
+            </Link>
+          ) : (
+            <span aria-hidden className="w-[108px]" />
+          )}
+          <span className="mazed-tabular px-2 text-[12.5px] font-semibold text-muted">
+            {page} / {lastPage}
+          </span>
+          {page < lastPage ? (
+            <Link
+              href={qs({ page: String(page + 1) }) as never}
+              className="tap-target inline-flex items-center gap-1 rounded-full bg-surface-2 px-4 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-border transition hover:ring-foreground/30"
+            >
+              Suivant <ChevronRight className="size-4" />
+            </Link>
+          ) : (
+            <span aria-hidden className="w-[108px]" />
+          )}
+        </nav>
       )}
     </main>
   );

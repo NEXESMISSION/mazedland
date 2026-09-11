@@ -7,6 +7,7 @@ import { normalizeSearchQuery } from "@/lib/search";
 import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
 import { Search, MapPin } from "lucide-react";
 import { SelectMenu, type SelectOption } from "@/components/ui/SelectMenu";
+import { TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
 
 // Canonical 24-wilaya list (previously a truncated 16 here).
 const GOVERNORATES = TUNISIAN_GOVERNORATES;
@@ -16,7 +17,7 @@ const GOVERNORATES = TUNISIAN_GOVERNORATES;
 const TYPE_KEYS = ["apartment", "villa", "house", "land", "commercial", "office"] as const;
 
 /**
- * Home search — keyword + governorate + type, submits to /properties.
+ * Home search — keyword + governorate + type, submits to /annonces.
  *
  * This is the marketplace's missing primary action: an inline search
  * the moment a user lands. Without it the home reads as a magazine
@@ -54,16 +55,17 @@ export function HomeSearch({
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
-    // Strip ilike wildcards + `or()` separators here so the
-    // /properties server query doesn't have to re-clean the same input.
+    // Strip ilike wildcards + `or()` separators here so the catalogue's
+    // server query doesn't have to re-clean the same input.
     const cleanQ = normalizeSearchQuery(q);
     if (cleanQ) params.set("q", cleanQ);
     if (gov) params.set("gov", gov);
-    // The new Explore page expects `types` (comma-separated list); a
-    // single picked type maps cleanly to a one-element list.
-    if (type) params.set("types", type);
+    // The catalogue filters by CATEGORY. This used to send `types=` — the
+    // auction-era explore page's parameter — through a redirect to a page that
+    // never reads it, so choosing « Villa » searched everything.
+    if (type && TYPE_TO_CATEGORY[type]) params.set("cat", TYPE_TO_CATEGORY[type]);
     const qs = params.toString();
-    router.push((qs ? `/properties?${qs}` : "/properties") as `/properties`);
+    router.push((qs ? `/annonces?${qs}` : "/annonces") as `/annonces`);
   }
 
   // Desktop hero variant — one horizontal row: keyword | governorate |

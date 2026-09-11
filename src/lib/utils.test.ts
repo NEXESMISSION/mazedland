@@ -1,24 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { minBidIncrement, formatTND, cn } from "./utils";
-
-describe("minBidIncrement (bid ladder, plan §8)", () => {
-  it("uses 1,000 below 100k", () => {
-    expect(minBidIncrement(0)).toBe(1_000);
-    expect(minBidIncrement(99_999)).toBe(1_000);
-  });
-  it("uses 5,000 in 100k..500k", () => {
-    expect(minBidIncrement(100_000)).toBe(5_000);
-    expect(minBidIncrement(499_999)).toBe(5_000);
-  });
-  it("uses 10,000 in 500k..1M", () => {
-    expect(minBidIncrement(500_000)).toBe(10_000);
-    expect(minBidIncrement(999_999)).toBe(10_000);
-  });
-  it("uses 25,000 at/above 1M", () => {
-    expect(minBidIncrement(1_000_000)).toBe(25_000);
-    expect(minBidIncrement(5_000_000)).toBe(25_000);
-  });
-});
+import { formatTND, cn } from "./utils";
 
 describe("formatTND", () => {
   it("renders whole dinars with no decimals", () => {

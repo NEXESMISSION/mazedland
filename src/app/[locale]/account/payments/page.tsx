@@ -28,10 +28,11 @@ type PaymentRow = {
 type Photo = { storage_path: string; sort_order: number };
 type Entity = { title: string | null; governorate: string | null; coverUrl: string | null };
 
-/** Buyer-spend kinds that count toward "Total dépensé" once captured.
- *  `deposit_lock` is excluded — a locked caution is tracked separately and
- *  shouldn't be double-counted as spend. */
-const SPEND_KINDS = new Set(["buy_now", "final_payment", "inspection_fee", "listing_fee"]);
+/** Kinds that count toward "Total dépensé" once captured — every kind a
+ *  payment can have today. This used to list the auction product's kinds
+ *  (buy_now, final_payment, inspection_fee) and only one of today's, so four
+ *  of the five things a seller can pay for never counted. */
+const SPEND_KINDS = new Set(["listing_fee", "renewal", "promo", "listing_pack", "badge"]);
 
 function coverFrom(photos: Photo[] | null | undefined): string | null {
   const cover = (photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0];
@@ -150,12 +151,10 @@ export default async function MyPaymentsPage({
       createdAt: p.created_at,
       adminNotes: p.admin_notes ?? null,
       receiptUrl: signed.get(p.id) ?? null,
-      auctionId: null,
+      listingId,
       title: entity?.title ?? null,
       governorate: entity?.governorate ?? null,
       coverUrl: entity?.coverUrl ?? null,
-      // No payment kind carries a caution lifecycle any more.
-      depositStatus: null,
     };
   });
 
@@ -171,21 +170,10 @@ export default async function MyPaymentsPage({
     if (p.status === "pending_review") reviewCount += 1;
     if (p.status === "captured" && SPEND_KINDS.has(p.kind)) spentTotal += Number(p.amount);
   }
-  // Cautions were the only thing that could be "locked" or "refunded", and
-  // they went with the auction product. Kept at zero rather than removed from
-  // `PaymentsSummary`: the client renders these tiles conditionally on > 0, so
-  // they simply stop appearing, and the shape stays stable for the day a
-  // refundable payment kind exists again.
-  const lockedTotal = 0;
-  const refundedTotal = 0;
-
-  const summary: PaymentsSummary = {
-    actionCount,
-    reviewCount,
-    lockedTotal,
-    spentTotal,
-    refundedTotal,
-  };
+  // `lockedTotal` / `refundedTotal` stood here, pinned at zero "so the tiles
+  // stop appearing". The client never checked for zero: every seller saw a
+  // « Caution bloquée · 0 TND » tile for a product that no longer exists.
+  const summary: PaymentsSummary = { actionCount, reviewCount, spentTotal };
 
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-16 lg:max-w-[var(--max-w-content)]">
@@ -193,7 +181,7 @@ export default async function MyPaymentsPage({
       <span className="mazed-eyebrow">Historique</span>
       <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">Mes paiements</h1>
       <p className="mt-1.5 text-[12px] text-muted">
-        Cautions, achats, frais et remboursements.
+        Frais de publication, options et leur statut.
       </p>
 
       <PaymentsClient payments={vms} summary={summary} locale={dateLocale} />

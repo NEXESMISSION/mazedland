@@ -89,7 +89,12 @@ export function SignupForm() {
     // Hard navigation (not router.replace+refresh): the auth cookie was just
     // written by the signup response; a soft refresh can prefetch the
     // destination before the cookie propagates, leaving the render anonymous.
-    window.location.assign(`/${locale}/kyc`);
+    //
+    // To /account, not /kyc. Identity verification was retired with the auction
+    // product and /kyc survives only as a redirect to /account, so every new
+    // account took a detour through a route that no longer exists.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload so the first render carries the new cookie
+    window.location.assign(`/${locale}/account`);
   }
 
   function onSubmit(e: React.FormEvent) {

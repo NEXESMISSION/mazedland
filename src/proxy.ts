@@ -28,6 +28,9 @@ const LEGACY_LOCALES = ["ar", "en"] as const;
  *
  * Supabase env not configured? Return the next-intl response unchanged
  * (dev clones without `.env.local` keep working).
+ *
+ * Named `proxy`, not `middleware`: Next 16 renamed the file convention and
+ * warns on the old name at every build. Same runtime, same matcher.
  */
 const mwLog = log.scope("mw");
 
@@ -44,7 +47,7 @@ const clamp01 = (v: unknown, fb: number) => {
 const PAGEVIEW_AUTH_SAMPLE = clamp01(process.env.ACTIVITY_PAGEVIEW_AUTH_SAMPLE, 1);
 const PAGEVIEW_ANON_SAMPLE = clamp01(process.env.ACTIVITY_PAGEVIEW_ANON_SAMPLE, 0.1);
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const t0 = performance.now();
   const { pathname, search } = req.nextUrl;
 
@@ -90,8 +93,8 @@ export async function middleware(req: NextRequest) {
   // single most-hit server cost, so we skip the whole Supabase client +
   // getUser() round-trip unless an auth-token cookie is actually present.
   // The gates below stay correct on the null-user path: the account-gate
-  // still redirects anonymous users to login; the auth-page and KYC gates
-  // simply no-op (they only act when authUserId is set).
+  // still redirects anonymous users to login; the auth-page gate simply
+  // no-ops (it only acts when authUserId is set).
   //
   // Supabase SSR stores the session in cookie(s) named
   // `sb-<project-ref>-auth-token` (sometimes chunked `.0`, `.1`), so a
@@ -102,10 +105,9 @@ export async function middleware(req: NextRequest) {
 
   let authUserId: string | null = null;
   let authUserEmail: string | null = null;
-  let supabase: ReturnType<typeof createServerClient> | null = null;
 
   if (hasAuthCookie) {
-    supabase = createServerClient(url, key, {
+    const supabase = createServerClient(url, key, {
       cookies: {
         getAll() {
           return req.cookies.getAll();
@@ -161,31 +163,10 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(target, 307);
   }
 
-  // KYC entry-page gate. Verified/in-flight users hitting any step of
-  // the wizard get bounced to /kyc/status server-side so they never see
-  // the start screen flash. Match `/<locale>/kyc/(start|id-front|id-back|
-  // selfie|processing)` — we leave /kyc/status itself alone so the
-  // verified UI can render there.
-  const kycMatch = pathname.match(
-    /^\/(fr|ar|en)\/kyc\/(start|id-front|id-back|selfie|processing)\/?$/,
-  );
-  if (kycMatch && authUserId && supabase) {
-    try {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("kyc_status")
-        .eq("id", authUserId)
-        .single();
-      const s = profile?.kyc_status;
-      if (s === "verified" || s === "submitted" || s === "pending") {
-        const target = new URL(`/${kycMatch[1]}/kyc/status`, req.url);
-        mwLog.info(`kyc-gate ${pathname} → ${target.pathname} (status=${s})`);
-        return NextResponse.redirect(target, 307);
-      }
-    } catch (err) {
-      mwLog.warn(`kyc-gate lookup failed: ${err instanceof Error ? err.message : err}`);
-    }
-  }
+  // The KYC entry-page gate that stood here is gone with KYC. next.config
+  // redirects every /kyc path to /account before this function runs, so the
+  // gate could never fire — it was a profiles query waiting for a route that
+  // no longer answers.
 
   // Activity log — record the page view (who is on the site, what page).
   // Fire-and-forget so navigation is never slowed. We log real page

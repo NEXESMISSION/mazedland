@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { fail } from "@/lib/http/errors";
 
@@ -37,7 +38,13 @@ export async function POST(req: NextRequest) {
   // CPU denial-of-wallet vector. 120 / 5 min is generous for a real listing's
   // photo burst but caps sustained abuse across all serverless instances.
   // Fail-open (only block on an explicit true) — availability over strictness.
-  const { data: limited } = await supabase.rpc("check_rate_limit", {
+  //
+  // Called through the SERVICE client. `check_rate_limit` is a definer-rights
+  // write into `rate_limits`; migration 0157 revokes it from the client roles
+  // so a browser cannot exhaust — or pre-poison — somebody else's limit key.
+  // The session client stays as the fallback for env-less local development.
+  const limiter = getServiceSupabase() ?? supabase;
+  const { data: limited } = await limiter.rpc("check_rate_limit", {
     p_key: `optimize-image:${user.id}`,
     p_max: 120,
     p_window_secs: 300,

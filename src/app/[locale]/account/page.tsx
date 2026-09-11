@@ -6,18 +6,15 @@ import { SignOutButton } from "@/components/auth/SignOutButton";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import { SmsNotificationsToggle } from "@/components/account/SmsNotificationsToggle";
 import {
-  ShieldCheck,
-  ClipboardCheck,
   Wallet,
   ChevronRight,
   ChevronLeft,
-  Building2,
-  LayoutGrid,
   LayoutDashboard,
-  Briefcase,
-  UserCog,
   ArrowRight,
   ArrowUpRight,
+  FileText,
+  Heart,
+  Plus,
 } from "lucide-react";
 
 // Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
@@ -40,7 +37,6 @@ export default async function AccountPage() {
   let userId: string | null = null;
   let userEmail: string | null = null;
   let fullName: string | null = null;
-  let kycStatus: string = "none";
   let role: string = "individual";
   let smsEnabled = true;
 
@@ -52,11 +48,10 @@ export default async function AccountPage() {
       userEmail = user.email ?? null;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, kyc_status, role, sms_notifications_enabled")
+        .select("full_name, role, sms_notifications_enabled")
         .eq("id", user.id)
         .single();
       fullName = profile?.full_name ?? null;
-      kycStatus = profile?.kyc_status ?? "none";
       role = profile?.role ?? "individual";
       smsEnabled = profile?.sms_notifications_enabled ?? true;
     }
@@ -110,7 +105,7 @@ export default async function AccountPage() {
 
             <div className="border-t border-border bg-surface-2 px-7 py-4 text-center sm:px-8">
               <Link
-                href="/properties"
+                href="/annonces"
                 className="inline-flex items-center gap-1.5 text-[12px] font-bold text-muted transition hover:text-gold-bright"
               >
                 Explorer sans compte
@@ -127,47 +122,25 @@ export default async function AccountPage() {
   }
 
   // Signed-in surface.
-  const kycHref =
-    kycStatus === "verified" || kycStatus === "submitted" || kycStatus === "pending"
-      ? "/kyc/status"
-      : "/kyc/start";
-
-  const roleActions: ActionItem[] = [];
-  if (role === "admin") {
-    roleActions.push({ href: "/admin", Icon: LayoutDashboard, title: "Console admin", body: "Annonces, KYC, experts." });
-  } else if (role === "bank" || role === "agency" || role === "bailiff") {
-    roleActions.push({ href: "/partners/dashboard", Icon: Briefcase, title: "Espace partenaire", body: "Portefeuille banque / agence." });
-  } else if (role === "inspector") {
-    roleActions.push({ href: "/inspector", Icon: ClipboardCheck, title: "Espace inspecteur", body: "Vos missions d'expertise." });
-  } else {
-    roleActions.push({ href: "/inspectors/apply", Icon: UserCog, title: "Devenir inspecteur", body: "Rejoignez le réseau d'experts." });
-  }
-
-  // Account hub grouped by journey so a buyer isn't handed a seller
-  // dashboard next to their bids (and vice-versa). Identity/KYC + the
-  // role-specific space sit under "Mon compte"; buyer surfaces under
-  // "Acheteur"; selling under "Vendeur".
+  //
+  // WHAT STOOD HERE. Three groups built for the auction product: identity
+  // verification (KYC), a role space for inspectors, banks and agencies, an
+  // "Acheteur" group of bids and inspections, and a seller dashboard at /sell.
+  // KYC, the inspector network, the partner portal, inspections and /sell are
+  // all retired — next.config sends every one of those paths somewhere else —
+  // so on the page a signed-in user lands on, five of the seven rows led
+  // nowhere they had asked to go. What remains is what the product does.
   const accountActions: ActionItem[] = [
-    {
-      href: kycHref,
-      Icon: ShieldCheck,
-      title: t("sections.kyc"),
-      body: kycStatus === "verified" ? "Identité vérifiée" : t("sections.kycBody"),
-    },
-    ...roleActions,
+    { href: "/account/listings", Icon: FileText, title: "Mes annonces", body: "Brouillons, annonces publiées et expirées." },
+    { href: "/annonces/nouvelle", Icon: Plus, title: "Publier une annonce", body: "Terrain, maison, appartement ou local." },
+    { href: "/account/activity", Icon: Heart, title: "Mes favoris", body: "Les annonces que vous avez enregistrées." },
+    { href: "/account/payments", Icon: Wallet, title: "Mes paiements", body: "Frais de publication, options et reçus." },
   ];
-  const buyerActions: ActionItem[] = [
-    { href: "/account/activity", Icon: LayoutGrid, title: "Mes activités", body: "Enchères, achats et favoris." },
-    { href: "/account/payments", Icon: Wallet, title: t("sections.payments"), body: t("sections.paymentsBody") },
-    { href: "/account/inspections", Icon: ClipboardCheck, title: t("sections.inspections"), body: t("sections.inspectionsBody") },
-  ];
-  const sellerActions: ActionItem[] = [
-    { href: "/sell", Icon: Building2, title: "Tableau du vendeur", body: "Annonces, revenus, retraits." },
-  ];
+  if (role === "admin") {
+    accountActions.push({ href: "/admin", Icon: LayoutDashboard, title: "Console admin", body: "Annonces, paiements et vendeurs." });
+  }
   const groups: { label: string; items: ActionItem[] }[] = [
-    { label: "Mon compte", items: accountActions },
-    { label: "Acheteur", items: buyerActions },
-    { label: "Vendeur", items: sellerActions },
+    { label: "Mon espace", items: accountActions },
   ];
 
   const identity = (
@@ -187,10 +160,11 @@ export default async function AccountPage() {
           {fullName && userEmail && (
             <div className="mt-0.5 truncate text-[11px] text-muted">{userEmail}</div>
           )}
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <KycPill status={kycStatus} />
-            {role !== "individual" && <span className="mazed-pill-gold">{role}</span>}
-          </div>
+          {role === "admin" && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="mazed-pill-gold">Administrateur</span>
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -239,8 +213,7 @@ export default async function AccountPage() {
               <h1 className={`text-[24px] font-extrabold tracking-tight ${isRTL ? "font-arabic" : ""}`}>
                 {fullName ?? userEmail ?? ""}
               </h1>
-              <KycPill status={kycStatus} />
-              {role !== "individual" && <span className="mazed-pill-gold">{role}</span>}
+              {role === "admin" && <span className="mazed-pill-gold">Administrateur</span>}
             </div>
             {fullName && userEmail && (
               <p className="mt-1 text-[13.5px] text-muted">{userEmail}</p>
@@ -282,13 +255,13 @@ type ActionItem = {
   body: string;
 };
 
-/** Desktop action card — matches the mockup: blue icon badge, title +
- *  corner arrow, description; lifts with a soft blue shadow on hover. */
+/** Desktop action card — icon badge, title + corner arrow, description;
+ *  lifts with a soft shadow on hover. */
 function ActionTile({ href, Icon, title, body, isRTL }: ActionItem & { isRTL: boolean }) {
   return (
     <Link
       href={href as `/${string}`}
-      className="group rounded-2xl bg-surface p-6 ring-1 ring-border transition hover:-translate-y-0.5 hover:ring-gold-soft/60 hover:shadow-[0_12px_30px_-14px_rgba(30,58,138,0.35)]"
+      className="group rounded-2xl bg-surface p-6 ring-1 ring-border transition hover:-translate-y-0.5 hover:ring-gold-soft/60 hover:shadow-[var(--shadow-md)]"
     >
       <span className="mb-5 inline-flex size-11 items-center justify-center rounded-2xl bg-gold-faint text-gold">
         <Icon className="size-5" strokeWidth={2} />
@@ -304,24 +277,6 @@ function ActionTile({ href, Icon, title, body, isRTL }: ActionItem & { isRTL: bo
   );
 }
 
-function KycPill({ status }: { status: string }) {
-  const tone =
-    status === "verified" ? "mazed-tone-ok"
-    : status === "submitted" || status === "pending" ? "mazed-tone-warn"
-    : status === "rejected" ? "mazed-tone-bad"
-    : "bg-surface-2 text-muted border border-border";
-  const label =
-    status === "verified" ? "Identité vérifiée"
-    : status === "submitted" ? "En cours de vérification"
-    : status === "pending" ? "Vérification en attente"
-    : status === "rejected" ? "Vérification refusée"
-    : "Vérification requise";
-  return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.14em] ${tone}`}>
-      {label}
-    </span>
-  );
-}
 
 function Row({
   href,

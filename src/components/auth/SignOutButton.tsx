@@ -20,15 +20,6 @@ export function SignOutButton({ label }: { label: string }) {
 
   function onClick() {
     start(async () => {
-      // Drop any in-flight KYC draft (storage paths to the previous
-      // user's CIN photos) before the cookie clear, so the next sign-in
-      // on this browser starts the wizard from scratch.
-      try {
-        sessionStorage.removeItem("mazed_kyc_draft");
-      } catch {
-        /* sessionStorage unavailable — nothing to clean. */
-      }
-
       const supabase = getBrowserSupabase();
       await Promise.all([
         supabase.auth.signOut(),
@@ -39,6 +30,9 @@ export function SignOutButton({ label }: { label: string }) {
           headers: { Accept: "application/json" },
         }),
       ]);
+      // A full reload, not a router push: the next render must be produced
+      // with the cleared cookie, and client stores still hold the old user.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload after the auth cookie changes
       window.location.assign(`/${locale}`);
     });
   }

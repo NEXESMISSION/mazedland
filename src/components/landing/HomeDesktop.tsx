@@ -8,6 +8,7 @@ import { AnnonceCard } from "@/components/listing/AnnonceCard";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
 import type { HomeListingRow } from "@/lib/home/feed";
+import { catalogueHrefForType } from "@/lib/catalog/browse";
 import {
   ArrowUpRight,
   ChevronRight,
@@ -50,10 +51,10 @@ const PROPERTY_TYPES: { key: string }[] = [
 ];
 
 const PRICE_BUCKETS: { key: string; label: string; query: string }[] = [
-  { key: "under-100k", label: "Moins de 100k", query: "max_price=100000" },
-  { key: "100k-500k",  label: "100k – 500k",   query: "min_price=100000&max_price=500000" },
-  { key: "500k-1m",    label: "500k – 1M",     query: "min_price=500000&max_price=1000000" },
-  { key: "1m-plus",    label: "1M+ TND",       query: "min_price=1000000" },
+  { key: "under-100k", label: "Moins de 100k", query: "max=100000" },
+  { key: "100k-500k",  label: "100k – 500k",   query: "min=100000&max=500000" },
+  { key: "500k-1m",    label: "500k – 1M",     query: "min=500000&max=1000000" },
+  { key: "1m-plus",    label: "1M+ TND",       query: "min=1000000" },
 ];
 
 const TRUST_PILLARS: {
@@ -253,7 +254,7 @@ export async function HomeDesktop({
                 title: t("home.heroBrandTitle"),
                 slogan: t("brand.slogan"),
                 cta: t("home.heroBrowseCta"),
-                href: "/properties",
+                href: "/annonces",
               }}
             />
           </div>
@@ -366,7 +367,7 @@ export async function HomeDesktop({
             </h3>
           </div>
           <Link
-            href="/properties"
+            href="/annonces"
             className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[11.5px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
           >
             {t("home.seeAll")}
@@ -379,7 +380,7 @@ export async function HomeDesktop({
           {PROPERTY_TYPES.map((pt) => (
             <Link
               key={pt.key}
-              href={`/properties?types=${pt.key}` as `/properties`}
+              href={catalogueHrefForType(pt.key) as `/annonces`}
               className="group flex flex-col items-center gap-2 rounded-2xl bg-surface px-3 py-5 ring-1 ring-border transition hover:-translate-y-0.5 hover:bg-surface-2 hover:ring-gold-soft/50"
             >
               <picture>
@@ -407,7 +408,7 @@ export async function HomeDesktop({
           {PRICE_BUCKETS.map((b) => (
             <Link
               key={b.key}
-              href={`/properties?${b.query}` as `/properties`}
+              href={`/annonces?${b.query}` as `/annonces`}
               className="group flex items-center justify-between rounded-2xl bg-surface px-5 py-3.5 ring-1 ring-border transition hover:bg-gold-faint hover:ring-gold-soft/50"
             >
               <span className="text-[13px] font-bold text-foreground">{b.label}</span>
@@ -450,7 +451,7 @@ export async function HomeDesktop({
               </p>
               <div className="mt-7 flex items-center gap-3">
                 <Link
-                  href="/properties"
+                  href="/annonces"
                   className="mazed-gold-fill inline-flex items-center gap-2 rounded-full px-5 py-3 text-[12.5px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
                 >
                   {t("home.heroBrowseCta")}
@@ -544,7 +545,7 @@ function RailHeader({
         </h3>
       </div>
       <Link
-        href="/properties"
+        href="/annonces"
         className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[11.5px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
       >
         {seeAllLabel}

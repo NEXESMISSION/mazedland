@@ -11,7 +11,7 @@ import { ShieldCheck, Eye, Zap, Star } from "lucide-react";
 const FEATURES = [
   { Icon: ShieldCheck, title: "100% sécurisé",    sub: "Transactions vérifiées" },
   { Icon: Eye,         title: "Transparence totale", sub: "Informations vérifiées" },
-  { Icon: Zap,         title: "Simple et rapide",  sub: "Enchérissez en quelques clics" },
+  { Icon: Zap,         title: "Simple et rapide",  sub: "Publiez une annonce en quelques minutes" },
 ];
 
 export function AuthHeroPanel() {
@@ -35,7 +35,7 @@ export function AuthHeroPanel() {
         {/* Top — one brand pill */}
         <span className="inline-flex w-fit items-center gap-2.5 rounded-full bg-white/10 px-4 py-2 text-[12.5px] font-bold text-white ring-1 ring-white/20 backdrop-blur">
           <ShieldCheck className="size-4 shrink-0" strokeWidth={2} />
-          La maison des enchères immobilières tunisiennes
+          Les petites annonces immobilières en Tunisie
         </span>
 
         {/* Bottom — headline + trust points + social proof */}

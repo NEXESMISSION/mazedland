@@ -59,6 +59,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
   }
 
+  // A per-seller ceiling on signed upload URLs. Each call mints up to twelve,
+  // and every one is a write into the public `properties` bucket — without a
+  // cap a single account could fill storage in a loop. Forty calls an hour is
+  // ten complete twelve-photo annonces with retries, which no honest seller
+  // reaches.
+  const { data: over } = await admin.rpc("check_rate_limit", {
+    p_key: `photo-url:${user.id}`,
+    p_max: 40,
+    p_window_secs: 3600,
+  });
+  if (over === true) {
+    return NextResponse.json(
+      { error: "rate_limited", detail: "Trop d'envois de photos. Réessayez dans une heure." },
+      { status: 429 },
+    );
+  }
+
   const stamp = Date.now();
   const uploads: { path: string; signedUrl: string }[] = [];
   for (let i = 0; i < exts.length; i++) {

@@ -5,18 +5,21 @@ import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import {
-  User, Activity, Receipt, Heart, ShieldCheck, Plus, FileText,
+  User, Receipt, Heart, ShieldCheck, Plus, FileText,
   LogOut, Loader2,
 } from "lucide-react";
 
 type Item = { href: string; label: string; Icon: typeof User };
 
+// "Mon activité" and "Favoris" were two entries for ONE page: /watchlist
+// redirects into /account/activity, which is favourites and nothing else since
+// the auction tabs went. Two menu items that land in the same place read as a
+// bug the moment someone tries both.
 const ITEMS: Item[] = [
   { href: "/account", label: "Mon compte", Icon: User },
-  { href: "/account/activity", label: "Mon activité", Icon: Activity },
-  { href: "/account/payments", label: "Mes paiements", Icon: Receipt },
-  { href: "/watchlist", label: "Favoris", Icon: Heart },
   { href: "/account/listings", label: "Mes annonces", Icon: FileText },
+  { href: "/account/activity", label: "Mes favoris", Icon: Heart },
+  { href: "/account/payments", label: "Mes paiements", Icon: Receipt },
   { href: "/annonces/nouvelle", label: "Vendre un bien", Icon: Plus },
 ];
 
@@ -128,6 +131,9 @@ export function AccountMenu() {
         fetch("/api/auth/signout", { method: "POST", headers: { Accept: "application/json" } }),
       ]);
     } finally {
+      // Full reload for the same reason as SignOutButton: render with the
+      // cleared cookie and drop the previous user's client state.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload after the auth cookie changes
       window.location.href = `/${locale}/login`;
     }
   }

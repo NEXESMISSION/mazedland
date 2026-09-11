@@ -3,6 +3,7 @@ import { getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { XCircle, ArrowLeft, LifeBuoy } from "lucide-react";
 import { formatTND } from "@/lib/utils";
+import { safeInternalPath } from "@/lib/safePath";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,9 @@ export default async function PaymentFailed({
 }) {
   const { id, reason, return: returnUrl } = await searchParams;
   const locale = await getLocale();
-  const safeReturn = returnUrl && returnUrl.startsWith("/") ? returnUrl : "/";
+  // Same fix as /payment/success: `//evil.example` passes a bare
+  // `startsWith("/")` and is a different origin.
+  const safeReturn = safeInternalPath(returnUrl, "/account/payments");
 
   type PaymentRow = {
     id: string;
@@ -55,7 +58,7 @@ export default async function PaymentFailed({
     <div className="mx-auto max-w-md px-4 py-10">
       <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-7 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]">
         <div className="mx-auto h-16 w-16 rounded-full bg-red-500/15 ring-1 ring-red-500/30 flex items-center justify-center">
-          <XCircle className="h-9 w-9 text-red-300" strokeWidth={2.2} />
+          <XCircle className="h-9 w-9 text-red-600" strokeWidth={2.2} />
         </div>
 
         <div className="mt-5 text-[10px] uppercase tracking-[0.18em] font-extrabold text-[var(--danger)]">
@@ -96,7 +99,7 @@ export default async function PaymentFailed({
         <div className="mt-6 space-y-2">
           <Link
             href={safeReturn as `/${string}`}
-            className="inline-flex items-center justify-center gap-2 w-full h-12 rounded-[var(--radius)] bg-gradient-to-b from-[var(--gold-bright)] to-[var(--gold)] text-black font-bold text-[14px] shadow-[var(--shadow-gold)] active:scale-[0.99] transition-all"
+            className="mazed-btn-luxe w-full h-12 text-[14px]"
           >
             <ArrowLeft className="h-4 w-4" />
             Réessayer

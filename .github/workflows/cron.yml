@@ -1,26 +1,30 @@
 name: External cron backstop
 
-# Supabase pg_cron is the PRIMARY minute-scheduler (tick_auctions_cron +
-# process_bid_events). This workflow is the BACKSTOP + dead-man's-switch: if
-# pg_cron stalls (extension disabled, project paused, scheduler incident), this
-# keeps the auction engine + bid-notification drain running and surfaces the
-# outage via the health check. GitHub's scheduled runner is best-effort (often
-# ~5-min granularity, can be delayed under load), so it is a safety net, not a
-# precise minute clock — pg_cron remains primary.
+# pg_cron inside Supabase is the PRIMARY scheduler: it drains the SMS and e-mail
+# notification queues every five minutes and runs the daily housekeeping jobs.
+# This workflow is the BACKSTOP and dead-man's switch: if pg_cron stalls
+# (extension disabled, project paused, scheduler incident) it keeps both
+# notification drains moving and makes the outage visible through /api/health.
 #
-# Required repo config: secret CRON_SECRET (matches the deploy's CRON_SECRET)
-# and variable SITE_URL (e.g. https://batta.tn). WITHOUT them this workflow now
-# SKIPS cleanly (job stays green) instead of FAILING every 5 min — so it no
-# longer spams failure emails before it's been configured. Set both (Settings →
-# Secrets and variables → Actions) to actually enable the backstop + the
-# notification-email drain.
+# GitHub's scheduler is best-effort, so this is a safety net rather than a
+# clock. Every six hours catches a stalled pg_cron within a working day at
+# almost no Actions cost.
+#
+# The auction tick + bid-queue drain that used to run here are gone. The
+# auction product was retired, /api/cron/auctions/tick no longer exists, and a
+# step that exits 1 on its 404 failed this workflow on every run.
+#
+# Required repo config: secret CRON_SECRET (matching the deployment's) and
+# variable SITE_URL (e.g. https://mazedland.vercel.app). Without the secret the
+# job SKIPS cleanly instead of failing, so it pages nobody before it has been
+# configured.
+#
+# The secret travels in an Authorization header, never in the URL. A query
+# string is written verbatim into request logs, proxies and CDN traces; a
+# header is not.
 
 on:
   schedule:
-    # pg_cron (inside Supabase) now drives the SMS/email drains every 5 min at
-    # zero GitHub cost. This GitHub run is just a dead-man's-switch backstop, so
-    # every 6 h is plenty — and keeps us well within the free Actions minutes
-    # (was */5, which burned ~8,600 min/month per repo).
     - cron: "0 */6 * * *"
   workflow_dispatch: {}
 
@@ -31,71 +35,50 @@ concurrency:
 jobs:
   backstop:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SITE_URL: "${{ vars.SITE_URL || 'https://mazedland.vercel.app' }}"
     steps:
       - name: Config check
         id: cfg
         env:
-          SITE_URL: "${{ vars.SITE_URL || 'https://mazedland.vercel.app' }}"
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          if [ -z "$SITE_URL" ] || [ -z "$CRON_SECRET" ]; then
-            echo "::warning::Backstop idle — set repo variable SITE_URL + secret CRON_SECRET to enable it. pg_cron is the primary scheduler; this workflow is only the safety net + the notification-email drain. Skipping (not failing)."
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::Backstop idle — set the CRON_SECRET repo secret (and the SITE_URL variable) to enable it. pg_cron remains the primary scheduler. Skipping."
             echo "configured=false" >> "$GITHUB_OUTPUT"
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # Probe health BEFORE the tick so a stale heartbeat (pg_cron stalled) is
-      # observable — the tick below refreshes it, so checking after would always
-      # read fresh. Warn-only: this run is about to RECOVER via the tick. A hard
-      # pager should be an INDEPENDENT external monitor polling /api/health on
-      # its own cadence (see README) — this in-run probe is a smoke test, not
-      # the stall detector.
-      - name: Health probe (pre-tick, warn-only)
+      # Probe BEFORE draining so a stale heartbeat is observable — the drains
+      # below refresh it. Warn-only: a hard pager belongs in an independent
+      # monitor polling /api/health on its own cadence.
+      - name: Health probe (pre-drain, warn-only)
         if: steps.cfg.outputs.configured == 'true'
-        env:
-          SITE_URL: "${{ vars.SITE_URL || 'https://mazedland.vercel.app' }}"
         run: |
           code=$(curl -s -o /tmp/health.json -w "%{http_code}" "$SITE_URL/api/health")
           echo "health HTTP $code"; cat /tmp/health.json 2>/dev/null || true
-          if [ "$code" != "200" ]; then echo "::warning::/api/health $code — a scheduler heartbeat is stale; recovering via tick below"; fi
+          if [ "$code" != "200" ]; then echo "::warning::/api/health returned $code — a scheduler heartbeat is stale"; fi
 
-      - name: Tick auctions + drain bid queue (HTTP backstop)
+      - name: Drain notification e-mail queue
         if: steps.cfg.outputs.configured == 'true'
         env:
-          SITE_URL: "${{ vars.SITE_URL || 'https://mazedland.vercel.app' }}"
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        run: |
-          code=$(curl -s -o /tmp/tick.json -w "%{http_code}" -X POST \
-            "$SITE_URL/api/cron/auctions/tick" \
-            -H "Authorization: Bearer $CRON_SECRET")
-          echo "tick HTTP $code"; cat /tmp/tick.json 2>/dev/null || true
-          if [ "$code" != "200" ]; then echo "::error::tick returned $code"; exit 1; fi
-
-      # Email digest drain. Was a Vercel cron (*/10), removed from vercel.json
-      # because a sub-daily schedule isn't allowed on Vercel's Hobby plan and
-      # failed the deploy. This backstop (~5 min) keeps notification emails
-      # flowing. Warn-only — a transient email hiccup shouldn't fail the run.
-      - name: Drain notification email queue (HTTP backstop)
-        if: steps.cfg.outputs.configured == 'true'
-        env:
-          SITE_URL: "${{ vars.SITE_URL || 'https://mazedland.vercel.app' }}"
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           code=$(curl -s -o /tmp/email.json -w "%{http_code}" \
-            "$SITE_URL/api/cron/notify-email?key=$CRON_SECRET")
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/notify-email")
           echo "notify-email HTTP $code"; cat /tmp/email.json 2>/dev/null || true
           if [ "$code" != "200" ]; then echo "::warning::notify-email returned $code"; fi
 
-      # Important-notification SMS drain (WinSMS). Additive channel — warn-only,
-      # so an SMS hiccup never fails the run (email + in-app remain the baseline).
-      - name: Drain notification SMS queue (HTTP backstop)
+      - name: Drain notification SMS queue
         if: steps.cfg.outputs.configured == 'true'
         env:
-          SITE_URL: "${{ vars.SITE_URL || 'https://mazedland.vercel.app' }}"
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           code=$(curl -s -o /tmp/sms.json -w "%{http_code}" \
-            "$SITE_URL/api/cron/notify-sms?key=$CRON_SECRET")
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/notify-sms")
           echo "notify-sms HTTP $code"; cat /tmp/sms.json 2>/dev/null || true
           if [ "$code" != "200" ]; then echo "::warning::notify-sms returned $code"; fi

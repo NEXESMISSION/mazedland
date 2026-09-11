@@ -135,25 +135,35 @@ const nextConfig: NextConfig = {
     const supabaseHost = supabaseUrl.replace(/^https?:\/\//, "");
     const supabaseWs = supabaseHost ? `wss://${supabaseHost}` : "";
 
+    const isDev = process.env.NODE_ENV !== "production";
+
+    // Every host in this policy is here because something on the site loads
+    // from it TODAY. It used to also allow OpenStreetMap tiles and its embed
+    // iframe (the property map, retired with the auction lot page), Supabase
+    // in frame-src (the in-app document viewer, retired with KYC), Google Fonts
+    // (the font is self-hosted), three payment gateways the browser never talks
+    // to (payments are manual receipts), and picsum / unsplash test hosts. An
+    // allowance nothing uses is not harmless: it is a list an injected script
+    // gets to choose its exfiltration target from.
     const csp = [
       "default-src 'self'",
-      // va.vercel-scripts.com serves the Vercel Web Analytics + Speed Insights
-      // scripts in dev/preview (prod proxies them same-origin via /_vercel). Add
-      // it so the analytics you ship (@vercel/analytics + speed-insights) aren't
-      // CSP-blocked and actually collect data.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://*.tile.openstreetmap.org https://picsum.photos https://fastly.picsum.photos",
-      "font-src 'self' data: https://fonts.gstatic.com",
+      // 'unsafe-inline' stays: Next injects inline bootstrap scripts, and the
+      // nonce alternative makes every page dynamic — the catalogue's edge
+      // caching is what that would cost. 'unsafe-eval' is DEV-ONLY: React
+      // Refresh needs it, a production bundle does not, and it is the one
+      // directive that turns a markup injection into arbitrary code.
+      // va.vercel-scripts.com serves Vercel Analytics / Speed Insights on
+      // preview deployments (production proxies them same-origin).
+      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://va.vercel-scripts.com`,
+      "style-src 'self' 'unsafe-inline'",
+      // Listing photos go through /_next/image (same origin); receipts and
+      // signed storage URLs come straight from Supabase.
+      "img-src 'self' data: blob: https://*.supabase.co",
+      "font-src 'self' data:",
       [
         "connect-src 'self'",
         supabaseUrl,
         supabaseWs,
-        "https://api.konnect.network",
-        "https://api.paymee.tn",
-        "https://*.flouci.com",
-        // Vercel Analytics / Speed Insights beacons (dev/preview hosts; prod is
-        // same-origin via /_vercel/insights).
         "https://va.vercel-scripts.com",
         "https://vitals.vercel-insights.com",
       ]
@@ -164,20 +174,14 @@ const nextConfig: NextConfig = {
       "base-uri 'self'",
       "form-action 'self'",
       "frame-ancestors 'none'",
-      // Embedded property-location maps come from openstreetmap.org's
-      // /export/embed.html viewer (we don't bundle Leaflet ourselves).
-      // Supabase storage signed URLs are also framed: the in-app
-      // document viewer (titre foncier etc.) embeds them via iframe so
-      // PDFs/images open inside the page instead of in a new tab. The
-      // URLs are short-lived (60 s TTL) and RLS-gated, so allowing the
-      // origin in frame-src doesn't widen the attack surface.
-      "frame-src 'self' https://www.openstreetmap.org https://*.supabase.co",
-      // PWA: allow the service worker, the manifest, and child workers.
-      // `blob:` is required by heic2any, which converts iPhone HEIC receipts
-      // in a Web Worker spawned from a blob URL — without it the worker is
-      // blocked and the receipt upload hangs forever on "Envoi".
+      // Nothing on the site embeds a frame any more.
+      "frame-src 'none'",
+      // `blob:` is required by heic2any, which converts iPhone HEIC photos in
+      // a Web Worker spawned from a blob URL — without it the worker is
+      // blocked and the upload hangs.
       "worker-src 'self' blob:",
       "manifest-src 'self'",
+      ...(isDev ? [] : ["upgrade-insecure-requests"]),
     ].join("; ");
 
     return [
@@ -192,9 +196,15 @@ const nextConfig: NextConfig = {
             value: "max-age=63072000; includeSubDomains; preload",
           },
           {
+            // camera and geolocation were `(self)` for the KYC selfie and the
+            // property map. Neither exists; a permission no feature uses is a
+            // permission an injected script can still prompt for.
             key: "Permissions-Policy",
-            value: "camera=(self), microphone=(), geolocation=(self), payment=()",
+            value: "camera=(), microphone=(), geolocation=(), payment=()",
           },
+          // Keeps a page opened from this site (or that opened it) from holding
+          // a reference to our window — the tabnabbing vector.
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           { key: "Content-Security-Policy", value: csp },
         ],
       },

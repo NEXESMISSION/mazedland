@@ -9,6 +9,7 @@ import { formatTND } from "@/lib/utils";
 import { getHomeFeed, type HomeListingRow } from "@/lib/home/feed";
 import { log } from "@/lib/log";
 import { PerfProbe } from "@/components/dev/PerfProbe";
+import { catalogueHrefForType } from "@/lib/catalog/browse";
 
 // Statically render + ISR-revalidate every 60s. The home page is the same
 // for everyone (public catalogue); per-user bits (saved hearts, login state)
@@ -46,6 +47,13 @@ import {
  * users hit intermittently. A timeout turns a hang into a fast fallback:
  * the page renders its brand hero + browse rails instead of freezing.
  */
+/**
+ * How long the data phase may take. Short in development, where a person is
+ * watching the spinner; long in production, where the render is a background
+ * ISR regeneration and a slow-but-successful query is worth waiting for.
+ */
+const HOME_DATA_BUDGET_MS = process.env.NODE_ENV === "production" ? 8000 : 2500;
+
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
     p,
@@ -210,14 +218,22 @@ export default async function LandingPage({
       nouv: nouveautes.length,
       bestValue: bestValue.length,
     });
-    })(), 2500);
+    })(), HOME_DATA_BUDGET_MS);
   } catch (err) {
-    // env missing, query error, or timeout → the brand hero + browse
-    // rails below still render so the page is never a frozen spinner.
-    // 2.5s ceiling: longer than that and users have already bounced —
-    // better to paint the fallback hero immediately and let the client
-    // streams (LiveTicker, RecentBidsFeed) backfill the rails.
     perf.warn("data-phase aborted (timeout or error)", err);
+    // In production this render is an ISR REGENERATION, and nobody is waiting
+    // on it: visitors are being served the previous page while it runs. The
+    // fallback below would still render — an empty catalogue, "0 biens" — and
+    // Next would then cache THAT for the next 60 seconds, for everyone. One
+    // slow Supabase moment was enough to blank the home page site-wide.
+    //
+    // Throwing instead makes Next keep serving the last good page and retry on
+    // the next request. Development keeps the fallback (every request renders
+    // there, so a hang is a real wait), and so does `next build`, where a
+    // throw would fail a deploy over a transient database hiccup.
+    if (process.env.NODE_ENV === "production" && process.env.NEXT_PHASE !== "phase-production-build") {
+      throw err;
+    }
   } finally {
     endData();
   }
@@ -489,7 +505,7 @@ export default async function LandingPage({
           {PROPERTY_TYPES.map((pt) => (
             <Link
               key={pt.key}
-              href={`/properties?types=${pt.key}` as `/properties`}
+              href={catalogueHrefForType(pt.key) as `/annonces`}
               className="tap-target inline-flex shrink-0 snap-start items-center gap-2 rounded-full bg-surface-2 px-4 py-2.5 transition active:scale-[0.97] hover:bg-surface"
             >
               <pt.Icon className="size-4 text-gold" strokeWidth={2} />
@@ -513,7 +529,7 @@ export default async function LandingPage({
           {PRICE_BUCKETS.map((b) => (
             <Link
               key={b.key}
-              href={`/properties?${b.query}` as `/properties`}
+              href={`/annonces?${b.query}` as `/annonces`}
               className="tap-target inline-flex shrink-0 snap-start items-center justify-center whitespace-nowrap rounded-full bg-surface-2 px-4 py-2.5 text-[12px] font-bold leading-none text-foreground transition active:scale-[0.97] hover:bg-surface"
             >
               {isRTL ? b.labelAr : b.labelEn}
@@ -640,7 +656,7 @@ export default async function LandingPage({
           here" question the hero opens with, answered concretely. */}
       <section className="mt-10 px-4 lg:px-6">
         <Link
-          href="/properties"
+          href="/annonces"
           className="mazed-surface-navy-luxe tap-target relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25 transition active:scale-[0.99] lg:hidden"
         >
           <div className="relative min-w-0">
@@ -680,7 +696,7 @@ export default async function LandingPage({
                 </p>
                 <div className="mt-7 flex items-center gap-3">
                   <Link
-                    href="/properties"
+                    href="/annonces"
                     className="mazed-gold-fill inline-flex items-center gap-2 rounded-full px-5 py-3 text-[12.5px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
                   >
                     {t("home.heroBrowseCta")}
@@ -972,13 +988,13 @@ const PRICE_BUCKETS: {
   key: string;
   labelEn: string;
   labelAr: string;
-  /** Maps to the params the catalogue actually reads (min_price/max_price). */
+  /** The price params the catalogue reads (`min` / `max`, in TND). */
   query: string;
 }[] = [
-  { key: "under-100k",  labelEn: "Moins de 100k", labelAr: "أقل من 100 ألف",   query: "max_price=100000" },
-  { key: "100k-500k",   labelEn: "100k – 500k",   labelAr: "100 – 500 ألف",    query: "min_price=100000&max_price=500000" },
-  { key: "500k-1m",     labelEn: "500k – 1M",     labelAr: "500 ألف – 1 مليون", query: "min_price=500000&max_price=1000000" },
-  { key: "1m-plus",     labelEn: "1M+ TND",       labelAr: "أكثر من مليون",     query: "min_price=1000000" },
+  { key: "under-100k",  labelEn: "Moins de 100k", labelAr: "أقل من 100 ألف",   query: "max=100000" },
+  { key: "100k-500k",   labelEn: "100k – 500k",   labelAr: "100 – 500 ألف",    query: "min=100000&max=500000" },
+  { key: "500k-1m",     labelEn: "500k – 1M",     labelAr: "500 ألف – 1 مليون", query: "min=500000&max=1000000" },
+  { key: "1m-plus",     labelEn: "1M+ TND",       labelAr: "أكثر من مليون",     query: "min=1000000" },
 ];
 
 // StatTile lives near the top of the file as a const expression so

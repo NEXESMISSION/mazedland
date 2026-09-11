@@ -122,10 +122,6 @@ export default async function RootLayout({
             <link rel="dns-prefetch" href={supabaseOrigin} />
           </>
         )}
-        {/* OpenStreetMap tile servers — only hit on property-detail
-            pages, but pre-warming costs ~0 and shaves perceived load
-            time on the map iframe. */}
-        <link rel="dns-prefetch" href="https://tile.openstreetmap.org" />
         {/* Preload the splash-screen wordmark so it paints before any
             JS hydrates. AVIF is ~4 KB; the second preload covers the
             handful of browsers (older Safari, Firefox without AVIF) that

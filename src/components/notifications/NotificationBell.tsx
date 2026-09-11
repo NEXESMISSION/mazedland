@@ -598,14 +598,14 @@ export function NotificationBell() {
                     Aucune notification
                   </p>
                   <p className="mt-1 text-[12px] text-[var(--foreground-muted)]">
-                    Tout est calme. Allez jeter un œil aux enchères.
+                    Tout est calme. Jetez un œil aux dernières annonces.
                   </p>
                   <Link
-                    href="/properties"
+                    href="/annonces"
                     onClick={() => setOpen(false)}
                     className="mt-5 inline-flex items-center gap-1.5 rounded-full mazed-gold-fill px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]"
                   >
-                    Explorer les enchères
+                    Explorer les annonces
                   </Link>
                 </div>
               ) : visibleItems.length === 0 ? (

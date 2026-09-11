@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { evaluateHeartbeats } from "./health";
+import { evaluateHeartbeats, RETIRED_HEARTBEATS } from "./health";
 
 // The dead-man's-switch is only useful if its staleness math is correct. These
 // pin the per-job-budget comparison the /api/health route depends on.
@@ -10,8 +10,8 @@ describe("evaluateHeartbeats", () => {
   it("is ok when every job is within its own budget", () => {
     const r = evaluateHeartbeats(
       [
-        { job: "tick_auctions", last_run: ago(60), max_age_seconds: 300 },
-        { job: "notify_final_payment_due", last_run: ago(3600), max_age_seconds: 7200 },
+        { job: "notify_email", last_run: ago(60), max_age_seconds: 1800 },
+        { job: "prune_activity_log", last_run: ago(3600), max_age_seconds: 100_000 },
       ],
       now,
     );
@@ -24,13 +24,13 @@ describe("evaluateHeartbeats", () => {
       [
         // 50000s old: fine for a daily job (100000s) ...
         { job: "prune_activity_log", last_run: ago(50_000), max_age_seconds: 100_000 },
-        // ... but stale for a minute job (300s).
-        { job: "tick_auctions", last_run: ago(50_000), max_age_seconds: 300 },
+        // ... but stale for a five-minute drain (1800s).
+        { job: "notify_sms", last_run: ago(50_000), max_age_seconds: 1800 },
       ],
       now,
     );
     expect(r.ok).toBe(false);
-    expect(r.stale).toEqual(["tick_auctions"]);
+    expect(r.stale).toEqual(["notify_sms"]);
   });
 
   it("falls back to the default budget when max_age_seconds is null", () => {
@@ -44,5 +44,20 @@ describe("evaluateHeartbeats", () => {
 
   it("is NOT ok with zero heartbeat rows (fresh deploy, nothing stamped yet)", () => {
     expect(evaluateHeartbeats([], now).ok).toBe(false);
+  });
+
+  it("ignores heartbeats of retired jobs, however stale", () => {
+    const r = evaluateHeartbeats(
+      [
+        { job: "notify_email", last_run: ago(60), max_age_seconds: 1800 },
+        ...[...RETIRED_HEARTBEATS].map((job) => ({
+          job, last_run: ago(400_000), max_age_seconds: 300,
+        })),
+      ],
+      now,
+    );
+    expect(r.ok).toBe(true);
+    expect(r.stale).toEqual([]);
+    expect(r.jobs.map((j) => j.job)).toEqual(["notify_email"]);
   });
 });

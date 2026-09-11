@@ -5,31 +5,53 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { formatTND } from "@/lib/utils";
 import { CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
 import { SuccessAutoRedirect } from "./SuccessAutoRedirect";
+import { safeInternalPath } from "@/lib/safePath";
 
 export const dynamic = "force-dynamic";
 
+// The kinds a payment can have today (DB enum payment_kind). The labels this
+// map used to hold — caution, achat finalisé, paiement final, inspection —
+// described the auction product, and none of the five kinds below was in it:
+// every real payment fell through to the generic "Paiement reçu".
 const KIND_LABEL: Record<string, string> = {
-  deposit_lock: "Caution verrouillée",
-  buy_now: "Achat finalisé",
-  final_payment: "Paiement final reçu",
-  inspection_fee: "Inspection payée",
-  commission: "Commission acquittée",
-  subscription: "Abonnement activé",
+  listing_fee: "Frais de publication réglés",
+  renewal: "Renouvellement réglé",
+  promo: "Mise en avant réglée",
+  listing_pack: "Pack d'annonces réglé",
+  badge: "Badge vendeur réglé",
 };
 
 const KIND_SUBLABEL: Record<string, string> = {
-  deposit_lock: "Vous pouvez maintenant enchérir sur cette enchère.",
-  buy_now: "L'enchère est clôturée — vous êtes l'adjudicataire.",
-  final_payment: "Le bien est à vous — signature notariale à venir.",
-  inspection_fee: "L'inspecteur a été notifié.",
-  commission: "Merci pour votre participation.",
-  subscription: "Votre abonnement est actif.",
+  listing_fee: "Votre annonce est publiée dès que notre équipe l'a vérifiée.",
+  renewal: "Votre annonce reste en ligne pour une nouvelle période.",
+  promo: "La mise en avant s'active dès la validation du paiement.",
+  listing_pack: "Vos crédits d'annonce sont disponibles dans votre compte.",
+  badge: "Le badge apparaît sur vos annonces après vérification.",
 };
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Reçu à téléverser",
+  pending_review: "Reçu en vérification",
+  captured: "Confirmé",
+  failed: "Refusé",
+  refunded: "Remboursé",
+};
+
+/** Where each kind of payment leaves the payer once it is confirmed. */
+function destinationFor(kind: string): string {
+  return kind === "listing_pack" || kind === "badge" ? "/account/payments" : "/account/listings";
+}
 
 /**
  * Post-payment confirmation page. Shows the transaction summary and
- * auto-redirects to the return URL passed by the initiating endpoint
- * (auction page, bid page, sell dashboard, etc.).
+ * auto-redirects to the return URL passed by the initiating endpoint, or to
+ * the seller's listings.
+ *
+ * WHAT WAS BROKEN. The payment was read with `select(..., auction_id)`, and
+ * `payments.auction_id` was dropped with the auction product. PostgREST refuses
+ * a whole request that names a missing column, so every lookup came back empty
+ * and every real payment landed on "Reçu introuvable" — the one page a payer is
+ * sent to after paying told them their payment did not exist.
  *
  * The page is server-side so the TX details are loaded with no client
  * round-trip. The auto-redirect is a small client component that fires
@@ -42,7 +64,9 @@ export default async function PaymentSuccess({
 }) {
   const { id, return: returnUrl } = await searchParams;
   const locale = await getLocale();
-  const safeReturn = returnUrl && returnUrl.startsWith("/") ? returnUrl : "/";
+  // `startsWith("/")` alone let `?return=//evil.example` through — a
+  // protocol-relative URL, auto-followed by SuccessAutoRedirect below.
+  const safeReturn = safeInternalPath(returnUrl, "/account/payments");
 
   // No id → bare success state (rare, but possible if a webhook lands
   // and the user followed a return URL that didn't carry the id).
@@ -63,12 +87,12 @@ export default async function PaymentSuccess({
     // wrong (provider redirected with stale session). Bounce to /login
     // with the return URL preserved so the user lands back here after
     // signing in.
-    redirect(`/${locale}/login?next=/payment/success?id=${id}`);
+    redirect(`/${locale}/login?next=${encodeURIComponent(`/payment/success?id=${id}`)}`);
   }
 
   const { data: payment } = await supabase
     .from("payments")
-    .select("id, kind, amount, status, currency, created_at, auction_id")
+    .select("id, kind, amount, status, currency, created_at")
     .eq("id", id)
     .maybeSingle();
 
@@ -88,19 +112,7 @@ export default async function PaymentSuccess({
     KIND_SUBLABEL[payment.kind as string] ??
     "Nous avons enregistré votre paiement.";
   const isCaptured = payment.status === "captured";
-  // When the initiator didn't pass ?return=, derive the destination from
-  // the payment itself: a caution unlocks bidding → the bid page (same
-  // deep-link as the "payment accepted" notification; while the receipt is
-  // still under review that page shows the "we're checking" gate). Other
-  // auction-tied payments land on the lot.
-  const isDeposit = payment.kind === "deposit_lock";
-  const dest = (returnUrl && returnUrl.startsWith("/")
-    ? returnUrl
-    : payment.auction_id
-      ? isDeposit
-        ? `/auctions/${payment.auction_id}/bid`
-        : `/auctions/${payment.auction_id}`
-      : safeReturn) as `/${string}`;
+  const dest = safeInternalPath(returnUrl, destinationFor(payment.kind as string)) as `/${string}`;
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-var(--desktop-nav-h))] w-full max-w-md flex-col items-center justify-center px-4 py-10">
@@ -118,7 +130,7 @@ export default async function PaymentSuccess({
             className={`relative h-16 w-16 rounded-full flex items-center justify-center ${
               isCaptured
                 ? "bg-emerald-500 text-white shadow-[0_0_30px_rgba(16,185,129,0.4)]"
-                : "bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/40"
+                : "bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/40"
             }`}
           >
             {isCaptured ? (
@@ -160,14 +172,14 @@ export default async function PaymentSuccess({
             </span>
           </Row>
           <Row label="Statut">
+            {/* Light-theme tones. `text-emerald-300` / `text-amber-300` were
+                chosen for a dark page and sat at ~1.6:1 on this one. */}
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                isCaptured
-                  ? "bg-emerald-500/15 text-emerald-300"
-                  : "bg-amber-500/15 text-amber-300"
+                isCaptured ? "mazed-tone-ok" : "mazed-tone-warn"
               }`}
             >
-              {payment.status}
+              {STATUS_LABEL[payment.status as string] ?? payment.status}
             </span>
           </Row>
         </dl>
@@ -179,11 +191,14 @@ export default async function PaymentSuccess({
               <Loader2 className="h-3 w-3 animate-spin" />
               Redirection automatique…
             </p>
+            {/* The primary button, not a gold gradient with black ink: with
+                the ink palette `--gold` is #27272a, so that was black text on
+                a near-black fill. */}
             <Link
               href={dest}
-              className="mt-3 inline-flex items-center justify-center gap-2 w-full h-12 rounded-[var(--radius)] bg-gradient-to-b from-[var(--gold-bright)] to-[var(--gold)] text-black font-bold text-[14px] shadow-[var(--shadow-gold)] active:scale-[0.99] transition-all"
+              className="mazed-btn-luxe mt-3 w-full h-12 text-[14px]"
             >
-              {isDeposit ? "Enchérir maintenant" : "Continuer"}
+              Continuer
               <ArrowRight className="h-4 w-4" />
             </Link>
           </>
@@ -192,7 +207,7 @@ export default async function PaymentSuccess({
             href={dest}
             className="mt-5 inline-flex items-center justify-center gap-2 w-full h-12 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] text-foreground font-semibold text-[14px] hover:border-[var(--gold-soft)] transition-colors"
           >
-            {isDeposit ? "Accéder à la page d'enchères" : "Retour"}
+            Retour
           </Link>
         )}
       </div>

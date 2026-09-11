@@ -3,6 +3,27 @@
 // (ending-soon */10, final-payment-due hourly, prune daily) aren't false-stale.
 export const DEFAULT_STALE_SECONDS = 300;
 
+/**
+ * Heartbeats of jobs that no longer exist.
+ *
+ * These four drove the auction engine. The jobs were unscheduled when the
+ * product was retired, but their `cron_heartbeat` rows were not deleted — so
+ * every one of them aged past its budget, and /api/health has answered 503
+ * ever since. An uptime monitor pointed at it reports the whole site DOWN, and
+ * the genuinely useful signal (is the SMS / e-mail drain running?) is buried
+ * under four alarms that can never clear.
+ *
+ * A denylist rather than an allowlist on purpose: a job added tomorrow is
+ * monitored the moment it stamps a heartbeat, without anyone remembering to
+ * register it here.
+ */
+export const RETIRED_HEARTBEATS: ReadonlySet<string> = new Set([
+  "tick_auctions",
+  "process_bid_events",
+  "notify_auctions_ending_soon",
+  "notify_final_payment_due",
+]);
+
 export type HeartbeatRow = {
   job: string;
   last_run: string;
@@ -31,7 +52,7 @@ export type HeartbeatStatus = {
  * route so the staleness logic is unit-testable without a live DB.
  */
 export function evaluateHeartbeats(rows: HeartbeatRow[], nowMs: number): HeartbeatStatus {
-  const jobs: HeartbeatJob[] = rows.map((r) => {
+  const jobs: HeartbeatJob[] = rows.filter((r) => !RETIRED_HEARTBEATS.has(r.job)).map((r) => {
     const ageS = Math.round((nowMs - new Date(r.last_run).getTime()) / 1000);
     const maxAge =
       Number(r.max_age_seconds ?? DEFAULT_STALE_SECONDS) || DEFAULT_STALE_SECONDS;

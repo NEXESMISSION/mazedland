@@ -1,21 +1,36 @@
 // ============================================================================
-// Security regression gate — re-runs the audit's live exploits against the
-// configured Supabase project and FAILS (exit 1) if any is no longer blocked.
+// Security regression gate — re-runs the attacks this platform has actually
+// been exposed to, against the configured Supabase project, and FAILS (exit 1)
+// if any of them works.
 //
-// This is the gate the deep audit demanded: a green check must mean "the
-// exploits fail", not just "TypeScript compiled". Run in CI against a
-// staging/prod project with NEXT_PUBLIC_SUPABASE_URL +
-// NEXT_PUBLIC_SUPABASE_ANON_KEY + SUPABASE_SERVICE_ROLE_KEY set.
+// It used to probe the auction schema: forge a caution, raise a bid, request a
+// payout — against tables dropped with the auction product. Every one of those
+// probes then "passed" because the table was gone. A security gate going green
+// for a reason that has nothing to do with security is worse than no gate, so
+// a probe that hits a missing table now FAILS as stale instead.
 //
-//   node scripts/security-regression.mjs
+// DEFAULT MODE IS READ-ONLY and safe against production:
+//   · anonymous PostgREST reads that must return nothing sensitive
+//   · catalog checks, inside a READ ONLY transaction, that service-only
+//     functions, TRUNCATE and the contact-number columns are not granted to
+//     the client roles (needs SB_HOST / SB_REF / SB_DB_PASSWORD)
 //
-// Covers: B1 (signup role escalation), B6 (anon PII scrape), B2 (forge deposit
-// via PostgREST), plus a positive control that the public id/full_name/role
-// read still works (so the fix didn't break the inspector/partner pages).
+// --write adds probes that CREATE a throwaway user and delete it afterwards.
+// Run those against staging, never against a database with real users:
+//   · signup cannot self-assign the admin role
+//   · a signed-in user cannot read seller phone numbers
+//   · a signed-in user cannot edit somebody else's annonce
+//   · a signed-in user cannot record a payment as already captured
+//
+//   node scripts/security-regression.mjs           read-only
+//   node scripts/security-regression.mjs --write   + write probes (staging)
 // ============================================================================
+
 import { config } from "dotenv";
-config({ path: ".env.local" });
 import { createClient } from "@supabase/supabase-js";
+import pg from "pg";
+
+config({ path: ".env.local", quiet: true });
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -24,311 +39,252 @@ if (!url || !anonKey || !svcKey) {
   console.error("Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY");
   process.exit(2);
 }
+
+const WRITE = process.argv.includes("--write");
 const svc = createClient(url, svcKey, { auth: { persistSession: false } });
 const freshAnon = () => createClient(url, anonKey, { auth: { persistSession: false } });
 
-let fails = 0;
-const P = (ok, label) => { console.log(`${ok ? "✅ PASS" : "❌ FAIL"} — ${label}`); if (!ok) fails++; };
+let passed = 0;
+let failed = 0;
+const P = (ok, label) => {
+  console.log(`${ok ? "✅ PASS" : "❌ FAIL"} — ${label}`);
+  if (ok) passed++;
+  else failed++;
+};
 
-// B1 — anonymous signUp must NOT yield an admin profile/JWT.
+// PostgREST / Postgres codes for "that relation does not exist".
+const MISSING_RELATION = new Set(["42P01", "PGRST205", "PGRST200"]);
+
+// Keep in sync with supabase/migrations/0157_privilege_hardening.sql.
+const SERVICE_ONLY_FUNCTIONS = [
+  "public._is_banned(uuid)",
+  "public._notify_admins(text, text, text, text)",
+  "public.check_auth_ratelimit(text)",
+  "public.check_rate_limit(text, integer, integer)",
+  "public.claim_emailable_notifications(integer, text[], timestamp with time zone, integer)",
+  "public.claim_smsable_notifications(integer, text[], timestamp with time zone, integer)",
+  "public.cleanup_old_notifications()",
+  "public.cleanup_phone_otps()",
+  "public.enqueue_waitlist(text, text, text, inet)",
+  "public.final_payment_interval()",
+  "public.notify_kyc_pending_reminder()",
+  "public.prune_activity_log()",
+  "public.prune_read_notifications()",
+  "public.record_listing_view(uuid, text, uuid)",
+  "public.stamp_cron_heartbeat(text, integer)",
+  "public.update_inspection_status(uuid, public.inspection_status, text)",
+];
+
+console.log(`Security regression gate — ${new URL(url).host} — ${WRITE ? "READ + WRITE probes" : "read-only"}\n`);
+
+// ── Anonymous reads ─────────────────────────────────────────────────────────
 {
-  const email = `sec-probe-${process.hrtime.bigint()}@example.com`;
-  const { data: su, error } = await freshAnon().auth.signUp({
-    email, password: "SecProbe!2026x",
-    options: { data: { role: "admin", full_name: "SEC PROBE" } },
-  });
-  if (error) {
-    P(true, `B1 signup-admin: signUp rejected (${error.message}) — no escalation path`);
+  const { data, error } = await freshAnon()
+    .from("listings")
+    .select("id, contact_phone, contact_whatsapp")
+    .eq("status", "published")
+    .limit(50);
+  const leaked = error ? 0 : (data ?? []).filter((r) => r.contact_phone || r.contact_whatsapp).length;
+  P(!!error || leaked === 0, `anon cannot read seller phone numbers${error ? "" : ` (${leaked} exposed)`}`);
+}
+
+{
+  const { data, error } = await freshAnon().from("profiles").select("id, phone").not("phone", "is", null).limit(5);
+  P(!!error || (data ?? []).length === 0, "anon cannot read profiles.phone");
+}
+
+for (const table of [
+  "payments", "notifications", "contact_reveals", "activity_log", "rate_limits",
+  "phone_otps", "auth_attempts", "listing_views", "seller_credits", "credit_ledger",
+  "watchlist", "popup_views",
+]) {
+  const { data, error } = await freshAnon().from(table).select("*").limit(1);
+  if (error && MISSING_RELATION.has(error.code)) {
+    P(false, `probe is stale — table ${table} does not exist; update this gate`);
   } else {
-    const uid = su.user?.id;
-    const { data: prof } = await svc.from("profiles").select("role").eq("id", uid).maybeSingle();
-    const { data: au } = await svc.auth.admin.getUserById(uid);
-    const jwtRole = au?.user?.app_metadata?.role ?? "(none)";
-    P(prof?.role === "individual" && jwtRole !== "admin",
-      `B1 signup-admin: new account role=${prof?.role}, jwt=${jwtRole} (must be individual / not admin)`);
-    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
+    P(!!error || (data ?? []).length === 0, `anon sees no rows in ${table}`);
   }
 }
 
-// B6 — anon must NOT be able to read sellers' phone/kyc. Use a FRESH anon
-// client (a signed-in client would test the separate authenticated vector).
-{
-  let leaks = 0;
-  for (let i = 0; i < 12; i++) {
-    const { data, error } = await freshAnon()
-      .from("profiles").select("id, full_name, phone, kyc_status").not("phone", "is", null).limit(5);
-    if (!error && (data ?? []).some((r) => r.phone)) leaks++;
-  }
-  P(leaks === 0, `B6 anon PII scrape: phone read blocked across 12 attempts (leaks=${leaks})`);
+for (const bucket of ["receipts", "property-documents", "kyc"]) {
+  const { data, error } = await freshAnon().storage.from(bucket).list("", { limit: 1 });
+  P(!!error || (data ?? []).length === 0, `anon cannot list the private "${bucket}" bucket`);
 }
 
-// B6-AUTH — a LOGGED-IN (non-admin) user must NOT read OTHER users'
-// phone/kyc either. This is the vector 0068/0075/0076 left open and 0080
-// closes (dropped the broad actor row-policy; cross-user names now come from
-// the public_profiles view, never the sensitive columns).
 {
-  const email = `sec-auth-${process.hrtime.bigint()}@example.com`;
-  const password = "SecProbe!2026x";
-  const { data: created, error: cErr } = await svc.auth.admin.createUser({
-    email, password, email_confirm: true,
-  });
-  if (cErr) {
-    P(false, `B6-auth: could not create probe user (${cErr.message})`);
+  const { data, error } = await freshAnon()
+    .from("listings")
+    .select("id, title, price")
+    .eq("status", "published")
+    .limit(1);
+  P(!error && Array.isArray(data), "positive control: anon can still read the public catalogue columns");
+}
+
+// ── Catalog (read-only transaction) ─────────────────────────────────────────
+if (process.env.SB_HOST && process.env.SB_REF && process.env.SB_DB_PASSWORD) {
+  let client = null;
+  for (const port of [5432, 6543]) {
+    const c = new pg.Client({
+      host: process.env.SB_HOST,
+      port,
+      user: `postgres.${process.env.SB_REF}`,
+      password: process.env.SB_DB_PASSWORD,
+      database: "postgres",
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 15000,
+    });
+    try {
+      await c.connect();
+      client = c;
+      break;
+    } catch {
+      /* try the next port */
+    }
+  }
+
+  if (!client) {
+    P(false, "could not connect to the database for the catalog checks");
   } else {
-    const uid = created.user?.id;
-    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
-    const { error: sErr } = await authed.auth.signInWithPassword({ email, password });
-    if (sErr) {
-      P(false, `B6-auth: probe sign-in failed (${sErr.message})`);
+    try {
+      await client.query("begin transaction read only");
+
+      const { rows } = await client.query(
+        `select fn,
+                to_regprocedure(fn) is not null as present,
+                coalesce(has_function_privilege('anon', to_regprocedure(fn), 'EXECUTE'), false) as anon,
+                coalesce(has_function_privilege('authenticated', to_regprocedure(fn), 'EXECUTE'), false) as auth
+           from unnest($1::text[]) as fn`,
+        [SERVICE_ONLY_FUNCTIONS],
+      );
+      for (const r of rows) {
+        if (!r.present) {
+          // Dropping a function is strictly safer than restricting it.
+          console.log(`   · ${r.fn} no longer exists — nothing to restrict`);
+          continue;
+        }
+        P(!r.anon && !r.auth, `${r.fn} is not callable by client roles`);
+      }
+
+      const { rows: cols } = await client.query(
+        `select has_column_privilege('anon', 'public.listings', 'contact_phone', 'SELECT') as anon_phone,
+                has_column_privilege('authenticated', 'public.listings', 'contact_phone', 'SELECT') as auth_phone,
+                has_column_privilege('anon', 'public.listings', 'contact_whatsapp', 'SELECT') as anon_wa,
+                has_column_privilege('authenticated', 'public.listings', 'contact_whatsapp', 'SELECT') as auth_wa`,
+      );
+      const c0 = cols[0];
+      P(
+        !c0.anon_phone && !c0.auth_phone && !c0.anon_wa && !c0.auth_wa,
+        "client roles hold no SELECT on listings.contact_phone / contact_whatsapp",
+      );
+
+      const { rows: truncate } = await client.query(
+        `select count(*)::int as n
+           from pg_class cl join pg_namespace ns on ns.oid = cl.relnamespace
+          where ns.nspname = 'public' and cl.relkind = 'r'
+            and (has_table_privilege('anon', cl.oid, 'TRUNCATE')
+                 or has_table_privilege('authenticated', cl.oid, 'TRUNCATE'))`,
+      );
+      P(truncate[0].n === 0, `client roles hold no TRUNCATE on public tables (${truncate[0].n} found)`);
+
+      await client.query("rollback");
+    } finally {
+      await client.end();
+    }
+  }
+} else {
+  console.log("⚠️  SKIP — catalog checks need SB_HOST / SB_REF / SB_DB_PASSWORD");
+}
+
+// ── Write probes (staging only) ─────────────────────────────────────────────
+if (WRITE) {
+  console.log("\n— write probes: a throwaway user is created and deleted —");
+  const stamp = Date.now();
+  const password = `SecProbe!${stamp}x`;
+
+  // Signup must not be able to self-assign the admin role.
+  {
+    const email = `sec-escalation-${stamp}@example.com`;
+    const { data: su, error } = await freshAnon().auth.signUp({
+      email,
+      password,
+      options: { data: { role: "admin", full_name: "SEC PROBE" } },
+    });
+    if (error) {
+      P(true, `signup cannot self-assign admin (signUp rejected: ${error.message})`);
     } else {
-      let leaks = 0;
-      for (let i = 0; i < 8; i++) {
-        const { data } = await authed
-          .from("profiles").select("id, phone, kyc_status")
-          .neq("id", uid).not("phone", "is", null).limit(5);
-        if (!data) continue;
-        if (data.some((r) => r.phone || r.kyc_status)) leaks++;
-      }
-      P(leaks === 0, `B6-auth PII scrape: logged-in read of OTHERS' phone/kyc blocked (leaks=${leaks})`);
-
-      // Positive control — display names still resolve via the safe view.
-      const { error: ppErr } = await authed
-        .from("public_profiles").select("id, full_name, role").limit(1);
-      P(!ppErr, `public_profiles readable by authenticated (bid history / inspectors intact)${ppErr ? ` — ${ppErr.message}` : ""}`);
+      const uid = su.user?.id;
+      const { data: prof } = await svc.from("profiles").select("role").eq("id", uid).maybeSingle();
+      const { data: au } = await svc.auth.admin.getUserById(uid);
+      P(
+        prof?.role !== "admin" && au?.user?.app_metadata?.role !== "admin",
+        `signup cannot self-assign admin (profile role=${prof?.role ?? "none"})`,
+      );
+      if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
     }
-    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
   }
-}
 
-// Positive control — anon public_profiles read still works for the public
-// inspector/partner pages (id/full_name/role only).
-{
-  const { error } = await freshAnon().from("public_profiles").select("id, full_name, role").limit(1);
-  P(!error, `anon public_profiles readable (inspector/partner pages intact)${error ? ` — ${error.message}` : ""}`);
-}
+  const email = `sec-probe-${stamp}@example.com`;
+  const { data: created, error: createError } = await svc.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: "SEC PROBE" },
+  });
 
-// B2 — a client must NOT be able to insert an auction_deposits row.
-{
-  const z = "00000000-0000-0000-0000-000000000000";
-  const { error } = await freshAnon().from("auction_deposits").insert({ auction_id: z, user_id: z, amount: 0 });
-  P(!!error, `B2 forge-deposit: insert blocked${error ? ` (${error.code})` : " — ACCEPTED (!!)"}`);
-}
+  if (createError) {
+    P(false, `could not create the probe user: ${createError.message}`);
+  } else {
+    const uid = created.user.id;
+    try {
+      const authed = freshAnon();
+      const { error: signInError } = await authed.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        P(false, `probe user could not sign in: ${signInError.message}`);
+      } else {
+        {
+          const { data, error } = await authed
+            .from("listings")
+            .select("id, contact_phone")
+            .eq("status", "published")
+            .limit(20);
+          const leaked = error ? 0 : (data ?? []).filter((r) => r.contact_phone).length;
+          P(!!error || leaked === 0, "a signed-in user cannot read seller phone numbers");
+        }
 
-// ENQ — a logged-in user must NOT be able to call enqueue_notification
-// (forged notifications / platform-branded phishing emails). 0082 revokes the
-// 6-arg overload from `authenticated`.
-{
-  const email = `sec-enq-${process.hrtime.bigint()}@example.com`;
-  const password = "SecProbe!2026x";
-  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
-  if (cErr) { P(false, `ENQ: probe user create failed (${cErr.message})`); }
-  else {
-    const uid = created.user?.id;
-    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
-    await authed.auth.signInWithPassword({ email, password });
-    const { error } = await authed.rpc("enqueue_notification", {
-      p_user_id: uid, p_kind: "payment_accepted", p_title: "X", p_body: "Y", p_link: "/account/payments", p_payload: {},
-    });
-    P(!!error, `ENQ enqueue_notification: blocked for authenticated${error ? ` (${error.code ?? (error.message||"").slice(0,40)})` : " — CALLABLE (!!)"}`);
-    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
-  }
-}
+        {
+          const { data: victim } = await svc
+            .from("listings")
+            .select("id, title")
+            .eq("status", "published")
+            .neq("seller_id", uid)
+            .limit(1)
+            .maybeSingle();
+          if (victim) {
+            await authed.from("listings").update({ title: "SEC PROBE — must not stick" }).eq("id", victim.id);
+            const { data: after } = await svc.from("listings").select("title").eq("id", victim.id).single();
+            const changed = after?.title !== victim.title;
+            if (changed) await svc.from("listings").update({ title: victim.title }).eq("id", victim.id);
+            P(!changed, "a signed-in user cannot edit somebody else's annonce");
+          } else {
+            console.log("⚠️  SKIP — no published annonce by another seller to probe");
+          }
+        }
 
-// BIDS — sensitive columns (ip_address/max_amount/device_hash) must NOT be
-// readable by anon/authenticated via PostgREST. 0083 revokes them.
-{
-  const { error } = await freshAnon().from("bids").select("id, max_amount, ip_address").limit(1);
-  P(!!error, `BIDS column lockdown: max_amount/ip_address blocked${error ? ` (${error.code ?? ""})` : " — READABLE (!!)"}`);
-  const { error: okErr } = await freshAnon().from("bids").select("id, amount, bidder_id").limit(1);
-  P(!okErr, `BIDS safe columns still readable${okErr ? ` — ${okErr.message}` : ""}`);
-}
-
-// B7 — a SELLER must NOT mutate their own auction row directly via PostgREST,
-// bypassing the place_bid/close/tick state machine. 0099 drops the owner
-// `FOR ALL` policy (it allowed UPDATE/DELETE), leaving owner INSERT + admin
-// writes only. The exploit: a seller "awards" their own auction to themselves
-// (or an accomplice) at a sham price. With RLS this UPDATE matches no policy
-// and is a 0-row no-op, so we verify the row is UNCHANGED via service-role.
-{
-  const email = `sec-seller-${process.hrtime.bigint()}@example.com`;
-  const password = "SecProbe!2026x";
-  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
-  if (cErr) { P(false, `B7: probe seller create failed (${cErr.message})`); }
-  else {
-    const uid = created.user?.id;
-    let propId, aucId;
-    const { data: prop, error: pErr } = await svc.from("properties")
-      .insert({ owner_id: uid, title: "SEC PROBE LOT", type: "apartment", governorate: "Tunis" })
-      .select("id").single();
-    if (pErr || !prop) { P(false, `B7: property seed failed (${pErr?.message ?? "no row"})`); }
-    else {
-      propId = prop.id;
-      const nowMs = Date.now();
-      const { data: auc, error: aErr } = await svc.from("auctions")
-        .insert({
-          property_id: propId, type: "english", opening_price: 1000, current_price: 1000, status: "live",
-          starts_at: new Date(nowMs - 3_600_000).toISOString(),
-          ends_at: new Date(nowMs + 3_600_000).toISOString(),
-        })
-        .select("id").single();
-      if (aErr || !auc) { P(false, `B7: auction seed failed (${aErr?.message ?? "no row"})`); }
-      else {
-        aucId = auc.id;
-        const authed = createClient(url, anonKey, { auth: { persistSession: false } });
-        await authed.auth.signInWithPassword({ email, password });
-        await authed.from("auctions").update({
-          status: "ended_sold", winner_user_id: uid, winner_amount: 1, current_price: 999_999,
-        }).eq("id", aucId);
-        const { data: after } = await svc.from("auctions")
-          .select("status, winner_user_id, current_price").eq("id", aucId).single();
-        const unchanged = !!after && after.status === "live" && after.winner_user_id === null && Number(after.current_price) === 1000;
-        P(unchanged, `B7 seller-hijack: direct UPDATE of own auction blocked (status=${after?.status}, winner=${after?.winner_user_id ? "SET(!!)" : "null"})`);
+        {
+          const { data: pay, error } = await authed
+            .from("payments")
+            .insert({ user_id: uid, kind: "listing_fee", provider: "bank_transfer", amount: 1, status: "captured" })
+            .select("id")
+            .maybeSingle();
+          if (!error && pay?.id) await svc.from("payments").delete().eq("id", pay.id);
+          P(!!error || !pay, "a signed-in user cannot record a payment as already captured");
+        }
       }
+    } finally {
+      await svc.auth.admin.deleteUser(uid).catch(() => {});
     }
-    if (aucId) await svc.from("auctions").delete().eq("id", aucId).then(() => {}, () => {});
-    if (propId) await svc.from("properties").delete().eq("id", propId).then(() => {}, () => {});
-    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
   }
 }
 
-// B8 — a logged-in user must NOT be able to INSERT a seller_payouts row
-// directly via PostgREST (forging a 'requested' payout with an arbitrary amount
-// bypasses request_payout's balance check). 0103 drops payouts_self_insert +
-// revokes the INSERT grant; the only legit path is the request_payout RPC.
-{
-  const email = `sec-payout-${process.hrtime.bigint()}@example.com`;
-  const password = "SecProbe!2026x";
-  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
-  if (cErr) { P(false, `B8: probe user create failed (${cErr.message})`); }
-  else {
-    const uid = created.user?.id;
-    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
-    await authed.auth.signInWithPassword({ email, password });
-    const { error } = await authed.from("seller_payouts").insert({
-      seller_id: uid, amount: 999999, status: "requested", iban: "TN5904018104004942712345",
-    });
-    P(!!error, `B8 forge-payout: direct seller_payouts INSERT blocked${error ? ` (${error.code ?? ""})` : " — ACCEPTED (!!)"}`);
-    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
-  }
-}
-
-// B9 — seller-created auctions are validated server-side (0106): a seller must
-// NOT be able to (a) auction a non-'ready' (unmoderated/rejected) property, nor
-// (b) run a second concurrent active auction on one asset.
-{
-  const email = `sec-auc-${process.hrtime.bigint()}@example.com`;
-  const password = "SecProbe!2026x";
-  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
-  if (cErr) { P(false, `B9: probe seller create failed (${cErr.message})`); }
-  else {
-    const uid = created.user?.id;
-    let propId;
-    const nowMs = Date.now();
-    const mkAuction = (authed, propertyId) => authed.from("auctions").insert({
-      property_id: propertyId, type: "english", opening_price: 1000, status: "scheduled",
-      starts_at: new Date(nowMs + 3_600_000).toISOString(),
-      ends_at: new Date(nowMs + 7_200_000).toISOString(),
-    }).select("id").single();
-
-    // Draft (unmoderated) property owned by the seller.
-    const { data: prop } = await svc.from("properties")
-      .insert({ owner_id: uid, title: "SEC PROBE AUC", type: "apartment", governorate: "Tunis", status: "draft" })
-      .select("id").single();
-    propId = prop?.id;
-    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
-    await authed.auth.signInWithPassword({ email, password });
-
-    // (a) auction on a non-ready property must be rejected by the trigger.
-    const { error: draftErr } = await mkAuction(authed, propId);
-    P(!!draftErr, `B9a auction-on-unmoderated: blocked${draftErr ? "" : " — ACCEPTED (!!)"}`);
-
-    // Promote to ready; first auction should succeed, a SECOND active one must fail.
-    await svc.from("properties").update({ status: "ready" }).eq("id", propId);
-    const { data: first, error: firstErr } = await mkAuction(authed, propId);
-    const { error: secondErr } = await mkAuction(authed, propId);
-    P(!firstErr && !!secondErr,
-      `B9b one-active-auction-per-property: 1st ok, 2nd blocked${firstErr ? ` (1st failed: ${firstErr.code})` : ""}${secondErr ? "" : " — 2nd ACCEPTED (!!)"}`);
-
-    // Cleanup (auctions first — FK restrict — then property, then user).
-    await svc.from("auctions").delete().eq("property_id", propId).then(() => {}, () => {});
-    if (first?.id) { /* deleted above */ }
-    if (propId) await svc.from("properties").delete().eq("id", propId).then(() => {}, () => {});
-    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
-  }
-}
-
-// B10 — a logged-in user must NOT be able to enumerate the pg_cron schedule
-// (job names + command text) via list_cron_jobs(). 0107 revokes it from
-// `authenticated` (kept for service_role/ops only).
-{
-  const email = `sec-cron-${process.hrtime.bigint()}@example.com`;
-  const password = "SecProbe!2026x";
-  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
-  if (cErr) { P(false, `B10: probe user create failed (${cErr.message})`); }
-  else {
-    const uid = created.user?.id;
-    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
-    await authed.auth.signInWithPassword({ email, password });
-    const { error } = await authed.rpc("list_cron_jobs");
-    P(!!error, `B10 cron-schedule enumeration: blocked for authenticated${error ? ` (${error.code ?? ""})` : " — CALLABLE (!!)"}`);
-    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
-  }
-}
-
-// B11 — the seller's secret reserve_price must NOT be readable by anon/
-// authenticated via PostgREST (a bidder reading it defeats the reserve). 0112
-// revokes table SELECT + re-grants every column except reserve_price.
-{
-  const { error } = await freshAnon().from("auctions").select("id, reserve_price").limit(1);
-  P(!!error, `B11 reserve_price hidden: anon select(reserve_price) blocked${error ? ` (${error.code ?? ""})` : " — READABLE (!!)"}`);
-  const { error: okErr } = await freshAnon()
-    .from("auctions").select("id, opening_price, current_price, status").limit(1);
-  P(!okErr, `auctions safe columns still readable${okErr ? ` — ${okErr.message}` : ""}`);
-}
-
-// B12 — close_auction_on_purchase must NOT be directly callable by an
-// authenticated user (it closes an auction + sets winner with NO payment
-// capture = free win / denial-of-sale). 0113 revokes it; only the
-// _on_payment_captured trigger (SECURITY DEFINER) invokes it.
-{
-  const email = `sec-close-${process.hrtime.bigint()}@example.com`;
-  const password = "SecProbe!2026x";
-  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
-  if (cErr) { P(false, `B12: probe user create failed (${cErr.message})`); }
-  else {
-    const uid = created.user?.id;
-    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
-    await authed.auth.signInWithPassword({ email, password });
-    const { error } = await authed.rpc("close_auction_on_purchase", {
-      p_auction_id: "00000000-0000-0000-0000-000000000000",
-      p_buyer_id: uid,
-      p_amount: 1,
-    });
-    P(!!error, `B12 close_auction direct-call: blocked for authenticated${error ? ` (${error.code ?? ""})` : " — CALLABLE (!!)"}`);
-    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
-  }
-}
-
-// B13 — seller_payouts.status must NOT be directly UPDATE-able via PostgREST
-// (even by an admin), so the advisory-locked balance recheck in
-// admin_set_payout_status can't be bypassed. 0115 revokes table UPDATE and
-// grants only (claimed_by, claimed_at). Column privilege is checked before row
-// match, so this fails for any authenticated caller regardless of RLS.
-{
-  const email = `sec-payupd-${process.hrtime.bigint()}@example.com`;
-  const password = "SecProbe!2026x";
-  const { data: created, error: cErr } = await svc.auth.admin.createUser({ email, password, email_confirm: true });
-  if (cErr) { P(false, `B13: probe user create failed (${cErr.message})`); }
-  else {
-    const uid = created.user?.id;
-    const authed = createClient(url, anonKey, { auth: { persistSession: false } });
-    await authed.auth.signInWithPassword({ email, password });
-    const { error } = await authed
-      .from("seller_payouts").update({ status: "paid" }).eq("id", "00000000-0000-0000-0000-000000000000");
-    P(!!error, `B13 payout-status direct UPDATE: blocked${error ? ` (${error.code ?? ""})` : " — ALLOWED (!!)"}`);
-    if (uid) await svc.auth.admin.deleteUser(uid).catch(() => {});
-  }
-}
-
-console.log(`\n${fails === 0 ? "ALL SECURITY CHECKS PASSED" : `${fails} SECURITY CHECK(S) FAILED`}`);
-process.exit(fails === 0 ? 0 : 1);
+console.log(`\n${passed} passed, ${failed} failed`);
+process.exit(failed ? 1 : 0);

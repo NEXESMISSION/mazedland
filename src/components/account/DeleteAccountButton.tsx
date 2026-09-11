@@ -63,18 +63,17 @@ export function DeleteAccountButton({ label }: { label: string }) {
           return;
         }
 
-        // Success — drop any local auth/KYC state and hard-navigate home.
-        try {
-          sessionStorage.removeItem("mazed_kyc_draft");
-        } catch {
-          /* sessionStorage unavailable */
-        }
+        // Success — drop the local session and hard-navigate home.
         try {
           await getBrowserSupabase().auth.signOut();
         } catch {
           /* already signed out server-side */
         }
         toast("Votre compte a été supprimé.", "success");
+        // A full reload, not a router push: the session is gone, and every
+        // in-memory store on the page (favourites, popups, notifications) still
+        // describes the deleted account. A soft navigation would keep them.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload drops the deleted account's client state
         window.location.assign(`/${locale}`);
       } catch {
         toast("La suppression a échoué. Vérifiez votre connexion.", "error");

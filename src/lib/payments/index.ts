@@ -158,3 +158,27 @@ export async function fetchPayeeDetails(supabase: any): Promise<PayeeDetails> {
     d17: m.get("payee_d17") || DEFAULT_PAYEE.d17,
   };
 }
+
+/**
+ * Which payment methods carry details a real person can send money to.
+ *
+ * `fetchPayeeDetails` falls back to DEFAULT_PAYEE for any field an admin has
+ * not filled in, and DEFAULT_PAYEE is a FAKE account: a plausible RIB, IBAN and
+ * D17 number belonging to nobody. On a local checkout page that is a
+ * convenience; in production a seller would wire a real listing fee to a
+ * number that goes nowhere, upload a real receipt, and wait for an approval
+ * that can never be justified. Checkout offers only the methods this passes,
+ * and refuses to take payment when neither does.
+ *
+ * The name is required but not compared to the default, since the company may
+ * genuinely be called that; the pre-rebrand name is rejected outright.
+ */
+export function usablePayeeMethods(p: PayeeDetails): { bank_transfer: boolean; d17: boolean } {
+  const norm = (v: string) => v.replace(/\s+/g, "").toUpperCase();
+  const real = (v: string, fake: string) => norm(v) !== "" && norm(v) !== norm(fake);
+  const nameOk = p.name.trim() !== "" && !/batta/i.test(p.name);
+  return {
+    bank_transfer: nameOk && real(p.rib, DEFAULT_PAYEE.rib) && real(p.iban, DEFAULT_PAYEE.iban),
+    d17: nameOk && real(p.d17, DEFAULT_PAYEE.d17),
+  };
+}
