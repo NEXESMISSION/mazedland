@@ -3,7 +3,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { formatTND } from "@/lib/utils";
 import { ArrowUpRight, MapPin, Ruler, BedDouble } from "lucide-react";
-import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
+import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 
@@ -56,14 +56,11 @@ export async function AnnonceCard({
   listing,
   saved = false,
   loggedIn = false,
-  priority = false,
 }: {
   listing: AnnonceCardRow;
   /** Pre-resolved favourite membership for this user. Defaults false (anon). */
   saved?: boolean;
   loggedIn?: boolean;
-  /** Eager-load + high-priority fetch for above-the-fold cards. */
-  priority?: boolean;
 }) {
   const t = await getTranslations();
   const locale = await getLocale();
@@ -92,20 +89,22 @@ export async function AnnonceCard({
             (() => {
               const src = propertyPhotoUrl(heroPhoto.storage_path);
               const blur = IMAGE_BLUR_MAP[heroPhoto.storage_path];
-              // Skip /_next/image for static seed photos — they are already
-              // small webps and the optimizer's cold-function round trip
-              // dwarfs the file fetch itself.
-              const unoptimized = isStaticSeedPath(src);
+              // Always optimized, always lazy.
+              //
+              // Seed photos under /public/properties used to skip the optimizer
+              // as "already 20–40 KB webps". They are up to 1600px and 390 KB
+              // now, and a 230px card downloaded every byte. Cards also took
+              // `priority`, which on home put a <link rel="preload"> in the head
+              // for photos in rails below the hero — and for rails in the layout
+              // the screen was not even showing — all racing the real LCP image.
               return (
                 <Image
                   src={src}
                   alt={listing.title}
                   fill
                   sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw"
-                  priority={priority}
                   placeholder={blur ? "blur" : "empty"}
                   blurDataURL={blur}
-                  unoptimized={unoptimized}
                   className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                 />
               );

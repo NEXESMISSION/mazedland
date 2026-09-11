@@ -55,7 +55,11 @@ export function ListingImage({
   alt: string;
   /** The CSS width this image occupies, e.g. "(min-width:1024px) 25vw, 50vw". */
   sizes: string;
-  /** Only for what is above the fold; everything else stays lazy. */
+  /**
+   * Only for what is above the fold: loads eagerly at high fetch priority.
+   * Not next/image's `preload` — the <img> is already in the HTML, which is
+   * the head start a preload link would buy, without one <link> per card.
+   */
   priority?: boolean;
   className?: string;
   quality?: number;
@@ -76,8 +80,8 @@ export function ListingImage({
         fill
         sizes={sizes}
         quality={quality}
-        priority={priority}
-        loading={priority ? undefined : "lazy"}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : undefined}
         className={`object-cover${className ? ` ${className}` : ""}`}
         draggable={false}
       />
@@ -118,8 +122,8 @@ export function ListingImage({
         fill
         sizes={sizes}
         quality={quality}
-        priority={priority}
-        loading={priority ? undefined : "lazy"}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : undefined}
         className={`object-contain${className ? ` ${className}` : ""}`}
         draggable={false}
       />

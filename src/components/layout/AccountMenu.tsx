@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
-import { getBrowserSupabase } from "@/lib/supabase/client";
+import { useSessionCookie } from "@/lib/useSessionCookie";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import {
   User, Receipt, Heart, ShieldCheck, Plus, FileText,
@@ -47,29 +47,41 @@ export function AccountMenu() {
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
+  // No session cookie means a guest, and a guest needs neither the Supabase
+  // client — imported on demand below, so it is not in every page's bundle —
+  // nor a round trip to learn that nobody is signed in.
+  const sessionCookie = useSessionCookie();
+  const signedIn = sessionCookie === false ? false : authed;
+
   // Resolve auth state once + keep it in sync.
   useEffect(() => {
-    const sb = getBrowserSupabase();
+    if (!sessionCookie) return;
     let active = true;
-    // Resolve auth + the admin flag (profile role 'admin' shows the admin
-    // shortcut, even if the JWT app_metadata claim lags a login behind).
-    async function resolve(u: unknown) {
+    let unsubscribe = () => {};
+    void import("@/lib/supabase/client").then(({ getBrowserSupabase }) => {
       if (!active) return;
-      setAuthed(!!u);
-      const id = (u as { id?: string } | null)?.id;
-      if (id) {
-        const { data: prof } = await sb.from("profiles").select("role").eq("id", id).single();
-        if (active) setIsAdmin(prof?.role === "admin");
-      } else if (active) {
-        setIsAdmin(false);
+      const sb = getBrowserSupabase();
+      // Resolve auth + the admin flag (profile role 'admin' shows the admin
+      // shortcut, even if the JWT app_metadata claim lags a login behind).
+      async function resolve(u: unknown) {
+        if (!active) return;
+        setAuthed(!!u);
+        const id = (u as { id?: string } | null)?.id;
+        if (id) {
+          const { data: prof } = await sb.from("profiles").select("role").eq("id", id).single();
+          if (active) setIsAdmin(prof?.role === "admin");
+        } else if (active) {
+          setIsAdmin(false);
+        }
       }
-    }
-    sb.auth.getUser().then((res: { data: { user: unknown } }) => resolve(res.data.user));
-    const { data: sub } = sb.auth.onAuthStateChange(
-      (_event: AuthChangeEvent, session: Session | null) => resolve(session?.user ?? null),
-    );
-    return () => { active = false; sub.subscription.unsubscribe(); };
-  }, []);
+      sb.auth.getUser().then((res: { data: { user: unknown } }) => resolve(res.data.user));
+      const { data: sub } = sb.auth.onAuthStateChange(
+        (_event: AuthChangeEvent, session: Session | null) => resolve(session?.user ?? null),
+      );
+      unsubscribe = () => sub.subscription.unsubscribe();
+    });
+    return () => { active = false; unsubscribe(); };
+  }, [sessionCookie]);
 
   // Close on outside click / Escape.
   useEffect(() => {
@@ -125,6 +137,7 @@ export function AccountMenu() {
     setLoggingOut(true);
     const locale = window.location.pathname.split("/")[1] || "fr";
     try {
+      const { getBrowserSupabase } = await import("@/lib/supabase/client");
       const sb = getBrowserSupabase();
       await Promise.all([
         sb.auth.signOut(),
@@ -139,7 +152,7 @@ export function AccountMenu() {
   }
 
   // Guest → plain login link (matches the avatar footprint).
-  if (authed === false) {
+  if (signedIn === false) {
     return (
       <Link
         href="/login"

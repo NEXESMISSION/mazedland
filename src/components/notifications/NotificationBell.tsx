@@ -46,7 +46,8 @@ import {
   RefreshCcw,
 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { getBrowserSupabase } from "@/lib/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
+import { useSessionCookie } from "@/lib/useSessionCookie";
 import { useToast } from "@/components/ui/Toast";
 import { resolveNotificationLink } from "@/lib/notifications/target";
 import { useHydrated } from "@/lib/useHydrated";
@@ -124,6 +125,12 @@ export function NotificationBell() {
   const refreshingRef = useRef(false);
   const refreshPendingRef = useRef(false);
   const { toast } = useToast();
+  // No session cookie means a guest: /api/notifications can only answer with
+  // an empty list, and the realtime channel has nobody to listen for. Both
+  // bells — the phone bar and the desktop nav are mounted together — used to
+  // ask anyway on every page, and pulled the Supabase client into every page's
+  // bundle to open that channel.
+  const sessionCookie = useSessionCookie();
 
   const PAGE_SIZE = 20;
 
@@ -202,6 +209,7 @@ export function NotificationBell() {
   }, [hasMore, items.length]);
 
   useEffect(() => {
+    if (!sessionCookie) return;
     void refresh();
     const id = window.setInterval(() => {
       // Skip the safety-net poll while the tab is hidden. This interval runs
@@ -213,7 +221,7 @@ export function NotificationBell() {
       void refresh();
     }, POLL_MS);
     return () => window.clearInterval(id);
-  }, [refresh]);
+  }, [refresh, sessionCookie]);
 
   // Realtime INSERT channel + reset on user change.
   //
@@ -228,9 +236,10 @@ export function NotificationBell() {
   // Tearing down on SIGNED_OUT also prevents a stale subscription
   // leaking a previous user's badge into the next session.
   useEffect(() => {
-    const supabase = getBrowserSupabase();
+    if (!sessionCookie) return;
     let cancelled = false;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let channel: RealtimeChannel | null = null;
+    let teardown: (() => void) | null = null;
     // Unique per mount. React strict-mode double-invokes effects (and a
     // fast unmount/remount can too); reusing a fixed channel name returns
     // the previous, still-subscribed channel from supabase's registry, and
@@ -252,7 +261,27 @@ export function NotificationBell() {
       }, 250);
     }
 
-    (async () => {
+    // Imported on demand: it is the heaviest thing the header could pull in,
+    // and only a visitor with a session gets this far.
+    void import("@/lib/supabase/client").then(async ({ getBrowserSupabase }) => {
+      if (cancelled) return;
+      const supabase = getBrowserSupabase();
+
+      const sub = supabase.auth.onAuthStateChange((event: string) => {
+        if (event === "SIGNED_OUT") {
+          setItems([]);
+          setUnread(0);
+          setOpen(false);
+          setConfirmingDeleteAll(false);
+        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+          void refresh();
+        }
+      });
+      teardown = () => {
+        sub.data.subscription.unsubscribe();
+        if (channel) void supabase.removeChannel(channel);
+      };
+
       const { data: { user } } = await supabase.auth.getUser();
       if (cancelled || !user) return;
       channel = supabase
@@ -294,26 +323,14 @@ export function NotificationBell() {
           () => scheduleRefresh(),
         )
         .subscribe();
-    })();
-
-    const sub = supabase.auth.onAuthStateChange((event: string) => {
-      if (event === "SIGNED_OUT") {
-        setItems([]);
-        setUnread(0);
-        setOpen(false);
-        setConfirmingDeleteAll(false);
-      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        void refresh();
-      }
     });
 
     return () => {
       cancelled = true;
       if (refreshTimer !== null) window.clearTimeout(refreshTimer);
-      sub.data.subscription.unsubscribe();
-      if (channel) void supabase.removeChannel(channel);
+      teardown?.();
     };
-  }, [refresh]);
+  }, [refresh, sessionCookie]);
 
   useEffect(() => {
     if (!open) {
@@ -454,7 +471,9 @@ export function NotificationBell() {
     }
   }
 
-  if (!loaded) return null;
+  // A guest has nothing to load, so the bell shows straight away with its empty
+  // state — what the empty API answer used to produce one round trip later.
+  if (!loaded && sessionCookie !== false) return null;
 
   const BellIcon = unread > 0 ? BellDot : Bell;
   const visibleItems = filter === "unread" ? items.filter((n) => !n.read_at) : items;

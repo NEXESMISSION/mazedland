@@ -10,6 +10,16 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: import.meta.dirname,
   },
+  // Metadata in <head> for every client, not only the crawlers on Next's list.
+  //
+  // On dynamic routes Next streams generated metadata after the first bytes
+  // unless the user agent is a bot it knows, which puts <title>, the
+  // description and the Open Graph tags inside <body>. Google copes; many link
+  // previewers (Telegram, Viber) and most SEO tooling do not, and a shared
+  // annonce is exactly where a missing preview costs something. The price is
+  // waiting for generateMetadata before the first byte — and on the one route
+  // with a real one, /annonces/[id], it shares a cached query with the page.
+  htmlLimitedBots: /.*/,
   // lucide-react is named-imported across ~125 files. This rewrites those
   // named imports to per-icon deep imports at build time, guaranteeing only
   // the icons actually used are bundled (insurance against the barrel

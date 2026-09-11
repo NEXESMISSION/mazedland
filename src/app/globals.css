@@ -748,8 +748,8 @@ textarea.mazed-input {
   to   { transform: translate3d(0, 0, 0); }
 }
 @keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 0 0 0 var(--gold-glow); }
-  50%      { box-shadow: 0 0 0 8px transparent; }
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(3.6); opacity: 0; }
 }
 
 /* Winner celebration — bounce the trophy in, then have a sparse
@@ -894,7 +894,22 @@ html[dir="rtl"] .mazed-marquee-reverse { animation-name: mazed-marquee; }
   will-change: transform;
 }
 
+/* A breathing glow around a small status dot. It animated box-shadow, which a
+   browser can only do by repainting on every frame, for as long as the page is
+   open. The glow is now its own layer that scales and fades — transform and
+   opacity, which the compositor animates without the main thread. The
+   negative z-index keeps it behind the dot and above the chip it sits in
+   (the chips are backdrop-blurred, so they are their own stacking context). */
 .pulse-gold {
+  position: relative;
+}
+.pulse-gold::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 9999px;
+  background: var(--gold-glow);
   animation: pulse-gold 2s ease-in-out infinite;
 }
 

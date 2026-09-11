@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import { isStaticSeedPath } from "@/lib/imageUrl";
+import { HiddenAt } from "@/components/ui/HiddenAt";
 import { LiveCountdown } from "@/components/landing/LiveCountdown";
 import { MapPin, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -45,14 +45,21 @@ export function HeroShowcase({
   isRTL = false,
   brand,
   intervalMs = 3000,
+  priority = false,
+  hiddenAt,
 }: {
   slides: ShowcaseSlide[];
   isRTL?: boolean;
   /** Shown when there are no live lots — keeps the hero from going blank. */
   brand: { title: string; slogan: string; cta: string; href: string };
   intervalMs?: number;
+  /** Load the first photo eagerly at high priority — the showcase is the LCP. */
+  priority?: boolean;
+  /** Media query at which CSS hides the showcase's tree (see HiddenAt). */
+  hiddenAt?: string;
 }) {
   const [index, setIndex] = useState(0);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const total = slides.length;
   const safeIndex = total > 0 ? index % total : 0;
 
@@ -62,10 +69,25 @@ export function HeroShowcase({
     if (total <= 1) return;
     if (typeof window === "undefined") return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    // Paused while out of view — which includes every phone, where the desktop
+    // tree this lives in is display:none and was re-rendering every 3 seconds.
+    const root = rootRef.current;
+    let inView = true;
+    const observer =
+      root && typeof IntersectionObserver !== "undefined"
+        ? new IntersectionObserver(([entry]) => {
+            inView = entry.isIntersecting;
+          })
+        : null;
+    if (observer && root) observer.observe(root);
     const id = window.setInterval(() => {
+      if (!inView || document.hidden) return;
       setIndex((i) => (i + 1) % total);
     }, intervalMs);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearInterval(id);
+      observer?.disconnect();
+    };
   }, [total, intervalMs]);
 
   if (total === 0) {
@@ -73,7 +95,7 @@ export function HeroShowcase({
   }
 
   return (
-    <div className="group/showcase relative aspect-[4/3] w-full overflow-hidden rounded-3xl bg-surface-2 ring-1 ring-border shadow-[0_28px_60px_-26px_rgba(15,23,42,0.45)]">
+    <div ref={rootRef} className="group/showcase relative aspect-[4/3] w-full overflow-hidden rounded-3xl bg-surface-2 ring-1 ring-border shadow-[0_28px_60px_-26px_rgba(15,23,42,0.45)]">
       {slides.map((slide, i) => {
         const active = i === safeIndex;
         return (
@@ -87,7 +109,13 @@ export function HeroShowcase({
             }`}
             draggable={false}
           >
-            <SlideBody slide={slide} active={active} priority={i === 0} isRTL={isRTL} />
+            <SlideBody
+              slide={slide}
+              active={active}
+              priority={priority && i === 0}
+              hiddenAt={i === 0 ? hiddenAt : undefined}
+              isRTL={isRTL}
+            />
           </Link>
         );
       })}
@@ -115,9 +143,11 @@ export function HeroShowcase({
         </>
       )}
 
-      {/* Dot indicators — sit above the photo, clear of the info panel. */}
+      {/* Dot indicators — sit above the photo, clear of the info panel. Each
+          dot is drawn inside a 24px button: the 6px dot alone was too small a
+          target (WCAG 2.5.8). */}
       {total > 1 && (
-        <div className="absolute inset-x-0 top-4 z-20 flex justify-center gap-1.5">
+        <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center">
           {slides.map((s, i) => (
             <button
               key={`dot-${s.id}`}
@@ -125,12 +155,17 @@ export function HeroShowcase({
               aria-label={`Bien ${i + 1} sur ${total}`}
               aria-current={i === safeIndex ? "true" : undefined}
               onClick={() => setIndex(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === safeIndex
-                  ? "w-6 bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]"
-                  : "w-1.5 bg-white/45 hover:bg-white/70"
-              }`}
-            />
+              className="group/dot pointer-events-auto grid h-6 min-w-6 place-items-center rounded-full px-[9px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            >
+              <span
+                aria-hidden
+                className={`block h-1.5 rounded-full transition-all duration-300 ${
+                  i === safeIndex
+                    ? "w-6 bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+                    : "w-1.5 bg-white/45 group-hover/dot:bg-white/70"
+                }`}
+              />
+            </button>
           ))}
         </div>
       )}
@@ -142,15 +177,32 @@ function SlideBody({
   slide,
   active,
   priority,
+  hiddenAt,
   isRTL,
 }: {
   slide: ShowcaseSlide;
   active: boolean;
   priority: boolean;
+  hiddenAt?: string;
   isRTL: boolean;
 }) {
   const [broken, setBroken] = useState(false);
-  const showImage = !!slide.imageUrl && !broken;
+  const photo =
+    slide.imageUrl && !broken ? (
+      <Image
+        src={slide.imageUrl}
+        alt=""
+        fill
+        sizes="(min-width: 1024px) 600px, 100vw"
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : undefined}
+        onError={() => setBroken(true)}
+        className={`object-cover transition-transform duration-[8000ms] ease-out ${
+          active ? "scale-105" : "scale-100"
+        }`}
+        draggable={false}
+      />
+    ) : null;
 
   return (
     <>
@@ -159,21 +211,12 @@ function SlideBody({
           and a navy slab is the one colour the brand does not contain. */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#fffdf7] to-[#efe5d2]" />
 
-      {showImage && (
-        <Image
-          src={slide.imageUrl!}
-          alt=""
-          fill
-          sizes="(min-width: 1024px) 600px, 100vw"
-          priority={priority}
-          loading={priority ? "eager" : "lazy"}
-          onError={() => setBroken(true)}
-          unoptimized={isStaticSeedPath(slide.imageUrl!)}
-          className={`object-cover transition-transform duration-[8000ms] ease-out ${
-            active ? "scale-105" : "scale-100"
-          }`}
-          draggable={false}
-        />
+      {photo && hiddenAt ? (
+        <HiddenAt media={hiddenAt} className="absolute inset-0">
+          {photo}
+        </HiddenAt>
+      ) : (
+        photo
       )}
 
       {/* Strong bottom gradient — also masks any watermark / price text
@@ -199,14 +242,14 @@ function SlideBody({
 
       {/* Info panel — title, location, price + action. */}
       <div className={`absolute inset-x-0 bottom-0 z-10 p-5 ${isRTL ? "text-right" : "text-left"}`}>
-        <h3
+        <h2
           className={`text-balance text-[20px] font-extrabold leading-[1.15] tracking-tight text-white drop-shadow ${
             isRTL ? "font-arabic" : ""
           }`}
           style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
         >
           {slide.title}
-        </h3>
+        </h2>
         <div className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-white/80">
           <MapPin className="size-3.5" strokeWidth={2} />
           <span className="truncate">{slide.governorate}</span>
@@ -251,13 +294,13 @@ function BrandPanel({
           "radial-gradient(70% 60% at 50% 25%, rgba(184,130,54,0.18) 0%, rgba(184,130,54,0) 62%), linear-gradient(180deg, #fffdf7 0%, #f4ecdd 100%)",
       }}
     >
-      <h3
+      <h2
         className={`max-w-[18ch] text-balance text-[26px] font-extrabold leading-[1.12] tracking-tight text-foreground ${
           isRTL ? "font-arabic" : ""
         }`}
       >
         {brand.title}
-      </h3>
+      </h2>
       <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-muted">{brand.slogan}</p>
       <span className="mazed-gold-fill mt-6 inline-flex items-center gap-1.5 rounded-full px-6 py-3 text-[12px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] ring-1 ring-black/10">
         {brand.cta}

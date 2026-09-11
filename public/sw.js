@@ -1,33 +1,43 @@
-// Mazed Immo PWA service worker. Minimal hand-rolled (no Workbox) so we can
-// reason about every line. Strategy:
-//   - Navigations    : network-first, fall back to cached offline shell.
-//   - Hashed assets  : cache-first (immutable, /_next/static/).
-//   - Images         : cache-first into IMAGE_CACHE with an LRU cap. The
-//                      seed catalogue + /_next/image variants stay hot
-//                      across visits without growing unbounded.
-//   - Other GETs     : stale-while-revalidate into RUNTIME_CACHE.
-//   - Cross-origin & non-GET: passthrough, never cached.
+// Mazed Immo PWA service worker. Hand-rolled (no Workbox) so every line can be
+// reasoned about. What it handles, and deliberately NOTHING else:
+//   - Navigations   : network-first, cached copy only when offline.
+//   - Hashed assets : cache-first (/_next/static/ never changes under a URL).
+//   - Images        : cache-first into IMAGE_CACHE with a FIFO cap.
+//
+// WHAT CHANGED (v5). There used to be a fourth branch: stale-while-revalidate
+// for "everything else same-origin". On this app everything else is DATA —
+// React Server Component payloads (`?_rsc=`), router prefetches, and every
+// `/api/*` GET (notifications, favourites, health). Stale-while-revalidate
+// answers from the cache FIRST, so a seller who had just published an annonce,
+// or a user with a new notification, could be shown the previous state until
+// they reloaded. And when the background fetch failed it invented a 503, which
+// is what an anonymous visitor's console showed for every account-link
+// prefetch. Dynamic data now always goes straight to the network.
+//
+// Bumping VERSION makes `activate` delete the v4 caches, including every RSC
+// and API response the old branch had stored.
 
-const VERSION = "mazed-v4";
-const RUNTIME_CACHE = `${VERSION}-runtime`;
+const VERSION = "mazed-v5";
+const RUNTIME_CACHE = `${VERSION}-pages`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const IMAGE_CACHE = `${VERSION}-images`;
 
-// Soft caps — we trim FIFO-style when we exceed these (oldest entries
-// die first). 120 was too tight for a single rail scroll because the
-// browser fetches each photo at multiple widths (responsive `sizes`),
-// so a 30-card catalogue would blow past the cap. 400 covers the whole
-// seed set plus a few sessions of fresh uploads without bloating disk.
+// Soft caps, trimmed oldest-first. Each photo is fetched at several widths
+// (responsive `sizes`), so the image cap has to cover a catalogue scroll.
 const MAX_IMAGE_ENTRIES = 400;
-const MAX_RUNTIME_ENTRIES = 80;
+const MAX_PAGE_ENTRIES = 40;
 
 const PRECACHE = [
-  // Only what the DOCUMENT asks for. The 512px PWA icons are fetched by the
-  // OS at install time, not by the page, and precaching both cost 160 KB of
-  // download on every first visit for bytes the browser never used.
+  // Only what the DOCUMENT asks for. The 512px PWA icons are fetched by the OS
+  // at install time, not by the page.
   "/icons/icon-192.png",
   "/manifest.webmanifest",
 ];
+
+// Pages that describe ONE signed-in person. They are never written to the
+// cache: on a shared device, the offline copy of someone's account or payments
+// page must not outlive their session.
+const PRIVATE_PREFIX = /^\/[a-z]{2}\/(account|admin|payment|annonces\/nouvelle)(\/|$)/;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -39,46 +49,35 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
-      await Promise.all(
-        keys
-          .filter((k) => !k.startsWith(VERSION))
-          .map((k) => caches.delete(k)),
-      );
+      await Promise.all(keys.filter((k) => !k.startsWith(VERSION)).map((k) => caches.delete(k)));
       await self.clients.claim();
     })(),
   );
 });
 
-/**
- * Trim a cache down to `maxEntries` by deleting the oldest keys. Cache
- * Storage returns keys in insertion order, so this is effectively FIFO
- * which is a reasonable proxy for LRU on a browse-heavy workload.
- *
- * Called fire-and-forget after each cache.put so we never make the user
- * wait on housekeeping.
- */
+/** Delete the oldest entries until the cache is within `maxEntries`. */
 async function trim(cacheName, maxEntries) {
   const cache = await caches.open(cacheName);
   const keys = await cache.keys();
-  if (keys.length <= maxEntries) return;
-  const excess = keys.length - maxEntries;
-  for (let i = 0; i < excess; i++) {
+  for (let i = 0; i < keys.length - maxEntries; i++) {
     await cache.delete(keys[i]);
   }
 }
 
-/**
- * Heuristic for "this request fetches a bitmap that's worth caching".
- * Catches:
- *   - Direct hits on /public/properties/*.webp + the /icons/* set.
- *   - Next/Image-optimized URLs (`/_next/image?url=...`).
- *   - Anything served with an image/* MIME (covers Supabase storage
- *     proxy paths that don't end in a recognizable extension).
- */
 function isImageRequest(request, url) {
   if (request.destination === "image") return true;
   if (url.pathname.startsWith("/_next/image")) return true;
   return /\.(?:avif|webp|jpe?g|png|gif|svg)$/i.test(url.pathname);
+}
+
+/** RSC payloads and router prefetches: data, not documents. Never touched. */
+function isFlightRequest(request, url) {
+  return (
+    url.searchParams.has("_rsc") ||
+    request.headers.get("RSC") === "1" ||
+    request.headers.has("Next-Router-Prefetch") ||
+    request.headers.has("Next-Router-State-Tree")
+  );
 }
 
 self.addEventListener("fetch", (event) => {
@@ -87,39 +86,44 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (isFlightRequest(request, url)) return;
+  if (url.pathname.startsWith("/api/")) return;
 
-  // HTML navigations — network-first with offline fallback.
+  // HTML navigations — network-first; the cache is only an offline fallback.
   if (request.mode === "navigate") {
     event.respondWith(
       (async () => {
         try {
           const fresh = await fetch(request);
-          const cache = await caches.open(RUNTIME_CACHE);
-          cache.put(request, fresh.clone());
-          event.waitUntil(trim(RUNTIME_CACHE, MAX_RUNTIME_ENTRIES));
+          if (fresh.ok && fresh.type === "basic" && !fresh.redirected && !PRIVATE_PREFIX.test(url.pathname)) {
+            const cache = await caches.open(RUNTIME_CACHE);
+            await cache.put(request, fresh.clone());
+            event.waitUntil(trim(RUNTIME_CACHE, MAX_PAGE_ENTRIES));
+          }
           return fresh;
         } catch {
           const cached = await caches.match(request);
           if (cached) return cached;
-          // Last resort: any cached page so the shell still renders.
-          const fallback = await caches.match("/");
-          if (fallback) return fallback;
-          return new Response("Offline", { status: 503, headers: { "Content-Type": "text/plain" } });
+          const shell = (await caches.match("/fr")) || (await caches.match("/"));
+          if (shell) return shell;
+          return new Response("Hors ligne", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
         }
       })(),
     );
     return;
   }
 
-  // Hashed Next.js build assets — cache-first (they never change).
+  // Hashed build assets — cache-first; a URL's content never changes.
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
       caches.match(request).then(
         (cached) =>
           cached ||
           fetch(request).then((response) => {
-            const copy = response.clone();
-            caches.open(ASSET_CACHE).then((cache) => cache.put(request, copy));
+            if (response.ok) {
+              const copy = response.clone();
+              caches.open(ASSET_CACHE).then((cache) => cache.put(request, copy));
+            }
             return response;
           }),
       ),
@@ -127,60 +131,31 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Images (real photos + next/image optimizer output + icons) —
-  // cache-first into a dedicated IMAGE_CACHE so they survive the
-  // RUNTIME_CACHE trim. Repeat views of the same listing are instant.
+  // Images — cache-first, refreshed in the background.
   if (isImageRequest(request, url)) {
     event.respondWith(
       (async () => {
         const cache = await caches.open(IMAGE_CACHE);
         const cached = await cache.match(request);
+        const refresh = fetch(request).then(async (fresh) => {
+          if (fresh && fresh.ok && fresh.type === "basic") {
+            await cache.put(request, fresh.clone());
+            await trim(IMAGE_CACHE, MAX_IMAGE_ENTRIES);
+          }
+          return fresh;
+        });
         if (cached) {
-          // Refresh in the background so a re-encoded variant
-          // eventually replaces the old one — but never make the user
-          // wait for it.
-          event.waitUntil(
-            (async () => {
-              try {
-                const fresh = await fetch(request);
-                if (fresh && fresh.ok && fresh.type === "basic") {
-                  await cache.put(request, fresh.clone());
-                  await trim(IMAGE_CACHE, MAX_IMAGE_ENTRIES);
-                }
-              } catch { /* offline — keep what we had */ }
-            })(),
-          );
+          event.waitUntil(refresh.catch(() => {}));
           return cached;
         }
         try {
-          const fresh = await fetch(request);
-          if (fresh && fresh.ok && fresh.type === "basic") {
-            await cache.put(request, fresh.clone());
-            event.waitUntil(trim(IMAGE_CACHE, MAX_IMAGE_ENTRIES));
-          }
-          return fresh;
+          return await refresh;
         } catch {
           return new Response("", { status: 504 });
         }
       })(),
     );
-    return;
   }
 
-  // Everything else same-origin — stale-while-revalidate.
-  event.respondWith(
-    caches.open(RUNTIME_CACHE).then(async (cache) => {
-      const cached = await cache.match(request);
-      const networkPromise = fetch(request)
-        .then((response) => {
-          if (response && response.status === 200 && response.type === "basic") {
-            cache.put(request, response.clone());
-            event.waitUntil(trim(RUNTIME_CACHE, MAX_RUNTIME_ENTRIES));
-          }
-          return response;
-        })
-        .catch(() => undefined);
-      return cached || (await networkPromise) || new Response("Offline", { status: 503 });
-    }),
-  );
+  // Anything else (manifest, fonts, robots…) is left to the browser.
 });

@@ -295,7 +295,7 @@ export default async function AnnoncesPage({
         </div>
       ) : (
         <ul className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
-          {rows.map((r) => {
+          {rows.map((r, i) => {
             const cat = one(r.category);
             const cover = coverPhoto(r.photos);
             const specs = specLine(r);
@@ -311,6 +311,7 @@ export default async function AnnoncesPage({
                         path={cover.storage_path}
                         alt={r.title}
                         sizes="(min-width:1024px) 260px, 45vw"
+                        priority={i < 4}
                         className="transition duration-500 group-hover:scale-[1.02]"
                       />
                     ) : (

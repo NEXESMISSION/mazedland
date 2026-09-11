@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
+import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
 
 type Photo = {
@@ -142,12 +142,11 @@ export function PhotoCarousel({
                       src={src}
                       alt={alt}
                       fill
-                      priority={i === 0}
                       loading={i === 0 ? "eager" : "lazy"}
+                      fetchPriority={i === 0 ? "high" : undefined}
                       sizes="(min-width: 1024px) 1100px, 100vw"
                       placeholder={blur ? "blur" : "empty"}
                       blurDataURL={blur}
-                      unoptimized={isStaticSeedPath(src)}
                       className="object-cover"
                     />
                   </div>
@@ -227,7 +226,6 @@ export function PhotoCarousel({
                   alt=""
                   fill
                   sizes="64px"
-                  unoptimized={isStaticSeedPath(src)}
                   className="object-cover"
                 />
               </button>

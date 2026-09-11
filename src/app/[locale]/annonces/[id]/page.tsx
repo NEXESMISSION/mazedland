@@ -1,9 +1,11 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { absoluteUrl } from "@/lib/siteUrl";
 import { formatTND } from "@/lib/utils";
 import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
 import { ContactReveal } from "./ContactReveal";
@@ -66,12 +68,14 @@ const SELECT = `
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
 
-async function fetchListing(id: string): Promise<Row | null> {
+// `cache`: generateMetadata and the page both need the listing for the same
+// request, and without it that was two identical database round trips.
+const fetchListing = cache(async (id: string): Promise<Row | null> => {
   const admin = getServiceSupabase();
   if (!admin) return null;
   const { data } = await admin.from("listings").select(SELECT).eq("id", id).maybeSingle();
   return (data as Row | null) ?? null;
-}
+});
 
 export async function generateMetadata({
   params,
@@ -79,15 +83,41 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const l = await fetchListing(id);
+  const [l, locale] = await Promise.all([fetchListing(id), getLocale()]);
   if (!l || l.status !== "published") return { title: "Annonce" };
   const price =
     l.price != null && !l.price_on_request
       ? `${Number(l.price).toLocaleString("fr-FR")} TND`
       : "Prix sur demande";
+  const title = `${l.title} · ${price}`;
+  const description = l.description?.slice(0, 160) ?? `${l.title} à ${l.governorate}.`;
+  const url = `/${locale}/annonces/${l.id}`;
+  const cover = (l.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0];
+  const image = cover ? propertyPhotoUrl(cover.storage_path) : null;
+
+  // An annonce is shared as a link — into WhatsApp, Messenger, a family group —
+  // and the preview is what gets it opened. Without its own Open Graph block
+  // the preview was the site-wide one: brand banner and slogan, no photo, no
+  // price. `openGraph` replaces the parent's block instead of merging with it,
+  // hence the site name and type restated here.
   return {
-    title: `${l.title} · ${price} · Mazed Immo`,
-    description: l.description?.slice(0, 160) ?? `${l.title} à ${l.governorate}.`,
+    title: `${title} · Mazed Immo`,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "website",
+      siteName: "Mazed Immo",
+      url,
+      title,
+      description,
+      ...(image ? { images: [{ url: image, alt: l.title }] } : {}),
+    },
+    twitter: {
+      card: image ? "summary_large_image" : "summary",
+      title,
+      description,
+      ...(image ? { images: [image] } : {}),
+    },
   };
 }
 
@@ -161,20 +191,16 @@ export default async function AnnoncePage({
   // The seller's phone is deliberately absent: JSON-LD is the easiest thing on
   // a page to scrape, and the whole point of ContactReveal is that it is not
   // in the markup.
-  const siteUrl = (
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://mazedimmo.tn")
-  ).replace(/\/$/, "");
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "RealEstateListing",
     name: l.title,
     description: l.description ?? undefined,
-    image: photos.slice(0, 6).map((p) => propertyPhotoUrl(p.storage_path)),
+    image: photos.slice(0, 6).map((p) => absoluteUrl(propertyPhotoUrl(p.storage_path))),
     category: category?.label_fr,
     offers: {
       "@type": "Offer",
-      url: `${siteUrl}/${locale}/annonces/${l.id}`,
+      url: absoluteUrl(`/${locale}/annonces/${l.id}`),
       priceCurrency: "TND",
       ...(l.price != null && !l.price_on_request ? { price: Number(l.price) } : {}),
       availability: "https://schema.org/InStock",
@@ -250,7 +276,7 @@ export default async function AnnoncePage({
   const safetyNote = (
     <section className="flex items-start gap-2.5 rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
       <ShieldAlert className="mt-0.5 size-4 shrink-0 text-muted" />
-      <p className="text-[11.5px] leading-relaxed text-muted">
+      <p className="text-[12.5px] leading-relaxed text-muted">
         Mazed Immo publie et vérifie les annonces, mais n&apos;intervient pas dans la transaction :
         le paiement et la signature se font directement entre vous et le vendeur. Visitez le
         bien, demandez le titre de propriété et passez par un notaire avant tout versement.

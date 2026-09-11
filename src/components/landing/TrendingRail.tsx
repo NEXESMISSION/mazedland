@@ -53,7 +53,19 @@ export function TrendingRail({
     el.addEventListener("mouseenter", onEnter);
     el.addEventListener("mouseleave", onLeave);
 
+    // Paused while the rail is off screen or the tab is hidden: a smooth scroll
+    // nobody sees still lays out, paints, and pulls in the next card's photo.
+    let inView = true;
+    const observer =
+      el && typeof IntersectionObserver !== "undefined"
+        ? new IntersectionObserver(([entry]) => {
+            inView = entry.isIntersecting;
+          })
+        : null;
+    if (observer && el) observer.observe(el);
+
     const id = window.setInterval(() => {
+      if (!inView || document.hidden) return;
       if (hovering) return;
       if (Date.now() - lastInteractionAt.current < resumeAfterMs) return;
       const card = el.querySelector<HTMLElement>(":scope > *");
@@ -79,6 +91,7 @@ export function TrendingRail({
 
     return () => {
       window.clearInterval(id);
+      observer?.disconnect();
       el.removeEventListener("touchstart", note);
       el.removeEventListener("pointerdown", note);
       el.removeEventListener("wheel", note);

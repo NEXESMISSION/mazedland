@@ -3,6 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { TrendingRail } from "@/components/landing/TrendingRail";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeDesktop } from "@/components/landing/HomeDesktop";
+import { LG_UP } from "@/components/ui/HiddenAt";
 import { AnnonceCard } from "@/components/listing/AnnonceCard";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
@@ -273,13 +274,18 @@ export default async function LandingPage({
         page stays static (no server-side device detection); CSS picks one.
         ════════════════════════════════════════════════════════════════ */}
     <div className="lg:hidden mx-auto max-w-[var(--max-w)]">
+      {/* The page's visible <h1> lives in the desktop hero, and at this width
+          that whole tree is display:none — out of the accessibility tree too.
+          The phone layout opens on a photo carousel, so its heading is for
+          screen readers and search engines. */}
+      <h1 className="sr-only">{t("home.heroBrandTitle")}</h1>
       {/* ───── HERO BANNER ─────
           Auto-advancing image carousel sourced from the top trending
           auctions. Each slide is a full-bleed property photo with the
           listing's headline + price overlaid; tap goes straight to the
           auction. Fallback brand slides kick in when the DB has nothing
           live so the carousel never renders empty. */}
-      <HeroBanner slides={heroSlides} isRTL={isRTL} />
+      <HeroBanner slides={heroSlides} isRTL={isRTL} priority hiddenAt={LG_UP} />
 
 
       {/* ══════════════════════════════════════════════════════════════
@@ -302,46 +308,30 @@ export default async function LandingPage({
           seeAllLabel={t("home.seeAll")}
           flush
         />
-        {/* Mobile: horizontal snap rail (auto-advancing). Desktop: replaced
-            by a proper 4-col grid below — much better than a horizontal
-            scroller when the input device is a mouse and the viewport is
-            wide enough to show eight cards on one viewport-height of
-            screen. */}
-        <div className="lg:hidden">
-          {trending.length > 0 ? (
-            <TrendingRail>
-              {trending.map((a, i) => (
-                <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                  <AnnonceCard
-                    listing={a}
-                    saved={savedIds.has(a.id)}
-                    loggedIn={loggedIn}
-                    priority={i < 3}
-                  />
-                </div>
-              ))}
-              <div className="w-1 shrink-0" />
-            </TrendingRail>
-          ) : (
-            <TrendingRail>
-              <TrendingSkeleton />
-              <TrendingSkeleton />
-              <TrendingSkeleton />
-            </TrendingRail>
-          )}
-        </div>
-        {trending.length > 0 && (
-          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
-            {trending.slice(0, 8).map((a, i) => (
-              <AnnonceCard
-                key={a.id}
-                listing={a}
-                saved={savedIds.has(a.id)}
-                loggedIn={loggedIn}
-                priority={i < 4}
-              />
+        {/* Horizontal snap rail, auto-advancing.
+            These rails used to be followed by a `hidden lg:grid` of eight more
+            cards "for desktop" — inside this tree, which is itself lg:hidden,
+            so no screen ever showed them. Home shipped 24 invisible cards, and
+            their photos were preloaded. The desktop layout is HomeDesktop. */}
+        {trending.length > 0 ? (
+          <TrendingRail>
+            {trending.map((a) => (
+              <div key={a.id} className="w-[230px] shrink-0 snap-start">
+                <AnnonceCard
+                  listing={a}
+                  saved={savedIds.has(a.id)}
+                  loggedIn={loggedIn}
+                />
+              </div>
             ))}
-          </div>
+            <div className="w-1 shrink-0" />
+          </TrendingRail>
+        ) : (
+          <TrendingRail>
+            <TrendingSkeleton />
+            <TrendingSkeleton />
+            <TrendingSkeleton />
+          </TrendingRail>
         )}
       </section>
 
@@ -366,32 +356,18 @@ export default async function LandingPage({
             seeAllLabel={t("home.seeAll")}
             flush
           />
-          <div className="lg:hidden">
-            <TrendingRail>
-              {bestValue.map((a, i) => (
-                <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                  <AnnonceCard
-                    listing={a}
-                    saved={savedIds.has(a.id)}
-                    loggedIn={loggedIn}
-                    priority={i < 3}
-                  />
-                </div>
-              ))}
-              <div className="w-1 shrink-0" />
-            </TrendingRail>
-          </div>
-          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
-            {bestValue.slice(0, 8).map((a, i) => (
-              <AnnonceCard
-                key={a.id}
-                listing={a}
-                saved={savedIds.has(a.id)}
-                loggedIn={loggedIn}
-                priority={i < 4}
-              />
+          <TrendingRail>
+            {bestValue.map((a) => (
+              <div key={a.id} className="w-[230px] shrink-0 snap-start">
+                <AnnonceCard
+                  listing={a}
+                  saved={savedIds.has(a.id)}
+                  loggedIn={loggedIn}
+                />
+              </div>
             ))}
-          </div>
+            <div className="w-1 shrink-0" />
+          </TrendingRail>
         </section>
       )}
 
@@ -415,32 +391,18 @@ export default async function LandingPage({
             seeAllLabel={t("home.seeAll")}
             flush
           />
-          <div className="lg:hidden">
-            <TrendingRail>
-              {nouveautes.map((a, i) => (
-                <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                  <AnnonceCard
-                    listing={a}
-                    saved={savedIds.has(a.id)}
-                    loggedIn={loggedIn}
-                    priority={i < 3}
-                  />
-                </div>
-              ))}
-              <div className="w-1 shrink-0" />
-            </TrendingRail>
-          </div>
-          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
-            {nouveautes.slice(0, 8).map((a, i) => (
-              <AnnonceCard
-                key={a.id}
-                listing={a}
-                saved={savedIds.has(a.id)}
-                loggedIn={loggedIn}
-                priority={i < 4}
-              />
+          <TrendingRail>
+            {nouveautes.map((a) => (
+              <div key={a.id} className="w-[230px] shrink-0 snap-start">
+                <AnnonceCard
+                  listing={a}
+                  saved={savedIds.has(a.id)}
+                  loggedIn={loggedIn}
+                />
+              </div>
             ))}
-          </div>
+            <div className="w-1 shrink-0" />
+          </TrendingRail>
         </section>
       )}
 
@@ -478,13 +440,12 @@ export default async function LandingPage({
             flush
           />
           <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
-            {recent.map((a, i) => (
+            {recent.map((a) => (
               <AnnonceCard
                 key={a.id}
                 listing={a}
                 saved={savedIds.has(a.id)}
                 loggedIn={loggedIn}
-                priority={i < 4}
               />
             ))}
           </div>
@@ -646,14 +607,7 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* Final browse band.
-          Mobile: the original single-line nav band — compact, finger-
-          sized chevron on the right.
-          Desktop (lg+): a two-up magazine spread — large eyebrow + huge
-          gradient headline + slogan on the left, three numbered
-          shortcut links on the right (enchères / offres directes /
-          inspections). Closes the page with the same "what can I do
-          here" question the hero opens with, answered concretely. */}
+      {/* Final browse band — one line, with a finger-sized chevron. */}
       <section className="mt-10 px-4 lg:px-6">
         <Link
           href="/annonces"
@@ -674,80 +628,6 @@ export default async function LandingPage({
             <ArrowUpRight className="size-5" strokeWidth={2.5} />
           </span>
         </Link>
-
-        {/* Desktop spread. Not a duplicate of the mobile band — different
-            information density. Left column closes the brand pitch, right
-            column gives the user three concrete next-action shortcuts so
-            the page doesn't bottom-out on a single link. */}
-        <div className="hidden lg:block">
-          <div className="mazed-surface-navy-luxe relative overflow-hidden rounded-3xl ring-1 ring-gold/25">
-            <div className="relative grid grid-cols-12 gap-8 px-10 py-12">
-              <div className="col-span-7">
-                <span className="mazed-eyebrow text-[10.5px]">
-                  {t("brand.slogan")}
-                </span>
-                <h2 className="mt-3 text-[48px] font-extrabold leading-[1.05] tracking-tight">
-                  <span className="gradient-gold-text">
-                    {t("home.heroBrandTitle")}
-                  </span>
-                </h2>
-                <p className="mt-4 max-w-prose text-[14px] leading-relaxed text-muted">
-                  {t("home.trustEscrowBody")}
-                </p>
-                <div className="mt-7 flex items-center gap-3">
-                  <Link
-                    href="/annonces"
-                    className="mazed-gold-fill inline-flex items-center gap-2 rounded-full px-5 py-3 text-[12.5px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
-                  >
-                    {t("home.heroBrowseCta")}
-                    <ArrowUpRight className="size-4" strokeWidth={2.5} />
-                  </Link>
-                  <Link
-                    href="/annonces/nouvelle"
-                    className="inline-flex items-center gap-2 rounded-full border border-gold/30 px-5 py-3 text-[12.5px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-gold-faint"
-                  >
-                    Vendre
-                  </Link>
-                </div>
-              </div>
-
-              {/* Right column — three quiet shortcut tiles. Each lands on
-                  a different surface so the user gets a guided next step
-                  no matter which intent they came in with. */}
-              <div className="col-span-5 flex flex-col gap-3">
-                {[
-                  // The classifieds journey, not the auction one. This read
-                  // « parcourir les lots → vérifier votre identité → mettre en
-                  // vente aux enchères »; the middle step is a KYC flow that
-                  // buying at a fixed price does not require, and the last one
-                  // led to the auction form.
-                  { num: "01", href: "/annonces" as const, title: "Parcourir", body: "Des biens à prix affiché, partout en Tunisie." },
-                  { num: "02", href: "/annonces/nouvelle" as const, title: "Publier", body: "Vos photos, votre prix, votre numéro. En quelques minutes." },
-                  { num: "03", href: "/account/listings" as const, title: "Suivre", body: "Vos annonces, leur statut, ce qui attend une action." },
-                ].map((s) => (
-                  <Link
-                    key={s.num}
-                    href={s.href as never}
-                    className="group flex items-start gap-4 rounded-2xl bg-surface/40 p-4 ring-1 ring-gold/15 backdrop-blur-sm transition hover:bg-surface/70 hover:ring-gold-soft/40"
-                  >
-                    <span className="mazed-tabular text-[20px] font-extrabold leading-none text-gold">
-                      {s.num}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[13.5px] font-bold leading-tight text-foreground">
-                        {s.title}
-                      </span>
-                      <span className="mt-1 block text-[11.5px] leading-relaxed text-muted">
-                        {s.body}
-                      </span>
-                    </span>
-                    <ArrowUpRight className="mt-1 size-4 shrink-0 text-muted transition group-hover:text-gold-bright" strokeWidth={2.2} />
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Slim footer — single inline row of legal links. The big

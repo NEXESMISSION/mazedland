@@ -128,9 +128,10 @@ function BrandMark() {
   // as an image, the name as live type — gives the tower the full 36px and the
   // name renders at a size somebody can actually read.
   //
-  // `priority` skips the lazy-load: this is above-the-fold on every page that
-  // shows the bar, and the asset is `<link rel="preload">`-ed in the root
-  // layout, so by the time this paints it is already in cache.
+  // Eager, not preloaded: the bar is above the fold on every page that shows
+  // it, and an <img> near the top of the HTML is all the head start a 4 KB
+  // mark needs. (The root layout's preload was for a splash screen's logo,
+  // never this file.)
   return (
     <Link href="/" className="flex items-center gap-2" aria-label={t("name")}>
       <Image
@@ -138,7 +139,7 @@ function BrandMark() {
         alt=""
         width={745}
         height={936}
-        priority
+        loading="eager"
         sizes="30px"
         className="h-9 w-auto shrink-0"
       />

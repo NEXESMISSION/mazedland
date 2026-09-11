@@ -27,7 +27,9 @@ export default async function ForgotPasswordPage() {
             alt={t("brand.name")}
             width={357}
             height={480}
-            priority
+            sizes="60px"
+            loading="eager"
+            fetchPriority="high"
             className="h-20 w-auto"
           />
           <h1

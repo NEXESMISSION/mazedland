@@ -2,6 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { TrendingRail } from "@/components/landing/TrendingRail";
 import { HeroShowcase, type ShowcaseSlide } from "@/components/landing/HeroShowcase";
+import { BELOW_LG } from "@/components/ui/HiddenAt";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeSearch } from "@/components/landing/HomeSearch";
 import { AnnonceCard } from "@/components/listing/AnnonceCard";
@@ -250,6 +251,8 @@ export async function HomeDesktop({
             <HeroShowcase
               slides={showcaseSlides}
               isRTL={isRTL}
+              priority
+              hiddenAt={alwaysVisible ? undefined : BELOW_LG}
               brand={{
                 title: t("home.heroBrandTitle"),
                 slogan: t("brand.slogan"),
@@ -314,7 +317,6 @@ export async function HomeDesktop({
             items={trending}
             savedIds={savedIds}
             loggedIn={loggedIn}
-            priorityCount={4}
           />
         </section>
       )}
@@ -560,22 +562,19 @@ function CardSlider({
   items,
   savedIds,
   loggedIn,
-  priorityCount = 0,
 }: {
   items: HomeListingRow[];
   savedIds: Set<string>;
   loggedIn: boolean;
-  priorityCount?: number;
 }) {
   return (
     <TrendingRail arrows>
-      {items.map((a, i) => (
+      {items.map((a) => (
         <div key={a.id} className="w-[300px] shrink-0 snap-start">
           <AnnonceCard
             listing={a}
             saved={savedIds.has(a.id)}
             loggedIn={loggedIn}
-            priority={i < priorityCount}
           />
         </div>
       ))}

@@ -1,4 +1,5 @@
 import { ShieldCheck, Eye, Zap, Star } from "lucide-react";
+import { BELOW_LG, EMPTY_GIF } from "@/components/ui/HiddenAt";
 
 /**
  * Desktop-only split-screen hero for the auth pages. A full-height
@@ -6,7 +7,8 @@ import { ShieldCheck, Eye, Zap, Star } from "lucide-react";
  * trust points, and a slim social-proof line set directly on the image
  * (no stacked cards) — kept compact so the whole auth screen fits in one
  * viewport without scrolling. Rendered only inside the `hidden lg:grid`
- * tree, so phones never load it.
+ * tree. That hides it on phones but does not stop the photo downloading, so
+ * the first <source> hands narrow screens an empty GIF (see HiddenAt).
  */
 const FEATURES = [
   { Icon: ShieldCheck, title: "100% sécurisé",    sub: "Transactions vérifiées" },
@@ -18,6 +20,7 @@ export function AuthHeroPanel() {
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#1a1206]">
       <picture>
+        <source media={BELOW_LG} srcSet={EMPTY_GIF} />
         <source srcSet="/auth-hero.avif" type="image/avif" />
         <source srcSet="/auth-hero.webp" type="image/webp" />
         <img

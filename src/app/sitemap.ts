@@ -1,10 +1,9 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/siteUrl";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { log } from "@/lib/log";
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+const SITE_URL = siteUrl();
 
 // Regenerate at most hourly — listings change on the order of minutes, and a
 // search crawler doesn't need second-fresh URLs. Keeps the DB read off the
@@ -20,7 +19,7 @@ export const revalidate = 3600;
  * robots.ts. Uses the cookieless service-role client like the home feed.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = SITE_URL?.replace(/\/$/, "") ?? "";
+  const base = SITE_URL ?? "";
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${base}/fr`, changeFrequency: "hourly", priority: 1 },

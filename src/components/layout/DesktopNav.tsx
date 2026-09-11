@@ -95,7 +95,7 @@ export function DesktopNav() {
               alt=""
               width={745}
               height={936}
-              priority
+              loading="eager"
               sizes="36px"
               className="h-10 w-auto"
             />
@@ -111,6 +111,9 @@ export function DesktopNav() {
                 <Link
                   key={l.href}
                   href={l.href}
+                  // Behind sign-in: for a guest, prefetching it on every page
+                  // fetches nothing but the redirect to /login.
+                  prefetch={l.href.startsWith("/account") ? false : undefined}
                   aria-current={active ? "page" : undefined}
                   className={`rounded-full px-3.5 py-2 text-[13.5px] font-semibold transition-colors ${
                     active

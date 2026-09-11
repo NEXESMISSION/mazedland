@@ -134,6 +134,9 @@ export function BottomTabBar() {
           <Link
             key={tab.href}
             href={tab.href}
+            // Favoris and Compte are behind sign-in: for a guest, prefetching
+            // them on every page fetches nothing but the redirect to /login.
+            prefetch={tab.href.startsWith("/account") ? false : undefined}
             className={`relative flex h-full min-w-0 flex-col items-center justify-center gap-1 px-1 transition-colors ${
               active
                 ? "text-foreground"

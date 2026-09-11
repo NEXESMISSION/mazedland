@@ -1,13 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { isStaticSeedPath, propertyPhotoUrl } from "./imageUrl";
-
-describe("isStaticSeedPath", () => {
-  it("flags /properties seed images", () => {
-    expect(isStaticSeedPath("/properties/seed-1.webp")).toBe(true);
-    expect(isStaticSeedPath("user-123/photo.jpg")).toBe(false);
-    expect(isStaticSeedPath("https://x.supabase.co/a.jpg")).toBe(false);
-  });
-});
+import { propertyPhotoUrl } from "./imageUrl";
 
 describe("propertyPhotoUrl", () => {
   const prev = process.env.NEXT_PUBLIC_SUPABASE_URL;

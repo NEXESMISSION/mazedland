@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/siteUrl";
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+const SITE_URL = siteUrl();
 
 /**
  * /robots.txt — let crawlers index the public marketplace, keep them out of
@@ -28,6 +27,6 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: SITE_URL ? `${SITE_URL}/sitemap.xml` : undefined,
-    host: SITE_URL,
+    host: SITE_URL ?? undefined,
   };
 }

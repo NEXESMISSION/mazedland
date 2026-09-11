@@ -17,7 +17,7 @@ import {
 import { useToast } from "@/components/ui/Toast";
 import { formatTND, cn } from "@/lib/utils";
 import { getBrowserSupabase } from "@/lib/supabase/client";
-import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
+import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { compressImage } from "@/lib/imageCompress";
 import type { ProviderInstructions } from "@/lib/payments";
 import type { PaymentProvider } from "@/lib/payments/types";
@@ -374,7 +374,6 @@ export function CheckoutClient({
                 alt=""
                 fill
                 sizes="360px"
-                unoptimized={isStaticSeedPath(propertyPhotoUrl(listing.heroPhotoPath))}
                 className="object-cover"
               />
             </div>

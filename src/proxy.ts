@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
 import { log } from "./lib/log";
+import { isSupabaseAuthCookie } from "./lib/supabase/session-cookie";
 import { logActivity } from "./lib/activity";
 
 const intlMiddleware = createIntlMiddleware(routing);
@@ -101,7 +102,7 @@ export async function proxy(req: NextRequest) {
   // name containing `-auth-token` reliably detects a logged-in session.
   const hasAuthCookie = req.cookies
     .getAll()
-    .some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
+    .some((c) => isSupabaseAuthCookie(c.name));
 
   let authUserId: string | null = null;
   let authUserEmail: string | null = null;

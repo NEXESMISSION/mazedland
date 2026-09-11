@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import { isStaticSeedPath } from "@/lib/imageUrl";
+import { HiddenAt } from "@/components/ui/HiddenAt";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export type HeroSlide = {
@@ -44,19 +44,27 @@ export type HeroSlide = {
  *   - Keyboard ←/→ moves between slides when the banner has focus.
  *   - RTL flips the direction so swiping right goes back, not forward.
  *
- * SSR: the first slide renders server-side; only that slide is marked
- * `priority` for the LCP. Other slides lazy-load as they scroll in.
+ * SSR: the first slide renders server-side. With `priority` it loads eagerly
+ * at high fetch priority — pass it only where the banner opens the page.
+ * `hiddenAt` is the media query at which CSS hides the banner's tree, so that
+ * first photo is not downloaded there (see HiddenAt). Other slides are lazy.
  */
 export function HeroBanner({
   slides,
   intervalMs = 3000,
   resumeAfterMs = 6000,
   isRTL = false,
+  priority = false,
+  hiddenAt,
 }: {
   slides: HeroSlide[];
   intervalMs?: number;
   resumeAfterMs?: number;
   isRTL?: boolean;
+  /** Load the first photo eagerly at high priority — this banner is the LCP. */
+  priority?: boolean;
+  /** Media query at which CSS hides this banner's tree. */
+  hiddenAt?: string;
 }) {
   const [index, setIndex] = useState(0);
   const [dragPx, setDragPx] = useState(0);
@@ -76,12 +84,29 @@ export function HeroBanner({
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (reduce) return;
 
+    // Paused while scrolled away or in a background tab: nobody sees it, and
+    // each step re-renders the banner and starts a transition. Home has two of
+    // these, and the second starts below the fold.
+    const track = trackRef.current;
+    let inView = true;
+    const observer =
+      track && typeof IntersectionObserver !== "undefined"
+        ? new IntersectionObserver(([entry]) => {
+            inView = entry.isIntersecting;
+          })
+        : null;
+    if (observer && track) observer.observe(track);
+
     const id = window.setInterval(() => {
+      if (!inView || document.hidden) return;
       if (isDragging) return;
       if (Date.now() - lastInteractionAt.current < resumeAfterMs) return;
       setIndex((i) => (i + 1) % total);
     }, intervalMs);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearInterval(id);
+      observer?.disconnect();
+    };
   }, [total, intervalMs, resumeAfterMs, isDragging]);
 
   function jumpTo(next: number) {
@@ -168,8 +193,8 @@ export function HeroBanner({
   return (
     <section
       className="relative px-4 pt-4"
-      aria-roledescription="carousel"
-      aria-label="Featured auctions"
+      aria-roledescription="carrousel"
+      aria-label="Annonces à la une"
     >
       <div
         ref={trackRef}
@@ -193,14 +218,17 @@ export function HeroBanner({
             cursor: isDragging ? "grabbing" : "grab",
           }}
           onClickCapture={onClickCapture}
-          aria-live="polite"
+          // "off", not "polite": the track rotates by itself, and a polite
+          // region reads a new slide aloud every three seconds.
+          aria-live="off"
         >
           {slides.map((slide, i) => (
             <SlideCard
               key={slide.id}
               slide={slide}
               isRTL={isRTL}
-              priority={i === 0}
+              priority={priority && i === 0}
+              hiddenAt={i === 0 ? hiddenAt : undefined}
               active={i === index}
             />
           ))}
@@ -232,22 +260,29 @@ export function HeroBanner({
           </>
         )}
 
-        {/* Dot indicator — clickable, jumps directly to that slide. */}
+        {/* Dot indicator — clickable, jumps directly to that slide. Each dot
+            is drawn inside a 24px button: the 6px dot as the button itself
+            was too small a target to hit reliably (WCAG 2.5.8). */}
         {total > 1 && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center gap-1.5">
+          <div className="pointer-events-none absolute inset-x-0 bottom-1 z-10 flex justify-center">
             {slides.map((s, i) => (
               <button
                 key={`dot-${s.id}`}
                 type="button"
-                aria-label={`Slide ${i + 1} of ${total}`}
+                aria-label={`Annonce ${i + 1} sur ${total}`}
                 aria-current={i === index ? "true" : undefined}
                 onClick={() => jumpTo(i)}
-                className={`pointer-events-auto h-1.5 rounded-full transition-all duration-300 ${
-                  i === index
-                    ? "w-6 bg-gold shadow-[0_0_6px_rgba(30,58,138,0.35)]"
-                    : "w-1.5 bg-white/40 hover:bg-white/60"
-                }`}
-              />
+                className="group/dot pointer-events-auto grid h-6 min-w-6 place-items-center rounded-full px-[9px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              >
+                <span
+                  aria-hidden
+                  className={`block h-1.5 rounded-full transition-all duration-300 ${
+                    i === index
+                      ? "w-6 bg-gold shadow-[0_0_6px_rgba(30,58,138,0.35)]"
+                      : "w-1.5 bg-white/40 group-hover/dot:bg-white/60"
+                  }`}
+                />
+              </button>
             ))}
           </div>
         )}
@@ -260,11 +295,13 @@ function SlideCard({
   slide,
   isRTL,
   priority,
+  hiddenAt,
   active,
 }: {
   slide: HeroSlide;
   isRTL: boolean;
   priority: boolean;
+  hiddenAt?: string;
   active: boolean;
 }) {
   // The brand slide gets a dedicated layout — see BrandSlide below.
@@ -274,22 +311,39 @@ function SlideCard({
       <BrandSlide slide={slide} isRTL={isRTL} active={active} />
     );
   }
-  return <PhotoSlide slide={slide} isRTL={isRTL} priority={priority} active={active} />;
+  return (
+    <PhotoSlide slide={slide} isRTL={isRTL} priority={priority} hiddenAt={hiddenAt} active={active} />
+  );
 }
 
 function PhotoSlide({
   slide,
   isRTL,
   priority,
+  hiddenAt,
   active,
 }: {
   slide: HeroSlide;
   isRTL: boolean;
   priority: boolean;
+  hiddenAt?: string;
   active: boolean;
 }) {
   const [imageBroken, setImageBroken] = useState(false);
-  const showImage = !!slide.imageUrl && !imageBroken;
+  const photo =
+    slide.imageUrl && !imageBroken ? (
+      <Image
+        src={slide.imageUrl}
+        alt=""
+        fill
+        sizes="(min-width: 1024px) 1280px, calc(100vw - 2rem)"
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : undefined}
+        onError={() => setImageBroken(true)}
+        className="object-cover transition-transform duration-[6000ms] ease-out group-hover:scale-105"
+        draggable={false}
+      />
+    ) : null;
 
   return (
     <Link
@@ -300,25 +354,14 @@ function PhotoSlide({
       style={{ minWidth: "100%" }}
       draggable={false}
     >
-      {showImage ? (
-        <div className="absolute inset-0 bg-gradient-to-br from-[var(--gold-deep)] via-[var(--gold)] to-[var(--gold-deep)]" />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-[var(--gold-deep)] via-[var(--gold)] to-[var(--gold-deep)]" />
-      )}
+      <div className="absolute inset-0 bg-gradient-to-br from-[var(--gold-deep)] via-[var(--gold)] to-[var(--gold-deep)]" />
 
-      {showImage && (
-        <Image
-          src={slide.imageUrl!}
-          alt=""
-          fill
-          sizes="(min-width: 1024px) 1280px, (min-width: 640px) 640px, 100vw"
-          priority={priority}
-          loading={priority ? "eager" : "lazy"}
-          onError={() => setImageBroken(true)}
-          unoptimized={isStaticSeedPath(slide.imageUrl!)}
-          className="object-cover transition-transform duration-[6000ms] ease-out group-hover:scale-105"
-          draggable={false}
-        />
+      {photo && hiddenAt ? (
+        <HiddenAt media={hiddenAt} className="absolute inset-0">
+          {photo}
+        </HiddenAt>
+      ) : (
+        photo
       )}
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/15" />
@@ -330,7 +373,9 @@ function PhotoSlide({
       >
         {slide.eyebrow && (
           <span className="mazed-eyebrow inline-flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 backdrop-blur-sm">
-            <span aria-hidden className="size-1.5 rounded-full bg-gold pulse-gold" />
+            {/* Pulses on the slide in view only: the others sit translated out
+                of sight, and each pulse is an animation kept running. */}
+            <span aria-hidden className={`size-1.5 rounded-full bg-gold${active ? " pulse-gold" : ""}`} />
             {slide.eyebrow}
           </span>
         )}
@@ -429,7 +474,7 @@ function BrandSlide({
           {hasLiveCount && (
             <span
               aria-hidden
-              className="size-1.5 rounded-full bg-red-500 pulse-gold"
+              className={`size-1.5 rounded-full bg-red-500${active ? " pulse-gold" : ""}`}
               style={{ boxShadow: "0 0 8px rgba(239,68,68,0.6)" }}
             />
           )}

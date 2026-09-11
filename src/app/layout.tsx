@@ -6,6 +6,7 @@ import { ClientLogger } from "@/components/dev/ClientLogger";
 import { ClientErrorReporter } from "@/components/observability/ClientErrorReporter";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { siteUrl } from "@/lib/siteUrl";
 import "./globals.css";
 
 // Plus Jakarta Sans — SELF-HOSTED (next/font/local) instead of next/font/google.
@@ -21,9 +22,8 @@ const jakarta = localFont({
   display: "swap",
 });
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+// Null on a local build, which leaves metadataBase to Next's own default.
+const SITE_URL = siteUrl();
 
 export const metadata: Metadata = {
   metadataBase: SITE_URL ? new URL(SITE_URL) : undefined,
@@ -122,25 +122,6 @@ export default async function RootLayout({
             <link rel="dns-prefetch" href={supabaseOrigin} />
           </>
         )}
-        {/* Preload the splash-screen wordmark so it paints before any
-            JS hydrates. AVIF is ~4 KB; the second preload covers the
-            handful of browsers (older Safari, Firefox without AVIF) that
-            need WebP. The `imagesrcset` makes the browser pick exactly
-            one — no double download. */}
-        <link
-          rel="preload"
-          as="image"
-          href="/logo.avif"
-          type="image/avif"
-          fetchPriority="high"
-        />
-        <link
-          rel="preload"
-          as="image"
-          href="/logo.webp"
-          type="image/webp"
-          fetchPriority="high"
-        />
       </head>
       <body
         className="min-h-full bg-background text-foreground font-sans"
@@ -161,9 +142,16 @@ export default async function RootLayout({
             single, unified observability stream. */}
         <ClientErrorReporter />
         {/* Vercel web analytics + Core Web Vitals (zero-config, no DSN).
-            Real-user performance + traffic without a third-party tag. */}
-        <Analytics />
-        <SpeedInsights />
+            Real-user performance + traffic without a third-party tag.
+            Only on Vercel: both load their script from /_vercel/*, which
+            exists nowhere else — under `next start` they 404 and log two
+            console errors on every page. */}
+        {process.env.VERCEL ? (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        ) : null}
         <Suspense fallback={null}>
           <ClientLogger />
         </Suspense>
