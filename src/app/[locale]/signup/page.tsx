@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { getTranslations, getLocale } from "next-intl/server";
 import { SignupForm } from "@/components/auth/SignupForm";
@@ -10,7 +11,19 @@ import { Link } from "@/i18n/navigation";
  *   - Desktop (lg+): a split screen — a property-photo hero with floating
  *     trust cards on the left, the create-account card on the right.
  */
-export default async function SignupPage() {
+export const metadata: Metadata = {
+  title: "Créer un compte — Mazed Immo",
+};
+
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
+  // `next` rides along to the other form: someone sent here from « Vendre »
+  // who signs up instead of signing in should still land on the publish page.
+  const sp = await searchParams;
+  const next = typeof sp.next === "string" ? sp.next : undefined;
   const t = await getTranslations();
   const locale = await getLocale();
   const isRTL = locale === "ar";
@@ -58,7 +71,7 @@ export default async function SignupPage() {
               <p className="text-[12.5px] text-muted">
                 Déjà inscrit ?{" "}
                 <Link
-                  href="/login"
+                  href={{ pathname: "/login", query: next ? { next } : {} }}
                   className="font-bold text-foreground transition hover:text-gold-bright"
                 >
                   {t("nav.login")}
@@ -107,7 +120,7 @@ export default async function SignupPage() {
             <p className="mt-6 text-center text-[13px] text-muted">
               Déjà inscrit ?{" "}
               <Link
-                href="/login"
+                href={{ pathname: "/login", query: next ? { next } : {} }}
                 className="font-bold text-foreground transition hover:text-gold-bright"
               >
                 {t("nav.login")}

@@ -52,9 +52,9 @@ const PROPERTY_TYPES: { key: string }[] = [
 ];
 
 const PRICE_BUCKETS: { key: string; label: string; query: string }[] = [
-  { key: "under-100k", label: "Moins de 100k", query: "max=100000" },
-  { key: "100k-500k",  label: "100k – 500k",   query: "min=100000&max=500000" },
-  { key: "500k-1m",    label: "500k – 1M",     query: "min=500000&max=1000000" },
+  { key: "under-100k", label: "Moins de 100k", query: "max=99999" },
+  { key: "100k-500k",  label: "100k – 500k",   query: "min=100000&max=499999" },
+  { key: "500k-1m",    label: "500k – 1M",     query: "min=500000&max=999990" },
   { key: "1m-plus",    label: "1M+ TND",       query: "min=1000000" },
 ];
 
@@ -121,7 +121,7 @@ export async function HomeDesktop({
   const stats: { display: string; label: string; sub: string; Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; live: boolean }[] = [
     { display: fmt(liveCount), label: liveCount > 1 ? "Annonces en ligne" : "Annonce en ligne", sub: "À prix affiché", Icon: Home, live: true },
     secondStat,
-    { display: fmt(coverageGovs), label: coverageGovs > 1 ? "Gouvernorats" : "Gouvernorat", sub: "Couverture nationale", Icon: MapPin, live: false },
+    { display: fmt(coverageGovs), label: coverageGovs > 1 ? "Gouvernorats" : "Gouvernorat", sub: coverageGovs >= 24 ? "Couverture nationale" : "sur les 24 du pays", Icon: MapPin, live: false },
   ];
 
   // Featured showcase — the newest annonces, as a single auto-advancing card
@@ -226,9 +226,12 @@ export async function HomeDesktop({
                 not part of the action row. */}
             <div className="mt-8 flex flex-wrap gap-x-7 gap-y-4 border-t border-border pt-6">
               {[
-                { Icon: ShieldCheck, title: "100% sécurisé", sub: "Transactions vérifiées" },
-                { Icon: Zap,         title: "Rapidité",      sub: "Processus optimisés" },
-                { Icon: Users,       title: "Confiance",     sub: "Accompagnement dédié" },
+                // What the product actually does. It said "100% sécurisé —
+                // Transactions vérifiées", and the site never sees the
+                // transaction: buyers telephone sellers directly.
+                { Icon: ShieldCheck, title: "Annonces vérifiées", sub: "Contrôlées avant publication" },
+                { Icon: Zap,         title: "Aucune commission", sub: "Vous payez la publication" },
+                { Icon: Users,       title: "Numéro protégé",     sub: "Affiché à la demande" },
               ].map((it) => (
                 <div key={it.title} className="flex items-center gap-2.5">
                   <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/15">

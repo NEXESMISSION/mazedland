@@ -49,7 +49,8 @@ const HOME_LISTING_SELECT = `
 `;
 
 export type HomeFeed = {
-  /** Published annonces, newest first. Drives the trending rail and the grid. */
+  /** Published annonces, paid home placement first, then most viewed. Drives the
+   *  "biens du moment" rail, the hero and the grid. */
   published: { rows: HomeListingRow[]; count: number };
   /** The newest arrivals rail. */
   nouveautes: HomeListingRow[];
@@ -96,6 +97,11 @@ export const getHomeFeed = unstable_cache(
           .from("listings")
           .select(HOME_LISTING_SELECT, { count: "exact" })
           .eq("status", "published")
+          // "Les biens du moment": paid home placement, then what people open.
+          // Sorted by date it was the same list, in the same order, as
+          // "Fraîchement publiés" two rails further down.
+          .order("promo_home_featured", { ascending: false, nullsFirst: false })
+          .order("view_count", { ascending: false, nullsFirst: false })
           .order("published_at", { ascending: false, nullsFirst: false })
           .limit(24),
       ),

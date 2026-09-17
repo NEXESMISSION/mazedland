@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { paymentInstructions, fetchPayeeDetails, usablePayeeMethods } from "@/lib/payments";
 import { Link } from "@/i18n/navigation";
 import { CheckoutClient } from "./CheckoutClient";
@@ -55,7 +56,11 @@ export default async function CheckoutEntry({
 
   if (!paymentParam) notFound();
 
-  const payee = await fetchPayeeDetails(supabase);
+  // The payee rows in app_settings are admin-only, so with the seller's own
+  // client this came back empty, fell back to the built-in example account, and
+  // usablePayeeMethods then (correctly) refused it: every non-admin seller met
+  // « Paiement momentanément indisponible » and could not pay at all.
+  const payee = await fetchPayeeDetails(getServiceSupabase() ?? supabase);
 
   // `error` is captured, not discarded. The previous version destructured only
   // `data`, so a PostgREST failure was indistinguishable from "no such payment"
@@ -95,7 +100,7 @@ export default async function CheckoutEntry({
       listing={listing}
       instructions={instructions}
       locale={locale}
-      reupload={pay.status === "pending_review"}
+      receiptUnderReview={pay.status === "pending_review"}
       // The seller can go back and fix the annonce before paying — a rejected
       // receipt is often a rejected LISTING in disguise. It returns here.
       editHref={

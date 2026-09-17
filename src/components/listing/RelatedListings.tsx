@@ -243,7 +243,7 @@ function Card({
         <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
           {cat?.label_fr ?? ""}
         </span>
-        <h3 className="mt-0.5 line-clamp-2 break-words text-[13px] font-bold leading-snug text-foreground">
+        <h3 dir="auto" className="mt-0.5 line-clamp-2 break-words text-[13px] font-bold leading-snug text-foreground">
           {listing.title}
         </h3>
         <p className="mazed-tabular mt-1 text-[14px] font-extrabold text-foreground">

@@ -18,9 +18,10 @@ const ROOT_PATHS = new Set([
  * Universal back affordance for the TopBar.
  *
  * - Hidden on the home / root-tab routes (already top-level).
- * - Always returns to the home page. Per product decision we don't try to
- *   guess a "logical parent" anymore — every back tap is a reliable, no-
- *   surprise trip home. The bottom tab bar covers section-level navigation.
+ * - Goes BACK when the visitor arrived from inside the app, and home otherwise.
+ *   It always went home, which threw away a buyer's filters: « Terrains · Sfax
+ *   · page 2 » → open an annonce → back → the home page. Installed as a PWA
+ *   there is no browser back button either, so this is the only way back.
  * - Chevron flips for RTL so it always points in the page-flow direction.
  */
 export function BackButton() {
@@ -36,7 +37,16 @@ export function BackButton() {
   return (
     <button
       type="button"
-      onClick={() => router.push("/")}
+      onClick={() => {
+        // An empty referrer means a client-side navigation inside the app.
+        const cameFromApp =
+          !document.referrer || document.referrer.startsWith(window.location.origin);
+        if (window.history.length > 1 && cameFromApp) {
+          router.back();
+          return;
+        }
+        router.push("/");
+      }}
       aria-label={t("shell.back")}
       className="
         group relative h-9 w-9 rounded-full shrink-0

@@ -5,6 +5,7 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { assertSupabaseRef } from "@/lib/supabase/guard";
 import { clientIp } from "@/lib/clientIp";
 import { isSmsConfigured } from "@/lib/winsms";
+import { PHONE_PROOF_COOKIE, verifyPhoneProof } from "@/lib/otp";
 
 /**
  * Phone-only signup — fully server-side.
@@ -110,6 +111,11 @@ export async function POST(req: NextRequest) {
   // could POST here and register any phone). When SMS is OFF (today), skip —
   // accounts are unverified by design until SMS is wired, which is acceptable.
   if (isSmsConfigured()) {
+    // Same pair as the password reset: the row proves the number was verified,
+    // the cookie proves this browser is the one that verified it.
+    if (!verifyPhoneProof(req.cookies.get(PHONE_PROOF_COOKIE)?.value, phone)) {
+      return NextResponse.json({ ok: false, error: "phone_not_verified" }, { status: 403 });
+    }
     const { data: otp } = await admin
       .from("phone_otps")
       .select("verified_at")

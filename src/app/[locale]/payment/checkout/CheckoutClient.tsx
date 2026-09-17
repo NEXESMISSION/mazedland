@@ -34,7 +34,8 @@ interface Props {
   instructions: ProviderInstructions[];
   locale: string;
   /** True when re-uploading after a rejection (or a refresh). */
-  reupload: boolean;
+  /** The seller already sent a receipt and an admin has not ruled on it yet. */
+  receiptUnderReview: boolean;
   /** When set (listing-fee payments), shows a "Modifier l'annonce" link so the
    *  seller can go back and fix the listing before paying. Full locale-prefixed
    *  href to the edit page (which returns here after saving). */
@@ -78,7 +79,7 @@ export function CheckoutClient({
   listing,
   instructions,
   locale,
-  reupload,
+  receiptUnderReview,
   editHref,
 }: Props) {
   const { toast } = useToast();
@@ -407,10 +408,17 @@ export function CheckoutClient({
           )}
         </section>
 
-        {reupload && (
-          <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[12px] text-red-900">
+        {/* This said « Reçu précédent refusé » in red. Reaching checkout with a
+            payment in `pending_review` means the opposite: the receipt arrived
+            and is waiting for an admin. A refused one is `failed`, and never
+            lands here. */}
+        {receiptUnderReview && (
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] text-amber-900">
             <AlertCircle className="mt-0.5 size-4 shrink-0" />
-            <span>Reçu précédent refusé — vérifiez les coordonnées et renvoyez un nouveau justificatif.</span>
+            <span>
+              Reçu en vérification — moins de 24 h. Vous serez notifié(e) dès qu&apos;il
+              est validé. Envoyez-en un autre seulement s&apos;il y a une erreur.
+            </span>
           </div>
         )}
         </div>
@@ -568,7 +576,7 @@ export function CheckoutClient({
         </p>
 
         {/* Cancel — small, out of the way */}
-        {!reupload && (
+        {!receiptUnderReview && (
           <button
             type="button"
             onClick={cancelPayment}

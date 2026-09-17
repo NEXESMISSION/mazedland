@@ -2,6 +2,9 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { useSearchParams } from "next/navigation";
+import { stripLocalePrefix } from "@/i18n/routing";
+import { safeInternalPath } from "@/lib/safePath";
 import { PhoneInput } from "./PhoneInput";
 import { Loader2, Smartphone } from "lucide-react";
 import { TUNISIAN_GOVERNORATES, normalizeE164, validatePhone } from "@/lib/tunisia";
@@ -29,6 +32,9 @@ import { TermsContent, PrivacyContent } from "@/components/legal/LegalContent";
 export function SignupForm() {
   const t = useTranslations();
   const locale = useLocale();
+  const searchParams = useSearchParams();
+  // Where the visitor was heading before being asked to sign up.
+  const next = stripLocalePrefix(safeInternalPath(searchParams.get("next"), "/account"));
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [dialCode, setDialCode] = useState("+216");
@@ -93,8 +99,11 @@ export function SignupForm() {
     // To /account, not /kyc. Identity verification was retired with the auction
     // product and /kyc survives only as a redirect to /account, so every new
     // account took a detour through a route that no longer exists.
+    // Where they were going before they were asked to sign up — « Vendre »
+    // sends visitors through login, whose « Créer un compte » link carries
+    // `next` along. Signing up used to drop it and land on /account.
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload so the first render carries the new cookie
-    window.location.assign(`/${locale}/account`);
+    window.location.assign(`/${locale}${next}`);
   }
 
   function onSubmit(e: React.FormEvent) {

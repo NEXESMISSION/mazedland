@@ -372,14 +372,15 @@ function PhotoSlide({
         }`}
       >
         {slide.eyebrow && (
-          <span className="mazed-eyebrow inline-flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 backdrop-blur-sm">
+          <span className="mazed-eyebrow inline-flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 text-white/90 backdrop-blur-sm">
             {/* Pulses on the slide in view only: the others sit translated out
                 of sight, and each pulse is an animation kept running. */}
-            <span aria-hidden className={`size-1.5 rounded-full bg-gold${active ? " pulse-gold" : ""}`} />
+            <span aria-hidden className={`size-1.5 rounded-full bg-white${active ? " pulse-gold" : ""}`} />
             {slide.eyebrow}
           </span>
         )}
         <h2
+          dir="auto"
           className={`mt-2.5 text-balance text-[22px] font-extrabold leading-[1.1] tracking-tight text-white drop-shadow-md md:text-[28px] lg:max-w-[60%] ${
             isRTL ? "font-arabic" : ""
           }`}
@@ -471,14 +472,15 @@ function BrandSlide({
       >
         {/* Top — eyebrow. */}
         <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gold-soft)] bg-white/70 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--gold-deep)] backdrop-blur-sm">
+          {/* "En direct" with a red pulse belonged to a live auction. A
+              catalogue is simply online. */}
           {hasLiveCount && (
             <span
               aria-hidden
-              className={`size-1.5 rounded-full bg-red-500${active ? " pulse-gold" : ""}`}
-              style={{ boxShadow: "0 0 8px rgba(239,68,68,0.6)" }}
+              className={`size-1.5 rounded-full bg-[var(--accent)]${active ? " pulse-gold" : ""}`}
             />
           )}
-          {hasLiveCount ? "En direct" : "Mazed Immo · Tunisie"}
+          {hasLiveCount ? "En ligne" : "Mazed Immo · Tunisie"}
         </span>
 
         {/* Middle — stretches to fill, centers its content vertically. */}
@@ -493,7 +495,7 @@ function BrandSlide({
                 {slide.liveCount}
               </span>
               <span className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.32em] text-muted">
-                Annonces
+                {slide.liveCount === 1 ? "Annonce" : "Annonces"}
               </span>
             </div>
           )}

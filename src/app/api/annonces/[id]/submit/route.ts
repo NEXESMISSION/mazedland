@@ -43,7 +43,7 @@ export async function POST(
 
   const { data: listing } = await admin
     .from("listings")
-    .select("id, seller_id, category_id, status, title, contact_phone, seller_attestation_version")
+    .select("id, seller_id, category_id, status, title, contact_phone, seller_attestation_version, fee_payment_id")
     .eq("id", id)
     .maybeSingle();
   if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
@@ -85,6 +85,37 @@ export async function POST(
       { error: "photo_required", detail: "Ajoutez au moins une photo." },
       { status: 400 },
     );
+  }
+
+  // ── 0. A fee that was already captured ────────────────────────────────────
+  // A rejected annonce keeps its `fee_payment_id`. Re-submitting it ran the
+  // pricing path again and created a SECOND payment for one publication.
+  if (listing.fee_payment_id) {
+    const { data: paid } = await admin
+      .from("payments")
+      .select("status")
+      .eq("id", listing.fee_payment_id as string)
+      .maybeSingle();
+    if (paid?.status === "captured") {
+      const { error } = await admin
+        .from("listings")
+        .update({ status: "pending_review", rejection_reason: null })
+        .eq("id", id);
+      if (error) return fail("listing_submit_failed", 500, error);
+
+      await admin
+        .rpc("enqueue_notification", {
+          p_user_id: user.id,
+          p_kind: "listing_submitted",
+          p_title: "Annonce envoyée à la vérification",
+          p_body: `« ${listing.title} » est en cours de vérification. Les frais de publication étaient déjà réglés.`,
+          p_link: "/account/listings",
+        })
+        .then(() => {}, () => {});
+
+      logAction(req, user, "listing.submit.already_paid", { id, paymentId: listing.fee_payment_id });
+      return NextResponse.json({ status: "pending_review", paidWith: "already_paid" });
+    }
   }
 
   // ── 1. A pack credit, if they have one ────────────────────────────────────

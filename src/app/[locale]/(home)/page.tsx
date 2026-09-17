@@ -3,10 +3,11 @@ import { Link } from "@/i18n/navigation";
 import { TrendingRail } from "@/components/landing/TrendingRail";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeDesktop } from "@/components/landing/HomeDesktop";
+import { HomeSearch } from "@/components/landing/HomeSearch";
 import { LG_UP } from "@/components/ui/HiddenAt";
 import { AnnonceCard } from "@/components/listing/AnnonceCard";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
-import { formatTND } from "@/lib/utils";
+import { formatNumber, formatTND } from "@/lib/utils";
 import { getHomeFeed, type HomeListingRow } from "@/lib/home/feed";
 import { log } from "@/lib/log";
 import { PerfProbe } from "@/components/dev/PerfProbe";
@@ -18,6 +19,9 @@ import { catalogueHrefForType } from "@/lib/catalog/browse";
 // lets Vercel serve the page straight from the edge CDN — ~20ms TTFB and no
 // serverless cold start — instead of rendering ~200 cards on every request.
 export const revalidate = 60;
+
+/** A rail with fewer cards than this reads as a leftover, not a section. */
+const MIN_RAIL_CARDS = 4;
 import {
   ArrowUpRight,
   ChevronRight,
@@ -202,16 +206,20 @@ export default async function LandingPage({
     nouveautes = feed?.nouveautes ?? [];
     coverageGovs = new Set(feed?.govs ?? []).size;
 
-    // Two surfaces over one slice:
-    //   - the trending rail (horizontal scroller, self-sized to the dataset)
-    //   - the "plus à explorer" grid underneath
-    //
-    // Below ~16 rows they deliberately OVERLAP, so neither renders empty. A
-    // catalogue with 12 published annonces used to leave the grid showing one
-    // lonely card; now the rail covers the front and the grid shows the back
-    // half of the same set.
+    // Every rail draws from one inventory, and at a few dozen annonces that made
+    // the home page the same cards over and over: "Les biens du moment" and
+    // "Fraîchement publiés" opened with the same listings in the same order, and
+    // the grid repeated the rail's tail. Each later surface now leaves out what
+    // an earlier one shows, and a rail left with too few cards is not rendered —
+    // it comes back on its own once there are annonces it alone would show.
+    // "Bonnes affaires" is exempt: re-ranking the same annonces by price per m²
+    // is what that rail is for.
     trending = rows.slice(0, 18);
-    recent = rows.length >= 16 ? rows.slice(12) : rows.slice(Math.min(rows.length, 8));
+    const shown = new Set(trending.map((r) => r.id));
+    nouveautes = nouveautes.filter((r) => !shown.has(r.id));
+    if (nouveautes.length < MIN_RAIL_CARDS) nouveautes = [];
+    for (const r of nouveautes) shown.add(r.id);
+    recent = rows.filter((r) => !shown.has(r.id));
 
     perf.debug("data ready", {
       published: rows.length,
@@ -286,6 +294,13 @@ export default async function LandingPage({
           auction. Fallback brand slides kick in when the DB has nothing
           live so the carousel never renders empty. */}
       <HeroBanner slides={heroSlides} isRTL={isRTL} priority hiddenAt={LG_UP} />
+
+      {/* Search. The desktop header has a search box and the desktop hero has
+          this component; the phone layout had neither, so a visitor could
+          browse the catalogue but never search it. */}
+      <div className="mt-4 px-4">
+        <HomeSearch isRTL={isRTL} />
+      </div>
 
 
       {/* ══════════════════════════════════════════════════════════════
@@ -786,7 +801,7 @@ function buildHeroSlides(
     slides.push({
       id: l.id,
       imageUrl: propertyPhotoUrl(photo.storage_path),
-      eyebrow: Number.isFinite(area) && area > 0 ? `${where} · ${area} m²` : where,
+      eyebrow: Number.isFinite(area) && area > 0 ? `${where} · ${formatNumber(area)} m²` : where,
       title: l.title,
       subtitle:
         l.price_on_request || l.price == null
@@ -871,9 +886,9 @@ const PRICE_BUCKETS: {
   /** The price params the catalogue reads (`min` / `max`, in TND). */
   query: string;
 }[] = [
-  { key: "under-100k",  labelEn: "Moins de 100k", labelAr: "أقل من 100 ألف",   query: "max=100000" },
-  { key: "100k-500k",   labelEn: "100k – 500k",   labelAr: "100 – 500 ألف",    query: "min=100000&max=500000" },
-  { key: "500k-1m",     labelEn: "500k – 1M",     labelAr: "500 ألف – 1 مليون", query: "min=500000&max=1000000" },
+  { key: "under-100k",  labelEn: "Moins de 100k", labelAr: "أقل من 100 ألف",   query: "max=99999" },
+  { key: "100k-500k",   labelEn: "100k – 500k",   labelAr: "100 – 500 ألف",    query: "min=100000&max=499999" },
+  { key: "500k-1m",     labelEn: "500k – 1M",     labelAr: "500 ألف – 1 مليون", query: "min=500000&max=999990" },
   { key: "1m-plus",     labelEn: "1M+ TND",       labelAr: "أكثر من مليون",     query: "min=1000000" },
 ];
 

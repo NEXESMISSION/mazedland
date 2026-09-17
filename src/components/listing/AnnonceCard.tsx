@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { formatTND } from "@/lib/utils";
+import { formatNumber, formatTND } from "@/lib/utils";
 import { ArrowUpRight, MapPin, Ruler, BedDouble } from "lucide-react";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
@@ -194,7 +194,7 @@ export async function AnnonceCard({
             {Number.isFinite(area) && area > 0 && (
               <span className="mazed-tabular inline-flex shrink-0 items-center gap-1">
                 <Ruler className="size-3" strokeWidth={2} />
-                {area} m²
+                {formatNumber(area)} m²
               </span>
             )}
             {Number.isFinite(rooms) && rooms > 0 && (

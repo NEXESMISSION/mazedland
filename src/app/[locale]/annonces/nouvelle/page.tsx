@@ -45,7 +45,13 @@ export const dynamic = "force-dynamic";
  * table is not laziness here — it is what lets an admin add "piscine" to
  * Villas without a deploy.
  */
-export default async function NewListingPage() {
+export default async function NewListingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ draft?: string | string[] }>;
+}) {
+  const sp = await searchParams;
+  const wantedDraft = Array.isArray(sp.draft) ? sp.draft[0] : sp.draft;
   const locale = await getLocale();
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
@@ -80,21 +86,27 @@ export default async function NewListingPage() {
       .eq("seller_id", user!.id)
       .eq("status", "active"),
     admin.from("profiles").select("full_name, phone").eq("id", user!.id).maybeSingle(),
-    // The draft this seller left behind, if any. Publishing a property takes
-    // long enough that a phone call, a dead battery or a mistaken back gesture
-    // will interrupt it — and until now that threw the whole form away.
-    admin
-      .from("listings")
-      .select(
-        `id, category_id, title, description, price, price_on_request, negotiable,
-         governorate, delegation, attributes, contact_name, contact_phone, updated_at,
-         photos:listing_photos (storage_path, sort_order)`,
-      )
-      .eq("seller_id", user!.id)
-      .eq("status", "draft")
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+    // The annonce to edit. « Reprendre », « Corriger » and checkout's
+    // « Modifier l'annonce » all pass ?draft=<id> — which this page used to
+    // ignore, always loading the NEWEST draft instead, so a rejected annonce
+    // could not be corrected and « Reprendre » opened the wrong one. Without
+    // the parameter, fall back to that newest draft: publishing a property
+    // takes long enough that a phone call or a stray back gesture interrupts
+    // it, and until then that threw the whole form away.
+    (() => {
+      const q = admin
+        .from("listings")
+        .select(
+          `id, category_id, title, description, price, price_on_request, negotiable,
+           governorate, delegation, attributes, contact_name, contact_phone, updated_at,
+           photos:listing_photos (storage_path, sort_order)`,
+        )
+        .eq("seller_id", user!.id);
+      return wantedDraft
+        ? // Only the seller's own annonce, and only one still editable here.
+          q.eq("id", wantedDraft).in("status", ["draft", "rejected", "pending_payment"]).maybeSingle()
+        : q.eq("status", "draft").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+    })(),
   ]);
 
   type CatRow = {

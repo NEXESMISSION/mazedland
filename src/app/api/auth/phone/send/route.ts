@@ -4,7 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { clientIp } from "@/lib/clientIp";
 import { sendSms, isSmsConfigured } from "@/lib/winsms";
-import { hashCode } from "@/lib/otp";
+import { PHONE_PROOF_COOKIE, hashCode } from "@/lib/otp";
 import { log } from "@/lib/log";
 
 const oLog = log.scope("otp-send");
@@ -95,6 +95,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       code_hash: hashCode(phone, code),
       expires_at: new Date(now + CODE_TTL_MS).toISOString(),
       attempts: 0,
+      // A new code retires the previous verification. Without this, the proof
+      // left by a finished signup stayed usable for the rest of its 15 minutes.
+      verified_at: null,
       send_count: sendCount,
       window_start: windowStart,
       last_sent_at: nowIso,
@@ -112,5 +115,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "send_failed" }, { status: 502 });
   }
 
-  return NextResponse.json({ ok: true, configured: true });
+  // The browser's old proof goes with it: the new code has to be verified.
+  const res = NextResponse.json({ ok: true, configured: true });
+  res.cookies.delete(PHONE_PROOF_COOKIE);
+  return res;
 }

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { AccountMenu } from "./AccountMenu";
@@ -55,7 +55,8 @@ function isActive(pathname: string, href: string): boolean {
   if (href === "/annonces") {
     return (
       pathname === "/annonces" ||
-      pathname.startsWith("/annonces/") ||
+      // …but not the sell form: « Explorer » lit up while publishing.
+      (pathname.startsWith("/annonces/") && pathname !== "/annonces/nouvelle") ||
       pathname === "/properties" ||
       pathname.startsWith("/properties/") ||
       pathname.startsWith("/auctions")
@@ -71,9 +72,29 @@ export function DesktopNav() {
   const router = useRouter();
   const [q, setQ] = useState("");
 
+  // Show what the results are filtered by. Read from the URL after mount
+  // rather than with useSearchParams: this bar renders on the statically
+  // generated home page, which would otherwise have to be client-rendered.
+  useEffect(() => {
+    const current = new URLSearchParams(window.location.search).get("q") ?? "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reading the URL is synchronising with an external system.
+    setQ(current);
+  }, [pathname]);
+
   function submitSearch(e: React.FormEvent) {
     e.preventDefault();
     const clean = normalizeSearchQuery(q);
+    // Keep the filters the buyer already chose. Submitting used to push `q`
+    // alone, dropping category, governorate, sort and price.
+    const params = new URLSearchParams(
+      pathname === "/annonces" ? window.location.search : "",
+    );
+    params.delete("page");
+    if (clean) params.set("q", clean);
+    else params.delete("q");
+    const qs = params.toString();
+    router.push((qs ? `/annonces?${qs}` : "/annonces") as `/annonces`);
+    return;
     // Straight to the catalogue. It reads `q` itself; going via /properties
     // only added a redirect between pressing Enter and seeing results.
     router.push(

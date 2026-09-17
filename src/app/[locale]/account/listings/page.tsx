@@ -11,6 +11,7 @@ import {
   ArrowRight, AlertTriangle, Inbox,
 } from "lucide-react";
 import { RenewButton } from "./RenewButton";
+import { PaySubmitButton } from "@/components/payments/PaySubmitButton";
 import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct, type Product } from "@/lib/products";
 import { formatTND as fmt } from "@/lib/utils";
 
@@ -116,10 +117,16 @@ export default async function MyListingsPage({
     (catRes.data ?? []).map((c) => [c.id as string, (c.parent_id as string | null) ?? null]),
   );
 
+  // Split by status: a receipt already with an admin is not a fee still to
+  // pay, and both used to show « À payer » with a « Payer » button next to
+  // money the seller had already sent.
   const payFor = new Map<string, string>();
-  for (const p of (payRes.data ?? []) as { id: string; metadata: unknown }[]) {
+  const reviewFor = new Map<string, string>();
+  for (const p of (payRes.data ?? []) as { id: string; metadata: unknown; status: string }[]) {
     const listingId = (p.metadata as { listing_id?: string } | null)?.listing_id;
-    if (listingId && !payFor.has(listingId)) payFor.set(listingId, p.id);
+    if (!listingId) continue;
+    const target = p.status === "pending_review" ? reviewFor : payFor;
+    if (!target.has(listingId)) target.set(listingId, p.id);
   }
 
   const now = Date.now();
@@ -175,11 +182,34 @@ export default async function MyListingsPage({
    * resuming a draft relies on /annonces/nouvelle loading the seller's own
    * draft, which is what it already does.
    */
+  /**
+   * The chip a row shows. A `pending_payment` annonce whose receipt is already
+   * under review says so, instead of « À payer ».
+   */
+  function statusOf(l: Row) {
+    if (l.status === "pending_payment" && reviewFor.has(l.id)) {
+      return {
+        label: "Reçu en vérification",
+        tone: "mazed-tone-warn",
+        hint: "Nous validons votre reçu — moins de 24 h.",
+      };
+    }
+    return STATUS[l.status] ?? { label: l.status, tone: "bg-surface-2 text-muted" };
+  }
+
   function Action({ l, block = false }: { l: Row; block?: boolean }) {
     const cls = block
       ? "mazed-btn-luxe tap-target mt-2.5 flex w-full justify-center px-3 py-2.5 text-[12.5px]"
       : "mazed-btn-luxe tap-target inline-flex px-3 py-1.5 text-[12px]";
 
+    // Receipt with an admin: the action is to look at it, not to pay again.
+    if (l.status === "pending_payment" && reviewFor.has(l.id)) {
+      return (
+        <Link href={`/payment/checkout?payment=${reviewFor.get(l.id)}` as never} className={cls}>
+          <CreditCard className="size-3.5" /> Voir le reçu
+        </Link>
+      );
+    }
     if (l.status === "pending_payment" && payFor.has(l.id)) {
       return (
         <Link href={`/payment/checkout?payment=${payFor.get(l.id)}` as never} className={cls}>
@@ -187,10 +217,24 @@ export default async function MyListingsPage({
         </Link>
       );
     }
+    // Refused or cancelled payment: the annonce is still waiting and there was
+    // no way back to a payment at all.
+    if (l.status === "pending_payment") {
+      return <PaySubmitButton listingId={l.id} block={block} />;
+    }
     if (l.status === "draft") {
       return (
-        <Link href={"/annonces/nouvelle" as never} className={cls}>
+        <Link href={`/annonces/nouvelle?draft=${l.id}` as never} className={cls}>
           <PencilLine className="size-3.5" /> Reprendre
+        </Link>
+      );
+    }
+    // « À corriger » has to reopen THAT annonce. It used to fall through to
+    // « Voir », which 404s for anything unpublished.
+    if (l.status === "rejected") {
+      return (
+        <Link href={`/annonces/nouvelle?draft=${l.id}` as never} className={cls}>
+          <PencilLine className="size-3.5" /> Corriger
         </Link>
       );
     }
@@ -274,7 +318,7 @@ export default async function MyListingsPage({
       {/* ── PHONE · one card per annonce ───────────────────────────────── */}
       <div className="mt-4 space-y-3 lg:hidden">
         {rows.map((l) => {
-          const st = STATUS[l.status] ?? { label: l.status, tone: "bg-surface-2 text-muted" };
+          const st = statusOf(l);
           const cat = Array.isArray(l.category) ? l.category[0] : l.category;
           const cover = coverPhoto(l.photos);
           const left = daysLeft(l);
@@ -345,7 +389,7 @@ export default async function MyListingsPage({
           </thead>
           <tbody className="divide-y divide-border">
             {rows.map((l) => {
-              const st = STATUS[l.status] ?? { label: l.status, tone: "bg-surface-2 text-muted" };
+              const st = statusOf(l);
               const cat = Array.isArray(l.category) ? l.category[0] : l.category;
               const cover = coverPhoto(l.photos);
               const left = daysLeft(l);

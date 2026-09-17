@@ -4,6 +4,7 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { assertSupabaseRef } from "@/lib/supabase/guard";
 import { clientIp } from "@/lib/clientIp";
 import { isSmsConfigured } from "@/lib/winsms";
+import { PHONE_PROOF_COOKIE, verifyPhoneProof } from "@/lib/otp";
 
 /**
  * Phone-OTP password reset — fully server-side.
@@ -77,6 +78,14 @@ export async function POST(req: NextRequest) {
   }
 
   // Require a fresh OTP proof stamped by /api/auth/phone/verify.
+  // Two proofs, because the row alone is not one: it says this number was
+  // verified recently, not that the caller is who verified it. A seller's
+  // number is published on every annonce, so without the cookie this endpoint
+  // was an account takeover for the length of that window.
+  if (!verifyPhoneProof(req.cookies.get(PHONE_PROOF_COOKIE)?.value, phone)) {
+    return NextResponse.json({ ok: false, error: "phone_not_verified" }, { status: 403 });
+  }
+
   const { data: otp } = await admin
     .from("phone_otps")
     .select("verified_at")
@@ -102,5 +111,7 @@ export async function POST(req: NextRequest) {
 
   // Consume the proof so it can't be reused for another reset.
   await admin.from("phone_otps").delete().eq("phone", phone);
-  return NextResponse.json({ ok: true });
+  const res = NextResponse.json({ ok: true });
+  res.cookies.delete(PHONE_PROOF_COOKIE);
+  return res;
 }

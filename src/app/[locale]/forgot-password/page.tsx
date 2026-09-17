@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { getTranslations, getLocale } from "next-intl/server";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
@@ -12,6 +13,10 @@ import { Link } from "@/i18n/navigation";
  *     whole auth quartet is visually coherent (previously this collapsed to a
  *     lonely 384px card on a vast empty desktop field).
  */
+export const metadata: Metadata = {
+  title: "Mot de passe oublié — Mazed Immo",
+};
+
 export default async function ForgotPasswordPage() {
   const t = await getTranslations();
   const locale = await getLocale();

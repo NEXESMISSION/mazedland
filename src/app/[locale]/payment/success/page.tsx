@@ -3,7 +3,8 @@ import { Link } from "@/i18n/navigation";
 import { getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { formatTND } from "@/lib/utils";
-import { CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
+import { CheckCircle2, ArrowRight, Loader2, XCircle } from "lucide-react";
+import { PaySubmitButton } from "@/components/payments/PaySubmitButton";
 import { SuccessAutoRedirect } from "./SuccessAutoRedirect";
 import { safeInternalPath } from "@/lib/safePath";
 
@@ -92,7 +93,7 @@ export default async function PaymentSuccess({
 
   const { data: payment } = await supabase
     .from("payments")
-    .select("id, kind, amount, status, currency, created_at")
+    .select("id, kind, amount, status, currency, created_at, metadata")
     .eq("id", id)
     .maybeSingle();
 
@@ -112,6 +113,11 @@ export default async function PaymentSuccess({
     KIND_SUBLABEL[payment.kind as string] ??
     "Nous avons enregistré votre paiement.";
   const isCaptured = payment.status === "captured";
+  // A refused receipt (or a cancelled payment) used to land here and read
+  // « Frais de publication réglés » under a spinner that never stopped.
+  const isFailed = payment.status === "failed";
+  const listingId =
+    (payment.metadata as { listing_id?: string } | null)?.listing_id ?? null;
   const dest = safeInternalPath(returnUrl, destinationFor(payment.kind as string)) as `/${string}`;
 
   return (
@@ -130,11 +136,15 @@ export default async function PaymentSuccess({
             className={`relative h-16 w-16 rounded-full flex items-center justify-center ${
               isCaptured
                 ? "bg-emerald-500 text-white shadow-[0_0_30px_rgba(16,185,129,0.4)]"
-                : "bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/40"
+                : isFailed
+                  ? "bg-red-500/15 text-red-700 ring-1 ring-red-500/40"
+                  : "bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/40"
             }`}
           >
             {isCaptured ? (
               <CheckCircle2 className="h-9 w-9" strokeWidth={2.2} />
+            ) : isFailed ? (
+              <XCircle className="h-9 w-9" strokeWidth={2.2} />
             ) : (
               <Loader2 className="h-7 w-7 animate-spin" />
             )}
@@ -142,14 +152,22 @@ export default async function PaymentSuccess({
         </div>
 
         <div className="mt-5 text-[10px] uppercase tracking-[0.18em] font-extrabold text-[var(--gold)]">
-          {isCaptured ? "Paiement confirmé" : "En attente de confirmation"}
+          {isCaptured ? "Paiement confirmé" : isFailed ? "Reçu refusé" : "En attente de confirmation"}
         </div>
         <h1 className="mt-1 text-2xl font-extrabold tracking-tight">
           {kindLabel}
         </h1>
         <p className="mt-2 text-sm text-[var(--foreground-muted)] leading-relaxed">
-          {subLabel}
+          {isFailed
+            ? "Votre reçu n'a pas été validé. Rien n'a été encaissé — vous pouvez relancer le paiement et envoyer un nouveau justificatif."
+            : subLabel}
         </p>
+
+        {isFailed && listingId && (
+          <div className="mt-5">
+            <PaySubmitButton listingId={listingId} block label="Payer à nouveau" />
+          </div>
+        )}
 
         {/* TX details */}
         <dl className="mt-6 space-y-2 rounded-[var(--radius)] bg-[var(--surface-2)] p-4 text-start">

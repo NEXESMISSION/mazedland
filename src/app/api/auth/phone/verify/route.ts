@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { clientIp } from "@/lib/clientIp";
-import { hashCode } from "@/lib/otp";
+import { PHONE_PROOF_COOKIE, PHONE_PROOF_TTL_MS, hashCode, signPhoneProof } from "@/lib/otp";
 
 const MAX_ATTEMPTS = 5;
 
@@ -77,5 +77,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .from("phone_otps")
     .update({ verified_at: new Date().toISOString(), code_hash: "", attempts: 0 })
     .eq("phone", phone);
-  return NextResponse.json({ ok: true });
+
+  // The row says this number was verified; the cookie says THIS browser did it.
+  // Signup and password reset require both — see signPhoneProof.
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set({
+    name: PHONE_PROOF_COOKIE,
+    value: signPhoneProof(phone, Date.now() + PHONE_PROOF_TTL_MS),
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: Math.floor(PHONE_PROOF_TTL_MS / 1000),
+  });
+  return res;
 }

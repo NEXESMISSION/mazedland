@@ -1,10 +1,12 @@
+import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { getLocale } from "next-intl/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { coverPhoto } from "@/lib/listingCover";
 import { ListingImage } from "@/components/media/ListingImage";
-import { formatTND } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, SearchX, X } from "lucide-react";
+import { formatNumber, formatTND } from "@/lib/utils";
+import { searchTokens } from "@/lib/search";
+import { ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, X } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,18 @@ export const dynamic = "force-dynamic";
  * count under-reports, and everything past the 60th is unreachable because
  * nothing links to it.
  */
+
+/**
+ * A repeated query parameter (?q=a&q=b) arrives as an array, and every read
+ * below assumes a string — that pair used to crash the page.
+ */
+function firstValues(
+  sp: Record<string, string | string[] | undefined>,
+): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {};
+  for (const [k, v] of Object.entries(sp)) out[k] = Array.isArray(v) ? v[0] : v;
+  return out;
+}
 
 /** Annonces per page — four rows of the desktop grid. */
 const PAGE_SIZE = 24;
@@ -63,23 +77,41 @@ function specLine(r: Row): string[] {
   const a = (r.attributes ?? {}) as Record<string, unknown>;
   const out: string[] = [];
   const m2 = surfaceOf(r.attributes);
-  if (m2) out.push(`${m2.toLocaleString("fr-FR")} m²`);
+  if (m2) out.push(`${formatNumber(m2)} m²`);
   if (Number(a.rooms) > 0) out.push(`${a.rooms} pièces`);
   if (Number(a.bathrooms) > 0) out.push(`${a.bathrooms} SdB`);
   return out;
 }
 
+// The tab title follows the filters. Every catalogue view used to carry the
+// site's home title, so "Terrains à Sfax" and the unfiltered page were the
+// same line in a browser tab, a bookmark and a search result.
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const sp = firstValues(await searchParams);
+  const admin = getServiceSupabase();
+  let what = "Annonces immobilières";
+  if (sp.cat && admin) {
+    const { data } = await admin.from("categories").select("label_fr").eq("slug", sp.cat).maybeSingle();
+    if (data?.label_fr) what = data.label_fr as string;
+  }
+  const where = sp.gov?.trim() ? ` à ${sp.gov.trim()}` : " en Tunisie";
+  return {
+    title: `${what}${where} — Mazed Immo`,
+    // A keyword search is a results page, not a page to put in an index.
+    ...(sp.q?.trim() ? { robots: { index: false, follow: true } } : {}),
+  };
+}
+
 export default async function AnnoncesPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    cat?: string; gov?: string; sort?: string; q?: string;
-    min?: string; max?: string; page?: string;
-    /** Pre-rename price params — see `min` below. */
-    min_price?: string; max_price?: string;
-  }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const sp = await searchParams;
+  const sp = firstValues(await searchParams);
   const locale = await getLocale();
   const admin = getServiceSupabase();
 
@@ -125,13 +157,19 @@ export default async function AnnoncesPage({
 
   if (active) q = q.eq("category_id", active.id);
   if (sp.gov) q = q.eq("governorate", sp.gov);
-  if (sp.q?.trim()) q = q.ilike("search_text", `%${sp.q.trim().toLowerCase()}%`);
+  // One ILIKE per word, against the accent-folded column: every word has to
+  // appear, in any order. See searchTokens.
+  for (const token of searchTokens(sp.q)) q = q.ilike("search_text", `%${token}%`);
   if (min) q = q.gte("price", min);
   if (max) q = q.lte("price", max);
 
   if (sort === "cheap") q = q.order("price", { ascending: true, nullsFirst: false });
   else if (sort === "dear") q = q.order("price", { ascending: false, nullsFirst: false });
   else q = q.order("published_at", { ascending: false });
+  // A unique last key. Bulk approval stamps a whole batch with the same
+  // published_at and prices tie, so without it the order was undefined between
+  // pages: one annonce could show up on both, another on neither.
+  q = q.order("id", { ascending: true });
 
   let rows: Row[];
   let total: number;
@@ -152,9 +190,16 @@ export default async function AnnoncesPage({
     rows = all.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   } else {
     const from = (page - 1) * PAGE_SIZE;
-    const { data, count } = await q.range(from, from + PAGE_SIZE - 1);
-    rows = (data ?? []) as unknown as Row[];
-    total = count ?? rows.length;
+    let res = await q.range(from, from + PAGE_SIZE - 1);
+    // A page past the end — a stale bookmark, an indexed link, or annonces that
+    // have expired since — makes PostgREST refuse the range. `count` then came
+    // back null, so the page printed "0 bien" with no pager to escape with.
+    if (res.error && page > 1) {
+      page = 1;
+      res = await q.range(0, PAGE_SIZE - 1);
+    }
+    rows = (res.data ?? []) as unknown as Row[];
+    total = res.count ?? rows.length;
   }
   const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -186,6 +231,32 @@ export default async function AnnoncesPage({
           and the first row of results are the heading. The h1 stays for
           assistive tech and search engines. */}
       <h1 className="sr-only">Biens à prix fixe — annonces immobilières</h1>
+
+      {/* Keyword search for phones. The header search is desktop-only, so a
+          phone could reach the catalogue but never search it. A plain GET form:
+          it works before hydration and carries the active filters along. */}
+      <form action={`/${locale}/annonces`} method="get" role="search" className="relative lg:hidden">
+        {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
+        {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
+        {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
+        {min ? <input type="hidden" name="min" value={String(min)} /> : null}
+        {max ? <input type="hidden" name="max" value={String(max)} /> : null}
+        <Search
+          aria-hidden
+          className="pointer-events-none absolute start-4 top-1/2 size-4 -translate-y-1/2 text-muted"
+          strokeWidth={2}
+        />
+        {/* 16px text: iOS zooms the whole page into any smaller input on focus. */}
+        <input
+          type="search"
+          name="q"
+          defaultValue={sp.q ?? ""}
+          placeholder="Rechercher un bien, un lieu…"
+          aria-label="Rechercher dans les annonces"
+          enterKeyHint="search"
+          className="h-11 w-full rounded-full border border-border bg-surface-2 pe-4 ps-11 text-[16px] text-foreground outline-none transition placeholder:text-muted focus:border-gold-soft focus:bg-surface"
+        />
+      </form>
 
       {/* Filters. Property is filtered by what it IS and where it is — the two
           questions a buyer actually starts from. */}
@@ -281,6 +352,16 @@ export default async function AnnoncesPage({
 
       <p className="mt-4 text-[12.5px] text-muted">
         {total} bien{total > 1 ? "s" : ""}
+        {sp.q?.trim() && (
+          <Link
+            href={qs({ q: undefined }) as never}
+            aria-label={`Effacer la recherche « ${sp.q.trim()} »`}
+            className="ms-2 inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-0.5 font-semibold text-foreground ring-1 ring-border transition hover:ring-gold-soft"
+          >
+            « {sp.q.trim()} »
+            <X className="size-3" />
+          </Link>
+        )}
         {active ? ` · ${active.label_fr}` : ""}
         {sp.gov ? ` · ${sp.gov}` : ""}
       </p>
@@ -292,6 +373,16 @@ export default async function AnnoncesPage({
           <p className="mt-1 text-[12.5px] text-muted">
             Élargissez la recherche, le budget ou le gouvernorat.
           </p>
+          {/* A way out. Seven of the eight category chips are empty at this
+              catalogue size, and this state used to be text only. */}
+          {(sp.cat || sp.gov || sp.q || min || max) && (
+            <Link
+              href={"/annonces" as never}
+              className="tap-target mt-4 inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[12.5px] font-bold text-[var(--background)]"
+            >
+              <X className="size-3.5" /> Effacer les filtres
+            </Link>
+          )}
         </div>
       ) : (
         <ul className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
@@ -325,7 +416,7 @@ export default async function AnnoncesPage({
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
                       <Home className="size-3" /> {cat?.label_fr ?? ""}
                     </span>
-                    <h2 className="mt-0.5 line-clamp-2 break-words text-[13.5px] font-bold leading-snug text-foreground">
+                    <h2 dir="auto" className="mt-0.5 line-clamp-2 break-words text-[13.5px] font-bold leading-snug text-foreground">
                       {r.title}
                     </h2>
 
@@ -338,14 +429,19 @@ export default async function AnnoncesPage({
                       )}
                     </p>
 
-                    {specs.length > 0 && (
-                      <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted">
-                        <Ruler className="size-3" /> {specs.join(" · ")}
-                      </p>
-                    )}
-                    <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
-                      <MapPin className="size-3" /> {r.governorate}
-                    </p>
+                    {/* One wrapping row. These were two inline-flex paragraphs,
+                        which sit side by side with nothing between them when
+                        they fit: "200 m²◎ Sfax". */}
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-muted">
+                      {specs.length > 0 && (
+                        <span className="inline-flex items-center gap-1">
+                          <Ruler className="size-3" /> {specs.join(" · ")}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="size-3" /> {r.governorate}
+                      </span>
+                    </div>
                   </div>
                 </Link>
               </li>

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { getTranslations, getLocale } from "next-intl/server";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
@@ -14,6 +15,10 @@ import { AuthHeroPanel } from "@/components/auth/AuthHeroPanel";
  *
  * No "back to login" footer — the form's success state redirects to /login.
  */
+export const metadata: Metadata = {
+  title: "Nouveau mot de passe — Mazed Immo",
+};
+
 export default async function ResetPasswordPage() {
   const t = await getTranslations();
   const locale = await getLocale();

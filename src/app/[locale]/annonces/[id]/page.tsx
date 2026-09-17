@@ -6,7 +6,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { absoluteUrl } from "@/lib/siteUrl";
-import { formatTND } from "@/lib/utils";
+import { formatNumber, formatTND } from "@/lib/utils";
 import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
 import { ContactReveal } from "./ContactReveal";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
@@ -49,6 +49,7 @@ type Row = {
   attributes: Record<string, unknown> | null;
   contact_name: string | null; show_phone: boolean;
   status: string; published_at: string | null; expires_at: string | null;
+  rejection_reason: string | null;
   reference: string | null;
   seller_id: string;
   category:
@@ -61,12 +62,23 @@ type Row = {
 const SELECT = `
   id, title, description, price, price_on_request, negotiable,
   governorate, delegation, attributes, contact_name, show_phone, status,
-  published_at, expires_at, seller_id, reference,
+  published_at, expires_at, seller_id, reference, rejection_reason,
   category:categories (id, label_fr, kind),
   photos:listing_photos (storage_path, sort_order)
 `;
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
+
+/** How a non-public status reads in the seller's own preview banner. */
+const PREVIEW_LABEL: Record<string, string> = {
+  draft: "brouillon",
+  pending_payment: "frais à régler",
+  pending_review: "en vérification",
+  rejected: "à corriger",
+  expired: "expirée",
+  sold: "vendue",
+  archived: "retirée",
+};
 
 // `cache`: generateMetadata and the page both need the listing for the same
 // request, and without it that was two identical database round trips.
@@ -84,7 +96,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const [l, locale] = await Promise.all([fetchListing(id), getLocale()]);
-  if (!l || l.status !== "published") return { title: "Annonce" };
+  if (!l) return { title: "Annonce introuvable — Mazed Immo", robots: { index: false } };
+  // Visible to its seller and to an admin (see the page), never to a crawler.
+  if (l.status !== "published") {
+    return { title: `${l.title} · Mazed Immo`, robots: { index: false } };
+  }
   const price =
     l.price != null && !l.price_on_request
       ? `${Number(l.price).toLocaleString("fr-FR")} TND`
@@ -129,8 +145,7 @@ export default async function AnnoncePage({
   const { id } = await params;
   const locale = await getLocale();
   const l = await fetchListing(id);
-
-  if (!l || l.status !== "published") notFound();
+  if (!l) notFound();
 
   const category = one(l.category);
   const photos = (l.photos ?? [])
@@ -142,6 +157,24 @@ export default async function AnnoncePage({
 
   const userClient = await getServerSupabase();
   const { data: { user } } = await userClient.auth.getUser();
+
+  // An unpublished annonce stays visible to its seller, and to an admin. Every
+  // link in « Mes annonces » — the title, the thumbnail, « Voir » — points here
+  // and answered « Page introuvable » for drafts, annonces waiting for payment
+  // or review, rejected, expired and sold ones alike.
+  const isOwner = !!user && user.id === l.seller_id;
+  const isPreview = l.status !== "published";
+  let isAdmin = false;
+  if (isPreview && user && !isOwner && admin) {
+    const { data: prof } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    isAdmin = prof?.role === "admin";
+  }
+  if (isPreview && !isOwner && !isAdmin) notFound();
+
   let saved = false;
   if (user) {
     const { data: w } = await userClient
@@ -181,7 +214,9 @@ export default async function AnnoncePage({
         raw === true
           ? "Oui"
           : d.options?.find((o) => o.value === String(raw))?.label ??
-            (d.unit ? `${raw} ${d.unit}` : String(raw));
+            (d.unit
+              ? `${/^\d+(\.\d+)?$/.test(String(raw)) ? formatNumber(Number(raw)) : raw} ${d.unit}`
+              : String(raw));
       return { label: d.label, value };
     })
     .filter(Boolean) as { label: string; value: string }[];
@@ -294,7 +329,28 @@ export default async function AnnoncePage({
       />
       {/* Renders nothing; reports from the browser that this page was really
           looked at, rather than merely prefetched. */}
-      <ViewTracker listingId={l.id} />
+      {/* A seller looking at their own draft is not a view. */}
+      {!isPreview && <ViewTracker listingId={l.id} />}
+
+      {isPreview && (
+        <div className="mx-4 mt-3 rounded-2xl border border-dashed border-gold-soft bg-gold-faint px-4 py-3 lg:mx-0">
+          <p className="text-[12.5px] font-bold text-foreground">
+            Aperçu privé — {PREVIEW_LABEL[l.status] ?? l.status}
+          </p>
+          <p className="mt-1 text-[12px] leading-relaxed text-muted">
+            Cette annonce n&apos;est pas visible publiquement.
+            {l.status === "rejected" && l.rejection_reason
+              ? ` Motif : ${l.rejection_reason}`
+              : ""}
+          </p>
+          <Link
+            href={"/account/listings" as never}
+            className="mt-2 inline-flex text-[12.5px] font-bold text-gold hover:underline"
+          >
+            Gérer mes annonces →
+          </Link>
+        </div>
+      )}
 
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-8 lg:px-6 lg:pt-6">
         {/* ── Left: the thing being sold ── */}
@@ -319,7 +375,7 @@ export default async function AnnoncePage({
             </div>
 
             {/* break-words: a title can arrive as one unbroken string. */}
-            <h1 className="mt-2 break-words text-[24px] font-extrabold leading-tight tracking-tight lg:text-[28px]">
+            <h1 dir="auto" className="mt-2 break-words text-[24px] font-extrabold leading-tight tracking-tight lg:text-[28px]">
               {l.title}
             </h1>
 
@@ -382,7 +438,7 @@ export default async function AnnoncePage({
                     width and pushes the whole page sideways. `anywhere` breaks
                     it and, unlike `break-word`, also stops it inflating the
                     column's min-content width inside the grid. */}
-                <p className="mt-2 whitespace-pre-line text-[14px] leading-relaxed text-foreground/85 [overflow-wrap:anywhere]">
+                <p dir="auto" className="mt-2 whitespace-pre-line text-[14px] leading-relaxed text-foreground/85 [overflow-wrap:anywhere]">
                   {l.description}
                 </p>
               </section>

@@ -43,6 +43,21 @@ export function normalizeSearchQuery(raw: string | null | undefined): string {
     .replace(ILIKE_AND_OR_SPECIALS, "");
 }
 
+/**
+ * The words a search must match, folded the way `search_text` is stored.
+ *
+ * `search_text` is `f_unaccent(lower(…))` (0146), and the catalogue only
+ * lower-cased the term: "bâtir" matched nothing, and the whole phrase went in
+ * as one `%…%`, so "terrain sfax" found nothing while "sfax terrain" found
+ * three. Postgres `unaccent` also folds the ligatures, which NFD does not.
+ *
+ * Capped at six words: past that the extra ILIKEs cost more than they filter.
+ */
+export function searchTokens(raw: string | null | undefined): string[] {
+  const folded = stripAccents(normalizeSearchQuery(raw)).replace(/œ/g, "oe").replace(/æ/g, "ae");
+  return [...new Set(folded.split(/[\s-]+/).filter(Boolean))].slice(0, 6);
+}
+
 export function buildIlikeOrClause(query: string, fields: readonly string[]): string {
   return fields.map((f) => `${f}.ilike.%${query}%`).join(",");
 }

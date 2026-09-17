@@ -243,6 +243,7 @@ function SlideBody({
       {/* Info panel — title, location, price + action. */}
       <div className={`absolute inset-x-0 bottom-0 z-10 p-5 ${isRTL ? "text-right" : "text-left"}`}>
         <h2
+          dir="auto"
           className={`text-balance text-[20px] font-extrabold leading-[1.15] tracking-tight text-white drop-shadow ${
             isRTL ? "font-arabic" : ""
           }`}
@@ -262,9 +263,12 @@ function SlideBody({
             </div>
             <div className="mazed-tabular mt-0.5 text-[26px] font-black leading-none text-white">
               {slide.priceLabel}
-              <span className="ms-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/60">
-                TND
-              </span>
+              {/* "Prix sur demande" takes no currency after it. */}
+              {/\d/.test(slide.priceLabel) && (
+                <span className="ms-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/60">
+                  TND
+                </span>
+              )}
             </div>
           </div>
           <span className="mazed-gold-fill inline-flex shrink-0 items-center gap-1.5 rounded-full px-5 py-2.5 text-[12px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition group-hover/showcase:scale-[1.03]">
