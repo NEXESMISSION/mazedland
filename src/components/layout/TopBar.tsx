@@ -94,14 +94,17 @@ export function TopBar() {
           ) : (
             <>
               <BackButton />
+              {/* A <p>, not an <h1>: every page below has its own heading, and
+                  a listing page ended up with two — "Annonce" in the bar and
+                  the annonce's title in the page. */}
               {titleKey && (
-                <h1
+                <p
                   className={`truncate text-[16px] font-bold tracking-tight text-foreground ${
                     isRTL ? "font-arabic" : ""
                   }`}
                 >
                   {t(`shell.pageTitles.${titleKey}`)}
-                </h1>
+                </p>
               )}
             </>
           )}

@@ -18,7 +18,14 @@ import { Phone, MessageCircle, Loader2 } from "lucide-react";
  * selling property in a governorate is a saleable asset, and the reveal log is
  * what makes harvesting it visible.
  */
-export function ContactReveal({ listingId }: { listingId: string }) {
+export function ContactReveal({
+  listingId,
+  showPhone = true,
+}: {
+  listingId: string;
+  /** false when the seller chose not to publish a number at all. */
+  showPhone?: boolean;
+}) {
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [contact, setContact] = useState<{ phone: string; whatsapp: string | null } | null>(null);
@@ -41,11 +48,16 @@ export function ContactReveal({ listingId }: { listingId: string }) {
   }
 
   if (contact) {
-    const wa = (contact.whatsapp ?? contact.phone).replace(/\D/g, "");
+    const digits = (contact.whatsapp ?? contact.phone).replace(/\D/g, "");
+    // Numbers are stored both ways — "20 123 456" and "+216 20 123 456".
+    // wa.me needs the country code, so a local 8-digit number gets one, and
+    // tel: gets the digits without the spaces.
+    const wa = digits.length === 8 ? `216${digits}` : digits;
+    const tel = contact.phone.replace(/[^\d+]/g, "");
     return (
       <div className="space-y-2">
         <a
-          href={`tel:${contact.phone}`}
+          href={`tel:${tel}`}
           className="mazed-btn-luxe tap-target flex w-full items-center justify-center gap-2 px-5 py-3.5 text-[15px]"
         >
           <Phone className="size-4" strokeWidth={2.5} />
@@ -65,6 +77,17 @@ export function ContactReveal({ listingId }: { listingId: string }) {
           titre de propriété avant tout versement.
         </p>
       </div>
+    );
+  }
+
+  // Nothing to reveal: saying so beats a button that answers « Ce vendeur ne
+  // partage pas son numéro » only after it is pressed.
+  if (!showPhone) {
+    return (
+      <p className="rounded-xl bg-surface-2 px-4 py-3 text-center text-[12.5px] text-muted ring-1 ring-border">
+        Ce vendeur ne partage pas son numéro. Enregistrez l&apos;annonce pour la
+        retrouver.
+      </p>
     );
   }
 

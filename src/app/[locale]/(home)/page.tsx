@@ -29,6 +29,8 @@ import {
   Building2,
   Home,
   Trees,
+  Warehouse,
+  Wheat,
   Store,
   Briefcase,
   Phone,
@@ -875,8 +877,12 @@ const PROPERTY_TYPES: {
   { key: "villa",      labelEn: "Villa",       labelAr: "فيلا",      Icon: Home },
   { key: "house",      labelEn: "House",       labelAr: "منزل",      Icon: Home },
   { key: "land",       labelEn: "Land",        labelAr: "أرض",       Icon: Trees },
+  // Fermes and Dépôts are categories in the catalogue with chips of their own;
+  // the home tiles listed six of the eight, so two were unreachable from here.
+  { key: "farm",       labelEn: "Farm",        labelAr: "مزرعة",     Icon: Wheat },
   { key: "commercial", labelEn: "Commercial",  labelAr: "محل تجاري", Icon: Store },
   { key: "office",     labelEn: "Office",      labelAr: "مكتب",      Icon: Briefcase },
+  { key: "warehouse",  labelEn: "Warehouse",   labelAr: "مستودع",    Icon: Warehouse },
 ];
 
 const PRICE_BUCKETS: {

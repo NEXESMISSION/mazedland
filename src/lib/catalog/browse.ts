@@ -18,8 +18,10 @@ export const TYPE_TO_CATEGORY: Readonly<Record<string, string>> = {
   villa: "villas",
   house: "maisons",
   land: "terrain",
+  farm: "fermes",
   commercial: "locaux-commerciaux",
   office: "bureaux",
+  warehouse: "depots",
 };
 
 /** Catalogue URL for a property-type tile. */

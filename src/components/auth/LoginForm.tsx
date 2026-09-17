@@ -83,6 +83,13 @@ export function LoginForm() {
           body: JSON.stringify({ phone, password }),
         });
         const data = (await res.json().catch(() => ({}))) as { ok?: boolean };
+        // 429 is the shared auth rate limit (10 tries per number / 15 min, 20
+        // per IP / 5 min). Calling that « identifiants invalides » sends people
+        // to reset a password that was right.
+        if (res.status === 429) {
+          setError("Trop de tentatives. Réessayez dans quelques minutes.");
+          return;
+        }
         if (!data.ok) {
           // Generic wording — never reveals whether the phone is the problem
           // or the password (no account-enumeration signal).

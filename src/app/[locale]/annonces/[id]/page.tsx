@@ -303,7 +303,7 @@ export default async function AnnoncePage({
       </div>
 
       <div className="mt-4">
-        <ContactReveal listingId={l.id} />
+        <ContactReveal listingId={l.id} showPhone={l.show_phone} />
       </div>
     </section>
   );

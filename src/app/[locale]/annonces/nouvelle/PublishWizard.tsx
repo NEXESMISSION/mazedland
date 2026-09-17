@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { frenchApiError } from "@/lib/apiError";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUploader";
@@ -319,7 +320,7 @@ export function PublishWizard({
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      toast(j.detail ?? j.error ?? "Enregistrement impossible.", "error");
+      toast(frenchApiError(j, "Enregistrement impossible."), "error");
       setSaved("idle");
       return null;
     }
@@ -338,6 +339,11 @@ export function PublishWizard({
 
   useEffect(() => {
     if (!categoryId) return;
+    // The row requires a 3-140 character title (0146). saveDraft substitutes
+    // "Brouillon" for an empty one, so the only gap left is the moment between
+    // the first and third keystroke — which used to autosave, fail, and toast.
+    const typedSoFar = title.trim();
+    if (typedSoFar.length > 0 && typedSoFar.length < 3) return;
     // Nothing to write on the first render of a resumed draft: the form and the
     // row already agree.
     if (firstRun.current) {
@@ -391,7 +397,7 @@ export function PublishWizard({
         paymentId?: string; error?: string; detail?: string;
       };
       if (!res.ok) {
-        toast(j.detail ?? j.error ?? "Envoi impossible.", "error");
+        toast(frenchApiError(j, "Envoi impossible."), "error");
         return;
       }
       if (j.status === "pending_payment" && j.paymentId) {

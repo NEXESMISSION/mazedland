@@ -42,13 +42,17 @@ import {
 
 // Labels come from i18n (`property.types.<key>`); the tile art is a
 // pre-optimized illustration at /icons/<key>.{avif,webp}.
-const PROPERTY_TYPES: { key: string }[] = [
-  { key: "apartment" },
-  { key: "villa" },
-  { key: "house" },
-  { key: "land" },
-  { key: "commercial" },
-  { key: "office" },
+// `icon` names the file in /public/icons: the set has six, and the two
+// categories added here borrow the closest one rather than ship a broken tile.
+const PROPERTY_TYPES: { key: string; icon: string }[] = [
+  { key: "apartment",  icon: "apartment" },
+  { key: "villa",      icon: "villa" },
+  { key: "house",      icon: "house" },
+  { key: "land",       icon: "land" },
+  { key: "farm",       icon: "land" },
+  { key: "commercial", icon: "commercial" },
+  { key: "office",     icon: "office" },
+  { key: "warehouse",  icon: "commercial" },
 ];
 
 const PRICE_BUCKETS: { key: string; label: string; query: string }[] = [
@@ -381,7 +385,7 @@ export async function HomeDesktop({
         </div>
 
         {/* Type — six compact category tiles across one row. */}
-        <div className="mt-6 grid grid-cols-6 gap-3">
+        <div className="mt-6 grid grid-cols-4 gap-3">
           {PROPERTY_TYPES.map((pt) => (
             <Link
               key={pt.key}
@@ -389,10 +393,10 @@ export async function HomeDesktop({
               className="group flex flex-col items-center gap-2 rounded-2xl bg-surface px-3 py-5 ring-1 ring-border transition hover:-translate-y-0.5 hover:bg-surface-2 hover:ring-gold-soft/50"
             >
               <picture>
-                <source srcSet={`/icons/${pt.key}.avif`} type="image/avif" />
-                <source srcSet={`/icons/${pt.key}.webp`} type="image/webp" />
+                <source srcSet={`/icons/${pt.icon}.avif`} type="image/avif" />
+                <source srcSet={`/icons/${pt.icon}.webp`} type="image/webp" />
                 <img
-                  src={`/icons/${pt.key}.webp`}
+                  src={`/icons/${pt.icon}.webp`}
                   alt=""
                   width={64}
                   height={64}

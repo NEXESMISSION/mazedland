@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
+import { frenchApiError } from "@/lib/apiError";
 import { CreditCard, Loader2 } from "lucide-react";
 
 /**
@@ -37,7 +38,7 @@ export function PaySubmitButton({
         detail?: string;
       };
       if (!res.ok) {
-        toast(j.detail ?? "Paiement impossible pour le moment.", "error");
+        toast(frenchApiError(j, "Paiement impossible pour le moment."), "error");
         return;
       }
       if (j.paymentId) {

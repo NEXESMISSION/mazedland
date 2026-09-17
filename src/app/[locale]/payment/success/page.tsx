@@ -61,9 +61,12 @@ function destinationFor(kind: string): string {
 export default async function PaymentSuccess({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string; return?: string }>;
+  searchParams: Promise<{ id?: string | string[]; return?: string | string[] }>;
 }) {
-  const { id, return: returnUrl } = await searchParams;
+  // ?id=a&id=b arrives as an array; every read below expects a string.
+  const rawParams = await searchParams;
+  const id = Array.isArray(rawParams.id) ? rawParams.id[0] : rawParams.id;
+  const returnUrl = Array.isArray(rawParams.return) ? rawParams.return[0] : rawParams.return;
   const locale = await getLocale();
   // `startsWith("/")` alone let `?return=//evil.example` through — a
   // protocol-relative URL, auto-followed by SuccessAutoRedirect below.

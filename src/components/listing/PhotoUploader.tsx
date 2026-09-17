@@ -155,7 +155,10 @@ export function PhotoUploader({
         });
         disarm();
         if (!urlRes.ok) {
-          mark({ phase: "failed", error: "Le serveur a refusé l'envoi." });
+          // The route explains itself ("Trop d'envois de photos…"); that is more
+          // use than "Le serveur a refusé l'envoi."
+          const j = (await urlRes.json().catch(() => ({}))) as { detail?: string };
+          mark({ phase: "failed", error: j.detail ?? "Le serveur a refusé l'envoi." });
           return null;
         }
         const { uploads } = (await urlRes.json()) as {
@@ -217,7 +220,18 @@ export function PhotoUploader({
   const accept = useCallback(
     async (files: File[]) => {
       if (disabled) return;
-      const images = files.filter((f) => f.type.startsWith("image/"));
+      // Some pickers hand over HEIC/HEIF from an iPhone with an empty MIME
+      // type, and those files were dropped without a word.
+      const looksLikeImage = (f: File) =>
+        f.type.startsWith("image/") || /\.(hei[cf]|jpe?g|png|webp|avif|gif)$/i.test(f.name);
+      const images = files.filter(looksLikeImage);
+      const rejected = files.filter((f) => !looksLikeImage(f));
+      if (rejected.length > 0) {
+        toast(
+          `${rejected.length} fichier(s) ignoré(s) : envoyez des photos (JPEG, PNG, HEIC, WebP).`,
+          "warning",
+        );
+      }
       if (images.length === 0) return;
       if (room <= 0) {
         toast(`Maximum ${max} photos.`, "warning");

@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { frenchApiError } from "@/lib/apiError";
 import { formatTND, cn } from "@/lib/utils";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
@@ -112,7 +113,7 @@ export function CheckoutClient({
           error?: string;
           detail?: string;
         };
-        toast(data.detail ?? data.error ?? "Annulation impossible.", "error");
+        toast(frenchApiError(data, "Annulation impossible."), "error");
         setCancelling(false);
         return;
       }
@@ -215,7 +216,8 @@ export function CheckoutClient({
           .upload(path, toUpload, { cacheControl: "3600", upsert: false, contentType: toUpload.type });
         if (upErr) {
           if (uploadedPaths.length) void supabase.storage.from("receipts").remove(uploadedPaths);
-          toast(`Échec du téléversement : ${upErr.message}`, "error");
+          // upErr.message is the storage API's English text.
+          toast("Échec du téléversement du reçu. Réessayez.", "error");
           setSubmitting(false);
           return;
         }
@@ -231,13 +233,13 @@ export function CheckoutClient({
         const data = await res.json().catch(() => ({}));
         // Couldn't attach — clean up every uploaded object so we don't orphan.
         void supabase.storage.from("receipts").remove(uploadedPaths);
-        toast(data.error ?? "Échec de la soumission.", "error");
+        toast(frenchApiError(data, "Échec de la soumission."), "error");
         setSubmitting(false);
         return;
       }
       setSubmitted(true);
-    } catch (e) {
-      toast(e instanceof Error ? e.message : "Erreur réseau.", "error");
+    } catch {
+      toast("Erreur réseau. Vérifiez votre connexion et réessayez.", "error");
       setSubmitting(false);
     }
   }

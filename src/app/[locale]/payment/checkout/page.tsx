@@ -41,9 +41,10 @@ export type CheckoutKind = "listing_fee";
 export default async function CheckoutEntry({
   searchParams,
 }: {
-  searchParams: Promise<{ payment?: string }>;
+  searchParams: Promise<{ payment?: string | string[] }>;
 }) {
-  const { payment: paymentParam } = await searchParams;
+  const rawParams = await searchParams;
+  const paymentParam = Array.isArray(rawParams.payment) ? rawParams.payment[0] : rawParams.payment;
   const locale = await getLocale();
 
   const supabase = await getServerSupabase();

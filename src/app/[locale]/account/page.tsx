@@ -37,6 +37,7 @@ export default async function AccountPage() {
   let userId: string | null = null;
   let userEmail: string | null = null;
   let fullName: string | null = null;
+  let userPhone: string | null = null;
   let role: string = "individual";
   let smsEnabled = true;
 
@@ -48,16 +49,22 @@ export default async function AccountPage() {
       userEmail = user.email ?? null;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, role, sms_notifications_enabled")
+        .select("full_name, role, sms_notifications_enabled, phone")
         .eq("id", user.id)
         .single();
       fullName = profile?.full_name ?? null;
+      userPhone = (profile?.phone as string | null) ?? null;
       role = profile?.role ?? "individual";
       smsEnabled = profile?.sms_notifications_enabled ?? true;
     }
   } catch {
     // env missing — fall through to guest UI.
   }
+
+  // A phone signup gets a synthetic address (216…@phone.mazedland.app) that
+  // nobody can write to, and the number they actually signed up with was never
+  // shown anywhere. Prefer the number whenever the address is that placeholder.
+  const contactLine = userEmail && /@phone\./.test(userEmail) ? userPhone : userEmail;
 
   if (!userId) {
     return (
@@ -147,7 +154,7 @@ export default async function AccountPage() {
     <section className="mazed-surface-navy-luxe relative overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25">
       <div className="flex items-start gap-3">
         <span className="mazed-monogram mazed-monogram-filled size-12 shrink-0 text-[20px] font-extrabold">
-          {(fullName ?? userEmail ?? "?").charAt(0).toUpperCase()}
+          {(fullName ?? contactLine ?? "?").charAt(0).toUpperCase()}
         </span>
         <div className="min-w-0 flex-1">
           <div
@@ -155,10 +162,10 @@ export default async function AccountPage() {
               isRTL ? "font-arabic" : ""
             }`}
           >
-            {fullName ?? userEmail ?? ""}
+            {fullName ?? contactLine ?? ""}
           </div>
-          {fullName && userEmail && (
-            <div className="mt-0.5 truncate text-[11px] text-muted">{userEmail}</div>
+          {fullName && contactLine && (
+            <div className="mt-0.5 truncate text-[11px] text-muted">{contactLine}</div>
           )}
           {role === "admin" && (
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -206,17 +213,17 @@ export default async function AccountPage() {
       <div className="hidden lg:block mx-auto max-w-6xl px-8 py-10">
         <section className="flex items-center gap-6 rounded-3xl bg-surface p-8 ring-1 ring-border">
           <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-[var(--gold)] text-[24px] font-extrabold text-white">
-            {(fullName ?? userEmail ?? "?").charAt(0).toUpperCase()}
+            {(fullName ?? contactLine ?? "?").charAt(0).toUpperCase()}
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className={`text-[24px] font-extrabold tracking-tight ${isRTL ? "font-arabic" : ""}`}>
-                {fullName ?? userEmail ?? ""}
+                {fullName ?? contactLine ?? ""}
               </h1>
               {role === "admin" && <span className="mazed-pill-gold">Administrateur</span>}
             </div>
-            {fullName && userEmail && (
-              <p className="mt-1 text-[13.5px] text-muted">{userEmail}</p>
+            {fullName && contactLine && (
+              <p className="mt-1 text-[13.5px] text-muted">{contactLine}</p>
             )}
           </div>
           <div className="shrink-0">
