@@ -103,7 +103,7 @@ export async function generateMetadata({
   }
   const price =
     l.price != null && !l.price_on_request
-      ? `${Number(l.price).toLocaleString("fr-FR")} TND`
+      ? `${formatNumber(Number(l.price))} TND`
       : "Prix sur demande";
   const title = `${l.title} · ${price}`;
   const description = l.description?.slice(0, 160) ?? `${l.title} à ${l.governorate}.`;
@@ -391,7 +391,7 @@ export default async function AnnoncePage({
                 </span>
               )}
               {/* Printed where a buyer will find it when they call: "je vous
-                  appelle pour la BT-00042". A uuid cannot be read down a phone
+                  appelle pour la MZ-00042". A uuid cannot be read down a phone
                   line, and property here is sold by telephone. */}
               {l.reference && (
                 <span

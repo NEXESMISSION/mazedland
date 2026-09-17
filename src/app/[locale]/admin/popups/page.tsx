@@ -6,6 +6,7 @@
  * or "which badge has lapsed". There is no render to replay. */
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { formatNumber } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import type { Popup, PopupStatus, PopupVariant } from "@/lib/popups/schema";
 import {
@@ -127,7 +128,7 @@ function StatTile({
     <div className="relative overflow-hidden rounded-2xl bg-surface p-4 ring-1 ring-border">
       <span aria-hidden className={`absolute left-3 top-3 size-1.5 rounded-full ${accent}`} />
       <div className="mazed-tabular mt-3 text-[28px] font-extrabold leading-none">
-        {value.toLocaleString("fr-FR")}
+        {formatNumber(value)}
       </div>
       <div className="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted">
         {label}
@@ -183,11 +184,11 @@ function PopupRow({
           <div className="mazed-tabular mt-1.5 flex flex-wrap items-center gap-3 text-[10.5px] text-muted">
             <span className="inline-flex items-center gap-1">
               <Eye className="size-3" strokeWidth={2.2} />
-              {stats.impressions.toLocaleString("fr-FR")}
+              {formatNumber(stats.impressions)}
             </span>
             <span className="inline-flex items-center gap-1">
               <MousePointerClick className="size-3" strokeWidth={2.2} />
-              {stats.clicks.toLocaleString("fr-FR")}
+              {formatNumber(stats.clicks)}
             </span>
             <span>CTR&nbsp;{ctr}</span>
           </div>

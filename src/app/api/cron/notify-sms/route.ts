@@ -194,7 +194,7 @@ async function run(req: NextRequest) {
         p_kind: "admin_sms_deadletter",
         p_title: "SMS non délivrés",
         p_body:
-          `${deadLettered} SMS important(s) (gagnant / paiement / surenchère) ont échoué après ` +
+          `${deadLettered} SMS important(s) (publication / paiement) ont échoué après ` +
           `${MAX_ATTEMPTS} tentatives et ne seront plus réessayés. Vérifiez le crédit et le fournisseur WinSMS.`,
         p_link: "/admin",
       })

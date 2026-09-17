@@ -28,7 +28,7 @@ import { FavoriteButton } from "@/components/property/FavoriteButton";
  *                          property site "120 m² · S+2" is the line that
  *                          decides whether the card is worth opening, and it
  *                          is the one that was missing entirely.
- *   lot number           → `reference` (BT-00042). Same corner, same mono
+ *   lot number           → `reference` (MZ-00042). Same corner, same mono
  *                          treatment, but now it is a number the seller and
  *                          the office can both say out loud on the telephone.
  *   StartBiddingButton   → nothing. The action is a phone call, and the number

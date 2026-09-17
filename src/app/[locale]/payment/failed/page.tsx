@@ -7,13 +7,20 @@ import { safeInternalPath } from "@/lib/safePath";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Payment here is a bank transfer or a D17 send, and a person reads the
+ * receipt. There is no gateway and there never was one on Land, so « votre
+ * banque a refusé la transaction » and « la passerelle a refusé » described a
+ * failure mode that cannot occur — and sent a seller to argue with their bank
+ * about a receipt we simply could not read.
+ */
 const FAIL_REASONS: Record<string, string> = {
-  insufficient_funds: "Solde insuffisant sur le compte ou la carte.",
-  card_declined: "Votre banque a refusé la transaction.",
+  rejected: "Le reçu n'a pas pu être validé. Vérifiez le montant et la référence, puis renvoyez-le.",
+  unreadable: "Le reçu était illisible. Renvoyez une photo nette du justificatif.",
+  wrong_amount: "Le montant reçu ne correspond pas aux frais de publication.",
   expired: "Le délai de paiement a expiré.",
   cancelled: "Vous avez annulé le paiement.",
-  network: "Problème de connexion avec la passerelle.",
-  unknown: "La passerelle a refusé la transaction sans détail.",
+  unknown: "Le paiement n'a pas abouti. Notre équipe peut vous dire pourquoi.",
 };
 
 /**

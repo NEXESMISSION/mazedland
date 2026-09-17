@@ -39,8 +39,13 @@ export function RenewButton({
         router.push(`/payment/checkout?payment=${j.paymentId}` as never);
         return;
       }
+      // `remaining` only exists when a forfait credit paid for it. Printing it
+      // unconditionally announced « undefined publication(s) restante(s) » on
+      // every free or paid renewal.
       toast(
-        `Annonce renvoyée à la vérification. ${j.remaining} publication(s) restante(s).`,
+        typeof j.remaining === "number"
+          ? `Annonce renvoyée à la vérification. ${j.remaining} publication(s) restante(s).`
+          : "Annonce renvoyée à la vérification — moins de 24 h.",
         "success",
       );
       router.refresh();

@@ -370,8 +370,9 @@ export function SignupForm() {
         {legalModal === "privacy" ? <PrivacyContent /> : <TermsContent />}
       </Modal>
       <p className="text-center text-[11px] text-mazed-muted">
-        Compte partenaire (agence, expert, banque) ? Créez un compte ici puis
-        candidatez depuis <span className="text-mazed-cream">Compte</span>.
+        Agence ou professionnel ? Créez votre compte ici, puis écrivez-nous
+        depuis <span className="text-mazed-cream">Contact</span> pour obtenir le
+        badge vendeur vérifié.
       </p>
     </form>
   );

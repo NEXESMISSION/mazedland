@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
+import { formatNumber } from "@/lib/utils";
 
 const RANGES = [
   { key: "", label: "Tout" },
@@ -83,7 +84,7 @@ export function AdminQueryBar({
       </div>
 
       <span className="mazed-tabular ms-auto text-[12px] text-muted">
-        {total.toLocaleString("fr-FR")} résultat{total > 1 ? "s" : ""}
+        {formatNumber(total)} résultat{total > 1 ? "s" : ""}
       </span>
     </div>
   );

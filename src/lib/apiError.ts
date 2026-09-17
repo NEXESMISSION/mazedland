@@ -25,6 +25,9 @@ const MESSAGES: Record<string, string> = {
   payment_not_found: "Paiement introuvable.",
   receipt_required: "Joignez le reçu du virement.",
   signed_url_failed: "Envoi des photos impossible. Réessayez.",
+  listing_status_failed: "Changement de statut impossible. Réessayez.",
+  listing_relist_failed: "Remise en ligne impossible. Réessayez.",
+  unknown_action: "Action inconnue. Rechargez la page.",
   too_large: "Fichier trop volumineux.",
   empty_body: "Fichier vide.",
 };

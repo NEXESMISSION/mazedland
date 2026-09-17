@@ -51,7 +51,7 @@ interface Props {
 const META = {
   label: "Frais d'annonce",
   body:
-    "Frais de publication + options choisies. Votre annonce part en vérification dès validation du reçu.",
+    "Frais de publication de votre annonce. Elle part en vérification dès validation du reçu.",
 };
 
 const PROVIDER_ICONS: Record<PaymentProvider, typeof Building2> = {

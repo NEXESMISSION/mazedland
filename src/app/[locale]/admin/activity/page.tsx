@@ -6,6 +6,7 @@
  * or "which badge has lapsed". There is no render to replay. */
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { formatNumber } from "@/lib/utils";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -191,19 +192,19 @@ export default async function AdminActivity({
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
             <Eye className="size-3.5" /> Pages vues · 24h
           </div>
-          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{(viewsRes.count ?? 0).toLocaleString("fr-FR")}</div>
+          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{formatNumber(viewsRes.count ?? 0)}</div>
         </div>
         <div className="rounded-xl bg-surface px-4 py-3 ring-1 ring-border">
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
             <Zap className="size-3.5" /> Actions · 24h
           </div>
-          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{(actionsRes.count ?? 0).toLocaleString("fr-FR")}</div>
+          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{formatNumber(actionsRes.count ?? 0)}</div>
         </div>
         <div className="rounded-xl bg-surface px-4 py-3 ring-1 ring-border">
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
             <Activity className="size-3.5" /> Total évènements
           </div>
-          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{total.toLocaleString("fr-FR")}</div>
+          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{formatNumber(total)}</div>
         </div>
       </div>
 

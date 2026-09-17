@@ -6,6 +6,7 @@
  * or "which badge has lapsed". There is no render to replay. */
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { formatNumber } from "@/lib/utils";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { actionLabel } from "@/lib/admin/actions";
 import { AlertTriangle, ArrowRight } from "lucide-react";
@@ -252,7 +253,7 @@ function Figure({
           danger ? "text-[var(--tone-bad)]" : accent ? "text-[var(--gold)]" : "text-foreground"
         }`}
       >
-        {value.toLocaleString("fr-FR")}
+        {formatNumber(value)}
       </div>
     </div>
   );

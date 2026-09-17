@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { formatNumber } from "@/lib/utils";
 
 /**
  * Counts a number up from 0 to `to` over `duration` ms, but only starts
@@ -68,7 +69,7 @@ export function CountUp({
     return () => io.disconnect();
   }, [to, duration]);
 
-  const rendered = format === "raw" ? String(value) : value.toLocaleString("fr-TN");
+  const rendered = format === "raw" ? String(value) : formatNumber(value);
 
   return (
     <span ref={ref} className="tabular-nums">

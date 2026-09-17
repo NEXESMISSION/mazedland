@@ -11,6 +11,7 @@ import {
   ArrowRight, AlertTriangle, Inbox,
 } from "lucide-react";
 import { RenewButton } from "./RenewButton";
+import { ListingStatusActions } from "./ListingStatusActions";
 import { PaySubmitButton } from "@/components/payments/PaySubmitButton";
 import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct, type Product } from "@/lib/products";
 import { formatTND as fmt } from "@/lib/utils";
@@ -178,6 +179,15 @@ export default async function MyListingsPage({
   };
 
   /**
+   * An annonce the seller took down while the days they had paid for were
+   * still running. Those days are not forfeited: it goes back online for free
+   * and without a second trip through the queue. Past that point renewing is
+   * a new publication, which is what RENEWABLE and /renew cover.
+   */
+  const withinPaidWindow = (l: Row) =>
+    l.status !== "expired" && !!l.expires_at && new Date(l.expires_at).getTime() > now;
+
+  /**
    * The one action a row implies. Every branch points at a route that exists:
    * resuming a draft relies on /annonces/nouvelle loading the seller's own
    * draft, which is what it already does.
@@ -239,19 +249,32 @@ export default async function MyListingsPage({
       );
     }
     if (RENEWABLE.includes(l.status)) {
+      if (withinPaidWindow(l)) {
+        return <ListingStatusActions listingId={l.id} actions={["relist"]} block={block} primary />;
+      }
       return <RenewButton listingId={l.id} usesCredit={creditsLeft > 0} feeLabel={renewLabel(l)} />;
     }
     return (
-      <Link
-        href={`/annonces/${l.id}` as never}
-        className={
-          block
-            ? "mt-2.5 flex w-full items-center justify-center gap-1 rounded-xl border border-border px-3 py-2.5 text-[12.5px] font-bold text-foreground hover:border-gold-soft hover:text-gold"
-            : "inline-flex items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
-        }
-      >
-        Voir <ArrowRight className="size-3.5" />
-      </Link>
+      <>
+        <Link
+          href={`/annonces/${l.id}` as never}
+          className={
+            block
+              ? "mt-2.5 flex w-full items-center justify-center gap-1 rounded-xl border border-border px-3 py-2.5 text-[12.5px] font-bold text-foreground hover:border-gold-soft hover:text-gold"
+              : "inline-flex items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
+          }
+        >
+          Voir <ArrowRight className="size-3.5" />
+        </Link>
+        {/* Say it is sold, or take it down — neither was possible from here. */}
+        {l.status === "published" && (
+          <ListingStatusActions
+            listingId={l.id}
+            actions={["mark_sold", "withdraw"]}
+            block={block}
+          />
+        )}
+      </>
     );
   }
 

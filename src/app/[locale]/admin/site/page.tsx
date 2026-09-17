@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { formatNumber } from "@/lib/utils";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import {
   LayoutTemplate, MessageSquare, FileText, Bell, Settings2, Activity,
@@ -110,7 +111,7 @@ export default async function AdminSiteHub() {
               </span>
               {c.count != null && (
                 <span className="mazed-tabular hidden shrink-0 text-[11.5px] text-subtle sm:block">
-                  {c.count.toLocaleString("fr-FR")} {c.unit}
+                  {formatNumber(c.count)} {c.unit}
                 </span>
               )}
               <ArrowRight

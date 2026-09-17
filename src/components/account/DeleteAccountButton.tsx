@@ -14,15 +14,17 @@ import { Trash2, AlertTriangle } from "lucide-react";
  * and returns { blockers } — we surface each as a toast so the user knows
  * exactly what to settle first (prefer toasts over inline error blocks).
  */
+/**
+ * The two things `request_account_deletion` actually refuses on (0153). The
+ * other two it used to list — an auction won but unpaid, a payout in flight —
+ * went with the auction product, and `active_listings` no longer means "a lot
+ * is live": it means an annonce is sitting in the moderation queue.
+ */
 const BLOCKER_FR: Record<string, string> = {
   active_listings:
-    "Vous avez une annonce en cours d'enchère. Attendez sa clôture avant de supprimer votre compte.",
-  unpaid_win:
-    "Vous avez une enchère remportée non réglée. Réglez le solde avant de supprimer votre compte.",
+    "Une de vos annonces est en cours de vérification. Attendez la décision avant de supprimer votre compte.",
   pending_payments:
     "Un paiement est en cours de vérification. Attendez sa validation avant de supprimer votre compte.",
-  pending_payout:
-    "Un virement de vos gains est en cours. Attendez son règlement avant de supprimer votre compte.",
 };
 
 const CONFIRM_WORD = "SUPPRIMER";

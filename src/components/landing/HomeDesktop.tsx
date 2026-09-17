@@ -7,7 +7,7 @@ import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeSearch } from "@/components/landing/HomeSearch";
 import { AnnonceCard } from "@/components/listing/AnnonceCard";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
-import { formatTND } from "@/lib/utils";
+import { formatNumber, formatTND } from "@/lib/utils";
 import type { HomeListingRow } from "@/lib/home/feed";
 import { catalogueHrefForType } from "@/lib/catalog/browse";
 import {
@@ -117,7 +117,7 @@ export async function HomeDesktop({
   // A fixed-price catalogue has no clock, so the figures are the ones a buyer
   // can actually use — how much is on offer, how fresh it is, and how far it
   // reaches.
-  const fmt = (n: number) => n.toLocaleString("fr-FR");
+  const fmt = (n: number) => formatNumber(n);
   const secondStat =
     newThisWeek > 0
       ? { display: fmt(newThisWeek), label: "Nouvelles cette semaine", sub: "Fraîchement publiées", Icon: CalendarClock, live: false }

@@ -250,7 +250,11 @@ export default async function AdminAnnoncesPage({
           searchPlaceholder="Référence MZ-00042, titre, téléphone…"
           resetParams={["page", "a"]}
         />
-        <Link href="/admin/annonces/nouvelle" className={`${adminBtn("primary", "sm")} shrink-0`}>
+        {/* The admin-side creation form never came across from Auto, so this
+            pointed at a 404. It opens the seller wizard instead — the same
+            form, which is what an admin taking an annonce over the phone
+            needs. */}
+        <Link href="/annonces/nouvelle" className={`${adminBtn("primary", "sm")} shrink-0`}>
           <Plus className="size-3.5" strokeWidth={2.8} />
           <span className="hidden sm:inline">Créer</span>
         </Link>

@@ -225,22 +225,16 @@ export async function POST(
       );
     }
 
-    const { error } = await admin
-      .from("listings")
-      .update({
-        status: "rejected",
-        rejection_reason: reason,
-        reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq("id", id);
-    if (error) return fail("listing_reject_failed", 500, error);
-
     // Auto returns the seller's publication credit here. Land has no credits
     // ledger yet, so there is nothing to give back — and rather than silently
     // skipping it, this refuses a rejection that WOULD have owed one. Today
     // the branch is unreachable (nothing grants a credit); the day packs ship
     // it fails loudly instead of quietly costing a seller a publication.
+    //
+    // It refuses BEFORE writing. It used to run after the update and before
+    // the notification, so a forfait-paid annonce came back 409 to the
+    // moderator — who reasonably read that as "nothing happened" — while the
+    // row was already `rejected` and the seller had been told nothing at all.
     if (listing.seller_credit_id) {
       return NextResponse.json(
         {
@@ -252,6 +246,17 @@ export async function POST(
       );
     }
     const creditReturned = false;
+
+    const { error } = await admin
+      .from("listings")
+      .update({
+        status: "rejected",
+        rejection_reason: reason,
+        reviewed_by: user.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (error) return fail("listing_reject_failed", 500, error);
 
     await admin
       .rpc("enqueue_notification", {

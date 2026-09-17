@@ -246,7 +246,7 @@ async function run(req: NextRequest) {
         p_kind: "admin_email_deadletter",
         p_title: "E-mails non délivrés",
         p_body:
-          `${deadLettered} e-mail(s) critiques (gagnant d'enchère / paiement / KYC) ont échoué après ` +
+          `${deadLettered} e-mail(s) critiques (publication / paiement) ont échoué après ` +
           `${MAX_ATTEMPTS} tentatives et ne seront plus réessayés. Vérifiez le fournisseur d'e-mail ` +
           `et contactez les utilisateurs concernés.`,
         p_link: "/admin",

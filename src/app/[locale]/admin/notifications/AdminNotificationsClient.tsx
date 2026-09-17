@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { formatNumber } from "@/lib/utils";
 import {
   Send,
   Inbox,
@@ -1220,7 +1221,7 @@ function StatCard({
           accent ? "text-gold-bright" : "text-foreground"
         }`}
       >
-        {value.toLocaleString("fr-FR")}
+        {formatNumber(value)}
       </div>
     </div>
   );

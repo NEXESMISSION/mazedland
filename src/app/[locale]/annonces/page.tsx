@@ -6,6 +6,7 @@ import { coverPhoto } from "@/lib/listingCover";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatNumber, formatTND } from "@/lib/utils";
 import { searchTokens } from "@/lib/search";
+import { TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
 import { ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, X } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,14 @@ function firstValues(
 ): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
   for (const [k, v] of Object.entries(sp)) out[k] = Array.isArray(v) ? v[0] : v;
+  // The auction-era explore page filtered by property TYPE: /properties?types=villa.
+  // Those links are in e-mails, SMS and Google's index; next.config redirects
+  // the path here and keeps the query, but this page filters by category, so
+  // the type was dropped and every one of them opened the whole catalogue.
+  if (!out.cat && out.types) {
+    const slug = TYPE_TO_CATEGORY[out.types];
+    if (slug) out.cat = slug;
+  }
   return out;
 }
 
