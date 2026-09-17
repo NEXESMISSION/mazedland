@@ -9,6 +9,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { formatNumber } from "@/lib/utils";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { actionLabel } from "@/lib/admin/actions";
+import { fetchPayeeDetails, usablePayeeMethods } from "@/lib/payments";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -60,6 +61,7 @@ export default async function AdminDashboard() {
     paymentsPending, paymentsOverdue,
     expiringSoon, expired,
     recent,
+    payee,
   ] = await Promise.all([
     head("listings").eq("status", "pending_review"),
     head("listings").eq("status", "pending_review").lt("created_at", overdue),
@@ -80,7 +82,23 @@ export default async function AdminDashboard() {
       .not("action", "like", "server.%")
       .order("created_at", { ascending: false })
       .limit(10),
+    // Read as the admin, who can select app_settings.
+    fetchPayeeDetails(sb),
   ]);
+
+  // Whether the site can take money at all.
+  //
+  // `app_settings` still holds the seed payee — "Batta Tunisia SARL" and an
+  // IBAN belonging to nobody — so `usablePayeeMethods` refuses both methods
+  // and every seller who reaches checkout is told « Paiement momentanément
+  // indisponible ». That is the correct refusal, but it happens on the
+  // seller's screen, where no operator ever sees it: publication has been
+  // impossible and the console said nothing. It says it here now, first thing,
+  // on the page an operator opens every morning.
+  const canTakeMoney = (() => {
+    const u = usablePayeeMethods(payee);
+    return u.bank_transfer || u.d17;
+  })();
 
   const n = (r: { count: number | null }) => r.count ?? 0;
 
@@ -126,6 +144,34 @@ export default async function AdminDashboard() {
           Tableau de bord
         </h1>
       </header>
+
+      {!canTakeMoney && (
+        <Link
+          href={"/admin/settings" as "/admin"}
+          className="group mt-5 flex items-start gap-3 rounded-xl bg-[var(--tone-bad-bg)] p-3.5 ring-1 ring-[var(--tone-bad-ring)] transition hover:ring-[var(--tone-bad-edge)]"
+        >
+          <AlertTriangle
+            className="mt-px size-4 shrink-0 text-[var(--tone-bad)]"
+            strokeWidth={2.4}
+          />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[13px] font-semibold text-foreground">
+              Aucun vendeur ne peut payer
+            </span>
+            <span className="mt-0.5 block text-[11.5px] leading-relaxed text-subtle">
+              Le compte bénéficiaire est encore celui du jeu de test, donc le
+              paiement est refusé au lieu d&apos;envoyer un vendeur virer de
+              l&apos;argent sur un IBAN qui n&apos;existe pas. Renseignez le nom, le RIB,
+              l&apos;IBAN et le numéro D17 dans Réglages — la publication payante
+              reprend dès l&apos;enregistrement.
+            </span>
+          </span>
+          <ArrowRight
+            className="mt-px size-3.5 shrink-0 text-subtle transition group-hover:translate-x-0.5 group-hover:text-[var(--gold)]"
+            strokeWidth={2}
+          />
+        </Link>
+      )}
 
       {/* Three figures, separated by rules. No tiles. */}
       <div className="mt-7 grid grid-cols-3 border-y border-border">

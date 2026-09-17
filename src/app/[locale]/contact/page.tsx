@@ -10,24 +10,37 @@ export const metadata: Metadata = {
 export const dynamic = "force-static";
 
 /**
- * The e-mail row is env-driven and DISAPPEARS when unset.
+ * Both reachable channels are env-driven and DISAPPEAR when unset.
  *
- * It used to be a literal, contact@batta.tn, on a domain the business owned.
- * The rebrand has no domain behind it yet, and the honest options were an
- * address that bounces or no address at all — a support page whose first line
- * is a dead mailbox is worse than one that only offers a phone number. Set
- * NEXT_PUBLIC_CONTACT_EMAIL and the row comes back.
+ * The e-mail used to be a literal, contact@batta.tn, on a domain the business
+ * owned; the rebrand has no domain behind it yet, and an address that bounces
+ * is worse than no address. The phone was a literal too — "+216 70 000 000",
+ * which is not a number anyone answers. It sat on the page as the ONLY
+ * actionable detail, presented exactly like a real one: a visitor with a
+ * question about a payment dialled it and got nothing.
+ *
+ * Set NEXT_PUBLIC_CONTACT_EMAIL / NEXT_PUBLIC_CONTACT_PHONE and the rows come
+ * back. Until one of them is set the page says so, which is honest and is also
+ * hard to miss.
  */
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim();
+const CONTACT_PHONE = process.env.NEXT_PUBLIC_CONTACT_PHONE?.trim();
+
+/** tel: wants digits and a leading +, not the spaces that make it readable. */
+const telHref = (v: string) => `tel:${v.replace(/[^\d+]/g, "")}`;
 
 const ITEMS = [
   ...(CONTACT_EMAIL
     ? [{ Icon: Mail, label: "E-mail", value: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` }]
     : []),
-  { Icon: Phone, label: "Téléphone", value: "+216 70 000 000", href: "tel:+21670000000" },
+  ...(CONTACT_PHONE
+    ? [{ Icon: Phone, label: "Téléphone", value: CONTACT_PHONE, href: telHref(CONTACT_PHONE) }]
+    : []),
   { Icon: MapPin, label: "Adresse", value: "Sfax, Tunisie", href: null },
   { Icon: Clock, label: "Horaires", value: "Lun – Ven, 9h – 17h", href: null },
 ];
+
+const HAS_CHANNEL = Boolean(CONTACT_EMAIL || CONTACT_PHONE);
 
 export default function ContactPage() {
   return (
@@ -36,6 +49,13 @@ export default function ContactPage() {
         Une question sur une annonce, un paiement ou votre compte ? Notre équipe
         est là pour vous aider.
       </p>
+      {!HAS_CHANNEL && (
+        <p className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[12.5px] leading-relaxed text-muted ring-1 ring-border">
+          Nos coordonnées téléphonique et e-mail sont en cours de publication.
+          En attendant, chaque décision sur vos annonces et vos paiements vous
+          est notifiée dans l&apos;application et par SMS.
+        </p>
+      )}
       <ul className="mt-5 space-y-2.5">
         {ITEMS.map((it) => {
           const inner = (
