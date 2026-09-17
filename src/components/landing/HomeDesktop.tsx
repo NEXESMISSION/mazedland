@@ -58,7 +58,7 @@ const PROPERTY_TYPES: { key: string; icon: string }[] = [
 const PRICE_BUCKETS: { key: string; label: string; query: string }[] = [
   { key: "under-100k", label: "Moins de 100k", query: "max=99999" },
   { key: "100k-500k",  label: "100k – 500k",   query: "min=100000&max=499999" },
-  { key: "500k-1m",    label: "500k – 1M",     query: "min=500000&max=999990" },
+  { key: "500k-1m",    label: "500k – 1M",     query: "min=500000&max=999999" },
   { key: "1m-plus",    label: "1M+ TND",       query: "min=1000000" },
 ];
 

@@ -894,7 +894,7 @@ const PRICE_BUCKETS: {
 }[] = [
   { key: "under-100k",  labelEn: "Moins de 100k", labelAr: "أقل من 100 ألف",   query: "max=99999" },
   { key: "100k-500k",   labelEn: "100k – 500k",   labelAr: "100 – 500 ألف",    query: "min=100000&max=499999" },
-  { key: "500k-1m",     labelEn: "500k – 1M",     labelAr: "500 ألف – 1 مليون", query: "min=500000&max=999990" },
+  { key: "500k-1m",     labelEn: "500k – 1M",     labelAr: "500 ألف – 1 مليون", query: "min=500000&max=999999" },
   { key: "1m-plus",     labelEn: "1M+ TND",       labelAr: "أكثر من مليون",     query: "min=1000000" },
 ];
 

@@ -6,8 +6,8 @@ import { coverPhoto } from "@/lib/listingCover";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatNumber, formatTND } from "@/lib/utils";
 import { searchTokens } from "@/lib/search";
-import { TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
-import { ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, X } from "lucide-react";
+import { PRICE_BUCKETS, TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
+import { ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, Wallet, X } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -218,6 +218,17 @@ export default async function AnnoncesPage({
     .eq("status", "published");
   const govs = [...new Set((govRows ?? []).map((g) => g.governorate as string))].sort();
 
+  // What the Budget row reads when it is closed — the whole state of the
+  // filter in one line, so it does not have to be opened to be understood.
+  const priceLabel =
+    min && max
+      ? `${formatTND(min, locale)} – ${formatTND(max, locale)} TND`
+      : min
+        ? `À partir de ${formatTND(min, locale)} TND`
+        : max
+          ? `Jusqu'à ${formatTND(max, locale)} TND`
+          : null;
+
   const qs = (next: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
     // `page` is deliberately absent from the defaults: changing any filter
@@ -309,20 +320,6 @@ export default async function AnnoncesPage({
         >
           Toute la Tunisie
         </Link>
-        {(min || max) && (
-          <Link
-            href={qs({ min: undefined, max: undefined }) as never}
-            aria-label="Retirer le filtre de prix"
-            className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-foreground px-3 py-1.5 text-[11.5px] font-semibold text-[var(--background)] transition"
-          >
-            {min && max
-              ? `${formatTND(min, locale)} – ${formatTND(max, locale)} TND`
-              : min
-                ? `À partir de ${formatTND(min, locale)} TND`
-                : `Jusqu'à ${formatTND(max!, locale)} TND`}
-            <X className="size-3" strokeWidth={2.5} />
-          </Link>
-        )}
         {govs.map((g) => (
           <Link
             key={g}
@@ -358,6 +355,107 @@ export default async function AnnoncesPage({
           ))}
         </span>
       </div>
+
+      {/* ── Budget ───────────────────────────────────────────────────────
+          The catalogue already filtered on `min`/`max` — the home page's
+          brackets link straight into it — but nothing here could set them.
+          A buyer arriving from the nav or from Google could narrow by type
+          and by governorate, and not by price.
+
+          A <details> with a GET form inside: it opens, applies and clears
+          before any JavaScript has run, which is also what the keyword
+          search above it does. */}
+      <details className="mt-3 overflow-hidden rounded-2xl border border-border bg-surface">
+        <summary className="tap-target flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5">
+          <span className="inline-flex items-center gap-2 text-[12.5px] font-bold text-foreground">
+            <Wallet className="size-4 text-muted" strokeWidth={2} />
+            Budget
+          </span>
+          <span
+            className={`mazed-tabular text-[11.5px] font-semibold ${priceLabel ? "text-gold" : "text-muted"}`}
+          >
+            {priceLabel ?? "Tous les prix"}
+          </span>
+        </summary>
+
+        <div className="border-t border-border p-3">
+          <div className="flex flex-wrap gap-1.5">
+            {PRICE_BUCKETS.map((b) => {
+              const on = (b.min ?? 0) === (min ?? 0) && (b.max ?? 0) === (max ?? 0);
+              return (
+                <Link
+                  key={b.key}
+                  href={qs({
+                    min: b.min ? String(b.min) : undefined,
+                    max: b.max ? String(b.max) : undefined,
+                  }) as never}
+                  className={
+                    "tap-target whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
+                    (on
+                      ? "bg-foreground text-[var(--background)]"
+                      : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
+                  }
+                >
+                  {b.label}
+                </Link>
+              );
+            })}
+            {(min || max) && (
+              <Link
+                href={qs({ min: undefined, max: undefined }) as never}
+                className="tap-target inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold text-muted transition hover:text-foreground"
+              >
+                <X className="size-3" strokeWidth={2.5} /> Tous les prix
+              </Link>
+            )}
+          </div>
+
+          {/* An exact bracket, for someone whose budget is not one of four. */}
+          <form
+            action={`/${locale}/annonces`}
+            method="get"
+            className="mt-3 flex flex-wrap items-end gap-2 border-t border-border pt-3"
+          >
+            {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
+            {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
+            {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
+            {sp.q && <input type="hidden" name="q" value={sp.q} />}
+            {/* 16px, like the search field: iOS zooms into anything smaller. */}
+            <label className="flex-1 basis-28 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+              Min (TND)
+              <input
+                type="number"
+                name="min"
+                min={0}
+                step={1000}
+                inputMode="numeric"
+                defaultValue={min ? String(min) : ""}
+                placeholder="0"
+                className="mazed-tabular mt-1 h-11 w-full rounded-xl border border-border bg-surface-2 px-3 text-[16px] font-bold text-foreground outline-none transition placeholder:font-normal placeholder:text-muted focus:border-gold-soft focus:bg-surface"
+              />
+            </label>
+            <label className="flex-1 basis-28 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+              Max (TND)
+              <input
+                type="number"
+                name="max"
+                min={0}
+                step={1000}
+                inputMode="numeric"
+                defaultValue={max ? String(max) : ""}
+                placeholder="Sans limite"
+                className="mazed-tabular mt-1 h-11 w-full rounded-xl border border-border bg-surface-2 px-3 text-[16px] font-bold text-foreground outline-none transition placeholder:font-normal placeholder:text-muted focus:border-gold-soft focus:bg-surface"
+              />
+            </label>
+            <button
+              type="submit"
+              className="mazed-btn-luxe tap-target h-11 shrink-0 px-4 text-[12.5px]"
+            >
+              Appliquer
+            </button>
+          </form>
+        </div>
+      </details>
 
       <p className="mt-4 text-[12.5px] text-muted">
         {total} bien{total > 1 ? "s" : ""}

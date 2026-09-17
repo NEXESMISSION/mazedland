@@ -85,7 +85,7 @@ export default async function NewListingPage({
       .select("quota_total, quota_used, expires_at, status")
       .eq("seller_id", user!.id)
       .eq("status", "active"),
-    admin.from("profiles").select("full_name, phone").eq("id", user!.id).maybeSingle(),
+    admin.from("profiles").select("full_name, phone, governorate").eq("id", user!.id).maybeSingle(),
     // The annonce to edit. « Reprendre », « Corriger » and checkout's
     // « Modifier l'annonce » all pass ?draft=<id> — which this page used to
     // ignore, always loading the NEWEST draft instead, so a rejected annonce
@@ -174,6 +174,7 @@ export default async function NewListingPage({
       creditsLeft={creditsLeft}
       defaultContactName={(profRes.data?.full_name as string | null) ?? ""}
       defaultContactPhone={(profRes.data?.phone as string | null) ?? ""}
+      defaultGovernorate={(profRes.data?.governorate as string | null) ?? ""}
       initialDraft={(draftRes.data as unknown as InitialDraft | null) ?? null}
       locale={locale}
     />

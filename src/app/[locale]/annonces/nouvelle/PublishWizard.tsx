@@ -102,6 +102,7 @@ export function PublishWizard({
   creditsLeft,
   defaultContactName,
   defaultContactPhone,
+  defaultGovernorate,
   initialDraft,
   locale,
 }: {
@@ -112,6 +113,9 @@ export function PublishWizard({
   creditsLeft: number;
   defaultContactName: string;
   defaultContactPhone: string;
+  /** From the seller's profile — signup asks for it, so the form should not
+   *  ask again. Empty for an older account that never gave one. */
+  defaultGovernorate: string;
   initialDraft: InitialDraft | null;
   locale: string;
 }) {
@@ -155,9 +159,14 @@ export function PublishWizard({
   const [price, setPrice] = useState(d?.price != null && Number(d.price) > 0 ? String(d.price) : "");
   const [onRequest, setOnRequest] = useState(d?.price_on_request === true);
   const [negotiable, setNegotiable] = useState(d?.negotiable !== false);
-  const [governorate, setGovernorate] = useState<string>(
-    d?.governorate ?? TUNISIAN_GOVERNORATES[0],
-  );
+  // Where the seller lives, not the first governorate in the alphabet. Most
+  // people sell property in their own governorate, and "Ariana" was pre-filled
+  // for all 24 of them — a wrong default nobody is prompted to correct, which
+  // is worse than an empty field.
+  const homeGovernorate = (TUNISIAN_GOVERNORATES as readonly string[]).includes(defaultGovernorate)
+    ? defaultGovernorate
+    : TUNISIAN_GOVERNORATES[0];
+  const [governorate, setGovernorate] = useState<string>(d?.governorate ?? homeGovernorate);
   const [delegation, setDelegation] = useState(d?.delegation ?? "");
   const [contactName, setContactName] = useState(d?.contact_name ?? defaultContactName);
   const [contactPhone, setContactPhone] = useState(d?.contact_phone ?? defaultContactPhone);
@@ -287,7 +296,7 @@ export function PublishWizard({
     setPrice("");
     setOnRequest(false);
     setNegotiable(true);
-    setGovernorate(TUNISIAN_GOVERNORATES[0]);
+    setGovernorate(homeGovernorate);
     setDelegation("");
     setContactName(defaultContactName);
     setContactPhone(defaultContactPhone);
