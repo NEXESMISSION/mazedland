@@ -43,8 +43,9 @@ export function SmsNotificationsToggle({ initial }: { initial: boolean }) {
       <div className="min-w-0 flex-1">
         <div className="text-[14px] font-bold text-foreground">SMS pour les alertes importantes</div>
         <div className="mt-0.5 text-[12px] leading-relaxed text-muted">
-          Un SMS quand vous gagnez, êtes surenchéri ou qu&apos;un paiement est dû. Le
-          détail reste dans l&apos;application et par e-mail.
+          Un SMS quand votre annonce est publiée ou refusée, quand elle approche
+          de sa date de retrait, et pour chaque décision de paiement. Le détail
+          reste dans l&apos;application et par e-mail.
         </div>
       </div>
       <button

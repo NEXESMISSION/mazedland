@@ -36,8 +36,12 @@ export const SMS_KINDS = new Set<string>([
   "final_payment_overdue", "final_payment_overdue_seller",
   "final_payment_defaulted",
   // Listings (seller) — outcomes only; "listing_submitted" is an on-site ack.
+  // `listing_expiring` is the J-3 warning: once per annonce per cycle, and the
+  // one message that can stop a paid annonce going dark unnoticed. It was
+  // in-app only, which is where a seller is least likely to be.
   "listing_published", "listing_approved",
-  "listing_rejected", "listing_payment_rejected", "listing_expired",
+  "listing_rejected", "listing_payment_rejected",
+  "listing_expiring", "listing_expired",
   "listing_unscheduled_reminder",
   // Payouts (seller)
   "payout_processing", "payout_paid", "payout_rejected",

@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { sendEmail, isEmailConfigured } from "@/lib/email";
 import { log } from "@/lib/log";
 import { fail } from "@/lib/http/errors";
+import { EMAIL_KINDS } from "@/lib/email-kinds";
 
 export const dynamic = "force-dynamic";
 // Give the worker real headroom: a Resend latency spike must not kill the
@@ -28,26 +29,7 @@ const cLog = log.scope("cron-mail");
  * recent backlog (last 24h), never the whole history.
  */
 
-// Kinds worth an email. Deliberately excludes high-frequency noise like
-// `outbid` (would spam) and admin broadcast kinds.
-const EMAILABLE = new Set([
-  "auction_won",
-  "auction_lost",
-  "auction_sold_seller",
-  "final_payment_due_soon",
-  "final_payment_due_tomorrow",
-  "final_payment_overdue",
-  "payment_accepted",
-  "payment_rejected",
-  "kyc_verified",
-  "kyc_rejected",
-  // OPERATIONAL/MONEY admin alerts — out-of-band delivery (not just the in-app
-  // bell) so a stranded payment, a clawback owed, or a dead-lettered email is
-  // actioned even when no admin is looking at the dashboard. Low volume.
-  "admin_refund_due",       // 0095 stranded buy-now
-  "admin_clawback_owed",    // 0110 settlement reversed after payout
-  "admin_email_deadletter", // notify-email exhausted MAX_ATTEMPTS
-]);
+// Which kinds go out as e-mail lives in one pure, tested module.
 
 // Drain a close/broadcast wave fast enough that nothing money-critical ages
 // out. 200/run with the */5 cron ≈ 2,400 emails/hr, vs the old 300/hr that
@@ -158,7 +140,7 @@ async function run(req: NextRequest) {
   // (email_attempts reflects the post-increment value).
   const { data: rows, error } = await db.rpc("claim_emailable_notifications", {
     p_limit: MAX_PER_RUN,
-    p_kinds: Array.from(EMAILABLE),
+    p_kinds: Array.from(EMAIL_KINDS),
     p_since: sinceIso,
     p_max_attempts: MAX_ATTEMPTS,
   });

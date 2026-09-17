@@ -172,6 +172,10 @@ export default async function MyListingsPage({
   const date = (v: string | null) =>
     v ? new Date(v).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
+  /** DD/MM — the same form the expiry notification uses. */
+  const shortDate = (v: string | null) =>
+    v ? new Date(v).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) : "";
+
   /** Days left before a published annonce expires — the only date that is urgent. */
   const daysLeft = (l: Row) => {
     if (l.status !== "published" || !l.expires_at) return null;
@@ -385,6 +389,11 @@ export default async function MyListingsPage({
                 <p className={`mt-2 inline-flex items-center gap-1 text-[11.5px] ${left <= 3 ? "font-bold text-amber-400" : "text-muted"}`}>
                   <Clock className="size-3" />
                   {left <= 0 ? "Expire aujourd'hui" : `Encore ${left} jour${left > 1 ? "s" : ""} en ligne`}
+                  {/* Renewal is refused while an annonce is published — it
+                      would take a paid, live annonce off the catalogue while
+                      the fee is verified. So the date is the useful fact, not
+                      a « Renouveler » button that cannot be there yet. */}
+                  {left <= 3 && <span className="font-semibold">· renouvelable le {shortDate(l.expires_at)}</span>}
                 </p>
               )}
 
