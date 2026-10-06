@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { frenchApiError } from "@/lib/apiError";
+import { useApiError } from "@/lib/useApiError";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUploader";
@@ -122,6 +122,7 @@ export function PublishWizard({
   const d = initialDraft;
   const router = useRouter();
   const { toast } = useToast();
+  const apiError = useApiError();
 
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<"idle" | "saving" | "ok">("idle");
@@ -329,7 +330,7 @@ export function PublishWizard({
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      toast(frenchApiError(j, "Enregistrement impossible."), "error");
+      toast(apiError(j, "Enregistrement impossible."), "error");
       setSaved("idle");
       return null;
     }
@@ -406,7 +407,7 @@ export function PublishWizard({
         paymentId?: string; error?: string; detail?: string;
       };
       if (!res.ok) {
-        toast(frenchApiError(j, "Envoi impossible."), "error");
+        toast(apiError(j, "Envoi impossible."), "error");
         return;
       }
       if (j.status === "pending_payment" && j.paymentId) {

@@ -25,6 +25,7 @@ const base: Product = {
   nameFr: "Annonce standard",
   nameAr: null,
   description: null,
+  descriptionAr: null,
   price: 15,
   categoryId: null,
   listingQuota: null,
@@ -167,7 +168,7 @@ describe("toProduct", () => {
   it("reads a row and defaults an unknown kind rather than throwing", () => {
     const p = toProduct({
       id: "x", slug: "s", kind: "not_a_kind", name_fr: "X", name_ar: null,
-      description: null, price: "12.50", category_id: null, listing_quota: null,
+      description: null, description_ar: null, price: "12.50", category_id: null, listing_quota: null,
       duration_days: 30, is_active: true, sort_order: 1,
     });
     expect(p.kind).toBe("listing_single");

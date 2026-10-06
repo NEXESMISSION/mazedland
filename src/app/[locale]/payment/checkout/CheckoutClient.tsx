@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
-import { frenchApiError } from "@/lib/apiError";
+import { useApiError } from "@/lib/useApiError";
 import { formatTND, cn } from "@/lib/utils";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
@@ -84,6 +84,7 @@ export function CheckoutClient({
   editHref,
 }: Props) {
   const { toast } = useToast();
+  const apiError = useApiError();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [provider, setProvider] = useState<PaymentProvider>(
     instructions[0]?.value ?? "bank_transfer",
@@ -113,7 +114,7 @@ export function CheckoutClient({
           error?: string;
           detail?: string;
         };
-        toast(frenchApiError(data, "Annulation impossible."), "error");
+        toast(apiError(data, "Annulation impossible."), "error");
         setCancelling(false);
         return;
       }
@@ -233,7 +234,7 @@ export function CheckoutClient({
         const data = await res.json().catch(() => ({}));
         // Couldn't attach — clean up every uploaded object so we don't orphan.
         void supabase.storage.from("receipts").remove(uploadedPaths);
-        toast(frenchApiError(data, "Échec de la soumission."), "error");
+        toast(apiError(data, "Échec de la soumission."), "error");
         setSubmitting(false);
         return;
       }

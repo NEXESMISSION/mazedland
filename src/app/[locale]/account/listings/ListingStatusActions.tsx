@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
-import { frenchApiError } from "@/lib/apiError";
+import { useApiError } from "@/lib/useApiError";
 import { BadgeCheck, EyeOff, RotateCw, Loader2 } from "lucide-react";
 
 /**
@@ -65,6 +65,7 @@ export function ListingStatusActions({
 }) {
   const router = useRouter();
   const { toast } = useToast();
+  const apiError = useApiError();
   const [asking, setAsking] = useState<Act | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -78,7 +79,7 @@ export function ListingStatusActions({
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast(frenchApiError(j, "Action impossible pour le moment."), "error");
+        toast(apiError(j, "Action impossible pour le moment."), "error");
         return;
       }
       toast(COPY[act].done, "success");
