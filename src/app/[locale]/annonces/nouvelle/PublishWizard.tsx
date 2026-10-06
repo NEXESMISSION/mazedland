@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useApiError } from "@/lib/useApiError";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUploader";
 import { ListingImage } from "@/components/media/ListingImage";
-import { formatTND, cn } from "@/lib/utils";
-import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
+import { Ltr } from "@/components/ui/Ltr";
+import { formatTND, formatDate, cn } from "@/lib/utils";
+import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 import {
   Check, Tag, Camera, Wallet, Phone, ClipboardList, Loader2, MapPin,
   Gift, Ticket, ImageOff, Home,
@@ -43,14 +45,11 @@ import {
  * can add one from /admin/catalogue without a deploy.
  */
 
+/**
+ * The attestation the seller ticks lives in messages as `publish.attestation`.
+ * Bump the version whenever its wording changes, in either language.
+ */
 export const SELLER_ATTESTATION_VERSION = "v1";
-
-const ATTESTATION_TEXT =
-  "J'atteste sur l'honneur que toutes les informations, photos et documents " +
-  "fournis sont exacts, complets et concernent bien ce bien. Je déclare être " +
-  "propriétaire ou mandaté pour le vendre. Je suis seul responsable de toute " +
-  "information fausse, inexacte ou trompeuse. En cas de fausse déclaration, " +
-  "Mazed Immo peut refuser ou retirer l'annonce et conserver les frais déjà réglés.";
 
 export type WizardCategory = {
   id: string;
@@ -123,6 +122,8 @@ export function PublishWizard({
   const router = useRouter();
   const { toast } = useToast();
   const apiError = useApiError();
+  const t = useTranslations("publish");
+  const tc = useTranslations("common");
 
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<"idle" | "saving" | "ok">("idle");
@@ -215,9 +216,11 @@ export function PublishWizard({
   const suggestedTitle = useMemo(() => {
     if (!category) return "";
     const area = attrs.area_sqm?.trim();
-    const where = delegation.trim() || governorate;
-    return [category.label, area ? `${area} m²` : null, where].filter(Boolean).join(" · ");
-  }, [category, attrs.area_sqm, delegation, governorate]);
+    const where = delegation.trim() || governorateLabel(governorate, locale);
+    return [category.label, area ? t("suggestedArea", { area }) : null, where]
+      .filter(Boolean)
+      .join(" · ");
+  }, [category, attrs.area_sqm, delegation, governorate, locale, t]);
 
   const title = titleTouched ? typedTitle : suggestedTitle;
   const setTitle = (v: string) => { setTitleTouched(true); setTypedTitle(v); };
@@ -226,33 +229,36 @@ export function PublishWizard({
   // Each entry knows the section it belongs to, so a click takes the seller
   // straight there instead of leaving them to scan the page for it.
   const missing: { label: string; fieldId: string }[] = [];
-  if (!categoryId) missing.push({ label: "Choisissez le type de bien.", fieldId: "f-category" });
+  if (!categoryId) missing.push({ label: t("missingCategory"), fieldId: "f-category" });
   if (photosUploading > 0) {
     missing.push({
-      label: `Encore ${photosUploading} photo${photosUploading > 1 ? "s" : ""} en cours d'envoi…`,
+      label: t("missingPhotosUploading", { count: photosUploading }),
       fieldId: "f-photos",
     });
   } else if (photos.length === 0) {
-    missing.push({ label: "Ajoutez au moins une photo.", fieldId: "f-photos" });
+    missing.push({ label: t("missingPhoto"), fieldId: "f-photos" });
   }
   for (const def of defs) {
     if (!def.required) continue;
     const v = attrs[def.field_key];
     if (v == null || String(v).trim() === "") {
-      missing.push({ label: `Indiquez : ${def.label.toLowerCase()}.`, fieldId: "f-details" });
+      missing.push({
+        label: t("missingAttribute", { label: def.label.toLowerCase() }),
+        fieldId: "f-details",
+      });
     }
   }
   if (title.trim().length < 3) {
-    missing.push({ label: "Donnez un titre à votre annonce.", fieldId: "f-title" });
+    missing.push({ label: t("missingTitle"), fieldId: "f-title" });
   }
   if (!onRequest && !(Number(price) > 0)) {
-    missing.push({ label: "Indiquez un prix, ou cochez « prix sur demande ».", fieldId: "f-price" });
+    missing.push({ label: t("missingPrice"), fieldId: "f-price" });
   }
   if (contactPhone.replace(/\D/g, "").length < 8) {
-    missing.push({ label: "Un numéro joignable est obligatoire.", fieldId: "f-phone" });
+    missing.push({ label: t("missingPhone"), fieldId: "f-phone" });
   }
   if (!attested) {
-    missing.push({ label: "Cochez l'attestation pour publier.", fieldId: "f-contact" });
+    missing.push({ label: t("missingAttestation"), fieldId: "f-contact" });
   }
 
   // Red only survives while the field is still empty: fill it and the outline
@@ -330,7 +336,7 @@ export function PublishWizard({
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      toast(apiError(j, "Enregistrement impossible."), "error");
+      toast(apiError(j, t("saveFailed")), "error");
       setSaved("idle");
       return null;
     }
@@ -378,12 +384,7 @@ export function PublishWizard({
       // modal over it would say the same thing twice.
       setFlagged(missing.map((m) => m.fieldId));
       goToField(missing[0].fieldId);
-      toast(
-        missing.length === 1
-          ? "Il manque une chose avant de publier."
-          : `Il manque ${missing.length} choses avant de publier.`,
-        "warning",
-      );
+      toast(t("missingCount", { count: missing.length }), "warning");
       return;
     }
     return publish();
@@ -407,7 +408,7 @@ export function PublishWizard({
         paymentId?: string; error?: string; detail?: string;
       };
       if (!res.ok) {
-        toast(apiError(j, "Envoi impossible."), "error");
+        toast(apiError(j, t("submitFailed")), "error");
         return;
       }
       if (j.status === "pending_payment" && j.paymentId) {
@@ -427,20 +428,19 @@ export function PublishWizard({
         <span className="mx-auto grid size-16 place-items-center rounded-full bg-gold-faint text-gold ring-1 ring-gold-soft">
           <Check className="size-8" strokeWidth={2.6} />
         </span>
-        <h1 className="mt-5 text-[22px] font-extrabold tracking-tight">Annonce envoyée</h1>
+        <h1 className="mt-5 text-[22px] font-extrabold tracking-tight">{t("doneTitle")}</h1>
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
-          Notre équipe la vérifie avant publication — généralement en moins de 24 h. Vous serez
-          prévenu dès qu&apos;elle est en ligne.
+          {t("doneBody")}
           {done.paidWith === "credit" && typeof done.remaining === "number" && (
-            <> Il vous reste {done.remaining} publication{done.remaining > 1 ? "s" : ""}.</>
+            <> {t("doneCreditsLeft", { count: done.remaining })}</>
           )}
-          {done.paidWith === "free" && <> La publication était gratuite dans cette catégorie.</>}
+          {done.paidWith === "free" && <> {t("doneFree")}</>}
         </p>
         <button
           onClick={() => router.push("/account/listings" as never)}
           className="mazed-btn-luxe tap-target mt-7 inline-flex px-6 py-3 text-[13.5px]"
         >
-          Voir mes annonces
+          {t("seeMyListings")}
         </button>
       </main>
     );
@@ -450,19 +450,19 @@ export function PublishWizard({
     <main className="mx-auto max-w-[var(--max-w-wide)] px-4 pb-32 pt-4 lg:px-6 lg:pb-12 lg:pt-8">
       <div className="flex items-start justify-between gap-3 pt-2">
         <div>
-          <h1 className="text-[24px] font-extrabold tracking-tight">Publier une annonce</h1>
+          <h1 className="text-[24px] font-extrabold tracking-tight">{t("title")}</h1>
           <p className="mt-1 text-[13px] text-muted">
-            Quelques informations, des photos, votre numéro — c&apos;est tout.
+            {t("subtitle")}
           </p>
         </div>
         {saved === "saving" && (
           <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-[11px] text-muted">
-            <Loader2 className="size-3 animate-spin" /> Enregistrement…
+            <Loader2 className="size-3 animate-spin" /> {t("saving")}
           </span>
         )}
         {saved === "ok" && (
           <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-[11px] text-muted">
-            <Check className="size-3" /> Brouillon enregistré
+            <Check className="size-3" /> {t("draftSaved")}
           </span>
         )}
       </div>
@@ -470,15 +470,16 @@ export function PublishWizard({
       {resumed && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold-soft bg-gold-faint px-4 py-3">
           <p className="text-[12.5px] font-semibold text-gold">
-            Nous avons repris votre brouillon
-            {d?.updated_at ? ` du ${new Date(d.updated_at).toLocaleDateString("fr-FR")}` : ""}.
+            {d?.updated_at
+              ? t("resumedOn", { date: formatDate(d.updated_at, locale, "short") })
+              : t("resumed")}
           </p>
           <button
             type="button"
             onClick={startOver}
             className="text-[12px] font-bold text-muted underline hover:text-foreground"
           >
-            Recommencer à zéro
+            {t("startOver")}
           </button>
         </div>
       )}
@@ -490,15 +491,15 @@ export function PublishWizard({
             id="f-category"
             className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-category")}`}
           >
-            <SectionHead icon={Tag} title="Que vendez-vous ?" />
+            <SectionHead icon={Tag} title={t("categoryTitle")} />
             <p className="mt-1 text-[13px] text-muted">
-              Cela décide des informations qui vous seront demandées.
+              {t("categoryHint")}
             </p>
 
             {usingCredit && (
               <p className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft">
                 <Ticket className="size-4" />
-                {creditsLeft} publication{creditsLeft > 1 ? "s" : ""} dans votre forfait
+                {t("creditsInPlan", { count: creditsLeft })}
               </p>
             )}
 
@@ -508,7 +509,7 @@ export function PublishWizard({
             <div className="mt-4">
               <div
                 role="radiogroup"
-                aria-label="Famille de bien"
+                aria-label={t("groupAria")}
                 className="grid gap-1 rounded-xl bg-surface-2 p-1"
                 style={{ gridTemplateColumns: `repeat(${Math.max(1, groups.length)}, minmax(0, 1fr))` }}
               >
@@ -540,7 +541,7 @@ export function PublishWizard({
                 })}
               </div>
 
-              <div role="radiogroup" aria-label="Catégorie" className="mt-2.5 flex flex-wrap gap-1.5">
+              <div role="radiogroup" aria-label={t("categoryAria")} className="mt-2.5 flex flex-wrap gap-1.5">
                 {categories
                   .filter((c) => c.groupId === groupId)
                   .map((c) => {
@@ -576,9 +577,16 @@ export function PublishWizard({
                   )}
                 >
                   {free ? (
-                    <><Gift className="size-3.5" /> Publication gratuite dans cette catégorie.</>
+                    <><Gift className="size-3.5" /> {t("freeInCategory")}</>
                   ) : (
-                    <>Publication : {formatTND(fee, locale)} TND</>
+                    // One flex item, as the plain text was: the <Ltr> on its
+                    // own would pick up the row's gap.
+                    <span>
+                      {t.rich("feeLine", {
+                        amount: formatTND(fee, locale),
+                        ltr: (chunks) => <Ltr>{chunks}</Ltr>,
+                      })}
+                    </span>
                   )}
                 </p>
               )}
@@ -590,10 +598,9 @@ export function PublishWizard({
             id="f-photos"
             className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-photos")}`}
           >
-            <SectionHead icon={Camera} title="Vos photos" />
+            <SectionHead icon={Camera} title={t("photosTitle")} />
             <p className="mt-1 text-[13px] text-muted">
-              Elles décident si un acheteur clique. Montrez la façade, le séjour, les chambres, la
-              cuisine et la vue — et le plan ou le titre foncier si vous l&apos;avez.
+              {t("photosHint")}
             </p>
             <div className="mt-5">
               <PhotoUploader
@@ -609,11 +616,9 @@ export function PublishWizard({
             id="f-details"
             className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-details")}`}
           >
-            <SectionHead icon={ClipboardList} title="Le bien" />
+            <SectionHead icon={ClipboardList} title={t("detailsTitle")} />
             <p className="mt-1 text-[13px] text-muted">
-              {categoryId
-                ? "Ces informations servent aux filtres de recherche — c'est ainsi qu'on vous trouve."
-                : "Choisissez d'abord le type de bien ci-dessus."}
+              {categoryId ? t("detailsHint") : t("detailsPickCategory")}
             </p>
 
             {defs.length > 0 ? (
@@ -630,8 +635,7 @@ export function PublishWizard({
             ) : (
               categoryId && (
                 <p className="mt-5 rounded-xl bg-surface-2 px-3 py-2.5 text-[12.5px] text-muted">
-                  Aucune caractéristique n&apos;est demandée pour cette catégorie. Décrivez le bien
-                  dans la description plus bas.
+                  {t("detailsNone")}
                 </p>
               )
             )}
@@ -642,24 +646,24 @@ export function PublishWizard({
             id="f-price"
             className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-price")}`}
           >
-            <SectionHead icon={Wallet} title="Titre et prix" />
+            <SectionHead icon={Wallet} title={t("priceTitle")} />
             <p className="mt-1 text-[13px] text-muted">
-              Le titre est proposé d&apos;après ce que vous avez saisi — modifiez-le si vous voulez.
+              {t("priceHint")}
             </p>
 
             <div className="mt-5 space-y-4">
               <div id="f-title" className={`scroll-mt-24 rounded-xl${flagCls("f-title")}`}>
                 <Field
-                  label="Titre de l'annonce"
+                  label={t("titleLabel")}
                   required
                   value={title}
                   onChange={setTitle}
-                  placeholder="Appartement S+2 · 120 m² · La Marsa"
+                  placeholder={t("titlePlaceholder")}
                 />
               </div>
 
               <div>
-                <Label>Prix {!onRequest && <span className="text-gold">*</span>}</Label>
+                <Label>{t("priceLabel")} {!onRequest && <span className="text-gold">*</span>}</Label>
                 <div className="relative mt-1">
                   <input
                     type="number"
@@ -671,26 +675,28 @@ export function PublishWizard({
                     className="w-full rounded-xl border border-border bg-surface px-3 py-3 pe-16 text-[16px] font-bold text-foreground placeholder:font-normal placeholder:text-muted focus:border-gold focus:outline-none disabled:opacity-40"
                   />
                   <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[13px] font-bold text-muted">
-                    TND
+                    {tc("tnd")}
                   </span>
                 </div>
                 <div className="mt-2.5 flex flex-wrap gap-2">
-                  <Toggle label="Négociable" on={negotiable} onClick={() => setNegotiable((v) => !v)} />
-                  <Toggle label="Prix sur demande" on={onRequest} onClick={() => setOnRequest((v) => !v)} />
+                  <Toggle label={t("negotiable")} on={negotiable} onClick={() => setNegotiable((v) => !v)} />
+                  <Toggle label={t("onRequest")} on={onRequest} onClick={() => setOnRequest((v) => !v)} />
                 </div>
               </div>
 
               <div>
-                <Label>Description</Label>
+                <Label>{t("descriptionLabel")}</Label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={5}
                   maxLength={4000}
-                  placeholder="Situation, exposition, état, charges, ce qu'il y a à refaire, papiers disponibles. Soyez honnête : c'est ce qui évite les visites pour rien."
+                  placeholder={t("descriptionPlaceholder")}
                   className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13.5px] leading-relaxed text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
                 />
-                <p className="mt-1 text-end text-[10.5px] text-muted">{description.length} / 4000</p>
+                <p className="mt-1 text-end text-[10.5px] text-muted">
+                  <Ltr>{description.length} / 4000</Ltr>
+                </p>
               </div>
             </div>
           </section>
@@ -700,23 +706,36 @@ export function PublishWizard({
             id="f-contact"
             className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-contact")}`}
           >
-            <SectionHead icon={Phone} title="Contact et publication" />
+            <SectionHead icon={Phone} title={t("contactTitle")} />
             <p className="mt-1 text-[13px] text-muted">
-              Les acheteurs vous appellent directement sur ce numéro. Il n&apos;apparaît jamais dans
-              la page : il n&apos;est affiché qu&apos;à ceux qui le demandent.
+              {t("contactHint")}
             </p>
 
             <div className="mt-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Nom affiché" value={contactName} onChange={setContactName} placeholder="Karim B." />
+                <Field
+                  label={t("contactNameLabel")}
+                  value={contactName}
+                  onChange={setContactName}
+                  placeholder={t("contactNamePlaceholder")}
+                />
                 <div id="f-phone" className={`scroll-mt-24 rounded-xl${flagCls("f-phone")}`}>
-                  <Field label="Téléphone" required value={contactPhone} onChange={setContactPhone} placeholder="+216 …" />
+                  {/* dir="ltr": "+216 98 124 111" typed into a right-to-left
+                      field comes out as "111 124 98 216+". */}
+                  <Field
+                    label={t("phoneLabel")}
+                    required
+                    value={contactPhone}
+                    onChange={setContactPhone}
+                    placeholder="+216 …"
+                    dir="ltr"
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Gouvernorat <span className="text-gold">*</span></Label>
+                  <Label>{t("governorate")} <span className="text-gold">*</span></Label>
                   <div className="relative mt-1">
                     <MapPin className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
                     <select
@@ -724,7 +743,9 @@ export function PublishWizard({
                       onChange={(e) => setGovernorate(e.target.value)}
                       className="w-full appearance-none rounded-xl border border-border bg-surface py-3 ps-9 pe-3 text-[14px] text-foreground focus:border-gold focus:outline-none"
                     >
-                      {TUNISIAN_GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+                      {TUNISIAN_GOVERNORATES.map((g) => (
+                        <option key={g} value={g}>{governorateLabel(g, locale)}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -733,10 +754,10 @@ export function PublishWizard({
                     wrong costs a filter nobody uses — the governorate is what
                     search actually keys on. */}
                 <Field
-                  label="Délégation / quartier"
+                  label={t("delegationLabel")}
                   value={delegation}
                   onChange={setDelegation}
-                  placeholder="La Marsa"
+                  placeholder={t("delegationPlaceholder")}
                 />
               </div>
 
@@ -744,7 +765,7 @@ export function PublishWizard({
                   ListingImage every real card uses so a portrait photo behaves
                   here the way it will there. */}
               <div>
-                <Label>Aperçu</Label>
+                <Label>{t("preview")}</Label>
                 <div className="mt-1 w-[180px] overflow-hidden rounded-2xl border border-border bg-surface">
                   <div className="relative aspect-[4/3] bg-surface-2">
                     {photos[0] ? (
@@ -752,7 +773,7 @@ export function PublishWizard({
                     ) : (
                       <span className="grid size-full place-items-center gap-1 text-center text-muted">
                         <ImageOff className="mx-auto size-5" />
-                        <span className="px-2 text-[10px] leading-tight">Aucune photo</span>
+                        <span className="px-2 text-[10px] leading-tight">{t("noPhoto")}</span>
                       </span>
                     )}
                   </div>
@@ -764,12 +785,14 @@ export function PublishWizard({
                       {title || "—"}
                     </h3>
                     <p className="mazed-tabular mt-1 text-[13px] font-extrabold">
-                      {onRequest || !(Number(price) > 0)
-                        ? "Sur demande"
-                        : `${formatTND(Number(price), locale)} TND`}
+                      {onRequest || !(Number(price) > 0) ? (
+                        t("priceOnRequestShort")
+                      ) : (
+                        <Ltr>{formatTND(Number(price), locale)} {tc("tnd")}</Ltr>
+                      )}
                     </p>
                     <p className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-muted">
-                      <MapPin className="size-2.5" /> {delegation.trim() || governorate}
+                      <MapPin className="size-2.5" /> {delegation.trim() || governorateLabel(governorate, locale)}
                     </p>
                   </div>
                 </div>
@@ -782,34 +805,36 @@ export function PublishWizard({
                   onChange={(e) => setAttested(e.target.checked)}
                   className="mt-0.5 size-5 shrink-0 accent-[var(--gold)]"
                 />
-                <span className="text-[12.5px] leading-relaxed text-foreground">{ATTESTATION_TEXT}</span>
+                <span className="text-[12.5px] leading-relaxed text-foreground">{t("attestation")}</span>
               </label>
 
               <div className="rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-[13px] text-muted">
                     {usingCredit
-                      ? "Publication depuis votre forfait"
+                      ? t("feeFromPlan")
                       : free
-                        ? "Publication"
-                        : "Frais de publication"}
+                        ? t("feePublication")
+                        : t("feeLabel")}
                   </span>
                   <span className="mazed-tabular text-[18px] font-extrabold text-foreground">
-                    {usingCredit
-                      ? `1 / ${creditsLeft}`
-                      : fee == null
-                        ? "—"
-                        : free
-                          ? "Gratuit"
-                          : `${formatTND(fee, locale)} TND`}
+                    {usingCredit ? (
+                      <Ltr>1 / {creditsLeft}</Ltr>
+                    ) : fee == null ? (
+                      "—"
+                    ) : free ? (
+                      t("free")
+                    ) : (
+                      <Ltr>{formatTND(fee, locale)} {tc("tnd")}</Ltr>
+                    )}
                   </span>
                 </div>
                 <p className="mt-1.5 text-[11.5px] leading-snug text-muted">
                   {usingCredit
-                    ? "Aucun paiement : une publication est décomptée de votre forfait."
+                    ? t("creditExplain")
                     : free
-                      ? "Gratuit dans cette catégorie : votre annonce part directement en vérification."
-                      : "Vous serez redirigé vers le paiement. L'annonce part en vérification dès la réception du reçu."}
+                      ? t("freeExplain")
+                      : t("paidExplain")}
                 </p>
               </div>
             </div>
@@ -822,16 +847,16 @@ export function PublishWizard({
             <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-4 sm:p-5">
               <div className="min-w-0">
                 <span className="block text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted">
-                  Avant de publier
+                  {t("beforePublish")}
                 </span>
                 {missing.length === 0 ? (
                   <p className="mt-1 flex items-center gap-1.5 text-[14.5px] font-extrabold text-foreground">
                     <Check className="size-4 shrink-0 text-gold" strokeWidth={3} />
-                    Tout est prêt.
+                    {t("allReady")}
                   </p>
                 ) : (
                   <p className="mt-1 text-[14.5px] font-extrabold text-foreground">
-                    {missing.length} élément{missing.length > 1 ? "s" : ""} à compléter
+                    {t("itemsToComplete", { count: missing.length })}
                   </p>
                 )}
               </div>
@@ -853,11 +878,11 @@ export function PublishWizard({
                   className="mazed-btn-luxe tap-target h-11 shrink-0 items-center justify-center gap-1.5 px-7 text-[13.5px] disabled:opacity-60"
                 >
                   {busy ? (
-                    <><Loader2 className="size-4 animate-spin" /> Un instant…</>
+                    <><Loader2 className="size-4 animate-spin" /> {t("oneMoment")}</>
                   ) : photosUploading > 0 ? (
-                    <><Loader2 className="size-4 animate-spin" /> Envoi des photos…</>
+                    <><Loader2 className="size-4 animate-spin" /> {t("sendingPhotos")}</>
                   ) : (
-                    <>Publier mon annonce</>
+                    <>{t("publishCta")}</>
                   )}
                 </button>
               </div>
@@ -901,21 +926,21 @@ export function PublishWizard({
           className="mazed-btn-luxe tap-target inline-flex h-12 w-full items-center justify-center gap-1.5 text-[14px] disabled:opacity-60"
         >
           {busy ? (
-            <><Loader2 className="size-4 animate-spin" /> Un instant…</>
+            <><Loader2 className="size-4 animate-spin" /> {t("oneMoment")}</>
           ) : photosUploading > 0 ? (
-            <><Loader2 className="size-4 animate-spin" /> Envoi des photos…</>
+            <><Loader2 className="size-4 animate-spin" /> {t("sendingPhotos")}</>
           ) : (
-            <>Publier mon annonce</>
+            <>{t("publishCta")}</>
           )}
         </button>
         <p className="mt-2 text-center text-[11px] text-muted lg:mt-3">
           {free
-            ? "Publication gratuite dans cette catégorie."
+            ? t("freeInCategory")
             : usingCredit
-              ? `Utilise 1 de vos ${creditsLeft} publications.`
+              ? t("useOneCredit", { count: creditsLeft })
               : fee != null
-                ? `${fee} TND — à régler après vérification.`
-                : "Le prix de publication s'affiche dès que la catégorie est choisie."}
+                ? t.rich("feeAfterReview", { amount: fee, ltr: (chunks) => <Ltr>{chunks}</Ltr> })
+                : t("feeShownAfterCategory")}
         </p>
       </div>
     </main>
@@ -959,6 +984,7 @@ function AttributeField({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const t = useTranslations("publish");
   if (def.data_type === "boolean") {
     // A yes/no is a switch, not a dropdown with two options in it. Clicking the
     // active side again clears the answer, because "not stated" is a real third
@@ -969,8 +995,8 @@ function AttributeField({
         <Label>{def.label} {def.required && <span className="text-gold">*</span>}</Label>
         <div className="mt-1.5 flex gap-2">
           {[
-            { v: "true", label: "Oui" },
-            { v: "false", label: "Non" },
+            { v: "true", label: t("yes") },
+            { v: "false", label: t("no") },
           ].map((o) => (
             <button
               key={o.v}
@@ -1053,7 +1079,7 @@ function Label({ children }: { children: React.ReactNode }) {
 }
 
 function Field({
-  label, value, onChange, placeholder, type = "text", required, suffix, compact,
+  label, value, onChange, placeholder, type = "text", required, suffix, compact, dir,
 }: {
   label?: string;
   value: string;
@@ -1063,6 +1089,7 @@ function Field({
   required?: boolean;
   suffix?: string;
   compact?: boolean;
+  dir?: "ltr" | "rtl";
 }) {
   return (
     <label className="block">
@@ -1071,6 +1098,7 @@ function Field({
         <input
           type={type}
           inputMode={type === "number" ? "numeric" : undefined}
+          dir={dir}
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
