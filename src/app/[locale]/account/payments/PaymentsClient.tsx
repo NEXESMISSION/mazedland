@@ -1,9 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
-import { formatTND } from "@/lib/utils";
+import { useApiError } from "@/lib/useApiError";
+import { formatDate, formatTND } from "@/lib/utils";
+import { governorateLabel } from "@/lib/tunisia";
 import {
   Wallet,
   FileText,
@@ -63,33 +66,34 @@ export type PaymentsSummary = {
   spentTotal: number;
 };
 
-const KIND_LABELS: Record<string, string> = {
-  listing_fee: "Frais de publication",
-  renewal: "Renouvellement",
-  promo: "Mise en avant",
-  listing_pack: "Pack d'annonces",
-  badge: "Badge vendeur",
-};
+/** The `account.payments` translator, for the helpers below. */
+type T = ReturnType<typeof useTranslations>;
+
+/** A payment kind's name (`account.payments.kind.*`); an unknown kind shows as stored. */
+function kindLabel(t: T, kind: string): string {
+  return t.has(`kind.${kind}`) ? t(`kind.${kind}`) : kind;
+}
 
 /** Kinds tied to one annonce — a rejected one is redone by re-submitting it. */
 const LISTING_KINDS = new Set(["listing_fee", "renewal", "promo"]);
 
-const STATUS: Record<string, { label: string; tone: string }> = {
-  pending: { label: "Reçu à téléverser", tone: "mazed-tone-warn" },
-  pending_review: { label: "Reçu en vérification", tone: "mazed-tone-warn" },
-  captured: { label: "Payé", tone: "mazed-tone-ok" },
-  refunded: { label: "Remboursé", tone: "bg-surface-2 text-muted ring-1 ring-border" },
-  failed: { label: "Refusé", tone: "mazed-tone-bad" },
+/** Chip colour per status; the words are `account.payments.status.*`. */
+const STATUS_TONE: Record<string, string> = {
+  pending: "mazed-tone-warn",
+  pending_review: "mazed-tone-warn",
+  captured: "mazed-tone-ok",
+  refunded: "bg-surface-2 text-muted ring-1 ring-border",
+  failed: "mazed-tone-bad",
 };
 
-function providerLabel(provider: string): string {
+function providerLabel(t: T, provider: string): string {
   switch (provider) {
     case "d17":
       return "D17";
     case "bank_transfer":
-      return "Virement";
+      return t("provider.bank_transfer");
     case "manual":
-      return "Enregistré par l'admin";
+      return t("provider.manual");
     default:
       return provider;
   }
@@ -107,10 +111,10 @@ function actionHref(p: PaymentVM): string | null {
   return null;
 }
 
-function actionLabel(p: PaymentVM): string {
-  if (p.status === "pending") return "Téléverser le reçu";
-  if (p.status === "pending_review") return "Voir / corriger le reçu";
-  return "Soumettre à nouveau";
+function actionLabel(t: T, p: PaymentVM): string {
+  if (p.status === "pending") return t("action.upload");
+  if (p.status === "pending_review") return t("action.review");
+  return t("action.resubmit");
 }
 
 type FilterKey = "all" | "action" | "paid" | "refunded";
@@ -142,18 +146,22 @@ export function PaymentsClient({
   summary: PaymentsSummary;
   locale: string;
 }) {
+  const t = useTranslations("account.payments");
+  const tc = useTranslations("common");
   const [filter, setFilter] = useState<FilterKey>("all");
   const router = useRouter();
   const { toast } = useToast();
+  const apiError = useApiError();
 
   async function cancelPayment(id: string): Promise<boolean> {
     const res = await fetch(`/api/payments/${id}/cancel`, { method: "POST" });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      toast(j.detail ?? j.error ?? "Annulation impossible.", "error");
+      // `j.error ?? …` printed bare codes (« cancel_failed ») to the seller.
+      toast(apiError(j, t("cancelFailed")), "error");
       return false;
     }
-    toast("Paiement annulé.", "success");
+    toast(t("cancelDone"), "success");
     router.refresh();
     return true;
   }
@@ -183,33 +191,33 @@ export function PaymentsClient({
   // A tab with nothing in it is only offered when it is the one selected.
   const TABS: { key: FilterKey; label: string }[] = (
     [
-      { key: "all", label: "Tout" },
-      { key: "action", label: "À traiter" },
-      { key: "paid", label: "Payés" },
-      { key: "refunded", label: "Remboursés" },
+      { key: "all", label: t("tabs.all") },
+      { key: "action", label: t("tabs.action") },
+      { key: "paid", label: t("tabs.paid") },
+      { key: "refunded", label: t("tabs.refunded") },
     ] as { key: FilterKey; label: string }[]
-  ).filter((t) => t.key === "all" || t.key === filter || counts[t.key] > 0);
+  ).filter((tab) => tab.key === "all" || tab.key === filter || counts[tab.key] > 0);
 
   return (
     <div className="mt-6">
       {/* ── Summary — the three signals that matter, at a glance. ── */}
       <div className="grid grid-cols-3 gap-3">
         <StatCard
-          label="À traiter"
+          label={t("toHandle")}
           value={String(summary.actionCount)}
           Icon={AlertTriangle}
           tone={summary.actionCount > 0 ? "text-amber-700" : "text-foreground/50"}
           highlight={summary.actionCount > 0}
         />
         <StatCard
-          label="Total dépensé"
+          label={t("spentTotal")}
           value={formatTND(summary.spentTotal, locale)}
-          suffix="TND"
+          suffix={tc("tnd")}
           Icon={TrendingUp}
           tone="text-foreground/70"
         />
         <StatCard
-          label="En vérification"
+          label={t("inReview")}
           value={String(summary.reviewCount)}
           Icon={Clock}
           tone="text-foreground/70"
@@ -222,9 +230,9 @@ export function PaymentsClient({
           <div className="flex items-center gap-1.5 px-3.5 pt-3 pb-2">
             <AlertTriangle className="size-3.5 text-amber-700" strokeWidth={2.6} />
             <span className="text-[11.5px] font-extrabold uppercase tracking-[0.12em] text-amber-800">
-              À traiter
+              {t("toHandle")}
             </span>
-            <span className="mazed-tabular ml-0.5 rounded-full bg-amber-500/20 px-1.5 text-[10px] font-extrabold text-amber-800">
+            <span className="mazed-tabular ms-0.5 rounded-full bg-amber-500/20 px-1.5 text-[10px] font-extrabold text-amber-800">
               {todo.length}
             </span>
           </div>
@@ -236,19 +244,19 @@ export function PaymentsClient({
                   <Thumb url={p.coverUrl} className="size-9 rounded-lg" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[13px] font-bold text-foreground">
-                      {KIND_LABELS[p.kind] ?? p.kind}
+                      {kindLabel(t, p.kind)}
                       {" · "}
-                      <span className="mazed-tabular">{formatTND(p.amount, locale)} TND</span>
+                      <span className="mazed-tabular">{t("amount", { amount: formatTND(p.amount, locale) })}</span>
                     </div>
                     <div className="truncate text-[11px] font-semibold text-amber-800">
                       {p.status === "pending"
-                        ? "Reçu à téléverser"
+                        ? t("status.pending")
                         : p.adminNotes
-                          ? `Refusé : ${p.adminNotes}`
-                          : "Refusé — à soumettre de nouveau"}
+                          ? t("rejectedWithReason", { reason: p.adminNotes })
+                          : t("rejectedResubmit")}
                     </div>
                   </div>
-                  <ChevronRight className="size-4 shrink-0 text-amber-700" strokeWidth={2.4} />
+                  <ChevronRight className="size-4 shrink-0 text-amber-700 rtl:-scale-x-100" strokeWidth={2.4} />
                 </div>
               );
               return (
@@ -282,7 +290,7 @@ export function PaymentsClient({
               {label}
               {count > 0 && (
                 <span
-                  className={`mazed-tabular ml-0.5 rounded-full px-1.5 text-[10px] font-extrabold ${
+                  className={`mazed-tabular ms-0.5 rounded-full px-1.5 text-[10px] font-extrabold ${
                     on ? "bg-white/20" : "bg-surface text-foreground/70"
                   }`}
                 >
@@ -298,7 +306,7 @@ export function PaymentsClient({
       {visible.length === 0 ? (
         <div className="mazed-frame-gold relative mt-5 px-6 py-10 text-center">
           <Wallet className="mx-auto size-8 text-gold" strokeWidth={2} />
-          <p className="mt-3 text-[13px] text-muted">Aucun paiement dans cette catégorie.</p>
+          <p className="mt-3 text-[13px] text-muted">{t("emptyFilter")}</p>
         </div>
       ) : (
         <ul className="mt-4 space-y-2.5 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
@@ -373,13 +381,17 @@ function PaymentRow({
   locale: string;
   onCancel: (id: string) => Promise<boolean>;
 }) {
+  const t = useTranslations("account.payments");
+  const tc = useTranslations("common");
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const cancelled = isCancelled(p);
 
   const badge = cancelled
-    ? { label: "Annulé", tone: "bg-surface-2 text-muted ring-1 ring-border" }
-    : STATUS[p.status] ?? { label: p.status, tone: "bg-surface-2 text-muted ring-1 ring-border" };
+    ? { label: t("status.cancelled"), tone: "bg-surface-2 text-muted ring-1 ring-border" }
+    : STATUS_TONE[p.status]
+      ? { label: t(`status.${p.status}`), tone: STATUS_TONE[p.status] }
+      : { label: p.status, tone: "bg-surface-2 text-muted ring-1 ring-border" };
 
   const canResume =
     (p.status === "pending" || p.status === "pending_review" || p.status === "failed") && !cancelled;
@@ -397,41 +409,36 @@ function PaymentRow({
 
         <div className="min-w-0 flex-1">
           <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">
-            {KIND_LABELS[p.kind] ?? p.kind}
+            {kindLabel(t, p.kind)}
           </div>
           {p.title && (
             <div className="mt-0.5 truncate text-[11.5px] font-bold text-foreground">{p.title}</div>
           )}
           <div className="mazed-tabular mt-1 text-[18px] font-extrabold text-foreground">
             {formatTND(p.amount, locale)}{" "}
-            <span className="text-[10px] font-bold uppercase text-muted">TND</span>
+            <span className="text-[10px] font-bold uppercase text-muted">{tc("tnd")}</span>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted">
-            <span>
-              {new Date(p.createdAt).toLocaleDateString(locale, {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </span>
+            <span>{formatDate(p.createdAt, locale, "medium")}</span>
             <span aria-hidden>·</span>
-            <span>{providerLabel(p.provider)}</span>
+            <span>{providerLabel(t, p.provider)}</span>
             {p.governorate && (
               <>
                 <span aria-hidden>·</span>
                 <span className="inline-flex items-center gap-0.5">
                   <MapPin className="size-3" strokeWidth={2} />
-                  {p.governorate}
+                  {governorateLabel(p.governorate, locale)}
                 </span>
               </>
             )}
           </div>
 
           {/* Rejection reason — inline so the seller knows what to fix. Hidden
-              for user-cancelled rows (the "motif" would be our own marker). */}
+              for user-cancelled rows (the "motif" would be our own marker).
+              The reason itself is the admin's free text, shown as written. */}
           {p.status === "failed" && !cancelled && p.adminNotes && (
             <div className="mt-2 rounded-lg bg-red-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-red-700 ring-1 ring-red-500/20">
-              Motif du refus : {p.adminNotes}
+              {t("rejectionReason", { reason: p.adminNotes })}
             </div>
           )}
         </div>
@@ -450,8 +457,8 @@ function PaymentRow({
               href={aHref as "/payment/checkout"}
               className="mazed-btn-luxe tap-target gap-1 rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.12em]"
             >
-              {actionLabel(p)}
-              <ArrowRight className="size-3" strokeWidth={2.5} />
+              {actionLabel(t, p)}
+              <ArrowRight className="size-3 rtl:-scale-x-100" strokeWidth={2.5} />
             </Link>
           )}
 
@@ -473,7 +480,7 @@ function PaymentRow({
                   className="tap-target inline-flex items-center gap-1 rounded-full bg-[var(--danger)] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white disabled:opacity-50"
                 >
                   {busy ? <Loader2 className="size-3 animate-spin" /> : <X className="size-3" strokeWidth={2.6} />}
-                  Confirmer
+                  {t("confirm")}
                 </button>
                 <button
                   type="button"
@@ -481,7 +488,7 @@ function PaymentRow({
                   onClick={() => setConfirming(false)}
                   className="tap-target inline-flex items-center rounded-full px-2.5 py-1.5 text-[11px] font-bold text-muted hover:text-foreground disabled:opacity-50"
                 >
-                  Non
+                  {t("no")}
                 </button>
               </span>
             ) : (
@@ -491,7 +498,7 @@ function PaymentRow({
                 className="tap-target inline-flex items-center gap-1 rounded-full border border-[var(--accent-soft)] bg-[var(--accent-faint)] px-3 py-1.5 text-[11px] font-bold text-[var(--accent-deep)] transition hover:bg-[var(--accent)]/10"
               >
                 <X className="size-3" strokeWidth={2.5} />
-                Annuler
+                {t("cancel")}
               </button>
             ))}
           {p.receiptUrl && (
@@ -502,7 +509,7 @@ function PaymentRow({
               className="tap-target inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[11px] font-semibold text-foreground hover:border-gold-soft/50"
             >
               <FileText className="size-3" strokeWidth={2} />
-              Reçu
+              {t("receipt")}
             </a>
           )}
           {entityHref && (
@@ -510,8 +517,8 @@ function PaymentRow({
               href={entityHref}
               className="tap-target ms-auto inline-flex items-center gap-1 text-[11px] font-bold text-muted hover:text-foreground"
             >
-              Voir l&apos;annonce
-              <ChevronRight className="size-3.5" />
+              {t("viewListing")}
+              <ChevronRight className="size-3.5 rtl:-scale-x-100" />
             </Link>
           )}
         </div>

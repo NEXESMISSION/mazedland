@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import { coverPhoto } from "@/lib/listingCover";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ListingImage } from "@/components/media/ListingImage";
-import { formatTND } from "@/lib/utils";
+import { formatDate, formatTND } from "@/lib/utils";
+import { categoryLabel } from "@/lib/i18n";
 import {
   Plus, Ticket, ImageOff, Clock, CreditCard, PencilLine,
   ArrowRight, AlertTriangle, Inbox,
@@ -33,31 +34,40 @@ export const dynamic = "force-dynamic";
  * status implies: pay, resume the draft, renew, or view.
  */
 
-const STATUS: Record<string, { label: string; tone: string; hint?: string }> = {
-  draft:           { label: "Brouillon",    tone: "bg-surface-2 text-muted ring-1 ring-border", hint: "Pas encore envoyée." },
-  pending_payment: { label: "À payer",      tone: "mazed-tone-warn", hint: "Réglez les frais pour lancer la vérification." },
-  pending_review:  { label: "Vérification", tone: "mazed-tone-warn", hint: "Notre équipe la contrôle — moins de 24 h." },
-  published:       { label: "En ligne",     tone: "mazed-tone-ok" },
-  rejected:        { label: "À corriger",   tone: "mazed-tone-bad" },
-  expired:         { label: "Expirée",      tone: "bg-surface-2 text-muted ring-1 ring-border", hint: "Renouvelez-la pour la remettre en ligne." },
-  sold:            { label: "Vendue",       tone: "mazed-tone-ok" },
-  archived:        { label: "Retirée",      tone: "bg-surface-2 text-muted ring-1 ring-border" },
+/**
+ * Chip colour per status, and whether the status has a hint line. The words
+ * are `account.listings.status.*` / `statusHint.*` — seller-facing wording,
+ * deliberately not shared with the admin console's.
+ */
+const STATUS: Record<string, { tone: string; hint?: true }> = {
+  draft:           { tone: "bg-surface-2 text-muted ring-1 ring-border", hint: true },
+  pending_payment: { tone: "mazed-tone-warn", hint: true },
+  pending_review:  { tone: "mazed-tone-warn", hint: true },
+  published:       { tone: "mazed-tone-ok" },
+  rejected:        { tone: "mazed-tone-bad" },
+  expired:         { tone: "bg-surface-2 text-muted ring-1 ring-border", hint: true },
+  sold:            { tone: "mazed-tone-ok" },
+  archived:        { tone: "bg-surface-2 text-muted ring-1 ring-border" },
 };
 
 /**
  * The tabs. `key` is what appears in the URL — French and readable, because a
  * seller who bookmarks "mes annonces à corriger" should not be looking at
- * `?statut=action_required`.
+ * `?statut=action_required`. It stays French on /ar too; `label` is the
+ * message key under `account.listings.tabs`.
  */
 const TABS = [
-  { key: "",             label: "Toutes",     statuses: null,                                   tone: "text-foreground" },
-  { key: "en-ligne",     label: "En ligne",   statuses: ["published"],                          tone: "text-emerald-400" },
-  { key: "verification", label: "En cours",   statuses: ["pending_payment", "pending_review"],  tone: "text-amber-400" },
-  { key: "a-corriger",   label: "À corriger", statuses: ["rejected", "draft"],                  tone: "text-[var(--danger)]" },
-  { key: "terminees",    label: "Terminées",  statuses: ["expired", "archived", "sold"],        tone: "text-muted" },
+  { key: "",             label: "all",        statuses: null,                                   tone: "text-foreground" },
+  { key: "en-ligne",     label: "online",     statuses: ["published"],                          tone: "text-emerald-400" },
+  { key: "verification", label: "inProgress", statuses: ["pending_payment", "pending_review"],  tone: "text-amber-400" },
+  { key: "a-corriger",   label: "toFix",      statuses: ["rejected", "draft"],                  tone: "text-[var(--danger)]" },
+  { key: "terminees",    label: "ended",      statuses: ["expired", "archived", "sold"],        tone: "text-muted" },
 ] as const;
 
 const RENEWABLE = ["expired", "archived", "sold"];
+
+/** The title PublishWizard stores for a draft with none (a marker, not copy). */
+const UNTITLED_DRAFT = "Brouillon";
 
 export default async function MyListingsPage({
   searchParams,
@@ -66,6 +76,8 @@ export default async function MyListingsPage({
 }) {
   const sp = await searchParams;
   const locale = await getLocale();
+  const t = await getTranslations("account.listings");
+  const tAccount = await getTranslations("account");
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -80,7 +92,7 @@ export default async function MyListingsPage({
       .from("listings")
       .select(
         `id, title, price, price_on_request, status, rejection_reason, published_at,
-         expires_at, created_at, category_id, category:categories (label_fr),
+         expires_at, created_at, category_id, category:categories (label_fr, label_ar),
          photos:listing_photos (storage_path, sort_order, is_cover)`,
       )
       .eq("seller_id", user.id)
@@ -136,17 +148,18 @@ export default async function MyListingsPage({
     return n + Math.max(0, (c.quota_total as number) - (c.quota_used as number));
   }, 0);
 
+  type Category = { label_fr: string; label_ar: string | null };
   type Row = {
     id: string; title: string; price: number | null; price_on_request: boolean;
     status: string; rejection_reason: string | null; published_at: string | null;
     expires_at: string | null; created_at: string;
-    category: { label_fr: string } | { label_fr: string }[] | null;
+    category: Category | Category[] | null;
     category_id: string;
     photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
   };
   const all = (listRes.data ?? []) as Row[];
 
-  const active = TABS.find((t) => t.key === (sp.statut ?? "")) ?? TABS[0];
+  const active = TABS.find((tab) => tab.key === (sp.statut ?? "")) ?? TABS[0];
   const countFor = (statuses: readonly string[] | null) =>
     statuses === null ? all.length : all.filter((r) => statuses.includes(r.status)).length;
   const rows =
@@ -161,20 +174,28 @@ export default async function MyListingsPage({
     const categoryFee = resolveListingFee(products, l.category_id, parentOf.get(l.category_id) ?? null);
     const p = isFree(categoryFee) ? categoryFee : renewalProduct ?? categoryFee;
     if (!p) return null;
-    return p.price <= 0 ? "Gratuit" : `${fmt(p.price, locale)} TND`;
+    return p.price <= 0 ? t("free") : t("price", { amount: fmt(p.price, locale) });
   };
 
   const priceOf = (l: Row) =>
     l.price_on_request || l.price == null
-      ? "Sur demande"
-      : `${formatTND(Number(l.price), locale)} TND`;
+      ? t("priceOnRequest")
+      : t("price", { amount: formatTND(Number(l.price), locale) });
 
-  const date = (v: string | null) =>
-    v ? new Date(v).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+  const date = (v: string | null) => (v ? formatDate(v, locale, "medium") : "—");
 
-  /** DD/MM — the same form the expiry notification uses. */
-  const shortDate = (v: string | null) =>
-    v ? new Date(v).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) : "";
+  /** Day and month — the expiry date is never more than a few days away. */
+  const shortDate = (v: string | null) => (v ? formatDate(v, locale, "dayMonth") : "");
+
+  const categoryOf = (l: Row) =>
+    categoryLabel(Array.isArray(l.category) ? l.category[0] : l.category, locale) || "—";
+
+  /**
+   * The wizard saves an untitled draft as « Brouillon » and checks for that
+   * exact word when it reopens it, so the stored value stays French; the
+   * seller sees it in their own language.
+   */
+  const titleOf = (l: Row) => (l.title === UNTITLED_DRAFT ? tAccount("untitledDraft") : l.title);
 
   /** Days left before a published annonce expires — the only date that is urgent. */
   const daysLeft = (l: Row) => {
@@ -203,12 +224,18 @@ export default async function MyListingsPage({
   function statusOf(l: Row) {
     if (l.status === "pending_payment" && reviewFor.has(l.id)) {
       return {
-        label: "Reçu en vérification",
+        label: t("receiptInReview"),
         tone: "mazed-tone-warn",
-        hint: "Nous validons votre reçu — moins de 24 h.",
+        hint: t("receiptInReviewHint"),
       };
     }
-    return STATUS[l.status] ?? { label: l.status, tone: "bg-surface-2 text-muted" };
+    const known = STATUS[l.status];
+    if (!known) return { label: l.status, tone: "bg-surface-2 text-muted", hint: undefined };
+    return {
+      label: t(`status.${l.status}`),
+      tone: known.tone,
+      hint: known.hint ? t(`statusHint.${l.status}`) : undefined,
+    };
   }
 
   function Action({ l, block = false }: { l: Row; block?: boolean }) {
@@ -220,14 +247,14 @@ export default async function MyListingsPage({
     if (l.status === "pending_payment" && reviewFor.has(l.id)) {
       return (
         <Link href={`/payment/checkout?payment=${reviewFor.get(l.id)}` as never} className={cls}>
-          <CreditCard className="size-3.5" /> Voir le reçu
+          <CreditCard className="size-3.5" /> {t("viewReceipt")}
         </Link>
       );
     }
     if (l.status === "pending_payment" && payFor.has(l.id)) {
       return (
         <Link href={`/payment/checkout?payment=${payFor.get(l.id)}` as never} className={cls}>
-          <CreditCard className="size-3.5" /> Payer
+          <CreditCard className="size-3.5" /> {t("pay")}
         </Link>
       );
     }
@@ -239,7 +266,7 @@ export default async function MyListingsPage({
     if (l.status === "draft") {
       return (
         <Link href={`/annonces/nouvelle?draft=${l.id}` as never} className={cls}>
-          <PencilLine className="size-3.5" /> Reprendre
+          <PencilLine className="size-3.5" /> {t("resume")}
         </Link>
       );
     }
@@ -248,7 +275,7 @@ export default async function MyListingsPage({
     if (l.status === "rejected") {
       return (
         <Link href={`/annonces/nouvelle?draft=${l.id}` as never} className={cls}>
-          <PencilLine className="size-3.5" /> Corriger
+          <PencilLine className="size-3.5" /> {t("fix")}
         </Link>
       );
     }
@@ -268,7 +295,7 @@ export default async function MyListingsPage({
               : "inline-flex items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
           }
         >
-          Voir <ArrowRight className="size-3.5" />
+          {t("view")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
         </Link>
         {/* Say it is sold, or take it down — neither was possible from here. */}
         {l.status === "published" && (
@@ -287,22 +314,22 @@ export default async function MyListingsPage({
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-[24px] font-extrabold tracking-tight lg:text-[32px]">Mes annonces</h1>
+          <h1 className="text-[24px] font-extrabold tracking-tight lg:text-[32px]">{t("title")}</h1>
           <p className="mt-1 text-[13px] text-muted lg:text-[14px]">
             {all.length === 0
-              ? "Vous n'avez pas encore publié."
-              : `${all.length} annonce${all.length > 1 ? "s" : ""} · gérez-les ici.`}
+              ? t("subtitleEmpty")
+              : t("subtitleCount", { count: all.length })}
           </p>
         </div>
         <div className="flex items-center gap-2">
           {creditsLeft > 0 && (
             <span className="inline-flex items-center gap-1.5 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft">
               <Ticket className="size-4" />
-              {creditsLeft} restante{creditsLeft > 1 ? "s" : ""}
+              {t("creditsLeft", { count: creditsLeft })}
             </span>
           )}
           <Link href={"/annonces/nouvelle" as never} className="mazed-btn-luxe tap-target px-4 py-2.5 text-[13px]">
-            <Plus className="size-4" /> Publier
+            <Plus className="size-4" /> {t("publish")}
           </Link>
         </div>
       </div>
@@ -313,16 +340,16 @@ export default async function MyListingsPage({
       {all.length > 0 && (
         <nav className="-mx-4 mt-5 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:overflow-visible lg:px-0">
           <div className="flex min-w-max gap-2 lg:min-w-0">
-            {TABS.map((t) => {
-              const n = countFor(t.statuses);
-              const on = t.key === active.key;
+            {TABS.map((tab) => {
+              const n = countFor(tab.statuses);
+              const on = tab.key === active.key;
               // An empty tab is noise — unless you are standing in it, in which
               // case removing it would strand you.
-              if (n === 0 && !on && t.key !== "") return null;
+              if (n === 0 && !on && tab.key !== "") return null;
               return (
                 <Link
-                  key={t.key || "all"}
-                  href={(t.key ? `/account/listings?statut=${t.key}` : "/account/listings") as never}
+                  key={tab.key || "all"}
+                  href={(tab.key ? `/account/listings?statut=${tab.key}` : "/account/listings") as never}
                   aria-current={on ? "page" : undefined}
                   className={[
                     "tap-target flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-[13px] font-bold transition",
@@ -331,8 +358,8 @@ export default async function MyListingsPage({
                       : "border-border bg-surface text-muted hover:border-gold-soft hover:text-foreground",
                   ].join(" ")}
                 >
-                  {t.label}
-                  <span className={`mazed-tabular text-[13px] font-extrabold ${on ? "text-gold" : t.tone}`}>
+                  {t(`tabs.${tab.label}`)}
+                  <span className={`mazed-tabular text-[13px] font-extrabold ${on ? "text-gold" : tab.tone}`}>
                     {n}
                   </span>
                 </Link>
@@ -346,7 +373,6 @@ export default async function MyListingsPage({
       <div className="mt-4 space-y-3 lg:hidden">
         {rows.map((l) => {
           const st = statusOf(l);
-          const cat = Array.isArray(l.category) ? l.category[0] : l.category;
           const cover = coverPhoto(l.photos);
           const left = daysLeft(l);
           return (
@@ -367,10 +393,10 @@ export default async function MyListingsPage({
                     <span className={`rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.12em] ${st.tone}`}>
                       {st.label}
                     </span>
-                    <span className="truncate text-[11px] text-muted">{cat?.label_fr ?? "—"}</span>
+                    <span className="truncate text-[11px] text-muted">{categoryOf(l)}</span>
                   </div>
                   <Link href={`/annonces/${l.id}` as never} className="mt-1 block truncate text-[14.5px] font-bold text-foreground">
-                    {l.title}
+                    {titleOf(l)}
                   </Link>
                   <p className="mazed-tabular mt-0.5 text-[14px] font-extrabold text-gold">{priceOf(l)}</p>
                 </div>
@@ -388,12 +414,14 @@ export default async function MyListingsPage({
               {left !== null && (
                 <p className={`mt-2 inline-flex items-center gap-1 text-[11.5px] ${left <= 3 ? "font-bold text-amber-400" : "text-muted"}`}>
                   <Clock className="size-3" />
-                  {left <= 0 ? "Expire aujourd'hui" : `Encore ${left} jour${left > 1 ? "s" : ""} en ligne`}
+                  {left <= 0 ? t("expiresToday") : t("daysLeft", { days: left })}
                   {/* Renewal is refused while an annonce is published — it
                       would take a paid, live annonce off the catalogue while
                       the fee is verified. So the date is the useful fact, not
                       a « Renouveler » button that cannot be there yet. */}
-                  {left <= 3 && <span className="font-semibold">· renouvelable le {shortDate(l.expires_at)}</span>}
+                  {left <= 3 && (
+                    <span className="font-semibold">{t("renewableOn", { date: shortDate(l.expires_at) })}</span>
+                  )}
                 </p>
               )}
 
@@ -411,18 +439,17 @@ export default async function MyListingsPage({
         <table className="w-full text-[13px]">
           <thead className="bg-surface-2 text-[10px] uppercase tracking-[0.14em] text-muted">
             <tr>
-              <th className="px-5 py-3.5 text-start font-extrabold">Annonce</th>
-              <th className="px-3 py-3.5 text-start font-extrabold">Statut</th>
-              <th className="px-3 py-3.5 text-end font-extrabold">Prix</th>
-              <th className="px-3 py-3.5 text-start font-extrabold">Publiée</th>
-              <th className="px-3 py-3.5 text-start font-extrabold">Expire</th>
-              <th className="px-5 py-3.5 text-end font-extrabold">Action</th>
+              <th className="px-5 py-3.5 text-start font-extrabold">{t("columns.listing")}</th>
+              <th className="px-3 py-3.5 text-start font-extrabold">{t("columns.status")}</th>
+              <th className="px-3 py-3.5 text-end font-extrabold">{t("columns.price")}</th>
+              <th className="px-3 py-3.5 text-start font-extrabold">{t("columns.published")}</th>
+              <th className="px-3 py-3.5 text-start font-extrabold">{t("columns.expires")}</th>
+              <th className="px-5 py-3.5 text-end font-extrabold">{t("columns.action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {rows.map((l) => {
               const st = statusOf(l);
-              const cat = Array.isArray(l.category) ? l.category[0] : l.category;
               const cover = coverPhoto(l.photos);
               const left = daysLeft(l);
               return (
@@ -444,9 +471,9 @@ export default async function MyListingsPage({
                           href={`/annonces/${l.id}` as never}
                           className="block max-w-[34ch] truncate text-[14px] font-bold text-foreground hover:text-gold"
                         >
-                          {l.title}
+                          {titleOf(l)}
                         </Link>
-                        <div className="truncate text-[11.5px] text-muted">{cat?.label_fr ?? "—"}</div>
+                        <div className="truncate text-[11.5px] text-muted">{categoryOf(l)}</div>
                       </div>
                     </div>
                   </td>
@@ -473,7 +500,7 @@ export default async function MyListingsPage({
                       <span className={left <= 3 ? "font-bold text-amber-400" : "text-muted"}>
                         {date(l.expires_at)}
                         <span className="block text-[11px]">
-                          {left <= 0 ? "aujourd'hui" : `dans ${left} j`}
+                          {left <= 0 ? t("today") : t("inDays", { days: left })}
                         </span>
                       </span>
                     )}
@@ -496,25 +523,27 @@ export default async function MyListingsPage({
           </span>
           {all.length === 0 ? (
             <>
-              <p className="mt-4 text-[15px] font-bold text-foreground">Aucune annonce pour le moment</p>
+              <p className="mt-4 text-[15px] font-bold text-foreground">{t("emptyTitle")}</p>
               <p className="mx-auto mt-1 max-w-sm text-[13px] leading-relaxed text-muted">
-                Publiez votre première annonce — appartement, terrain ou local.
+                {t("emptyBody")}
               </p>
               <Link href={"/annonces/nouvelle" as never} className="mazed-btn-luxe tap-target mt-5 inline-flex px-5 py-2.5 text-[13px]">
-                <Plus className="size-4" /> Publier une annonce
+                <Plus className="size-4" /> {t("publishListing")}
               </Link>
             </>
           ) : (
             <>
-              <p className="mt-4 text-[15px] font-bold text-foreground">Rien dans « {active.label} »</p>
+              <p className="mt-4 text-[15px] font-bold text-foreground">
+                {t("emptyTabTitle", { tab: t(`tabs.${active.label}`) })}
+              </p>
               <p className="mx-auto mt-1 max-w-sm text-[13px] leading-relaxed text-muted">
-                Vos autres annonces sont dans les onglets voisins.
+                {t("emptyTabBody")}
               </p>
               <Link
                 href={"/account/listings" as never}
                 className="mt-5 inline-flex items-center gap-1 text-[13px] font-bold text-gold hover:underline"
               >
-                Voir toutes les annonces <ArrowRight className="size-3.5" />
+                {t("seeAll")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
               </Link>
             </>
           )}

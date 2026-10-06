@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { useApiError } from "@/lib/useApiError";
@@ -18,12 +19,14 @@ import { CreditCard, Loader2 } from "lucide-react";
 export function PaySubmitButton({
   listingId,
   block = false,
-  label = "Payer",
+  label,
 }: {
   listingId: string;
   block?: boolean;
+  /** Defaults to « Payer » in the page's language. */
   label?: string;
 }) {
+  const t = useTranslations("payment.payButton");
   const router = useRouter();
   const { toast } = useToast();
   const apiError = useApiError();
@@ -39,7 +42,7 @@ export function PaySubmitButton({
         detail?: string;
       };
       if (!res.ok) {
-        toast(apiError(j, "Paiement impossible pour le moment."), "error");
+        toast(apiError(j, t("failed")), "error");
         return;
       }
       if (j.paymentId) {
@@ -47,10 +50,10 @@ export function PaySubmitButton({
         return;
       }
       // No payment needed (a credit, a free category, or a fee already paid).
-      toast("Annonce envoyée à la vérification.", "success");
+      toast(t("sent"), "success");
       router.refresh();
     } catch {
-      toast("Erreur réseau.", "error");
+      toast(t("networkError"), "error");
     } finally {
       setBusy(false);
     }
@@ -68,7 +71,7 @@ export function PaySubmitButton({
       }
     >
       {busy ? <Loader2 className="size-3.5 animate-spin" /> : <CreditCard className="size-3.5" />}
-      {label}
+      {label ?? t("pay")}
     </button>
   );
 }

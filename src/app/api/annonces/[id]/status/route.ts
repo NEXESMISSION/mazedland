@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslator } from "@/lib/i18n/server";
 
 /**
  * POST /api/annonces/[id]/status - what a seller can do to their own annonce
@@ -35,11 +36,8 @@ const ALLOWED: Record<Action, string[]> = {
   relist: ["sold", "archived"],
 };
 
-const REFUSAL: Record<Action, string> = {
-  mark_sold: "Seule une annonce en ligne peut être marquée vendue.",
-  withdraw: "Cette annonce n'est pas en ligne.",
-  relist: "Cette annonce est déjà en ligne ou en cours de traitement.",
-};
+// Why each action is refused from the wrong status: the sentence is
+// `accountApi.status.refusal.<action>`, in the seller's language.
 
 export async function POST(
   req: NextRequest,
@@ -75,8 +73,9 @@ export async function POST(
 
   const status = listing.status as string;
   if (!ALLOWED[action].includes(status)) {
+    const t = await apiTranslator(req, "accountApi.status");
     return NextResponse.json(
-      { error: "wrong_status", detail: REFUSAL[action] },
+      { error: "wrong_status", detail: t(`refusal.${action}`) },
       { status: 409 },
     );
   }
@@ -85,17 +84,16 @@ export async function POST(
   if (action === "relist") {
     const until = listing.expires_at ? new Date(listing.expires_at as string).getTime() : 0;
     if (!until || until <= Date.now()) {
+      const t = await apiTranslator(req, "accountApi.status");
       return NextResponse.json(
-        {
-          error: "window_closed",
-          detail: "Votre période de publication est terminée — renouvelez l'annonce.",
-        },
+        { error: "window_closed", detail: t("windowClosed") },
         { status: 409 },
       );
     }
     if (!listing.contact_phone) {
+      const t = await apiTranslator(req, "accountApi.status");
       return NextResponse.json(
-        { error: "contact_required", detail: "Ajoutez un numéro joignable avant de republier." },
+        { error: "contact_required", detail: t("contactRequired") },
         { status: 400 },
       );
     }
