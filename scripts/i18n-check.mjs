@@ -126,9 +126,54 @@ if (process.argv.includes("--unused")) {
 
 // ── fr ⇄ ar parity ─────────────────────────────────────────────────────────
 // Placeholder names a message uses: "{count, plural, …}" → count, "{name}" →
-// name. Plural branch bodies ("{# annonces}") and Arabic text are not \w, so
-// they are not mistaken for arguments.
-const argsOf = (msg) => new Set([...String(msg).matchAll(/\{\s*([A-Za-z_]\w*)\s*[,}]/g)].map((m) => m[1]));
+// name. A small ICU walker rather than a regex: a brace after a plural/select
+// selector ("one {Annonce}", "sale {Vente}") opens a branch body, which can only
+// be told from an argument by where it sits.
+function argsOf(msg) {
+  const s = String(msg);
+  const args = new Set();
+  let i = 0;
+  const ws = () => { while (i < s.length && /\s/.test(s[i])) i++; };
+  const word = () => { const m = /^[^\s,{}]+/.exec(s.slice(i)); i += m ? m[0].length : 0; return m ? m[0] : ""; };
+  // Text until the closing brace of the current body (or the end).
+  const text = () => {
+    while (i < s.length) {
+      if (s[i] === "'" && s[i + 1] === "'") { i += 2; continue; }
+      if (s[i] === "'" && /[{}#]/.test(s[i + 1] ?? "")) { const end = s.indexOf("'", i + 1); i = end < 0 ? s.length : end + 1; continue; }
+      if (s[i] === "{") { i++; argument(); continue; }
+      if (s[i] === "}") return;
+      i++;
+    }
+  };
+  const argument = () => {
+    ws();
+    const name = word();
+    ws();
+    if (/^[A-Za-z_]\w*$/.test(name)) args.add(name);
+    if (s[i] === "}") { i++; return; }
+    if (s[i] !== ",") { text(); i++; return; } // malformed: skip to the brace
+    i++;
+    ws();
+    const type = word();
+    ws();
+    if (["plural", "select", "selectordinal"].includes(type)) {
+      if (s[i] === ",") i++;
+      for (;;) {
+        ws();
+        if (i >= s.length) return;
+        if (s[i] === "}") { i++; return; }
+        word(); // selector, or offset:n
+        ws();
+        if (s[i] === "{") { i++; text(); i++; }
+      }
+    }
+    // number / date / time with an optional style: skip to the closing brace.
+    let depth = 1;
+    while (i < s.length && depth) { if (s[i] === "{") depth++; else if (s[i] === "}") depth--; i++; }
+  };
+  text();
+  return args;
+}
 const flatten = (node, path = "", out = new Map()) => {
   for (const [k, v] of Object.entries(node)) {
     const full = path ? `${path}.${k}` : k;
