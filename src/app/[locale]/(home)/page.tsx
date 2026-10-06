@@ -8,6 +8,8 @@ import { LG_UP } from "@/components/ui/HiddenAt";
 import { AnnonceCard } from "@/components/listing/AnnonceCard";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatNumber, formatTND } from "@/lib/utils";
+import { isRtl } from "@/lib/i18n";
+import { governorateLabel } from "@/lib/tunisia";
 import { getHomeFeed, type HomeListingRow } from "@/lib/home/feed";
 import { log } from "@/lib/log";
 import { PerfProbe } from "@/components/dev/PerfProbe";
@@ -143,7 +145,7 @@ export default async function LandingPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations();
-  const isRTL = locale === "ar";
+  const isRTL = isRtl(locale);
   const ChevronEnd = isRTL ? ChevronLeft : ChevronRight;
   // Both device trees are rendered and CSS picks one (lg breakpoint). The
   // page is static, so saved-hearts + login state stay false here and the
@@ -259,6 +261,8 @@ export default async function LandingPage({
     brandTitle: t("home.heroBrandTitle"),
     brandSlogan: t("brand.slogan"),
     brandEyebrow: t("home.heroBrandEyebrow", { count: liveCount }),
+    priceOnRequest: t("home.priceOnRequest"),
+    placeWithArea: (place, area) => t("home.slideEyebrowArea", { place, area }),
   });
 
   // Second "ending soon" hero carousel — built once, shown on mobile AND
@@ -269,6 +273,7 @@ export default async function LandingPage({
           endingSoonWord: t("home.endingSoonEyebrow"),
           tnd: t("common.tnd"),
           bidCta: t("home.heroBidCta"),
+          priceOnRequest: t("home.priceOnRequest"),
         })
       : [];
 
@@ -364,8 +369,8 @@ export default async function LandingPage({
       {bestValue.length > 0 && (
         <section className="mt-7">
           <RailHeader
-            eyebrow="Le meilleur rapport"
-            title="Bonnes affaires"
+            eyebrow={t("home.bestValueEyebrow")}
+            title={t("home.bestValueTitle")}
             countLabel={bestValue.length}
             ctaHref="/annonces"
             ChevronEnd={ChevronEnd}
@@ -510,7 +515,7 @@ export default async function LandingPage({
               href={`/annonces?${b.query}` as `/annonces`}
               className="tap-target inline-flex shrink-0 snap-start items-center justify-center whitespace-nowrap rounded-full bg-surface-2 px-4 py-2.5 text-[12px] font-bold leading-none text-foreground transition active:scale-[0.97] hover:bg-surface"
             >
-              {isRTL ? b.labelAr : b.labelEn}
+              {t(`home.priceBuckets.${b.labelKey}`)}
             </Link>
           ))}
         </div>
@@ -631,7 +636,7 @@ export default async function LandingPage({
           className="mazed-surface-navy-luxe tap-target relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25 transition active:scale-[0.99] lg:hidden"
         >
           <div className="relative min-w-0">
-            <span className="mazed-eyebrow">Parcourir le catalogue</span>
+            <span className="mazed-eyebrow">{t("home.browseCatalogue")}</span>
             <div
               className={`mt-2 text-[22px] font-extrabold leading-tight tracking-tight ${
                 isRTL ? "font-arabic" : ""
@@ -642,7 +647,7 @@ export default async function LandingPage({
             <div className="mt-1 text-[12px] text-muted">{t("brand.slogan")}</div>
           </div>
           <span className="mazed-gold-fill inline-flex size-10 shrink-0 items-center justify-center rounded-full ring-1 ring-black/10 shadow-[var(--shadow-gold)]">
-            <ArrowUpRight className="size-5" strokeWidth={2.5} />
+            <ArrowUpRight className="size-5 rtl:-scale-x-100" strokeWidth={2.5} />
           </span>
         </Link>
       </section>
@@ -792,6 +797,9 @@ function buildHeroSlides(
     brandSlogan: string;
     /** The eyebrow on the brand slide — the caller resolves the placeholder. */
     brandEyebrow: string;
+    priceOnRequest: string;
+    /** "Sfax · 450 m²" — one message, so the unit sits where each language wants it. */
+    placeWithArea: (place: string, area: string) => string;
   },
 ): HeroSlide[] {
   const slides: HeroSlide[] = [];
@@ -799,15 +807,18 @@ function buildHeroSlides(
     const photo = (l.photos ?? []).slice().sort((p, q) => p.sort_order - q.sort_order)[0];
     if (!photo) continue;
     const area = Number((l.attributes ?? {}).area_sqm);
-    const where = l.delegation?.trim() || l.governorate;
+    const where = l.delegation?.trim() || governorateLabel(l.governorate, locale);
     slides.push({
       id: l.id,
       imageUrl: propertyPhotoUrl(photo.storage_path),
-      eyebrow: Number.isFinite(area) && area > 0 ? `${where} · ${formatNumber(area)} m²` : where,
+      eyebrow:
+        Number.isFinite(area) && area > 0
+          ? labels.placeWithArea(where, formatNumber(area, locale))
+          : where,
       title: l.title,
       subtitle:
         l.price_on_request || l.price == null
-          ? "Prix sur demande"
+          ? labels.priceOnRequest
           : `${formatTND(Number(l.price), locale)} ${labels.tnd}`,
       href: `/annonces/${l.id}`,
       ctaLabel: labels.bidCta,
@@ -840,7 +851,7 @@ function buildHeroSlides(
 function buildEndingSoonSlides(
   rows: HomeListingRow[],
   locale: string,
-  labels: { endingSoonWord: string; tnd: string; bidCta: string },
+  labels: { endingSoonWord: string; tnd: string; bidCta: string; priceOnRequest: string },
 ): HeroSlide[] {
   const slides: HeroSlide[] = [];
   for (const l of rows) {
@@ -849,11 +860,11 @@ function buildEndingSoonSlides(
     slides.push({
       id: l.id,
       imageUrl: propertyPhotoUrl(photo.storage_path),
-      eyebrow: `${labels.endingSoonWord} · ${l.delegation?.trim() || l.governorate}`,
+      eyebrow: `${labels.endingSoonWord} · ${l.delegation?.trim() || governorateLabel(l.governorate, locale)}`,
       title: l.title,
       subtitle:
         l.price_on_request || l.price == null
-          ? "Prix sur demande"
+          ? labels.priceOnRequest
           : `${formatTND(Number(l.price), locale)} ${labels.tnd}`,
       href: `/annonces/${l.id}`,
       ctaLabel: labels.bidCta,
@@ -867,35 +878,34 @@ function buildEndingSoonSlides(
 // Browse-by-type / browse-by-price tables.
 // ──────────────────────────────────────────────────────────────────────
 
+// Labels come from `property.types.<key>`.
 const PROPERTY_TYPES: {
   key: string;
-  labelEn: string;
-  labelAr: string;
   Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
 }[] = [
-  { key: "apartment",  labelEn: "Apartment",   labelAr: "شقة",       Icon: Building2 },
-  { key: "villa",      labelEn: "Villa",       labelAr: "فيلا",      Icon: Home },
-  { key: "house",      labelEn: "House",       labelAr: "منزل",      Icon: Home },
-  { key: "land",       labelEn: "Land",        labelAr: "أرض",       Icon: Trees },
+  { key: "apartment",  Icon: Building2 },
+  { key: "villa",      Icon: Home },
+  { key: "house",      Icon: Home },
+  { key: "land",       Icon: Trees },
   // Fermes and Dépôts are categories in the catalogue with chips of their own;
   // the home tiles listed six of the eight, so two were unreachable from here.
-  { key: "farm",       labelEn: "Farm",        labelAr: "مزرعة",     Icon: Wheat },
-  { key: "commercial", labelEn: "Commercial",  labelAr: "محل تجاري", Icon: Store },
-  { key: "office",     labelEn: "Office",      labelAr: "مكتب",      Icon: Briefcase },
-  { key: "warehouse",  labelEn: "Warehouse",   labelAr: "مستودع",    Icon: Warehouse },
+  { key: "farm",       Icon: Wheat },
+  { key: "commercial", Icon: Store },
+  { key: "office",     Icon: Briefcase },
+  { key: "warehouse",  Icon: Warehouse },
 ];
 
+// Labels come from `home.priceBuckets.<labelKey>`.
 const PRICE_BUCKETS: {
   key: string;
-  labelEn: string;
-  labelAr: string;
+  labelKey: string;
   /** The price params the catalogue reads (`min` / `max`, in TND). */
   query: string;
 }[] = [
-  { key: "under-100k",  labelEn: "Moins de 100k", labelAr: "أقل من 100 ألف",   query: "max=99999" },
-  { key: "100k-500k",   labelEn: "100k – 500k",   labelAr: "100 – 500 ألف",    query: "min=100000&max=499999" },
-  { key: "500k-1m",     labelEn: "500k – 1M",     labelAr: "500 ألف – 1 مليون", query: "min=500000&max=999999" },
-  { key: "1m-plus",     labelEn: "1M+ TND",       labelAr: "أكثر من مليون",     query: "min=1000000" },
+  { key: "under-100k",  labelKey: "under100k",      query: "max=99999" },
+  { key: "100k-500k",   labelKey: "from100kTo500k", query: "min=100000&max=499999" },
+  { key: "500k-1m",     labelKey: "from500kTo1m",   query: "min=500000&max=999999" },
+  { key: "1m-plus",     labelKey: "over1m",         query: "min=1000000" },
 ];
 
 // StatTile lives near the top of the file as a const expression so

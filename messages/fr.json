@@ -18,7 +18,13 @@
     "logout": "Déconnexion",
     "browse": "Explorer",
     "watchlist": "Favoris",
-    "account": "Compte"
+    "account": "Compte",
+    "myListings": "Mes annonces",
+    "myFavorites": "Mes favoris",
+    "myPayments": "Mes paiements",
+    "sellProperty": "Vendre un bien",
+    "adminConsole": "Console admin",
+    "signOut": "Se déconnecter"
   },
   "shell": {
     "back": "Retour",
@@ -46,7 +52,10 @@
       "sell": "Tableau du vendeur",
       "admin": "Console admin",
       "payment": "Paiement"
-    }
+    },
+    "mainNav": "Navigation principale",
+    "offline": "Hors ligne — reconnexion automatique…",
+    "reconnected": "Connexion rétablie"
   },
   "accountPage": {
     "guestTitle": "Bienvenue sur Mazed Immo",
@@ -123,6 +132,36 @@
       "terms": "Conditions d'utilisation",
       "privacy": "Politique de confidentialité",
       "contact": "Contact"
+    },
+    "carousel": {
+      "prev": "Précédent",
+      "next": "Suivant"
+    },
+    "heroBanner": {
+      "roleDescription": "carrousel",
+      "label": "Annonces à la une",
+      "slideOf": "Annonce {index} sur {total}",
+      "view": "Voir",
+      "online": "En ligne",
+      "brandEyebrow": "Mazed Immo · Tunisie",
+      "brandCount": "{count, plural, one {<n>#</n><l>Annonce</l>} other {<n>#</n><l>Annonces</l>}}",
+      "brandHeadline": "L'immobilier <gold>tunisien</gold>",
+      "explore": "Explorer"
+    },
+    "showcase": {
+      "prev": "Bien précédent",
+      "next": "Bien suivant",
+      "slideOf": "Bien {index} sur {total}",
+      "live": "En direct",
+      "forSale": "À vendre",
+      "price": "Prix",
+      "view": "Voir"
+    },
+    "countdown": {
+      "ended": "ended",
+      "days": "{d}d {h}h",
+      "hours": "{h}h {m}m",
+      "minutes": "{m}m {s}s"
     }
   },
   "home": {
@@ -163,7 +202,35 @@
     "trustInspectionTitle": "Vendeurs vérifiés",
     "trustInspectionBody": "Le badge distingue les vendeurs contrôlés par notre équipe.",
     "trustLegalTitle": "Aucune commission",
-    "trustLegalBody": "Vous payez la publication, pas un pourcentage de la vente."
+    "trustLegalBody": "Vous payez la publication, pas un pourcentage de la vente.",
+    "bestValueEyebrow": "Le meilleur rapport",
+    "bestValueTitle": "Bonnes affaires",
+    "browseCatalogue": "Parcourir le catalogue",
+    "priceOnRequest": "Prix sur demande",
+    "slideEyebrowArea": "{place} · {area} m²",
+    "priceBuckets": {
+      "under100k": "Moins de 100k",
+      "from100kTo500k": "100k – 500k",
+      "from500kTo1m": "500k – 1M",
+      "over1m": "1M+ TND"
+    },
+    "liveBadge": "{count, plural, one {· # annonce à prix affiché} other {· # annonces à prix affiché}}",
+    "statLive": "{count, plural, one {Annonce en ligne} other {Annonces en ligne}}",
+    "statLiveSub": "À prix affiché",
+    "statNewThisWeek": "Nouvelles cette semaine",
+    "statNewThisWeekSub": "Fraîchement publiées",
+    "verifiedTitle": "Annonces vérifiées",
+    "verifiedSub": "Contrôlées avant publication",
+    "statGovernorates": "{count, plural, one {<n>#</n><l>Gouvernorat</l>} other {<n>#</n><l>Gouvernorats</l>}}",
+    "statGovernoratesNational": "Couverture nationale",
+    "statGovernoratesPartial": "sur les 24 du pays",
+    "sellProperty": "Vendre un bien",
+    "sellShort": "Vendre",
+    "noFeeSub": "Vous payez la publication",
+    "protectedNumberTitle": "Numéro protégé",
+    "protectedNumberSub": "Affiché à la demande",
+    "browseEyebrow": "Parcourir",
+    "browseTitle": "Trouvez votre bien"
   },
   "search": {
     "placeholder": "Rechercher un bien…",
@@ -172,6 +239,50 @@
     "allWilayas": "Tous les gouvernorats",
     "type": "Type",
     "allTypes": "Tous les types"
+  },
+  "notificationsUi": {
+    "title": "Notifications",
+    "unreadAria": "{count} non lues",
+    "deleteAll": "Supprimer tout",
+    "close": "Fermer",
+    "filterAll": "Toutes",
+    "filterUnread": "Non lues",
+    "confirmDeleteAll": "Tout supprimer ?",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "emptyTitle": "Aucune notification",
+    "emptyBody": "Tout est calme. Jetez un œil aux dernières annonces.",
+    "emptyCta": "Explorer les annonces",
+    "noUnreadTitle": "Aucune non lue",
+    "noUnreadBody": "Vous êtes à jour.",
+    "showMore": "Afficher plus",
+    "urgent": "Urgent",
+    "deleteOne": "Supprimer la notification",
+    "deleteRefused": "Suppression refusée par le serveur.",
+    "deleteFailed": "Échec de la suppression. Vérifiez la connexion.",
+    "deletedCount": "{count, plural, one {# notification supprimée.} other {# notifications supprimées.}}"
+  },
+  "ui": {
+    "loading": "Chargement",
+    "searching": "Recherche en cours…",
+    "close": "Fermer",
+    "lightbox": {
+      "label": "Image en plein écran",
+      "zoomOut": "Dézoomer",
+      "zoomIn": "Zoomer",
+      "reset": "Réinitialiser",
+      "hint": "Molette / pincer pour zoomer · glisser pour déplacer"
+    },
+    "favorite": {
+      "add": "Ajouter aux favoris",
+      "remove": "Retirer des favoris",
+      "sessionExpired": "Votre session a expiré. Reconnectez-vous pour enregistrer vos favoris.",
+      "saveFailed": "Impossible d'enregistrer ce favori. Réessayez.",
+      "offline": "Pas de connexion. Réessayez."
+    }
+  },
+  "popupsUi": {
+    "close": "Fermer"
   },
   "gallery": {
     "prev": "Photo précédente",

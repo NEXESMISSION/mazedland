@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -95,6 +96,7 @@ const variantStyles: Record<
 };
 
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
+  const t = useTranslations("ui");
   const { icon: Icon, accent, iconColor } = variantStyles[toast.variant];
   return (
     <div
@@ -114,7 +116,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       </div>
       <button
         onClick={onClose}
-        aria-label="Fermer"
+        aria-label={t("close")}
         className="tap-target shrink-0 rounded-full flex items-center justify-center text-[var(--foreground-muted)] hover:bg-[var(--surface-2)] hover:text-foreground transition-colors"
       >
         <X className="h-3.5 w-3.5" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useSessionCookie } from "@/lib/useSessionCookie";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
@@ -9,18 +10,19 @@ import {
   LogOut, Loader2,
 } from "lucide-react";
 
-type Item = { href: string; label: string; Icon: typeof User };
+/** `labelKey` is a key under `nav`. */
+type Item = { href: string; labelKey: string; Icon: typeof User };
 
 // "Mon activité" and "Favoris" were two entries for ONE page: /watchlist
 // redirects into /account/activity, which is favourites and nothing else since
 // the auction tabs went. Two menu items that land in the same place read as a
 // bug the moment someone tries both.
 const ITEMS: Item[] = [
-  { href: "/account", label: "Mon compte", Icon: User },
-  { href: "/account/listings", label: "Mes annonces", Icon: FileText },
-  { href: "/account/activity", label: "Mes favoris", Icon: Heart },
-  { href: "/account/payments", label: "Mes paiements", Icon: Receipt },
-  { href: "/annonces/nouvelle", label: "Vendre un bien", Icon: Plus },
+  { href: "/account", labelKey: "myAccount", Icon: User },
+  { href: "/account/listings", labelKey: "myListings", Icon: FileText },
+  { href: "/account/activity", labelKey: "myFavorites", Icon: Heart },
+  { href: "/account/payments", labelKey: "myPayments", Icon: Receipt },
+  { href: "/annonces/nouvelle", labelKey: "sellProperty", Icon: Plus },
 ];
 
 /*
@@ -39,6 +41,7 @@ const ITEMS: Item[] = [
  * page). For guests it's just a "Connexion" link.
  */
 export function AccountMenu() {
+  const t = useTranslations("nav");
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [open, setOpen] = useState(false);
@@ -156,11 +159,11 @@ export function AccountMenu() {
     return (
       <Link
         href="/login"
-        aria-label="Connexion"
+        aria-label={t("login")}
         className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border px-4 text-[13px] font-semibold text-muted transition-colors hover:border-gold-soft/60 hover:text-foreground"
       >
         <User className="size-4.5" strokeWidth={2} />
-        Connexion
+        {t("login")}
       </Link>
     );
   }
@@ -173,7 +176,7 @@ export function AccountMenu() {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Mon compte"
+        aria-label={t("myAccount")}
         className={`inline-flex size-10 items-center justify-center rounded-full border transition-colors ${
           open
             ? "border-gold-soft bg-gold-faint text-gold"
@@ -187,7 +190,7 @@ export function AccountMenu() {
         <div
           ref={menuRef}
           role="menu"
-          aria-label="Mon compte"
+          aria-label={t("myAccount")}
           onKeyDown={onMenuKey}
           className="absolute end-0 mt-2 w-60 overflow-hidden rounded-2xl border border-border bg-surface p-1.5 shadow-[0_20px_50px_-18px_rgba(0,0,0,0.45)]"
         >
@@ -199,7 +202,7 @@ export function AccountMenu() {
               className="mb-1 flex items-center gap-3 rounded-xl bg-gold-faint px-3 py-2.5 text-[13px] font-bold text-gold ring-1 ring-gold/30 transition-colors hover:bg-gold-faint/80"
             >
               <ShieldCheck className="size-4 shrink-0" strokeWidth={2.2} />
-              Console admin
+              {t("adminConsole")}
             </Link>
           )}
 
@@ -212,7 +215,7 @@ export function AccountMenu() {
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-foreground/85 transition-colors hover:bg-surface-2 hover:text-foreground"
             >
               <it.Icon className="size-4 shrink-0 text-muted" strokeWidth={2} />
-              {it.label}
+              {t(it.labelKey)}
             </Link>
           ))}
 
@@ -226,7 +229,7 @@ export function AccountMenu() {
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-bold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
           >
             {loggingOut ? <Loader2 className="size-4 shrink-0 animate-spin" /> : <LogOut className="size-4 shrink-0" strokeWidth={2.2} />}
-            Se déconnecter
+            {t("signOut")}
           </button>
         </div>
       )}

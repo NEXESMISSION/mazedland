@@ -18,7 +18,13 @@
     "logout": "خروج",
     "browse": "تصفّح",
     "watchlist": "المفضّلة",
-    "account": "الحساب"
+    "account": "الحساب",
+    "myListings": "إعلاناتي",
+    "myFavorites": "المفضّلة",
+    "myPayments": "مدفوعاتي",
+    "sellProperty": "بيع عقار",
+    "adminConsole": "لوحة الإدارة",
+    "signOut": "تسجيل الخروج"
   },
   "shell": {
     "back": "رجوع",
@@ -46,7 +52,10 @@
       "sell": "لوحة البائع",
       "admin": "لوحة الإدارة",
       "payment": "الدفع"
-    }
+    },
+    "mainNav": "التنقل الرئيسي",
+    "offline": "غير متصل — إعادة الاتصال تلقائيًا…",
+    "reconnected": "رجع الاتصال"
   },
   "accountPage": {
     "guestTitle": "مرحبا بيك في Mazed Immo",
@@ -123,6 +132,36 @@
       "terms": "شروط الاستعمال",
       "privacy": "سياسة الخصوصية",
       "contact": "اتصل بنا"
+    },
+    "carousel": {
+      "prev": "السابق",
+      "next": "التالي"
+    },
+    "heroBanner": {
+      "roleDescription": "عرض شرائح",
+      "label": "إعلانات في الواجهة",
+      "slideOf": "الإعلان {index} من {total}",
+      "view": "شوف",
+      "online": "متاح",
+      "brandEyebrow": "Mazed Immo · تونس",
+      "brandCount": "{count, plural, zero {<n>#</n><l>إعلان</l>} one {<n>#</n><l>إعلان</l>} two {<n>#</n><l>إعلانات</l>} few {<n>#</n><l>إعلانات</l>} many {<n>#</n><l>إعلانًا</l>} other {<n>#</n><l>إعلان</l>}}",
+      "brandHeadline": "العقار <gold>التونسي</gold>",
+      "explore": "تصفّح"
+    },
+    "showcase": {
+      "prev": "العقار السابق",
+      "next": "العقار التالي",
+      "slideOf": "العقار {index} من {total}",
+      "live": "مباشر",
+      "forSale": "للبيع",
+      "price": "السعر",
+      "view": "شوف"
+    },
+    "countdown": {
+      "ended": "انتهى",
+      "days": "{d}ي {h}س",
+      "hours": "{h}س {m}د",
+      "minutes": "{m}د {s}ث"
     }
   },
   "home": {
@@ -163,7 +202,35 @@
     "trustInspectionTitle": "بائعون موثّقون",
     "trustInspectionBody": "الشارة تميّز البائعين اللي راقبهم فريقنا.",
     "trustLegalTitle": "بلا عمولة",
-    "trustLegalBody": "تخلّص النشر، موش نسبة من البيعة."
+    "trustLegalBody": "تخلّص النشر، موش نسبة من البيعة.",
+    "bestValueEyebrow": "أحسن قيمة",
+    "bestValueTitle": "فرص باهية",
+    "browseCatalogue": "تصفّح الإعلانات",
+    "priceOnRequest": "السعر عند الطلب",
+    "slideEyebrowArea": "{place} · {area} م²",
+    "priceBuckets": {
+      "under100k": "أقل من 100 ألف",
+      "from100kTo500k": "100 – 500 ألف",
+      "from500kTo1m": "500 ألف – 1 مليون",
+      "over1m": "أكثر من مليون دينار"
+    },
+    "liveBadge": "{count, plural, zero {· # إعلان بسوم واضح} one {· إعلان واحد بسوم واضح} two {· إعلانين بسوم واضح} few {· # إعلانات بسوم واضح} many {· # إعلانًا بسوم واضح} other {· # إعلان بسوم واضح}}",
+    "statLive": "{count, plural, zero {إعلان منشور} one {إعلان منشور} two {إعلانات منشورة} few {إعلانات منشورة} many {إعلانًا منشورًا} other {إعلان منشور}}",
+    "statLiveSub": "بسعر معلن",
+    "statNewThisWeek": "جديدة هذا الأسبوع",
+    "statNewThisWeekSub": "منشورة حديثًا",
+    "verifiedTitle": "إعلانات مراقبة",
+    "verifiedSub": "تتمّ مراقبتها قبل النشر",
+    "statGovernorates": "{count, plural, zero {<n>#</n><l>ولاية</l>} one {<n>#</n><l>ولاية</l>} two {<n>#</n><l>ولايات</l>} few {<n>#</n><l>ولايات</l>} many {<n>#</n><l>ولاية</l>} other {<n>#</n><l>ولاية</l>}}",
+    "statGovernoratesNational": "تغطية وطنية",
+    "statGovernoratesPartial": "من أصل 24 ولاية",
+    "sellProperty": "بيع عقارك",
+    "sellShort": "بيع",
+    "noFeeSub": "تخلّص على النشر",
+    "protectedNumberTitle": "رقم محمي",
+    "protectedNumberSub": "يظهر عند الطلب",
+    "browseEyebrow": "تصفّح",
+    "browseTitle": "لقى عقارك"
   },
   "search": {
     "placeholder": "لوّج على عقار…",
@@ -172,6 +239,50 @@
     "allWilayas": "كل الولايات",
     "type": "النوع",
     "allTypes": "كل الأنواع"
+  },
+  "notificationsUi": {
+    "title": "الإشعارات",
+    "unreadAria": "{count, plural, zero {لا توجد إشعارات غير مقروءة} one {إشعار واحد غير مقروء} two {إشعاران غير مقروءين} few {# إشعارات غير مقروءة} many {# إشعارًا غير مقروء} other {# إشعار غير مقروء}}",
+    "deleteAll": "احذف الكل",
+    "close": "إغلاق",
+    "filterAll": "الكل",
+    "filterUnread": "غير مقروءة",
+    "confirmDeleteAll": "تحذف الكل؟",
+    "cancel": "إلغاء",
+    "confirm": "أكّد",
+    "emptyTitle": "ما فماش إشعارات",
+    "emptyBody": "كل شيء هادي. شوف آخر الإعلانات.",
+    "emptyCta": "تصفّح الإعلانات",
+    "noUnreadTitle": "ما فماش إشعارات جديدة",
+    "noUnreadBody": "ما فاتك شيء.",
+    "showMore": "شوف أكثر",
+    "urgent": "عاجل",
+    "deleteOne": "احذف الإشعار",
+    "deleteRefused": "رفض الخادم عملية الحذف.",
+    "deleteFailed": "تعذّر الحذف. تحقّق من الاتصال.",
+    "deletedCount": "{count, plural, zero {لم يتم حذف أي إشعار.} one {تم حذف إشعار واحد.} two {تم حذف إشعارين.} few {تم حذف # إشعارات.} many {تم حذف # إشعارًا.} other {تم حذف # إشعار.}}"
+  },
+  "ui": {
+    "loading": "جاري التحميل",
+    "searching": "جاري البحث…",
+    "close": "إغلاق",
+    "lightbox": {
+      "label": "صورة بملء الشاشة",
+      "zoomOut": "تصغير",
+      "zoomIn": "تكبير",
+      "reset": "إعادة الضبط",
+      "hint": "العجلة أو الضغط بإصبعين للتكبير · اسحب للتحريك"
+    },
+    "favorite": {
+      "add": "زيد للمفضّلة",
+      "remove": "نحّي من المفضّلة",
+      "sessionExpired": "انتهت صلاحية الجلسة. سجّل الدخول من جديد لحفظ المفضّلة.",
+      "saveFailed": "تعذّر حفظ هذا الإعلان في المفضّلة. حاول من جديد.",
+      "offline": "لا يوجد اتصال. حاول من جديد."
+    }
+  },
+  "popupsUi": {
+    "close": "إغلاق"
   },
   "gallery": {
     "prev": "الصورة السابقة",

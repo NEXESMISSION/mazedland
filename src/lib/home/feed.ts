@@ -36,7 +36,7 @@ export type HomeListingRow = {
   attributes: Record<string, unknown> | null;
   published_at: string | null;
   created_at: string;
-  category: { id: string; label_fr: string; kind: string } | null;
+  category: { id: string; label_fr: string; label_ar: string | null; kind: string } | null;
   photos: { storage_path: string; sort_order: number }[] | null;
 };
 
@@ -44,7 +44,7 @@ export type HomeListingRow = {
 const HOME_LISTING_SELECT = `
   id, title, price, price_on_request, negotiable, governorate, delegation,
   reference, attributes, published_at, created_at,
-  category:categories!listings_category_id_fkey ( id, label_fr, kind ),
+  category:categories!listings_category_id_fkey ( id, label_fr, label_ar, kind ),
   photos:listing_photos ( storage_path, sort_order )
 `;
 

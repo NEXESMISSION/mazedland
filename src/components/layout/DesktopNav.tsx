@@ -69,6 +69,7 @@ function isActive(pathname: string, href: string): boolean {
 export function DesktopNav() {
   const t = useTranslations("shell.tabs");
   const ts = useTranslations("search");
+  const tShell = useTranslations("shell");
   const pathname = usePathname();
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -126,7 +127,7 @@ export function DesktopNav() {
             </span>
           </Link>
 
-          <nav className="flex items-center gap-1" aria-label="Navigation principale">
+          <nav className="flex items-center gap-1" aria-label={tShell("mainNav")}>
             {LINKS.map((l) => {
               const active = isActive(pathname, l.href);
               return (

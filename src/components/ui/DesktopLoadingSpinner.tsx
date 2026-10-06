@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 /**
  * Desktop-only loading indicator: one simple centered circular spinner.
  *
@@ -7,16 +11,19 @@
  * gold ring spinner in the middle — covering the skeleton blocks so desktop
  * gets the clean "one circle" loading state instead of a wall of shimmer.
  *
- * Pure CSS (conic-gradient ring + rotate), no JS, so it costs nothing.
+ * Pure CSS (conic-gradient ring + rotate). A client component only for its
+ * label: server-side next-intl in a loading.tsx would read request headers
+ * and turn static pages dynamic (see LoadingText).
  */
 export function DesktopLoadingSpinner() {
+  const t = useTranslations("ui");
   return (
     <div
       aria-hidden
       className="fixed inset-0 z-[60] hidden items-center justify-center bg-[var(--background)] lg:flex"
     >
       <span
-        aria-label="Chargement"
+        aria-label={t("loading")}
         className="size-9 animate-spin rounded-full border-[3px] border-[var(--border)] border-t-[var(--gold)]"
       />
     </div>

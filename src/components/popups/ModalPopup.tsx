@@ -2,9 +2,23 @@
 
 import { useEffect } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
-import type { Popup } from "@/lib/popups/schema";
+import type { LocalisedText, Popup, PopupLocale } from "@/lib/popups/schema";
 import { pickLocalised } from "@/lib/popups/schema";
+
+/**
+ * The popup's text in the reader's language, then in French. A blank
+ * translation counts as missing — an Arabic visitor gets the French text
+ * rather than an empty card.
+ */
+function localised(text: LocalisedText, locale: string): string {
+  for (const l of [locale, "fr"] as PopupLocale[]) {
+    const v = text[l];
+    if (v && v.trim()) return v;
+  }
+  return pickLocalised(text, locale);
+}
 
 /**
  * Centered modal popup renderer. The PopupManager owns the open/close
@@ -32,13 +46,14 @@ export function ModalPopup({
   onDismiss: () => void;
   onClick: (href: string) => void;
 }) {
-  const title = pickLocalised(popup.title, locale);
-  const body = pickLocalised(popup.body, locale);
+  const t = useTranslations("popupsUi");
+  const title = localised(popup.title, locale);
+  const body = localised(popup.body, locale);
   const primary = popup.cta_primary
-    ? { label: pickLocalised(popup.cta_primary.label, locale), href: popup.cta_primary.href }
+    ? { label: localised(popup.cta_primary.label, locale), href: popup.cta_primary.href }
     : null;
   const secondary = popup.cta_secondary
-    ? { label: pickLocalised(popup.cta_secondary.label, locale), href: popup.cta_secondary.href }
+    ? { label: localised(popup.cta_secondary.label, locale), href: popup.cta_secondary.href }
     : null;
   const canDismiss = popup.dismissible && !popup.force_action;
 
@@ -69,7 +84,7 @@ export function ModalPopup({
           <button
             type="button"
             onClick={onDismiss}
-            aria-label="Fermer"
+            aria-label={t("close")}
             className="absolute end-3 top-3 z-10 inline-flex size-8 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60"
           >
             <X className="size-4" strokeWidth={2.5} />
@@ -95,12 +110,13 @@ export function ModalPopup({
           )}
           <h3
             id={`popup-${popup.id}-title`}
+            dir="auto"
             className="text-[19px] font-extrabold leading-tight text-foreground"
           >
             {title}
           </h3>
           {body && (
-            <p className="mt-2 whitespace-pre-line text-[13.5px] leading-relaxed text-foreground/85">
+            <p dir="auto" className="mt-2 whitespace-pre-line text-[13.5px] leading-relaxed text-foreground/85">
               {body}
             </p>
           )}
@@ -110,6 +126,7 @@ export function ModalPopup({
               {primary && (
                 <button
                   type="button"
+                  dir="auto"
                   onClick={() => onClick(primary.href)}
                   className="mazed-btn-luxe tap-target inline-flex w-full items-center justify-center gap-1.5 px-4 py-3 text-[13px]"
                 >
@@ -119,6 +136,7 @@ export function ModalPopup({
               {secondary && (
                 <button
                   type="button"
+                  dir="auto"
                   onClick={() => onClick(secondary.href)}
                   className="inline-flex w-full items-center justify-center rounded-full bg-surface-2 px-4 py-2.5 text-[12.5px] font-bold text-muted ring-1 ring-border transition hover:text-foreground"
                 >

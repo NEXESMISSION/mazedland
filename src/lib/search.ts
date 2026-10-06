@@ -21,7 +21,24 @@
  * `stripAccents` below so both sides are diacritic-free before matching.
  */
 
+import { TUNISIAN_GOVERNORATES, governorateLabel } from "./tunisia";
+
 const ILIKE_AND_OR_SPECIALS = /[%_,\\()"]/g;
+
+/**
+ * Arabic governorate names → the folded French name `search_text` holds.
+ * Governorates are stored in French, so on the Arabic site "صفاقس" found only
+ * the listings that happened to write it in their text, never the Sfax
+ * listings themselves. Whole words only: "تونسية" is not "Tunis". The hamza
+ * is optional (أريانة and اريانة both match): the query is folded with NFD,
+ * which splits أ into ا + a combining hamza, and people often leave it out.
+ */
+const GOVERNORATE_FROM_ARABIC: [RegExp, string][] = TUNISIAN_GOVERNORATES.map((g) => {
+  const name = stripAccents(governorateLabel(g, "ar"))
+    .replace(/[\u0653-\u0655]/g, "")
+    .replace(/ا/g, "ا[\u0653-\u0655]?");
+  return [new RegExp(`(?<=^|[\\s-])${name}(?=$|[\\s-])`, "g"), stripAccents(g)];
+});
 
 /**
  * Fold accents/diacritics off a string and lower-case it, mirroring the
@@ -52,9 +69,12 @@ export function normalizeSearchQuery(raw: string | null | undefined): string {
  * three. Postgres `unaccent` also folds the ligatures, which NFD does not.
  *
  * Capped at six words: past that the extra ILIKEs cost more than they filter.
+ *
+ * A governorate typed in Arabic searches for its stored French name.
  */
 export function searchTokens(raw: string | null | undefined): string[] {
-  const folded = stripAccents(normalizeSearchQuery(raw)).replace(/œ/g, "oe").replace(/æ/g, "ae");
+  let folded = stripAccents(normalizeSearchQuery(raw)).replace(/œ/g, "oe").replace(/æ/g, "ae");
+  for (const [ar, fr] of GOVERNORATE_FROM_ARABIC) folded = folded.replace(ar, fr);
   return [...new Set(folded.split(/[\s-]+/).filter(Boolean))].slice(0, 6);
 }
 

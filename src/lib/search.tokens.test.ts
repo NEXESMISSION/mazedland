@@ -21,6 +21,16 @@ describe("searchTokens", () => {
     expect(searchTokens(null)).toEqual([]);
   });
 
+  it("searches a governorate typed in Arabic by its stored French name", () => {
+    expect(searchTokens("شقة صفاقس")).toEqual(["شقة", "sfax"]);
+    expect(searchTokens("أريانة")).toEqual(["ariana"]);
+    expect(searchTokens("اريانة")).toEqual(["ariana"]);
+    expect(searchTokens("سيدي بوزيد")).toEqual(["sidi", "bouzid"]);
+    expect(searchTokens("قابس")).toEqual(["gabes"]);
+    // Whole words only: an adjective is not the governorate.
+    expect(searchTokens("دار تونسية")).toEqual(["دار", "تونسية"]);
+  });
+
   it("keeps at most six words", () => {
     expect(searchTokens("un deux trois quatre cinq six sept huit")).toHaveLength(6);
   });

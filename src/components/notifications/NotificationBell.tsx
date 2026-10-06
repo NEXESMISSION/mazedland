@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Bell,
   BellDot,
@@ -51,6 +52,7 @@ import { useSessionCookie } from "@/lib/useSessionCookie";
 import { useToast } from "@/components/ui/Toast";
 import { resolveNotificationLink } from "@/lib/notifications/target";
 import { useHydrated } from "@/lib/useHydrated";
+import { formatDate, formatRelativeTime } from "@/lib/utils";
 
 type NotificationRow = {
   id: string;
@@ -105,6 +107,7 @@ const URGENT_KINDS = new Set<string>([
 ]);
 
 export function NotificationBell() {
+  const t = useTranslations("notificationsUi");
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [open, setOpen] = useState(false);
@@ -429,12 +432,12 @@ export function NotificationBell() {
       if (typeof deletedCount === "number" && deletedCount === 0) {
         setItems(snapshot.items);
         setUnread(snapshot.unread);
-        toast("Suppression refusée par le serveur.", "error");
+        toast(t("deleteRefused"), "error");
       }
     } catch {
       setItems(snapshot.items);
       setUnread(snapshot.unread);
-      toast("Échec de la suppression. Vérifiez la connexion.", "error");
+      toast(t("deleteFailed"), "error");
     }
   }
 
@@ -457,17 +460,14 @@ export function NotificationBell() {
       if (typeof deletedCount === "number" && deletedCount === 0) {
         setItems(snapshot.items);
         setUnread(snapshot.unread);
-        toast("Suppression refusée par le serveur.", "error");
+        toast(t("deleteRefused"), "error");
       } else if (typeof deletedCount === "number") {
-        toast(
-          `${deletedCount} notification${deletedCount > 1 ? "s" : ""} supprimée${deletedCount > 1 ? "s" : ""}.`,
-          "success",
-        );
+        toast(t("deletedCount", { count: deletedCount }), "success");
       }
     } catch {
       setItems(snapshot.items);
       setUnread(snapshot.unread);
-      toast("Échec de la suppression. Vérifiez la connexion.", "error");
+      toast(t("deleteFailed"), "error");
     }
   }
 
@@ -482,7 +482,7 @@ export function NotificationBell() {
     <>
       <button
         type="button"
-        aria-label="Notifications"
+        aria-label={t("title")}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
@@ -497,7 +497,7 @@ export function NotificationBell() {
         {unread > 0 && (
           <span
             className="absolute -top-0.5 -end-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--accent)] px-[5px] text-[10px] font-bold leading-none text-white ring-2 ring-[var(--surface)] mazed-tabular"
-            aria-label={`${unread} non lues`}
+            aria-label={t("unreadAria", { count: unread })}
           >
             {unread > 99 ? "99+" : unread}
           </span>
@@ -510,7 +510,7 @@ export function NotificationBell() {
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 lg:items-start lg:justify-end lg:p-0"
             role="dialog"
             aria-modal="true"
-            aria-label="Notifications"
+            aria-label={t("title")}
           >
             {/* Backdrop — dark sheet on mobile; on desktop it's invisible
                 (just a click-catcher) so the panel reads as a header dropdown,
@@ -526,7 +526,7 @@ export function NotificationBell() {
               {/* Header — title + inline unread count, "Supprimer tout", close. */}
               <div className="flex items-center gap-3 px-5 pt-4 pb-3">
                 <h3 className="flex items-center gap-2 text-[16px] font-extrabold tracking-tight text-foreground leading-none">
-                  Notifications
+                  {t("title")}
                   {unread > 0 && (
                     <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-[11px] font-extrabold leading-none text-white mazed-tabular">
                       {unread > 99 ? "99+" : unread}
@@ -542,13 +542,13 @@ export function NotificationBell() {
                       className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-bold text-[var(--foreground-muted)] transition hover:bg-red-50 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4" strokeWidth={2} />
-                      Supprimer tout
+                      {t("deleteAll")}
                     </button>
                   )}
 
                   <button
                     type="button"
-                    aria-label="Fermer"
+                    aria-label={t("close")}
                     onClick={() => setOpen(false)}
                     className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground-muted)] hover:bg-[var(--surface-2)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                   >
@@ -560,7 +560,7 @@ export function NotificationBell() {
               {/* Filter tabs — Toutes / Non lues */}
               {items.length > 0 && (
                 <div className="flex items-center gap-1.5 border-b border-[var(--border)] px-5 pb-2.5">
-                  {([["all", "Toutes"], ["unread", "Non lues"]] as const).map(([key, label]) => {
+                  {([["all", t("filterAll")], ["unread", t("filterUnread")]] as const).map(([key, label]) => {
                     const active = filter === key;
                     const showCount = key === "unread" && unread > 0;
                     return (
@@ -588,21 +588,21 @@ export function NotificationBell() {
 
               {confirmingDeleteAll && (
                 <div className="mx-5 mb-3 flex items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[13px] text-red-900">
-                  <span className="font-semibold">Tout supprimer ?</span>
+                  <span className="font-semibold">{t("confirmDeleteAll")}</span>
                   <div className="flex gap-1.5">
                     <button
                       type="button"
                       onClick={() => setConfirmingDeleteAll(false)}
                       className="rounded-lg px-2.5 py-1 text-[12px] font-bold text-red-900 hover:bg-red-100"
                     >
-                      Annuler
+                      {t("cancel")}
                     </button>
                     <button
                       type="button"
                       onClick={() => void deleteAll()}
                       className="rounded-lg bg-red-600 px-2.5 py-1 text-[12px] font-bold text-white hover:bg-red-700"
                     >
-                      Confirmer
+                      {t("confirm")}
                     </button>
                   </div>
                 </div>
@@ -614,17 +614,17 @@ export function NotificationBell() {
                     <Bell className="h-6 w-6 text-[var(--gold)]" strokeWidth={1.8} />
                   </div>
                   <p className="text-[14px] font-bold text-foreground">
-                    Aucune notification
+                    {t("emptyTitle")}
                   </p>
                   <p className="mt-1 text-[12px] text-[var(--foreground-muted)]">
-                    Tout est calme. Jetez un œil aux dernières annonces.
+                    {t("emptyBody")}
                   </p>
                   <Link
                     href="/annonces"
                     onClick={() => setOpen(false)}
                     className="mt-5 inline-flex items-center gap-1.5 rounded-full mazed-gold-fill px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]"
                   >
-                    Explorer les annonces
+                    {t("emptyCta")}
                   </Link>
                 </div>
               ) : visibleItems.length === 0 ? (
@@ -632,9 +632,9 @@ export function NotificationBell() {
                   <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50">
                     <CheckCheck className="h-5 w-5 text-emerald-600" strokeWidth={2} />
                   </div>
-                  <p className="text-[13.5px] font-bold text-foreground">Aucune non lue</p>
+                  <p className="text-[13.5px] font-bold text-foreground">{t("noUnreadTitle")}</p>
                   <p className="mt-1 text-[12px] text-[var(--foreground-muted)]">
-                    Vous êtes à jour.
+                    {t("noUnreadBody")}
                   </p>
                 </div>
               ) : (
@@ -670,7 +670,7 @@ export function NotificationBell() {
                           onClick={() => void loadMore()}
                           className="text-[12px] font-bold text-[var(--gold)] hover:underline"
                         >
-                          Afficher plus
+                          {t("showMore")}
                         </button>
                       )}
                     </li>
@@ -704,6 +704,8 @@ function NotificationRow({
   onDelete: () => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("notificationsUi");
+  const locale = useLocale();
   const unread = !item.read_at;
   const { Icon, tone } = iconForKind(item.kind);
   const isUrgent = unread && URGENT_KINDS.has(item.kind);
@@ -723,7 +725,10 @@ function NotificationRow({
           {unread && (
             <span aria-hidden className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--gold)]" />
           )}
+          {/* dir="auto": titles and bodies are shown as stored, so a French
+              notification keeps its own direction on the Arabic site. */}
           <span
+            dir="auto"
             className={`text-[13px] leading-tight ${
               unread ? "font-extrabold text-foreground" : "font-semibold text-[var(--foreground-muted)]"
             }`}
@@ -732,12 +737,13 @@ function NotificationRow({
           </span>
           {isUrgent && (
             <span className="mt-0.5 shrink-0 rounded-full bg-red-600 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-white leading-none">
-              Urgent
+              {t("urgent")}
             </span>
           )}
         </span>
         {item.body && (
           <span
+            dir="auto"
             className={`mt-1 block text-[12px] leading-snug line-clamp-2 ${
               unread ? "text-foreground/80" : "text-[var(--foreground-muted)]"
             }`}
@@ -746,7 +752,7 @@ function NotificationRow({
           </span>
         )}
         <span className="mt-1.5 block text-[10px] font-medium text-[var(--foreground-muted)]">
-          {timeAgo(item.created_at)}
+          {timeAgo(item.created_at, locale)}
         </span>
       </span>
     </>
@@ -777,7 +783,7 @@ function NotificationRow({
       {/* Small always-visible delete button — no swipe, no big red box. */}
       <button
         type="button"
-        aria-label="Supprimer la notification"
+        aria-label={t("deleteOne")}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -914,23 +920,9 @@ function iconForKind(kind: string): {
   }
 }
 
-function timeAgo(iso: string): string {
-  const then = new Date(iso).getTime();
-  const diffMs = Date.now() - then;
-  const s = Math.floor(diffMs / 1000);
-  if (s < 60) return "à l'instant";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `il y a ${m} min`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h} h`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `il y a ${d} j`;
-  try {
-    return new Date(iso).toLocaleDateString("fr-FR", {
-      day: "2-digit",
-      month: "short",
-    });
-  } catch {
-    return iso;
-  }
+/** Relative for the last week ("il y a 3 heures"), then the day and month. */
+function timeAgo(iso: string, locale: string): string {
+  const ageMs = Date.now() - new Date(iso).getTime();
+  if (ageMs < 7 * 24 * 3600 * 1000) return formatRelativeTime(iso, locale);
+  return formatDate(iso, locale, "dayMonth") || iso;
 }

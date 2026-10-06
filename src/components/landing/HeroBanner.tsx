@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { HiddenAt } from "@/components/ui/HiddenAt";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -66,6 +67,7 @@ export function HeroBanner({
   /** Media query at which CSS hides this banner's tree. */
   hiddenAt?: string;
 }) {
+  const t = useTranslations("landing");
   const [index, setIndex] = useState(0);
   const [dragPx, setDragPx] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -193,8 +195,8 @@ export function HeroBanner({
   return (
     <section
       className="relative px-4 pt-4"
-      aria-roledescription="carrousel"
-      aria-label="Annonces à la une"
+      aria-roledescription={t("heroBanner.roleDescription")}
+      aria-label={t("heroBanner.label")}
     >
       <div
         ref={trackRef}
@@ -241,21 +243,21 @@ export function HeroBanner({
           <>
             <button
               type="button"
-              aria-label="Précédent"
+              aria-label={t("carousel.prev")}
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => jumpTo(isRTL ? index + 1 : index - 1)}
+              onClick={() => jumpTo(index - 1)}
               className="absolute start-4 top-1/2 z-10 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70 lg:grid"
             >
-              <ChevronLeft className="size-5" strokeWidth={2.5} />
+              <ChevronLeft className="size-5 rtl:-scale-x-100" strokeWidth={2.5} />
             </button>
             <button
               type="button"
-              aria-label="Suivant"
+              aria-label={t("carousel.next")}
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => jumpTo(isRTL ? index - 1 : index + 1)}
+              onClick={() => jumpTo(index + 1)}
               className="absolute end-4 top-1/2 z-10 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70 lg:grid"
             >
-              <ChevronRight className="size-5" strokeWidth={2.5} />
+              <ChevronRight className="size-5 rtl:-scale-x-100" strokeWidth={2.5} />
             </button>
           </>
         )}
@@ -269,7 +271,7 @@ export function HeroBanner({
               <button
                 key={`dot-${s.id}`}
                 type="button"
-                aria-label={`Annonce ${i + 1} sur ${total}`}
+                aria-label={t("heroBanner.slideOf", { index: i + 1, total })}
                 aria-current={i === index ? "true" : undefined}
                 onClick={() => jumpTo(i)}
                 className="group/dot pointer-events-auto grid h-6 min-w-6 place-items-center rounded-full px-[9px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
@@ -329,6 +331,7 @@ function PhotoSlide({
   hiddenAt?: string;
   active: boolean;
 }) {
+  const t = useTranslations("landing");
   const [imageBroken, setImageBroken] = useState(false);
   const photo =
     slide.imageUrl && !imageBroken ? (
@@ -367,9 +370,7 @@ function PhotoSlide({
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/15" />
 
       <div
-        className={`absolute inset-0 z-[1] flex flex-col justify-end p-5 lg:p-8 ${
-          isRTL ? "items-end text-right" : "items-start text-left"
-        }`}
+        className="absolute inset-0 z-[1] flex flex-col items-start justify-end p-5 text-start lg:p-8"
       >
         {slide.eyebrow && (
           <span className="mazed-eyebrow inline-flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 text-white/90 backdrop-blur-sm">
@@ -394,8 +395,8 @@ function PhotoSlide({
         )}
       </div>
 
-      <span className="mazed-gold-fill absolute top-3 z-[1] inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)] ltr:right-3 rtl:left-3">
-        {slide.ctaLabel ?? "Voir"}
+      <span className="mazed-gold-fill absolute top-3 z-[1] inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)] end-3">
+        {slide.ctaLabel ?? t("heroBanner.view")}
       </span>
     </Link>
   );
@@ -422,6 +423,7 @@ function BrandSlide({
   isRTL: boolean;
   active: boolean;
 }) {
+  const t = useTranslations("landing");
   const hasLiveCount = (slide.liveCount ?? 0) > 0;
   return (
     <Link
@@ -480,41 +482,49 @@ function BrandSlide({
               className={`size-1.5 rounded-full bg-[var(--accent)]${active ? " pulse-gold" : ""}`}
             />
           )}
-          {hasLiveCount ? "En ligne" : "Mazed Immo · Tunisie"}
+          {hasLiveCount ? t("heroBanner.online") : t("heroBanner.brandEyebrow")}
         </span>
 
         {/* Middle — stretches to fill, centers its content vertically. */}
         <div className="flex flex-1 flex-col items-center justify-center">
           {/* Hero stat: big number stacked over its tiny label, so the
               count owns the optical center instead of having a small
-              word floating next to it on the baseline. */}
+              word floating next to it on the baseline. The number and its
+              noun are one plural message (Arabic agrees the noun with the
+              number); <n> and <l> place each part. */}
           {hasLiveCount && (
             <div className="flex flex-col items-center leading-none">
-              {/* Flat gold — see the note on .gradient-gold-text in globals.css. */}
-              <span className="mazed-tabular text-[56px] font-black leading-[0.95] tracking-tight text-gold md:text-[64px]">
-                {slide.liveCount}
-              </span>
-              <span className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.32em] text-muted">
-                {slide.liveCount === 1 ? "Annonce" : "Annonces"}
-              </span>
+              {t.rich("heroBanner.brandCount", {
+                count: slide.liveCount ?? 0,
+                // Flat gold — see the note on .gradient-gold-text in globals.css.
+                n: (chunks) => (
+                  <span className="mazed-tabular text-[56px] font-black leading-[0.95] tracking-tight text-gold md:text-[64px]">
+                    {chunks}
+                  </span>
+                ),
+                l: (chunks) => (
+                  <span className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.32em] text-muted">
+                    {chunks}
+                  </span>
+                ),
+              })}
             </div>
           )}
 
           {/* Headline — gold for the last word so the eye lands. */}
           <h2 className="mt-3 max-w-[18ch] text-balance text-[20px] font-extrabold leading-[1.1] tracking-tight text-foreground md:text-[24px]">
-            L&apos;immobilier{" "}
-            <span className="text-gold">
-              tunisien
-            </span>
+            {t.rich("heroBanner.brandHeadline", {
+              gold: (chunks) => <span className="text-gold">{chunks}</span>,
+            })}
           </h2>
 
           {/* Trust line — three values with gold dot separators. */}
           <div className="mt-2 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
-            Transparence
+            {t("values.transparencyTitle")}
             <span aria-hidden className="size-1 rounded-full bg-[var(--gold)]" />
-            Rapidité
+            {t("values.speedTitle")}
             <span aria-hidden className="size-1 rounded-full bg-[var(--gold)]" />
-            Confiance
+            {t("values.trustTitle")}
           </div>
         </div>
 
@@ -525,8 +535,8 @@ function BrandSlide({
         <span
           className="mazed-gold-fill gold-rim inline-flex h-10 items-center justify-center gap-1.5 rounded-full px-6 text-[11.5px] font-extrabold uppercase tracking-[0.16em] transition group-hover:scale-[1.03]"
         >
-          {slide.ctaLabel ?? "Explorer"}
-          <span aria-hidden className="text-[14px] leading-none">→</span>
+          {slide.ctaLabel ?? t("heroBanner.explore")}
+          <span aria-hidden className="inline-block text-[14px] leading-none rtl:-scale-x-100">→</span>
         </span>
       </div>
     </Link>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * Per-second updating countdown pill. SSR-friendly: renders the initial
@@ -18,6 +19,7 @@ export function LiveCountdown({
   endsAt: string;
   compact?: boolean;
 }) {
+  const t = useTranslations("landing.countdown");
   const [remaining, setRemaining] = useState(() => secondsUntil(endsAt));
 
   useEffect(() => {
@@ -35,17 +37,17 @@ export function LiveCountdown({
           compact ? "text-[10px]" : "text-xs"
         }`}
       >
-        ended
+        {t("ended")}
       </span>
     );
   }
 
   const { d, h, m, s, urgent } = breakdown(remaining);
   const label = d > 0
-    ? `${d}d ${h}h`
+    ? t("days", { d, h })
     : h > 0
-      ? `${h}h ${m}m`
-      : `${m}m ${String(s).padStart(2, "0")}s`;
+      ? t("hours", { h, m })
+      : t("minutes", { m, s: String(s).padStart(2, "0") });
 
   // suppressHydrationWarning: this is a clock — the seconds digit will
   // virtually always differ between SSR render and client first paint

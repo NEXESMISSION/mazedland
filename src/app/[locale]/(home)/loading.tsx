@@ -9,6 +9,7 @@
  * ship its own).
  */
 import { DesktopLoadingSpinner } from "@/components/ui/DesktopLoadingSpinner";
+import { LoadingText } from "@/components/ui/LoadingText";
 
 export default function HomeLoading() {
   return (
@@ -146,7 +147,7 @@ export default function HomeLoading() {
         <div className="mazed-skeleton-luxe h-24 w-full rounded-2xl" />
       </section>
 
-      <span className="sr-only">Chargement…</span>
+      <LoadingText />
     </div>
   );
 }

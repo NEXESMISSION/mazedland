@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { X, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { useHydrated } from "@/lib/useHydrated";
 
@@ -59,6 +60,7 @@ export function ImageLightbox({
 }
 
 function Viewer({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  const t = useTranslations("ui");
   const [scale, setScale] = useState(1);
   const [tx, setTx] = useState(0);
   const [ty, setTy] = useState(0);
@@ -151,24 +153,24 @@ function Viewer({ src, alt, onClose }: { src: string; alt: string; onClose: () =
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label="Image en plein écran"
+      aria-label={t("lightbox.label")}
       onClick={(e) => {
         // Close only on a genuine backdrop click (not after a pan/pinch).
         if (e.target === e.currentTarget && !moved.current) onClose();
       }}
     >
       {/* Controls */}
-      <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5">
-        <ControlButton label="Dézoomer" onClick={() => zoomBy(1 / 1.4)}>
+      <div className="absolute end-3 top-3 z-10 flex items-center gap-1.5">
+        <ControlButton label={t("lightbox.zoomOut")} onClick={() => zoomBy(1 / 1.4)}>
           <ZoomOut className="size-5" />
         </ControlButton>
-        <ControlButton label="Zoomer" onClick={() => zoomBy(1.4)}>
+        <ControlButton label={t("lightbox.zoomIn")} onClick={() => zoomBy(1.4)}>
           <ZoomIn className="size-5" />
         </ControlButton>
-        <ControlButton label="Réinitialiser" onClick={reset}>
+        <ControlButton label={t("lightbox.reset")} onClick={reset}>
           <Maximize2 className="size-5" />
         </ControlButton>
-        <ControlButton label="Fermer" onClick={onClose}>
+        <ControlButton label={t("close")} onClick={onClose}>
           <X className="size-5" />
         </ControlButton>
       </div>
@@ -195,7 +197,7 @@ function Viewer({ src, alt, onClose }: { src: string; alt: string; onClose: () =
       />
 
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-white/70">
-        Molette / pincer pour zoomer · glisser pour déplacer
+        {t("lightbox.hint")}
       </div>
     </div>
   );

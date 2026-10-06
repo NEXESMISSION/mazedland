@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Loader2, Search } from "lucide-react";
 
 /**
@@ -60,9 +61,10 @@ export function SearchSweep({ active }: { active: boolean }) {
  * a pause rather than interrupting.
  */
 export function SearchStatus({ active }: { active: boolean }) {
+  const t = useTranslations("ui");
   return (
     <span role="status" aria-live="polite" className="sr-only">
-      {active ? "Recherche en cours…" : ""}
+      {active ? t("searching") : ""}
     </span>
   );
 }
