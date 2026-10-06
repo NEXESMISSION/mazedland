@@ -5,6 +5,7 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { PRODUCT_SELECT, resolveListingFee, toProduct } from "@/lib/products";
+import { apiTranslator } from "@/lib/i18n/server";
 
 /**
  * POST /api/annonces/[id]/submit — send a draft listing for publication.
@@ -56,22 +57,29 @@ export async function POST(
   // queue would spend a second credit for one publication.
   const submittable = ["draft", "rejected", "pending_payment"];
   if (!submittable.includes(listing.status as string)) {
+    const t = await apiTranslator(req, "publishApi");
+    // The status in words: the raw enum (« pending_review ») is not a sentence
+    // a seller can read, in either language.
+    const status = String(listing.status);
+    const label = t.has(`statuses.${status}`) ? t(`statuses.${status}`) : status;
     return NextResponse.json(
-      { error: "not_submittable", detail: `Cette annonce est déjà « ${listing.status} ».` },
+      { error: "not_submittable", detail: t("notSubmittable", { status: label }) },
       { status: 409 },
     );
   }
 
   // Two things a listing cannot go live without, checked before any money moves.
   if (!listing.contact_phone) {
+    const t = await apiTranslator(req, "publishApi");
     return NextResponse.json(
-      { error: "contact_required", detail: "Ajoutez un numéro de téléphone joignable." },
+      { error: "contact_required", detail: t("contactRequired") },
       { status: 400 },
     );
   }
   if (!listing.seller_attestation_version) {
+    const t = await apiTranslator(req, "publishApi");
     return NextResponse.json(
-      { error: "attestation_required", detail: "Cochez l'attestation sur l'honneur." },
+      { error: "attestation_required", detail: t("attestationRequired") },
       { status: 400 },
     );
   }
@@ -81,8 +89,9 @@ export async function POST(
     .select("id", { count: "exact", head: true })
     .eq("listing_id", id);
   if ((photoCount ?? 0) === 0) {
+    const t = await apiTranslator(req, "publishApi");
     return NextResponse.json(
-      { error: "photo_required", detail: "Ajoutez au moins une photo." },
+      { error: "photo_required", detail: t("photoRequired") },
       { status: 400 },
     );
   }

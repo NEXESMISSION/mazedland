@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslator } from "@/lib/i18n/server";
 
 /**
  * POST /api/annonces — create or update the seller's draft listing.
@@ -87,8 +88,9 @@ export async function POST(req: NextRequest) {
 
   const id = text(body.id, 40);
   if (!id && (!categoryId || !title || !governorate)) {
+    const t = await apiTranslator(req, "publishApi");
     return NextResponse.json(
-      { error: "incomplete", detail: "Catégorie, titre et gouvernorat sont requis." },
+      { error: "incomplete", detail: t("incomplete") },
       { status: 400 },
     );
   }
@@ -105,8 +107,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "bad_category" }, { status: 400 });
     }
     if (cat.parent_id == null) {
+      const t = await apiTranslator(req, "publishApi");
       return NextResponse.json(
-        { error: "category_not_leaf", detail: "Choisissez une sous-catégorie." },
+        { error: "category_not_leaf", detail: t("categoryNotLeaf") },
         { status: 400 },
       );
     }
@@ -115,8 +118,9 @@ export async function POST(req: NextRequest) {
   const priceOnRequest = body.price_on_request === true;
   const price = num(body.price);
   if (!priceOnRequest && price == null && !id) {
+    const t = await apiTranslator(req, "publishApi");
     return NextResponse.json(
-      { error: "price_required", detail: "Indiquez un prix, ou cochez « prix sur demande »." },
+      { error: "price_required", detail: t("priceRequired") },
       { status: 400 },
     );
   }
@@ -161,8 +165,9 @@ export async function POST(req: NextRequest) {
     // On a property site that is the difference between a price correction and
     // a bait-and-switch.
     if (!["draft", "rejected", "pending_payment"].includes(owned.status as string)) {
+      const t = await apiTranslator(req, "publishApi");
       return NextResponse.json(
-        { error: "not_editable", detail: "Cette annonce est déjà en cours de traitement." },
+        { error: "not_editable", detail: t("notEditable") },
         { status: 409 },
       );
     }

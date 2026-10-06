@@ -5,7 +5,8 @@
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
 import { redirect } from "next/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { categoryLabel } from "@/lib/i18n";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import {
@@ -53,6 +54,8 @@ export default async function NewListingPage({
   const sp = await searchParams;
   const wantedDraft = Array.isArray(sp.draft) ? sp.draft[0] : sp.draft;
   const locale = await getLocale();
+  const t = await getTranslations("publish");
+  const tRoot = await getTranslations();
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -64,7 +67,7 @@ export default async function NewListingPage({
   if (!admin) {
     return (
       <main className="mx-auto max-w-md px-4 py-16 text-center">
-        <p className="text-[13px] text-muted">Service indisponible.</p>
+        <p className="text-[13px] text-muted">{t("serviceUnavailable")}</p>
       </main>
     );
   }
@@ -72,7 +75,7 @@ export default async function NewListingPage({
   const [catRes, attrRes, prodRes, creditRes, profRes, draftRes] = await Promise.all([
     admin
       .from("categories")
-      .select("id, parent_id, slug, label_fr, kind, sort_order")
+      .select("id, parent_id, slug, label_fr, label_ar, kind, sort_order")
       .eq("is_active", true)
       .order("sort_order"),
     admin
@@ -111,7 +114,7 @@ export default async function NewListingPage({
 
   type CatRow = {
     id: string; parent_id: string | null; slug: string;
-    label_fr: string; kind: string; sort_order: number;
+    label_fr: string; label_ar: string | null; kind: string; sort_order: number;
   };
   const catRows = (catRes.data ?? []) as CatRow[];
   const parents = catRows.filter((c) => c.parent_id == null);
@@ -123,22 +126,25 @@ export default async function NewListingPage({
       return {
         id: c.id,
         slug: c.slug,
-        label: c.label_fr,
+        label: categoryLabel(c, locale),
         groupId: parent?.id ?? "other",
-        groupLabel: parent?.label_fr ?? "Autres",
+        groupLabel: parent ? categoryLabel(parent, locale) : t("otherGroup"),
       };
     });
 
   // Keyed by category so the wizard can swap the questions the instant the
   // seller changes their mind, with no second round trip.
+  // Labels are stored in French, as admins type them in /admin/catalogue. The
+  // ones the site knows are translated here; one an admin adds later shows as
+  // typed until it gets a key under `attributes`.
   const attributesByCategory: Record<string, AttributeDef[]> = {};
   for (const a of (attrRes.data ?? []) as (AttributeDef & { category_id: string })[]) {
     (attributesByCategory[a.category_id] ??= []).push({
       field_key: a.field_key,
-      label: a.label,
+      label: tRoot.has(`attributes.${a.field_key}`) ? tRoot(`attributes.${a.field_key}`) : a.label,
       data_type: a.data_type,
       options: a.options,
-      unit: a.unit,
+      unit: a.unit === "m²" ? tRoot("common.sqm") : a.unit,
       required: a.required,
     });
   }
@@ -163,7 +169,7 @@ export default async function NewListingPage({
     return n + Math.max(0, (c.quota_total as number) - (c.quota_used as number));
   }, 0);
 
-  const groups = parents.map((p) => ({ id: p.id, label: p.label_fr }));
+  const groups = parents.map((p) => ({ id: p.id, label: categoryLabel(p, locale) }));
 
   return (
     <PublishWizard
