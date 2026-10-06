@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { Loader2, Smartphone, CheckCircle2 } from "lucide-react";
 import { PhoneInput } from "./PhoneInput";
 import { normalizeE164, validatePhone } from "@/lib/tunisia";
+import { Ltr } from "@/components/ui/Ltr";
 
 /**
  * Phone-OTP password recovery (phone-only app — there is no email inbox).
@@ -25,6 +26,7 @@ type Phase = "phone" | "otp" | "password" | "done";
 export function ForgotPasswordForm() {
   const router = useRouter();
   const tPhone = useTranslations("phone");
+  const t = useTranslations("auth");
   const [phase, setPhase] = useState<Phase>("phone");
   const [dialCode, setDialCode] = useState("+216");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -54,7 +56,7 @@ export function ForgotPasswordForm() {
     }
     const normalized = normalizeE164(dialCode, phoneNumber);
     if (!normalized) {
-      setError("Numéro invalide.");
+      setError(t("errors.invalidNumber"));
       return;
     }
     startTransition(async () => {
@@ -72,9 +74,7 @@ export function ForgotPasswordForm() {
         };
         // SMS off → there is no recovery channel for phone-only accounts.
         if (res.ok && j.configured === false) {
-          setError(
-            "La réinitialisation par SMS n'est pas disponible pour le moment. Contactez le support.",
-          );
+          setError(t("forgot.smsUnavailable"));
           return;
         }
         if (res.ok && j.ok) {
@@ -92,12 +92,12 @@ export function ForgotPasswordForm() {
           return;
         }
         if (res.status === 400 && j.error === "invalid_phone") {
-          setError("Numéro de téléphone invalide.");
+          setError(t("errors.invalidPhone"));
           return;
         }
-        setError("Impossible d'envoyer le code SMS. Réessayez dans un instant.");
+        setError(t("errors.smsSendFailed"));
       } catch {
-        setError("Impossible de joindre le serveur. Réessayez.");
+        setError(t("errors.serverUnreachable"));
       }
     });
   }
@@ -108,7 +108,7 @@ export function ForgotPasswordForm() {
     setError(null);
     const clean = otpCode.replace(/\D/g, "");
     if (clean.length !== 6) {
-      setError("Entrez le code à 6 chiffres.");
+      setError(t("otp.enterCode"));
       return;
     }
     if (!phone) return;
@@ -125,14 +125,14 @@ export function ForgotPasswordForm() {
           return;
         }
         const map: Record<string, string> = {
-          wrong_code: "Code incorrect.",
-          expired: "Code expiré. Redemandez-en un.",
-          no_code: "Aucun code en cours. Redemandez-en un.",
-          too_many_attempts: "Trop de tentatives. Redemandez un code.",
+          wrong_code: t("otp.wrongCode"),
+          expired: t("otp.expired"),
+          no_code: t("otp.noCode"),
+          too_many_attempts: t("otp.tooManyAttempts"),
         };
-        setError(map[j.error ?? ""] ?? "Échec de la vérification.");
+        setError(map[j.error ?? ""] ?? t("otp.failed"));
       } catch {
-        setError("Erreur réseau. Réessayez.");
+        setError(t("errors.networkError"));
       }
     });
   }
@@ -150,9 +150,9 @@ export function ForgotPasswordForm() {
         const j = (await res.json().catch(() => ({}))) as { ok?: boolean; retryAfter?: number; error?: string };
         if (res.ok && j.ok) setCooldown(60);
         else if (res.status === 429 && j.error === "cooldown") setCooldown(j.retryAfter ?? 60);
-        else setError("Échec du renvoi. Réessayez.");
+        else setError(t("otp.resendFailed"));
       } catch {
-        setError("Erreur réseau. Réessayez.");
+        setError(t("errors.networkError"));
       }
     });
   }
@@ -162,11 +162,11 @@ export function ForgotPasswordForm() {
     e.preventDefault();
     setError(null);
     if (password.length < 8) {
-      setError("Le mot de passe doit comporter au moins 8 caractères.");
+      setError(t("errors.passwordTooShort"));
       return;
     }
     if (password !== confirm) {
-      setError("Les deux mots de passe ne correspondent pas.");
+      setError(t("errors.passwordMismatch"));
       return;
     }
     if (!phone) return;
@@ -184,20 +184,20 @@ export function ForgotPasswordForm() {
           return;
         }
         const map: Record<string, string> = {
-          weak_password: "Mot de passe trop court (8 caractères minimum).",
-          no_account: "Aucun compte n'est associé à ce numéro.",
-          rate_limited: "Trop de tentatives. Réessayez dans un instant.",
+          weak_password: t("errors.weakPassword"),
+          no_account: t("forgot.noAccount"),
+          rate_limited: t("errors.tooManyAttempts"),
         };
         if (j.error === "phone_not_verified") {
           // Proof expired between verify and submit — restart from the top.
-          setError("Vérification expirée. Recommencez la procédure.");
+          setError(t("forgot.verificationExpired"));
           setPhase("phone");
           setOtpCode("");
           return;
         }
-        setError(map[j.error ?? ""] ?? "Impossible de réinitialiser le mot de passe. Réessayez.");
+        setError(map[j.error ?? ""] ?? t("forgot.resetFailed"));
       } catch {
-        setError("Impossible de joindre le serveur. Réessayez.");
+        setError(t("errors.serverUnreachable"));
       }
     });
   }
@@ -209,10 +209,10 @@ export function ForgotPasswordForm() {
           <CheckCircle2 className="size-5" strokeWidth={1.75} />
         </span>
         <h2 className="mazed-serif text-[16px] font-semibold text-mazed-cream">
-          Mot de passe mis à jour
+          {t("newPassword.updated")}
         </h2>
         <p className="mt-2 text-[12.5px] text-mazed-cream/75">
-          Redirection vers la page de connexion…
+          {t("newPassword.redirecting")}
         </p>
       </div>
     );
@@ -225,22 +225,29 @@ export function ForgotPasswordForm() {
           <Smartphone className="size-5" strokeWidth={1.75} />
         </span>
         <h2 className="mazed-serif text-[18px] font-semibold text-mazed-cream">
-          Vérifiez votre numéro
+          {t("otp.title")}
         </h2>
         <p className="mt-2 text-sm text-mazed-cream/75">
-          Entrez le code à 6 chiffres envoyé par SMS au{" "}
-          <span className="font-bold text-mazed-cream">{phone}</span>.
+          {t.rich("otp.sentTo", {
+            phone: phone ?? "",
+            b: (chunks) => (
+              <span className="font-bold text-mazed-cream">
+                <Ltr>{chunks}</Ltr>
+              </span>
+            ),
+          })}
         </p>
 
         <input
           type="text"
+          dir="ltr"
           inputMode="numeric"
           autoComplete="one-time-code"
           maxLength={6}
           value={otpCode}
           onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
           placeholder="••••••"
-          aria-label="Code de vérification à 6 chiffres"
+          aria-label={t("otp.codeLabel")}
           className="mt-5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-3 text-center text-[22px] font-bold tracking-[0.4em] text-mazed-cream placeholder:text-mazed-muted focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
         />
 
@@ -255,9 +262,9 @@ export function ForgotPasswordForm() {
             className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
           >
             {isPending ? (
-              <><Loader2 className="inline size-4 animate-spin" /> Vérification…</>
+              <><Loader2 className="inline size-4 animate-spin" /> {t("otp.verifying")}</>
             ) : (
-              "Vérifier le code"
+              t("otp.verify")
             )}
           </button>
           <button
@@ -266,14 +273,14 @@ export function ForgotPasswordForm() {
             disabled={cooldown > 0 || isPending}
             className="mazed-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
           >
-            {cooldown > 0 ? `Renvoyer le code (${cooldown}s)` : "Renvoyer le code"}
+            {cooldown > 0 ? t("otp.resendIn", { seconds: cooldown }) : t("otp.resend")}
           </button>
           <button
             type="button"
             onClick={() => { setPhase("phone"); setError(null); setOtpCode(""); }}
             className="text-[12px] text-mazed-cream/70 hover:text-gold-bright"
           >
-            Changer de numéro
+            {t("otp.changeNumber")}
           </button>
         </div>
       </form>
@@ -284,7 +291,7 @@ export function ForgotPasswordForm() {
     return (
       <form onSubmit={onSetPassword} className="space-y-4">
         <label className="block">
-          <span className="mazed-eyebrow text-[10px]">Nouveau mot de passe (min 8)</span>
+          <span className="mazed-eyebrow text-[10px]">{t("fields.newPasswordMin")}</span>
           <input
             type="password"
             required
@@ -297,7 +304,7 @@ export function ForgotPasswordForm() {
           />
         </label>
         <label className="block">
-          <span className="mazed-eyebrow text-[10px]">Confirmer</span>
+          <span className="mazed-eyebrow text-[10px]">{t("fields.confirm")}</span>
           <input
             type="password"
             required
@@ -317,9 +324,9 @@ export function ForgotPasswordForm() {
           className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
         >
           {isPending ? (
-            <><Loader2 className="inline size-4 animate-spin" /> Mise à jour…</>
+            <><Loader2 className="inline size-4 animate-spin" /> {t("newPassword.updating")}</>
           ) : (
-            "Mettre à jour le mot de passe"
+            t("newPassword.update")
           )}
         </button>
       </form>
@@ -330,7 +337,7 @@ export function ForgotPasswordForm() {
   return (
     <form onSubmit={onSendCode} className="space-y-4">
       <label className="block">
-        <span className="mazed-eyebrow text-[10px]">Téléphone</span>
+        <span className="mazed-eyebrow text-[10px]">{t("fields.phone")}</span>
         <PhoneInput
           dialCode={dialCode}
           onDialCodeChange={setDialCode}
@@ -348,9 +355,9 @@ export function ForgotPasswordForm() {
         className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
         {isPending ? (
-          <><Loader2 className="inline size-4 animate-spin" /> Envoi…</>
+          <><Loader2 className="inline size-4 animate-spin" /> {t("forgot.sending")}</>
         ) : (
-          "Envoyer le code SMS"
+          t("forgot.sendCode")
         )}
       </button>
     </form>

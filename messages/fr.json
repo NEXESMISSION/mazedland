@@ -535,5 +535,220 @@
     "contactRequired": "Ajoutez un numéro de téléphone joignable.",
     "attestationRequired": "Cochez l'attestation sur l'honneur.",
     "photoRequired": "Ajoutez au moins une photo."
+  },
+  "auth": {
+    "hero": {
+      "badge": "Les petites annonces immobilières en Tunisie",
+      "title": "Achetez et vendez en toute confiance.",
+      "secureTitle": "100% sécurisé",
+      "secureSub": "Transactions vérifiées",
+      "transparencyTitle": "Transparence totale",
+      "transparencySub": "Informations vérifiées",
+      "simpleTitle": "Simple et rapide",
+      "simpleSub": "Publiez une annonce en quelques minutes",
+      "users": "Plus de 12 000 utilisateurs",
+      "trust": "nous font confiance"
+    },
+    "phoneInput": {
+      "dialCodeLabel": "Indicatif pays — actuellement {country}",
+      "numberLabel": "Numéro de téléphone",
+      "listLabel": "Liste des indicatifs"
+    },
+    "fields": {
+      "phone": "Téléphone",
+      "password": "Mot de passe",
+      "passwordMin": "Mot de passe (min 8)",
+      "newPasswordMin": "Nouveau mot de passe (min 8)",
+      "confirm": "Confirmer",
+      "fullName": "Nom complet",
+      "governorate": "Gouvernorat",
+      "governoratePlaceholder": "Choisir votre gouvernorat…"
+    },
+    "errors": {
+      "invalidNumber": "Numéro invalide.",
+      "invalidPhone": "Numéro de téléphone invalide.",
+      "tooManyAttemptsMinutes": "Trop de tentatives. Réessayez dans quelques minutes.",
+      "tooManyAttempts": "Trop de tentatives. Réessayez dans un instant.",
+      "invalidCredentials": "Identifiants invalides. Vérifiez le numéro et le mot de passe.",
+      "serverUnreachableCheck": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
+      "serverUnreachable": "Impossible de joindre le serveur. Réessayez.",
+      "smsSendFailed": "Impossible d'envoyer le code SMS. Réessayez dans un instant.",
+      "weakPassword": "Mot de passe trop court (8 caractères minimum).",
+      "passwordTooShort": "Le mot de passe doit comporter au moins 8 caractères.",
+      "passwordMismatch": "Les deux mots de passe ne correspondent pas.",
+      "networkError": "Erreur réseau. Réessayez."
+    },
+    "login": {
+      "metaTitle": "Connexion — Mazed Immo",
+      "welcome": "Bienvenue sur <brand>Mazed Immo</brand>",
+      "submitting": "Connexion…",
+      "forgotPassword": "Mot de passe oublié ?",
+      "noAccount": "Pas encore de compte ?"
+    },
+    "signup": {
+      "metaTitle": "Créer un compte — Mazed Immo",
+      "alreadyMember": "Déjà inscrit ?",
+      "phoneTaken": "Ce numéro est déjà associé à un compte. Connectez-vous.",
+      "phoneNotVerified": "Vérification du numéro requise. Réessayez.",
+      "createFailed": "Impossible de créer le compte. Réessayez.",
+      "governorateRequired": "Sélectionnez votre gouvernorat pour continuer.",
+      "acceptRequired": "Veuillez accepter les conditions d'utilisation et la politique de confidentialité.",
+      "accept": "<accept>J'accepte les</accept> <terms>conditions d'utilisation</terms> <accept>et la</accept> <privacy>politique de confidentialité</privacy>.",
+      "acceptFirst": "Acceptez les conditions d'utilisation",
+      "submitting": "Création du compte…",
+      "proNote": "Agence ou professionnel ? Créez votre compte ici — le <badge>badge vendeur vérifié</badge> est attribué par notre équipe."
+    },
+    "otp": {
+      "title": "Vérifiez votre numéro",
+      "sentTo": "Entrez le code à 6 chiffres envoyé par SMS au <b>{phone}</b>.",
+      "codeLabel": "Code de vérification à 6 chiffres",
+      "enterCode": "Entrez le code à 6 chiffres.",
+      "verifying": "Vérification…",
+      "verifyAndCreate": "Vérifier et créer le compte",
+      "verify": "Vérifier le code",
+      "resend": "Renvoyer le code",
+      "resendIn": "Renvoyer le code ({seconds}s)",
+      "editInfo": "Modifier mes informations",
+      "changeNumber": "Changer de numéro",
+      "wrongCode": "Code incorrect.",
+      "expired": "Code expiré. Redemandez-en un.",
+      "noCode": "Aucun code en cours. Redemandez-en un.",
+      "tooManyAttempts": "Trop de tentatives. Redemandez un code.",
+      "failed": "Échec de la vérification.",
+      "resendFailed": "Échec du renvoi. Réessayez."
+    },
+    "newPassword": {
+      "updating": "Mise à jour…",
+      "update": "Mettre à jour le mot de passe",
+      "updated": "Mot de passe mis à jour",
+      "redirecting": "Redirection vers la page de connexion…"
+    },
+    "forgot": {
+      "metaTitle": "Mot de passe oublié — Mazed Immo",
+      "title": "Mot de passe oublié",
+      "intro": "Entrez votre numéro — nous vous enverrons un code SMS pour réinitialiser votre mot de passe.",
+      "remember": "Vous vous en souvenez ?",
+      "signIn": "Se connecter",
+      "smsUnavailable": "La réinitialisation par SMS n'est pas disponible pour le moment. Contactez le support.",
+      "sending": "Envoi…",
+      "sendCode": "Envoyer le code SMS",
+      "noAccount": "Aucun compte n'est associé à ce numéro.",
+      "verificationExpired": "Vérification expirée. Recommencez la procédure.",
+      "resetFailed": "Impossible de réinitialiser le mot de passe. Réessayez."
+    },
+    "reset": {
+      "metaTitle": "Nouveau mot de passe — Mazed Immo",
+      "title": "Nouveau mot de passe",
+      "intro": "Choisissez un nouveau mot de passe pour votre compte.",
+      "checkingLink": "Vérification du lien…",
+      "invalidLink": "Lien invalide ou expiré. <link>Demander un nouveau lien</link>."
+    }
+  },
+  "legal": {
+    "home": "Accueil",
+    "eyebrow": "Légal",
+    "lastUpdated": "Dernière mise à jour : {date}",
+    "terms": {
+      "metaTitle": "Conditions d'utilisation — Mazed Immo",
+      "title": "Conditions d'utilisation",
+      "sections": {
+        "purpose": {
+          "title": "1. Objet",
+          "body": "Les présentes conditions générales régissent l'utilisation de Mazed Immo, plateforme de petites annonces immobilières en Tunisie : terrains, maisons, appartements, villas, bureaux et locaux. En créant un compte, vous acceptez ces conditions dans leur intégralité."
+        },
+        "account": {
+          "title": "2. Compte",
+          "body": "Vous devez fournir des informations exactes lors de l'inscription, notamment un numéro de téléphone que vous contrôlez. Vous êtes responsable de la confidentialité de vos identifiants et de toute activité réalisée depuis votre compte."
+        },
+        "listings": {
+          "title": "3. Annonces",
+          "body": "Le vendeur garantit qu'il est habilité à proposer le bien et que les informations, le prix et les photos publiés sont exacts. Chaque annonce est vérifiée par notre équipe avant publication. Mazed Immo peut refuser, suspendre ou retirer une annonce trompeuse, illicite ou contraire aux présentes conditions."
+        },
+        "fees": {
+          "title": "4. Frais",
+          "body": "Les frais de publication et les options de mise en avant sont affichés avant tout paiement, en dinars tunisiens (TND). Le paiement se fait par virement bancaire ou D17, sur justificatif vérifié par notre équipe. Les frais déjà réglés restent acquis si une annonce est retirée pour non-respect des présentes conditions."
+        },
+        "matching": {
+          "title": "5. Mise en relation",
+          "body": "Mazed Immo met en relation acheteurs et vendeurs et n'intervient pas dans la transaction : la négociation, le paiement du prix et la signature se font directement entre les parties. Le numéro du vendeur est communiqué sur demande. Avant tout versement, visitez le bien, demandez le titre de propriété et faites appel à un notaire."
+        },
+        "liability": {
+          "title": "6. Responsabilité",
+          "body": "La situation juridique du bien, l'exactitude des informations fournies par le vendeur et le bon déroulement de la vente relèvent de la responsabilité des parties. Mazed Immo ne peut être tenu responsable d'un litige entre elles."
+        },
+        "suspension": {
+          "title": "7. Suspension et résiliation",
+          "body": "Nous pouvons suspendre ou clôturer un compte en cas de fraude, d'abus ou de violation des présentes conditions. Vous pouvez supprimer votre compte à tout moment depuis la page Mon compte."
+        },
+        "changes": {
+          "title": "8. Modifications",
+          "body": "Ces conditions peuvent évoluer. La version en vigueur est celle publiée sur cette page."
+        }
+      }
+    },
+    "privacy": {
+      "metaTitle": "Politique de confidentialité — Mazed Immo",
+      "title": "Politique de confidentialité",
+      "sections": {
+        "collected": {
+          "title": "1. Données collectées",
+          "body": "Nous collectons les informations que vous fournissez — nom, numéro de téléphone, gouvernorat, contenu et photos de vos annonces, justificatifs de paiement — ainsi que les données d'usage nécessaires au fonctionnement et à la sécurité du service."
+        },
+        "use": {
+          "title": "2. Utilisation",
+          "body": "Vos données servent à créer et sécuriser votre compte, vérifier et publier vos annonces, traiter vos paiements et vous envoyer les notifications liées à votre activité."
+        },
+        "phone": {
+          "title": "3. Votre numéro de téléphone",
+          "body": "Le numéro associé à une annonce n'est jamais affiché dans la page. Il est communiqué uniquement à la personne qui le demande, et chaque demande est enregistrée et limitée afin d'empêcher la collecte automatisée."
+        },
+        "sharing": {
+          "title": "4. Partage",
+          "body": "Vos données ne sont pas vendues. Elles peuvent être partagées avec des prestataires strictement nécessaires (hébergement, envoi de SMS et d'e-mails) et avec les autorités lorsque la loi l'exige."
+        },
+        "retention": {
+          "title": "5. Conservation et sécurité",
+          "body": "Les justificatifs de paiement sont stockés dans un espace privé, accessible uniquement à notre équipe pour leur vérification. Nous appliquons des mesures techniques et organisationnelles pour protéger vos données et ne les conservons que le temps nécessaire."
+        },
+        "rights": {
+          "title": "6. Vos droits",
+          "body": "Vous pouvez demander l'accès, la rectification ou la suppression de vos données, ou supprimer votre compte depuis la page Mon compte. Pour toute question, écrivez-nous via la page Contact."
+        },
+        "cookies": {
+          "title": "7. Cookies",
+          "body": "Nous utilisons des cookies essentiels au fonctionnement du site (session, préférences) et une mesure d'audience anonyme."
+        }
+      }
+    }
+  },
+  "contact": {
+    "metaTitle": "Contact — Mazed Immo",
+    "eyebrow": "Aide",
+    "title": "Contactez-nous",
+    "intro": "Une question sur une annonce, un paiement ou votre compte ? Notre équipe est là pour vous aider.",
+    "pending": "Nos coordonnées téléphonique et e-mail sont en cours de publication. En attendant, chaque décision sur vos annonces et vos paiements vous est notifiée dans l'application et par SMS.",
+    "email": "E-mail",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "addressValue": "Sfax, Tunisie",
+    "hours": "Horaires",
+    "hoursValue": "Lun – Ven, 9h – 17h"
+  },
+  "errors": {
+    "boundary": {
+      "networkTitle": "Connexion interrompue",
+      "title": "Quelque chose s'est mal passé",
+      "networkBody": "Votre appareil semble hors ligne. La page se rechargera automatiquement dès que la connexion revient.",
+      "body": "Une erreur inattendue a interrompu la page. Vous pouvez réessayer ; si le problème persiste, signalez-le à l'équipe.",
+      "ref": "ref · {digest}",
+      "retrying": "Reconnexion…",
+      "retry": "Réessayer",
+      "home": "Accueil"
+    },
+    "notFound": {
+      "title": "Page introuvable",
+      "body": "Le lien que vous avez suivi n'existe pas ou a été déplacé.",
+      "home": "Retour à l'accueil"
+    }
   }
 }

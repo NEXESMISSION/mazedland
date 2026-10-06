@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { AlertTriangle, RotateCcw, Home, WifiOff } from "lucide-react";
 import { reportClientError } from "@/components/observability/ClientErrorReporter";
 
@@ -25,12 +25,13 @@ export default function LocaleError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  // Plain useParams + raw <a> here on purpose — when this boundary
-  // fires, the NextIntlClientProvider context may not be available
-  // (we're rendered as a sibling, not a child, of the layout). The
-  // i18n Link helper would crash with "no intl context".
-  const params = useParams<{ locale?: string }>();
-  const locale = typeof params?.locale === "string" ? params.locale : "fr";
+  // A segment's error boundary renders INSIDE that segment's layout, so the
+  // NextIntlClientProvider from [locale]/layout.tsx is above it and the
+  // locale is always known. (An error in the layout itself skips this file
+  // and lands in global-error.tsx, which needs no provider.) The home link
+  // stays a raw <a>: a full load is what clears the errored segment.
+  const t = useTranslations("errors.boundary");
+  const locale = useLocale();
 
   // Tag the boundary cause. A network-flavored failure deserves a
   // friendlier surface (and auto-retry on reconnect) — a real bug in
@@ -96,18 +97,14 @@ export default function LocaleError({
         )}
       </div>
       <h1 className="mt-5 text-[22px] font-extrabold leading-tight tracking-tight">
-        {isNetwork
-          ? "Connexion interrompue"
-          : "Quelque chose s'est mal passé"}
+        {isNetwork ? t("networkTitle") : t("title")}
       </h1>
       <p className="mt-2 text-[13px] leading-relaxed text-[var(--foreground-muted)]">
-        {isNetwork
-          ? "Votre appareil semble hors ligne. La page se rechargera automatiquement dès que la connexion revient."
-          : "Une erreur inattendue a interrompu la page. Vous pouvez réessayer ; si le problème persiste, signalez-le à l'équipe."}
+        {isNetwork ? t("networkBody") : t("body")}
       </p>
       {error?.digest && (
-        <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--foreground-subtle)]">
-          ref · {error.digest}
+        <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--foreground-subtle)] rtl:tracking-normal">
+          {t("ref", { digest: error.digest })}
         </p>
       )}
       <div className="mt-6 grid w-full grid-cols-2 gap-2">
@@ -121,14 +118,14 @@ export default function LocaleError({
           className="tap-target inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-[var(--gold)] text-white text-[13px] font-bold shadow-[var(--shadow-gold)] hover:bg-[var(--gold-bright)] active:scale-[0.98] transition-all disabled:opacity-60"
         >
           <RotateCcw className={`size-4 ${retrying ? "animate-spin" : ""}`} strokeWidth={2.2} />
-          {retrying ? "Reconnexion…" : "Réessayer"}
+          {retrying ? t("retrying") : t("retry")}
         </button>
         <a
           href={`/${locale}`}
           className="tap-target inline-flex h-11 items-center justify-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-2)] text-foreground text-[13px] font-semibold hover:border-[var(--gold-soft)] hover:text-[var(--gold)] transition-colors"
         >
           <Home className="size-4" strokeWidth={2.2} />
-          Accueil
+          {t("home")}
         </a>
       </div>
     </div>

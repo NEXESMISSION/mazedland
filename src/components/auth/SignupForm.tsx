@@ -7,8 +7,9 @@ import { stripLocalePrefix } from "@/i18n/routing";
 import { safeInternalPath } from "@/lib/safePath";
 import { PhoneInput } from "./PhoneInput";
 import { Loader2, Smartphone } from "lucide-react";
-import { TUNISIAN_GOVERNORATES, normalizeE164, validatePhone } from "@/lib/tunisia";
+import { TUNISIAN_GOVERNORATES, governorateLabel, normalizeE164, validatePhone } from "@/lib/tunisia";
 import { Modal } from "@/components/ui/Modal";
+import { Ltr } from "@/components/ui/Ltr";
 import { TermsContent, PrivacyContent } from "@/components/legal/LegalContent";
 
 // Signup is intentionally identity-only. Role elevation (agency, bank,
@@ -77,18 +78,18 @@ export function SignupForm() {
       const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
       if (!res.ok || !j.ok) {
         const map: Record<string, string> = {
-          phone_taken: "Ce numéro est déjà associé à un compte. Connectez-vous.",
-          weak_password: "Mot de passe trop court (8 caractères minimum).",
-          invalid_phone: "Numéro de téléphone invalide.",
-          rate_limited: "Trop de tentatives. Réessayez dans un instant.",
-          phone_not_verified: "Vérification du numéro requise. Réessayez.",
+          phone_taken: t("auth.signup.phoneTaken"),
+          weak_password: t("auth.errors.weakPassword"),
+          invalid_phone: t("auth.errors.invalidPhone"),
+          rate_limited: t("auth.errors.tooManyAttempts"),
+          phone_not_verified: t("auth.signup.phoneNotVerified"),
         };
-        setError(map[j.error ?? ""] ?? "Impossible de créer le compte. Réessayez.");
+        setError(map[j.error ?? ""] ?? t("auth.signup.createFailed"));
         setOtpPhase(false);
         return;
       }
     } catch {
-      setError("Impossible de joindre le serveur. Réessayez.");
+      setError(t("auth.errors.serverUnreachable"));
       setOtpPhase(false);
       return;
     }
@@ -119,15 +120,15 @@ export function SignupForm() {
       // normalizeE164 only returns null on degenerate input that
       // validatePhone already caught. Defensive fallback so a future
       // schema change in one helper can't ship a confusing form error.
-      setError("Numéro invalide.");
+      setError(t("auth.errors.invalidNumber"));
       return;
     }
     if (!governorate) {
-      setError("Sélectionnez votre gouvernorat pour continuer.");
+      setError(t("auth.signup.governorateRequired"));
       return;
     }
     if (!accepted) {
-      setError("Veuillez accepter les conditions d'utilisation et la politique de confidentialité.");
+      setError(t("auth.signup.acceptRequired"));
       return;
     }
     startTransition(async () => {
@@ -173,7 +174,7 @@ export function SignupForm() {
         }
         // Bad phone number → the only case the user must fix before continuing.
         if (res.status === 400 && j.error === "invalid_phone") {
-          setError("Numéro de téléphone invalide.");
+          setError(t("auth.errors.invalidPhone"));
           return;
         }
         // SMS IS configured (we didn't get configured:false) but the send
@@ -182,11 +183,11 @@ export function SignupForm() {
         // (phone_not_verified) so the account can't be created without a code,
         // and the user would just see the confusing generic error. Surface the
         // real problem and let them retry.
-        setError("Impossible d'envoyer le code SMS. Réessayez dans un instant.");
+        setError(t("auth.errors.smsSendFailed"));
       } catch {
         // Couldn't even reach our API — surface it. performSignup would also
         // fail to reach it, and with SMS on it couldn't create the account.
-        setError("Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.");
+        setError(t("auth.errors.serverUnreachableCheck"));
       }
     });
   }
@@ -196,7 +197,7 @@ export function SignupForm() {
     setOtpError(null);
     const clean = otpCode.replace(/\D/g, "");
     if (clean.length !== 6) {
-      setOtpError("Entrez le code à 6 chiffres.");
+      setOtpError(t("auth.otp.enterCode"));
       return;
     }
     if (!verifiedPhone) return;
@@ -213,14 +214,14 @@ export function SignupForm() {
           return;
         }
         const map: Record<string, string> = {
-          wrong_code: "Code incorrect.",
-          expired: "Code expiré. Redemandez-en un.",
-          no_code: "Aucun code en cours. Redemandez-en un.",
-          too_many_attempts: "Trop de tentatives. Redemandez un code.",
+          wrong_code: t("auth.otp.wrongCode"),
+          expired: t("auth.otp.expired"),
+          no_code: t("auth.otp.noCode"),
+          too_many_attempts: t("auth.otp.tooManyAttempts"),
         };
-        setOtpError(map[j.error ?? ""] ?? "Échec de la vérification.");
+        setOtpError(map[j.error ?? ""] ?? t("auth.otp.failed"));
       } catch {
-        setOtpError("Erreur réseau. Réessayez.");
+        setOtpError(t("auth.errors.networkError"));
       }
     });
   }
@@ -241,10 +242,10 @@ export function SignupForm() {
         } else if (res.status === 429 && j.error === "cooldown") {
           setOtpCooldown(j.retryAfter ?? 60);
         } else {
-          setOtpError("Échec du renvoi. Réessayez.");
+          setOtpError(t("auth.otp.resendFailed"));
         }
       } catch {
-        setOtpError("Erreur réseau. Réessayez.");
+        setOtpError(t("auth.errors.networkError"));
       }
     });
   }
@@ -271,10 +272,10 @@ export function SignupForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Field label="Nom complet" value={fullName} onChange={setFullName} required autoComplete="name" />
+      <Field label={t("auth.fields.fullName")} value={fullName} onChange={setFullName} required autoComplete="name" />
 
       <label className="block">
-        <span className="mazed-eyebrow text-[10px]">Téléphone</span>
+        <span className="mazed-eyebrow text-[10px]">{t("auth.fields.phone")}</span>
         <PhoneInput
           dialCode={dialCode}
           onDialCodeChange={setDialCode}
@@ -285,7 +286,7 @@ export function SignupForm() {
       </label>
 
       <label className="block">
-        <span className="mazed-eyebrow text-[10px]">Gouvernorat</span>
+        <span className="mazed-eyebrow text-[10px]">{t("auth.fields.governorate")}</span>
         <select
           value={governorate}
           onChange={(e) => setGovernorate(e.target.value)}
@@ -293,18 +294,19 @@ export function SignupForm() {
           className="mt-1.5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-2.5 text-sm text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
         >
           <option value="" disabled className="bg-mazed-surface-2">
-            Choisir votre gouvernorat…
+            {t("auth.fields.governoratePlaceholder")}
           </option>
+          {/* The French name stays the stored value; only the label is localized. */}
           {TUNISIAN_GOVERNORATES.map((g) => (
             <option key={g} value={g} className="bg-mazed-surface-2">
-              {g}
+              {governorateLabel(g, locale)}
             </option>
           ))}
         </select>
       </label>
 
       <Field
-        label="Mot de passe (min 8)"
+        label={t("auth.fields.passwordMin")}
         type="password"
         value={password}
         onChange={setPassword}
@@ -325,23 +327,29 @@ export function SignupForm() {
           className="mt-0.5 size-4 shrink-0 accent-[var(--gold)]"
         />
         <span>
-          <label htmlFor="signup-accept" className="cursor-pointer">J&apos;accepte les</label>{" "}
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); setLegalModal("terms"); }}
-            className="font-bold text-mazed-cream underline transition hover:text-gold-bright"
-          >
-            conditions d&apos;utilisation
-          </button>{" "}
-          <label htmlFor="signup-accept" className="cursor-pointer">et la</label>{" "}
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); setLegalModal("privacy"); }}
-            className="font-bold text-mazed-cream underline transition hover:text-gold-bright"
-          >
-            politique de confidentialité
-          </button>
-          .
+          {t.rich("auth.signup.accept", {
+            accept: (chunks) => (
+              <label htmlFor="signup-accept" className="cursor-pointer">{chunks}</label>
+            ),
+            terms: (chunks) => (
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); setLegalModal("terms"); }}
+                className="font-bold text-mazed-cream underline transition hover:text-gold-bright"
+              >
+                {chunks}
+              </button>
+            ),
+            privacy: (chunks) => (
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); setLegalModal("privacy"); }}
+                className="font-bold text-mazed-cream underline transition hover:text-gold-bright"
+              >
+                {chunks}
+              </button>
+            ),
+          })}
         </span>
       </div>
 
@@ -351,11 +359,11 @@ export function SignupForm() {
       <button
         type="submit"
         disabled={isPending || !accepted}
-        title={!accepted && !isPending ? "Acceptez les conditions d'utilisation" : undefined}
+        title={!accepted && !isPending ? t("auth.signup.acceptFirst") : undefined}
         className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
         {isPending ? (
-          <><Loader2 className="inline size-4 animate-spin" /> Création du compte…</>
+          <><Loader2 className="inline size-4 animate-spin" /> {t("auth.signup.submitting")}</>
         ) : (
           t("nav.signup")
         )}
@@ -365,14 +373,14 @@ export function SignupForm() {
         open={legalModal !== null}
         onClose={() => setLegalModal(null)}
         size="lg"
-        title={legalModal === "privacy" ? "Politique de confidentialité" : "Conditions d'utilisation"}
+        title={legalModal === "privacy" ? t("legal.privacy.title") : t("legal.terms.title")}
       >
         {legalModal === "privacy" ? <PrivacyContent /> : <TermsContent />}
       </Modal>
       <p className="text-center text-[11px] text-mazed-muted">
-        Agence ou professionnel ? Créez votre compte ici — le{" "}
-        <span className="text-mazed-cream">badge vendeur vérifié</span> est
-        attribué par notre équipe.
+        {t.rich("auth.signup.proNote", {
+          badge: (chunks) => <span className="text-mazed-cream">{chunks}</span>,
+        })}
       </p>
     </form>
   );
@@ -396,28 +404,36 @@ function PhoneVerify({
   error: string | null;
   pending: boolean;
 }) {
+  const t = useTranslations("auth.otp");
   return (
     <form onSubmit={onVerify} className="mazed-frame-gold relative p-6 text-center">
       <span className="mazed-monogram mazed-monogram-filled mx-auto mb-3 size-12 text-[18px]">
         <Smartphone className="size-5" strokeWidth={1.75} />
       </span>
       <h2 className="mazed-serif text-[18px] font-semibold text-mazed-cream">
-        Vérifiez votre numéro
+        {t("title")}
       </h2>
       <p className="mt-2 text-sm text-mazed-cream/75">
-        Entrez le code à 6 chiffres envoyé par SMS au{" "}
-        <span className="font-bold text-mazed-cream">{phone}</span>.
+        {t.rich("sentTo", {
+          phone,
+          b: (chunks) => (
+            <span className="font-bold text-mazed-cream">
+              <Ltr>{chunks}</Ltr>
+            </span>
+          ),
+        })}
       </p>
 
       <input
         type="text"
+        dir="ltr"
         inputMode="numeric"
         autoComplete="one-time-code"
         maxLength={6}
         value={code}
         onChange={(e) => onCodeChange(e.target.value.replace(/\D/g, ""))}
         placeholder="••••••"
-        aria-label="Code de vérification à 6 chiffres"
+        aria-label={t("codeLabel")}
         className="mt-5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-3 text-center text-[22px] font-bold tracking-[0.4em] text-mazed-cream placeholder:text-mazed-muted focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
       />
 
@@ -432,9 +448,9 @@ function PhoneVerify({
           className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
         >
           {pending ? (
-            <><Loader2 className="inline size-4 animate-spin" /> Vérification…</>
+            <><Loader2 className="inline size-4 animate-spin" /> {t("verifying")}</>
           ) : (
-            "Vérifier et créer le compte"
+            t("verifyAndCreate")
           )}
         </button>
         <button
@@ -443,14 +459,14 @@ function PhoneVerify({
           disabled={cooldown > 0 || pending}
           className="mazed-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
         >
-          {cooldown > 0 ? `Renvoyer le code (${cooldown}s)` : "Renvoyer le code"}
+          {cooldown > 0 ? t("resendIn", { seconds: cooldown }) : t("resend")}
         </button>
         <button
           type="button"
           onClick={onBack}
           className="text-[12px] text-mazed-cream/70 hover:text-gold-bright"
         >
-          Modifier mes informations
+          {t("editInfo")}
         </button>
       </div>
     </form>
