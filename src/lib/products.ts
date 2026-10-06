@@ -19,24 +19,9 @@ export const PRODUCT_KINDS = [
 
 export type ProductKind = (typeof PRODUCT_KINDS)[number];
 
-/** What each kind is for, in the words the admin screen shows. */
-export const PRODUCT_KIND_LABEL: Record<ProductKind, string> = {
-  listing_single: "Annonce à l'unité",
-  listing_pack: "Pack d'annonces",
-  subscription: "Abonnement",
-  promo: "Mise en avant",
-  badge_verified: "Badge vérifié",
-  renewal: "Renouvellement",
-};
-
-export const PRODUCT_KIND_HINT: Record<ProductKind, string> = {
-  listing_single: "Une publication. Le prix peut différer par catégorie.",
-  listing_pack: "N publications prépayées, à utiliser quand le vendeur veut.",
-  subscription: "Publications sur une période, pour les professionnels.",
-  promo: "Accueil, top de la recherche, bannière.",
-  badge_verified: "Vendu au vendeur, accordé à la main après vérification.",
-  renewal: "Remet une annonce expirée en ligne.",
-};
+// What each kind is called and what it is for, in the words the admin screen
+// shows, are messages in both languages: `adminOffers.kinds.<kind>` and
+// `adminOffers.kindHints.<kind>` in messages/fr.json and messages/ar.json.
 
 /**
  * A product's name in the reader's language: `name_ar` when an admin has set

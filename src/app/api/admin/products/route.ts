@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslator } from "@/lib/i18n/server";
 import { PRODUCT_KINDS, PRODUCT_SELECT, type ProductKind } from "@/lib/products";
 
 /**
@@ -17,6 +18,9 @@ import { PRODUCT_KINDS, PRODUCT_SELECT, type ProductKind } from "@/lib/products"
  *
  * Admin-only. Prices are money, so every field is re-validated here rather than
  * trusted from the form.
+ *
+ * `name_ar` / `description_ar` (0163) are optional, with the French fields'
+ * limits; an empty string stores null and the Arabic site falls back to French.
  */
 
 type Body = {
@@ -26,6 +30,7 @@ type Body = {
   name_fr?: unknown;
   name_ar?: unknown;
   description?: unknown;
+  description_ar?: unknown;
   price?: unknown;
   category_id?: unknown;
   listing_quota?: unknown;
@@ -91,6 +96,7 @@ export async function POST(req: NextRequest) {
   if (!admin) return fail("server_misconfigured", 500);
 
   const body = (await req.json().catch(() => ({}))) as Body;
+  const t = await apiTranslator(req, "adminOffers.api");
   const kind = PRODUCT_KINDS.includes(body.kind as ProductKind)
     ? (body.kind as ProductKind)
     : null;
@@ -106,13 +112,13 @@ export async function POST(req: NextRequest) {
   // into a sentence the admin can act on.
   if ((kind === "listing_pack" || kind === "subscription") && !quota) {
     return NextResponse.json(
-      { error: "quota_required", detail: "Un pack doit accorder au moins une publication." },
+      { error: "quota_required", detail: t("quotaRequired") },
       { status: 400 },
     );
   }
   if (kind === "badge_verified" && !duration) {
     return NextResponse.json(
-      { error: "duration_required", detail: "Le badge doit avoir une durée de validité." },
+      { error: "duration_required", detail: t("durationRequired") },
       { status: 400 },
     );
   }
@@ -128,6 +134,7 @@ export async function POST(req: NextRequest) {
       name_fr: nameFr,
       name_ar: text(body.name_ar, 120),
       description: text(body.description, 500),
+      description_ar: text(body.description_ar, 500),
       price: money(body.price),
       category_id: text(body.category_id, 40),
       listing_quota: quota,
@@ -142,7 +149,7 @@ export async function POST(req: NextRequest) {
   if (error) {
     if (error.code === "23505") {
       return NextResponse.json(
-        { error: "slug_taken", detail: "Un produit porte déjà ce nom." },
+        { error: "slug_taken", detail: t("slugTaken") },
         { status: 409 },
       );
     }
@@ -171,6 +178,7 @@ export async function PATCH(req: NextRequest) {
   if ("name_fr" in body) patch.name_fr = text(body.name_fr, 120);
   if ("name_ar" in body) patch.name_ar = text(body.name_ar, 120);
   if ("description" in body) patch.description = text(body.description, 500);
+  if ("description_ar" in body) patch.description_ar = text(body.description_ar, 500);
   if ("price" in body) patch.price = money(body.price);
   if ("category_id" in body) patch.category_id = text(body.category_id, 40);
   if ("listing_quota" in body) patch.listing_quota = posInt(body.listing_quota, 1000);
@@ -187,12 +195,11 @@ export async function PATCH(req: NextRequest) {
     // 23514 = a CHECK from 0157 (pack without quota, badge without duration,
     // two active single prices for one category).
     if (error.code === "23514" || error.code === "23505") {
+      const t = await apiTranslator(req, "adminOffers.api");
       return NextResponse.json(
         {
           error: "invalid_product",
-          detail:
-            "Vérifiez la cohérence : un pack a besoin d'un quota, un badge d'une durée, " +
-            "et une seule annonce à l'unité peut être active par catégorie.",
+          detail: t("invalidProduct"),
         },
         { status: 400 },
       );

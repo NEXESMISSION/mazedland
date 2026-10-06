@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { PropertyType } from "@/lib/types";
 import { LegalDocsEditor, type LegalDocKindRow } from "./LegalDocsEditor";
@@ -22,28 +23,26 @@ export default async function AdminLegalDocsPage() {
     .order("label");
 
   const byType = new Map<PropertyType, LegalDocKindRow[]>();
-  for (const t of PROPERTY_TYPES) byType.set(t, []);
+  for (const pt of PROPERTY_TYPES) byType.set(pt, []);
   for (const row of (data ?? []) as LegalDocKindRow[]) {
     byType.get(row.property_type)?.push(row);
   }
 
   const initial = Object.fromEntries(
-    PROPERTY_TYPES.map((t) => [t, byType.get(t) ?? []]),
+    PROPERTY_TYPES.map((pt) => [pt, byType.get(pt) ?? []]),
   ) as Record<PropertyType, LegalDocKindRow[]>;
 
+  const t = await getTranslations("adminLegalDocs");
+
+  // Document labels and descriptions are shown as stored: they are French
+  // content an admin wrote, not interface text.
   return (
     <div>
       <SiteTabs />
       <AdminPageHeader
-        eyebrow="Documents légaux"
-        title="Catalogue par type de bien"
-        description={
-          <>
-            Définissez la liste des documents que chaque vendeur doit téléverser
-            selon le type de bien. Les documents marqués <b>requis</b> bloquent
-            l&apos;envoi du formulaire tant qu&apos;ils ne sont pas fournis.
-          </>
-        }
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t.rich("description", { b: (chunks) => <b>{chunks}</b> })}
       />
 
       <div className="mt-5">

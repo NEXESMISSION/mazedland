@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { Link } from "@/i18n/navigation";
 import { usablePayeeMethods } from "@/lib/payments";
@@ -47,29 +48,31 @@ export default async function AdminSettingsPage() {
     d17: initial.payee_d17,
   });
 
+  const t = await getTranslations("adminSettings");
+
   return (
     <div>
       <SiteTabs />
       <AdminPageHeader
-        eyebrow="Paiement"
-        title="Réglages"
-        description="Les coordonnées vers lesquelles les vendeurs règlent leurs frais de publication, par virement ou D17."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
 
       {!usable.bank_transfer && !usable.d17 && (
         <div className="mt-5 rounded-2xl bg-amber-500/10 p-4 text-[13px] leading-relaxed text-amber-900 ring-1 ring-amber-500/30">
-          <strong>Aucun moyen de paiement valide.</strong> La page de paiement est bloquée tant que
-          ces champs sont vides ou contiennent les valeurs d&apos;exemple : un vendeur ne doit jamais
-          virer de l&apos;argent vers un compte fictif.
+          {t.rich("noPayeeMethod", { strong: (chunks) => <strong>{chunks}</strong> })}
         </div>
       )}
 
       <p className="mt-4 text-[12.5px] text-muted">
-        Les prix des annonces et des options se règlent dans{" "}
-        <Link href="/admin/offres" className="font-bold text-foreground underline underline-offset-2">
-          Offres
-        </Link>
-        .
+        {t.rich("pricesLink", {
+          link: (chunks) => (
+            <Link href="/admin/offres" className="font-bold text-foreground underline underline-offset-2">
+              {chunks}
+            </Link>
+          ),
+        })}
       </p>
 
       <div className="mt-5">

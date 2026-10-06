@@ -1,3 +1,4 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { formatNumber } from "@/lib/utils";
@@ -18,18 +19,20 @@ export const revalidate = 0;
  * destination now.
  */
 
+/** Each card's words live under `adminSite.cards.<key>`. */
 type Card = {
-  label: string;
+  key: "home" | "popups" | "legalDocs" | "notifications" | "settings" | "activity";
   href: string;
   Icon: LucideIcon;
-  description: string;
+  /** Shown as `cards.<key>.count`, which only the counted cards have. */
   count?: number;
-  unit?: string;
 };
 
 export default async function AdminSiteHub() {
+  const t = await getTranslations("adminSite");
+  const locale = await getLocale();
   const sb = await getServerSupabase();
-  const head = (t: string) => sb.from(t).select("*", { count: "exact", head: true });
+  const head = (table: string) => sb.from(table).select("*", { count: "exact", head: true });
 
   const [popups, docs, notifs] = await Promise.all([
     head("popups"),
@@ -40,58 +43,20 @@ export default async function AdminSiteHub() {
   const n = (r: { count: number | null }) => r.count ?? 0;
 
   const cards: Card[] = [
-    {
-      label: "Accueil",
-      href: "/admin/home",
-      Icon: LayoutTemplate,
-      description: "Choisir ce qui est mis en avant sur la page d'accueil.",
-    },
-    {
-      label: "Popups",
-      href: "/admin/popups",
-      Icon: MessageSquare,
-      description: "Messages affichés aux visiteurs, avec ciblage et planning.",
-      count: n(popups),
-      unit: "configurés",
-    },
-    {
-      label: "Documents légaux",
-      href: "/admin/legal-docs",
-      Icon: FileText,
-      description: "CGU, confidentialité, mentions — le texte publié sur le site.",
-      count: n(docs),
-      unit: "documents",
-    },
-    {
-      label: "Diffusions",
-      href: "/admin/notifications",
-      Icon: Bell,
-      description: "Notifications envoyées aux vendeurs et aux acheteurs.",
-      count: n(notifs),
-      unit: "envoyées",
-    },
-    {
-      label: "Réglages",
-      href: "/admin/settings",
-      Icon: Settings2,
-      description: "Coordonnées bancaires, cautions, délais.",
-    },
-    {
-      label: "Journal d'activité",
-      href: "/admin/activity",
-      Icon: Activity,
-      description: "Qui a fait quoi, et quand. La trace d'audit de la console.",
-    },
+    { key: "home", href: "/admin/home", Icon: LayoutTemplate },
+    { key: "popups", href: "/admin/popups", Icon: MessageSquare, count: n(popups) },
+    { key: "legalDocs", href: "/admin/legal-docs", Icon: FileText, count: n(docs) },
+    { key: "notifications", href: "/admin/notifications", Icon: Bell, count: n(notifs) },
+    { key: "settings", href: "/admin/settings", Icon: Settings2 },
+    { key: "activity", href: "/admin/activity", Icon: Activity },
   ];
 
   return (
     <AdminPage>
       <header>
-        <span className={EYEBROW}>Console</span>
-        <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-foreground">Site</h1>
-        <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
-          Le contenu et la configuration du site public. Ce que l'on règle une fois, puis rarement.
-        </p>
+        <span className={EYEBROW}>{t("eyebrow")}</span>
+        <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-foreground">{t("title")}</h1>
+        <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">{t("description")}</p>
       </header>
 
       <ul className="mt-7 border-t border-border">
@@ -106,16 +71,23 @@ export default async function AdminSiteHub() {
                 strokeWidth={2}
               />
               <span className="min-w-0 flex-1">
-                <span className="block text-[13px] font-medium text-foreground">{c.label}</span>
-                <span className="mt-0.5 block text-[11.5px] text-subtle">{c.description}</span>
+                <span className="block text-[13px] font-medium text-foreground">
+                  {t(`cards.${c.key}.label`)}
+                </span>
+                <span className="mt-0.5 block text-[11.5px] text-subtle">
+                  {t(`cards.${c.key}.description`)}
+                </span>
               </span>
               {c.count != null && (
                 <span className="mazed-tabular hidden shrink-0 text-[11.5px] text-subtle sm:block">
-                  {formatNumber(c.count)} {c.unit}
+                  {t(`cards.${c.key}.count`, {
+                    count: c.count,
+                    formatted: formatNumber(c.count, locale),
+                  })}
                 </span>
               )}
               <ArrowRight
-                className="mt-0.5 size-3.5 shrink-0 text-subtle transition group-hover:translate-x-0.5 group-hover:text-[var(--gold)]"
+                className="mt-0.5 size-3.5 shrink-0 text-subtle transition group-hover:translate-x-0.5 group-hover:text-[var(--gold)] rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5"
                 strokeWidth={2}
               />
             </Link>
