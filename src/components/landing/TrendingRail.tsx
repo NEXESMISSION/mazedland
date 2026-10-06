@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 /**
@@ -27,6 +28,7 @@ export function TrendingRail({
   resumeAfterMs?: number;
   arrows?: boolean;
 }) {
+  const t = useTranslations("landing.carousel");
   const ref = useRef<HTMLDivElement | null>(null);
   const lastInteractionAt = useRef<number>(0);
 
@@ -128,7 +130,7 @@ export function TrendingRail({
       {rail}
       <button
         type="button"
-        aria-label="Précédent"
+        aria-label={t("prev")}
         onClick={() => scrollByDir(-1)}
         className="absolute top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-white/90 text-foreground shadow-[0_8px_24px_-10px_rgba(15,23,42,0.4)] backdrop-blur transition hover:border-gold-soft hover:text-gold active:scale-95 lg:flex ltr:left-1 rtl:right-1"
       >
@@ -137,7 +139,7 @@ export function TrendingRail({
       </button>
       <button
         type="button"
-        aria-label="Suivant"
+        aria-label={t("next")}
         onClick={() => scrollByDir(1)}
         className="absolute top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-white/90 text-foreground shadow-[0_8px_24px_-10px_rgba(15,23,42,0.4)] backdrop-blur transition hover:border-gold-soft hover:text-gold active:scale-95 lg:flex ltr:right-1 rtl:left-1"
       >

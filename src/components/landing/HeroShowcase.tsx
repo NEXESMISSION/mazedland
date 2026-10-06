@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { HiddenAt } from "@/components/ui/HiddenAt";
 import { LiveCountdown } from "@/components/landing/LiveCountdown";
@@ -58,6 +59,7 @@ export function HeroShowcase({
   /** Media query at which CSS hides the showcase's tree (see HiddenAt). */
   hiddenAt?: string;
 }) {
+  const t = useTranslations("landing.showcase");
   const [index, setIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const total = slides.length;
@@ -126,19 +128,19 @@ export function HeroShowcase({
         <>
           <button
             type="button"
-            aria-label="Bien précédent"
+            aria-label={t("prev")}
             onClick={() => setIndex((i) => (i - 1 + total) % total)}
             className="absolute start-3 top-1/2 z-20 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70"
           >
-            <ChevronLeft className="size-5" strokeWidth={2.5} />
+            <ChevronLeft className="size-5 rtl:-scale-x-100" strokeWidth={2.5} />
           </button>
           <button
             type="button"
-            aria-label="Bien suivant"
+            aria-label={t("next")}
             onClick={() => setIndex((i) => (i + 1) % total)}
             className="absolute end-3 top-1/2 z-20 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70"
           >
-            <ChevronRight className="size-5" strokeWidth={2.5} />
+            <ChevronRight className="size-5 rtl:-scale-x-100" strokeWidth={2.5} />
           </button>
         </>
       )}
@@ -152,7 +154,7 @@ export function HeroShowcase({
             <button
               key={`dot-${s.id}`}
               type="button"
-              aria-label={`Bien ${i + 1} sur ${total}`}
+              aria-label={t("slideOf", { index: i + 1, total })}
               aria-current={i === safeIndex ? "true" : undefined}
               onClick={() => setIndex(i)}
               className="group/dot pointer-events-auto grid h-6 min-w-6 place-items-center rounded-full px-[9px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
@@ -186,6 +188,8 @@ function SlideBody({
   hiddenAt?: string;
   isRTL: boolean;
 }) {
+  const t = useTranslations("landing.showcase");
+  const tc = useTranslations("common");
   const [broken, setBroken] = useState(false);
   const photo =
     slide.imageUrl && !broken ? (
@@ -231,7 +235,7 @@ function SlideBody({
           {slide.isLive && (
             <span className="mazed-pulse-dot size-1.5 rounded-full bg-red-500 text-red-500/40" />
           )}
-          {slide.isLive ? "En direct" : "À vendre"}
+          {slide.isLive ? t("live") : t("forSale")}
         </span>
         {slide.endsAt && (
           <span className="shrink-0 drop-shadow">
@@ -241,7 +245,7 @@ function SlideBody({
       </div>
 
       {/* Info panel — title, location, price + action. */}
-      <div className={`absolute inset-x-0 bottom-0 z-10 p-5 ${isRTL ? "text-right" : "text-left"}`}>
+      <div className="absolute inset-x-0 bottom-0 z-10 p-5 text-start">
         <h2
           dir="auto"
           className={`text-balance text-[20px] font-extrabold leading-[1.15] tracking-tight text-white drop-shadow ${
@@ -259,21 +263,21 @@ function SlideBody({
         <div className="mt-3 flex items-end justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55">
-              Prix
+              {t("price")}
             </div>
             <div className="mazed-tabular mt-0.5 text-[26px] font-black leading-none text-white">
               {slide.priceLabel}
               {/* "Prix sur demande" takes no currency after it. */}
               {/\d/.test(slide.priceLabel) && (
                 <span className="ms-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/60">
-                  TND
+                  {tc("tnd")}
                 </span>
               )}
             </div>
           </div>
           <span className="mazed-gold-fill inline-flex shrink-0 items-center gap-1.5 rounded-full px-5 py-2.5 text-[12px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition group-hover/showcase:scale-[1.03]">
-            Voir
-            <ArrowUpRight className="size-4" strokeWidth={2.5} />
+            {t("view")}
+            <ArrowUpRight className="size-4 rtl:-scale-x-100" strokeWidth={2.5} />
           </span>
         </div>
       </div>
@@ -308,7 +312,7 @@ function BrandPanel({
       <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-muted">{brand.slogan}</p>
       <span className="mazed-gold-fill mt-6 inline-flex items-center gap-1.5 rounded-full px-6 py-3 text-[12px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] ring-1 ring-black/10">
         {brand.cta}
-        <ArrowUpRight className="size-4" strokeWidth={2.5} />
+        <ArrowUpRight className="size-4 rtl:-scale-x-100" strokeWidth={2.5} />
       </span>
     </Link>
   );

@@ -8,6 +8,8 @@ import { HomeSearch } from "@/components/landing/HomeSearch";
 import { AnnonceCard } from "@/components/listing/AnnonceCard";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatNumber, formatTND } from "@/lib/utils";
+import { isRtl } from "@/lib/i18n";
+import { governorateLabel } from "@/lib/tunisia";
 import type { HomeListingRow } from "@/lib/home/feed";
 import { catalogueHrefForType } from "@/lib/catalog/browse";
 import {
@@ -55,11 +57,12 @@ const PROPERTY_TYPES: { key: string; icon: string }[] = [
   { key: "warehouse",  icon: "commercial" },
 ];
 
-const PRICE_BUCKETS: { key: string; label: string; query: string }[] = [
-  { key: "under-100k", label: "Moins de 100k", query: "max=99999" },
-  { key: "100k-500k",  label: "100k – 500k",   query: "min=100000&max=499999" },
-  { key: "500k-1m",    label: "500k – 1M",     query: "min=500000&max=999999" },
-  { key: "1m-plus",    label: "1M+ TND",       query: "min=1000000" },
+// Labels come from `home.priceBuckets.<labelKey>`.
+const PRICE_BUCKETS: { key: string; labelKey: string; query: string }[] = [
+  { key: "under-100k", labelKey: "under100k",      query: "max=99999" },
+  { key: "100k-500k",  labelKey: "from100kTo500k", query: "min=100000&max=499999" },
+  { key: "500k-1m",    labelKey: "from500kTo1m",   query: "min=500000&max=999999" },
+  { key: "1m-plus",    labelKey: "over1m",         query: "min=1000000" },
 ];
 
 const TRUST_PILLARS: {
@@ -106,7 +109,7 @@ export async function HomeDesktop({
 }) {
   const t = await getTranslations();
   const locale = await getLocale();
-  const isRTL = locale === "ar";
+  const isRTL = isRtl(locale);
   const ChevronEnd = isRTL ? ChevronLeft : ChevronRight;
 
   // Stats strip. Cohesive navy/gold treatment, and — critically — it never
@@ -117,15 +120,57 @@ export async function HomeDesktop({
   // A fixed-price catalogue has no clock, so the figures are the ones a buyer
   // can actually use — how much is on offer, how fresh it is, and how far it
   // reaches.
-  const fmt = (n: number) => formatNumber(n);
+  const fmt = (n: number) => formatNumber(n, locale);
+  // The figure and its label are rendered as two blocks. Where the label's
+  // grammar depends on the number (Arabic agrees the noun with it), both come
+  // from one plural message, and its <n>/<l> tags place each part.
   const secondStat =
     newThisWeek > 0
-      ? { display: fmt(newThisWeek), label: "Nouvelles cette semaine", sub: "Fraîchement publiées", Icon: CalendarClock, live: false }
-      : { display: "100%", label: "Annonces vérifiées", sub: "Contrôlées avant publication", Icon: ShieldCheck, live: false };
-  const stats: { display: string; label: string; sub: string; Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; live: boolean }[] = [
-    { display: fmt(liveCount), label: liveCount > 1 ? "Annonces en ligne" : "Annonce en ligne", sub: "À prix affiché", Icon: Home, live: true },
+      ? {
+          key: "new",
+          body: (
+            <>
+              <StatFigure live={false}>{fmt(newThisWeek)}</StatFigure>
+              <StatLabel>{t("home.statNewThisWeek")}</StatLabel>
+            </>
+          ),
+          sub: t("home.statNewThisWeekSub"),
+          Icon: CalendarClock,
+        }
+      : {
+          key: "verified",
+          body: (
+            <>
+              <StatFigure live={false}>100%</StatFigure>
+              <StatLabel>{t("home.verifiedTitle")}</StatLabel>
+            </>
+          ),
+          sub: t("home.verifiedSub"),
+          Icon: ShieldCheck,
+        };
+  const stats: { key: string; body: React.ReactNode; sub: string; Icon: React.ComponentType<{ className?: string; strokeWidth?: number }> }[] = [
+    {
+      key: "live",
+      body: (
+        <>
+          <StatFigure live>{fmt(liveCount)}</StatFigure>
+          <StatLabel>{t("home.statLive", { count: liveCount })}</StatLabel>
+        </>
+      ),
+      sub: t("home.statLiveSub"),
+      Icon: Home,
+    },
     secondStat,
-    { display: fmt(coverageGovs), label: coverageGovs > 1 ? "Gouvernorats" : "Gouvernorat", sub: coverageGovs >= 24 ? "Couverture nationale" : "sur les 24 du pays", Icon: MapPin, live: false },
+    {
+      key: "governorates",
+      body: t.rich("home.statGovernorates", {
+        count: coverageGovs,
+        n: (chunks) => <StatFigure live={false}>{chunks}</StatFigure>,
+        l: (chunks) => <StatLabel>{chunks}</StatLabel>,
+      }),
+      sub: coverageGovs >= 24 ? t("home.statGovernoratesNational") : t("home.statGovernoratesPartial"),
+      Icon: MapPin,
+    },
   ];
 
   // Featured showcase — the newest annonces, as a single auto-advancing card
@@ -144,11 +189,11 @@ export async function HomeDesktop({
         id: l.id,
         imageUrl: propertyPhotoUrl(photo.storage_path),
         href: `/annonces/${l.id}`,
-        governorate: l.delegation?.trim() || l.governorate,
+        governorate: l.delegation?.trim() || governorateLabel(l.governorate, locale),
         title: l.title,
         priceLabel:
           l.price_on_request || l.price == null
-            ? "Prix sur demande"
+            ? t("home.priceOnRequest")
             : formatTND(Number(l.price), locale),
         endsAt: null,
         isLive: false,
@@ -180,9 +225,9 @@ export async function HomeDesktop({
                 aria-hidden
                 className="mazed-pulse-dot size-2 rounded-full bg-[var(--accent)] text-[var(--accent)]/40"
               />
-              <span className="uppercase tracking-[0.08em] text-[var(--accent)]">En ligne</span>
+              <span className="uppercase tracking-[0.08em] text-[var(--accent)]">{t("home.heroLive")}</span>
               <span className="text-muted">
-                · {liveCount} annonce{liveCount > 1 ? "s" : ""} à prix affiché
+                {t("home.liveBadge", { count: liveCount })}
               </span>
             </span>
 
@@ -215,14 +260,14 @@ export async function HomeDesktop({
                 href="/annonces"
                 className="mazed-gold-fill inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[13px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
               >
-                Explorer les annonces
-                <ArrowUpRight className="size-4" strokeWidth={2.5} />
+                {t("home.heroBrowseCta")}
+                <ArrowUpRight className="size-4 rtl:-scale-x-100" strokeWidth={2.5} />
               </Link>
               <Link
                 href="/annonces/nouvelle"
                 className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-6 py-3.5 text-[13px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-gold-faint"
               >
-                Vendre un bien
+                {t("home.sellProperty")}
               </Link>
             </div>
 
@@ -233,11 +278,11 @@ export async function HomeDesktop({
                 // What the product actually does. It said "100% sécurisé —
                 // Transactions vérifiées", and the site never sees the
                 // transaction: buyers telephone sellers directly.
-                { Icon: ShieldCheck, title: "Annonces vérifiées", sub: "Contrôlées avant publication" },
-                { Icon: Zap,         title: "Aucune commission", sub: "Vous payez la publication" },
-                { Icon: Users,       title: "Numéro protégé",     sub: "Affiché à la demande" },
+                { key: "verified", Icon: ShieldCheck, title: t("home.verifiedTitle"),        sub: t("home.verifiedSub") },
+                { key: "nofee",    Icon: Zap,         title: t("home.trustLegalTitle"),      sub: t("home.noFeeSub") },
+                { key: "number",   Icon: Users,       title: t("home.protectedNumberTitle"), sub: t("home.protectedNumberSub") },
               ].map((it) => (
-                <div key={it.title} className="flex items-center gap-2.5">
+                <div key={it.key} className="flex items-center gap-2.5">
                   <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/15">
                     <it.Icon className="size-4" strokeWidth={2} />
                   </span>
@@ -283,24 +328,13 @@ export async function HomeDesktop({
             className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold-soft/45 to-transparent"
           />
           <div className="grid grid-cols-3 divide-x divide-border rtl:divide-x-reverse">
-            {stats.map(({ display, label, sub, Icon, live }) => (
-              <div key={label} className="group flex items-center gap-3.5 px-6 py-5">
+            {stats.map(({ key, body, sub, Icon }) => (
+              <div key={key} className="group flex items-center gap-3.5 px-6 py-5">
                 <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/15 transition group-hover:ring-gold/30">
                   <Icon className="size-5" strokeWidth={2} />
                 </span>
                 <div className="min-w-0">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="mazed-tabular gradient-gold-text text-[28px] font-extrabold leading-none">
-                      {display}
-                    </span>
-                    {live && (
-                      <span
-                        aria-hidden
-                        className="mazed-pulse-dot size-2 rounded-full bg-[var(--accent)] text-[var(--accent)]/40"
-                      />
-                    )}
-                  </div>
-                  <div className="mt-1.5 text-[12.5px] font-bold leading-tight text-foreground">{label}</div>
+                  {body}
                   <div className="text-[10.5px] text-muted">{sub}</div>
                 </div>
               </div>
@@ -332,8 +366,8 @@ export async function HomeDesktop({
       {bestValue.length > 0 && (
         <section className="mt-12">
           <RailHeader
-            eyebrow="Le meilleur rapport"
-            title="Bonnes affaires"
+            eyebrow={t("home.bestValueEyebrow")}
+            title={t("home.bestValueTitle")}
             countLabel={bestValue.length}
             ChevronEnd={ChevronEnd}
             isRTL={isRTL}
@@ -370,9 +404,9 @@ export async function HomeDesktop({
       <section className="mt-14">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <span className="mazed-eyebrow">Parcourir</span>
+            <span className="mazed-eyebrow">{t("home.browseEyebrow")}</span>
             <h3 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
-              Trouvez votre bien
+              {t("home.browseTitle")}
             </h3>
           </div>
           <Link
@@ -420,9 +454,9 @@ export async function HomeDesktop({
               href={`/annonces?${b.query}` as `/annonces`}
               className="group flex items-center justify-between rounded-2xl bg-surface px-5 py-3.5 ring-1 ring-border transition hover:bg-gold-faint hover:ring-gold-soft/50"
             >
-              <span className="text-[13px] font-bold text-foreground">{b.label}</span>
+              <span className="text-[13px] font-bold text-foreground">{t(`home.priceBuckets.${b.labelKey}`)}</span>
               <ArrowUpRight
-                className="size-4 text-muted transition group-hover:text-gold-bright"
+                className="size-4 text-muted transition group-hover:text-gold-bright rtl:-scale-x-100"
                 strokeWidth={2.2}
               />
             </Link>
@@ -464,13 +498,13 @@ export async function HomeDesktop({
                   className="mazed-gold-fill inline-flex items-center gap-2 rounded-full px-5 py-3 text-[12.5px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
                 >
                   {t("home.heroBrowseCta")}
-                  <ArrowUpRight className="size-4" strokeWidth={2.5} />
+                  <ArrowUpRight className="size-4 rtl:-scale-x-100" strokeWidth={2.5} />
                 </Link>
                 <Link
                   href="/annonces/nouvelle"
                   className="inline-flex items-center gap-2 rounded-full border border-gold/30 px-5 py-3 text-[12.5px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-gold-faint"
                 >
-                  Vendre
+                  {t("home.sellShort")}
                 </Link>
               </div>
             </div>
@@ -515,6 +549,28 @@ export async function HomeDesktop({
       </section>
     </div>
   );
+}
+
+/** The big gradient figure of a stats-strip cell, with the live dot when it counts what is online. */
+function StatFigure({ live, children }: { live: boolean; children: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline gap-1.5">
+      <span className="mazed-tabular gradient-gold-text text-[28px] font-extrabold leading-none">
+        {children}
+      </span>
+      {live && (
+        <span
+          aria-hidden
+          className="mazed-pulse-dot size-2 rounded-full bg-[var(--accent)] text-[var(--accent)]/40"
+        />
+      )}
+    </div>
+  );
+}
+
+/** The label under a stats-strip figure. */
+function StatLabel({ children }: { children: React.ReactNode }) {
+  return <div className="mt-1.5 text-[12.5px] font-bold leading-tight text-foreground">{children}</div>;
 }
 
 /** Section header — eyebrow + title + count chip + "see all" link. */

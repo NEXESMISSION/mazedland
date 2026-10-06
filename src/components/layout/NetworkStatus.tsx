@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { WifiOff, Wifi } from "lucide-react";
 
 type Phase = "online" | "offline" | "reconnected";
@@ -20,6 +21,7 @@ type Phase = "online" | "offline" | "reconnected";
  * No polling, no fetch, no realtime — the browser tells us. Cheap.
  */
 export function NetworkStatus() {
+  const t = useTranslations("shell");
   const router = useRouter();
   // `online` is the default — only show the strip when we transition
   // away from it. SSR has no `navigator`, so we start optimistic.
@@ -83,12 +85,12 @@ export function NetworkStatus() {
       {isOffline ? (
         <>
           <WifiOff className="size-4 shrink-0" strokeWidth={2.4} />
-          <span>Hors ligne — reconnexion automatique…</span>
+          <span>{t("offline")}</span>
         </>
       ) : (
         <>
           <Wifi className="size-4 shrink-0" strokeWidth={2.4} />
-          <span>Connexion rétablie</span>
+          <span>{t("reconnected")}</span>
         </>
       )}
     </div>

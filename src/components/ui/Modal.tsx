@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +41,7 @@ export function Modal({
   size = "md",
   hideClose = false,
 }: ModalProps) {
+  const t = useTranslations("ui");
   const [mounted, setMounted] = React.useState(false);
   const dialogRef = React.useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = React.useRef<HTMLElement | null>(null);
@@ -146,7 +148,7 @@ export function Modal({
                 <button
                   onClick={onClose}
                   className="shrink-0 h-8 w-8 -mt-1 rounded-full hover:bg-[var(--surface-2)] transition-colors flex items-center justify-center"
-                  aria-label="Fermer"
+                  aria-label={t("close")}
                 >
                   <X className="h-4 w-4" />
                 </button>

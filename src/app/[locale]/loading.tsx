@@ -1,3 +1,5 @@
+import { LoadingText } from "@/components/ui/LoadingText";
+
 /**
  * Locale-root loading fallback — fires only for route segments that don't
  * ship their own loading.tsx. Deliberately NEUTRAL (a centered brand spinner,
@@ -13,7 +15,7 @@ export default function LocaleLoading() {
       className="flex min-h-[60vh] w-full items-center justify-center px-6"
     >
       <span className="inline-flex size-10 animate-spin rounded-full border-[3px] border-[var(--border)] border-t-[var(--gold)]" />
-      <span className="sr-only">Chargement…</span>
+      <LoadingText />
     </div>
   );
 }
