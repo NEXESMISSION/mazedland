@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import { Ltr } from "@/components/ui/Ltr";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { Popup } from "@/lib/popups/schema";
 import { PopupForm } from "../../PopupForm";
@@ -25,15 +27,19 @@ export default async function EditPopupPage({
     .single();
   if (error || !data) notFound();
   const popup = data as Popup;
+  const t = await getTranslations("adminPopups");
 
   return (
     <div>
-      <span className="mazed-eyebrow">Diffusion</span>
+      <span className="mazed-eyebrow">{t("eyebrow")}</span>
       <h2 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">
-        Modifier le popup
+        {t("editTitle")}
       </h2>
       <p className="mt-1.5 text-[12px] text-muted">
-        Slug : <span className="mazed-tabular font-mono">{popup.slug}</span>
+        {t.rich("slugLine", {
+          slug: popup.slug,
+          mono: (chunks) => <Ltr className="mazed-tabular font-mono">{chunks}</Ltr>,
+        })}
       </p>
       <div className="mt-5">
         <PopupForm initial={popup} />

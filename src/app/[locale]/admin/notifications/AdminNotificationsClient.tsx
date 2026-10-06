@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { formatNumber } from "@/lib/utils";
+import { useLocale, useTranslations } from "next-intl";
+import { formatDate, formatNumber, formatRelativeTime } from "@/lib/utils";
+import { Ltr } from "@/components/ui/Ltr";
 import {
   Send,
   Inbox,
@@ -50,6 +52,7 @@ type ListResponse = {
 const ROLES = ["individual", "agency", "bank", "bailiff", "inspector", "admin"] as const;
 
 export function AdminNotificationsClient() {
+  const t = useTranslations("adminNotifications");
   const [tab, setTab] = useState<"compose" | "queue">("compose");
 
   return (
@@ -57,11 +60,11 @@ export function AdminNotificationsClient() {
       <div className="flex gap-1.5 rounded-full bg-surface p-1 ring-1 ring-border w-fit">
         <TabButton active={tab === "compose"} onClick={() => setTab("compose")}>
           <Send className="size-3.5" strokeWidth={2} />
-          Composer
+          {t("tabs.compose")}
         </TabButton>
         <TabButton active={tab === "queue"} onClick={() => setTab("queue")}>
           <Inbox className="size-3.5" strokeWidth={2} />
-          File
+          {t("tabs.queue")}
         </TabButton>
       </div>
 
@@ -99,6 +102,7 @@ function TabButton({
 // ─── Compose ────────────────────────────────────────────────────────────────
 
 function ComposeTab() {
+  const t = useTranslations("adminNotifications");
   const [kind, setKind] = useState<string>(KIND_CONFIG[0].value);
   // Flat field bag keyed by FieldDef.key. Strings for text/url/datetime,
   // numbers for number, booleans for checkbox. Cleared (not preserved)
@@ -223,7 +227,7 @@ function ComposeTab() {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-4">
-        <Field label="Type">
+        <Field label={t("compose.type")}>
           <div className="flex flex-wrap gap-1.5">
             {KIND_CONFIG.map((k) => (
               <button
@@ -236,18 +240,19 @@ function ComposeTab() {
                     : "bg-surface text-muted ring-border hover:text-foreground"
                 }`}
               >
-                {k.label}
+                {t(`kinds.${k.value}.label`)}
               </button>
             ))}
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-muted">
-            {config.description}
+            {t(`kinds.${config.value}.description`)}
           </p>
         </Field>
 
         {config.fields.map((f) => (
           <DynamicField
             key={f.key}
+            kind={config.value}
             field={f}
             value={values[f.key]}
             onChange={(v) => setField(f.key, v)}
@@ -256,20 +261,20 @@ function ComposeTab() {
       </div>
 
       <div className="space-y-4">
-        <Field label="Destinataires">
+        <Field label={t("compose.recipients")}>
           <div className="flex flex-wrap gap-1.5">
-            {(["all", "role", "users"] as const).map((t) => (
+            {(["all", "role", "users"] as const).map((a) => (
               <button
-                key={t}
+                key={a}
                 type="button"
-                onClick={() => setAudienceType(t)}
+                onClick={() => setAudienceType(a)}
                 className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em] ring-1 transition ${
-                  audienceType === t
+                  audienceType === a
                     ? "bg-foreground text-background ring-foreground"
                     : "bg-surface text-muted ring-border hover:text-foreground"
                 }`}
               >
-                {t === "all" ? "Tous" : t === "role" ? "Par rôle" : "Utilisateurs"}
+                {t(`compose.audience.${a}`)}
               </button>
             ))}
           </div>
@@ -298,13 +303,14 @@ function ComposeTab() {
               value={userIds}
               onChange={(e) => setUserIds(e.target.value)}
               rows={5}
+              dir="ltr"
               className="mt-3 w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-[11px]"
-              placeholder="ID utilisateur, un par ligne (ou séparés par virgule)"
+              placeholder={t("compose.userIdsPlaceholder")}
             />
           )}
         </Field>
 
-        <Field label="Aperçu">
+        <Field label={t("compose.preview")}>
           <PreviewCard kind={kind} title={titleValue} body={bodyValue} link={linkValue} />
           {/* Show the non-core payload fields underneath the preview so
               the admin can see what extras the recipient row will carry.
@@ -322,7 +328,7 @@ function ComposeTab() {
             disabled={!canSend}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-foreground transition hover:border-gold/40 disabled:opacity-50"
           >
-            Envoyer un test à moi
+            {t("compose.sendTest")}
           </button>
           <button
             type="button"
@@ -331,11 +337,11 @@ function ComposeTab() {
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.12em] text-background transition hover:bg-gold-bright disabled:opacity-50"
           >
             <Send className="size-3.5" strokeWidth={2.4} />
-            {sending ? "Envoi..." : "Diffuser"}
+            {sending ? t("compose.sending") : t("compose.broadcast")}
           </button>
           {missingRequired && (
             <p className="text-center text-[10px] uppercase tracking-[0.12em] text-muted">
-              Champs requis manquants
+              {t("compose.missingRequired")}
             </p>
           )}
         </div>
@@ -351,9 +357,9 @@ function ComposeTab() {
             {result.ok ? (
               <>
                 <span className="font-bold">
-                  {result.test ? "Test envoyé." : "Diffusion envoyée."}
+                  {result.test ? t("compose.testSent") : t("compose.broadcastSent")}
                 </span>{" "}
-                {result.count} destinataire{result.count > 1 ? "s" : ""}
+                {t("compose.recipientCount", { count: result.count })}
                 {!result.test && (
                   <>
                     {" "}
@@ -362,7 +368,7 @@ function ComposeTab() {
                 )}
               </>
             ) : (
-              <>Erreur : {result.error}</>
+              <>{t("compose.error", { error: result.error })}</>
             )}
           </div>
         )}
@@ -377,18 +383,24 @@ function ComposeTab() {
  * means extending the switch here in one place.
  */
 function DynamicField({
+  kind,
   field,
   value,
   onChange,
 }: {
+  kind: string;
   field: FieldDef;
   value: string | number | boolean | undefined;
   onChange: (v: string | number | boolean) => void;
 }) {
+  const t = useTranslations("adminNotifications");
   const str = value === undefined || value === null ? "" : String(value);
+  // Texts for this field: adminNotifications.kinds.<kind>.fields.<key>.*
+  const base = `kinds.${kind}.fields.${field.key}`;
+  const placeholder = field.placeholder ? t(`${base}.placeholder`) : undefined;
 
   return (
-    <Field label={field.label} required={field.required}>
+    <Field label={t(`${base}.label`)} required={field.required}>
       {(() => {
         switch (field.type) {
           case "text":
@@ -400,13 +412,14 @@ function DynamicField({
                   value={str}
                   onChange={(e) => onChange(e.target.value)}
                   maxLength={field.maxLength}
-                  placeholder={field.placeholder}
+                  placeholder={placeholder}
+                  dir={field.type === "url" ? "ltr" : undefined}
                   className={`w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] ${
                     field.type === "url" ? "font-mono text-[12px]" : ""
                   }`}
                 />
                 {field.maxLength && (
-                  <div className="mt-1 text-right text-[10px] uppercase tracking-[0.12em] text-muted">
+                  <div className="mt-1 text-end text-[10px] uppercase tracking-[0.12em] text-muted">
                     {str.length} / {field.maxLength}
                   </div>
                 )}
@@ -420,11 +433,11 @@ function DynamicField({
                   onChange={(e) => onChange(e.target.value)}
                   maxLength={field.maxLength}
                   rows={4}
-                  placeholder={field.placeholder}
+                  placeholder={placeholder}
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px]"
                 />
                 {field.maxLength && (
-                  <div className="mt-1 text-right text-[10px] uppercase tracking-[0.12em] text-muted">
+                  <div className="mt-1 text-end text-[10px] uppercase tracking-[0.12em] text-muted">
                     {str.length} / {field.maxLength}
                   </div>
                 )}
@@ -436,7 +449,7 @@ function DynamicField({
                 type="number"
                 value={str}
                 onChange={(e) => onChange(e.target.value === "" ? "" : e.target.value)}
-                placeholder={field.placeholder}
+                placeholder={placeholder}
                 className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-[12px]"
               />
             );
@@ -458,8 +471,8 @@ function DynamicField({
               >
                 <option value="">—</option>
                 {field.options?.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                  <option key={opt} value={opt}>
+                    {t(`${base}.options.${opt}`)}
                   </option>
                 ))}
               </select>
@@ -473,7 +486,7 @@ function DynamicField({
                   onChange={(e) => onChange(e.target.checked)}
                   className="size-4 accent-gold-bright"
                 />
-                <span>Oui</span>
+                <span>{t("compose.yes")}</span>
               </label>
             );
           default:
@@ -482,7 +495,7 @@ function DynamicField({
       })()}
       {field.helper && (
         <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-muted">
-          {field.helper}
+          {t(`${base}.helper`)}
         </p>
       )}
     </Field>
@@ -502,6 +515,7 @@ function PayloadSummary({
   fields: FieldDef[];
   values: Record<string, string | number | boolean>;
 }) {
+  const t = useTranslations("adminNotifications");
   const present = fields.filter((f) => {
     const v = values[f.key];
     if (v === undefined || v === null) return false;
@@ -512,7 +526,7 @@ function PayloadSummary({
   return (
     <div className="mt-2 rounded-lg border border-border bg-foreground/[0.02] p-2.5">
       <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
-        Payload
+        {t("compose.payload")}
       </div>
       <ul className="mt-1 space-y-0.5 font-mono text-[11px] text-foreground">
         {present.map((f) => (
@@ -556,6 +570,7 @@ function PreviewCard({
   body: string;
   link: string;
 }) {
+  const t = useTranslations("adminNotifications");
   return (
     <div className="rounded-2xl bg-surface p-3 ring-1 ring-border">
       <div className="flex items-start gap-3">
@@ -564,7 +579,7 @@ function PreviewCard({
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-[13px] font-bold text-foreground leading-tight">
-            {title || "Titre de la notification"}
+            {title || t("compose.previewTitle")}
           </div>
           {body && (
             <div className="mt-1 text-[12px] text-muted leading-relaxed">
@@ -573,7 +588,7 @@ function PreviewCard({
           )}
           {link && (
             <div className="mt-1.5 truncate font-mono text-[10px] text-gold-bright">
-              → {link}
+              <span className="inline-block rtl:-scale-x-100">→</span> <Ltr>{link}</Ltr>
             </div>
           )}
           <div className="mt-1.5 text-[10px] uppercase tracking-[0.14em] text-muted">
@@ -588,6 +603,7 @@ function PreviewCard({
 // ─── Queue inspector ────────────────────────────────────────────────────────
 
 function QueueTab() {
+  const t = useTranslations("adminNotifications.queue");
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<ListResponse["stats"] | null>(null);
@@ -636,7 +652,7 @@ function QueueTab() {
         cache: "no-store",
       });
       if (!res.ok) {
-        setError("Échec du chargement");
+        setError(t("loadFailed"));
         return;
       }
       const data = (await res.json()) as ListResponse;
@@ -651,7 +667,7 @@ function QueueTab() {
     } finally {
       setLoading(false);
     }
-  }, [queryString]);
+  }, [queryString, t]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronising with an external system, which is what an effect is for.
@@ -683,7 +699,7 @@ function QueueTab() {
         method: "DELETE",
       });
       if (!res.ok) {
-        setError("Échec de la suppression");
+        setError(t("deleteFailed"));
         return;
       }
       setItems((arr) => arr.filter((x) => x.id !== id));
@@ -712,16 +728,14 @@ function QueueTab() {
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError("Échec de la suppression");
+        setError(t("deleteFailed"));
         return;
       }
       const { deletedCount } = payload as { deletedCount?: number };
       setSelected(new Set());
       await refresh();
       setError(
-        typeof deletedCount === "number"
-          ? `${deletedCount} notification${deletedCount > 1 ? "s" : ""} supprimée${deletedCount > 1 ? "s" : ""}.`
-          : null,
+        typeof deletedCount === "number" ? t("deleted", { count: deletedCount }) : null,
       );
     } finally {
       setBusy(false);
@@ -741,16 +755,14 @@ function QueueTab() {
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError("Échec de la suppression");
+        setError(t("deleteFailed"));
         return;
       }
       const { deletedCount } = payload as { deletedCount?: number };
       setSelected(new Set());
       await refresh();
       setError(
-        typeof deletedCount === "number"
-          ? `${deletedCount} notification${deletedCount > 1 ? "s" : ""} supprimée${deletedCount > 1 ? "s" : ""}.`
-          : null,
+        typeof deletedCount === "number" ? t("deleted", { count: deletedCount }) : null,
       );
     } finally {
       setBusy(false);
@@ -774,15 +786,16 @@ function QueueTab() {
     <div>
       {/* Stats strip */}
       <div className="mb-4 grid grid-cols-3 gap-3">
-        <StatCard label="24 heures" value={stats?.last24h ?? 0} />
-        <StatCard label="7 jours" value={stats?.last7d ?? 0} />
-        <StatCard label="Non lues" value={stats?.unread ?? 0} accent />
+        <StatCard label={t("last24h")} value={stats?.last24h ?? 0} />
+        <StatCard label={t("last7d")} value={stats?.last7d ?? 0} />
+        <StatCard label={t("unread")} value={stats?.unread ?? 0} accent />
       </div>
 
-      {/* Filter bar */}
+      {/* Filter bar. kind / user_id / broadcast_id are column names typed as
+          identifiers, so they stay as-is and left-to-right in both languages. */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" />
+          <Search className="absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" />
           <input
             type="text"
             value={filters.q}
@@ -790,8 +803,8 @@ function QueueTab() {
               setFilters((f) => ({ ...f, q: e.target.value }));
               setPage(0);
             }}
-            placeholder="Recherche titre…"
-            className="rounded-full border border-border bg-surface py-1.5 pl-7 pr-3 text-[12px]"
+            placeholder={t("searchPlaceholder")}
+            className="rounded-full border border-border bg-surface py-1.5 ps-7 pe-3 text-[12px]"
           />
         </div>
         <input
@@ -802,6 +815,7 @@ function QueueTab() {
             setPage(0);
           }}
           placeholder="kind"
+          dir="ltr"
           className="w-32 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px]"
         />
         <input
@@ -812,6 +826,7 @@ function QueueTab() {
             setPage(0);
           }}
           placeholder="user_id"
+          dir="ltr"
           className="w-44 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px]"
         />
         <input
@@ -822,6 +837,7 @@ function QueueTab() {
             setPage(0);
           }}
           placeholder="broadcast_id"
+          dir="ltr"
           className="w-44 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px]"
         />
         <button
@@ -836,7 +852,7 @@ function QueueTab() {
               : "bg-surface text-muted ring-border hover:text-foreground"
           }`}
         >
-          Non lues
+          {t("unread")}
         </button>
         {hasActiveFilters && (
           <button
@@ -848,7 +864,7 @@ function QueueTab() {
             className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted hover:text-foreground"
           >
             <X className="size-3" strokeWidth={2.4} />
-            Réinitialiser
+            {t("reset")}
           </button>
         )}
         <button
@@ -857,7 +873,7 @@ function QueueTab() {
           className="ms-auto inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted hover:border-gold/40 hover:text-foreground"
         >
           <RefreshCw className={`size-3 ${loading ? "animate-spin" : ""}`} strokeWidth={2.4} />
-          Rafraîchir
+          {t("refresh")}
         </button>
       </div>
 
@@ -879,16 +895,17 @@ function QueueTab() {
             ) : (
               <Square className="size-3.5" strokeWidth={2.2} />
             )}
-            {allOnPageSelected ? "Tout désélectionner" : "Tout sélectionner"}
+            {allOnPageSelected ? t("deselectAll") : t("selectAll")}
           </button>
           {selected.size > 0 && (
             <span className="font-bold text-foreground">
-              {selected.size} sélectionnée{selected.size > 1 ? "s" : ""}
+              {t("selectedCount", { count: selected.size })}
             </span>
           )}
           <span className="ms-2">
-            {total} résultat{total > 1 ? "s" : ""}
-            {hasActiveFilters && " (filtrés)"}
+            {hasActiveFilters
+              ? t("resultsFiltered", { count: total })
+              : t("results", { count: total })}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -900,7 +917,7 @@ function QueueTab() {
               className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition hover:bg-red-700 disabled:opacity-60"
             >
               <Trash2 className="size-3.5" strokeWidth={2.4} />
-              Supprimer la sélection
+              {t("deleteSelection")}
             </button>
           )}
           {hasActiveFilters && selected.size === 0 && !confirmingFiltered && (
@@ -911,7 +928,7 @@ function QueueTab() {
               className="inline-flex items-center gap-1.5 rounded-full border border-red-300 bg-red-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-red-700 transition hover:bg-red-100 disabled:opacity-60"
             >
               <AlertTriangle className="size-3.5" strokeWidth={2.4} />
-              Supprimer tout (filtré)
+              {t("deleteFiltered")}
             </button>
           )}
         </div>
@@ -921,7 +938,7 @@ function QueueTab() {
           inside the styled admin shell. */}
       {confirmingSelection && (
         <ConfirmStrip
-          message={`Supprimer ${selected.size} notification${selected.size > 1 ? "s" : ""} sélectionnée${selected.size > 1 ? "s" : ""} ?`}
+          message={t("confirmDeleteSelection", { count: selected.size })}
           onCancel={() => setConfirmingSelection(false)}
           onConfirm={() => void deleteSelected()}
           busy={busy}
@@ -929,7 +946,7 @@ function QueueTab() {
       )}
       {confirmingFiltered && (
         <ConfirmStrip
-          message={`Supprimer toutes les notifications correspondant aux filtres (${total} ligne${total > 1 ? "s" : ""}) ?`}
+          message={t("confirmDeleteFiltered", { count: total })}
           onCancel={() => setConfirmingFiltered(false)}
           onConfirm={() => void deleteFiltered()}
           busy={busy}
@@ -959,7 +976,7 @@ function QueueTab() {
           ))}
           {!loading && items.length === 0 && (
             <li className="p-8 text-center text-[13px] text-muted">
-              Aucune notification ne correspond aux filtres.
+              {t("empty")}
             </li>
           )}
         </ul>
@@ -969,7 +986,7 @@ function QueueTab() {
       {pageCount > 1 && (
         <div className="mt-3 flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-muted">
           <span>
-            Page {page + 1} / {pageCount} · {total} total
+            {t("pagination", { page: page + 1, pages: pageCount, total })}
           </span>
           <div className="flex gap-1.5">
             <button
@@ -978,7 +995,7 @@ function QueueTab() {
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               className="rounded-full border border-border bg-surface px-3 py-1 text-[11px] font-bold disabled:opacity-40"
             >
-              ←
+              <span className="inline-block rtl:-scale-x-100">←</span>
             </button>
             <button
               type="button"
@@ -986,7 +1003,7 @@ function QueueTab() {
               onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
               className="rounded-full border border-border bg-surface px-3 py-1 text-[11px] font-bold disabled:opacity-40"
             >
-              →
+              <span className="inline-block rtl:-scale-x-100">→</span>
             </button>
           </div>
         </div>
@@ -1006,6 +1023,7 @@ function ConfirmStrip({
   onConfirm: () => void;
   busy: boolean;
 }) {
+  const t = useTranslations("adminNotifications.queue");
   return (
     <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[13px] text-red-900">
       <span className="font-semibold">{message}</span>
@@ -1015,7 +1033,7 @@ function ConfirmStrip({
           onClick={onCancel}
           className="rounded-lg px-2.5 py-1 text-[12px] font-bold text-red-900 hover:bg-red-100"
         >
-          Annuler
+          {t("cancel")}
         </button>
         <button
           type="button"
@@ -1023,7 +1041,7 @@ function ConfirmStrip({
           disabled={busy}
           className="rounded-lg bg-red-600 px-2.5 py-1 text-[12px] font-bold text-white hover:bg-red-700 disabled:opacity-60"
         >
-          Confirmer
+          {t("confirm")}
         </button>
       </div>
     </div>
@@ -1052,9 +1070,14 @@ function QueueRow({
   onFilterByUser: () => void;
   busy: boolean;
 }) {
-  const recipientName = n.recipient?.full_name?.trim() || `user · ${n.user_id.slice(0, 8)}`;
+  const t = useTranslations("adminNotifications.queue");
+  const locale = useLocale();
+  const recipientName =
+    n.recipient?.full_name?.trim() || t("unknownUser", { id: n.user_id.slice(0, 8) });
   const recipientRole = n.recipient?.role || "";
-  const senderName = n.sender?.full_name?.trim() || (n.created_by ? `admin · ${n.created_by.slice(0, 8)}` : null);
+  const senderName =
+    n.sender?.full_name?.trim() ||
+    (n.created_by ? t("unknownAdmin", { id: n.created_by.slice(0, 8) }) : null);
   const isBroadcast = !!n.broadcast_id;
 
   return (
@@ -1066,7 +1089,7 @@ function QueueRow({
       <button
         type="button"
         onClick={onToggle}
-        aria-label={selected ? "Désélectionner" : "Sélectionner"}
+        aria-label={selected ? t("deselect") : t("select")}
         className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded text-muted hover:text-foreground"
       >
         {selected ? (
@@ -1084,12 +1107,12 @@ function QueueRow({
           </span>
           {n.read_at ? (
             <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-              Lue · {timeAgo(n.read_at)}
+              {t("readAgo", { ago: formatRelativeTime(n.read_at, locale) })}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-gold-bright">
               <span className="inline-block size-1.5 rounded-full bg-gold-bright" />
-              Non lue
+              {t("unreadOne")}
             </span>
           )}
           {isBroadcast && (
@@ -1097,10 +1120,10 @@ function QueueRow({
               type="button"
               onClick={onFilterByBroadcast}
               className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-gold-bright transition hover:bg-gold/25"
-              title="Filtrer par cette diffusion"
+              title={t("filterByBroadcast")}
             >
               <Radio className="size-3" strokeWidth={2.4} />
-              Diffusion · {n.broadcast_id!.slice(0, 8)}
+              {t("broadcastTag", { id: n.broadcast_id!.slice(0, 8) })}
             </button>
           )}
         </div>
@@ -1120,7 +1143,7 @@ function QueueRow({
         {/* Link (if any) */}
         {n.link && (
           <div className="mt-1.5 truncate font-mono text-[10px] text-gold-bright">
-            → {n.link}
+            <span className="inline-block rtl:-scale-x-100">→</span> <Ltr>{n.link}</Ltr>
           </div>
         )}
 
@@ -1133,7 +1156,7 @@ function QueueRow({
             type="button"
             onClick={onFilterByUser}
             className="inline-flex items-center gap-1 rounded-full bg-foreground/5 px-2 py-0.5 transition hover:bg-foreground/10 hover:text-foreground"
-            title="Filtrer par destinataire"
+            title={t("filterByRecipient")}
           >
             <User className="size-3" strokeWidth={2.2} />
             <span className="font-semibold">{recipientName}</span>
@@ -1146,19 +1169,14 @@ function QueueRow({
           {senderName && (
             <span className="inline-flex items-center gap-1">
               <ShieldCheck className="size-3 text-gold-bright" strokeWidth={2.2} />
-              <span>par</span>
+              <span>{t("by")}</span>
               <span className="font-semibold text-foreground">{senderName}</span>
             </span>
           )}
           <span title={new Date(n.created_at).toISOString()} className="font-medium">
-            {timeAgo(n.created_at)} ·{" "}
+            {formatRelativeTime(n.created_at, locale)} ·{" "}
             <span className="text-muted/80">
-              {new Date(n.created_at).toLocaleString("fr-FR", {
-                day: "2-digit",
-                month: "short",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              {formatDate(n.created_at, locale, "dateTime")}
             </span>
           </span>
         </div>
@@ -1168,32 +1186,13 @@ function QueueRow({
         type="button"
         onClick={onDelete}
         disabled={busy}
-        aria-label="Supprimer"
+        aria-label={t("delete")}
         className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
       >
         <Trash2 className="size-3.5" strokeWidth={2} />
       </button>
     </li>
   );
-}
-
-function timeAgo(iso: string): string {
-  const then = new Date(iso).getTime();
-  const diffMs = Date.now() - then;
-  const s = Math.floor(diffMs / 1000);
-  if (s < 60) return "à l'instant";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `il y a ${m} min`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h} h`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `il y a ${d} j`;
-  const w = Math.floor(d / 7);
-  if (w < 5) return `il y a ${w} sem`;
-  const mo = Math.floor(d / 30);
-  if (mo < 12) return `il y a ${mo} mois`;
-  const y = Math.floor(d / 365);
-  return `il y a ${y} an${y > 1 ? "s" : ""}`;
 }
 
 function StatCard({
@@ -1205,6 +1204,7 @@ function StatCard({
   value: number;
   accent?: boolean;
 }) {
+  const locale = useLocale();
   return (
     <div
       className={`rounded-xl p-3 ring-1 ${
@@ -1221,7 +1221,7 @@ function StatCard({
           accent ? "text-gold-bright" : "text-foreground"
         }`}
       >
-        {formatNumber(value)}
+        {formatNumber(value, locale)}
       </div>
     </div>
   );

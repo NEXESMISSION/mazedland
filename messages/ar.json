@@ -262,5 +262,469 @@
     "unknown_action": "إجراء غير معروف. أعد تحميل الصفحة.",
     "too_large": "الملف كبير جدًا.",
     "empty_body": "الملف فارغ."
+  },
+  "adminPayments": {
+    "serviceUnavailable": "الخدمة غير مهيّأة.",
+    "title": "المدفوعات",
+    "tabs": {
+      "pending": "قيد المراجعة",
+      "captured": "مقبولة",
+      "failed": "مرفوضة",
+      "all": "الكل"
+    },
+    "searchPlaceholder": "المرجع، السبب…",
+    "thisMonth": "هذا الشهر",
+    "total": "المجموع",
+    "amount": "{amount} د.ت",
+    "emptyFiltered": "لا توجد عملية دفع مطابقة",
+    "emptyTab": "لا شيء في «{tab}»",
+    "emptyFilteredHint": "جرّب كلمة أخرى أو بدّل التبويب.",
+    "emptyHint": "لا يوجد وصل في انتظار قرار.",
+    "noName": "بدون اسم",
+    "noReceiptTag": "بدون وصل",
+    "pickOne": "اختر عملية دفع من القائمة.",
+    "keysHint": "j / k للتنقّل، Enter للفتح.",
+    "kinds": {
+      "listing_fee": "نشر الإعلان",
+      "listing_pack": "باقة إعلانات",
+      "subscription": "اشتراك",
+      "promo": "إبراز",
+      "badge": "شارة بائع موثّق",
+      "renewal": "تجديد"
+    },
+    "providers": {
+      "bank_transfer": "تحويل بنكي",
+      "d17": "D17",
+      "manual": "نقدًا / يدوي",
+      "konnect": "Konnect",
+      "paymee": "Paymee",
+      "flouci": "Flouci"
+    },
+    "detail": {
+      "back": "القائمة",
+      "receipt": "وصل الدفع",
+      "receiptN": "وصل الدفع {n}",
+      "noReceipt": "لم يُرسَل أي وصل لهذا الدفع.",
+      "rejectionReason": "سبب الرفض:",
+      "paymentSection": "الدفع",
+      "amountLabel": "المبلغ",
+      "for": "مقابل",
+      "method": "طريقة الدفع",
+      "initiatedAt": "تاريخ الإنشاء",
+      "receiptSentAt": "تاريخ إرسال الوصل",
+      "processedAt": "تاريخ المعالجة",
+      "sellerSection": "البائع",
+      "name": "الاسم",
+      "phone": "رقم الهاتف",
+      "listingSection": "الإعلان المعني",
+      "listingTitle": "العنوان",
+      "listingStatus": "الحالة",
+      "acceptNote": "قبول هذا الوصل يحوّل الإعلان إلى المراجعة — لا يُنشر تلقائيًا.",
+      "accept": "قبول الوصل",
+      "reject": "رفض",
+      "alreadyProcessed": "تمت المعالجة — لا يوجد قرار لاتخاذه هنا.",
+      "confirmAcceptTitle": "قبول {amount}؟",
+      "confirmAcceptBodyListing": "يُسجَّل الدفع ويمرّ الإعلان إلى المراجعة.",
+      "confirmAcceptBody": "يُسجَّل الدفع ويُمنح البائع ما اشتراه.",
+      "confirmAcceptLabel": "قبول",
+      "accepted": "تم قبول الوصل.",
+      "confirmRejectTitle": "رفض هذا الوصل؟",
+      "confirmRejectBody": "يتلقّى البائع السبب ويمكنه إرسال وصل آخر.",
+      "confirmRejectLabel": "رفض",
+      "reasonLabel": "السبب (يُرسَل إلى البائع)",
+      "reasonPlaceholder": "مبلغ مختلف، وصل غير مقروء، تحويل غير موجود…",
+      "rejected": "تم رفض الوصل."
+    },
+    "api": {
+      "alreadyResolved": "تمت معالجة هذا الدفع من قبل (الحالة: «{status}»).",
+      "wrongKind": "«{kind}» يخصّ منتج المزادات، الذي لم يعد موجودًا.",
+      "reasonRequired": "اشرح للبائع ما المشكل — يجب أن يتمكّن من إرسال وصل صالح."
+    }
+  },
+  "adminActivity": {
+    "eyebrow": "النظام · المراقبة",
+    "title": "سجلّ النشاط",
+    "description": "من يزور المنصّة، وأي صفحات، وما الإجراءات المنجزة.",
+    "kpiViews": "مشاهدات الصفحات · 24 ساعة",
+    "kpiActions": "الإجراءات · 24 ساعة",
+    "kpiTotal": "مجموع الأحداث",
+    "types": {
+      "all": "الكل",
+      "page_view": "الصفحات المزارة",
+      "action": "الإجراءات",
+      "error": "الأخطاء"
+    },
+    "searchPlaceholder": "البريد الإلكتروني، الصفحة أو الإجراء…",
+    "empty": "لا يوجد نشاط مسجّل.",
+    "columns": {
+      "when": "التوقيت",
+      "user": "المستخدم",
+      "event": "الحدث",
+      "page": "الصفحة / التفاصيل",
+      "ip": "IP",
+      "device": "الجهاز"
+    },
+    "anonymous": "مجهول",
+    "pageView": "مشاهدة صفحة",
+    "actionFallback": "إجراء",
+    "browserFallback": "متصفّح",
+    "actions": {
+      "paymentCaptured": "تم قبول الدفع",
+      "paymentFailed": "تم رفض الدفع",
+      "paymentManual": "تم تسجيل دفع يدوي",
+      "kycVerified": "تم قبول KYC",
+      "kycRejected": "تم رفض KYC",
+      "propertyReady": "تم قبول الإعلان",
+      "propertyRejected": "تم رفض الإعلان",
+      "propertyPendingReview": "أُعيد الإعلان إلى قائمة المراجعة",
+      "payoutRequest": "تم طلب سحب",
+      "payoutProcessing": "سحب قيد المعالجة",
+      "payoutPaid": "تم دفع السحب",
+      "payoutRejected": "تم رفض السحب",
+      "depositPrepare": "تم تجهيز الضمانات",
+      "depositRefund": "تم استرجاع الضمان",
+      "depositForfeit": "تمت مصادرة الضمان",
+      "inspectorApproved": "تم قبول الخبير",
+      "notificationBroadcast": "تم إرسال إشعار جماعي",
+      "notificationDelete": "تم حذف إشعار",
+      "notificationBulkDelete": "تم حذف إشعارات",
+      "settingsUpdate": "تم تعديل الإعدادات",
+      "homeFeature": "إبراز (الصفحة الرئيسية)",
+      "characteristicsUpdate": "تم تعديل الخصائص",
+      "legalDocsUpdate": "تم تعديل الوثائق القانونية",
+      "popupCreate": "تم إنشاء نافذة منبثقة",
+      "popupUpdate": "تم تعديل نافذة منبثقة",
+      "popupDelete": "تم حذف نافذة منبثقة",
+      "logout": "خروج"
+    }
+  },
+  "adminNotifications": {
+    "eyebrow": "أدوات الإدارة",
+    "title": "الإشعارات",
+    "description": "اكتب رسالة ظرفية أو راجع القائمة الكاملة للإشعارات المرسلة.",
+    "tabs": {
+      "compose": "كتابة",
+      "queue": "القائمة"
+    },
+    "compose": {
+      "type": "النوع",
+      "recipients": "المستلمون",
+      "audience": {
+        "all": "الجميع",
+        "role": "حسب الدور",
+        "users": "مستخدمون محدّدون"
+      },
+      "userIdsPlaceholder": "معرّف المستخدم، واحد في كل سطر (أو مفصولة بفواصل)",
+      "preview": "معاينة",
+      "sendTest": "أرسل اختبارًا لي",
+      "sending": "جارٍ الإرسال...",
+      "broadcast": "أرسل للجميع",
+      "missingRequired": "حقول مطلوبة ناقصة",
+      "testSent": "تم إرسال الاختبار.",
+      "broadcastSent": "تم إرسال الإشعار.",
+      "recipientCount": "{count, plural, zero {لا يوجد أي مستلم} one {مستلم واحد} two {مستلمان} few {# مستلمين} many {# مستلمًا} other {# مستلم}}",
+      "error": "خطأ: {error}",
+      "yes": "نعم",
+      "payload": "البيانات المرفقة",
+      "previewTitle": "عنوان الإشعار"
+    },
+    "kinds": {
+      "announcement": {
+        "label": "إعلان عام",
+        "description": "ميزة جديدة، تغيير في السياسة، تواصل حول المنتج.",
+        "fields": {
+          "title": {
+            "label": "العنوان",
+            "placeholder": "ميزة جديدة متاحة"
+          },
+          "body": {
+            "label": "الرسالة",
+            "placeholder": "اكتب نص الإعلان."
+          },
+          "link": {
+            "label": "الرابط (اختياري)",
+            "placeholder": "/properties"
+          },
+          "cta_label": {
+            "label": "نص الزر",
+            "placeholder": "اعرف أكثر",
+            "helper": "نص زر الإجراء المعروض مع الرابط."
+          }
+        }
+      },
+      "maintenance": {
+        "label": "صيانة",
+        "description": "توقّف مبرمج، فترة صيانة.",
+        "fields": {
+          "title": {
+            "label": "العنوان",
+            "placeholder": "صيانة مبرمجة"
+          },
+          "body": {
+            "label": "الرسالة",
+            "placeholder": "تفاصيل الصيانة."
+          },
+          "scheduled_at": {
+            "label": "البداية المتوقّعة",
+            "helper": "بالتوقيت المحلي (تونس)."
+          },
+          "duration_min": {
+            "label": "المدة (بالدقائق)",
+            "placeholder": "60"
+          },
+          "affected": {
+            "label": "الخدمات المعنية",
+            "placeholder": "النشر، المدفوعات"
+          }
+        }
+      },
+      "promo": {
+        "label": "عرض / أخبار",
+        "description": "عرض محدود، حدث، إبراز إعلان.",
+        "fields": {
+          "title": {
+            "label": "العنوان",
+            "placeholder": "النشر مجاني نهاية هذا الأسبوع"
+          },
+          "body": {
+            "label": "الرسالة",
+            "placeholder": "تفاصيل العرض."
+          },
+          "link": {
+            "label": "الرابط",
+            "placeholder": "/annonces"
+          },
+          "cta_label": {
+            "label": "نص الزر",
+            "placeholder": "شوف العرض"
+          },
+          "expires_at": {
+            "label": "ينتهي في",
+            "helper": "لا يبقى العرض صالحًا بعد هذا التاريخ."
+          },
+          "promo_code": {
+            "label": "رمز الترويج",
+            "placeholder": "MAZED2026"
+          }
+        }
+      },
+      "system_alert": {
+        "label": "تنبيه النظام",
+        "description": "عطل، مشكل معروف، تعليمات لإجراء عاجل.",
+        "fields": {
+          "title": {
+            "label": "العنوان",
+            "placeholder": "تم رصد مشكل في الدفع"
+          },
+          "body": {
+            "label": "الرسالة",
+            "placeholder": "تفاصيل المشكل والحل."
+          },
+          "severity": {
+            "label": "درجة الخطورة",
+            "options": {
+              "info": "معلومة",
+              "warning": "تحذير",
+              "error": "حرج"
+            }
+          },
+          "action_required": {
+            "label": "إجراء مطلوب من المستخدم"
+          }
+        }
+      }
+    },
+    "queue": {
+      "loadFailed": "فشل التحميل",
+      "deleteFailed": "فشل الحذف",
+      "deleted": "{count, plural, zero {لم يُحذف أي إشعار.} one {تم حذف إشعار واحد.} two {تم حذف إشعارين.} few {تم حذف # إشعارات.} many {تم حذف # إشعارًا.} other {تم حذف # إشعار.}}",
+      "last24h": "24 ساعة",
+      "last7d": "7 أيام",
+      "unread": "غير مقروءة",
+      "searchPlaceholder": "البحث في العنوان…",
+      "reset": "إعادة الضبط",
+      "refresh": "تحديث",
+      "selectAll": "تحديد الكل",
+      "deselectAll": "إلغاء تحديد الكل",
+      "selectedCount": "{count, plural, zero {لا يوجد إشعار محدّد} one {إشعار واحد محدّد} two {إشعاران محدّدان} few {# إشعارات محدّدة} many {# إشعارًا محدّدًا} other {# إشعار محدّد}}",
+      "results": "{count, plural, zero {لا توجد نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجةً} other {# نتيجة}}",
+      "resultsFiltered": "{count, plural, zero {لا توجد نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجةً} other {# نتيجة}} (بعد التصفية)",
+      "deleteSelection": "احذف المحدّد",
+      "deleteFiltered": "احذف الكل (بعد التصفية)",
+      "confirmDeleteSelection": "{count, plural, zero {حذف الإشعارات المحدّدة؟} one {حذف الإشعار المحدّد؟} two {حذف الإشعارين المحدّدين؟} few {حذف # إشعارات محدّدة؟} many {حذف # إشعارًا محدّدًا؟} other {حذف # إشعار محدّد؟}}",
+      "confirmDeleteFiltered": "حذف كل الإشعارات المطابقة للتصفية ({count, plural, zero {لا يوجد أي سطر} one {سطر واحد} two {سطران} few {# أسطر} many {# سطرًا} other {# سطر}})؟",
+      "empty": "لا توجد إشعارات مطابقة للتصفية.",
+      "pagination": "الصفحة {page} / {pages} · المجموع {total}",
+      "cancel": "إلغاء",
+      "confirm": "تأكيد",
+      "unknownUser": "مستخدم · {id}",
+      "unknownAdmin": "مشرف · {id}",
+      "select": "تحديد",
+      "deselect": "إلغاء التحديد",
+      "readAgo": "مقروء · {ago}",
+      "unreadOne": "غير مقروء",
+      "filterByBroadcast": "تصفية حسب هذا الإرسال الجماعي",
+      "broadcastTag": "إرسال جماعي · {id}",
+      "filterByRecipient": "تصفية حسب المستلم",
+      "by": "من طرف",
+      "delete": "احذف"
+    }
+  },
+  "adminPopups": {
+    "eyebrow": "البثّ",
+    "title": "النوافذ المنبثقة",
+    "description": "لافتات ونوافذ حوارية وألواح سفلية تظهر على الموقع. كل نافذة تستهدف جمهورًا وصفحات وفترة زمنية.",
+    "newPopup": "نافذة منبثقة جديدة",
+    "editTitle": "تعديل النافذة المنبثقة",
+    "newSubtitle": "حدّد ما سيراه المستخدمون، ولمن، وفي أي صفحات، ومتى.",
+    "slugLine": "المعرّف (Slug): <mono>{slug}</mono>",
+    "stats": {
+      "live": "منشورة",
+      "scheduled": "مبرمجة",
+      "draft": "مسودّات"
+    },
+    "blocking": "حاجبة",
+    "modes": {
+      "rule": "قاعدة دائمة",
+      "broadcast": "بثّ"
+    },
+    "ctr": "نسبة النقر {value}",
+    "status": {
+      "draft": "مسودة",
+      "live": "منشورة",
+      "paused": "موقوفة مؤقتًا",
+      "archived": "مؤرشفة"
+    },
+    "variants": {
+      "banner": "لافتة",
+      "modal": "نافذة حوارية",
+      "sheet": "لوح سفلي"
+    },
+    "emptyTitle": "لا توجد نوافذ منبثقة.",
+    "emptyBody": "أنشئ أول لافتة أو نافذة حوارية أو لوح سفلي للترحيب بالمستخدمين أو تنبيههم أو توجيههم.",
+    "form": {
+      "unknownError": "خطأ غير معروف",
+      "updated": "تم تحديث النافذة المنبثقة",
+      "created": "تم إنشاء النافذة المنبثقة",
+      "confirmDelete": "حذف «{slug}» نهائيًا؟",
+      "deleteFailed": "فشل الحذف",
+      "deleted": "تم حذف النافذة المنبثقة",
+      "preview": "معاينة",
+      "delete": "احذف",
+      "saving": "جارٍ الحفظ…",
+      "save": "سجّل",
+      "untitled": "بدون عنوان",
+      "close": "إغلاق",
+      "sections": {
+        "identification": {
+          "title": "التعريف",
+          "subtitle": "معرّف قصير (حروف وأرقام وشرطات) — يُستعمل في السجلات وفي localStorage للزوار المجهولين."
+        },
+        "content": {
+          "title": "المحتوى",
+          "subtitle": "العنوان + النص + صورة اختيارية. الفرنسية مطلوبة؛ العربية والإنجليزية اختياريتان."
+        },
+        "ctas": {
+          "title": "أزرار الإجراء",
+          "subtitle": "الزر الرئيسي ضروري لتكون النافذة قابلة للتفاعل؛ الزر الثانوي اختياري."
+        },
+        "audience": {
+          "title": "الجمهور",
+          "subtitle": "لمن هذه النافذة؟"
+        },
+        "targeting": {
+          "title": "الاستهداف",
+          "subtitle": "الصفحات التي تظهر فيها النافذة، ولغتها، ونوع الجهاز."
+        },
+        "schedule": {
+          "title": "فترة البثّ",
+          "subtitle": "تاريخا البداية والنهاية (UTC)."
+        },
+        "frequency": {
+          "title": "التكرار والسلوك",
+          "subtitle": "كم مرة يرى المستخدم النافذة من جديد؟"
+        }
+      },
+      "fields": {
+        "slug": "المعرّف (Slug)",
+        "slugPlaceholder": "مثال: welcome-2026 أو kyc-nudge",
+        "status": "الحالة",
+        "mode": "النمط",
+        "modeHint": "بثّ = فترة زمنية. قاعدة = شرط دائم.",
+        "variant": "الشكل",
+        "variantHint": "النسخة الأولى تعرض النافذة الحوارية فقط؛ اللافتة واللوح السفلي في المرحلة الثانية.",
+        "priority": "الأولوية",
+        "priorityHint": "عند تطابق عدة نوافذ، تظهر صاحبة الأولوية الأعلى.",
+        "title": "العنوان",
+        "body": "النص",
+        "imageUrl": "رابط الصورة",
+        "imageUrlHint": "اختياري. يظهر أعلى النافذة.",
+        "icon": "الأيقونة (Lucide)",
+        "iconHint": "مثال: Sparkles، ShieldCheck — فارغ = بدون أيقونة.",
+        "ctaPrimaryLabel": "نص الزر الرئيسي (fr)",
+        "ctaPrimaryHref": "رابط الزر الرئيسي",
+        "ctaSecondaryLabel": "نص الزر الثانوي (fr) — اختياري",
+        "ctaSecondaryHref": "رابط الزر الثانوي — اختياري",
+        "scope": "النطاق",
+        "roles": "الأدوار (اختياري)",
+        "rolesHint": "حصر العرض في أدوار معيّنة. فارغ = كل الأدوار.",
+        "pages": "الصفحات",
+        "pagesHint": "نمط (glob) في كل سطر أو مفصولة بفواصل. فارغ = كل الصفحات. مثال: \"/, /auctions/*\". البادئة \"!\" للاستثناء: \"!/admin/*\".",
+        "locales": "اللغات",
+        "devices": "الأجهزة",
+        "startsAt": "تبدأ في",
+        "endsAt": "تنتهي في",
+        "frequency": "التكرار",
+        "frequencyN": "N (أيام)",
+        "dismissible": "يمكن للمستخدم إغلاقها",
+        "forceAction": "حجب الصفحة حتى يتّخذ المستخدم إجراءً (مثال: قبول الشروط)",
+        "localisedPlaceholder": "النص ({lang})…"
+      },
+      "options": {
+        "mode": {
+          "broadcast": "بثّ (مرة واحدة)",
+          "rule": "قاعدة دائمة"
+        },
+        "variant": {
+          "modal": "نافذة حوارية",
+          "banner": "لافتة (قريبًا)",
+          "sheet": "لوح سفلي (قريبًا)"
+        },
+        "scope": {
+          "all": "الجميع",
+          "anon": "الزوار غير المسجّلين",
+          "logged_in": "المستخدمون المسجّلون"
+        },
+        "devices": {
+          "both": "الهاتف + الحاسوب",
+          "mobile": "الهاتف فقط",
+          "desktop": "الحاسوب فقط"
+        },
+        "frequency": {
+          "once_per_user": "مرة واحدة لكل مستخدم",
+          "once_per_session": "مرة واحدة في كل جلسة",
+          "every_visit": "في كل زيارة",
+          "every_n_days": "كل N أيام"
+        }
+      },
+      "roles": {
+        "individual": "الخواص",
+        "agency": "الوكالات العقارية",
+        "bank": "البنوك",
+        "bailiff": "العدول المنفذون",
+        "inspector": "الخبراء",
+        "admin": "المشرفون"
+      },
+      "errors": {
+        "slug_invalid": "المعرّف غير صالح (حروف وأرقام وشرطات).",
+        "title_required": "العنوان بالفرنسية مطلوب.",
+        "body_invalid": "النص غير صالح.",
+        "mode_invalid": "نمط غير معروف.",
+        "variant_invalid": "شكل غير معروف.",
+        "audience_invalid": "جمهور غير صالح.",
+        "forbidden": "تم رفض الوصول.",
+        "auth": "يرجى تسجيل الدخول من جديد."
+      }
+    }
   }
 }

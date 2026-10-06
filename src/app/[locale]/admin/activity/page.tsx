@@ -5,8 +5,10 @@
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
 import { Link } from "@/i18n/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { formatNumber } from "@/lib/utils";
+import { formatDate, formatNumber } from "@/lib/utils";
+import { Ltr } from "@/components/ui/Ltr";
 import { AdminQueryBar } from "@/components/admin/AdminQueryBar";
 import { AdminPager } from "@/components/admin/AdminPager";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -18,11 +20,12 @@ export const revalidate = 0;
 
 const PAGE_SIZE = 50;
 
+/** Labels live in messages: adminActivity.types.<key>. */
 const TYPES = [
-  { key: "all", label: "Tout" },
-  { key: "page_view", label: "Pages visitées" },
-  { key: "action", label: "Actions" },
-  { key: "error", label: "Erreurs" },
+  { key: "all" },
+  { key: "page_view" },
+  { key: "action" },
+  { key: "error" },
 ] as const;
 
 type Tone = "ok" | "bad" | "warn" | "info" | "neutral";
@@ -34,40 +37,46 @@ const TONE_CLASS: Record<Tone, string> = {
   neutral: "bg-surface-2 text-muted ring-1 ring-border",
 };
 
-// Human-readable label + tone for each logged action code. Anything not
-// mapped falls back to the raw code so a new action still shows up.
-const ACTION_META: Record<string, { label: string; tone: Tone }> = {
-  "payment.captured": { label: "Paiement validé", tone: "ok" },
-  "payment.failed": { label: "Paiement refusé", tone: "bad" },
-  "payment.manual": { label: "Paiement manuel enregistré", tone: "info" },
-  "kyc.verified": { label: "KYC approuvé", tone: "ok" },
-  "kyc.rejected": { label: "KYC rejeté", tone: "bad" },
-  "property.ready": { label: "Annonce validée", tone: "ok" },
-  "property.rejected": { label: "Annonce refusée", tone: "bad" },
-  "property.pending_review": { label: "Annonce remise en file", tone: "warn" },
-  "payout.request": { label: "Retrait demandé", tone: "info" },
-  "payout.processing": { label: "Retrait en traitement", tone: "warn" },
-  "payout.paid": { label: "Retrait payé", tone: "ok" },
-  "payout.rejected": { label: "Retrait refusé", tone: "bad" },
-  "deposit.prepare": { label: "Cautions préparées", tone: "info" },
-  "deposit.refund": { label: "Caution remboursée", tone: "ok" },
-  "deposit.forfeit": { label: "Caution saisie", tone: "bad" },
-  "inspector.approved": { label: "Inspecteur approuvé", tone: "ok" },
-  "notification.broadcast": { label: "Diffusion envoyée", tone: "info" },
-  "notification.delete": { label: "Notification supprimée", tone: "neutral" },
-  "notification.bulk_delete": { label: "Notifications supprimées", tone: "neutral" },
-  "settings.update": { label: "Réglages modifiés", tone: "info" },
-  "home.feature": { label: "Mise en avant (accueil)", tone: "info" },
-  "characteristics.update": { label: "Caractéristiques modifiées", tone: "info" },
-  "legal_docs.update": { label: "Documents légaux modifiés", tone: "info" },
-  "popup.create": { label: "Popup créé", tone: "info" },
-  "popup.update": { label: "Popup modifié", tone: "info" },
-  "popup.delete": { label: "Popup supprimé", tone: "neutral" },
-  logout: { label: "Déconnexion", tone: "neutral" },
+// Message key (adminActivity.actions.<key>) + tone for each logged action
+// code. Action codes contain dots, which next-intl reads as nesting, hence the
+// separate key. Anything not mapped falls back to the raw code so a new action
+// still shows up.
+const ACTION_META: Record<string, { key: string; tone: Tone }> = {
+  "payment.captured": { key: "paymentCaptured", tone: "ok" },
+  "payment.failed": { key: "paymentFailed", tone: "bad" },
+  "payment.manual": { key: "paymentManual", tone: "info" },
+  "kyc.verified": { key: "kycVerified", tone: "ok" },
+  "kyc.rejected": { key: "kycRejected", tone: "bad" },
+  "property.ready": { key: "propertyReady", tone: "ok" },
+  "property.rejected": { key: "propertyRejected", tone: "bad" },
+  "property.pending_review": { key: "propertyPendingReview", tone: "warn" },
+  "payout.request": { key: "payoutRequest", tone: "info" },
+  "payout.processing": { key: "payoutProcessing", tone: "warn" },
+  "payout.paid": { key: "payoutPaid", tone: "ok" },
+  "payout.rejected": { key: "payoutRejected", tone: "bad" },
+  "deposit.prepare": { key: "depositPrepare", tone: "info" },
+  "deposit.refund": { key: "depositRefund", tone: "ok" },
+  "deposit.forfeit": { key: "depositForfeit", tone: "bad" },
+  "inspector.approved": { key: "inspectorApproved", tone: "ok" },
+  "notification.broadcast": { key: "notificationBroadcast", tone: "info" },
+  "notification.delete": { key: "notificationDelete", tone: "neutral" },
+  "notification.bulk_delete": { key: "notificationBulkDelete", tone: "neutral" },
+  "settings.update": { key: "settingsUpdate", tone: "info" },
+  "home.feature": { key: "homeFeature", tone: "info" },
+  "characteristics.update": { key: "characteristicsUpdate", tone: "info" },
+  "legal_docs.update": { key: "legalDocsUpdate", tone: "info" },
+  "popup.create": { key: "popupCreate", tone: "info" },
+  "popup.update": { key: "popupUpdate", tone: "info" },
+  "popup.delete": { key: "popupDelete", tone: "neutral" },
+  logout: { key: "logout", tone: "neutral" },
 };
-function actionMeta(action: string | null): { label: string; tone: Tone } {
-  if (!action) return { label: "Action", tone: "neutral" };
-  return ACTION_META[action] ?? { label: action, tone: "neutral" };
+function actionMeta(
+  action: string | null,
+  t: (key: string) => string,
+): { label: string; tone: Tone } {
+  if (!action) return { label: t("actionFallback"), tone: "neutral" };
+  const meta = ACTION_META[action];
+  return meta ? { label: t(`actions.${meta.key}`), tone: meta.tone } : { label: action, tone: "neutral" };
 }
 
 type ActivityRow = {
@@ -84,15 +93,16 @@ type ActivityRow = {
   user_agent: string | null;
 };
 
-/** Best-effort, dependency-free device label from a User-Agent string. */
-function deviceLabel(ua: string | null): string {
+/** Best-effort, dependency-free device label from a User-Agent string.
+ *  `unknownBrowser` is the reader's word for an unrecognised browser. */
+function deviceLabel(ua: string | null, unknownBrowser: string): string {
   if (!ua) return "—";
   const browser = /Edg\//.test(ua) ? "Edge"
     : /OPR\//.test(ua) ? "Opera"
     : /Chrome\//.test(ua) ? "Chrome"
     : /Firefox\//.test(ua) ? "Firefox"
     : /Safari\//.test(ua) ? "Safari"
-    : "Navigateur";
+    : unknownBrowser;
   const os = /Android/.test(ua) ? "Android"
     : /iPhone|iPad|iPod/.test(ua) ? "iOS"
     : /Windows/.test(ua) ? "Windows"
@@ -115,10 +125,12 @@ export default async function AdminActivity({
   searchParams: Promise<{ q?: string; type?: string; range?: string; page?: string }>;
 }) {
   const { q: qP, type: typeP, range: rangeP, page: pageP } = await searchParams;
+  const t = await getTranslations("adminActivity");
+  const locale = await getLocale();
   const sb = await getServerSupabase();
 
   const q = (qP ?? "").trim().slice(0, 80).replace(/[,()*%]/g, " ").trim();
-  const type = TYPES.some((t) => t.key === typeP) ? typeP! : "all";
+  const type = TYPES.some((ty) => ty.key === typeP) ? typeP! : "all";
   const sinceDays = rangeP === "1" || rangeP === "7" || rangeP === "30" ? Number(rangeP) : null;
   const page = Math.max(1, Number(pageP) || 1);
   const from = (page - 1) * PAGE_SIZE;
@@ -182,75 +194,74 @@ export default async function AdminActivity({
     <div>
       <SiteTabs />
       <AdminPageHeader
-        eyebrow="Système · Surveillance"
-        title="Journal d'activité"
-        description="Qui visite la plateforme, quelles pages, et quelles actions sont effectuées."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
 
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl bg-surface px-4 py-3 ring-1 ring-border">
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
-            <Eye className="size-3.5" /> Pages vues · 24h
+            <Eye className="size-3.5" /> {t("kpiViews")}
           </div>
-          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{formatNumber(viewsRes.count ?? 0)}</div>
+          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{formatNumber(viewsRes.count ?? 0, locale)}</div>
         </div>
         <div className="rounded-xl bg-surface px-4 py-3 ring-1 ring-border">
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
-            <Zap className="size-3.5" /> Actions · 24h
+            <Zap className="size-3.5" /> {t("kpiActions")}
           </div>
-          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{formatNumber(actionsRes.count ?? 0)}</div>
+          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{formatNumber(actionsRes.count ?? 0, locale)}</div>
         </div>
         <div className="rounded-xl bg-surface px-4 py-3 ring-1 ring-border">
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
-            <Activity className="size-3.5" /> Total évènements
+            <Activity className="size-3.5" /> {t("kpiTotal")}
           </div>
-          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{formatNumber(total)}</div>
+          <div className="mazed-tabular mt-1 text-[22px] font-extrabold">{formatNumber(total, locale)}</div>
         </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-1.5">
-        {TYPES.map((t) => (
+        {TYPES.map((ty) => (
           <Link
-            key={t.key}
-            href={pill(t.key)}
+            key={ty.key}
+            href={pill(ty.key)}
             className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-bold transition-colors ${
-              type === t.key ? "border-[var(--gold)] bg-[var(--gold)] text-white" : "border-border bg-surface text-muted hover:border-gold-soft"
+              type === ty.key ? "border-[var(--gold)] bg-[var(--gold)] text-white" : "border-border bg-surface text-muted hover:border-gold-soft"
             }`}
           >
-            {t.label}
+            {t(`types.${ty.key}`)}
           </Link>
         ))}
       </div>
 
-      <AdminQueryBar total={total} placeholder="E-mail, page ou action…" />
+      <AdminQueryBar total={total} placeholder={t("searchPlaceholder")} />
 
       {rows.length === 0 ? (
         <div className="mazed-frame-gold relative mt-5 px-6 py-10 text-center text-[13px] text-muted">
-          Aucune activité enregistrée.
+          {t("empty")}
         </div>
       ) : (
         <div className="mt-5 overflow-x-auto rounded-2xl bg-surface ring-1 ring-border">
           <table className="w-full min-w-[760px] text-[13px]">
             <thead>
-              <tr className="border-b border-border text-left text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted">
-                <th className="px-4 py-3">Quand</th>
-                <th className="px-4 py-3">Utilisateur</th>
-                <th className="px-4 py-3">Évènement</th>
-                <th className="px-4 py-3">Page / Détail</th>
-                <th className="px-4 py-3">IP</th>
-                <th className="px-4 py-3">Appareil</th>
+              <tr className="border-b border-border text-start text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted">
+                <th className="px-4 py-3">{t("columns.when")}</th>
+                <th className="px-4 py-3">{t("columns.user")}</th>
+                <th className="px-4 py-3">{t("columns.event")}</th>
+                <th className="px-4 py-3">{t("columns.page")}</th>
+                <th className="px-4 py-3">{t("columns.ip")}</th>
+                <th className="px-4 py-3">{t("columns.device")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {rows.map((e) => {
                 const prof = e.user_id ? profById.get(e.user_id) : undefined;
                 const isAction = e.type === "action";
+                const meta = isAction ? actionMeta(e.action, t) : null;
                 return (
                   <tr key={e.id} className="hover:bg-surface-2">
                     <td className="mazed-tabular whitespace-nowrap px-4 py-2.5 text-muted">
-                      {new Date(e.created_at).toLocaleString("fr-FR", {
-                        day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
-                      })}
+                      {formatDate(e.created_at, locale, "dateTime")}
                     </td>
                     <td className="px-4 py-2.5">
                       {e.user_id ? (
@@ -261,25 +272,29 @@ export default async function AdminActivity({
                           </div>
                         </>
                       ) : (
-                        <span className="text-muted">Anonyme</span>
+                        <span className="text-muted">{t("anonymous")}</span>
                       )}
                     </td>
                     <td className="px-4 py-2.5">
-                      {isAction ? (
-                        <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold ${TONE_CLASS[actionMeta(e.action).tone]}`}>
-                          {actionMeta(e.action).label}
+                      {meta ? (
+                        <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold ${TONE_CLASS[meta.tone]}`}>
+                          {meta.label}
                         </span>
                       ) : (
                         <span className="inline-block rounded-full bg-surface-2 px-2.5 py-0.5 text-[11px] font-bold text-muted ring-1 ring-border">
-                          Page vue
+                          {t("pageView")}
                         </span>
                       )}
                     </td>
                     <td className="max-w-[280px] truncate px-4 py-2.5 text-foreground/80" title={e.path || ""}>
-                      {e.path || "—"}
+                      {e.path ? <Ltr>{e.path}</Ltr> : "—"}
                     </td>
-                    <td className="mazed-tabular whitespace-nowrap px-4 py-2.5 text-muted">{e.ip || "—"}</td>
-                    <td className="whitespace-nowrap px-4 py-2.5 text-muted">{deviceLabel(e.user_agent)}</td>
+                    <td className="mazed-tabular whitespace-nowrap px-4 py-2.5 text-muted">
+                      {e.ip ? <Ltr>{e.ip}</Ltr> : "—"}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-muted">
+                      {deviceLabel(e.user_agent, t("browserFallback"))}
+                    </td>
                   </tr>
                 );
               })}

@@ -262,5 +262,469 @@
     "unknown_action": "Action inconnue. Rechargez la page.",
     "too_large": "Fichier trop volumineux.",
     "empty_body": "Fichier vide."
+  },
+  "adminPayments": {
+    "serviceUnavailable": "Service non configuré.",
+    "title": "Paiements",
+    "tabs": {
+      "pending": "À valider",
+      "captured": "Validés",
+      "failed": "Refusés",
+      "all": "Tous"
+    },
+    "searchPlaceholder": "Référence, motif…",
+    "thisMonth": "Ce mois",
+    "total": "Total",
+    "amount": "{amount} TND",
+    "emptyFiltered": "Aucun paiement ne correspond",
+    "emptyTab": "Rien dans « {tab} »",
+    "emptyFilteredHint": "Essayez un autre terme, ou changez d'onglet.",
+    "emptyHint": "Aucun reçu n'attend une décision.",
+    "noName": "Sans nom",
+    "noReceiptTag": "aucun reçu",
+    "pickOne": "Choisissez un paiement à gauche.",
+    "keysHint": "j / k pour parcourir, Entrée pour ouvrir.",
+    "kinds": {
+      "listing_fee": "Publication",
+      "listing_pack": "Pack d'annonces",
+      "subscription": "Abonnement",
+      "promo": "Mise en avant",
+      "badge": "Badge vérifié",
+      "renewal": "Renouvellement"
+    },
+    "providers": {
+      "bank_transfer": "Virement bancaire",
+      "d17": "D17",
+      "manual": "Espèces / manuel",
+      "konnect": "Konnect",
+      "paymee": "Paymee",
+      "flouci": "Flouci"
+    },
+    "detail": {
+      "back": "File",
+      "receipt": "Reçu",
+      "receiptN": "Reçu {n}",
+      "noReceipt": "Aucun reçu n'a été envoyé pour ce paiement.",
+      "rejectionReason": "Motif du refus :",
+      "paymentSection": "Le paiement",
+      "amountLabel": "Montant",
+      "for": "Pour",
+      "method": "Méthode",
+      "initiatedAt": "Initié le",
+      "receiptSentAt": "Reçu envoyé le",
+      "processedAt": "Traité le",
+      "sellerSection": "Vendeur",
+      "name": "Nom",
+      "phone": "Téléphone",
+      "listingSection": "Annonce concernée",
+      "listingTitle": "Titre",
+      "listingStatus": "Statut",
+      "acceptNote": "Valider ce reçu fait passer l'annonce en vérification — elle n'est pas publiée automatiquement.",
+      "accept": "Valider le reçu",
+      "reject": "Refuser",
+      "alreadyProcessed": "Déjà traité — plus rien à décider ici.",
+      "confirmAcceptTitle": "Valider {amount} ?",
+      "confirmAcceptBodyListing": "Le paiement est encaissé et l'annonce part en vérification.",
+      "confirmAcceptBody": "Le paiement est encaissé et ce que le vendeur a acheté lui est accordé.",
+      "confirmAcceptLabel": "Valider",
+      "accepted": "Reçu validé.",
+      "confirmRejectTitle": "Refuser ce reçu ?",
+      "confirmRejectBody": "Le vendeur reçoit le motif et peut en envoyer un autre.",
+      "confirmRejectLabel": "Refuser",
+      "reasonLabel": "Motif (envoyé au vendeur)",
+      "reasonPlaceholder": "Montant différent, reçu illisible, virement introuvable…",
+      "rejected": "Reçu refusé."
+    },
+    "api": {
+      "alreadyResolved": "Ce paiement est déjà « {status} ».",
+      "wrongKind": "« {kind} » appartient au produit enchères, qui n'existe plus.",
+      "reasonRequired": "Dites au vendeur ce qui ne va pas — il doit pouvoir renvoyer un reçu valable."
+    }
+  },
+  "adminActivity": {
+    "eyebrow": "Système · Surveillance",
+    "title": "Journal d'activité",
+    "description": "Qui visite la plateforme, quelles pages, et quelles actions sont effectuées.",
+    "kpiViews": "Pages vues · 24h",
+    "kpiActions": "Actions · 24h",
+    "kpiTotal": "Total évènements",
+    "types": {
+      "all": "Tout",
+      "page_view": "Pages visitées",
+      "action": "Actions",
+      "error": "Erreurs"
+    },
+    "searchPlaceholder": "E-mail, page ou action…",
+    "empty": "Aucune activité enregistrée.",
+    "columns": {
+      "when": "Quand",
+      "user": "Utilisateur",
+      "event": "Évènement",
+      "page": "Page / Détail",
+      "ip": "IP",
+      "device": "Appareil"
+    },
+    "anonymous": "Anonyme",
+    "pageView": "Page vue",
+    "actionFallback": "Action",
+    "browserFallback": "Navigateur",
+    "actions": {
+      "paymentCaptured": "Paiement validé",
+      "paymentFailed": "Paiement refusé",
+      "paymentManual": "Paiement manuel enregistré",
+      "kycVerified": "KYC approuvé",
+      "kycRejected": "KYC rejeté",
+      "propertyReady": "Annonce validée",
+      "propertyRejected": "Annonce refusée",
+      "propertyPendingReview": "Annonce remise en file",
+      "payoutRequest": "Retrait demandé",
+      "payoutProcessing": "Retrait en traitement",
+      "payoutPaid": "Retrait payé",
+      "payoutRejected": "Retrait refusé",
+      "depositPrepare": "Cautions préparées",
+      "depositRefund": "Caution remboursée",
+      "depositForfeit": "Caution saisie",
+      "inspectorApproved": "Inspecteur approuvé",
+      "notificationBroadcast": "Diffusion envoyée",
+      "notificationDelete": "Notification supprimée",
+      "notificationBulkDelete": "Notifications supprimées",
+      "settingsUpdate": "Réglages modifiés",
+      "homeFeature": "Mise en avant (accueil)",
+      "characteristicsUpdate": "Caractéristiques modifiées",
+      "legalDocsUpdate": "Documents légaux modifiés",
+      "popupCreate": "Popup créé",
+      "popupUpdate": "Popup modifié",
+      "popupDelete": "Popup supprimé",
+      "logout": "Déconnexion"
+    }
+  },
+  "adminNotifications": {
+    "eyebrow": "Outils admin",
+    "title": "Notifications",
+    "description": "Composer un message ponctuel ou inspecter la file complète des notifications envoyées.",
+    "tabs": {
+      "compose": "Composer",
+      "queue": "File"
+    },
+    "compose": {
+      "type": "Type",
+      "recipients": "Destinataires",
+      "audience": {
+        "all": "Tous",
+        "role": "Par rôle",
+        "users": "Utilisateurs"
+      },
+      "userIdsPlaceholder": "ID utilisateur, un par ligne (ou séparés par virgule)",
+      "preview": "Aperçu",
+      "sendTest": "Envoyer un test à moi",
+      "sending": "Envoi...",
+      "broadcast": "Diffuser",
+      "missingRequired": "Champs requis manquants",
+      "testSent": "Test envoyé.",
+      "broadcastSent": "Diffusion envoyée.",
+      "recipientCount": "{count, plural, one {# destinataire} other {# destinataires}}",
+      "error": "Erreur : {error}",
+      "yes": "Oui",
+      "payload": "Payload",
+      "previewTitle": "Titre de la notification"
+    },
+    "kinds": {
+      "announcement": {
+        "label": "Annonce",
+        "description": "Nouvelle fonctionnalité, changement de politique, communication produit.",
+        "fields": {
+          "title": {
+            "label": "Titre",
+            "placeholder": "Nouvelle fonctionnalité disponible"
+          },
+          "body": {
+            "label": "Message",
+            "placeholder": "Décrivez l'annonce."
+          },
+          "link": {
+            "label": "Lien (optionnel)",
+            "placeholder": "/properties"
+          },
+          "cta_label": {
+            "label": "Libellé du bouton",
+            "placeholder": "En savoir plus",
+            "helper": "Texte du bouton d'action affiché avec le lien."
+          }
+        }
+      },
+      "maintenance": {
+        "label": "Maintenance",
+        "description": "Indisponibilité planifiée, fenêtre de maintenance.",
+        "fields": {
+          "title": {
+            "label": "Titre",
+            "placeholder": "Maintenance programmée"
+          },
+          "body": {
+            "label": "Message",
+            "placeholder": "Détails de la maintenance."
+          },
+          "scheduled_at": {
+            "label": "Début prévu",
+            "helper": "Heure locale (Tunis)."
+          },
+          "duration_min": {
+            "label": "Durée (minutes)",
+            "placeholder": "60"
+          },
+          "affected": {
+            "label": "Services impactés",
+            "placeholder": "Publication, paiements"
+          }
+        }
+      },
+      "promo": {
+        "label": "Promo / actualité",
+        "description": "Offre limitée, événement, mise en avant d'une annonce.",
+        "fields": {
+          "title": {
+            "label": "Titre",
+            "placeholder": "Publication offerte ce week-end"
+          },
+          "body": {
+            "label": "Message",
+            "placeholder": "Détails de la promo."
+          },
+          "link": {
+            "label": "Lien",
+            "placeholder": "/annonces"
+          },
+          "cta_label": {
+            "label": "Libellé du bouton",
+            "placeholder": "Voir l'offre"
+          },
+          "expires_at": {
+            "label": "Expire le",
+            "helper": "L'offre n'est plus valable après cette date."
+          },
+          "promo_code": {
+            "label": "Code promo",
+            "placeholder": "MAZED2026"
+          }
+        }
+      },
+      "system_alert": {
+        "label": "Alerte système",
+        "description": "Incident, problème connu, instruction d'action urgente.",
+        "fields": {
+          "title": {
+            "label": "Titre",
+            "placeholder": "Problème de paiement détecté"
+          },
+          "body": {
+            "label": "Message",
+            "placeholder": "Détails du problème et de la solution."
+          },
+          "severity": {
+            "label": "Sévérité",
+            "options": {
+              "info": "Info",
+              "warning": "Avertissement",
+              "error": "Critique"
+            }
+          },
+          "action_required": {
+            "label": "Action requise de l'utilisateur"
+          }
+        }
+      }
+    },
+    "queue": {
+      "loadFailed": "Échec du chargement",
+      "deleteFailed": "Échec de la suppression",
+      "deleted": "{count, plural, one {# notification supprimée.} other {# notifications supprimées.}}",
+      "last24h": "24 heures",
+      "last7d": "7 jours",
+      "unread": "Non lues",
+      "searchPlaceholder": "Recherche titre…",
+      "reset": "Réinitialiser",
+      "refresh": "Rafraîchir",
+      "selectAll": "Tout sélectionner",
+      "deselectAll": "Tout désélectionner",
+      "selectedCount": "{count, plural, one {# sélectionnée} other {# sélectionnées}}",
+      "results": "{count, plural, one {# résultat} other {# résultats}}",
+      "resultsFiltered": "{count, plural, one {# résultat} other {# résultats}} (filtrés)",
+      "deleteSelection": "Supprimer la sélection",
+      "deleteFiltered": "Supprimer tout (filtré)",
+      "confirmDeleteSelection": "{count, plural, one {Supprimer # notification sélectionnée ?} other {Supprimer # notifications sélectionnées ?}}",
+      "confirmDeleteFiltered": "Supprimer toutes les notifications correspondant aux filtres ({count, plural, one {# ligne} other {# lignes}}) ?",
+      "empty": "Aucune notification ne correspond aux filtres.",
+      "pagination": "Page {page} / {pages} · {total} total",
+      "cancel": "Annuler",
+      "confirm": "Confirmer",
+      "unknownUser": "user · {id}",
+      "unknownAdmin": "admin · {id}",
+      "select": "Sélectionner",
+      "deselect": "Désélectionner",
+      "readAgo": "Lue · {ago}",
+      "unreadOne": "Non lue",
+      "filterByBroadcast": "Filtrer par cette diffusion",
+      "broadcastTag": "Diffusion · {id}",
+      "filterByRecipient": "Filtrer par destinataire",
+      "by": "par",
+      "delete": "Supprimer"
+    }
+  },
+  "adminPopups": {
+    "eyebrow": "Diffusion",
+    "title": "Popups",
+    "description": "Bannières, modales et bottom-sheets affichées sur le site. Chaque popup cible un public, des pages et une fenêtre temporelle.",
+    "newPopup": "Nouveau popup",
+    "editTitle": "Modifier le popup",
+    "newSubtitle": "Configurez ce que les utilisateurs verront, à qui, sur quelles pages et quand.",
+    "slugLine": "Slug : <mono>{slug}</mono>",
+    "stats": {
+      "live": "En ligne",
+      "scheduled": "Programmés",
+      "draft": "Brouillons"
+    },
+    "blocking": "Bloquant",
+    "modes": {
+      "rule": "Règle permanente",
+      "broadcast": "Diffusion"
+    },
+    "ctr": "CTR {value}",
+    "status": {
+      "draft": "Brouillon",
+      "live": "En ligne",
+      "paused": "En pause",
+      "archived": "Archivé"
+    },
+    "variants": {
+      "banner": "Bannière",
+      "modal": "Modale",
+      "sheet": "Sheet"
+    },
+    "emptyTitle": "Aucun popup configuré.",
+    "emptyBody": "Créez votre première bannière, modale ou bottom-sheet pour accueillir, alerter ou guider vos utilisateurs.",
+    "form": {
+      "unknownError": "Erreur inconnue",
+      "updated": "Popup mis à jour",
+      "created": "Popup créé",
+      "confirmDelete": "Supprimer définitivement « {slug} » ?",
+      "deleteFailed": "Suppression échouée",
+      "deleted": "Popup supprimé",
+      "preview": "Aperçu",
+      "delete": "Supprimer",
+      "saving": "Enregistrement…",
+      "save": "Enregistrer",
+      "untitled": "Sans titre",
+      "close": "Fermer",
+      "sections": {
+        "identification": {
+          "title": "Identification",
+          "subtitle": "Slug court (lettres, chiffres, tirets) — utilisé dans les logs et le localStorage anonyme."
+        },
+        "content": {
+          "title": "Contenu",
+          "subtitle": "Titre + corps + image facultative. Le français est requis ; arabe et anglais sont optionnels."
+        },
+        "ctas": {
+          "title": "Boutons d'action",
+          "subtitle": "Le bouton principal est obligatoire pour que le popup soit actionnable ; le secondaire est optionnel."
+        },
+        "audience": {
+          "title": "Audience",
+          "subtitle": "À qui le popup est-il destiné ?"
+        },
+        "targeting": {
+          "title": "Ciblage",
+          "subtitle": "Les pages où le popup doit s'afficher, sa langue et le type d'appareil."
+        },
+        "schedule": {
+          "title": "Fenêtre de diffusion",
+          "subtitle": "Dates de début et de fin (UTC)."
+        },
+        "frequency": {
+          "title": "Fréquence & comportement",
+          "subtitle": "À quelle cadence l'utilisateur revoit-il le popup ?"
+        }
+      },
+      "fields": {
+        "slug": "Slug",
+        "slugPlaceholder": "ex. welcome-2026 ou kyc-nudge",
+        "status": "Statut",
+        "mode": "Mode",
+        "modeHint": "Diffusion = fenêtre temporelle. Règle = condition permanente.",
+        "variant": "Variante",
+        "variantHint": "V1 ne rend que la modale ; bannière + sheet arrivent en phase 2.",
+        "priority": "Priorité",
+        "priorityHint": "Quand plusieurs popups correspondent, le plus haut gagne.",
+        "title": "Titre",
+        "body": "Corps",
+        "imageUrl": "URL de l'image",
+        "imageUrlHint": "Optionnel. Affiché en haut de la modale.",
+        "icon": "Icône (Lucide)",
+        "iconHint": "ex. Sparkles, ShieldCheck — laissé vide = pas d'icône.",
+        "ctaPrimaryLabel": "Libellé principal (fr)",
+        "ctaPrimaryHref": "Lien principal",
+        "ctaSecondaryLabel": "Libellé secondaire (fr) — facultatif",
+        "ctaSecondaryHref": "Lien secondaire — facultatif",
+        "scope": "Portée",
+        "roles": "Rôles (optionnel)",
+        "rolesHint": "Restreindre à certains rôles. Vide = tous les rôles.",
+        "pages": "Pages",
+        "pagesHint": "Une glob par ligne ou séparées par des virgules. Vide = toutes les pages. Ex. \"/, /auctions/*\". Préfixe \"!\" pour exclure : \"!/admin/*\".",
+        "locales": "Langues",
+        "devices": "Appareils",
+        "startsAt": "Démarre le",
+        "endsAt": "Se termine le",
+        "frequency": "Fréquence",
+        "frequencyN": "N (jours)",
+        "dismissible": "Fermable par l'utilisateur",
+        "forceAction": "Bloquer la page jusqu'à action (ex. acceptation CGU)",
+        "localisedPlaceholder": "Texte en {lang}…"
+      },
+      "options": {
+        "mode": {
+          "broadcast": "Diffusion (one-shot)",
+          "rule": "Règle permanente"
+        },
+        "variant": {
+          "modal": "Modale",
+          "banner": "Bannière (à venir)",
+          "sheet": "Bottom sheet (à venir)"
+        },
+        "scope": {
+          "all": "Tout le monde",
+          "anon": "Visiteurs anonymes",
+          "logged_in": "Utilisateurs connectés"
+        },
+        "devices": {
+          "both": "Mobile + Desktop",
+          "mobile": "Mobile uniquement",
+          "desktop": "Desktop uniquement"
+        },
+        "frequency": {
+          "once_per_user": "Une fois par utilisateur",
+          "once_per_session": "Une fois par session",
+          "every_visit": "À chaque visite",
+          "every_n_days": "Tous les N jours"
+        }
+      },
+      "roles": {
+        "individual": "Particuliers",
+        "agency": "Agences",
+        "bank": "Banques",
+        "bailiff": "Huissiers",
+        "inspector": "Inspecteurs",
+        "admin": "Admins"
+      },
+      "errors": {
+        "slug_invalid": "Le slug est invalide (lettres, chiffres, tirets).",
+        "title_required": "Le titre en français est requis.",
+        "body_invalid": "Le corps est invalide.",
+        "mode_invalid": "Mode inconnu.",
+        "variant_invalid": "Variante inconnue.",
+        "audience_invalid": "Audience invalide.",
+        "forbidden": "Accès refusé.",
+        "auth": "Veuillez vous reconnecter."
+      }
+    }
   }
 }
