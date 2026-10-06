@@ -240,7 +240,7 @@ export function ToggleField({
       >
         <span
           className={`size-4 rounded-full bg-white shadow-sm transition ${
-            checked ? "translate-x-4" : "translate-x-0"
+            checked ? "translate-x-4 rtl:-translate-x-4" : "translate-x-0"
           }`}
         />
       </button>

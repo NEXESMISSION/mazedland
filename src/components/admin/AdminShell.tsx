@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
   LayoutDashboard, Inbox, Receipt, Tag, Users, FolderTree,
@@ -26,10 +27,10 @@ import { NavIcon } from "./kit/LinkPending";
  */
 
 type Item = {
-  label: string;
+  /** Names the label in `admin.nav`; its tooltip is `${key}Hint`. */
+  key: string;
   href: string;
   Icon: LucideIcon;
-  hint: string;
   /** Key into the `counts` map — a badge for work that is waiting. */
   countKey?: CountKey;
 };
@@ -38,55 +39,19 @@ export type CountKey = "annonces" | "paiements";
 export type AdminCounts = Partial<Record<CountKey, number>>;
 
 const NAV: Item[] = [
-  {
-    label: "Tableau de bord",
-    href: "/admin",
-    Icon: LayoutDashboard,
-    hint: "Ce qui attend une décision",
-  },
-  {
-    label: "Annonces",
-    href: "/admin/annonces",
-    Icon: Inbox,
-    hint: "Modérer, créer, mettre en avant",
-    countKey: "annonces",
-  },
-  {
-    label: "Paiements",
-    href: "/admin/paiements",
-    Icon: Receipt,
-    hint: "Reçus à valider",
-    countKey: "paiements",
-  },
-  {
-    label: "Offres & prix",
-    href: "/admin/offres",
-    Icon: Tag,
-    hint: "Annonces, packs, mises en avant, badge",
-  },
-  {
-    label: "Vendeurs",
-    href: "/admin/vendeurs",
-    Icon: Users,
-    hint: "Comptes, rôles, badges",
-  },
-  {
-    label: "Catalogue",
-    href: "/admin/catalogue",
-    Icon: FolderTree,
-    hint: "Catégories et caractéristiques",
-  },
+  { key: "dashboard", href: "/admin", Icon: LayoutDashboard },
+  { key: "listings", href: "/admin/annonces", Icon: Inbox, countKey: "annonces" },
+  { key: "payments", href: "/admin/paiements", Icon: Receipt, countKey: "paiements" },
+  { key: "offers", href: "/admin/offres", Icon: Tag },
+  { key: "sellers", href: "/admin/vendeurs", Icon: Users },
+  { key: "catalogue", href: "/admin/catalogue", Icon: FolderTree },
 ];
 
 
-const SITE: Item = {
-  label: "Site",
-  href: "/admin/site",
-  Icon: SlidersHorizontal,
-  hint: "Accueil, popups, documents, diffusions, réglages, journal",
-};
+const SITE: Item = { key: "site", href: "/admin/site", Icon: SlidersHorizontal };
 
 function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
+  const t = useTranslations("admin");
   return (
     <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2.5">
       {/* The mark, not a house glyph. The glyph was standing in for a logo
@@ -94,7 +59,7 @@ function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
           should be recognisably the same product as the site. */}
       <Image src="/logo-mark.webp" alt="" width={127} height={160} className="h-5 w-auto" />
       <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-foreground">
-        Mazed Immo<span className="text-[var(--gold)]"> Console</span>
+        Mazed Immo<span className="text-[var(--gold)]">{" "}{t("console")}</span>
       </span>
     </Link>
   );
@@ -108,6 +73,7 @@ function NavList({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const t = useTranslations("admin.nav");
 
   // `/admin` must match exactly — every other route starts with it, so a
   // prefix test lights the dashboard up on every single screen.
@@ -125,7 +91,7 @@ function NavList({
           href={item.href as "/admin"}
           onClick={onNavigate}
           aria-current={active ? "page" : undefined}
-          title={item.hint}
+          title={t(`${item.key}Hint`)}
           className={`relative flex items-center gap-2.5 py-[7px] ps-4 pe-3 text-[13px] font-medium transition ${
             active
               ? "text-[var(--gold)] before:absolute before:inset-y-0 before:start-0 before:w-[2px] before:bg-[var(--gold)]"
@@ -133,7 +99,7 @@ function NavList({
           }`}
         >
           <NavIcon Icon={item.Icon} active={active} />
-          <span className="truncate">{item.label}</span>
+          <span className="truncate">{t(item.key)}</span>
           {count > 0 && (
             <span
               className={`mazed-tabular ms-auto text-[11px] font-bold ${
@@ -160,6 +126,7 @@ function NavList({
 }
 
 function ExitLink({ onNavigate }: { onNavigate?: () => void }) {
+  const t = useTranslations("admin.nav");
   return (
     <Link
       href="/"
@@ -167,7 +134,7 @@ function ExitLink({ onNavigate }: { onNavigate?: () => void }) {
       className="flex items-center gap-2.5 px-4 py-[7px] text-[12.5px] font-medium text-subtle transition hover:text-foreground"
     >
       <ExternalLink className="size-4 shrink-0" strokeWidth={2} />
-      Quitter l&apos;admin
+      {t("exit")}
     </Link>
   );
 }
@@ -190,6 +157,7 @@ export function AdminRail({ counts }: { counts: AdminCounts }) {
 /** Top bar + slide-over drawer — below lg. */
 export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
   const pathname = usePathname();
+  const t = useTranslations("admin.nav");
   const [open, setOpen] = useState(false);
 
   // Close the drawer when the route changes. During render, not in an effect:
@@ -222,7 +190,7 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="Ouvrir le menu"
+          aria-label={t("openMenu")}
           aria-expanded={open}
           className="tap-target grid size-9 place-items-center rounded text-muted transition hover:text-foreground"
         >
@@ -231,7 +199,7 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
       </header>
 
       {open && (
-        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Navigation admin">
+        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={t("label")}>
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setOpen(false)}
@@ -243,7 +211,7 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Fermer le menu"
+                aria-label={t("closeMenu")}
                 className="tap-target grid size-8 place-items-center rounded text-muted transition hover:text-foreground"
               >
                 <X className="size-5" strokeWidth={2.2} />

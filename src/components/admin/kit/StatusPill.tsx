@@ -1,4 +1,5 @@
-import { statusLabel, statusTone, TONE_TEXT, type Tone } from "./tones";
+import { useTranslations } from "next-intl";
+import { statusText, statusTone, TONE_TEXT, type Tone } from "./tones";
 
 /**
  * Status, as a dot and a word.
@@ -32,8 +33,11 @@ export function StatusPill({
   dotOnly?: boolean;
   className?: string;
 }) {
+  // useTranslations, not getTranslations: this renders in server and client
+  // trees alike, and next-intl's hook works in both (it is not async).
+  const t = useTranslations("admin");
   const resolved: Tone = tone ?? statusTone(status);
-  const label = children ?? statusLabel(status);
+  const label = children ?? statusText(t, status);
 
   if (dotOnly) {
     return (

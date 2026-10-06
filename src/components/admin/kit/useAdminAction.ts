@@ -2,7 +2,9 @@
 
 import { useCallback, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useToast } from "@/components/ui/Toast";
+import { useApiError } from "@/lib/useApiError";
 
 /**
  * Every mutation the console makes, through one door.
@@ -17,23 +19,25 @@ import { useToast } from "@/components/ui/Toast";
  *   - a pending flag, so buttons can't be double-fired
  *   - a transient `done` tick for ~1.6 s, so an action that changes nothing
  *     visible still confirms it happened
- *   - server error codes translated to French, with the raw code kept only as
- *     a fallback for something we haven't seen before
+ *   - server error codes translated into the operator's language, with the raw
+ *     code kept only as a fallback for something we haven't seen before
  *   - `router.refresh()` on success, so the server-rendered list re-reads the
  *     database rather than trusting the client's guess about the new state
  */
 
-/** Error codes the admin API returns, in the operator's words. */
-const MESSAGES: Record<string, string> = {
-  auth: "Session expirée. Reconnectez-vous.",
-  forbidden: "Vous n'avez pas les droits pour cette action.",
-  cross_origin_blocked: "Requête bloquée. Rechargez la page et réessayez.",
-  already_claimed: "Un autre admin traite déjà cette ligne.",
-  not_found: "Cette ligne n'existe plus — elle a peut-être été supprimée.",
-  conflict: "L'état a changé depuis le chargement. Rechargez la page.",
-  invalid: "Données invalides.",
-  rate_limited: "Trop de requêtes. Patientez un instant.",
-};
+/** Error codes the admin API returns, worded in `admin.actionErrors.*`. A
+ *  route's own `detail` sentence comes next, then the site-wide `apiErrors`
+ *  codes, then the raw code. */
+const ADMIN_ERROR_CODES = new Set([
+  "auth",
+  "forbidden",
+  "cross_origin_blocked",
+  "already_claimed",
+  "not_found",
+  "conflict",
+  "invalid",
+  "rate_limited",
+]);
 
 export type RunOptions = {
   url: string;
@@ -48,6 +52,8 @@ export type RunOptions = {
 export function useAdminAction() {
   const router = useRouter();
   const { toast } = useToast();
+  const t = useTranslations("admin");
+  const apiError = useApiError();
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(false);
   const [, startTransition] = useTransition();
@@ -70,13 +76,16 @@ export function useAdminAction() {
           .catch(() => ({}));
 
         if (!res.ok) {
-          const known = data.error ? MESSAGES[data.error] : undefined;
-          toast(known ?? data.detail ?? data.error ?? "L'action a échoué.", "error");
+          const known =
+            data.error && ADMIN_ERROR_CODES.has(data.error)
+              ? t(`actionErrors.${data.error}`)
+              : undefined;
+          toast(known ?? apiError(data, data.error ?? t("actionFailed")), "error");
           return false;
         }
 
         onSuccess?.(data);
-        if (success !== null) toast(success ?? "C'est fait.", "success");
+        if (success !== null) toast(success ?? t("actionDone"), "success");
 
         setDone(true);
         if (timer.current) clearTimeout(timer.current);
@@ -87,13 +96,13 @@ export function useAdminAction() {
       } catch {
         // Network-level failure: the request never got an answer, so the row
         // state on screen is unknown rather than unchanged. Say so.
-        toast("Connexion perdue. Vérifiez le réseau et rechargez.", "error");
+        toast(t("connectionLost"), "error");
         return false;
       } finally {
         setPending(false);
       }
     },
-    [pending, router, toast],
+    [pending, router, toast, t, apiError],
   );
 
   return { run, pending, done };

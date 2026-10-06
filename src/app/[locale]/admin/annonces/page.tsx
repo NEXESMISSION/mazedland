@@ -4,6 +4,7 @@
  * This module is an async Server Component — it runs once, per request, on the
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPager } from "@/components/admin/AdminPager";
@@ -12,6 +13,8 @@ import { FullBleed, Toolbar, EmptyState, QueueKeys, type Tab } from "@/component
 import { QueueList, type QueueRow } from "./QueueList";
 import { ListingDetail, type PanelListing } from "./ListingDetail";
 import { formatTND } from "@/lib/utils";
+import { categoryLabel } from "@/lib/i18n";
+import { governorateLabel } from "@/lib/tunisia";
 import { Inbox, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -35,19 +38,11 @@ export const revalidate = 0;
 const PAGE_SIZE = 25;
 const EXPIRING_DAYS = 7;
 
+/** Each tab's label is `adminListings.tabs.<key>`. */
 type TabKey =
   | "pending_review" | "pending_payment" | "published"
   | "expiring" | "expired" | "rejected" | "all";
 
-const TAB_LABEL: Record<TabKey, string> = {
-  pending_review: "À valider",
-  pending_payment: "Paiement attendu",
-  published: "En ligne",
-  expiring: "Expirent bientôt",
-  expired: "Expirées",
-  rejected: "Refusées",
-  all: "Toutes",
-};
 const TAB_ORDER: TabKey[] = [
   "pending_review", "pending_payment", "published", "expiring", "expired", "rejected", "all",
 ];
@@ -88,7 +83,7 @@ const LIST_SELECT = `
   id, title, price, negotiable, price_on_request, governorate, status,
   created_at, published_at, expires_at,   seller_credit_id, fee_payment_id, fee_waived_by, contact_phone,
   seller:profiles!listings_seller_id_fkey (full_name, phone),
-  category:categories (label_fr),
+  category:categories (label_fr, label_ar),
   photos:listing_photos (storage_path, sort_order, is_cover)
 `;
 
@@ -99,9 +94,15 @@ export default async function AdminAnnoncesPage({
 }) {
   const sp = await searchParams;
   const admin = getServiceSupabase();
+  // One binding per line, not a destructured Promise.all: scripts/i18n-check
+  // only sees `const t = await getTranslations(…)`.
+  const locale = await getLocale();
+  const t = await getTranslations("adminListings");
+  const tAdmin = await getTranslations("admin");
+  const tRoot = await getTranslations();
 
   if (!admin) {
-    return <p className="text-[13px] text-muted">Service non configuré.</p>;
+    return <p className="text-[13px] text-muted">{tAdmin("serviceNotConfigured")}</p>;
   }
 
   const tab: TabKey = TAB_ORDER.includes(sp.status as TabKey)
@@ -172,15 +173,15 @@ export default async function AdminAnnoncesPage({
     tally.all += 1;
     if (row.status in tally) tally[row.status as TabKey] += 1;
     if (row.status === "published" && row.expires_at) {
-      const t = new Date(row.expires_at).getTime();
-      if (t >= now && t <= soonMs) tally.expiring += 1;
+      const at = new Date(row.expires_at).getTime();
+      if (at >= now && at <= soonMs) tally.expiring += 1;
     }
   }
 
-  const tabs: Tab[] = TAB_ORDER.map((t) => ({
-    value: t,
-    label: TAB_LABEL[t],
-    count: tally[t],
+  const tabs: Tab[] = TAB_ORDER.map((key) => ({
+    value: key,
+    label: t(`tabs.${key}`),
+    count: tally[key],
   }));
 
   type ListRow = {
@@ -190,7 +191,7 @@ export default async function AdminAnnoncesPage({
     seller_credit_id: string | null; fee_payment_id: string | null;
     fee_waived_by: string | null; contact_phone: string | null;
     seller: { full_name: string | null; phone: string | null } | null;
-    category: { label_fr: string } | null;
+    category: { label_fr: string; label_ar: string | null } | null;
     photos: { storage_path: string; sort_order: number; is_cover: boolean }[] | null;
   };
 
@@ -198,36 +199,41 @@ export default async function AdminAnnoncesPage({
   const total = listRes.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const queueRows: QueueRow[] = rows.map((r) => ({
-    id: r.id,
-    title: r.title,
-    meta: `${r.seller?.full_name ?? "Sans nom"} · ${r.category?.label_fr ?? "—"} · ${r.governorate}`,
-    // Also as separate fields: at full width the queue lays these out as
-    // columns instead of one stretched line (see QueueList).
-    seller: r.seller?.full_name ?? "Sans nom",
-    category: r.category?.label_fr ?? "—",
-    gov: r.governorate,
-    value: r.price_on_request
-      ? "Sur demande"
-      : r.price != null
-        ? `${formatTND(r.price, "fr")} TND`
-        : "—",
-    hint: ageLabel(r.status === "published" ? r.expires_at : r.created_at, r.status),
-    status: r.status,
-    // Flag what needs a human before it can move: an annonce with no phone can
-    // never be published, and one waiting on money is waiting on us to look.
-    flag:
-      r.status === "pending_review" && !r.contact_phone
-        ? "bad"
-        : r.status === "pending_payment"
-          ? "warn"
-          : undefined,
-  }));
+  const queueRows: QueueRow[] = rows.map((r) => {
+    const seller = r.seller?.full_name ?? tAdmin("noName");
+    const category = categoryLabel(r.category, locale) || "—";
+    const gov = governorateLabel(r.governorate, locale);
+    return {
+      id: r.id,
+      title: r.title,
+      meta: `${seller} · ${category} · ${gov}`,
+      // Also as separate fields: at full width the queue lays these out as
+      // columns instead of one stretched line (see QueueList).
+      seller,
+      category,
+      gov,
+      value: r.price_on_request
+        ? t("priceOnRequest")
+        : r.price != null
+          ? `${formatTND(r.price, locale)} ${tRoot("common.tnd")}`
+          : "—",
+      hint: ageLabel(r.status === "published" ? r.expires_at : r.created_at, r.status, t),
+      status: r.status,
+      // Flag what needs a human before it can move: an annonce with no phone can
+      // never be published, and one waiting on money is waiting on us to look.
+      flag:
+        r.status === "pending_review" && !r.contact_phone
+          ? "bad"
+          : r.status === "pending_payment"
+            ? "warn"
+            : undefined,
+    };
+  });
 
   // The open annonce. Fetched only when asked for — the list query has no
   // business carrying every attribute of every row.
   const openId = sp.a ?? null;
-  const detail = openId ? await loadPanel(admin, openId) : null;
+  const detail = openId ? await loadPanel(admin, openId, locale, tRoot) : null;
 
   // Current filters, as a prefix a row can append its own id to.
   const base = new URLSearchParams();
@@ -242,12 +248,12 @@ export default async function AdminAnnoncesPage({
       {/* One header line: what this is, what is filtered, what you can add. */}
       <header className="flex h-12 shrink-0 items-center gap-4 border-b border-border px-4">
         <h1 className="shrink-0 text-[13px] font-semibold tracking-tight text-foreground">
-          Annonces
+          {t("title")}
         </h1>
         <Toolbar
           tabs={tabs}
           defaultTab="pending_review"
-          searchPlaceholder="Référence MZ-00042, titre, téléphone…"
+          searchPlaceholder={t("searchPlaceholder")}
           resetParams={["page", "a"]}
         />
         {/* The admin-side creation form never came across from Auto, so this
@@ -256,7 +262,7 @@ export default async function AdminAnnoncesPage({
             needs. */}
         <Link href="/annonces/nouvelle" className={`${adminBtn("primary", "sm")} shrink-0`}>
           <Plus className="size-3.5" strokeWidth={2.8} />
-          <span className="hidden sm:inline">Créer</span>
+          <span className="hidden sm:inline">{t("create")}</span>
         </Link>
       </header>
 
@@ -282,12 +288,10 @@ export default async function AdminAnnoncesPage({
               <EmptyState
                 Icon={Inbox}
                 tone={q ? "filtered" : "idle"}
-                title={q ? "Aucune annonce ne correspond" : `Rien dans « ${TAB_LABEL[tab]} »`}
-                hint={
-                  q
-                    ? "Essayez un autre terme, ou changez d'onglet."
-                    : "Rien n'attend de décision dans cette file."
+                title={
+                  q ? t("emptyFilteredTitle") : tAdmin("emptyTab", { tab: t(`tabs.${tab}`) })
                 }
+                hint={q ? t("emptyFilteredHint") : t("emptyIdleHint")}
               />
             </div>
           ) : (
@@ -315,20 +319,28 @@ export default async function AdminAnnoncesPage({
   );
 }
 
-/** "il y a 3 j" for what is waiting, "expire dans 5 j" for what is live. */
-function ageLabel(iso: string | null, status: string): string {
+/** "il y a 3 j" for what is waiting, "dans 5 j" for what is live — worded
+ *  by `adminListings.age.*`. */
+function ageLabel(
+  iso: string | null,
+  status: string,
+  t: (key: string, values?: { days: number }) => string,
+): string {
   if (!iso) return "—";
   const diff = new Date(iso).getTime() - Date.now();
   const days = Math.round(Math.abs(diff) / 86_400_000);
   if (status === "published") {
-    if (diff < 0) return "expirée";
-    return days === 0 ? "aujourd'hui" : `dans ${days} j`;
+    if (diff < 0) return t("age.expired");
+    return days === 0 ? t("age.today") : t("age.inDays", { days });
   }
-  if (days === 0) return "aujourd'hui";
-  return `il y a ${days} j`;
+  if (days === 0) return t("age.today");
+  return t("age.daysAgo", { days });
 }
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
+
+/** The root translator — `await getTranslations()`. */
+type RootT = { (key: string): string; has(key: string): boolean };
 
 /**
  * Everything the drawer shows, for one annonce.
@@ -336,8 +348,15 @@ type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
  * The attribute labels are resolved here against `category_attributes` rather
  * than shipped as raw jsonb keys: a moderator reading `boite: auto` has to
  * translate it in their head, and `attributes` holds field keys, not labels.
+ * A field with an `attributes.<field_key>` message reads in the page's
+ * language; any other keeps the label stored on the category.
  */
-async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null> {
+async function loadPanel(
+  admin: Admin,
+  id: string,
+  locale: string,
+  tRoot: RootT,
+): Promise<PanelListing | null> {
   const { data } = await admin
     .from("listings")
     .select(
@@ -348,7 +367,7 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
        seller_attestation_version, seller_attestation_at,
        seller_credit_id, fee_payment_id, fee_waived_by,
        seller:profiles!listings_seller_id_fkey (full_name, phone),
-       category:categories (label_fr, kind),
+       category:categories (label_fr, label_ar, kind),
        photos:listing_photos (storage_path, sort_order, is_cover)`,
     )
     .eq("id", id)
@@ -367,7 +386,7 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
     seller_attestation_version: string | null; seller_attestation_at: string | null;
     seller_credit_id: string | null; fee_payment_id: string | null; fee_waived_by: string | null;
     seller: { full_name: string | null; phone: string | null } | null;
-    category: { label_fr: string; kind: string } | null;
+    category: { label_fr: string; label_ar: string | null; kind: string } | null;
     photos: { storage_path: string; sort_order: number; is_cover: boolean }[] | null;
   };
 
@@ -398,8 +417,16 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
       // Options carry their own display label; a select stored as `auto`
       // should read "Automatique", not "auto".
       const opt = d.options?.find((o) => o.value === String(raw));
-      const value = opt?.label ?? (typeof raw === "boolean" ? (raw ? "Oui" : "Non") : String(raw));
-      return { label: d.label, value: d.unit ? `${value} ${d.unit}` : value };
+      const value =
+        opt?.label ??
+        (typeof raw === "boolean"
+          ? raw
+            ? tRoot("adminListings.yes")
+            : tRoot("adminListings.no")
+          : String(raw));
+      const labelKey = `attributes.${d.field_key}`;
+      const label = tRoot.has(labelKey) ? tRoot(labelKey) : d.label;
+      return { label, value: d.unit ? `${value} ${d.unit}` : value };
     })
     .filter((a): a is { label: string; value: string } => a !== null);
 
@@ -430,9 +457,9 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
     delegation: r.delegation,
     status: r.status,
     rejectionReason: r.rejection_reason,
-    categoryLabel: r.category?.label_fr ?? "—",
+    categoryLabel: categoryLabel(r.category, locale) || "—",
     categoryKind: r.category?.kind ?? "vehicle",
-    sellerName: r.seller?.full_name ?? "Sans nom",
+    sellerName: r.seller?.full_name ?? tRoot("admin.noName"),
     sellerPhone: r.seller?.phone ?? null,
     contactName: r.contact_name,
     contactPhone: r.contact_phone,
