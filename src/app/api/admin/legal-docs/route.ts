@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslator } from "@/lib/i18n/server";
 import type { PropertyType } from "@/lib/types";
 
 const PROPERTY_TYPES: PropertyType[] = [
@@ -26,6 +27,10 @@ type IncomingItem = {
  * any existing row whose id isn't in the incoming list gets deleted, the
  * rest are upserted. Doing it in one route means the editor doesn't need
  * three round-trips for create/update/delete.
+ *
+ * The editor shows `detail` when there is one — the validation errors an admin
+ * can actually hit (a title over 80 characters, a duplicate, too many rows),
+ * written in the console's language. The codes stay as they were.
  */
 export async function PUT(req: NextRequest) {
   const gate = await requireAdmin(req);
@@ -42,8 +47,12 @@ export async function PUT(req: NextRequest) {
   if (!Array.isArray(rawItems)) {
     return NextResponse.json({ error: "invalid_items" }, { status: 400 });
   }
+  const t = await apiTranslator(req, "adminLegalDocs.api");
   if (rawItems.length > 20) {
-    return NextResponse.json({ error: "too_many_items" }, { status: 400 });
+    return NextResponse.json(
+      { error: "too_many_items", detail: t("tooManyItems", { max: 20 }) },
+      { status: 400 },
+    );
   }
 
   const seenLabels = new Set<string>();
@@ -61,10 +70,16 @@ export async function PUT(req: NextRequest) {
     }
     const label = typeof raw.label === "string" ? raw.label.trim() : "";
     if (!label || label.length > 80) {
-      return NextResponse.json({ error: "invalid_label", index: i }, { status: 400 });
+      return NextResponse.json(
+        { error: "invalid_label", index: i, detail: t("invalidLabel", { line: i + 1, max: 80 }) },
+        { status: 400 },
+      );
     }
     if (seenLabels.has(label.toLowerCase())) {
-      return NextResponse.json({ error: "duplicate_label", index: i, label }, { status: 400 });
+      return NextResponse.json(
+        { error: "duplicate_label", index: i, label, detail: t("duplicateLabel", { label }) },
+        { status: 400 },
+      );
     }
     seenLabels.add(label.toLowerCase());
 

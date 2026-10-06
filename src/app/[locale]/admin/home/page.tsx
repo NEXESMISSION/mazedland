@@ -4,6 +4,7 @@
  * This module is an async Server Component — it runs once, per request, on the
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
+import { getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { HomeControlClient, type HomeRow } from "./HomeControlClient";
@@ -71,24 +72,19 @@ export default async function AdminHomePage({
   // Featured first, then the rest.
   rows.sort((a, b) => Number(b.featured) - Number(a.featured));
   const activeCount = rows.filter((r) => r.featured).length;
+  const t = await getTranslations("adminHome");
 
   return (
     <div>
       <SiteTabs />
       <AdminPageHeader
-        eyebrow="Vitrine d'accueil"
-        title="Accueil"
-        description={
-          <>
-            Contrôlez les annonces mises en avant (accueil, top recherche,
-            bannière). « Payé » = via une option achetée, « Manuel » = ajouté ici.
-            Vous pouvez mettre n&apos;importe quelle annonce publiée en vedette.
-          </>
-        }
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         actions={
           activeCount > 0 ? (
             <span className="shrink-0 rounded-full bg-gold-faint px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-gold-bright">
-              {activeCount} en vedette
+              {t("featuredCount", { count: activeCount })}
             </span>
           ) : undefined
         }
@@ -98,18 +94,18 @@ export default async function AdminHomePage({
           (the list is capped at 150, so search is the way to reach the rest). */}
       <form method="get" role="search" className="mt-4 flex items-center gap-2">
         <div className="relative max-w-sm flex-1">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" strokeWidth={2} />
+          <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" strokeWidth={2} />
           <input
             type="search"
             name="q"
             defaultValue={q}
-            placeholder="Rechercher une annonce (titre ou ville)…"
-            className="h-9 w-full rounded-lg border border-border bg-surface pl-8 pr-3 text-[12px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
+            placeholder={t("searchPlaceholder")}
+            className="h-9 w-full rounded-lg border border-border bg-surface ps-8 pe-3 text-[12px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
           />
         </div>
         {q && (
           <span className="mazed-tabular text-[12px] text-muted">
-            {rows.length} résultat{rows.length > 1 ? "s" : ""}
+            {t("results", { count: rows.length })}
           </span>
         )}
       </form>
