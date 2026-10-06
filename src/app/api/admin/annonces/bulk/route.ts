@@ -119,6 +119,7 @@ export async function POST(req: NextRequest) {
           p_title: "Votre annonce est en ligne",
           p_body: `« ${r.title} » est visible jusqu'au ${expires.toLocaleDateString("fr-FR")}.`,
           p_link: `/annonces/${r.id}`,
+          p_payload: { vars: { title: r.title, expires_at: expires.toISOString() } },
         })
         .then(() => {}, () => {});
     }

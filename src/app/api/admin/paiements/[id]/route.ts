@@ -203,6 +203,7 @@ export async function POST(
           p_title: "Reçu refusé",
           p_body: `Motif : ${reason}. Vous pouvez en envoyer un nouveau.`,
           p_link: "/account/payments",
+          p_payload: { vars: { reason } },
         })
         .then(() => {}, () => {});
     }

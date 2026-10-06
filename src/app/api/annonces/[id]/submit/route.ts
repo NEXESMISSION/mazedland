@@ -119,6 +119,7 @@ export async function POST(
           p_title: "Annonce envoyée à la vérification",
           p_body: `« ${listing.title} » est en cours de vérification. Les frais de publication étaient déjà réglés.`,
           p_link: "/account/listings",
+          p_payload: { vars: { title: listing.title, variant: "paid" } },
         })
         .then(() => {}, () => {});
 
@@ -147,6 +148,7 @@ export async function POST(
         p_title: "Annonce envoyée à la vérification",
         p_body: `« ${listing.title} » est en cours de vérification. Il vous reste ${credited.remaining} publication(s).`,
         p_link: "/account/listings",
+        p_payload: { vars: { title: listing.title, variant: "credit", remaining: credited.remaining } },
       })
       .then(() => {}, () => {});
 
@@ -205,6 +207,7 @@ export async function POST(
         p_title: "Annonce envoyée à la vérification",
         p_body: `« ${listing.title} » est en cours de vérification. La publication est gratuite dans cette catégorie.`,
         p_link: "/account/listings",
+        p_payload: { vars: { title: listing.title, variant: "free" } },
       })
       .then(() => {}, () => {});
 

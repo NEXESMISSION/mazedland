@@ -24,14 +24,22 @@ export function LocaleSwitcher({ className = "" }: { className?: string }) {
   return (
     <button
       type="button"
-      onClick={() =>
+      onClick={() => {
+        // Remember it on the profile too, so SMS and e-mails follow. A visitor
+        // who is not signed in gets a 401 here, which is fine to ignore.
+        fetch("/api/account/language", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ language: target }),
+          keepalive: true,
+        }).catch(() => {});
         startTransition(() => {
           // Read at click time: useSearchParams would force a Suspense
           // boundary on every statically rendered page that shows the bar.
           const query = window.location.search;
           router.replace(`${pathname}${query}`, { locale: target });
-        })
-      }
+        });
+      }}
       disabled={pending}
       aria-label={t("switchTo")}
       title={t("switchTo")}

@@ -59,6 +59,33 @@ describe("renderNotification", () => {
     expect(renderNotification(n, tr("fr"), "fr").title).toBe("Paiement validé");
   });
 
+  it("renders the kinds the API routes produce", () => {
+    const credit = {
+      kind: "listing_submitted",
+      title: "x",
+      body: "x",
+      payload: { vars: { title: "Villa", variant: "credit", remaining: 4 } },
+    };
+    expect(renderNotification(credit, tr("fr"), "fr").body).toBe(
+      "« Villa » est en cours de vérification. Il vous reste 4 publications.",
+    );
+    expect(renderNotification(credit, tr("ar"), "ar").body).toBe("« Villa » قيد المراجعة. بقاتلك 4 عمليات نشر.");
+
+    const published = {
+      kind: "listing_published",
+      title: "x",
+      body: "x",
+      payload: { vars: { title: "Villa", expires_at: "2026-11-05T09:00:00.000Z" } },
+    };
+    expect(renderNotification(published, tr("fr"), "fr").body).toBe("« Villa » est visible jusqu'au 05/11/2026.");
+
+    const badge = { kind: "badge_granted", title: "x", body: "x", payload: { vars: {} } };
+    expect(renderNotification(badge, tr("ar"), "ar").title).toBe("شارة البائع الموثّق");
+
+    const pack = { kind: "pack_purchased", title: "x", body: "x", payload: { vars: { quota: 1 } } };
+    expect(renderNotification(pack, tr("fr"), "fr").body).toBe("1 publication ajoutée à votre compte.");
+  });
+
   it("keeps the stored text for old rows and kinds without a template", () => {
     const old = { kind: "listing_expired", title: "Annonce expirée", body: "« A » n'est plus visible.", payload: {} };
     expect(renderNotification(old, tr("ar"), "ar")).toEqual({ title: old.title, body: old.body });

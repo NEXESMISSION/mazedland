@@ -5,6 +5,9 @@ import { sendEmail, isEmailConfigured } from "@/lib/email";
 import { log } from "@/lib/log";
 import { fail } from "@/lib/http/errors";
 import { EMAIL_KINDS } from "@/lib/email-kinds";
+import { getTranslations } from "next-intl/server";
+import { renderNotification } from "@/lib/notifications/render";
+import { asAppLocale, isRtl, type AppLocale } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 // Give the worker real headroom: a Resend latency spike must not kill the
@@ -81,17 +84,27 @@ function escapeHtml(s: string): string {
  * are the same values globals.css resolves to: --gold-deep for the wordmark,
  * --foreground for the heading, --border for the hairline.
  */
-function renderHtml(title: string, body: string, href: string | null): string {
+function renderHtml(
+  title: string,
+  body: string,
+  href: string | null,
+  lang: AppLocale,
+  words: { cta: string; footer: string },
+): string {
   const cta = href
-    ? `<a href="${href}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#18181b;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px">Voir sur Mazed Immo</a>`
+    ? `<a href="${href}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#18181b;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px">${escapeHtml(words.cta)}</a>`
     : "";
-  return `<!doctype html><html lang="fr"><body style="margin:0;background:#f4f4f5;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  // lang + dir on <html> so a mail client lays an Arabic e-mail out right to
+  // left; Tahoma is on every desktop client and draws Arabic cleanly.
+  const dir = isRtl(lang) ? "rtl" : "ltr";
+  const fonts = isRtl(lang) ? "Tahoma,Segoe UI,Arial,sans-serif" : "-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif";
+  return `<!doctype html><html lang="${lang}" dir="${dir}"><body style="margin:0;background:#f4f4f5;padding:24px;font-family:${fonts}">
     <div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e4e4e7;border-radius:16px;padding:28px">
       <div style="font-size:18px;font-weight:800;color:#5d420b;letter-spacing:.5px">Mazed Immo</div>
       <h1 style="font-size:18px;color:#18181b;margin:18px 0 8px">${escapeHtml(title)}</h1>
       <p style="font-size:14px;line-height:1.6;color:#52525b;margin:0">${escapeHtml(body)}</p>
       ${cta}
-      <p style="font-size:11px;color:#71717a;margin:24px 0 0">Vous recevez cet e-mail car vous avez un compte sur Mazed Immo.</p>
+      <p style="font-size:11px;color:#71717a;margin:24px 0 0">${escapeHtml(words.footer)}</p>
     </div></body></html>`;
 }
 
@@ -163,6 +176,7 @@ async function run(req: NextRequest) {
     title: string | null;
     body: string | null;
     link: string | null;
+    payload: unknown;
     email_attempts: number | null;
   };
 
@@ -177,14 +191,22 @@ async function run(req: NextRequest) {
       return "skipped";
     }
 
-    const title = row.title ?? "Notification Mazed Immo";
-    const body = row.body ?? "";
-    const href = row.link ? `${base}/fr${row.link.startsWith("/") ? "" : "/"}${row.link}` : null;
+    // In the recipient's language, rendered from the values the producer stored.
+    const lang = langByUser.get(row.user_id) ?? "fr";
+    const words = tMail[lang];
+    const said = renderNotification(
+      { kind: row.kind, title: row.title ?? words("fallbackSubject"), body: row.body, payload: row.payload },
+      tNotif[lang],
+      lang,
+    );
+    const title = said.title;
+    const body = said.body ?? "";
+    const href = row.link ? `${base}/${lang}${row.link.startsWith("/") ? "" : "/"}${row.link}` : null;
 
     const result = await sendEmail({
       to,
       subject: title,
-      html: renderHtml(title, body, href),
+      html: renderHtml(title, body, href, lang, { cta: words("cta"), footer: words("footer") }),
       text: href ? `${body}\n\n${href}` : body,
     });
 
@@ -206,6 +228,23 @@ async function run(req: NextRequest) {
   // across chunks. Sends fan out CONCURRENCY-wide so one slow Resend call
   // can't serialize the whole batch into a timeout.
   const all = (rows ?? []) as Row[];
+
+  // Each recipient's language (profiles.language), resolved once for the batch.
+  const langByUser = new Map<string, AppLocale>();
+  const userIds = Array.from(new Set(all.map((r) => r.user_id)));
+  if (userIds.length) {
+    const { data: profs } = await db.from("profiles").select("id, language").in("id", userIds);
+    for (const p of profs ?? []) langByUser.set(p.id as string, asAppLocale(p.language as string | null));
+  }
+  const [tNotifFr, tNotifAr, tMailFr, tMailAr] = await Promise.all([
+    getTranslations({ locale: "fr", namespace: "notifications" }),
+    getTranslations({ locale: "ar", namespace: "notifications" }),
+    getTranslations({ locale: "fr", namespace: "notificationMail" }),
+    getTranslations({ locale: "ar", namespace: "notificationMail" }),
+  ]);
+  const tNotif = { fr: tNotifFr, ar: tNotifAr };
+  const tMail = { fr: tMailFr, ar: tMailAr };
+
   for (let i = 0; i < all.length; i += CONCURRENCY) {
     const outcomes = await Promise.all(all.slice(i, i + CONCURRENCY).map(processRow));
     for (const o of outcomes) {
@@ -232,6 +271,7 @@ async function run(req: NextRequest) {
           `${MAX_ATTEMPTS} tentatives et ne seront plus réessayés. Vérifiez le fournisseur d'e-mail ` +
           `et contactez les utilisateurs concernés.`,
         p_link: "/admin",
+        p_payload: { vars: { count: deadLettered, attempts: MAX_ATTEMPTS } },
       })
       .then(() => {}, () => {});
   }

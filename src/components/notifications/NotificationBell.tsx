@@ -51,6 +51,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useSessionCookie } from "@/lib/useSessionCookie";
 import { useToast } from "@/components/ui/Toast";
 import { resolveNotificationLink } from "@/lib/notifications/target";
+import { renderNotification } from "@/lib/notifications/render";
 import { useHydrated } from "@/lib/useHydrated";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
 
@@ -705,7 +706,11 @@ function NotificationRow({
   onClose: () => void;
 }) {
   const t = useTranslations("notificationsUi");
+  const tn = useTranslations("notifications");
   const locale = useLocale();
+  // Said in the language the reader has open, from the values the producer
+  // stored; rows from before payloads existed keep their stored text.
+  const text = renderNotification(item, tn, locale);
   const unread = !item.read_at;
   const { Icon, tone } = iconForKind(item.kind);
   const isUrgent = unread && URGENT_KINDS.has(item.kind);
@@ -725,7 +730,7 @@ function NotificationRow({
           {unread && (
             <span aria-hidden className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--gold)]" />
           )}
-          {/* dir="auto": titles and bodies are shown as stored, so a French
+          {/* dir="auto": an old row is shown as stored, so a French
               notification keeps its own direction on the Arabic site. */}
           <span
             dir="auto"
@@ -733,7 +738,7 @@ function NotificationRow({
               unread ? "font-extrabold text-foreground" : "font-semibold text-[var(--foreground-muted)]"
             }`}
           >
-            {item.title}
+            {text.title}
           </span>
           {isUrgent && (
             <span className="mt-0.5 shrink-0 rounded-full bg-red-600 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-white leading-none">
@@ -741,14 +746,14 @@ function NotificationRow({
             </span>
           )}
         </span>
-        {item.body && (
+        {text.body && (
           <span
             dir="auto"
             className={`mt-1 block text-[12px] leading-snug line-clamp-2 ${
               unread ? "text-foreground/80" : "text-[var(--foreground-muted)]"
             }`}
           >
-            {item.body}
+            {text.body}
           </span>
         )}
         <span className="mt-1.5 block text-[10px] font-medium text-[var(--foreground-muted)]">

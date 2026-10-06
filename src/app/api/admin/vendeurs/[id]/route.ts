@@ -171,6 +171,7 @@ export async function POST(
         p_title: "Forfait crédité",
         p_body: `${quota} publication${quota === 1 ? "" : "s"} ajoutée${quota === 1 ? "" : "s"} à votre compte.`,
         p_link: "/account/listings",
+        p_payload: { vars: { quota } },
       })
       .then(() => {}, () => {});
 
@@ -208,6 +209,7 @@ export async function POST(
         p_title: "Badge vendeur vérifié",
         p_body: "Votre badge est actif. Il apparaît sur toutes vos annonces.",
         p_link: "/account",
+        p_payload: { vars: {} },
       })
       .then(() => {}, () => {});
 

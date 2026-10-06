@@ -5,6 +5,9 @@ import { sendSms, isSmsConfigured, toSmsText } from "@/lib/winsms";
 import { log } from "@/lib/log";
 import { fail } from "@/lib/http/errors";
 import { SMS_KINDS, CAPPED_KINDS } from "@/lib/sms-kinds";
+import { getTranslations } from "next-intl/server";
+import { renderNotification } from "@/lib/notifications/render";
+import { asAppLocale, type AppLocale } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -103,6 +106,7 @@ async function run(req: NextRequest) {
     title: string | null;
     body: string | null;
     link: string | null;
+    payload: unknown;
     sms_attempts: number | null;
   };
   const all = (rows ?? []) as Row[];
@@ -112,10 +116,19 @@ async function run(req: NextRequest) {
   // row, not the phone — so one IN(...) query, mapped by user.
   const userIds = Array.from(new Set(all.map((r) => r.user_id)));
   const phoneByUser = new Map<string, string>();
+  // The language each SMS goes out in: the recipient's, not the site default.
+  const langByUser = new Map<string, AppLocale>();
   if (userIds.length) {
-    const { data: profs } = await db.from("profiles").select("id, phone").in("id", userIds);
-    for (const p of profs ?? []) if (p.phone) phoneByUser.set(p.id as string, p.phone as string);
+    const { data: profs } = await db.from("profiles").select("id, phone, language").in("id", userIds);
+    for (const p of profs ?? []) {
+      if (p.phone) phoneByUser.set(p.id as string, p.phone as string);
+      langByUser.set(p.id as string, asAppLocale(p.language as string | null));
+    }
   }
+  const tNotif = {
+    fr: await getTranslations({ locale: "fr", namespace: "notifications" }),
+    ar: await getTranslations({ locale: "ar", namespace: "notifications" }),
+  };
 
   const base = siteUrl();
   let sent = 0;
@@ -159,8 +172,14 @@ async function run(req: NextRequest) {
       }
     }
 
-    const url = row.link ? `${base}/fr${row.link.startsWith("/") ? "" : "/"}${row.link}` : null;
-    const { text, unicode } = toSmsText({ brand: BRAND, title: row.title ?? BRAND, body: row.body, url });
+    const lang = langByUser.get(row.user_id) ?? "fr";
+    const said = renderNotification(
+      { kind: row.kind, title: row.title ?? BRAND, body: row.body, payload: row.payload },
+      tNotif[lang],
+      lang,
+    );
+    const url = row.link ? `${base}/${lang}${row.link.startsWith("/") ? "" : "/"}${row.link}` : null;
+    const { text, unicode } = toSmsText({ brand: BRAND, title: said.title, body: said.body, url });
     const result = await sendSms({ to: phone, sms: text, unicode });
 
     if (result.ok) {
@@ -197,6 +216,7 @@ async function run(req: NextRequest) {
           `${deadLettered} SMS important(s) (publication / paiement) ont échoué après ` +
           `${MAX_ATTEMPTS} tentatives et ne seront plus réessayés. Vérifiez le crédit et le fournisseur WinSMS.`,
         p_link: "/admin",
+        p_payload: { vars: { count: deadLettered, attempts: MAX_ATTEMPTS } },
       })
       .then(() => {}, () => {});
   }

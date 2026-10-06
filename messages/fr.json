@@ -840,6 +840,10 @@
       "captured": {
         "title": "Paiement validé",
         "body": "« {title} » passe à la vérification. Vous serez prévenu dès sa mise en ligne."
+      },
+      "recorded": {
+        "title": "Paiement enregistré",
+        "body": "« {title} » passe en vérification."
       }
     },
     "listing_payment_rejected": {
@@ -874,6 +878,48 @@
       "renewal": "renouvellement",
       "subscription": "abonnement",
       "other": "paiement"
+    },
+    "listing_submitted": {
+      "paid": {
+        "title": "Annonce envoyée à la vérification",
+        "body": "« {title} » est en cours de vérification. Les frais de publication étaient déjà réglés."
+      },
+      "credit": {
+        "title": "Annonce envoyée à la vérification",
+        "body": "« {title} » est en cours de vérification. {remaining, plural, one {Il vous reste # publication.} other {Il vous reste # publications.}}"
+      },
+      "free": {
+        "title": "Annonce envoyée à la vérification",
+        "body": "« {title} » est en cours de vérification. La publication est gratuite dans cette catégorie."
+      }
+    },
+    "listing_published": {
+      "title": "Votre annonce est en ligne",
+      "body": "« {title} » est visible jusqu'au {fullDate}."
+    },
+    "listing_rejected": {
+      "title": "Annonce à corriger",
+      "body": "« {title} » n'a pas été publiée. Motif : {reason}"
+    },
+    "payment_rejected": {
+      "title": "Reçu refusé",
+      "body": "Motif : {reason}. Vous pouvez en envoyer un nouveau."
+    },
+    "pack_purchased": {
+      "title": "Forfait crédité",
+      "body": "{quota, plural, one {# publication ajoutée à votre compte.} other {# publications ajoutées à votre compte.}}"
+    },
+    "badge_granted": {
+      "title": "Badge vendeur vérifié",
+      "body": "Votre badge est actif. Il apparaît sur toutes vos annonces."
+    },
+    "admin_sms_deadletter": {
+      "title": "SMS non délivrés",
+      "body": "{count} SMS important(s) (publication / paiement) ont échoué après {attempts} tentatives et ne seront plus réessayés. Vérifiez le crédit et le fournisseur WinSMS."
+    },
+    "admin_email_deadletter": {
+      "title": "E-mails non délivrés",
+      "body": "{count} e-mail(s) critiques (publication / paiement) ont échoué après {attempts} tentatives et ne seront plus réessayés. Vérifiez le fournisseur d'e-mail et contactez les utilisateurs concernés."
     }
   },
   "publish": {
@@ -2376,5 +2422,13 @@
       "packNoQuota": "Ce forfait n'accorde aucune publication.",
       "revokeReasonRequired": "Indiquez pourquoi le badge est retiré."
     }
+  },
+  "notificationMail": {
+    "cta": "Voir sur Mazed Immo",
+    "footer": "Vous recevez cet e-mail car vous avez un compte sur Mazed Immo.",
+    "fallbackSubject": "Notification Mazed Immo"
+  },
+  "sms": {
+    "otp": "Votre code de vérification Mazed Immo est : {code}. Valable 10 minutes."
   }
 }

@@ -162,6 +162,7 @@ export async function POST(
         p_title: "Paiement enregistré",
         p_body: `« ${listing.title} » passe en vérification.`,
         p_link: "/account/listings",
+        p_payload: { vars: { title: listing.title, variant: "recorded" } },
       })
       .then(() => {}, () => {});
 
@@ -212,6 +213,7 @@ export async function POST(
         p_title: "Votre annonce est en ligne",
         p_body: `« ${listing.title} » est visible jusqu'au ${expires.toLocaleDateString("fr-FR")}.`,
         p_link: `/annonces/${id}`,
+        p_payload: { vars: { title: listing.title, expires_at: expires.toISOString() } },
       })
       .then(() => {}, () => {});
 
@@ -270,6 +272,7 @@ export async function POST(
           `« ${listing.title} » n'a pas été publiée. Motif : ${reason}` +
           (creditReturned ? " Votre publication vous a été rendue." : ""),
         p_link: "/account/listings",
+        p_payload: { vars: { title: listing.title, reason } },
       })
       .then(() => {}, () => {});
 
