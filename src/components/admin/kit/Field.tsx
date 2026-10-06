@@ -67,12 +67,17 @@ export function TextField({
   onChange,
   placeholder,
   type = "text",
+  dir,
   ...rest
 }: Common & {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   type?: "text" | "tel" | "email" | "url";
+  /** Defaults to "auto" for text — the box follows the language typed into it
+   *  (an Arabic name on the French console, French on the Arabic one) — and
+   *  to "ltr" for phone numbers, e-mails and URLs. */
+  dir?: "auto" | "ltr" | "rtl";
 }) {
   const id = useId();
   return (
@@ -80,6 +85,7 @@ export function TextField({
       <input
         id={id}
         type={type}
+        dir={dir ?? (type === "text" ? "auto" : "ltr")}
         value={value}
         disabled={rest.disabled}
         required={rest.required}
@@ -96,18 +102,22 @@ export function TextareaField({
   onChange,
   rows = 4,
   placeholder,
+  dir = "auto",
   ...rest
 }: Common & {
   value: string;
   onChange: (v: string) => void;
   rows?: number;
   placeholder?: string;
+  /** "auto": the box follows the language typed into it. */
+  dir?: "auto" | "ltr" | "rtl";
 }) {
   const id = useId();
   return (
     <Shell id={id} {...rest}>
       <textarea
         id={id}
+        dir={dir}
         value={value}
         rows={rows}
         disabled={rest.disabled}

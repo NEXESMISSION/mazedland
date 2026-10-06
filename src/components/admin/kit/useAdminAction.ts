@@ -76,11 +76,15 @@ export function useAdminAction() {
           .catch(() => ({}));
 
         if (!res.ok) {
+          // A route's own sentence is the most specific thing to say ("Rôle
+          // inconnu." beats "Données invalides."); a bare code is not one.
+          const detail = typeof data.detail === "string" ? data.detail.trim() : "";
+          const sentence = detail && !/^[a-z0-9_.]+$/.test(detail) ? detail : undefined;
           const known =
             data.error && ADMIN_ERROR_CODES.has(data.error)
               ? t(`actionErrors.${data.error}`)
               : undefined;
-          toast(known ?? apiError(data, data.error ?? t("actionFailed")), "error");
+          toast(sentence ?? known ?? apiError(data, data.error ?? t("actionFailed")), "error");
           return false;
         }
 
