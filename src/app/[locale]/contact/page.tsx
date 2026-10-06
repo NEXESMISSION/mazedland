@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LegalPage } from "@/components/legal/LegalPage";
+import { Ltr } from "@/components/ui/Ltr";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Contact — Mazed Immo",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "contact" });
+  return { title: t("metaTitle") };
+}
 
 // Pure static content — prerender at build and serve from the edge CDN.
 export const dynamic = "force-static";
@@ -29,31 +37,50 @@ const CONTACT_PHONE = process.env.NEXT_PUBLIC_CONTACT_PHONE?.trim();
 /** tel: wants digits and a leading +, not the spaces that make it readable. */
 const telHref = (v: string) => `tel:${v.replace(/[^\d+]/g, "")}`;
 
-const ITEMS = [
+/**
+ * Labels are message keys under `contact`, translated at render. A row's
+ * value is either the env-provided literal (`value`, shown as-is and kept
+ * left-to-right) or a message key (`valueKey`).
+ */
+type Item = {
+  Icon: typeof Mail;
+  labelKey: "email" | "phone" | "address" | "hours";
+  value?: string;
+  valueKey?: "addressValue" | "hoursValue";
+  href: string | null;
+};
+
+const ITEMS: Item[] = [
   ...(CONTACT_EMAIL
-    ? [{ Icon: Mail, label: "E-mail", value: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` }]
+    ? [{ Icon: Mail, labelKey: "email", value: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` } satisfies Item]
     : []),
   ...(CONTACT_PHONE
-    ? [{ Icon: Phone, label: "Téléphone", value: CONTACT_PHONE, href: telHref(CONTACT_PHONE) }]
+    ? [{ Icon: Phone, labelKey: "phone", value: CONTACT_PHONE, href: telHref(CONTACT_PHONE) } satisfies Item]
     : []),
-  { Icon: MapPin, label: "Adresse", value: "Sfax, Tunisie", href: null },
-  { Icon: Clock, label: "Horaires", value: "Lun – Ven, 9h – 17h", href: null },
+  { Icon: MapPin, labelKey: "address", valueKey: "addressValue", href: null },
+  { Icon: Clock, labelKey: "hours", valueKey: "hoursValue", href: null },
 ];
 
 const HAS_CHANNEL = Boolean(CONTACT_EMAIL || CONTACT_PHONE);
 
-export default function ContactPage() {
+export default async function ContactPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  // Static rendering with next-intl: the page must set the locale itself
+  // (Next can render it apart from the layout) before any translation call.
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations("contact");
   return (
-    <LegalPage eyebrow="Aide" title="Contactez-nous">
+    <LegalPage eyebrow={t("eyebrow")} title={t("title")}>
       <p className="text-[13.5px] leading-relaxed text-foreground/80">
-        Une question sur une annonce, un paiement ou votre compte ? Notre équipe
-        est là pour vous aider.
+        {t("intro")}
       </p>
       {!HAS_CHANNEL && (
         <p className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[12.5px] leading-relaxed text-muted ring-1 ring-border">
-          Nos coordonnées téléphonique et e-mail sont en cours de publication.
-          En attendant, chaque décision sur vos annonces et vos paiements vous
-          est notifiée dans l&apos;application et par SMS.
+          {t("pending")}
         </p>
       )}
       <ul className="mt-5 space-y-2.5">
@@ -64,15 +91,17 @@ export default function ContactPage() {
                 <it.Icon className="size-4.5" strokeWidth={2} />
               </span>
               <div className="min-w-0">
-                <div className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted">
-                  {it.label}
+                <div className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted rtl:tracking-normal">
+                  {t(it.labelKey)}
                 </div>
-                <div className="mt-0.5 text-[14px] font-bold text-foreground">{it.value}</div>
+                <div className="mt-0.5 text-[14px] font-bold text-foreground">
+                  {it.valueKey ? t(it.valueKey) : <Ltr>{it.value}</Ltr>}
+                </div>
               </div>
             </>
           );
           return (
-            <li key={it.label}>
+            <li key={it.labelKey}>
               {it.href ? (
                 <a
                   href={it.href}

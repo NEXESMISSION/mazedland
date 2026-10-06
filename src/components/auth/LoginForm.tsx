@@ -68,7 +68,7 @@ export function LoginForm() {
     }
     const phone = normalizeE164(dialCode, phoneNumber);
     if (!phone) {
-      setError("Numéro invalide.");
+      setError(t("auth.errors.invalidNumber"));
       return;
     }
     startTransition(async () => {
@@ -87,19 +87,17 @@ export function LoginForm() {
         // per IP / 5 min). Calling that « identifiants invalides » sends people
         // to reset a password that was right.
         if (res.status === 429) {
-          setError("Trop de tentatives. Réessayez dans quelques minutes.");
+          setError(t("auth.errors.tooManyAttemptsMinutes"));
           return;
         }
         if (!data.ok) {
           // Generic wording — never reveals whether the phone is the problem
           // or the password (no account-enumeration signal).
-          setError("Identifiants invalides. Vérifiez le numéro et le mot de passe.");
+          setError(t("auth.errors.invalidCredentials"));
           return;
         }
       } catch {
-        setError(
-          "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
-        );
+        setError(t("auth.errors.serverUnreachableCheck"));
         return;
       }
       window.location.assign(destination);
@@ -109,7 +107,7 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <label className="block">
-        <span className="mazed-eyebrow text-[10px]">Téléphone</span>
+        <span className="mazed-eyebrow text-[10px]">{t("auth.fields.phone")}</span>
         <PhoneInput
           dialCode={dialCode}
           onDialCodeChange={setDialCode}
@@ -120,7 +118,7 @@ export function LoginForm() {
       </label>
 
       <Field
-        label="Mot de passe"
+        label={t("auth.fields.password")}
         type="password"
         value={password}
         onChange={setPassword}
@@ -136,7 +134,7 @@ export function LoginForm() {
         className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
         {isPending ? (
-          <><Loader2 className="inline size-4 animate-spin" /> Connexion…</>
+          <><Loader2 className="inline size-4 animate-spin" /> {t("auth.login.submitting")}</>
         ) : (
           t("nav.login")
         )}

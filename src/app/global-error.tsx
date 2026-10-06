@@ -8,6 +8,28 @@ import { useEffect } from "react";
  * it replaces the root layout. Kept dependency-free (no intl, no design
  * tokens guaranteed) so it can't fail to render.
  */
+const BLOCK: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: "0.75rem",
+  width: "100%",
+  maxWidth: 360,
+};
+
+const BUTTON: React.CSSProperties = {
+  height: 44,
+  padding: "0 24px",
+  borderRadius: 999,
+  border: "none",
+  background: "#18181b",
+  color: "#fff",
+  fontSize: 13,
+  fontWeight: 700,
+  fontFamily: "inherit",
+  cursor: "pointer",
+};
+
 export default function GlobalError({
   error,
   reset,
@@ -43,7 +65,10 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html lang="fr">
+    // No intl provider up here and no way to know the reader's language (the
+    // [locale] layout is what failed), so — like the root not-found page — it
+    // says it in French and in Arabic, each block with its own retry button.
+    <html lang="fr" dir="ltr">
       <body
         style={{
           margin: 0,
@@ -60,35 +85,39 @@ export default function GlobalError({
           color: "#18181b",
         }}
       >
-        <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>
-          Une erreur est survenue
-        </h1>
-        <p style={{ fontSize: 13, opacity: 0.7, maxWidth: 360, margin: 0 }}>
-          L&apos;application a rencontré un problème inattendu. Réessayez ; si
-          cela persiste, signalez-le à l&apos;équipe.
-        </p>
+        <section style={BLOCK}>
+          <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>
+            Une erreur est survenue
+          </h1>
+          <p style={{ fontSize: 13, opacity: 0.7, maxWidth: 360, margin: 0 }}>
+            L&apos;application a rencontré un problème inattendu. Réessayez ; si
+            cela persiste, signalez-le à l&apos;équipe.
+          </p>
+          <button type="button" onClick={reset} style={BUTTON}>
+            Réessayer
+          </button>
+        </section>
+
+        <section
+          lang="ar"
+          dir="rtl"
+          style={{ ...BLOCK, borderTop: "1px solid #e4e4e7", paddingTop: "1.5rem", marginTop: "0.5rem" }}
+        >
+          <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>صار مشكل</h2>
+          <p style={{ fontSize: 13, opacity: 0.7, maxWidth: 360, margin: 0 }}>
+            تعرّض التطبيق لمشكلة غير متوقّعة. أعد المحاولة؛ وإذا استمرّت المشكلة،
+            أبلغ الفريق بها.
+          </p>
+          <button type="button" onClick={reset} style={BUTTON}>
+            عاود جرّب
+          </button>
+        </section>
+
         {error?.digest && (
-          <p style={{ fontSize: 10, opacity: 0.5, fontFamily: "monospace" }}>
+          <p style={{ fontSize: 10, opacity: 0.5, fontFamily: "monospace", margin: 0 }}>
             ref · {error.digest}
           </p>
         )}
-        <button
-          type="button"
-          onClick={reset}
-          style={{
-            height: 44,
-            padding: "0 24px",
-            borderRadius: 999,
-            border: "none",
-            background: "#18181b",
-            color: "#fff",
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          Réessayer
-        </button>
       </body>
     </html>
   );
