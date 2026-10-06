@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { coverPhoto } from "@/lib/listingCover";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatNumber, formatTND } from "@/lib/utils";
 import { searchTokens } from "@/lib/search";
 import { PRICE_BUCKETS, TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
+import { categoryLabel } from "@/lib/i18n";
+import { governorateLabel } from "@/lib/tunisia";
 import { ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, Wallet, X } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -60,20 +62,26 @@ type Row = {
   governorate: string;
   attributes: Record<string, unknown> | null;
   published_at: string | null;
-  category: { label_fr: string; kind: string } | { label_fr: string; kind: string }[] | null;
+  category:
+    | { label_fr: string; label_ar: string | null; kind: string }
+    | { label_fr: string; label_ar: string | null; kind: string }[]
+    | null;
   photos: { storage_path: string; sort_order: number }[] | null;
 };
 
-type Cat = { id: string; slug: string; label_fr: string; kind: string; parent_id: string | null };
+type Cat = {
+  id: string;
+  slug: string;
+  label_fr: string;
+  label_ar: string | null;
+  kind: string;
+  parent_id: string | null;
+};
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
 
-const SORTS = [
-  { key: "recent", label: "Plus récentes" },
-  { key: "cheap", label: "Prix croissant" },
-  { key: "dear", label: "Prix décroissant" },
-  { key: "big", label: "Surface" },
-] as const;
+/** Sort keys; the chip text is `catalogue.sort.<key>`. */
+const SORTS = ["recent", "cheap", "dear", "big"] as const;
 
 /** Surface is the one number every property is compared on. */
 function surfaceOf(a: Record<string, unknown> | null): number | null {
@@ -82,13 +90,15 @@ function surfaceOf(a: Record<string, unknown> | null): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-function specLine(r: Row): string[] {
+type CatalogueT = Awaited<ReturnType<typeof getTranslations<"catalogue">>>;
+
+function specLine(r: Row, t: CatalogueT, locale: string): string[] {
   const a = (r.attributes ?? {}) as Record<string, unknown>;
   const out: string[] = [];
   const m2 = surfaceOf(r.attributes);
-  if (m2) out.push(`${formatNumber(m2)} m²`);
-  if (Number(a.rooms) > 0) out.push(`${a.rooms} pièces`);
-  if (Number(a.bathrooms) > 0) out.push(`${a.bathrooms} SdB`);
+  if (m2) out.push(t("specArea", { area: formatNumber(m2, locale) }));
+  if (Number(a.rooms) > 0) out.push(t("specRooms", { count: Number(a.rooms) }));
+  if (Number(a.bathrooms) > 0) out.push(t("specBathrooms", { count: Number(a.bathrooms) }));
   return out;
 }
 
@@ -96,20 +106,30 @@ function specLine(r: Row): string[] {
 // site's home title, so "Terrains à Sfax" and the unfiltered page were the
 // same line in a browser tab, a bookmark and a search result.
 export async function generateMetadata({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<Metadata> {
-  const sp = firstValues(await searchParams);
+  const [{ locale }, rawSp] = await Promise.all([params, searchParams]);
+  const sp = firstValues(rawSp);
+  const t = await getTranslations({ locale, namespace: "catalogue" });
   const admin = getServiceSupabase();
-  let what = "Annonces immobilières";
+  let what = t("metaTitleDefault");
   if (sp.cat && admin) {
-    const { data } = await admin.from("categories").select("label_fr").eq("slug", sp.cat).maybeSingle();
-    if (data?.label_fr) what = data.label_fr as string;
+    const { data } = await admin
+      .from("categories")
+      .select("label_fr, label_ar")
+      .eq("slug", sp.cat)
+      .maybeSingle();
+    if (data?.label_fr) what = categoryLabel(data as { label_fr: string; label_ar: string | null }, locale);
   }
-  const where = sp.gov?.trim() ? ` à ${sp.gov.trim()}` : " en Tunisie";
+  const gov = sp.gov?.trim();
   return {
-    title: `${what}${where} — Mazed Immo`,
+    title: gov
+      ? t("metaTitleIn", { what, governorate: governorateLabel(gov, locale) })
+      : t("metaTitleTunisia", { what }),
     // A keyword search is a results page, not a page to put in an index.
     ...(sp.q?.trim() ? { robots: { index: false, follow: true } } : {}),
   };
@@ -122,9 +142,10 @@ export default async function AnnoncesPage({
 }) {
   const sp = firstValues(await searchParams);
   const locale = await getLocale();
+  const t = await getTranslations("catalogue");
   const admin = getServiceSupabase();
 
-  const sort = (SORTS.find((s) => s.key === sp.sort)?.key ?? "recent") as string;
+  const sort = (SORTS.find((s) => s === sp.sort) ?? "recent") as string;
 
   // Price range, in TND. `min_price` / `max_price` are the names the home
   // page's price tiles sent before they pointed here; they are still read so a
@@ -140,14 +161,14 @@ export default async function AnnoncesPage({
   if (!admin) {
     return (
       <main className="mx-auto max-w-6xl px-4 py-10">
-        <p className="text-[13px] text-muted">Service indisponible.</p>
+        <p className="text-[13px] text-muted">{t("unavailable")}</p>
       </main>
     );
   }
 
   const { data: catRows } = await admin
     .from("categories")
-    .select("id, slug, label_fr, kind, parent_id")
+    .select("id, slug, label_fr, label_ar, kind, parent_id")
     .eq("is_active", true)
     .order("sort_order");
   const cats = (catRows ?? []) as Cat[];
@@ -158,7 +179,7 @@ export default async function AnnoncesPage({
     .from("listings")
     .select(
       `id, title, price, price_on_request, negotiable, governorate, attributes, published_at,
-       category:categories (label_fr, kind),
+       category:categories (label_fr, label_ar, kind),
        photos:listing_photos (storage_path, sort_order)`,
       { count: "exact" },
     )
@@ -222,11 +243,11 @@ export default async function AnnoncesPage({
   // filter in one line, so it does not have to be opened to be understood.
   const priceLabel =
     min && max
-      ? `${formatTND(min, locale)} – ${formatTND(max, locale)} TND`
+      ? t("priceBetween", { min: formatTND(min, locale), max: formatTND(max, locale) })
       : min
-        ? `À partir de ${formatTND(min, locale)} TND`
+        ? t("priceFrom", { min: formatTND(min, locale) })
         : max
-          ? `Jusqu'à ${formatTND(max, locale)} TND`
+          ? t("priceUpTo", { max: formatTND(max, locale) })
           : null;
 
   const qs = (next: Record<string, string | undefined>) => {
@@ -250,7 +271,7 @@ export default async function AnnoncesPage({
           « Explorer » that they are looking at things for sale. The filters
           and the first row of results are the heading. The h1 stays for
           assistive tech and search engines. */}
-      <h1 className="sr-only">Biens à prix fixe — annonces immobilières</h1>
+      <h1 className="sr-only">{t("heading")}</h1>
 
       {/* Keyword search for phones. The header search is desktop-only, so a
           phone could reach the catalogue but never search it. A plain GET form:
@@ -271,8 +292,8 @@ export default async function AnnoncesPage({
           type="search"
           name="q"
           defaultValue={sp.q ?? ""}
-          placeholder="Rechercher un bien, un lieu…"
-          aria-label="Rechercher dans les annonces"
+          placeholder={t("searchPlaceholder")}
+          aria-label={t("searchLabel")}
           enterKeyHint="search"
           className="h-11 w-full rounded-full border border-border bg-surface-2 pe-4 ps-11 text-[16px] text-foreground outline-none transition placeholder:text-muted focus:border-gold-soft focus:bg-surface"
         />
@@ -290,7 +311,7 @@ export default async function AnnoncesPage({
               : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
           }
         >
-          Tout
+          {t("allCategories")}
         </Link>
         {leaves.map((c) => (
           <Link
@@ -303,7 +324,7 @@ export default async function AnnoncesPage({
                 : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
             }
           >
-            {c.label_fr}
+            {categoryLabel(c, locale)}
           </Link>
         ))}
       </div>
@@ -318,7 +339,7 @@ export default async function AnnoncesPage({
               : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
           }
         >
-          Toute la Tunisie
+          {t("allTunisia")}
         </Link>
         {govs.map((g) => (
           <Link
@@ -331,7 +352,7 @@ export default async function AnnoncesPage({
                 : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
             }
           >
-            {g}
+            {governorateLabel(g, locale)}
           </Link>
         ))}
 
@@ -341,16 +362,16 @@ export default async function AnnoncesPage({
         <span className="ms-auto flex flex-wrap items-center gap-1.5">
           {SORTS.map((s) => (
             <Link
-              key={s.key}
-              href={qs({ sort: s.key }) as never}
+              key={s}
+              href={qs({ sort: s }) as never}
               className={
 "whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
-                (sort === s.key
+                (sort === s
                   ? "bg-foreground text-[var(--background)]"
                   : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
               }
             >
-              {s.label}
+              {t(`sort.${s}`)}
             </Link>
           ))}
         </span>
@@ -369,12 +390,12 @@ export default async function AnnoncesPage({
         <summary className="tap-target flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5">
           <span className="inline-flex items-center gap-2 text-[12.5px] font-bold text-foreground">
             <Wallet className="size-4 text-muted" strokeWidth={2} />
-            Budget
+            {t("budget")}
           </span>
           <span
             className={`mazed-tabular text-[11.5px] font-semibold ${priceLabel ? "text-gold" : "text-muted"}`}
           >
-            {priceLabel ?? "Tous les prix"}
+            {priceLabel ?? t("allPrices")}
           </span>
         </summary>
 
@@ -396,7 +417,7 @@ export default async function AnnoncesPage({
                       : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
                   }
                 >
-                  {b.label}
+                  {t(`priceBuckets.${b.key}`)}
                 </Link>
               );
             })}
@@ -405,7 +426,7 @@ export default async function AnnoncesPage({
                 href={qs({ min: undefined, max: undefined }) as never}
                 className="tap-target inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold text-muted transition hover:text-foreground"
               >
-                <X className="size-3" strokeWidth={2.5} /> Tous les prix
+                <X className="size-3" strokeWidth={2.5} /> {t("allPrices")}
               </Link>
             )}
           </div>
@@ -422,7 +443,7 @@ export default async function AnnoncesPage({
             {sp.q && <input type="hidden" name="q" value={sp.q} />}
             {/* 16px, like the search field: iOS zooms into anything smaller. */}
             <label className="flex-1 basis-28 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
-              Min (TND)
+              {t("minLabel")}
               <input
                 type="number"
                 name="min"
@@ -435,7 +456,7 @@ export default async function AnnoncesPage({
               />
             </label>
             <label className="flex-1 basis-28 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
-              Max (TND)
+              {t("maxLabel")}
               <input
                 type="number"
                 name="max"
@@ -443,7 +464,7 @@ export default async function AnnoncesPage({
                 step={1000}
                 inputMode="numeric"
                 defaultValue={max ? String(max) : ""}
-                placeholder="Sans limite"
+                placeholder={t("maxPlaceholder")}
                 className="mazed-tabular mt-1 h-11 w-full rounded-xl border border-border bg-surface-2 px-3 text-[16px] font-bold text-foreground outline-none transition placeholder:font-normal placeholder:text-muted focus:border-gold-soft focus:bg-surface"
               />
             </label>
@@ -451,35 +472,33 @@ export default async function AnnoncesPage({
               type="submit"
               className="mazed-btn-luxe tap-target h-11 shrink-0 px-4 text-[12.5px]"
             >
-              Appliquer
+              {t("apply")}
             </button>
           </form>
         </div>
       </details>
 
       <p className="mt-4 text-[12.5px] text-muted">
-        {total} bien{total > 1 ? "s" : ""}
+        {t("resultCount", { count: total })}
         {sp.q?.trim() && (
           <Link
             href={qs({ q: undefined }) as never}
-            aria-label={`Effacer la recherche « ${sp.q.trim()} »`}
+            aria-label={t("clearSearch", { query: sp.q.trim() })}
             className="ms-2 inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-0.5 font-semibold text-foreground ring-1 ring-border transition hover:ring-gold-soft"
           >
-            « {sp.q.trim()} »
+            {t("queryChip", { query: sp.q.trim() })}
             <X className="size-3" />
           </Link>
         )}
-        {active ? ` · ${active.label_fr}` : ""}
-        {sp.gov ? ` · ${sp.gov}` : ""}
+        {active ? ` · ${categoryLabel(active, locale)}` : ""}
+        {sp.gov ? ` · ${governorateLabel(sp.gov, locale)}` : ""}
       </p>
 
       {rows.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface-2/40 p-10 text-center">
           <SearchX className="mx-auto size-6 text-muted" />
-          <p className="mt-3 text-[13.5px] font-bold text-foreground">Aucun bien ne correspond.</p>
-          <p className="mt-1 text-[12.5px] text-muted">
-            Élargissez la recherche, le budget ou le gouvernorat.
-          </p>
+          <p className="mt-3 text-[13.5px] font-bold text-foreground">{t("emptyTitle")}</p>
+          <p className="mt-1 text-[12.5px] text-muted">{t("emptyBody")}</p>
           {/* A way out. Seven of the eight category chips are empty at this
               catalogue size, and this state used to be text only. */}
           {(sp.cat || sp.gov || sp.q || min || max) && (
@@ -487,7 +506,7 @@ export default async function AnnoncesPage({
               href={"/annonces" as never}
               className="tap-target mt-4 inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[12.5px] font-bold text-[var(--background)]"
             >
-              <X className="size-3.5" /> Effacer les filtres
+              <X className="size-3.5" /> {t("clearFilters")}
             </Link>
           )}
         </div>
@@ -496,7 +515,7 @@ export default async function AnnoncesPage({
           {rows.map((r, i) => {
             const cat = one(r.category);
             const cover = coverPhoto(r.photos);
-            const specs = specLine(r);
+            const specs = specLine(r, t, locale);
             return (
               <li key={r.id}>
                 <Link
@@ -521,7 +540,7 @@ export default async function AnnoncesPage({
 
                   <div className="p-3">
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-                      <Home className="size-3" /> {cat?.label_fr ?? ""}
+                      <Home className="size-3" /> {categoryLabel(cat, locale)}
                     </span>
                     <h2 dir="auto" className="mt-0.5 line-clamp-2 break-words text-[13.5px] font-bold leading-snug text-foreground">
                       {r.title}
@@ -529,10 +548,10 @@ export default async function AnnoncesPage({
 
                     <p className="mazed-tabular mt-1.5 text-[15px] font-extrabold text-foreground">
                       {r.price_on_request || r.price == null
-                        ? "Prix sur demande"
-                        : `${formatTND(Number(r.price), locale)} TND`}
+                        ? t("priceOnRequest")
+                        : t("priceAmount", { amount: formatTND(Number(r.price), locale) })}
                       {r.negotiable && !r.price_on_request && (
-                        <span className="ms-1.5 text-[10.5px] font-bold text-muted">négociable</span>
+                        <span className="ms-1.5 text-[10.5px] font-bold text-muted">{t("negotiable")}</span>
                       )}
                     </p>
 
@@ -546,7 +565,7 @@ export default async function AnnoncesPage({
                         </span>
                       )}
                       <span className="inline-flex items-center gap-1">
-                        <MapPin className="size-3" /> {r.governorate}
+                        <MapPin className="size-3" /> {governorateLabel(r.governorate, locale)}
                       </span>
                     </div>
                   </div>
@@ -558,13 +577,13 @@ export default async function AnnoncesPage({
       )}
 
       {lastPage > 1 && (
-        <nav className="mt-8 flex items-center justify-center gap-2" aria-label="Pagination">
+        <nav className="mt-8 flex items-center justify-center gap-2" aria-label={t("pagination")}>
           {page > 1 ? (
             <Link
               href={qs({ page: page - 1 > 1 ? String(page - 1) : undefined }) as never}
               className="tap-target inline-flex items-center gap-1 rounded-full bg-surface-2 px-4 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-border transition hover:ring-foreground/30"
             >
-              <ChevronLeft className="size-4" /> Précédent
+              <ChevronLeft className="size-4 rtl:-scale-x-100" /> {t("previous")}
             </Link>
           ) : (
             <span aria-hidden className="w-[108px]" />
@@ -577,7 +596,7 @@ export default async function AnnoncesPage({
               href={qs({ page: String(page + 1) }) as never}
               className="tap-target inline-flex items-center gap-1 rounded-full bg-surface-2 px-4 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-border transition hover:ring-foreground/30"
             >
-              Suivant <ChevronRight className="size-4" />
+              {t("next")} <ChevronRight className="size-4 rtl:-scale-x-100" />
             </Link>
           ) : (
             <span aria-hidden className="w-[108px]" />
