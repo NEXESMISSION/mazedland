@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Manual-only payments + in-app notifications (part 2).
+-- Mazed Immo — Manual-only payments + in-app notifications (part 2).
 --
 -- Companion to 0023, which adds the 'pending_review' enum value. This file
 -- adds everything that depends on it (partial index, columns) plus the

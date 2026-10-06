@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — ensure the auction-tick pg_cron is scheduled.
+-- Mazed Immo — ensure the auction-tick pg_cron is scheduled.
 --
 -- Vercel Hobby caps cron jobs at once-per-day, so vercel.json can't
 -- carry the minute-level auction tick. pg_cron in Supabase runs at

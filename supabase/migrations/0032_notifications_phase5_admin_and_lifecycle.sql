@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Phase 5+: admin fan-out, seller real-time, lifecycle reminders.
+-- Mazed Immo — Phase 5+: admin fan-out, seller real-time, lifecycle reminders.
 --
 -- Closes the second-order gaps identified in the deep notification audit:
 --   * Admins were silent on every review queue (KYC, receipts, payouts,
@@ -874,7 +874,7 @@ begin
       'final_payment_overdue',
       'Paiement final en retard',
       'Votre paiement final pour ' || coalesce('« ' || v_title || ' »', 'votre enchère') ||
-        ' est en retard. Contactez l''équipe Batta.tn pour éviter la perte de votre caution.',
+        ' est en retard. Contactez l''équipe Mazed Immo pour éviter la perte de votre caution.',
       v_link
     );
 
@@ -945,20 +945,20 @@ grant execute on function public.cleanup_old_notifications() to service_role;
 do $$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    if exists (select 1 from cron.job where jobname = 'batta-final-payment-due') then
-      perform cron.unschedule('batta-final-payment-due');
+    if exists (select 1 from cron.job where jobname = 'mazed-final-payment-due') then
+      perform cron.unschedule('mazed-final-payment-due');
     end if;
     perform cron.schedule(
-      'batta-final-payment-due',
+      'mazed-final-payment-due',
       '15 * * * *',  -- top-of-hour offset; checks every hour
       $cron$ select public.notify_final_payment_due(); $cron$
     );
 
-    if exists (select 1 from cron.job where jobname = 'batta-cleanup-notifications') then
-      perform cron.unschedule('batta-cleanup-notifications');
+    if exists (select 1 from cron.job where jobname = 'mazed-cleanup-notifications') then
+      perform cron.unschedule('mazed-cleanup-notifications');
     end if;
     perform cron.schedule(
-      'batta-cleanup-notifications',
+      'mazed-cleanup-notifications',
       '0 3 * * *',  -- 03:00 UTC daily
       $cron$ select public.cleanup_old_notifications(); $cron$
     );

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Auto-relist unsold auctions
+-- Mazed Immo — Auto-relist unsold auctions
 --
 -- When an auction closes as `ended_unsold` (no bids, or top bid below the
 -- reserve price, or a Dutch auction that timed out without a buyer), the

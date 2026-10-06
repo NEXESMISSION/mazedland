@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Point payment_receipt_received at /account/payments.
+-- Mazed Immo — Point payment_receipt_received at /account/payments.
 --
 -- When migration 0039 was written, /account/payments did not exist, so the
 -- buyer acknowledgment of a freshly uploaded receipt dumped them on the

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — rename kyc_submissions.reviewer_notes → rejection_reason.
+-- Mazed Immo — rename kyc_submissions.reviewer_notes → rejection_reason.
 --
 -- The original 0001 schema (ported from a generic admin-review template)
 -- called the free-text reviewer column `reviewer_notes`. Every consumer

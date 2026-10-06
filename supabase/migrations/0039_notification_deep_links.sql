@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Deep-link the admin review notifications.
+-- Mazed Immo — Deep-link the admin review notifications.
 --
 -- The "Annonce à valider" and "Nouveau reçu à vérifier" (listing-fee) pings
 -- previously dropped the admin on the broad /admin/properties queue. The

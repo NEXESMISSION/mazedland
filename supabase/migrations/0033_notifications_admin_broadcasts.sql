@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Admin notification control: broadcasts + queue inspector.
+-- Mazed Immo — Admin notification control: broadcasts + queue inspector.
 --
 -- Adds:
 --   * `created_by` (uuid) on notifications  — null = system-triggered;

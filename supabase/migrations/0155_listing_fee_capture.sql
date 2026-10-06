@@ -3,13 +3,13 @@
 --
 -- The seller pays by bank transfer or D17, uploads the receipt, an admin
 -- captures it. At that moment the annonce must stop waiting for money and start
--- waiting for moderation. Nothing on Batta did that: `/api/admin/paiements` was
+-- waiting for moderation. Nothing on Mazed Immo did that: `/api/admin/paiements` was
 -- ported from Mazed Auto, whose comments say "the `_listing_fee_captured`
 -- trigger does the cascade" — and the trigger was never ported with it.
 --
 -- Which means, until now, validating a receipt marked the payment captured and
 -- left the annonce sitting in `pending_payment` forever. Nobody had hit it yet
--- because Batta has no fee payments at all; it would have failed on the first
+-- because Mazed Immo has no fee payments at all; it would have failed on the first
 -- one. Found by listing the triggers on `payments` after the auction drop and
 -- noticing the route's cascade had nothing to cascade through.
 --

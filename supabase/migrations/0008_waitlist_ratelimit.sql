@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — waitlist abuse protection (audit C9)
+-- Mazed Immo — waitlist abuse protection (audit C9)
 --
 -- Replaces the wide-open `insert with check (true)` policy on waitlist
 -- with a SECURITY DEFINER RPC that enforces:

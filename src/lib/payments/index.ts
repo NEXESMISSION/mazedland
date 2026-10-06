@@ -171,12 +171,12 @@ export async function fetchPayeeDetails(supabase: any): Promise<PayeeDetails> {
  * and refuses to take payment when neither does.
  *
  * The name is required but not compared to the default, since the company may
- * genuinely be called that; the pre-rebrand name is rejected outright.
+ * genuinely be called that.
  */
 export function usablePayeeMethods(p: PayeeDetails): { bank_transfer: boolean; d17: boolean } {
   const norm = (v: string) => v.replace(/\s+/g, "").toUpperCase();
   const real = (v: string, fake: string) => norm(v) !== "" && norm(v) !== norm(fake);
-  const nameOk = p.name.trim() !== "" && !/batta/i.test(p.name);
+  const nameOk = p.name.trim() !== "";
   return {
     bank_transfer: nameOk && real(p.rib, DEFAULT_PAYEE.rib) && real(p.iban, DEFAULT_PAYEE.iban),
     d17: nameOk && real(p.d17, DEFAULT_PAYEE.d17),

@@ -50,11 +50,11 @@ grant execute on function public.cleanup_phone_otps() to service_role;
 do $$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    if exists (select 1 from cron.job where jobname = 'batta-cleanup-otps') then
-      perform cron.unschedule('batta-cleanup-otps');
+    if exists (select 1 from cron.job where jobname = 'mazed-cleanup-otps') then
+      perform cron.unschedule('mazed-cleanup-otps');
     end if;
     perform cron.schedule(
-      'batta-cleanup-otps',
+      'mazed-cleanup-otps',
       '17 3 * * *',
       $cron$ select public.cleanup_phone_otps(); $cron$
     );

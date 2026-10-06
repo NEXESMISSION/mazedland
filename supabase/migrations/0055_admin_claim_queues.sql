@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — "Claim / assigned-to-me" for the admin work queues.
+-- Mazed Immo — "Claim / assigned-to-me" for the admin work queues.
 --
 -- Problem: the KYC and seller-payout queues are FIFO lists worked by more
 -- than one admin. With no ownership marker, two admins open the same queue

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Restore the notifications place_bid stopped emitting + dedup
+-- Mazed Immo — Restore the notifications place_bid stopped emitting + dedup
 --            outbid / watched_new_bid bursts.
 --
 -- Migration 0046 introduced the self-raise rule on top of the 0043 body

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Per-kind notification fields via a generic JSONB payload.
+-- Mazed Immo — Per-kind notification fields via a generic JSONB payload.
 --
 -- The admin compose surface previously had one shape (title / body / link)
 -- regardless of broadcast type. Each kind now carries its own structured

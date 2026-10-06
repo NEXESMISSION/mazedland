@@ -1,5 +1,5 @@
 -- ============================================================================
--- Storage buckets + access policies for Batta.tn
+-- Storage buckets + access policies for Mazed Immo
 --
 -- Three buckets, each with a different access posture:
 --

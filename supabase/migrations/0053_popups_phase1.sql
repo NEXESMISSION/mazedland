@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Phase-1 of the admin-managed popup system.
+-- Mazed Immo — Phase-1 of the admin-managed popup system.
 --
 -- Notifications (the bell) and popups are different concerns: the bell is a
 -- per-user inbox; popups are page-rendered surfaces with visual variants,

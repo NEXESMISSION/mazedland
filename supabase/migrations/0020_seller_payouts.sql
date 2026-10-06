@@ -1,12 +1,12 @@
 -- ============================================================================
--- Batta.tn — seller payouts + earnings model.
+-- Mazed Immo — seller payouts + earnings model.
 --
--- Until now, money flowing through Batta lived in the `payments` table
+-- Until now, money flowing through Mazed Immo lived in the `payments` table
 -- with no aggregation: a seller couldn't see what they'd earned, what
 -- the platform had withheld as commission, or how to withdraw it. This
 -- migration introduces the missing financial model.
 --
---   * `batta_commission_rate()` — single source of truth for the cut
+--   * `mazed_commission_rate()` — single source of truth for the cut
 --     (5%, hardcoded; can move to a settings table later).
 --
 --   * `seller_earnings(seller_id)` — SECURITY DEFINER function returning
@@ -29,7 +29,7 @@
 -- 5% to start, matching the typical Tunisian luxury-auction house cut.
 -- Marked IMMUTABLE so the planner can fold it into expressions.
 
-create or replace function public.batta_commission_rate()
+create or replace function public.mazed_commission_rate()
 returns numeric
 language sql
 immutable
@@ -125,8 +125,8 @@ begin
       p.title,
       pay.kind::text,
       pay.amount,
-      pay.amount * public.batta_commission_rate(),
-      pay.amount * (1 - public.batta_commission_rate())
+      pay.amount * public.mazed_commission_rate(),
+      pay.amount * (1 - public.mazed_commission_rate())
     from public.payments pay
     join public.auctions a on a.id = pay.auction_id
     join public.properties p on p.id = a.property_id
@@ -191,7 +191,7 @@ begin
     'paid_out', v_paid_out,
     'pending_payout', v_pending,
     'available', v_available,
-    'commission_rate', public.batta_commission_rate()
+    'commission_rate', public.mazed_commission_rate()
   );
 end;
 $$;

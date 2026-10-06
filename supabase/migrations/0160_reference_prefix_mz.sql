@@ -1,7 +1,7 @@
 -- ============================================================================
 -- 0160 · The public reference says MZ, like the site it is printed on
 --
--- `listing_reference_next()` (0152) emits "BT-00042" — Batta, the brand this
+-- `listing_reference_next()` (0152) emits "BT-00042" — the prefix of the brand this
 -- catalogue was built under. Two things are wrong with that now:
 --
 --   · It is the number a seller reads down the phone and an office quotes

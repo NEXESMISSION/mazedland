@@ -109,9 +109,9 @@ grant execute on function public.expire_listing_promotions() to service_role;
 do $$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    perform cron.unschedule('batta-expire-promos')
-      where exists (select 1 from cron.job where jobname = 'batta-expire-promos');
-    perform cron.schedule('batta-expire-promos', '*/15 * * * *',
+    perform cron.unschedule('mazed-expire-promos')
+      where exists (select 1 from cron.job where jobname = 'mazed-expire-promos');
+    perform cron.schedule('mazed-expire-promos', '*/15 * * * *',
                           'select public.expire_listing_promotions();');
   end if;
 end $$;

@@ -55,7 +55,7 @@ $$;
 -- auth.users.raw_app_meta_data (the live is_admin() in 0016 returns true on
 -- EITHER). Before writing any destructive cleanup we ENUMERATED the live DB
 -- (2026-06-07): exactly two admins exist — the seed saifelleuchi127@gmail.com
--- and the deliberate operator account admin@batta.tn (the only JWT-mirror
+-- and the deliberate operator account admin@mazedimmo.test (the only JWT-mirror
 -- holder) — and NO forged accounts. So no data remediation is required; the
 -- trigger fix above closes the hole going forward.
 --
@@ -64,7 +64,7 @@ $$;
 --   do $$ begin perform set_config('app.bypass_profile_guard','on',true);
 --     update public.profiles p set role='individual'::user_role from auth.users u
 --      where p.id=u.id and p.role='admin'
---        and u.email not in ('saifelleuchi127@gmail.com','admin@batta.tn');
+--        and u.email not in ('saifelleuchi127@gmail.com','admin@mazedimmo.test');
 --     perform set_config('app.bypass_profile_guard','off',true); end $$;
 
 -- Refresh PostgREST so the new function is in effect immediately.

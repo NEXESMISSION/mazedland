@@ -72,19 +72,19 @@ grant execute on function public.notify_final_payment_due_cron() to service_role
 do $$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    if exists (select 1 from cron.job where jobname = 'batta-ending-soon') then
-      perform cron.unschedule('batta-ending-soon');
+    if exists (select 1 from cron.job where jobname = 'mazed-ending-soon') then
+      perform cron.unschedule('mazed-ending-soon');
     end if;
     perform cron.schedule(
-      'batta-ending-soon', '*/10 * * * *',
+      'mazed-ending-soon', '*/10 * * * *',
       $cron$ select public.notify_auctions_ending_soon_cron(); $cron$
     );
 
-    if exists (select 1 from cron.job where jobname = 'batta-final-payment-due') then
-      perform cron.unschedule('batta-final-payment-due');
+    if exists (select 1 from cron.job where jobname = 'mazed-final-payment-due') then
+      perform cron.unschedule('mazed-final-payment-due');
     end if;
     perform cron.schedule(
-      'batta-final-payment-due', '15 * * * *',
+      'mazed-final-payment-due', '15 * * * *',
       $cron$ select public.notify_final_payment_due_cron(); $cron$
     );
   end if;

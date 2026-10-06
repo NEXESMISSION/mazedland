@@ -1,4 +1,4 @@
-# Batta → classifieds: the full plan
+# Auctions → classifieds: the full plan
 
 **Goal, in your words:** *"i dont want it to be auction platform any more, make it like the mazed auto"* — same product shape as Mazed Auto, but for land and real estate.
 
@@ -83,7 +83,7 @@ countdown rail.
 | `src/components/landing/HomeDesktop.tsx` (610 l) | Same, plus the auto-advancing "featured lot" showcase → featured annonce. |
 | `messages/fr.json`, `ar.json`, `en.json` | **51 lines** carry auction language, including `tagline` and `heroSubtitle`. |
 
-**Design is not touched.** Batta's navy-on-white palette, type and layout stay exactly as
+**Design is not touched.** The navy-on-white palette, type and layout stay exactly as
 they are — only what the page is *about* changes.
 
 ### Phase 2 — The catalogue becomes searchable ⟵ *next*
@@ -122,7 +122,7 @@ see:
 
 | | |
 |---|---|
-| **`_listing_fee_captured` was never ported** | `/api/admin/paiements` came from Auto, whose comments say "the trigger does the cascade". Validating a receipt would have captured the payment and left the annonce in `pending_payment` **forever**. Nobody had hit it because Batta has no fee payments yet — it would have failed on the first one. Fixed in `0155`, then tested end to end: draft → payment → receipt → capture → `pending_review` → seller notified. |
+| **`_listing_fee_captured` was never ported** | `/api/admin/paiements` came from Auto, whose comments say "the trigger does the cascade". Validating a receipt would have captured the payment and left the annonce in `pending_payment` **forever**. Nobody had hit it because Mazed Immo has no fee payments yet — it would have failed on the first one. Fixed in `0155`, then tested end to end: draft → payment → receipt → capture → `pending_review` → seller notified. |
 | **`drop function if exists f(a,b)` silently drops nothing** | It matches on the argument list, and `if exists` turns a wrong signature into a no-op rather than an error. Six functions reported success and survived. `0154` drops them by `oid::regprocedure` selected by name, which takes every overload. |
 | **A view over a *surviving* table blocked the drop** | `auction_watcher_counts` reads `watchlist.auction_id`, so it never appeared in a dependency scan of the doomed tables. Only enumerating every view in the schema found it. |
 

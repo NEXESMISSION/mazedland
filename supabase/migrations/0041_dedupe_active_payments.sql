@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Collapse duplicate "active" payments and stop them recurring.
+-- Mazed Immo — Collapse duplicate "active" payments and stop them recurring.
 --
 -- A find-or-create that used .maybeSingle() threw whenever >1 row matched,
 -- so it kept inserting a fresh pending row on every visit to the deposit

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Plumb payload through enqueue_notification + bake focus ids
+-- Mazed Immo — Plumb payload through enqueue_notification + bake focus ids
 --            into payment-receipt acks.
 --
 -- The notifications.payload jsonb column (added in 0035) was only writable

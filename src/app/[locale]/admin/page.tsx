@@ -88,8 +88,8 @@ export default async function AdminDashboard() {
 
   // Whether the site can take money at all.
   //
-  // `app_settings` still holds the seed payee — "Batta Tunisia SARL" and an
-  // IBAN belonging to nobody — so `usablePayeeMethods` refuses both methods
+  // `app_settings` still holds the seed payee — no company name and an IBAN
+  // belonging to nobody — so `usablePayeeMethods` refuses both methods
   // and every seller who reaches checkout is told « Paiement momentanément
   // indisponible ». That is the correct refusal, but it happens on the
   // seller's screen, where no operator ever sees it: publication has been

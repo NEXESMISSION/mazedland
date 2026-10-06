@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Pay-per-post: schema + RPCs.
+-- Mazed Immo — Pay-per-post: schema + RPCs.
 --
 -- Builds on 0025 (enum values) to wire up:
 --   1. `app_settings`     — admin-tunable prices + payee details.
@@ -62,7 +62,7 @@ insert into public.app_settings (key, value, description) values
   ('promo_home_featured_tnd', to_jsonb(15::numeric), 'Supplément pour figurer dans le carrousel d''accueil.'),
   ('promo_top_listed_tnd',    to_jsonb(10::numeric), 'Supplément pour apparaître en haut de la recherche.'),
   ('promo_banner_tnd',        to_jsonb(30::numeric), 'Supplément pour figurer dans la bannière d''accueil.'),
-  ('payee_name',              to_jsonb('Batta Tunisia SARL'::text), 'Bénéficiaire affiché au vendeur.'),
+  ('payee_name',              to_jsonb('Mazed Immo Tunisia SARL'::text), 'Bénéficiaire affiché au vendeur.'),
   ('payee_bank',              to_jsonb('Société Tunisienne de Banque (STB)'::text), 'Banque du compte.'),
   ('payee_rib',               to_jsonb('07 003 0001234567890 78'::text), 'RIB affiché pour le virement.'),
   ('payee_iban',              to_jsonb('TN59 0700 3000 0123 4567 8907 8'::text), 'IBAN affiché pour le virement.'),
@@ -219,7 +219,7 @@ begin
     v_pay.user_id,
     'listing_published',
     'Annonce publiée',
-    'Votre paiement a été validé. Votre annonce est désormais visible sur Batta.tn.',
+    'Votre paiement a été validé. Votre annonce est désormais visible sur Mazed Immo.',
     '/sell'
   );
 end;
@@ -319,11 +319,11 @@ grant execute on function public.expire_listing_promotions() to service_role;
 do $$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    if exists (select 1 from cron.job where jobname = 'batta-expire-promos') then
-      perform cron.unschedule('batta-expire-promos');
+    if exists (select 1 from cron.job where jobname = 'mazed-expire-promos') then
+      perform cron.unschedule('mazed-expire-promos');
     end if;
     perform cron.schedule(
-      'batta-expire-promos',
+      'mazed-expire-promos',
       '*/15 * * * *',
       $cron$ select public.expire_listing_promotions(); $cron$
     );

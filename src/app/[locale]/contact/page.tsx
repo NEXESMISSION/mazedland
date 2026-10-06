@@ -12,7 +12,7 @@ export const dynamic = "force-static";
 /**
  * Both reachable channels are env-driven and DISAPPEAR when unset.
  *
- * The e-mail used to be a literal, contact@batta.tn, on a domain the business
+ * The e-mail used to be a literal on the pre-rebrand domain, which the business
  * owned; the rebrand has no domain behind it yet, and an address that bounces
  * is worse than no address. The phone was a literal too — "+216 70 000 000",
  * which is not a number anyone answers. It sat on the page as the ONLY

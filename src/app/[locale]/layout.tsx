@@ -31,7 +31,7 @@ export async function generateMetadata({
   // is what a segment's own landing title wants. Inner pages are unaffected:
   // they set a plain string title and keep inheriting the root's template.
   //
-  // These used to be built out of `brand.domain`, which held "Batta.tn". There
+  // These used to be built out of `brand.domain`, the pre-rebrand domain. There
   // is no Mazed Immo domain registered yet, so the strings are built from the
   // name and a title suffix instead of inventing one.
   return {

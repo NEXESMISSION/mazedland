@@ -1,5 +1,5 @@
 # ============================================================================
-# Supabase local-stack config for Batta.tn.
+# Supabase local-stack config for Mazed Immo.
 #
 # This drives `supabase start` / `supabase db start`, which spins up a real
 # local Supabase Postgres and APPLIES supabase/migrations/** in full — the
@@ -14,7 +14,7 @@
 # in a short window; the hosted defaults (30 / 5 min) would throttle it and make
 # the gate flaky. This file is for LOCAL/CI throwaway stacks only.
 # ============================================================================
-project_id = "batta"
+project_id = "mazed-immo"
 
 [api]
 enabled = true

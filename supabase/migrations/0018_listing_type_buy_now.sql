@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — two-path purchase: direct-sale listings + buy-now on auctions.
+-- Mazed Immo — two-path purchase: direct-sale listings + buy-now on auctions.
 --
 -- Mirrors mazed-auto's pattern adapted to real estate:
 --

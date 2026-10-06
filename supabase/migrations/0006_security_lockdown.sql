@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — security lockdown (audit fixes C1, C2, C3, C5, H6, H7)
+-- Mazed Immo — security lockdown (audit fixes C1, C2, C3, C5, H6, H7)
 --
 -- Fixes a constellation of privilege-escalation and race-condition bugs:
 --

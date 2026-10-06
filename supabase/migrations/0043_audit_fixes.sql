@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — post-audit correctness fixes.
+-- Mazed Immo — post-audit correctness fixes.
 --
 -- 1. app_settings_public_read: add the live monetization keys so end-users
 --    (sellers/bidders) actually read the admin-configured fees/deposit. The
@@ -76,8 +76,8 @@ begin
       p.title,
       pay.kind::text,
       pay.amount,
-      pay.amount * public.batta_commission_rate(),
-      pay.amount * (1 - public.batta_commission_rate())
+      pay.amount * public.mazed_commission_rate(),
+      pay.amount * (1 - public.mazed_commission_rate())
     from public.payments pay
     join public.auctions a on a.id = pay.auction_id
     join public.properties p on p.id = a.property_id
