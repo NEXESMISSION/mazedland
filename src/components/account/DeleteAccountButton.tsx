@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { Trash2, AlertTriangle } from "lucide-react";
@@ -19,22 +19,20 @@ import { Trash2, AlertTriangle } from "lucide-react";
  * other two it used to list — an auction won but unpaid, a payout in flight —
  * went with the auction product, and `active_listings` no longer means "a lot
  * is live": it means an annonce is sitting in the moderation queue.
+ *
+ * Their sentences are `account.deleteAccount.blockers.<code>`.
  */
-const BLOCKER_FR: Record<string, string> = {
-  active_listings:
-    "Une de vos annonces est en cours de vérification. Attendez la décision avant de supprimer votre compte.",
-  pending_payments:
-    "Un paiement est en cours de vérification. Attendez sa validation avant de supprimer votre compte.",
-};
-
-const CONFIRM_WORD = "SUPPRIMER";
+const BLOCKERS = new Set(["active_listings", "pending_payments"]);
 
 export function DeleteAccountButton({ label }: { label: string }) {
+  const t = useTranslations("account.deleteAccount");
   const locale = useLocale();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [pending, start] = useTransition();
+  // « SUPPRIMER » on /fr; on /ar a word typed in Arabic, not a French one.
+  const CONFIRM_WORD = t("confirmWord");
 
   function onDelete() {
     if (confirmText.trim().toUpperCase() !== CONFIRM_WORD) return;
@@ -51,17 +49,17 @@ export function DeleteAccountButton({ label }: { label: string }) {
           };
           const blockers = body.blockers ?? [];
           if (blockers.length === 0) {
-            toast("Suppression impossible pour le moment.", "warning");
+            toast(t("impossible"), "warning");
           } else {
             blockers.forEach((b) =>
-              toast(BLOCKER_FR[b] ?? "Une opération est encore en cours.", "warning"),
+              toast(BLOCKERS.has(b) ? t(`blockers.${b}`) : t("blockerUnknown"), "warning"),
             );
           }
           return;
         }
 
         if (!res.ok) {
-          toast("La suppression a échoué. Réessayez plus tard.", "error");
+          toast(t("failed"), "error");
           return;
         }
 
@@ -71,14 +69,14 @@ export function DeleteAccountButton({ label }: { label: string }) {
         } catch {
           /* already signed out server-side */
         }
-        toast("Votre compte a été supprimé.", "success");
+        toast(t("deleted"), "success");
         // A full reload, not a router push: the session is gone, and every
         // in-memory store on the page (favourites, popups, notifications) still
         // describes the deleted account. A soft navigation would keep them.
         // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload drops the deleted account's client state
         window.location.assign(`/${locale}`);
       } catch {
-        toast("La suppression a échoué. Vérifiez votre connexion.", "error");
+        toast(t("networkError"), "error");
       }
     });
   }
@@ -102,13 +100,13 @@ export function DeleteAccountButton({ label }: { label: string }) {
         <AlertTriangle className="size-5 shrink-0 text-[var(--danger)]" strokeWidth={2} />
         <div className="min-w-0">
           <p className="text-[13px] font-bold text-foreground">
-            Supprimer définitivement votre compte ?
+            {t("confirmTitle")}
           </p>
           <p className="mt-1 text-[12px] leading-relaxed text-muted">
-            Cette action est irréversible. Vos données personnelles et vos pièces
-            d&apos;identité seront effacées. Tapez{" "}
-            <span className="font-bold text-[var(--danger)]">{CONFIRM_WORD}</span> pour
-            confirmer.
+            {t.rich("confirmBody", {
+              word: CONFIRM_WORD,
+              strong: (chunks) => <span className="font-bold text-[var(--danger)]">{chunks}</span>,
+            })}
           </p>
         </div>
       </div>
@@ -133,7 +131,7 @@ export function DeleteAccountButton({ label }: { label: string }) {
           disabled={pending}
           className="mazed-btn-ghost-gold tap-target flex-1 px-4 py-2.5 text-[13px] disabled:opacity-50"
         >
-          Annuler
+          {t("cancel")}
         </button>
         <button
           type="button"
@@ -141,7 +139,7 @@ export function DeleteAccountButton({ label }: { label: string }) {
           disabled={pending || confirmText.trim().toUpperCase() !== CONFIRM_WORD}
           className="tap-target flex-1 rounded-xl bg-[var(--danger)] px-4 py-2.5 text-[13px] font-bold text-white transition-opacity disabled:opacity-40"
         >
-          {pending ? "Suppression…" : "Supprimer"}
+          {pending ? t("deleting") : t("delete")}
         </button>
       </div>
     </div>

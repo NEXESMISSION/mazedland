@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Building2,
   Smartphone,
@@ -15,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { Ltr } from "@/components/ui/Ltr";
 import { useApiError } from "@/lib/useApiError";
 import { formatTND, cn } from "@/lib/utils";
 import { getBrowserSupabase } from "@/lib/supabase/client";
@@ -43,16 +45,12 @@ interface Props {
   editHref?: string;
 }
 
-/**
+/*
  * There is one kind of payment. `KIND_TITLES` mapped four — caution, achat,
  * paiement final, frais d'annonce — and the three auction ones are unreachable
- * now that nothing can create them.
+ * now that nothing can create them. Its title and line are
+ * `checkout.feeLabel` / `checkout.feeBody`.
  */
-const META = {
-  label: "Frais d'annonce",
-  body:
-    "Frais de publication de votre annonce. Elle part en vérification dès validation du reçu.",
-};
 
 const PROVIDER_ICONS: Record<PaymentProvider, typeof Building2> = {
   bank_transfer: Building2,
@@ -83,6 +81,8 @@ export function CheckoutClient({
   receiptUnderReview,
   editHref,
 }: Props) {
+  const t = useTranslations("checkout");
+  const tc = useTranslations("common");
   const { toast } = useToast();
   const apiError = useApiError();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,9 +99,7 @@ export function CheckoutClient({
 
   async function cancelPayment() {
     if (cancelling) return;
-    const ok = window.confirm(
-      "Annuler ce paiement ? Vous pourrez en démarrer un nouveau à tout moment.",
-    );
+    const ok = window.confirm(t("cancelConfirm"));
     if (!ok) return;
     setCancelling(true);
     try {
@@ -114,13 +112,13 @@ export function CheckoutClient({
           error?: string;
           detail?: string;
         };
-        toast(apiError(data, "Annulation impossible."), "error");
+        toast(apiError(data, t("cancelFailed")), "error");
         setCancelling(false);
         return;
       }
       setCancelled(true);
     } catch {
-      toast("Erreur réseau lors de l'annulation.", "error");
+      toast(t("cancelNetworkError"), "error");
       setCancelling(false);
     }
   }
@@ -129,7 +127,6 @@ export function CheckoutClient({
     () => instructions.find((p) => p.value === provider) ?? instructions[0],
     [provider, instructions],
   );
-  const meta = META;
 
   async function copyValue(label: string, value: string) {
     try {
@@ -137,7 +134,7 @@ export function CheckoutClient({
       setCopiedField(label);
       setTimeout(() => setCopiedField(null), 1400);
     } catch {
-      toast("Impossible de copier.", "warning");
+      toast(t("copyFailed"), "warning");
     }
   }
 
@@ -146,13 +143,13 @@ export function CheckoutClient({
     if (picked.length === 0) return;
     const remaining = MAX_RECEIPTS - files.length;
     if (remaining <= 0) {
-      toast(`Maximum ${MAX_RECEIPTS} images.`, "warning");
+      toast(t("maxImages", { max: MAX_RECEIPTS }), "warning");
       return;
     }
     const accepted: File[] = [];
     for (const f of picked) {
       if (accepted.length >= remaining) {
-        toast(`Maximum ${MAX_RECEIPTS} images — fichiers en trop ignorés.`, "warning");
+        toast(t("maxImagesExtra", { max: MAX_RECEIPTS }), "warning");
         break;
       }
       // Some mobile pickers report empty `type` for HEIC files — fall back to
@@ -163,11 +160,11 @@ export function CheckoutClient({
         ["jpg", "jpeg", "png", "webp", "avif", "heic", "heif"].includes(ext);
       const looksPdf = f.type === "application/pdf" || ext === "pdf";
       if (!looksImage && !looksPdf && !ACCEPTED_TYPES.includes(f.type)) {
-        toast(`${f.name} : format non accepté (JPG, PNG, WebP, HEIC, PDF).`, "error");
+        toast(t("badFormat", { name: f.name }), "error");
         continue;
       }
       if (f.size > MAX_FILE_MB * 1024 * 1024) {
-        toast(`${f.name} : trop volumineux (max ${MAX_FILE_MB} Mo).`, "error");
+        toast(t("tooLarge", { name: f.name, maxMb: MAX_FILE_MB }), "error");
         continue;
       }
       accepted.push(f);
@@ -187,7 +184,7 @@ export function CheckoutClient({
       const supabase = getBrowserSupabase();
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) {
-        toast("Session expirée — reconnectez-vous.", "error");
+        toast(t("sessionExpired"), "error");
         setSubmitting(false);
         return;
       }
@@ -218,7 +215,7 @@ export function CheckoutClient({
         if (upErr) {
           if (uploadedPaths.length) void supabase.storage.from("receipts").remove(uploadedPaths);
           // upErr.message is the storage API's English text.
-          toast("Échec du téléversement du reçu. Réessayez.", "error");
+          toast(t("uploadFailed"), "error");
           setSubmitting(false);
           return;
         }
@@ -234,13 +231,13 @@ export function CheckoutClient({
         const data = await res.json().catch(() => ({}));
         // Couldn't attach — clean up every uploaded object so we don't orphan.
         void supabase.storage.from("receipts").remove(uploadedPaths);
-        toast(apiError(data, "Échec de la soumission."), "error");
+        toast(apiError(data, t("submitFailed")), "error");
         setSubmitting(false);
         return;
       }
       setSubmitted(true);
     } catch {
-      toast("Erreur réseau. Vérifiez votre connexion et réessayez.", "error");
+      toast(t("networkError"), "error");
       setSubmitting(false);
     }
   }
@@ -259,11 +256,10 @@ export function CheckoutClient({
               <X className="h-8 w-8" strokeWidth={2.8} />
             </div>
             <h1 className="mt-4 text-[22px] font-extrabold leading-tight text-red-900">
-              Paiement annulé
+              {t("cancelledTitle")}
             </h1>
             <p className="mt-2 text-[13px] text-red-900/80 leading-relaxed">
-              Aucun montant n&apos;a été prélevé. Vous pouvez relancer le
-              paiement à tout moment depuis l&apos;annonce.
+              {t("cancelledBody")}
             </p>
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
               {listing && (
@@ -271,15 +267,15 @@ export function CheckoutClient({
                   href={`/${locale}/annonces/${listing.id}`}
                   className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-white border border-red-200 text-red-900 px-5 text-[13px] font-bold hover:border-red-400"
                 >
-                  {"Voir l'annonce"}
+                  {t("viewListing")}
                 </a>
               )}
               <a
                 href={`/${locale}`}
                 className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] text-white px-5 text-[13px] font-bold hover:bg-[var(--gold-bright)]"
               >
-                Accueil
-                <ArrowRight className="ml-1.5 h-4 w-4" />
+                {t("home")}
+                <ArrowRight className="ms-1.5 h-4 w-4 rtl:-scale-x-100" />
               </a>
             </div>
           </div>
@@ -293,12 +289,10 @@ export function CheckoutClient({
     // "passe en ligne automatiquement" was wrong even before the pivot: a
     // captured fee moves the annonce to `pending_review`, not to `published`.
     // Paying buys a publication, not a way past moderation.
-    const finalStep = "Votre annonce part en vérification, puis passe en ligne.";
-    const steps = [
-      "Notre équipe vérifie votre reçu (moins de 24 h).",
-      "Vous recevez une notification : validé ou correction demandée.",
-      finalStep,
-    ];
+    const steps = [t("sentSteps.review"), t("sentSteps.notify"), t("sentSteps.publish")];
+    const bold = (chunks: React.ReactNode) => (
+      <span className="font-bold text-foreground">{chunks}</span>
+    );
     return (
       <div className="min-h-screen bg-background">
         <main className="mx-auto max-w-md px-4 py-12 lg:py-16">
@@ -308,20 +302,16 @@ export function CheckoutClient({
                 <Check className="h-8 w-8" strokeWidth={2.8} />
               </div>
               <h1 className="mt-4 text-[22px] font-extrabold leading-tight">
-                Reçu transmis
+                {t("sentTitle")}
               </h1>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--foreground-muted)]">
-                Justificatif de{" "}
-                <span className="font-bold text-foreground">
-                  {formatTND(amount, locale)}
-                </span>
-                {listing ? (
-                  <>
-                    {" "}pour{" "}
-                    <span className="font-bold text-foreground">{listing.title}</span>
-                  </>
-                ) : null}{" "}
-                bien reçu.
+                {listing
+                  ? t.rich("sentBodyFor", {
+                      amount: formatTND(amount, locale),
+                      title: listing.title,
+                      b: bold,
+                    })
+                  : t.rich("sentBody", { amount: formatTND(amount, locale), b: bold })}
               </p>
             </div>
 
@@ -346,14 +336,14 @@ export function CheckoutClient({
                 href={`/${locale}/account/listings`}
                 className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] px-5 text-[13px] font-bold text-white hover:bg-[var(--gold-bright)]"
               >
-                Mes annonces <ArrowRight className="ml-1.5 h-4 w-4" />
+                {t("myListings")} <ArrowRight className="ms-1.5 h-4 w-4 rtl:-scale-x-100" />
               </a>
               {listing && (
                 <a
                   href={`/${locale}/annonces/${listing.id}`}
                   className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface-2)] px-5 text-[13px] font-semibold hover:border-[var(--gold-soft)]"
                 >
-                  {"Voir l'annonce"}
+                  {t("viewListing")}
                 </a>
               )}
             </div>
@@ -383,7 +373,7 @@ export function CheckoutClient({
             </div>
           )}
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--gold)]">
-            {meta.label}
+            {t("feeLabel")}
           </div>
           {listing && (
             <div className="mt-0.5 text-[14px] font-bold leading-tight line-clamp-1">
@@ -393,11 +383,11 @@ export function CheckoutClient({
           <div className="mazed-tabular gradient-gold-text mt-3 text-[40px] font-extrabold leading-none">
             {formatTND(amount, locale)}
             <span className="ms-1 text-[12px] font-bold uppercase text-[var(--foreground-muted)]">
-              TND
+              {tc("tnd")}
             </span>
           </div>
           <p className="mx-auto mt-2 max-w-xs text-[11.5px] leading-snug text-[var(--foreground-muted)]">
-            {meta.body}
+            {t("feeBody")}
           </p>
           {editHref && (
             // Made a mistake? Go back and fix the listing before paying — saving
@@ -406,7 +396,7 @@ export function CheckoutClient({
               href={editHref}
               className="tap-target mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold text-[var(--gold)] ring-1 ring-[var(--gold-soft)] transition hover:bg-[var(--gold-faint)]"
             >
-              ← Modifier l&apos;annonce
+              {t("editListing")}
             </a>
           )}
         </section>
@@ -418,10 +408,7 @@ export function CheckoutClient({
         {receiptUnderReview && (
           <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] text-amber-900">
             <AlertCircle className="mt-0.5 size-4 shrink-0" />
-            <span>
-              Reçu en vérification — moins de 24 h. Vous serez notifié(e) dès qu&apos;il
-              est validé. Envoyez-en un autre seulement s&apos;il y a une erreur.
-            </span>
+            <span>{t("receiptUnderReview")}</span>
           </div>
         )}
         </div>
@@ -429,7 +416,7 @@ export function CheckoutClient({
         {/* RIGHT (desktop) / BELOW (mobile) — payment steps */}
         <div className="mt-4 space-y-4 lg:mt-0">
         {/* ── STEP 1: choose method (big toggles) ── */}
-        <Step n={1} title="Choisissez le mode de paiement" />
+        <Step n={1} title={t("stepMethod")} />
         <div className="grid grid-cols-2 gap-2.5">
           {instructions.map((p) => {
             const Icon = PROVIDER_ICONS[p.value];
@@ -448,7 +435,7 @@ export function CheckoutClient({
                 )}
               >
                 {isActive && (
-                  <span className="absolute right-2 top-2 inline-flex size-5 items-center justify-center rounded-full bg-[var(--gold)] text-white">
+                  <span className="absolute end-2 top-2 inline-flex size-5 items-center justify-center rounded-full bg-[var(--gold)] text-white">
                     <Check className="size-3" strokeWidth={3} />
                   </span>
                 )}
@@ -461,7 +448,7 @@ export function CheckoutClient({
                   <Icon className="size-5" strokeWidth={2} />
                 </span>
                 <span className="text-[13px] font-bold text-foreground">
-                  {p.value === "bank_transfer" ? "Virement (RIB)" : "D17 mobile"}
+                  {p.value === "bank_transfer" ? t("providerBank") : t("providerD17")}
                 </span>
               </button>
             );
@@ -471,7 +458,7 @@ export function CheckoutClient({
         {/* ── STEP 2: pay — copyable bank details ── */}
         {active && (
           <>
-            <Step n={2} title="Payez avec ces coordonnées" />
+            <Step n={2} title={t("stepPay")} />
             <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
               {active.fields.map((field, i) => (
                 <div
@@ -486,7 +473,7 @@ export function CheckoutClient({
                       {field.label}
                     </div>
                     <div className={cn("mt-0.5 text-[14px] font-bold text-foreground break-words", field.mono && "mazed-tabular")}>
-                      {field.value}
+                      {field.ltr ? <Ltr>{field.value}</Ltr> : field.value}
                     </div>
                   </div>
                   {field.copyable && (
@@ -501,9 +488,9 @@ export function CheckoutClient({
                       )}
                     >
                       {copiedField === field.label ? (
-                        <><Check className="size-3.5" strokeWidth={2.5} /> Copié</>
+                        <><Check className="size-3.5" strokeWidth={2.5} /> {t("copied")}</>
                       ) : (
-                        <><Copy className="size-3.5" strokeWidth={2} /> Copier</>
+                        <><Copy className="size-3.5" strokeWidth={2} /> {t("copy")}</>
                       )}
                     </button>
                   )}
@@ -514,7 +501,7 @@ export function CheckoutClient({
         )}
 
         {/* ── STEP 3: upload receipt ── */}
-        <Step n={3} title="Téléversez le reçu du virement" />
+        <Step n={3} title={t("stepUpload")} />
         <div className="space-y-2.5">
           {files.map((f, i) => (
             <div key={`${f.name}-${i}`} className="flex items-center gap-3 rounded-2xl border border-[var(--gold-soft)] bg-[var(--gold-faint)]/40 p-3.5">
@@ -522,14 +509,14 @@ export function CheckoutClient({
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] font-semibold">{f.name}</div>
                 <div className="text-[11px] text-[var(--foreground-muted)]">
-                  {(f.size / 1024).toFixed(0)} Ko
+                  {t("fileSize", { size: (f.size / 1024).toFixed(0) })}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
                 className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:border-red-300 hover:text-red-600"
-                aria-label={`Retirer ${f.name}`}
+                aria-label={t("removeFile", { name: f.name })}
               >
                 <X className="size-4" strokeWidth={2} />
               </button>
@@ -539,10 +526,10 @@ export function CheckoutClient({
             <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-[var(--gold-soft)] bg-[var(--gold-faint)]/30 p-7 text-center transition hover:border-[var(--gold)] hover:bg-[var(--gold-faint)]/60">
               <Upload className="size-7 text-[var(--gold)]" strokeWidth={1.8} />
               <span className="text-[14px] font-bold text-foreground">
-                {files.length === 0 ? "Choisir une photo ou un PDF" : "Ajouter une autre image"}
+                {files.length === 0 ? t("chooseFile") : t("addAnother")}
               </span>
               <span className="text-[11px] text-[var(--foreground-muted)]">
-                JPG · PNG · HEIC · PDF · max {MAX_FILE_MB} Mo · jusqu&apos;à {MAX_RECEIPTS} images ({files.length}/{MAX_RECEIPTS})
+                {t("uploadHint", { maxMb: MAX_FILE_MB, max: MAX_RECEIPTS, used: files.length })}
               </span>
               <input
                 ref={fileInputRef}
@@ -569,13 +556,13 @@ export function CheckoutClient({
           )}
         >
           {submitting ? (
-            <><Loader2 className="size-5 animate-spin" /> Envoi…</>
+            <><Loader2 className="size-5 animate-spin" /> {t("sending")}</>
           ) : (
-            <><Upload className="size-5" strokeWidth={2.5} /> Envoyer {files.length > 1 ? `les ${files.length} reçus` : "le reçu"}</>
+            <><Upload className="size-5" strokeWidth={2.5} /> {t("send", { count: files.length })}</>
           )}
         </button>
         <p className="text-center text-[11px] text-[var(--foreground-muted)]">
-          {files.length > 0 ? "Validation sous 24 h — vous serez notifié(e)." : "Téléversez d'abord le reçu pour activer le bouton."}
+          {files.length > 0 ? t("hintReady") : t("hintEmpty")}
         </p>
 
         {/* Cancel — small, out of the way */}
@@ -586,7 +573,7 @@ export function CheckoutClient({
             disabled={cancelling}
             className="mx-auto block text-[12px] font-semibold text-[var(--foreground-subtle)] underline underline-offset-2 hover:text-red-500 disabled:opacity-50"
           >
-            {cancelling ? "Annulation…" : "Annuler ce paiement"}
+            {cancelling ? t("cancelling") : t("cancelPayment")}
           </button>
         )}
         </div>

@@ -22,6 +22,12 @@ export type InstructionField = {
   copyable?: boolean;
   /** Render in monospaced tabular type — IBANs, references, amounts. */
   mono?: boolean;
+  /**
+   * Lay the value out left-to-right even on an Arabic page — RIB, IBAN, D17
+   * number, reference. Spaced digit groups would otherwise come out in
+   * reverse order. Not the amount: "15.00 د.ت" reads right as it is.
+   */
+  ltr?: boolean;
 };
 
 export type ProviderInstructions = {
@@ -70,6 +76,30 @@ function fmt(amountTND: number): string {
   return amountTND.toFixed(2);
 }
 
+/** The words of the instructions — `checkout.instructions.*` in messages. */
+export type InstructionTextKey =
+  | "bankLabel"
+  | "bankShortLabel"
+  | "bankDescription"
+  | "bankNextStep"
+  | "bankReference"
+  | "d17Label"
+  | "d17Description"
+  | "d17NextStep"
+  | "d17Number"
+  | "d17Reference"
+  | "beneficiary"
+  | "bank"
+  | "amount"
+  | "amountValue";
+
+/**
+ * A translator bound to `checkout.instructions`, in the payer's language. This
+ * module stays free of next-intl; the page passes
+ * `await getTranslations("checkout.instructions")`.
+ */
+export type InstructionTexts = (key: InstructionTextKey, values?: { amount: string }) => string;
+
 /**
  * Returns both payment options (bank transfer + D17) with the data the
  * UI needs to render them. If `payee` is omitted, falls back to the
@@ -80,43 +110,41 @@ export function paymentInstructions(opts: {
   paymentId: string;
   amountTND: number;
   payee?: PayeeDetails;
+  t: InstructionTexts;
 }): ProviderInstructions[] {
   const ref = paymentReference(opts.paymentId);
   const amt = fmt(opts.amountTND);
   const p = opts.payee ?? DEFAULT_PAYEE;
+  const t = opts.t;
 
   return [
     {
       value: "bank_transfer",
-      label: "Virement bancaire (RIB)",
-      shortLabel: "Virement",
-      description:
-        "Effectuez un virement depuis votre application bancaire ou en agence vers le compte ci-dessous, puis revenez ici pour téléverser le reçu.",
+      label: t("bankLabel"),
+      shortLabel: t("bankShortLabel"),
+      description: t("bankDescription"),
       fields: [
-        { label: "Bénéficiaire", value: p.name },
-        { label: "Banque", value: p.bank },
-        { label: "RIB", value: p.rib, copyable: true, mono: true },
-        { label: "IBAN", value: p.iban, copyable: true, mono: true },
-        { label: "Montant", value: `${amt} TND`, copyable: true, mono: true },
-        { label: "Référence (à indiquer dans le motif)", value: ref, copyable: true, mono: true },
+        { label: t("beneficiary"), value: p.name },
+        { label: t("bank"), value: p.bank },
+        { label: "RIB", value: p.rib, copyable: true, mono: true, ltr: true },
+        { label: "IBAN", value: p.iban, copyable: true, mono: true, ltr: true },
+        { label: t("amount"), value: t("amountValue", { amount: amt }), copyable: true, mono: true },
+        { label: t("bankReference"), value: ref, copyable: true, mono: true, ltr: true },
       ],
-      nextStep:
-        "Téléversez une photo lisible de votre ordre de virement (reçu, capture e-banking, ou avis d'agence).",
+      nextStep: t("bankNextStep"),
     },
     {
       value: "d17",
-      label: "D17 · La Poste Tunisienne",
+      label: t("d17Label"),
       shortLabel: "D17",
-      description:
-        "Envoyez le montant depuis votre application D17 vers le numéro Mazed Immo, puis téléversez la confirmation reçue par SMS ou dans l'app.",
+      description: t("d17Description"),
       fields: [
-        { label: "Numéro D17 Mazed Immo", value: p.d17, copyable: true, mono: true },
-        { label: "Bénéficiaire", value: p.name },
-        { label: "Montant", value: `${amt} TND`, copyable: true, mono: true },
-        { label: "Référence (libellé du transfert)", value: ref, copyable: true, mono: true },
+        { label: t("d17Number"), value: p.d17, copyable: true, mono: true, ltr: true },
+        { label: t("beneficiary"), value: p.name },
+        { label: t("amount"), value: t("amountValue", { amount: amt }), copyable: true, mono: true },
+        { label: t("d17Reference"), value: ref, copyable: true, mono: true, ltr: true },
       ],
-      nextStep:
-        "Téléversez la capture d'écran de la confirmation D17 (référence + montant lisibles).",
+      nextStep: t("d17NextStep"),
     },
   ];
 }

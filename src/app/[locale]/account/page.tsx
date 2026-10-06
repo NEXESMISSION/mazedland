@@ -5,6 +5,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import { SmsNotificationsToggle } from "@/components/account/SmsNotificationsToggle";
+import { Ltr } from "@/components/ui/Ltr";
 import {
   Wallet,
   ChevronRight,
@@ -73,7 +74,7 @@ export default async function AccountPage() {
           {/* Ambient gold blob behind the card, very low opacity. */}
           <div
             aria-hidden
-            className="mazed-gradient-blob mazed-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
+            className="mazed-gradient-blob mazed-gradient-blob-lg absolute -start-1/3 -top-1/4 -z-10 opacity-20"
           />
 
           <div className="relative overflow-hidden rounded-3xl bg-surface ring-1 ring-border shadow-[var(--shadow-md)]">
@@ -90,7 +91,7 @@ export default async function AccountPage() {
                   <span className="gradient-gold-text">{t("guestTitle")}</span>
                 </h1>
                 <p className="mt-2 text-[12.5px] text-muted">
-                  Connectez-vous pour continuer.
+                  {t("guestBody")}
                 </p>
               </div>
 
@@ -115,7 +116,7 @@ export default async function AccountPage() {
                 href="/annonces"
                 className="inline-flex items-center gap-1.5 text-[12px] font-bold text-muted transition hover:text-gold-bright"
               >
-                Explorer sans compte
+                {t("browseWithoutAccount")}
                 <ArrowRight
                   className={`size-3 ${isRTL ? "rotate-180" : ""}`}
                   strokeWidth={2.4}
@@ -138,17 +139,21 @@ export default async function AccountPage() {
   // so on the page a signed-in user lands on, five of the seven rows led
   // nowhere they had asked to go. What remains is what the product does.
   const accountActions: ActionItem[] = [
-    { href: "/account/listings", Icon: FileText, title: "Mes annonces", body: "Brouillons, annonces publiées et expirées." },
-    { href: "/annonces/nouvelle", Icon: Plus, title: "Publier une annonce", body: "Terrain, maison, appartement ou local." },
-    { href: "/account/activity", Icon: Heart, title: "Mes favoris", body: "Les annonces que vous avez enregistrées." },
-    { href: "/account/payments", Icon: Wallet, title: "Mes paiements", body: "Frais de publication, options et reçus." },
+    { href: "/account/listings", Icon: FileText, title: t("actions.listingsTitle"), body: t("actions.listingsBody") },
+    { href: "/annonces/nouvelle", Icon: Plus, title: t("actions.publishTitle"), body: t("actions.publishBody") },
+    { href: "/account/activity", Icon: Heart, title: t("actions.favoritesTitle"), body: t("actions.favoritesBody") },
+    { href: "/account/payments", Icon: Wallet, title: t("actions.paymentsTitle"), body: t("actions.paymentsBody") },
   ];
   if (role === "admin") {
-    accountActions.push({ href: "/admin", Icon: LayoutDashboard, title: "Console admin", body: "Annonces, paiements et vendeurs." });
+    accountActions.push({ href: "/admin", Icon: LayoutDashboard, title: t("actions.adminTitle"), body: t("actions.adminBody") });
   }
   const groups: { label: string; items: ActionItem[] }[] = [
-    { label: "Mon espace", items: accountActions },
+    { label: t("mySpace"), items: accountActions },
   ];
+
+  // An e-mail or a phone number: either way a left-to-right run, and a bare
+  // "+216…" in a right-to-left line would show its plus sign at the far end.
+  const contact = contactLine ? <Ltr>{contactLine}</Ltr> : null;
 
   const identity = (
     <section className="mazed-surface-navy-luxe relative overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25">
@@ -162,14 +167,14 @@ export default async function AccountPage() {
               isRTL ? "font-arabic" : ""
             }`}
           >
-            {fullName ?? contactLine ?? ""}
+            {fullName ?? contact ?? ""}
           </div>
           {fullName && contactLine && (
-            <div className="mt-0.5 truncate text-[11px] text-muted">{contactLine}</div>
+            <div className="mt-0.5 truncate text-[11px] text-muted">{contact}</div>
           )}
           {role === "admin" && (
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span className="mazed-pill-gold">Administrateur</span>
+              <span className="mazed-pill-gold">{t("adminBadge")}</span>
             </div>
           )}
         </div>
@@ -196,16 +201,16 @@ export default async function AccountPage() {
           </section>
         ))}
         <section className="mt-5">
-          <p className="mazed-eyebrow mb-2">Notifications</p>
+          <p className="mazed-eyebrow mb-2">{t("notifications")}</p>
           <div className="overflow-hidden rounded-xl bg-surface ring-1 ring-border">
             <SmsNotificationsToggle initial={smsEnabled} />
           </div>
         </section>
         <div className="mt-6">
-          <SignOutButton label="Se déconnecter" />
+          <SignOutButton label={t("signOut")} />
         </div>
         <div className="mt-2">
-          <DeleteAccountButton label="Supprimer mon compte" />
+          <DeleteAccountButton label={t("deleteAccount")} />
         </div>
       </div>
 
@@ -218,16 +223,16 @@ export default async function AccountPage() {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className={`text-[24px] font-extrabold tracking-tight ${isRTL ? "font-arabic" : ""}`}>
-                {fullName ?? contactLine ?? ""}
+                {fullName ?? contact ?? ""}
               </h1>
-              {role === "admin" && <span className="mazed-pill-gold">Administrateur</span>}
+              {role === "admin" && <span className="mazed-pill-gold">{t("adminBadge")}</span>}
             </div>
             {fullName && contactLine && (
-              <p className="mt-1 text-[13.5px] text-muted">{contactLine}</p>
+              <p className="mt-1 text-[13.5px] text-muted">{contact}</p>
             )}
           </div>
           <div className="shrink-0">
-            <SignOutButton label="Se déconnecter" />
+            <SignOutButton label={t("signOut")} />
           </div>
         </section>
 
@@ -242,13 +247,13 @@ export default async function AccountPage() {
           </div>
         ))}
         <div className="mt-8">
-          <p className="mazed-eyebrow mb-4">Notifications</p>
+          <p className="mazed-eyebrow mb-4">{t("notifications")}</p>
           <div className="max-w-xl overflow-hidden rounded-2xl bg-surface ring-1 ring-border">
             <SmsNotificationsToggle initial={smsEnabled} />
           </div>
         </div>
         <div className="mt-10 max-w-sm">
-          <DeleteAccountButton label="Supprimer mon compte" />
+          <DeleteAccountButton label={t("deleteAccount")} />
         </div>
       </div>
     </>
@@ -277,7 +282,7 @@ function ActionTile({ href, Icon, title, body, isRTL }: ActionItem & { isRTL: bo
         <h3 className={`text-[17px] font-bold leading-tight text-foreground ${isRTL ? "font-arabic" : ""}`}>
           {title}
         </h3>
-        <ArrowUpRight className="size-4 shrink-0 text-muted transition group-hover:text-gold" strokeWidth={2} />
+        <ArrowUpRight className="size-4 shrink-0 text-muted transition group-hover:text-gold rtl:-scale-x-100" strokeWidth={2} />
       </div>
       <p className="mt-1 text-[13px] leading-snug text-muted">{body}</p>
     </Link>

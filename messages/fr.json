@@ -62,14 +62,369 @@
     "guestBody": "Connectez-vous pour continuer.",
     "login": "Se connecter",
     "signup": "Créer un compte",
-    "sections": {
-      "kyc": "Vérification d'identité",
-      "kycBody": "Requis pour enchérir et vendre.",
-      "inspections": "Mes expertises",
-      "inspectionsBody": "Vos rapports d'expertise.",
-      "payments": "Paiements",
-      "paymentsBody": "Dépôts, commissions, remboursements.",
-      "language": "Langue"
+    "browseWithoutAccount": "Explorer sans compte",
+    "mySpace": "Mon espace",
+    "adminBadge": "Administrateur",
+    "notifications": "Notifications",
+    "signOut": "Se déconnecter",
+    "deleteAccount": "Supprimer mon compte",
+    "actions": {
+      "listingsTitle": "Mes annonces",
+      "listingsBody": "Brouillons, annonces publiées et expirées.",
+      "publishTitle": "Publier une annonce",
+      "publishBody": "Terrain, maison, appartement ou local.",
+      "favoritesTitle": "Mes favoris",
+      "favoritesBody": "Les annonces que vous avez enregistrées.",
+      "paymentsTitle": "Mes paiements",
+      "paymentsBody": "Frais de publication, options et reçus.",
+      "adminTitle": "Console admin",
+      "adminBody": "Annonces, paiements et vendeurs."
+    }
+  },
+  "account": {
+    "untitledDraft": "Brouillon",
+    "listings": {
+      "title": "Mes annonces",
+      "subtitleEmpty": "Vous n'avez pas encore publié.",
+      "subtitleCount": "{count, plural, one {# annonce · gérez-les ici.} other {# annonces · gérez-les ici.}}",
+      "creditsLeft": "{count, plural, one {# restante} other {# restantes}}",
+      "publish": "Publier",
+      "tabs": {
+        "all": "Toutes",
+        "online": "En ligne",
+        "inProgress": "En cours",
+        "toFix": "À corriger",
+        "ended": "Terminées"
+      },
+      "status": {
+        "draft": "Brouillon",
+        "pending_payment": "À payer",
+        "pending_review": "Vérification",
+        "published": "En ligne",
+        "rejected": "À corriger",
+        "expired": "Expirée",
+        "sold": "Vendue",
+        "archived": "Retirée"
+      },
+      "statusHint": {
+        "draft": "Pas encore envoyée.",
+        "pending_payment": "Réglez les frais pour lancer la vérification.",
+        "pending_review": "Notre équipe la contrôle — moins de 24 h.",
+        "expired": "Renouvelez-la pour la remettre en ligne."
+      },
+      "receiptInReview": "Reçu en vérification",
+      "receiptInReviewHint": "Nous validons votre reçu — moins de 24 h.",
+      "price": "{amount} TND",
+      "priceOnRequest": "Sur demande",
+      "free": "Gratuit",
+      "expiresToday": "Expire aujourd'hui",
+      "daysLeft": "{days, plural, one {Encore # jour en ligne} other {Encore # jours en ligne}}",
+      "renewableOn": "· renouvelable le {date}",
+      "columns": {
+        "listing": "Annonce",
+        "status": "Statut",
+        "price": "Prix",
+        "published": "Publiée",
+        "expires": "Expire",
+        "action": "Action"
+      },
+      "today": "aujourd'hui",
+      "inDays": "dans {days} j",
+      "viewReceipt": "Voir le reçu",
+      "pay": "Payer",
+      "resume": "Reprendre",
+      "fix": "Corriger",
+      "view": "Voir",
+      "emptyTitle": "Aucune annonce pour le moment",
+      "emptyBody": "Publiez votre première annonce — appartement, terrain ou local.",
+      "publishListing": "Publier une annonce",
+      "emptyTabTitle": "Rien dans « {tab} »",
+      "emptyTabBody": "Vos autres annonces sont dans les onglets voisins.",
+      "seeAll": "Voir toutes les annonces"
+    },
+    "listingActions": {
+      "mark_sold": {
+        "label": "C'est vendu",
+        "title": "Ce bien est vendu ?",
+        "body": "L'annonce quitte le catalogue et passe dans « Terminées ». Tant que les jours déjà payés courent, vous pouvez la remettre en ligne gratuitement.",
+        "confirm": "Oui, c'est vendu",
+        "done": "Annonce marquée vendue. Félicitations !"
+      },
+      "withdraw": {
+        "label": "Retirer",
+        "title": "Retirer cette annonce ?",
+        "body": "Elle disparaît du site immédiatement. Vos jours de publication continuent de courir : vous pourrez la remettre en ligne gratuitement jusqu'à leur terme.",
+        "confirm": "Retirer du site",
+        "done": "Annonce retirée du site."
+      },
+      "relist": {
+        "label": "Remettre en ligne",
+        "title": "Remettre en ligne ?",
+        "body": "Elle repart dans le catalogue tout de suite, sans nouvelle vérification et sans frais — ce sont les jours de votre publication en cours.",
+        "confirm": "Remettre en ligne",
+        "done": "Annonce de nouveau en ligne."
+      },
+      "failed": "Action impossible pour le moment.",
+      "networkError": "Erreur réseau — vérifiez votre connexion.",
+      "cancel": "Annuler"
+    },
+    "renew": {
+      "failed": "Renouvellement impossible.",
+      "doneWithCredits": "Annonce renvoyée à la vérification. {remaining, plural, one {# publication restante} other {# publications restantes}}.",
+      "done": "Annonce renvoyée à la vérification — moins de 24 h.",
+      "networkError": "Erreur réseau.",
+      "button": "Renouveler",
+      "viaCredit": "1 publication du forfait",
+      "paid": "payante"
+    },
+    "payments": {
+      "eyebrow": "Historique",
+      "title": "Mes paiements",
+      "emptySubtitle": "Vos frais de publication et leur statut.",
+      "subtitle": "Frais de publication, options et leur statut.",
+      "empty": "Aucun paiement pour le moment.",
+      "browse": "Parcourir les annonces",
+      "kind": {
+        "listing_fee": "Frais de publication",
+        "renewal": "Renouvellement",
+        "promo": "Mise en avant",
+        "listing_pack": "Pack d'annonces",
+        "badge": "Badge vendeur"
+      },
+      "status": {
+        "pending": "Reçu à téléverser",
+        "pending_review": "Reçu en vérification",
+        "captured": "Payé",
+        "refunded": "Remboursé",
+        "failed": "Refusé",
+        "cancelled": "Annulé"
+      },
+      "provider": {
+        "bank_transfer": "Virement",
+        "manual": "Enregistré par l'admin"
+      },
+      "action": {
+        "upload": "Téléverser le reçu",
+        "review": "Voir / corriger le reçu",
+        "resubmit": "Soumettre à nouveau"
+      },
+      "cancelFailed": "Annulation impossible.",
+      "cancelDone": "Paiement annulé.",
+      "toHandle": "À traiter",
+      "tabs": {
+        "all": "Tout",
+        "action": "À traiter",
+        "paid": "Payés",
+        "refunded": "Remboursés"
+      },
+      "spentTotal": "Total dépensé",
+      "inReview": "En vérification",
+      "amount": "{amount} TND",
+      "rejectedWithReason": "Refusé : {reason}",
+      "rejectedResubmit": "Refusé — à soumettre de nouveau",
+      "emptyFilter": "Aucun paiement dans cette catégorie.",
+      "rejectionReason": "Motif du refus : {reason}",
+      "confirm": "Confirmer",
+      "no": "Non",
+      "cancel": "Annuler",
+      "receipt": "Reçu",
+      "viewListing": "Voir l'annonce"
+    },
+    "favorites": {
+      "title": "Mes favoris",
+      "subtitleEmpty": "Vous n'avez rien enregistré pour l'instant.",
+      "subtitleCount": "{count, plural, one {# annonce enregistrée.} other {# annonces enregistrées.}}",
+      "emptyBody": "Touchez le cœur sur une annonce pour la retrouver ici.",
+      "browse": "Parcourir les annonces",
+      "priceOnRequest": "Prix sur demande",
+      "onRequest": "Sur demande",
+      "price": "{amount} TND",
+      "unavailable": "plus disponible"
+    },
+    "deleteAccount": {
+      "blockers": {
+        "active_listings": "Une de vos annonces est en cours de vérification. Attendez la décision avant de supprimer votre compte.",
+        "pending_payments": "Un paiement est en cours de vérification. Attendez sa validation avant de supprimer votre compte."
+      },
+      "impossible": "Suppression impossible pour le moment.",
+      "blockerUnknown": "Une opération est encore en cours.",
+      "failed": "La suppression a échoué. Réessayez plus tard.",
+      "deleted": "Votre compte a été supprimé.",
+      "networkError": "La suppression a échoué. Vérifiez votre connexion.",
+      "confirmTitle": "Supprimer définitivement votre compte ?",
+      "confirmBody": "Cette action est irréversible. Vos données personnelles et vos pièces d'identité seront effacées. Tapez <strong>{word}</strong> pour confirmer.",
+      "confirmWord": "SUPPRIMER",
+      "cancel": "Annuler",
+      "deleting": "Suppression…",
+      "delete": "Supprimer"
+    },
+    "sms": {
+      "enabled": "SMS importants activés.",
+      "disabled": "SMS importants désactivés.",
+      "failed": "Échec de la mise à jour. Réessayez.",
+      "title": "SMS pour les alertes importantes",
+      "body": "Un SMS quand votre annonce est publiée ou refusée, quand elle approche de sa date de retrait, et pour chaque décision de paiement. Le détail reste dans l'application et par e-mail.",
+      "ariaLabel": "Activer les SMS pour les alertes importantes"
+    }
+  },
+  "payment": {
+    "payButton": {
+      "pay": "Payer",
+      "failed": "Paiement impossible pour le moment.",
+      "sent": "Annonce envoyée à la vérification.",
+      "networkError": "Erreur réseau."
+    },
+    "success": {
+      "kind": {
+        "listing_fee": "Frais de publication réglés",
+        "renewal": "Renouvellement réglé",
+        "promo": "Mise en avant réglée",
+        "listing_pack": "Pack d'annonces réglé",
+        "badge": "Badge vendeur réglé"
+      },
+      "kindBody": {
+        "listing_fee": "Votre annonce est publiée dès que notre équipe l'a vérifiée.",
+        "renewal": "Votre annonce reste en ligne pour une nouvelle période.",
+        "promo": "La mise en avant s'active dès la validation du paiement.",
+        "listing_pack": "Vos crédits d'annonce sont disponibles dans votre compte.",
+        "badge": "Le badge apparaît sur vos annonces après vérification."
+      },
+      "status": {
+        "pending": "Reçu à téléverser",
+        "pending_review": "Reçu en vérification",
+        "captured": "Confirmé",
+        "failed": "Refusé",
+        "refunded": "Remboursé"
+      },
+      "receivedTitle": "Paiement reçu",
+      "receivedBody": "Nous avons enregistré votre paiement. Vous serez notifié dès que tout est confirmé.",
+      "notFoundTitle": "Reçu introuvable",
+      "notFoundBody": "Nous n'avons pas trouvé ce paiement. Si la somme a été débitée, contactez le support avec le numéro de référence ci-dessus.",
+      "defaultBody": "Nous avons enregistré votre paiement.",
+      "eyebrowConfirmed": "Paiement confirmé",
+      "eyebrowRejected": "Reçu refusé",
+      "eyebrowWaiting": "En attente de confirmation",
+      "failedBody": "Votre reçu n'a pas été validé. Rien n'a été encaissé — vous pouvez relancer le paiement et envoyer un nouveau justificatif.",
+      "payAgain": "Payer à nouveau",
+      "amount": "Montant",
+      "reference": "Référence",
+      "date": "Date",
+      "statusLabel": "Statut",
+      "redirecting": "Redirection automatique…",
+      "continue": "Continuer",
+      "back": "Retour",
+      "refLine": "Réf · <ref>{id}</ref>"
+    },
+    "failed": {
+      "reasons": {
+        "rejected": "Le reçu n'a pas pu être validé. Vérifiez le montant et la référence, puis renvoyez-le.",
+        "unreadable": "Le reçu était illisible. Renvoyez une photo nette du justificatif.",
+        "wrong_amount": "Le montant reçu ne correspond pas aux frais de publication.",
+        "expired": "Le délai de paiement a expiré.",
+        "cancelled": "Vous avez annulé le paiement.",
+        "unknown": "Le paiement n'a pas abouti. Notre équipe peut vous dire pourquoi."
+      },
+      "eyebrow": "Paiement refusé",
+      "title": "La transaction n'a pas abouti",
+      "attemptedAmount": "Montant tenté",
+      "reference": "Référence",
+      "amount": "{amount} TND",
+      "noDebit": "Aucun débit n'a été effectué sur votre compte. Vous pouvez réessayer immédiatement.",
+      "retry": "Réessayer",
+      "support": "Contacter le support"
+    }
+  },
+  "checkout": {
+    "unavailable": {
+      "title": "Paiement momentanément indisponible",
+      "body": "Nos coordonnées de paiement sont en cours de mise à jour. Votre annonce est enregistrée : revenez un peu plus tard, ou contactez-nous pour finaliser la publication.",
+      "myListings": "Mes annonces",
+      "support": "Contacter le support"
+    },
+    "feeLabel": "Frais d'annonce",
+    "feeBody": "Frais de publication de votre annonce. Elle part en vérification dès validation du reçu.",
+    "cancelConfirm": "Annuler ce paiement ? Vous pourrez en démarrer un nouveau à tout moment.",
+    "cancelFailed": "Annulation impossible.",
+    "cancelNetworkError": "Erreur réseau lors de l'annulation.",
+    "copyFailed": "Impossible de copier.",
+    "maxImages": "Maximum {max} images.",
+    "maxImagesExtra": "Maximum {max} images — fichiers en trop ignorés.",
+    "badFormat": "{name} : format non accepté (JPG, PNG, WebP, HEIC, PDF).",
+    "tooLarge": "{name} : trop volumineux (max {maxMb} Mo).",
+    "sessionExpired": "Session expirée — reconnectez-vous.",
+    "uploadFailed": "Échec du téléversement du reçu. Réessayez.",
+    "submitFailed": "Échec de la soumission.",
+    "networkError": "Erreur réseau. Vérifiez votre connexion et réessayez.",
+    "cancelledTitle": "Paiement annulé",
+    "cancelledBody": "Aucun montant n'a été prélevé. Vous pouvez relancer le paiement à tout moment depuis l'annonce.",
+    "viewListing": "Voir l'annonce",
+    "home": "Accueil",
+    "sentTitle": "Reçu transmis",
+    "sentBody": "Justificatif de <b>{amount}</b> bien reçu.",
+    "sentBodyFor": "Justificatif de <b>{amount}</b> pour <b>{title}</b> bien reçu.",
+    "sentSteps": {
+      "review": "Notre équipe vérifie votre reçu (moins de 24 h).",
+      "notify": "Vous recevez une notification : validé ou correction demandée.",
+      "publish": "Votre annonce part en vérification, puis passe en ligne."
+    },
+    "myListings": "Mes annonces",
+    "editListing": "← Modifier l'annonce",
+    "receiptUnderReview": "Reçu en vérification — moins de 24 h. Vous serez notifié(e) dès qu'il est validé. Envoyez-en un autre seulement s'il y a une erreur.",
+    "stepMethod": "Choisissez le mode de paiement",
+    "providerBank": "Virement (RIB)",
+    "providerD17": "D17 mobile",
+    "stepPay": "Payez avec ces coordonnées",
+    "copied": "Copié",
+    "copy": "Copier",
+    "stepUpload": "Téléversez le reçu du virement",
+    "fileSize": "{size} Ko",
+    "removeFile": "Retirer {name}",
+    "chooseFile": "Choisir une photo ou un PDF",
+    "addAnother": "Ajouter une autre image",
+    "uploadHint": "JPG · PNG · HEIC · PDF · max {maxMb} Mo · jusqu'à {max} images ({used}/{max})",
+    "sending": "Envoi…",
+    "send": "{count, plural, one {Envoyer le reçu} other {Envoyer les # reçus}}",
+    "hintReady": "Validation sous 24 h — vous serez notifié(e).",
+    "hintEmpty": "Téléversez d'abord le reçu pour activer le bouton.",
+    "cancelling": "Annulation…",
+    "cancelPayment": "Annuler ce paiement",
+    "instructions": {
+      "bankLabel": "Virement bancaire (RIB)",
+      "bankShortLabel": "Virement",
+      "bankDescription": "Effectuez un virement depuis votre application bancaire ou en agence vers le compte ci-dessous, puis revenez ici pour téléverser le reçu.",
+      "bankNextStep": "Téléversez une photo lisible de votre ordre de virement (reçu, capture e-banking, ou avis d'agence).",
+      "bankReference": "Référence (à indiquer dans le motif)",
+      "d17Label": "D17 · La Poste Tunisienne",
+      "d17Description": "Envoyez le montant depuis votre application D17 vers le numéro Mazed Immo, puis téléversez la confirmation reçue par SMS ou dans l'app.",
+      "d17NextStep": "Téléversez la capture d'écran de la confirmation D17 (référence + montant lisibles).",
+      "d17Number": "Numéro D17 Mazed Immo",
+      "d17Reference": "Référence (libellé du transfert)",
+      "beneficiary": "Bénéficiaire",
+      "bank": "Banque",
+      "amount": "Montant",
+      "amountValue": "{amount} TND"
+    }
+  },
+  "accountApi": {
+    "renew": {
+      "notRenewable": "Cette annonce est encore en ligne ou en cours de traitement.",
+      "contactRequired": "Ajoutez un numéro joignable avant de renouveler."
+    },
+    "status": {
+      "refusal": {
+        "mark_sold": "Seule une annonce en ligne peut être marquée vendue.",
+        "withdraw": "Cette annonce n'est pas en ligne.",
+        "relist": "Cette annonce est déjà en ligne ou en cours de traitement."
+      },
+      "windowClosed": "Votre période de publication est terminée — renouvelez l'annonce.",
+      "contactRequired": "Ajoutez un numéro joignable avant de republier."
+    }
+  },
+  "paymentApi": {
+    "cancel": {
+      "underReview": "Le reçu est déjà en revue. Contactez l'administration pour annuler.",
+      "notCancellable": "Le paiement n'est plus annulable.",
+      "changed": "Le paiement a changé d'état entre-temps."
     }
   },
   "landing": {

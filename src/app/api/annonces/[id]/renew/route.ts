@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslator } from "@/lib/i18n/server";
 import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct } from "@/lib/products";
 
 /**
@@ -49,17 +50,16 @@ export async function POST(
   // Only something that has actually come down can be renewed. A live listing
   // renewing itself would be paying twice for one publication.
   if (!["expired", "archived", "sold"].includes(listing.status as string)) {
+    const t = await apiTranslator(req, "accountApi.renew");
     return NextResponse.json(
-      {
-        error: "not_renewable",
-        detail: "Cette annonce est encore en ligne ou en cours de traitement.",
-      },
+      { error: "not_renewable", detail: t("notRenewable") },
       { status: 409 },
     );
   }
   if (!listing.contact_phone) {
+    const t = await apiTranslator(req, "accountApi.renew");
     return NextResponse.json(
-      { error: "contact_required", detail: "Ajoutez un numéro joignable avant de renouveler." },
+      { error: "contact_required", detail: t("contactRequired") },
       { status: 400 },
     );
   }
