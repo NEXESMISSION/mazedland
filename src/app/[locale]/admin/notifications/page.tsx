@@ -1,6 +1,7 @@
 import { AdminNotificationsClient } from "./AdminNotificationsClient";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
+import { getTranslations } from "next-intl/server";
 
 /**
  * Admin notification control center.
@@ -15,14 +16,15 @@ import { SiteTabs } from "@/components/admin/kit/SiteTabs";
  * and live refreshes after sending. RLS + same-origin checks on the
  * /api/admin/notifications/* routes block non-admin access.
  */
-export default function AdminNotificationsPage() {
+export default async function AdminNotificationsPage() {
+  const t = await getTranslations("adminNotifications");
   return (
     <div>
       <SiteTabs />
       <AdminPageHeader
-        eyebrow="Outils admin"
-        title="Notifications"
-        description="Composer un message ponctuel ou inspecter la file complète des notifications envoyées."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
 
       <div className="mt-5">

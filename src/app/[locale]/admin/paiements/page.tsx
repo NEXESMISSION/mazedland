@@ -3,12 +3,14 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminPager } from "@/components/admin/AdminPager";
 import {
   FullBleed, Toolbar, EmptyState, QueueKeys, StatusPill,
-  paymentKindLabel, EYEBROW, type Tab,
+  EYEBROW, type Tab,
 } from "@/components/admin/kit";
 import { ROW_BASE, ROW_IDLE, ROW_SELECTED, ROW_FOCUS } from "@/components/admin/kit/surface";
 import { Link } from "@/i18n/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { PaymentDetail, type PaymentDetailData } from "./PaymentDetail";
-import { formatTND } from "@/lib/utils";
+import { formatRelativeTime, formatTND } from "@/lib/utils";
+import { productName } from "@/lib/products";
 import { Receipt } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -37,13 +39,11 @@ const V3_KINDS = ["listing_fee", "listing_pack", "subscription", "promo", "badge
 
 type TabKey = "pending" | "captured" | "failed" | "all";
 
-const TAB_LABEL: Record<TabKey, string> = {
-  pending: "À valider",
-  captured: "Validés",
-  failed: "Refusés",
-  all: "Tous",
-};
+/** Tab labels live in messages: adminPayments.tabs.<key>. */
 const TAB_ORDER: TabKey[] = ["pending", "captured", "failed", "all"];
+
+/** Payment kinds with a label in messages: adminPayments.kinds.<kind>. */
+const KIND_KEYS = new Set(V3_KINDS);
 
 /** "À valider" spans two DB statuses: a receipt can arrive before or after the
  *  row moves to pending_review, and both are waiting on the same human. */
@@ -60,8 +60,10 @@ export default async function AdminPaiementsPage({
   searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string }>;
 }) {
   const sp = await searchParams;
+  const t = await getTranslations("adminPayments");
+  const locale = await getLocale();
   const admin = getServiceSupabase();
-  if (!admin) return <p className="text-[13px] text-muted">Service non configuré.</p>;
+  if (!admin) return <p className="text-[13px] text-muted">{t("serviceUnavailable")}</p>;
 
   const tab: TabKey = TAB_ORDER.includes(sp.status as TabKey)
     ? (sp.status as TabKey)
@@ -113,11 +115,13 @@ export default async function AdminPaiementsPage({
     } else if (r.status === "failed") counts.failed += 1;
   }
 
-  const tabs: Tab[] = TAB_ORDER.map((t) => ({
-    value: t,
-    label: TAB_LABEL[t],
-    count: counts[t],
+  const tabs: Tab[] = TAB_ORDER.map((k) => ({
+    value: k,
+    label: t(`tabs.${k}`),
+    count: counts[k],
   }));
+  const money = (n: number) => t("amount", { amount: formatTND(n, locale) });
+  const kindLabel = (kind: string) => (KIND_KEYS.has(kind) ? t(`kinds.${kind}`) : kind);
 
   type PayRow = {
     id: string; kind: string; status: string; amount: number | string;
@@ -139,28 +143,28 @@ export default async function AdminPaiementsPage({
   const listHref = `/admin/paiements${base.toString() ? `?${base.toString()}` : ""}`;
 
   const openId = sp.a ?? null;
-  const detail = openId ? await loadDetail(admin, openId) : null;
+  const detail = openId ? await loadDetail(admin, openId, locale, t("noName")) : null;
 
   return (
     <FullBleed>
       <header className="flex h-12 shrink-0 items-center gap-4 border-b border-border px-4">
         <h1 className="shrink-0 text-[13px] font-semibold tracking-tight text-foreground">
-          Paiements
+          {t("title")}
         </h1>
         <Toolbar
           tabs={tabs}
           defaultTab="pending"
-          searchPlaceholder="Référence, motif…"
+          searchPlaceholder={t("searchPlaceholder")}
           resetParams={["page", "a"]}
         />
         <div className="hidden shrink-0 items-baseline gap-4 xl:flex">
-          <span className={EYEBROW}>Ce mois</span>
+          <span className={EYEBROW}>{t("thisMonth")}</span>
           <span className="mazed-tabular text-[13px] font-semibold text-[var(--gold)]">
-            {formatTND(revenueMonth, "fr")} TND
+            {money(revenueMonth)}
           </span>
-          <span className={EYEBROW}>Total</span>
+          <span className={EYEBROW}>{t("total")}</span>
           <span className="mazed-tabular text-[13px] font-medium text-foreground">
-            {formatTND(revenueTotal, "fr")} TND
+            {money(revenueTotal)}
           </span>
         </div>
       </header>
@@ -178,12 +182,8 @@ export default async function AdminPaiementsPage({
               <EmptyState
                 Icon={Receipt}
                 tone={q ? "filtered" : "idle"}
-                title={q ? "Aucun paiement ne correspond" : `Rien dans « ${TAB_LABEL[tab]} »`}
-                hint={
-                  q
-                    ? "Essayez un autre terme, ou changez d'onglet."
-                    : "Aucun reçu n'attend une décision."
-                }
+                title={q ? t("emptyFiltered") : t("emptyTab", { tab: t(`tabs.${tab}`) })}
+                hint={q ? t("emptyFilteredHint") : t("emptyHint")}
               />
             </div>
           ) : (
@@ -210,21 +210,21 @@ export default async function AdminPaiementsPage({
                             selected ? "font-semibold text-foreground" : "font-medium text-foreground/90"
                           }`}
                         >
-                          {r.payer?.full_name ?? "Sans nom"}
+                          {r.payer?.full_name ?? t("noName")}
                         </span>
                         <span className="mt-0.5 block truncate text-[11.5px] text-subtle">
-                          {paymentKindLabel(r.kind)}
+                          {kindLabel(r.kind)}
                           {noReceipt && (
-                            <span className="text-[var(--tone-warn)]"> · aucun reçu</span>
+                            <span className="text-[var(--tone-warn)]"> · {t("noReceiptTag")}</span>
                           )}
                         </span>
                       </span>
                       <span className="shrink-0 text-end">
                         <span className="mazed-tabular block text-[12.5px] text-foreground/90">
-                          {formatTND(Number(r.amount) || 0, "fr")} TND
+                          {money(Number(r.amount) || 0)}
                         </span>
                         <span className="mazed-tabular mt-0.5 block text-[11px] text-subtle">
-                          {age(r.receipt_uploaded_at ?? r.created_at)}
+                          {formatRelativeTime(r.receipt_uploaded_at ?? r.created_at, locale)}
                         </span>
                       </span>
                     </Link>
@@ -249,9 +249,9 @@ export default async function AdminPaiementsPage({
           ) : (
             <div className="grid w-full place-items-center px-6">
               <p className="max-w-xs text-center text-[12.5px] text-subtle">
-                Choisissez un paiement à gauche.
+                {t("pickOne")}
                 <br />
-                <span className="text-[11.5px]">j / k pour parcourir, Entrée pour ouvrir.</span>
+                <span className="text-[11.5px]">{t("keysHint")}</span>
               </p>
             </div>
           )}
@@ -259,12 +259,6 @@ export default async function AdminPaiementsPage({
       </div>
     </FullBleed>
   );
-}
-
-function age(iso: string): string {
-  const days = Math.round((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days === 0) return "aujourd'hui";
-  return `il y a ${days} j`;
 }
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
@@ -276,7 +270,12 @@ type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
  * key: v3 fees never populated `payments.property_id`, which is also why the
  * `accept_listing_payment` RPC rejects every one of them.
  */
-async function loadDetail(admin: Admin, id: string): Promise<PaymentDetailData | null> {
+async function loadDetail(
+  admin: Admin,
+  id: string,
+  locale: string,
+  noName: string,
+): Promise<PaymentDetailData | null> {
   const { data } = await admin
     .from("payments")
     .select(
@@ -319,11 +318,16 @@ async function loadDetail(admin: Admin, id: string): Promise<PaymentDetailData |
           .maybeSingle()
       : Promise.resolve({ data: null }),
     r.metadata?.product_id
-      ? admin.from("products").select("name_fr").eq("id", r.metadata.product_id).maybeSingle()
+      ? admin
+          .from("products")
+          .select("name_fr, name_ar")
+          .eq("id", r.metadata.product_id)
+          .maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
   const listing = listingRes.data as { id: string; title: string; status: string } | null;
+  const product = productRes.data as { name_fr: string; name_ar: string | null } | null;
 
   return {
     id: r.id,
@@ -335,9 +339,11 @@ async function loadDetail(admin: Admin, id: string): Promise<PaymentDetailData |
     uploadedAt: r.receipt_uploaded_at,
     reviewedAt: r.reviewed_at,
     adminNotes: r.admin_notes,
-    sellerName: r.payer?.full_name ?? "Sans nom",
+    sellerName: r.payer?.full_name ?? noName,
     sellerPhone: r.payer?.phone ?? null,
-    productName: (productRes.data as { name_fr: string } | null)?.name_fr ?? null,
+    productName: product
+      ? productName({ nameFr: product.name_fr, nameAr: product.name_ar }, locale)
+      : null,
     listing,
     receipts,
   };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import type {
@@ -25,6 +26,7 @@ export function PopupForm({
 }: {
   initial: Popup | null;
 }) {
+  const t = useTranslations("adminPopups");
   const router = useRouter();
   const { toast } = useToast();
 
@@ -124,10 +126,10 @@ export function PopupForm({
       };
       if (!res.ok) {
         setError(data.error ?? "save_failed");
-        toast(data.error ?? "Erreur inconnue", "error");
+        toast(data.error ?? t("form.unknownError"), "error");
         return;
       }
-      toast(initial ? "Popup mis à jour" : "Popup créé", "success");
+      toast(initial ? t("form.updated") : t("form.created"), "success");
       router.push("/admin/popups");
       router.refresh();
     });
@@ -135,17 +137,17 @@ export function PopupForm({
 
   async function onDelete() {
     if (!initial) return;
-    if (!confirm(`Supprimer définitivement « ${slug} » ?`)) return;
+    if (!confirm(t("form.confirmDelete", { slug }))) return;
     const res = await fetch(`/api/admin/popups/${initial.id}`, {
       method: "DELETE",
       cache: "no-store",
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
-      toast((d as { error?: string }).error ?? "Suppression échouée", "error");
+      toast((d as { error?: string }).error ?? t("form.deleteFailed"), "error");
       return;
     }
-    toast("Popup supprimé", "success");
+    toast(t("form.deleted"), "success");
     router.push("/admin/popups");
     router.refresh();
   }
@@ -155,7 +157,7 @@ export function PopupForm({
       {/* Action bar — sticky so save is always one tap away from any field. */}
       <div className="sticky top-0 z-20 -mx-1 mb-5 flex items-center justify-between gap-3 rounded-2xl bg-background/95 px-2 py-2.5 backdrop-blur">
         <div className="text-[13px] font-bold text-foreground">
-          {initial ? "Modifier le popup" : "Nouveau popup"}
+          {initial ? t("editTitle") : t("newPopup")}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -164,7 +166,7 @@ export function PopupForm({
             className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-2 text-[11.5px] font-bold text-foreground ring-1 ring-border transition hover:ring-gold-soft/50"
           >
             <Eye className="size-4" strokeWidth={2.2} />
-            Aperçu
+            {t("form.preview")}
           </button>
           {initial && (
             <button
@@ -173,7 +175,7 @@ export function PopupForm({
               className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-3 py-2 text-[11.5px] font-bold text-red-700 ring-1 ring-red-500/30 transition hover:bg-red-500/20"
             >
               <Trash2 className="size-4" strokeWidth={2.2} />
-              Supprimer
+              {t("form.delete")}
             </button>
           )}
           <button
@@ -183,7 +185,7 @@ export function PopupForm({
             className="mazed-btn-luxe tap-target inline-flex items-center gap-1.5 px-4 py-2 text-[12px] disabled:opacity-50"
           >
             <Save className="size-4" strokeWidth={2.2} />
-            {saving ? "Enregistrement…" : "Enregistrer"}
+            {saving ? t("form.saving") : t("form.save")}
           </button>
         </div>
       </div>
@@ -191,58 +193,59 @@ export function PopupForm({
       {error && (
         <div className="mb-5 flex items-center gap-2 rounded-xl bg-red-500/10 px-4 py-3 text-[12.5px] font-semibold text-red-700 ring-1 ring-red-500/30">
           <AlertCircle className="size-4" strokeWidth={2.2} />
-          {humanError(error)}
+          {ERROR_CODES.has(error) ? t(`form.errors.${error}`) : error}
         </div>
       )}
 
       {/* ─── Identification ──────────────────────────────────────────── */}
-      <Section title="Identification" subtitle="Slug court (lettres, chiffres, tirets) — utilisé dans les logs et le localStorage anonyme.">
+      <Section title={t("form.sections.identification.title")} subtitle={t("form.sections.identification.subtitle")}>
         <div className="grid gap-3 lg:grid-cols-2">
-          <Field label="Slug" required>
+          <Field label={t("form.fields.slug")} required>
             <input
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
-              placeholder="ex. welcome-2026 ou kyc-nudge"
+              placeholder={t("form.fields.slugPlaceholder")}
+              dir="ltr"
               className="mazed-input"
             />
           </Field>
-          <Field label="Statut">
+          <Field label={t("form.fields.status")}>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as PopupStatus)}
               className="mazed-input"
             >
-              <option value="draft">Brouillon</option>
-              <option value="live">En ligne</option>
-              <option value="paused">En pause</option>
-              <option value="archived">Archivé</option>
+              <option value="draft">{t("status.draft")}</option>
+              <option value="live">{t("status.live")}</option>
+              <option value="paused">{t("status.paused")}</option>
+              <option value="archived">{t("status.archived")}</option>
             </select>
           </Field>
         </div>
 
         <div className="mt-3 grid gap-3 lg:grid-cols-3">
-          <Field label="Mode" hint="Diffusion = fenêtre temporelle. Règle = condition permanente.">
+          <Field label={t("form.fields.mode")} hint={t("form.fields.modeHint")}>
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value as PopupMode)}
               className="mazed-input"
             >
-              <option value="broadcast">Diffusion (one-shot)</option>
-              <option value="rule">Règle permanente</option>
+              <option value="broadcast">{t("form.options.mode.broadcast")}</option>
+              <option value="rule">{t("form.options.mode.rule")}</option>
             </select>
           </Field>
-          <Field label="Variante" hint="V1 ne rend que la modale ; bannière + sheet arrivent en phase 2.">
+          <Field label={t("form.fields.variant")} hint={t("form.fields.variantHint")}>
             <select
               value={variant}
               onChange={(e) => setVariant(e.target.value as PopupVariant)}
               className="mazed-input"
             >
-              <option value="modal">Modale</option>
-              <option value="banner">Bannière (à venir)</option>
-              <option value="sheet">Bottom sheet (à venir)</option>
+              <option value="modal">{t("form.options.variant.modal")}</option>
+              <option value="banner">{t("form.options.variant.banner")}</option>
+              <option value="sheet">{t("form.options.variant.sheet")}</option>
             </select>
           </Field>
-          <Field label="Priorité" hint="Quand plusieurs popups correspondent, le plus haut gagne.">
+          <Field label={t("form.fields.priority")} hint={t("form.fields.priorityHint")}>
             <input
               type="number"
               min={-100}
@@ -256,9 +259,9 @@ export function PopupForm({
       </Section>
 
       {/* ─── Contenu ─────────────────────────────────────────────────── */}
-      <Section title="Contenu" subtitle="Titre + corps + image facultative. Le français est requis ; arabe et anglais sont optionnels.">
+      <Section title={t("form.sections.content.title")} subtitle={t("form.sections.content.subtitle")}>
         <LocalisedInputs
-          label="Titre"
+          label={t("form.fields.title")}
           fr={titleFr} setFr={setTitleFr}
           ar={titleAr} setAr={setTitleAr}
           en={titleEn} setEn={setTitleEn}
@@ -266,7 +269,7 @@ export function PopupForm({
         />
         <div className="mt-4">
           <LocalisedInputs
-            label="Corps"
+            label={t("form.fields.body")}
             fr={bodyFr} setFr={setBodyFr}
             ar={bodyAr} setAr={setBodyAr}
             en={bodyEn} setEn={setBodyEn}
@@ -274,19 +277,21 @@ export function PopupForm({
           />
         </div>
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          <Field label="URL de l'image" hint="Optionnel. Affiché en haut de la modale.">
+          <Field label={t("form.fields.imageUrl")} hint={t("form.fields.imageUrlHint")}>
             <input
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               placeholder="https://…"
+              dir="ltr"
               className="mazed-input"
             />
           </Field>
-          <Field label="Icône (Lucide)" hint="ex. Sparkles, ShieldCheck — laissé vide = pas d'icône.">
+          <Field label={t("form.fields.icon")} hint={t("form.fields.iconHint")}>
             <input
               value={icon}
               onChange={(e) => setIcon(e.target.value)}
               placeholder="Sparkles"
+              dir="ltr"
               className="mazed-input"
             />
           </Field>
@@ -294,39 +299,45 @@ export function PopupForm({
       </Section>
 
       {/* ─── CTAs ────────────────────────────────────────────────────── */}
-      <Section title="Boutons d'action" subtitle="Le bouton principal est obligatoire pour que le popup soit actionnable ; le secondaire est optionnel.">
+      {/* The label fields take French popup content, so their placeholders are
+          French examples on purpose, whatever the console's language. */}
+      <Section title={t("form.sections.ctas.title")} subtitle={t("form.sections.ctas.subtitle")}>
         <div className="grid gap-3 lg:grid-cols-2">
-          <Field label="Libellé principal (fr)">
+          <Field label={t("form.fields.ctaPrimaryLabel")}>
             <input
               value={ctaPrimaryLabelFr}
               onChange={(e) => setCtaPrimaryLabelFr(e.target.value)}
               placeholder="Continuer"
+              dir="ltr"
               className="mazed-input"
             />
           </Field>
-          <Field label="Lien principal">
+          <Field label={t("form.fields.ctaPrimaryHref")}>
             <input
               value={ctaPrimaryHref}
               onChange={(e) => setCtaPrimaryHref(e.target.value)}
               placeholder="/properties"
+              dir="ltr"
               className="mazed-input"
             />
           </Field>
         </div>
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          <Field label="Libellé secondaire (fr) — facultatif">
+          <Field label={t("form.fields.ctaSecondaryLabel")}>
             <input
               value={ctaSecondaryLabelFr}
               onChange={(e) => setCtaSecondaryLabelFr(e.target.value)}
               placeholder="Plus tard"
+              dir="ltr"
               className="mazed-input"
             />
           </Field>
-          <Field label="Lien secondaire — facultatif">
+          <Field label={t("form.fields.ctaSecondaryHref")}>
             <input
               value={ctaSecondaryHref}
               onChange={(e) => setCtaSecondaryHref(e.target.value)}
               placeholder="/help"
+              dir="ltr"
               className="mazed-input"
             />
           </Field>
@@ -334,21 +345,21 @@ export function PopupForm({
       </Section>
 
       {/* ─── Audience ────────────────────────────────────────────────── */}
-      <Section title="Audience" subtitle="À qui le popup est-il destiné ?">
+      <Section title={t("form.sections.audience.title")} subtitle={t("form.sections.audience.subtitle")}>
         <div className="grid gap-3 lg:grid-cols-2">
-          <Field label="Portée">
+          <Field label={t("form.fields.scope")}>
             <select
               value={audienceScope}
               onChange={(e) => setAudienceScope(e.target.value as PopupAudience["scope"])}
               className="mazed-input"
             >
-              <option value="all">Tout le monde</option>
-              <option value="anon">Visiteurs anonymes</option>
-              <option value="logged_in">Utilisateurs connectés</option>
+              <option value="all">{t("form.options.scope.all")}</option>
+              <option value="anon">{t("form.options.scope.anon")}</option>
+              <option value="logged_in">{t("form.options.scope.logged_in")}</option>
             </select>
           </Field>
           {audienceScope === "logged_in" && (
-            <Field label="Rôles (optionnel)" hint="Restreindre à certains rôles. Vide = tous les rôles.">
+            <Field label={t("form.fields.roles")} hint={t("form.fields.rolesHint")}>
               <RoleMultiSelect value={audienceRoles} onChange={setAudienceRoles} />
             </Field>
           )}
@@ -356,17 +367,18 @@ export function PopupForm({
       </Section>
 
       {/* ─── Ciblage pages / langues / appareils ─────────────────────── */}
-      <Section title="Ciblage" subtitle="Les pages où le popup doit s'afficher, sa langue et le type d'appareil.">
-        <Field label="Pages" hint='Une glob par ligne ou séparées par des virgules. Vide = toutes les pages. Ex. "/, /auctions/*". Préfixe "!" pour exclure : "!/admin/*".'>
+      <Section title={t("form.sections.targeting.title")} subtitle={t("form.sections.targeting.subtitle")}>
+        <Field label={t("form.fields.pages")} hint={t("form.fields.pagesHint")}>
           <input
             value={pagesRaw}
             onChange={(e) => setPagesRaw(e.target.value)}
             placeholder="/, /auctions/*"
+            dir="ltr"
             className="mazed-input"
           />
         </Field>
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          <Field label="Langues">
+          <Field label={t("form.fields.locales")}>
             <div className="flex gap-2">
               {(["fr", "ar", "en"] as const).map((l) => (
                 <label key={l} className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5 text-[11.5px] font-bold ring-1 ring-border cursor-pointer">
@@ -384,15 +396,15 @@ export function PopupForm({
               ))}
             </div>
           </Field>
-          <Field label="Appareils">
+          <Field label={t("form.fields.devices")}>
             <select
               value={devices}
               onChange={(e) => setDevices(e.target.value as PopupDevices)}
               className="mazed-input"
             >
-              <option value="both">Mobile + Desktop</option>
-              <option value="mobile">Mobile uniquement</option>
-              <option value="desktop">Desktop uniquement</option>
+              <option value="both">{t("form.options.devices.both")}</option>
+              <option value="mobile">{t("form.options.devices.mobile")}</option>
+              <option value="desktop">{t("form.options.devices.desktop")}</option>
             </select>
           </Field>
         </div>
@@ -400,9 +412,9 @@ export function PopupForm({
 
       {/* ─── Diffusion ────────────────────────────────────────────────── */}
       {mode === "broadcast" && (
-        <Section title="Fenêtre de diffusion" subtitle="Dates de début et de fin (UTC).">
+        <Section title={t("form.sections.schedule.title")} subtitle={t("form.sections.schedule.subtitle")}>
           <div className="grid gap-3 lg:grid-cols-2">
-            <Field label="Démarre le">
+            <Field label={t("form.fields.startsAt")}>
               <input
                 type="datetime-local"
                 value={startsAt}
@@ -410,7 +422,7 @@ export function PopupForm({
                 className="mazed-input"
               />
             </Field>
-            <Field label="Se termine le">
+            <Field label={t("form.fields.endsAt")}>
               <input
                 type="datetime-local"
                 value={endsAt}
@@ -423,22 +435,22 @@ export function PopupForm({
       )}
 
       {/* ─── Fréquence + comportement ────────────────────────────────── */}
-      <Section title="Fréquence & comportement" subtitle="À quelle cadence l'utilisateur revoit-il le popup ?">
+      <Section title={t("form.sections.frequency.title")} subtitle={t("form.sections.frequency.subtitle")}>
         <div className="grid gap-3 lg:grid-cols-2">
-          <Field label="Fréquence">
+          <Field label={t("form.fields.frequency")}>
             <select
               value={frequency}
               onChange={(e) => setFrequency(e.target.value as PopupFrequency)}
               className="mazed-input"
             >
-              <option value="once_per_user">Une fois par utilisateur</option>
-              <option value="once_per_session">Une fois par session</option>
-              <option value="every_visit">À chaque visite</option>
-              <option value="every_n_days">Tous les N jours</option>
+              <option value="once_per_user">{t("form.options.frequency.once_per_user")}</option>
+              <option value="once_per_session">{t("form.options.frequency.once_per_session")}</option>
+              <option value="every_visit">{t("form.options.frequency.every_visit")}</option>
+              <option value="every_n_days">{t("form.options.frequency.every_n_days")}</option>
             </select>
           </Field>
           {frequency === "every_n_days" && (
-            <Field label="N (jours)">
+            <Field label={t("form.fields.frequencyN")}>
               <input
                 type="number"
                 min={1}
@@ -457,7 +469,7 @@ export function PopupForm({
               checked={dismissible}
               onChange={(e) => setDismissible(e.target.checked)}
             />
-            Fermable par l'utilisateur
+            {t("form.fields.dismissible")}
           </label>
           <label className="inline-flex items-center gap-2 text-[12.5px] font-semibold">
             <input
@@ -465,7 +477,7 @@ export function PopupForm({
               checked={forceAction}
               onChange={(e) => setForceAction(e.target.checked)}
             />
-            Bloquer la page jusqu'à action (ex. acceptation CGU)
+            {t("form.fields.forceAction")}
           </label>
         </div>
       </Section>
@@ -474,7 +486,7 @@ export function PopupForm({
       {previewOpen && (
         <PreviewOverlay
           onClose={() => setPreviewOpen(false)}
-          title={titleFr || "Sans titre"}
+          title={titleFr || t("form.untitled")}
           body={bodyFr || ""}
           imageUrl={imageUrl}
           icon={icon}
@@ -567,19 +579,18 @@ function localToIso(local: string): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
-function humanError(code: string): string {
-  switch (code) {
-    case "slug_invalid": return "Le slug est invalide (lettres, chiffres, tirets).";
-    case "title_required": return "Le titre en français est requis.";
-    case "body_invalid": return "Le corps est invalide.";
-    case "mode_invalid": return "Mode inconnu.";
-    case "variant_invalid": return "Variante inconnue.";
-    case "audience_invalid": return "Audience invalide.";
-    case "forbidden": return "Accès refusé.";
-    case "auth": return "Veuillez vous reconnecter.";
-    default: return code;
-  }
-}
+/** Error codes the popup API returns that have a sentence in messages
+ *  (adminPopups.form.errors.<code>); any other code is shown as-is. */
+const ERROR_CODES = new Set([
+  "slug_invalid",
+  "title_required",
+  "body_invalid",
+  "mode_invalid",
+  "variant_invalid",
+  "audience_invalid",
+  "forbidden",
+  "auth",
+]);
 
 // ──────────────────────────────────────────────────────────────────────
 // Sub-components
@@ -631,10 +642,13 @@ function LocalisedInputs({
   required?: boolean;
   multiline?: boolean;
 }) {
+  const t = useTranslations("adminPopups.form.fields");
   const [active, setActive] = useState<"fr" | "ar" | "en">("fr");
   const value = active === "fr" ? fr : active === "ar" ? ar : en;
   const setter = active === "fr" ? setFr : active === "ar" ? setAr : setEn;
   const Input = multiline ? "textarea" : "input";
+  // The text is written in the tab's language, whatever the console's.
+  const textDir = active === "ar" ? "rtl" : "ltr";
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between">
@@ -663,8 +677,9 @@ function LocalisedInputs({
         onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
           setter(e.target.value)
         }
+        dir={textDir}
         className={`mazed-input ${multiline ? "min-h-[100px]" : ""}`}
-        placeholder={`Texte en ${active.toUpperCase()}…`}
+        placeholder={t("localisedPlaceholder", { lang: active.toUpperCase() })}
       />
     </div>
   );
@@ -677,25 +692,20 @@ function RoleMultiSelect({
   value: string[];
   onChange: (next: string[]) => void;
 }) {
-  const ROLES = [
-    { key: "individual", label: "Particuliers" },
-    { key: "agency",     label: "Agences" },
-    { key: "bank",       label: "Banques" },
-    { key: "bailiff",    label: "Huissiers" },
-    { key: "inspector",  label: "Inspecteurs" },
-    { key: "admin",      label: "Admins" },
-  ];
+  const t = useTranslations("adminPopups.form.roles");
+  // Role values are stored identifiers; their labels live in messages.
+  const ROLES = ["individual", "agency", "bank", "bailiff", "inspector", "admin"] as const;
   return (
     <div className="flex flex-wrap gap-1.5">
       {ROLES.map((r) => {
-        const active = value.includes(r.key);
+        const active = value.includes(r);
         return (
           <button
-            key={r.key}
+            key={r}
             type="button"
             onClick={() => {
               onChange(
-                active ? value.filter((v) => v !== r.key) : [...value, r.key],
+                active ? value.filter((v) => v !== r) : [...value, r],
               );
             }}
             className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
@@ -704,7 +714,7 @@ function RoleMultiSelect({
                 : "border-[var(--border)] bg-surface text-muted hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
             }`}
           >
-            {r.label}
+            {t(r)}
           </button>
         );
       })}
@@ -726,6 +736,7 @@ function PreviewOverlay({
   ctaPrimary: { label: string; href: string } | null;
   ctaSecondary: { label: string; href: string } | null;
 }) {
+  const t = useTranslations("adminPopups.form");
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
       <div className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-surface ring-1 ring-gold/30 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]">
@@ -734,7 +745,7 @@ function PreviewOverlay({
           onClick={onClose}
           className="absolute end-3 top-3 z-10 rounded-full bg-black/40 px-2 py-1 text-[10px] font-bold text-white"
         >
-          Fermer
+          {t("close")}
         </button>
         {imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element

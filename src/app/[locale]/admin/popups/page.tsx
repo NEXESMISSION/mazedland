@@ -5,8 +5,9 @@
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
 import { Link } from "@/i18n/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { formatNumber } from "@/lib/utils";
+import { formatDate, formatNumber } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import type { Popup, PopupStatus, PopupVariant } from "@/lib/popups/schema";
 import {
@@ -14,6 +15,7 @@ import {
   Calendar, ShieldAlert, ChevronRight,
 } from "lucide-react";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
+import { Ltr } from "@/components/ui/Ltr";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -27,6 +29,8 @@ export const revalidate = 0;
  * Auth is enforced by the admin layout one level up (role=admin redirect).
  */
 export default async function AdminPopupsPage() {
+  const t = await getTranslations("adminPopups");
+  const locale = await getLocale();
   const supabase = await getServerSupabase();
   const { data: rows } = await supabase
     .from("popups")
@@ -68,31 +72,31 @@ export default async function AdminPopupsPage() {
     <div>
       <SiteTabs />
       <AdminPageHeader
-        eyebrow="Diffusion"
-        title="Popups"
-        description="Bannières, modales et bottom-sheets affichées sur le site. Chaque popup cible un public, des pages et une fenêtre temporelle."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         actions={
           <Link
             href={"/admin/popups/new" as never}
             className="mazed-btn-luxe tap-target inline-flex shrink-0 items-center gap-1.5 px-4 py-2 text-[12px]"
           >
             <PlusCircle className="size-4" strokeWidth={2.2} />
-            Nouveau popup
+            {t("newPopup")}
           </Link>
         }
       />
 
       {/* Stat tiles */}
       <div className="mt-5 grid grid-cols-3 gap-3">
-        <StatTile value={live} label="En ligne" tone="ok" />
-        <StatTile value={scheduled} label="Programmés" tone="info" />
-        <StatTile value={draft} label="Brouillons" tone="muted" />
+        <StatTile value={live} label={t("stats.live")} tone="ok" locale={locale} />
+        <StatTile value={scheduled} label={t("stats.scheduled")} tone="info" locale={locale} />
+        <StatTile value={draft} label={t("stats.draft")} tone="muted" locale={locale} />
       </div>
 
       {/* List */}
       <section className="mt-6">
         {popups.length === 0 ? (
-          <EmptyState />
+          <EmptyState t={t} />
         ) : (
           <ul className="space-y-2">
             {popups.map((p) => (
@@ -100,6 +104,8 @@ export default async function AdminPopupsPage() {
                 key={p.id}
                 popup={p}
                 stats={stats.get(p.id) ?? { impressions: 0, clicks: 0 }}
+                t={t}
+                locale={locale}
               />
             ))}
           </ul>
@@ -109,14 +115,19 @@ export default async function AdminPopupsPage() {
   );
 }
 
+/** The page's translator, handed to the sub-components rendered on the server. */
+type Translate = (key: string, values?: Record<string, string | number>) => string;
+
 function StatTile({
   value,
   label,
   tone,
+  locale,
 }: {
   value: number;
   label: string;
   tone: "ok" | "info" | "muted";
+  locale: string;
 }) {
   const accent =
     tone === "ok"
@@ -126,9 +137,9 @@ function StatTile({
         : "bg-foreground/30";
   return (
     <div className="relative overflow-hidden rounded-2xl bg-surface p-4 ring-1 ring-border">
-      <span aria-hidden className={`absolute left-3 top-3 size-1.5 rounded-full ${accent}`} />
+      <span aria-hidden className={`absolute start-3 top-3 size-1.5 rounded-full ${accent}`} />
       <div className="mazed-tabular mt-3 text-[28px] font-extrabold leading-none">
-        {formatNumber(value)}
+        {formatNumber(value, locale)}
       </div>
       <div className="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted">
         {label}
@@ -140,9 +151,13 @@ function StatTile({
 function PopupRow({
   popup,
   stats,
+  t,
+  locale,
 }: {
   popup: Popup;
   stats: { impressions: number; clicks: number };
+  t: Translate;
+  locale: string;
 }) {
   const title = popup.title.fr ?? popup.title.ar ?? popup.title.en ?? popup.slug;
   const ctr =
@@ -162,89 +177,83 @@ function PopupRow({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="truncate text-[14px] font-bold text-foreground">{title}</span>
-            <StatusPill status={popup.status} />
-            <VariantPill variant={popup.variant} />
+            <StatusPill status={popup.status} t={t} />
+            <VariantPill variant={popup.variant} t={t} />
             {popup.force_action && (
               <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider text-red-700 ring-1 ring-red-500/30">
                 <ShieldAlert className="size-2.5" strokeWidth={2.5} />
-                Bloquant
+                {t("blocking")}
               </span>
             )}
           </div>
           <div className="mt-0.5 truncate text-[11px] text-muted">
-            {popup.slug} · {popup.mode === "rule" ? "Règle permanente" : "Diffusion"}
+            <Ltr>{popup.slug}</Ltr> · {popup.mode === "rule" ? t("modes.rule") : t("modes.broadcast")}
             {popup.starts_at && (
               <>
                 {" · "}
                 <Calendar className="inline size-3" strokeWidth={2} />{" "}
-                {new Date(popup.starts_at).toLocaleDateString("fr-FR")}
+                {formatDate(popup.starts_at, locale, "short")}
               </>
             )}
           </div>
           <div className="mazed-tabular mt-1.5 flex flex-wrap items-center gap-3 text-[10.5px] text-muted">
             <span className="inline-flex items-center gap-1">
               <Eye className="size-3" strokeWidth={2.2} />
-              {formatNumber(stats.impressions)}
+              {formatNumber(stats.impressions, locale)}
             </span>
             <span className="inline-flex items-center gap-1">
               <MousePointerClick className="size-3" strokeWidth={2.2} />
-              {formatNumber(stats.clicks)}
+              {formatNumber(stats.clicks, locale)}
             </span>
-            <span>CTR&nbsp;{ctr}</span>
+            <span>{t("ctr", { value: ctr })}</span>
           </div>
         </div>
-        <ChevronRight className="size-4 shrink-0 text-muted" strokeWidth={2.2} />
+        <ChevronRight className="size-4 shrink-0 text-muted rtl:-scale-x-100" strokeWidth={2.2} />
       </Link>
     </li>
   );
 }
 
-function StatusPill({ status }: { status: PopupStatus }) {
-  const map: Record<PopupStatus, { label: string; tone: string }> = {
-    draft:    { label: "Brouillon",   tone: "bg-surface-2 text-muted ring-1 ring-border" },
-    live:     { label: "En ligne",    tone: "bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/30" },
-    paused:   { label: "En pause",    tone: "bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/30" },
-    archived: { label: "Archivé",     tone: "bg-surface-2 text-muted ring-1 ring-border" },
-  };
-  const v = map[status];
+const STATUS_TONE: Record<PopupStatus, string> = {
+  draft: "bg-surface-2 text-muted ring-1 ring-border",
+  live: "bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/30",
+  paused: "bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/30",
+  archived: "bg-surface-2 text-muted ring-1 ring-border",
+};
+
+/** Labels live in messages: adminPopups.status.<status>. */
+function StatusPill({ status, t }: { status: PopupStatus; t: Translate }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider ${v.tone}`}>
-      {v.label}
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider ${STATUS_TONE[status]}`}>
+      {t(`status.${status}`)}
     </span>
   );
 }
 
-function VariantPill({ variant }: { variant: PopupVariant }) {
-  const labels: Record<PopupVariant, string> = {
-    banner: "Bannière",
-    modal: "Modale",
-    sheet: "Sheet",
-  };
+/** Labels live in messages: adminPopups.variants.<variant>. */
+function VariantPill({ variant, t }: { variant: PopupVariant; t: Translate }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-gold-faint px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider text-gold-bright">
-      {labels[variant]}
+      {t(`variants.${variant}`)}
     </span>
   );
 }
 
-function EmptyState() {
+function EmptyState({ t }: { t: Translate }) {
   return (
     <div className="mazed-frame-gold relative mt-2 px-6 py-10 text-center">
       <div className="relative">
         <span className="mazed-monogram mazed-monogram-filled mx-auto mb-4 size-12 text-[20px]">
           <MessageSquare className="size-5" strokeWidth={2} />
         </span>
-        <p className="text-[18px] font-bold text-foreground">Aucun popup configuré.</p>
-        <p className="mt-2 text-[12px] text-muted">
-          Créez votre première bannière, modale ou bottom-sheet pour
-          accueillir, alerter ou guider vos utilisateurs.
-        </p>
+        <p className="text-[18px] font-bold text-foreground">{t("emptyTitle")}</p>
+        <p className="mt-2 text-[12px] text-muted">{t("emptyBody")}</p>
         <Link
           href={"/admin/popups/new" as never}
           className="mazed-btn-luxe tap-target mt-5 inline-flex items-center gap-1.5 px-5 py-2.5 text-[12.5px]"
         >
           <PlusCircle className="size-4" strokeWidth={2.2} />
-          Nouveau popup
+          {t("newPopup")}
         </Link>
       </div>
     </div>
