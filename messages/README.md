@@ -86,12 +86,21 @@ Category names come from the database (`categories.label_ar`) through
   "il y a …". `ar-TN` gives Latin digits and Tunisian month names.
 - **Governorates** are stored in French; display with `governorateLabel(name,
   locale)` from `@/lib/tunisia`. Dial codes: `dialCodeLabel(c, locale)`.
-- **Phone numbers, prices with currency, references (MZ-00042), IBAN/RIB** inside
-  text: wrap in `<Ltr>` from `@/components/ui/Ltr` so they do not reorder.
+- **Phone numbers, references (MZ-00042), IBAN/RIB/D17 numbers, codes like
+  "S+3"** inside text: wrap in `<Ltr>` from `@/components/ui/Ltr` so their
+  pieces do not reorder ("+216 98 124 111" would otherwise read "111 124 98 216+").
+- **Prices are NOT wrapped.** Write number then currency ("500.000 د.ت") and let
+  the bidi algorithm place them: an LTR box around the pair would put the
+  currency on the wrong side for an Arabic reader.
 - **Layout:** logical classes only — `ms-/me-`, `ps-/pe-`, `start-/end-`,
   `text-start/text-end`, `border-s/border-e`, `rounded-s/rounded-e`. A physical
   class (`ml-`, `left-`, `text-right`…) is a bug unless it is truly
-  direction-free (centering, a symmetric decoration).
+  direction-free (centering, a symmetric decoration). `space-x-*` is fine: in
+  Tailwind 4 it already uses logical margins.
+- **No letter-spacing on Arabic.** It is a joined script; tracking pulls the
+  letters apart. globals.css resets it on RTL pages for `tracking-*` utilities
+  and the eyebrow / pill / heading classes — don't add letter-spacing that
+  escapes that.
 - **Icons that point** (ChevronRight/Left, ArrowRight/Left as "next", "back",
   "go"): add `rtl:-scale-x-100` so they flip. Do not flip icons that are not
   directional (search, close, plus, check, upload).

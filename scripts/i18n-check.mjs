@@ -57,7 +57,7 @@ const files = [];
 })(join(ROOT, "src"));
 
 const BIND =
-  /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:await\s+)?(?:useTranslations|getTranslations)\(\s*([^)]*)\)/g;
+  /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:await\s+)?(?:useTranslations|getTranslations|apiTranslator)\(\s*([^)]*)\)/g;
 const lineOf = (src, idx) => src.slice(0, idx).split("\n").length;
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -70,7 +70,8 @@ for (const file of files) {
 
   const bindings = [];
   for (const m of src.matchAll(BIND)) {
-    const arg = m[2].trim();
+    // apiTranslator(req, "ns") — drop the request argument.
+    const arg = m[2].trim().replace(/^[A-Za-z_$][\w$]*\s*,\s*/, "");
     const direct = arg.match(/^["'`]([^"'`]*)["'`]$/);
     const inObj = arg.match(/namespace\s*:\s*["'`]([^"'`]*)["'`]/);
     const ns = direct ? direct[1] : inObj ? inObj[1] : "";

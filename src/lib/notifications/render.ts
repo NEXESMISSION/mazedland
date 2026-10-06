@@ -24,9 +24,19 @@ export type RenderableNotification = {
   payload?: unknown;
 };
 
-type Translator = {
+type StringTranslator = {
   (key: string, values?: Record<string, string | number | Date>): string;
   has(key: string): boolean;
+};
+
+/**
+ * Any next-intl translator. Typed translators narrow `key` to their literal
+ * keys, so they are not assignable to a `(key: string)` signature; `never`
+ * accepts all of them, and the keys built below are cast back to strings.
+ */
+type AnyTranslator = {
+  (key: never, values?: never): string;
+  has(key: never): boolean;
 };
 
 // Dates are shown in Tunisian time whatever the server's clock says (Vercel
@@ -47,9 +57,10 @@ function dateParts(iso: string, locale: string) {
 
 export function renderNotification(
   n: RenderableNotification,
-  t: Translator,
+  translator: AnyTranslator,
   locale: string,
 ): { title: string; body: string | null } {
+  const t = translator as unknown as StringTranslator;
   const stored = { title: n.title, body: n.body };
   const payload = n.payload && typeof n.payload === "object" ? (n.payload as Record<string, unknown>) : null;
   const vars = payload?.vars && typeof payload.vars === "object" ? (payload.vars as Record<string, unknown>) : null;

@@ -248,6 +248,18 @@ html[dir="rtl"] .font-arabic {
 }
 html[dir="rtl"] .mazed-serif { font-family: var(--font-cairo), var(--font-jakarta), system-ui, sans-serif; }
 
+/* Arabic is a joined script: letter-spacing pulls its letters apart, so the
+   eyebrow / pill / heading tracking and every tracking-* utility is reset on
+   RTL pages. (Latin words on those pages lose their tracking too — harmless.) */
+html[dir="rtl"] [class*="tracking-"],
+html[dir="rtl"] .mazed-serif,
+html[dir="rtl"] .mazed-gradient-gold-text,
+html[dir="rtl"] .mazed-eyebrow,
+html[dir="rtl"] .mazed-eyebrow-muted,
+html[dir="rtl"] .mazed-pill-gold {
+  letter-spacing: 0;
+}
+
 .tabular-nums,
 .mazed-tabular {
   font-variant-numeric: lining-nums tabular-nums;
