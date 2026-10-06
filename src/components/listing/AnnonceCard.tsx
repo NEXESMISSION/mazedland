@@ -6,6 +6,9 @@ import { ArrowUpRight, MapPin, Ruler, BedDouble } from "lucide-react";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
+import { Ltr } from "@/components/ui/Ltr";
+import { categoryLabel } from "@/lib/i18n";
+import { governorateLabel } from "@/lib/tunisia";
 
 /**
  * One annonce, as a card.
@@ -46,7 +49,11 @@ export type AnnonceCardRow = {
   delegation: string | null;
   reference: string | null;
   attributes: Record<string, unknown> | null;
-  category: { label_fr: string } | { label_fr: string }[] | null;
+  /** `label_ar` is shown on Arabic pages when the caller's select includes it. */
+  category:
+    | { label_fr: string; label_ar?: string | null }
+    | { label_fr: string; label_ar?: string | null }[]
+    | null;
   photos: { storage_path: string; sort_order: number }[] | null;
 };
 
@@ -74,7 +81,7 @@ export async function AnnonceCard({
   const attrs = (listing.attributes ?? {}) as Record<string, unknown>;
   const area = Number(attrs.area_sqm);
   const rooms = Number(attrs.rooms);
-  const where = listing.delegation?.trim() || listing.governorate;
+  const where = listing.delegation?.trim() || governorateLabel(listing.governorate, locale);
 
   return (
     <div className="block">
@@ -122,7 +129,7 @@ export async function AnnonceCard({
           {category && (
             <div className="absolute top-2.5 start-2.5">
               <span className="mazed-gold-fill inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
-                {category.label_fr}
+                {categoryLabel(category, locale)}
               </span>
             </div>
           )}
@@ -135,8 +142,8 @@ export async function AnnonceCard({
 
           {/* Bottom-trailing — polished-brass arrow chip, rotates on hover. */}
           <div className="absolute bottom-2.5 end-2.5">
-            <span className="mazed-gold-fill gold-rim inline-flex h-9 w-9 items-center justify-center rounded-full transition-transform group-hover:scale-110 group-hover:rotate-45">
-              <ArrowUpRight className="size-4" strokeWidth={2.5} />
+            <span className="mazed-gold-fill gold-rim inline-flex h-9 w-9 items-center justify-center rounded-full transition-transform group-hover:scale-110 group-hover:rotate-45 rtl:group-hover:-rotate-45">
+              <ArrowUpRight className="size-4 rtl:-scale-x-100" strokeWidth={2.5} />
             </span>
           </div>
         </div>
@@ -156,9 +163,9 @@ export async function AnnonceCard({
               {listing.title}
             </h3>
             {listing.reference && (
-              <span className="mazed-tabular mt-0.5 shrink-0 font-mono text-[9px] font-bold tracking-[0.05em] text-subtle">
+              <Ltr className="mazed-tabular mt-0.5 shrink-0 font-mono text-[9px] font-bold tracking-[0.05em] text-subtle">
                 {listing.reference}
-              </span>
+              </Ltr>
             )}
           </div>
 
@@ -166,7 +173,7 @@ export async function AnnonceCard({
               reordered into "TND 261.000" inside an RTL container. */}
           <div className="flex items-center justify-between gap-2">
             {listing.price_on_request || listing.price == null ? (
-              <span className="text-[13px] font-bold text-muted">Prix sur demande</span>
+              <span className="text-[13px] font-bold text-muted">{t("listing.priceOnRequest")}</span>
             ) : (
               <span
                 dir="ltr"
@@ -180,7 +187,7 @@ export async function AnnonceCard({
             )}
             {listing.negotiable && !listing.price_on_request && (
               <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-                négociable
+                {t("listing.negotiable")}
               </span>
             )}
           </div>
@@ -194,13 +201,15 @@ export async function AnnonceCard({
             {Number.isFinite(area) && area > 0 && (
               <span className="mazed-tabular inline-flex shrink-0 items-center gap-1">
                 <Ruler className="size-3" strokeWidth={2} />
-                {formatNumber(area)} m²
+                {t("listing.areaValue", { area: formatNumber(area, locale) })}
               </span>
             )}
             {Number.isFinite(rooms) && rooms > 0 && (
               <span className="mazed-tabular inline-flex shrink-0 items-center gap-1">
                 <BedDouble className="size-3" strokeWidth={2} />
-                S+{rooms}
+                {/* Tunisian shorthand, written in Latin in both languages.
+                    Isolated so RTL does not turn "S+3" into "3+S". */}
+                <Ltr>S+{rooms}</Ltr>
               </span>
             )}
           </div>

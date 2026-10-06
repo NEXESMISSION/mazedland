@@ -1,12 +1,16 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { absoluteUrl } from "@/lib/siteUrl";
-import { formatNumber, formatTND } from "@/lib/utils";
+import { formatDate, formatNumber, formatTND } from "@/lib/utils";
+import { categoryLabel } from "@/lib/i18n";
+import { governorateLabel } from "@/lib/tunisia";
+import { routing } from "@/i18n/routing";
+import { Ltr } from "@/components/ui/Ltr";
 import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
 import { ContactReveal } from "./ContactReveal";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
@@ -53,8 +57,8 @@ type Row = {
   reference: string | null;
   seller_id: string;
   category:
-    | { id: string; label_fr: string; kind: string }
-    | { id: string; label_fr: string; kind: string }[]
+    | { id: string; label_fr: string; label_ar: string | null; kind: string }
+    | { id: string; label_fr: string; label_ar: string | null; kind: string }[]
     | null;
   photos: { storage_path: string; sort_order: number }[] | null;
 };
@@ -63,22 +67,16 @@ const SELECT = `
   id, title, description, price, price_on_request, negotiable,
   governorate, delegation, attributes, contact_name, show_phone, status,
   published_at, expires_at, seller_id, reference, rejection_reason,
-  category:categories (id, label_fr, kind),
+  category:categories (id, label_fr, label_ar, kind),
   photos:listing_photos (storage_path, sort_order)
 `;
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
 
-/** How a non-public status reads in the seller's own preview banner. */
-const PREVIEW_LABEL: Record<string, string> = {
-  draft: "brouillon",
-  pending_payment: "frais à régler",
-  pending_review: "en vérification",
-  rejected: "à corriger",
-  expired: "expirée",
-  sold: "vendue",
-  archived: "retirée",
-};
+// How a non-public status reads in the seller's own preview banner:
+// `listing.previewStatus.<status>` in messages/.
+
+const OG_LOCALE: Record<string, string> = { fr: "fr_TN", ar: "ar_TN" };
 
 // `cache`: generateMetadata and the page both need the listing for the same
 // request, and without it that was two identical database round trips.
@@ -92,21 +90,29 @@ const fetchListing = cache(async (id: string): Promise<Row | null> => {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; locale: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const [l, locale] = await Promise.all([fetchListing(id), getLocale()]);
-  if (!l) return { title: "Annonce introuvable — Mazed Immo", robots: { index: false } };
+  const { id, locale } = await params;
+  const [l, t] = await Promise.all([
+    fetchListing(id),
+    getTranslations({ locale, namespace: "listing" }),
+  ]);
+  if (!l) return { title: t("metaNotFound"), robots: { index: false } };
   // Visible to its seller and to an admin (see the page), never to a crawler.
   if (l.status !== "published") {
     return { title: `${l.title} · Mazed Immo`, robots: { index: false } };
   }
   const price =
     l.price != null && !l.price_on_request
-      ? `${formatNumber(Number(l.price))} TND`
-      : "Prix sur demande";
+      ? t("priceAmount", { amount: formatNumber(Number(l.price), locale) })
+      : t("priceOnRequest");
   const title = `${l.title} · ${price}`;
-  const description = l.description?.slice(0, 160) ?? `${l.title} à ${l.governorate}.`;
+  const description =
+    l.description?.slice(0, 160) ??
+    t("metaDescriptionFallback", {
+      title: l.title,
+      governorate: governorateLabel(l.governorate, locale),
+    });
   const url = `/${locale}/annonces/${l.id}`;
   const cover = (l.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0];
   const image = cover ? propertyPhotoUrl(cover.storage_path) : null;
@@ -115,14 +121,22 @@ export async function generateMetadata({
   // and the preview is what gets it opened. Without its own Open Graph block
   // the preview was the site-wide one: brand banner and slogan, no photo, no
   // price. `openGraph` replaces the parent's block instead of merging with it,
-  // hence the site name and type restated here.
+  // hence the site name, type and locale restated here — and `alternates`
+  // likewise replaces the layout's, so the hreflang pair is this annonce's own.
   return {
     title: `${title} · Mazed Immo`,
     description,
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      languages: {
+        ...Object.fromEntries(routing.locales.map((lc) => [lc, `/${lc}/annonces/${l.id}`])),
+        "x-default": `/${routing.defaultLocale}/annonces/${l.id}`,
+      },
+    },
     openGraph: {
       type: "website",
       siteName: "Mazed Immo",
+      locale: OG_LOCALE[locale],
       url,
       title,
       description,
@@ -144,6 +158,7 @@ export default async function AnnoncePage({
 }) {
   const { id } = await params;
   const locale = await getLocale();
+  const [t, tRoot] = await Promise.all([getTranslations("listing"), getTranslations()]);
   const l = await fetchListing(id);
   if (!l) notFound();
 
@@ -201,7 +216,9 @@ export default async function AnnoncePage({
 
   // Only the attributes the seller actually filled, labelled the way the
   // category defines them — a raw jsonb dump ("titre_foncier: true") is not
-  // something a buyer should have to decode.
+  // something a buyer should have to decode. The label is the shared
+  // `attributes.<field_key>` message when there is one (the stored label is
+  // French), and the stored label for anything an admin added since.
   const attrs = (l.attributes ?? {}) as Record<string, unknown>;
   const specs = ((attrDefs ?? []) as {
     field_key: string; label: string; unit: string | null;
@@ -210,14 +227,18 @@ export default async function AnnoncePage({
     .map((d) => {
       const raw = attrs[d.field_key];
       if (raw == null || raw === "" || raw === false) return null;
+      const unit = d.unit === "m²" ? tRoot("common.sqm") : d.unit;
       const value =
         raw === true
-          ? "Oui"
+          ? t("yes")
           : d.options?.find((o) => o.value === String(raw))?.label ??
-            (d.unit
-              ? `${/^\d+(\.\d+)?$/.test(String(raw)) ? formatNumber(Number(raw)) : raw} ${d.unit}`
+            (unit
+              ? `${/^\d+(\.\d+)?$/.test(String(raw)) ? formatNumber(Number(raw), locale) : raw} ${unit}`
               : String(raw));
-      return { label: d.label, value };
+      const label = tRoot.has(`attributes.${d.field_key}`)
+        ? tRoot(`attributes.${d.field_key}`)
+        : d.label;
+      return { label, value };
     })
     .filter(Boolean) as { label: string; value: string }[];
 
@@ -225,21 +246,22 @@ export default async function AnnoncePage({
   // fields that /auctions/[id] emits — this listing has a price, not a bid.
   // The seller's phone is deliberately absent: JSON-LD is the easiest thing on
   // a page to scrape, and the whole point of ContactReveal is that it is not
-  // in the markup.
+  // in the markup. Name and description are the seller's own words, in
+  // whatever language they wrote them; the category and place follow the page.
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "RealEstateListing",
     name: l.title,
     description: l.description ?? undefined,
     image: photos.slice(0, 6).map((p) => absoluteUrl(propertyPhotoUrl(p.storage_path))),
-    category: category?.label_fr,
+    category: category ? categoryLabel(category, locale) : undefined,
     offers: {
       "@type": "Offer",
       url: absoluteUrl(`/${locale}/annonces/${l.id}`),
       priceCurrency: "TND",
       ...(l.price != null && !l.price_on_request ? { price: Number(l.price) } : {}),
       availability: "https://schema.org/InStock",
-      areaServed: l.governorate,
+      areaServed: governorateLabel(l.governorate, locale),
       ...(l.expires_at ? { priceValidUntil: l.expires_at.slice(0, 10) } : {}),
     },
   };
@@ -257,14 +279,16 @@ export default async function AnnoncePage({
     <div>
       <div className="mazed-tabular gradient-gold-text text-[34px] font-extrabold leading-none">
         {l.price_on_request || l.price == null
-          ? "Prix sur demande"
+          ? t("priceOnRequest")
           : `${formatTND(Number(l.price), locale)} `}
         {!l.price_on_request && l.price != null && (
-          <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-gold/80">TND</span>
+          <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-gold/80">
+            {tRoot("common.tnd")}
+          </span>
         )}
       </div>
       {l.negotiable && !l.price_on_request && (
-        <p className="mt-1 text-[12px] text-muted">Prix négociable</p>
+        <p className="mt-1 text-[12px] text-muted">{t("priceNegotiable")}</p>
       )}
     </div>
   );
@@ -280,11 +304,11 @@ export default async function AnnoncePage({
 
         <div className="min-w-0 flex-1">
           <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">
-            Vendeur
+            {t("seller")}
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="truncate text-[14.5px] font-bold text-foreground">
-              {l.contact_name ?? "Particulier"}
+            <span dir="auto" className="truncate text-[14.5px] font-bold text-foreground">
+              {l.contact_name ?? t("privateSeller")}
             </span>
             {/* A tick, not a second "Vendeur vérifié" chip — that claim is
                 already made at the top of the page. Here it answers the
@@ -293,7 +317,7 @@ export default async function AnnoncePage({
               <BadgeCheck
                 className="size-4 shrink-0 text-gold"
                 strokeWidth={2.4}
-                aria-label="Vendeur vérifié"
+                aria-label={t("verifiedSeller")}
               />
             )}
           </div>
@@ -311,11 +335,7 @@ export default async function AnnoncePage({
   const safetyNote = (
     <section className="flex items-start gap-2.5 rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
       <ShieldAlert className="mt-0.5 size-4 shrink-0 text-muted" />
-      <p className="text-[12.5px] leading-relaxed text-muted">
-        Mazed Immo publie et vérifie les annonces, mais n&apos;intervient pas dans la transaction :
-        le paiement et la signature se font directement entre vous et le vendeur. Visitez le
-        bien, demandez le titre de propriété et passez par un notaire avant tout versement.
-      </p>
+      <p className="text-[12.5px] leading-relaxed text-muted">{t("safetyNote")}</p>
     </section>
   );
 
@@ -335,19 +355,22 @@ export default async function AnnoncePage({
       {isPreview && (
         <div className="mx-4 mt-3 rounded-2xl border border-dashed border-gold-soft bg-gold-faint px-4 py-3 lg:mx-0">
           <p className="text-[12.5px] font-bold text-foreground">
-            Aperçu privé — {PREVIEW_LABEL[l.status] ?? l.status}
+            {t("previewTitle", {
+              status: t.has(`previewStatus.${l.status}`)
+                ? t(`previewStatus.${l.status}`)
+                : l.status,
+            })}
           </p>
           <p className="mt-1 text-[12px] leading-relaxed text-muted">
-            Cette annonce n&apos;est pas visible publiquement.
             {l.status === "rejected" && l.rejection_reason
-              ? ` Motif : ${l.rejection_reason}`
-              : ""}
+              ? t("previewBodyRejected", { reason: l.rejection_reason })
+              : t("previewBody")}
           </p>
           <Link
             href={"/account/listings" as never}
             className="mt-2 inline-flex text-[12.5px] font-bold text-gold hover:underline"
           >
-            Gérer mes annonces →
+            {t("manageListings")}
           </Link>
         </div>
       )}
@@ -365,11 +388,11 @@ export default async function AnnoncePage({
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[11px] font-bold text-muted ring-1 ring-border">
                 <Home className="size-3" />
-                {category?.label_fr ?? "Annonce"}
+                {category ? categoryLabel(category, locale) : t("categoryFallback")}
               </span>
               {badge === true && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-gold-faint px-2.5 py-1 text-[11px] font-extrabold text-gold ring-1 ring-gold-soft">
-                  <BadgeCheck className="size-3.5" strokeWidth={2.4} /> Vendeur vérifié
+                  <BadgeCheck className="size-3.5" strokeWidth={2.4} /> {t("verifiedSeller")}
                 </span>
               )}
             </div>
@@ -381,13 +404,13 @@ export default async function AnnoncePage({
 
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-muted">
               <span className="inline-flex items-center gap-1">
-                <MapPin className="size-3.5" /> {l.governorate}
+                <MapPin className="size-3.5" /> {governorateLabel(l.governorate, locale)}
                 {l.delegation ? ` · ${l.delegation}` : ""}
               </span>
               {l.published_at && (
                 <span className="inline-flex items-center gap-1">
                   <Clock className="size-3.5" />
-                  publiée le {new Date(l.published_at).toLocaleDateString("fr-FR")}
+                  {t("publishedOn", { date: formatDate(l.published_at, locale, "short") })}
                 </span>
               )}
               {/* Printed where a buyer will find it when they call: "je vous
@@ -396,10 +419,10 @@ export default async function AnnoncePage({
               {l.reference && (
                 <span
                   className="mazed-tabular inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 font-semibold tracking-wide text-foreground ring-1 ring-border"
-                  title="Référence de l'annonce"
+                  title={t("referenceTitle")}
                 >
                   <Hash className="size-3" />
-                  {l.reference}
+                  <Ltr>{l.reference}</Ltr>
                 </span>
               )}
             </div>
@@ -411,7 +434,7 @@ export default async function AnnoncePage({
 
             {specs.length > 0 && (
               <section className="mt-6">
-                <h2 className="mazed-eyebrow">Caractéristiques</h2>
+                <h2 className="mazed-eyebrow">{t("specsTitle")}</h2>
                 <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {specs.map((s) => (
                     <div
@@ -432,7 +455,7 @@ export default async function AnnoncePage({
 
             {l.description && (
               <section className="mt-6">
-                <h2 className="mazed-eyebrow">Description</h2>
+                <h2 className="mazed-eyebrow">{t("descriptionTitle")}</h2>
                 {/* Sellers paste links, and a URL is one unbreakable word. With
                     nothing to break it, the paragraph sets its own minimum
                     width and pushes the whole page sideways. `anywhere` breaks
@@ -451,7 +474,7 @@ export default async function AnnoncePage({
                 href={"/annonces" as never}
                 className="text-[13px] font-bold text-gold hover:underline"
               >
-                ← Toutes les annonces
+                {t("backToCatalogue")}
               </Link>
             </div>
           </div>

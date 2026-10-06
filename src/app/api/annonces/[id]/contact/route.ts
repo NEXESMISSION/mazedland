@@ -6,6 +6,7 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { clientIp } from "@/lib/clientIp";
 import { fail } from "@/lib/http/errors";
 import { log } from "@/lib/log";
+import { apiTranslator } from "@/lib/i18n/server";
 
 /**
  * POST /api/annonces/[id]/contact — reveal the seller's number, once, on demand.
@@ -57,11 +58,9 @@ export async function POST(
     p_window_secs: 3600,
   });
   if (over === true) {
+    const t = await apiTranslator(req, "listingApi");
     return NextResponse.json(
-      {
-        error: "rate_limited",
-        detail: "Trop de numéros consultés depuis cet appareil. Réessayez plus tard.",
-      },
+      { error: "rate_limited", detail: t("tooManyReveals") },
       { status: 429 },
     );
   }
@@ -76,8 +75,9 @@ export async function POST(
     return NextResponse.json({ error: "not_available" }, { status: 404 });
   }
   if (!listing.show_phone || !listing.contact_phone) {
+    const t = await apiTranslator(req, "listingApi");
     return NextResponse.json(
-      { error: "hidden", detail: "Ce vendeur ne partage pas son numéro." },
+      { error: "hidden", detail: t("phoneHidden") },
       { status: 403 },
     );
   }

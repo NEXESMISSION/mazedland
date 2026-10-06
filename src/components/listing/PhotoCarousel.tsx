@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
+import { isRtl } from "@/lib/i18n";
 
 type Photo = {
   id: string;
@@ -46,6 +47,10 @@ export function PhotoCarousel({
   children?: React.ReactNode;
 }) {
   const t = useTranslations();
+  // Right-to-left, the flex track lays the slides out leftwards from the right
+  // edge: the next photo is to the LEFT, so the track moves right to reach it,
+  // and the finger swipes right to bring it in.
+  const rtl = isRtl(useLocale());
   const count = photos.length;
   const loop = count > 1;
   // Clone the first photo at the tail for a seamless wrap.
@@ -118,14 +123,14 @@ export function PhotoCarousel({
             if (touchX.current == null) return;
             const dx = e.changedTouches[0].clientX - touchX.current;
             touchX.current = null;
-            if (Math.abs(dx) > SWIPE_THRESHOLD) go(dx < 0 ? 1 : -1);
+            if (Math.abs(dx) > SWIPE_THRESHOLD) go((rtl ? dx > 0 : dx < 0) ? 1 : -1);
           }}
         >
           {count > 0 ? (
             <div
               className="flex h-full w-full"
               style={{
-                transform: `translateX(-${index * 100}%)`,
+                transform: `translateX(${rtl ? "" : "-"}${index * 100}%)`,
                 transition: anim ? "transform 500ms ease-out" : "none",
               }}
               onTransitionEnd={onTransitionEnd}

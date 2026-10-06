@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useToast } from "@/components/ui/Toast";
+import { useApiError } from "@/lib/useApiError";
+import { Ltr } from "@/components/ui/Ltr";
 import { Phone, MessageCircle, Loader2 } from "lucide-react";
 
 /**
@@ -26,6 +29,8 @@ export function ContactReveal({
   /** false when the seller chose not to publish a number at all. */
   showPhone?: boolean;
 }) {
+  const t = useTranslations("listing.contact");
+  const apiError = useApiError();
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [contact, setContact] = useState<{ phone: string; whatsapp: string | null } | null>(null);
@@ -36,12 +41,14 @@ export function ContactReveal({
       const res = await fetch(`/api/annonces/${listingId}/contact`, { method: "POST" });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast(j.detail ?? "Numéro indisponible.", res.status === 429 ? "warning" : "error");
+        // The route writes `detail` in this page's language; a bare code
+        // (cross_origin_blocked, server_misconfigured…) goes through apiErrors.
+        toast(apiError(j, t("unavailable")), res.status === 429 ? "warning" : "error");
         return;
       }
       setContact({ phone: j.phone, whatsapp: j.whatsapp ?? null });
     } catch {
-      toast("Erreur réseau.", "error");
+      toast(t("networkError"), "error");
     } finally {
       setBusy(false);
     }
@@ -61,7 +68,7 @@ export function ContactReveal({
           className="mazed-btn-luxe tap-target flex w-full items-center justify-center gap-2 px-5 py-3.5 text-[15px]"
         >
           <Phone className="size-4" strokeWidth={2.5} />
-          <span className="mazed-tabular">{contact.phone}</span>
+          <Ltr className="mazed-tabular">{contact.phone}</Ltr>
         </a>
         <a
           href={`https://wa.me/${wa}`}
@@ -72,10 +79,7 @@ export function ContactReveal({
           <MessageCircle className="size-4" strokeWidth={2.2} />
           WhatsApp
         </a>
-        <p className="text-center text-[11px] text-muted">
-          Mazed Immo met en relation, sans intervenir dans la vente. Visitez le bien et vérifiez le
-          titre de propriété avant tout versement.
-        </p>
+        <p className="text-center text-[11px] text-muted">{t("disclaimer")}</p>
       </div>
     );
   }
@@ -85,8 +89,7 @@ export function ContactReveal({
   if (!showPhone) {
     return (
       <p className="rounded-xl bg-surface-2 px-4 py-3 text-center text-[12.5px] text-muted ring-1 ring-border">
-        Ce vendeur ne partage pas son numéro. Enregistrez l&apos;annonce pour la
-        retrouver.
+        {t("hidden")}
       </p>
     );
   }
@@ -100,7 +103,7 @@ export function ContactReveal({
         className="mazed-btn-luxe tap-target flex w-full items-center justify-center gap-2 px-5 py-3.5 text-[15px] disabled:opacity-60"
       >
         {busy ? <Loader2 className="size-4 animate-spin" /> : <Phone className="size-4" strokeWidth={2.5} />}
-        Afficher le numéro
+        {t("reveal")}
       </button>
     </div>
   );
