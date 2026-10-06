@@ -35,6 +35,48 @@ export const TUNISIAN_GOVERNORATES = [
 export type TunisianGovernorate = (typeof TUNISIAN_GOVERNORATES)[number];
 
 /**
+ * Arabic names of the 24 governorates. The French name stays the stored value
+ * (listings.governorate, profiles.governorate, URL filters); this is display
+ * only.
+ */
+const GOVERNORATE_AR: Record<TunisianGovernorate, string> = {
+  Tunis: "تونس",
+  Ariana: "أريانة",
+  "Ben Arous": "بن عروس",
+  Manouba: "منوبة",
+  Sousse: "سوسة",
+  Monastir: "المنستير",
+  Mahdia: "المهدية",
+  Nabeul: "نابل",
+  Sfax: "صفاقس",
+  Bizerte: "بنزرت",
+  Gabès: "قابس",
+  Médenine: "مدنين",
+  Kairouan: "القيروان",
+  Béja: "باجة",
+  Jendouba: "جندوبة",
+  Kef: "الكاف",
+  Kasserine: "القصرين",
+  "Sidi Bouzid": "سيدي بوزيد",
+  Gafsa: "قفصة",
+  Tozeur: "توزر",
+  Kebili: "قبلي",
+  Tataouine: "تطاوين",
+  Siliana: "سليانة",
+  Zaghouan: "زغوان",
+};
+
+/**
+ * A governorate's name in the reader's language. Unknown values (legacy rows,
+ * free text) come back unchanged rather than blank.
+ */
+export function governorateLabel(name: string | null | undefined, locale: string): string {
+  if (!name) return "";
+  if (locale !== "ar") return name;
+  return GOVERNORATE_AR[name as TunisianGovernorate] ?? name;
+}
+
+/**
  * Dial codes for the phone field. Tunisia leads (the platform's
  * primary market), then the diaspora destinations (France, Italy,
  * Germany, Belgium, Switzerland, UAE, Canada, USA, etc.) so an
@@ -44,30 +86,35 @@ export type TunisianGovernorate = (typeof TUNISIAN_GOVERNORATES)[number];
  * 200-country dropdown for an audience that's overwhelmingly
  * Tunisia-resident or Tunisia-diaspora.
  */
-export const DIAL_CODES: { code: string; label: string }[] = [
-  { code: "+216", label: "+216 Tunisie" },
-  { code: "+33",  label: "+33 France" },
-  { code: "+39",  label: "+39 Italie" },
-  { code: "+49",  label: "+49 Allemagne" },
-  { code: "+32",  label: "+32 Belgique" },
-  { code: "+41",  label: "+41 Suisse" },
-  { code: "+34",  label: "+34 Espagne" },
-  { code: "+31",  label: "+31 Pays-Bas" },
-  { code: "+44",  label: "+44 Royaume-Uni" },
-  { code: "+1",   label: "+1 USA / Canada" },
-  { code: "+971", label: "+971 Émirats" },
-  { code: "+966", label: "+966 Arabie saoudite" },
-  { code: "+974", label: "+974 Qatar" },
-  { code: "+965", label: "+965 Koweït" },
-  { code: "+973", label: "+973 Bahreïn" },
-  { code: "+968", label: "+968 Oman" },
-  { code: "+961", label: "+961 Liban" },
-  { code: "+962", label: "+962 Jordanie" },
-  { code: "+20",  label: "+20 Égypte" },
-  { code: "+212", label: "+212 Maroc" },
-  { code: "+213", label: "+213 Algérie" },
-  { code: "+90",  label: "+90 Turquie" },
+export const DIAL_CODES: { code: string; label: string; labelAr: string }[] = [
+  { code: "+216", label: "+216 Tunisie",         labelAr: "+216 تونس" },
+  { code: "+33",  label: "+33 France",           labelAr: "+33 فرنسا" },
+  { code: "+39",  label: "+39 Italie",           labelAr: "+39 إيطاليا" },
+  { code: "+49",  label: "+49 Allemagne",        labelAr: "+49 ألمانيا" },
+  { code: "+32",  label: "+32 Belgique",         labelAr: "+32 بلجيكا" },
+  { code: "+41",  label: "+41 Suisse",           labelAr: "+41 سويسرا" },
+  { code: "+34",  label: "+34 Espagne",          labelAr: "+34 إسبانيا" },
+  { code: "+31",  label: "+31 Pays-Bas",         labelAr: "+31 هولندا" },
+  { code: "+44",  label: "+44 Royaume-Uni",      labelAr: "+44 بريطانيا" },
+  { code: "+1",   label: "+1 USA / Canada",      labelAr: "+1 أمريكا / كندا" },
+  { code: "+971", label: "+971 Émirats",         labelAr: "+971 الإمارات" },
+  { code: "+966", label: "+966 Arabie saoudite", labelAr: "+966 السعودية" },
+  { code: "+974", label: "+974 Qatar",           labelAr: "+974 قطر" },
+  { code: "+965", label: "+965 Koweït",          labelAr: "+965 الكويت" },
+  { code: "+973", label: "+973 Bahreïn",         labelAr: "+973 البحرين" },
+  { code: "+968", label: "+968 Oman",            labelAr: "+968 عُمان" },
+  { code: "+961", label: "+961 Liban",           labelAr: "+961 لبنان" },
+  { code: "+962", label: "+962 Jordanie",        labelAr: "+962 الأردن" },
+  { code: "+20",  label: "+20 Égypte",           labelAr: "+20 مصر" },
+  { code: "+212", label: "+212 Maroc",           labelAr: "+212 المغرب" },
+  { code: "+213", label: "+213 Algérie",         labelAr: "+213 الجزائر" },
+  { code: "+90",  label: "+90 Turquie",          labelAr: "+90 تركيا" },
 ];
+
+/** A dial-code option's label in the reader's language. */
+export function dialCodeLabel(c: { label: string; labelAr: string }, locale: string): string {
+  return locale === "ar" ? c.labelAr : c.label;
+}
 
 /**
  * Normalize a (dialCode, raw number) pair to E.164.
@@ -97,46 +144,36 @@ export function normalizeE164(
 }
 
 /**
- * Phone validator that returns a specific French reason on failure,
- * for surfacing in the signup/login forms. Mirrors normalizeE164's
- * rules but says "what's wrong" instead of just null.
+ * Phone validator for the signup/login forms. Mirrors normalizeE164's rules
+ * but says "what's wrong" instead of just null — as a key under the shared
+ * `phone.errors` namespace plus its values, which the form renders with
+ * `t(`phone.errors.${check.code}`, check.values)`.
  *
- *   "+216" → exactly 8 digits required ("vous en avez N")
+ *   "+216" → exactly 8 digits required ("you typed N")
  *   other  → 6–15 digits required (E.164 spec)
  *
  * Used by the forms before normalizeE164. The forms still call
  * normalizeE164 after validatePhone succeeds, so a downstream change
  * to either function doesn't break the other.
  */
+export type PhoneError =
+  | { code: "empty"; values: Record<string, never> }
+  | { code: "tunisianLength"; values: { count: number } }
+  | { code: "tooShort"; values: { dialCode: string } }
+  | { code: "tooLong"; values: Record<string, never> };
+
 export function validatePhone(
   dialCode: string,
   rawNumber: string,
-): { ok: true } | { ok: false; reason: string } {
+): { ok: true } | ({ ok: false } & PhoneError) {
   const digits = rawNumber.replace(/\D/g, "").replace(/^0+/, "");
-  if (!digits) {
-    return { ok: false, reason: "Tapez votre numéro de téléphone." };
-  }
+  if (!digits) return { ok: false, code: "empty", values: {} };
   if (dialCode === "+216") {
-    if (digits.length !== 8) {
-      return {
-        ok: false,
-        reason: `Un numéro tunisien doit faire 8 chiffres — vous en avez tapé ${digits.length}.`,
-      };
-    }
+    if (digits.length !== 8) return { ok: false, code: "tunisianLength", values: { count: digits.length } };
     return { ok: true };
   }
-  if (digits.length < 6) {
-    return {
-      ok: false,
-      reason: `Numéro trop court — il faut au moins 6 chiffres après l'indicatif ${dialCode}.`,
-    };
-  }
-  if (digits.length > 15) {
-    return {
-      ok: false,
-      reason: `Numéro trop long — maximum 15 chiffres après l'indicatif.`,
-    };
-  }
+  if (digits.length < 6) return { ok: false, code: "tooShort", values: { dialCode } };
+  if (digits.length > 15) return { ok: false, code: "tooLong", values: {} };
   return { ok: true };
 }
 

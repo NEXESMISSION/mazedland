@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Loader2, Smartphone, CheckCircle2 } from "lucide-react";
 import { PhoneInput } from "./PhoneInput";
@@ -23,6 +24,7 @@ type Phase = "phone" | "otp" | "password" | "done";
 
 export function ForgotPasswordForm() {
   const router = useRouter();
+  const tPhone = useTranslations("phone");
   const [phase, setPhase] = useState<Phase>("phone");
   const [dialCode, setDialCode] = useState("+216");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -47,7 +49,7 @@ export function ForgotPasswordForm() {
     setError(null);
     const check = validatePhone(dialCode, phoneNumber);
     if (!check.ok) {
-      setError(check.reason);
+      setError(tPhone(`errors.${check.code}`, check.values));
       return;
     }
     const normalized = normalizeE164(dialCode, phoneNumber);

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { AccountMenu } from "./AccountMenu";
+import { LocaleSwitcher } from "./LocaleSwitcher";
 import { normalizeSearchQuery } from "@/lib/search";
 import { Search, Plus } from "lucide-react";
 
@@ -170,6 +171,7 @@ export function DesktopNav() {
         {/* ── Right zone: notifications, account, sell CTA ── */}
         <div className="flex shrink-0 items-center gap-2">
           <NotificationBell />
+          <LocaleSwitcher />
           <AccountMenu />
           <Link
             href="/annonces/nouvelle"

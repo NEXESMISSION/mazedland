@@ -226,14 +226,27 @@ body {
   overscroll-behavior-y: none;
 }
 
-html[dir="rtl"] body { font-family: var(--font-arabic); }
+/* Arabic pages: Cairo first for Arabic glyphs, Jakarta behind it for the Latin
+   text and digits Cairo's Arabic subset does not carry.
+
+   Set on the selectors themselves, not by redefining --font-sans: the tokens
+   are declared with `@theme inline`, so Tailwind inlines their values into the
+   .font-* utilities and drops any redefinition of them under a selector. */
+html[dir="rtl"],
+html[dir="rtl"] body,
+html[dir="rtl"] .font-sans,
+html[dir="rtl"] .font-display,
+html[dir="rtl"] .font-serif,
+html[dir="rtl"] .font-arabic {
+  font-family: var(--font-cairo), var(--font-jakarta), system-ui, sans-serif;
+}
 
 .mazed-serif {
   font-family: var(--font-sans);
   font-weight: 700;
   letter-spacing: -0.015em;
 }
-html[dir="rtl"] .mazed-serif { font-family: var(--font-arabic); }
+html[dir="rtl"] .mazed-serif { font-family: var(--font-cairo), var(--font-jakarta), system-ui, sans-serif; }
 
 .tabular-nums,
 .mazed-tabular {

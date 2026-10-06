@@ -9,8 +9,8 @@ import { logActivity } from "./lib/activity";
 const intlMiddleware = createIntlMiddleware(routing);
 
 // Legacy locale prefixes we used to support. Now redirected to /fr to
-// preserve bookmarks, share links, and any indexed URLs.
-const LEGACY_LOCALES = ["ar", "en"] as const;
+// preserve bookmarks, share links, and any indexed URLs. (/ar is served again.)
+const LEGACY_LOCALES = ["en"] as const;
 
 /**
  * Two-stage middleware:
@@ -52,7 +52,7 @@ export async function proxy(req: NextRequest) {
   const t0 = performance.now();
   const { pathname, search } = req.nextUrl;
 
-  // Legacy /ar/* and /en/* → /fr/* (preserve querystring + hash).
+  // Legacy /en/* → /fr/* (preserve querystring + hash).
   for (const legacy of LEGACY_LOCALES) {
     if (pathname === `/${legacy}` || pathname.startsWith(`/${legacy}/`)) {
       const rest = pathname.slice(legacy.length + 1) || "/";

@@ -1,0 +1,242 @@
+{
+  "brand": {
+    "name": "Mazed Immo",
+    "titleSuffix": "إعلانات العقارات في تونس",
+    "tagline": "إعلانات عقارية — أراضي، منازل ومحلات في كامل تونس",
+    "slogan": "السوم مكتوب، والبائع على الخط."
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "properties": "العقارات",
+    "auctions": "الإعلانات",
+    "inspectors": "شبكة الخبراء",
+    "howItWorks": "كيفاش تخدم",
+    "forBanks": "البنوك والوكالات",
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "myAccount": "حسابي",
+    "logout": "خروج",
+    "browse": "تصفّح",
+    "watchlist": "المفضّلة",
+    "account": "الحساب"
+  },
+  "shell": {
+    "back": "رجوع",
+    "skipToContent": "انتقل إلى المحتوى",
+    "tabs": {
+      "home": "الرئيسية",
+      "browse": "تصفّح",
+      "sell": "بيع",
+      "watchlist": "المفضّلة",
+      "activity": "النشاط",
+      "account": "الحساب"
+    },
+    "pageTitles": {
+      "annonces": "إعلان",
+      "annoncesNew": "نشر إعلان",
+      "properties": "العقارات",
+      "auctions": "الإعلانات",
+      "inspectors": "الخبراء",
+      "watchlist": "المفضّلة",
+      "account": "حسابي",
+      "login": "تسجيل الدخول",
+      "signup": "إنشاء حساب",
+      "kyc": "التحقق من الهوية",
+      "partners": "البنوك والوكالات",
+      "sell": "لوحة البائع",
+      "admin": "لوحة الإدارة",
+      "payment": "الدفع"
+    }
+  },
+  "accountPage": {
+    "guestTitle": "مرحبا بيك في Mazed Immo",
+    "guestBody": "سجّل دخولك باش تكمّل.",
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "sections": {
+      "kyc": "التحقق من الهوية",
+      "kycBody": "مطلوب للمزايدة والبيع.",
+      "inspections": "خبراتي",
+      "inspectionsBody": "تقارير الخبرة الخاصة بك.",
+      "payments": "المدفوعات",
+      "paymentsBody": "الضمانات والعمولات والاسترجاعات.",
+      "language": "اللغة"
+    }
+  },
+  "landing": {
+    "heroBadge": "الانطلاق في ماي 2026",
+    "heroTitle": "بيع واشري العقار بكل شفافية",
+    "heroSubtitle": "العقار بسوم واضح، في كامل تونس.",
+    "heroCta": "سجّل في قائمة الانتظار",
+    "heroSecondary": "اكتشف كيفاش تخدم",
+    "trustBar": "بنوك وعدول منفذون ووكالات معتمدة",
+    "valuesTitle": "ثلاث قيم ما فيهمش نقاش",
+    "values": {
+      "transparencyTitle": "الشفافية",
+      "transparencyBody": "كل شيء واضح ومراقب.",
+      "speedTitle": "السرعة",
+      "speedBody": "يتباع في 14 يوم، موش في 6 شهور.",
+      "trustTitle": "الثقة",
+      "trustBody": "خبراء معتمدون، تحقّق صارم من الهوية وضمانات قانونية."
+    },
+    "howItWorksTitle": "كيفاش تخدم؟",
+    "steps": {
+      "s1Title": "1. حطّ عقارك",
+      "s1Body": "الوثائق والصور تتراقب في 48 ساعة.",
+      "s2Title": "2. اختار نوع المزاد",
+      "s2Body": "إنجليزي، مختوم ولا هولندي.",
+      "s3Title": "3. مزايدون موثّقون",
+      "s3Body": "موثّقون، مع ضمان بـ10%.",
+      "s4Title": "4. بيع قانوني",
+      "s4Body": "عدل إشهاد معتمد وترسيم عقاري."
+    },
+    "auctionTypesTitle": "ثلاث أنواع مزادات لكل عقار",
+    "auctionTypes": {
+      "englishTitle": "مزاد إنجليزي",
+      "englishBody": "السوم يطلع، بكل وضوح.",
+      "sealedTitle": "مزاد مختوم",
+      "sealedBody": "عروض سرّية. اللي يعطي أكثر يربح.",
+      "dutchTitle": "مزاد هولندي",
+      "dutchBody": "السوم ينزل حتى لين واحد يشري."
+    },
+    "inspectorTitle": "شبكة خبراء في كل ولاية",
+    "inspectorBody": "خبير يراقب كل عقار قبل المزاد.",
+    "inspectorCta": "انضمّ كخبير معتمد",
+    "audienceTitle": "Mazed Immo لشكون؟",
+    "audience": {
+      "buyersTitle": "للشارين",
+      "buyersBody": "عقارات تحت سوم السوق، من التليفون متاعك.",
+      "sellersTitle": "للخواص اللي يبيعو",
+      "sellersBody": "بيع أسرع. عمولة 3%.",
+      "banksTitle": "للبنوك والمؤسسات",
+      "banksBody": "صفّي أصولك بسوم أعلى بـ10 حتى 20%.",
+      "diasporaTitle": "للتوانسة بالخارج",
+      "diasporaBody": "استثمر في تونس عن بعد."
+    },
+    "ctaTitle": "كون من الأوائل",
+    "ctaBody": "0% عمولة على أول معاملة.",
+    "emailPlaceholder": "بريدك الإلكتروني",
+    "phonePlaceholder": "الهاتف (اختياري)",
+    "joinWaitlist": "نسجّل",
+    "footerLegal": "© 2026 Mazed Immo. جميع الحقوق محفوظة.",
+    "footerLinks": {
+      "terms": "شروط الاستعمال",
+      "privacy": "سياسة الخصوصية",
+      "contact": "اتصل بنا"
+    }
+  },
+  "home": {
+    "trendingEyebrow": "في الواجهة",
+    "trendingTitle": "العقارات اللي عليها الطلب",
+    "nouveautesEyebrow": "جديد",
+    "nouveautesTitle": "تنشرو توّا",
+    "endingSoonEyebrow": "فرصة",
+    "moreToExplore": "اكتشف أكثر",
+    "browseByType": "تصفّح حسب النوع",
+    "browseByPrice": "تصفّح حسب السوم",
+    "recentlyHammered": "تباعو مؤخرا",
+    "realPrices": "أسوام حقيقية",
+    "seeAll": "شوف الكل",
+    "heroLive": "متاح",
+    "heroBidCta": "شوف الإعلان",
+    "heroBrowseCta": "تصفّح الإعلانات",
+    "heroBrandTitle": "اشري وبيع عقارك في تونس",
+    "heroBrandEyebrow": "{count, plural, zero {ما فماش إعلانات منشورة توّا} one {إعلان واحد منشور} two {إعلانين منشورين} few {# إعلانات منشورة} many {# إعلانًا منشورًا} other {# إعلان منشور}}",
+    "soldChip": "تباع",
+    "howItWorksEyebrow": "الخطوات",
+    "howItWorksTitle": "كيفاش تخدم",
+    "step1Eyebrow": "تصفّح",
+    "step1Title": "تصفّح الإعلانات",
+    "step1Body": "فلتر حسب المدينة والنوع والسوم، ورتّب حسب المساحة.",
+    "step2Eyebrow": "اتصل",
+    "step2Title": "كلّم البائع",
+    "step2Body": "الرقم يظهر بنقرة وحدة. بلا وسيط.",
+    "step3Eyebrow": "انشر",
+    "step3Title": "بيع عقارك",
+    "step3Body": "صورك، سومك. يتنشر بعد المراقبة.",
+    "trustEyebrow": "علاش Mazed Immo",
+    "trustTitle": "منصّة معمولة باش تحميك",
+    "trustEscrowTitle": "إعلانات مراقبة",
+    "trustEscrowBody": "كل إعلان يتراقب قبل ما يتنشر.",
+    "trustKycTitle": "رقمك محمي",
+    "trustKycBody": "عمرو ما يتنشر. يظهر كان كي يطلبوه.",
+    "trustInspectionTitle": "بائعون موثّقون",
+    "trustInspectionBody": "الشارة تميّز البائعين اللي راقبهم فريقنا.",
+    "trustLegalTitle": "بلا عمولة",
+    "trustLegalBody": "تخلّص النشر، موش نسبة من البيعة."
+  },
+  "search": {
+    "placeholder": "لوّج على عقار…",
+    "submit": "لوّج",
+    "governorate": "الولاية",
+    "allWilayas": "كل الولايات",
+    "type": "النوع",
+    "allTypes": "كل الأنواع"
+  },
+  "gallery": {
+    "prev": "الصورة السابقة",
+    "next": "الصورة التالية",
+    "goToPhoto": "روح للصورة {n}"
+  },
+  "property": {
+    "type": "النوع",
+    "area": "المساحة",
+    "rooms": "الغرف",
+    "bathrooms": "الحمّامات",
+    "floor": "الطابق",
+    "yearBuilt": "سنة البناء",
+    "location": "الموقع",
+    "documents": "الوثائق القانونية",
+    "inspectionReport": "تقرير الخبرة",
+    "requestInspection": "اطلب خبرة",
+    "virtualTour": "جولة افتراضية",
+    "types": {
+      "apartment": "شقة",
+      "house": "منزل",
+      "villa": "فيلا",
+      "land": "أرض",
+      "commercial": "محل تجاري",
+      "office": "مكتب",
+      "warehouse": "مستودع",
+      "farm": "مزرعة"
+    }
+  },
+  "common": {
+    "submit": "ابعث",
+    "cancel": "إلغاء",
+    "loading": "جاري التحميل…",
+    "save": "سجّل",
+    "delete": "احذف",
+    "edit": "بدّل",
+    "back": "رجوع",
+    "next": "التالي",
+    "search": "لوّج",
+    "filter": "فلتر",
+    "all": "الكل",
+    "tnd": "د.ت",
+    "perMonth": "/الشهر",
+    "soon": "قريبا",
+    "sqm": "م²"
+  },
+  "localeSwitcher": {
+    "switchTo": "التبديل إلى الفرنسية — Français"
+  },
+  "phone": {
+    "errors": {
+      "empty": "اكتب رقم هاتفك.",
+      "tunisianLength": "الرقم التونسي يتكوّن من 8 أرقام — كتبت {count}.",
+      "tooShort": "الرقم قصير جدًا — يلزم 6 أرقام على الأقل بعد رمز الدولة {dialCode}.",
+      "tooLong": "الرقم طويل جدًا — 15 رقمًا كحدّ أقصى بعد رمز الدولة."
+    }
+  },
+  "attributes": {
+    "area_sqm": "المساحة",
+    "rooms": "الغرف",
+    "bathrooms": "الحمّامات",
+    "floor": "الطابق",
+    "year_built": "سنة البناء",
+    "buildable": "صالحة للبناء",
+    "titled": "رسم عقاري",
+    "serviced": "مربوطة بالشبكات"
+  }
+}

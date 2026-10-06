@@ -22,6 +22,7 @@
   },
   "shell": {
     "back": "Retour",
+    "skipToContent": "Aller au contenu",
     "tabs": {
       "home": "Accueil",
       "browse": "Explorer",
@@ -140,7 +141,7 @@
     "heroBidCta": "Voir l’annonce",
     "heroBrowseCta": "Explorer les annonces",
     "heroBrandTitle": "Acheter et vendre un bien en Tunisie",
-    "heroBrandEyebrow": "{count} annonces en ligne",
+    "heroBrandEyebrow": "{count, plural, one {# annonce en ligne} other {# annonces en ligne}}",
     "soldChip": "Vendu",
     "howItWorksEyebrow": "Le parcours",
     "howItWorksTitle": "Comment ça marche",
@@ -214,6 +215,28 @@
     "all": "Tout",
     "tnd": "TND",
     "perMonth": "/mois",
-    "soon": "Bientôt"
+    "soon": "Bientôt",
+    "sqm": "m²"
+  },
+  "localeSwitcher": {
+    "switchTo": "Passer en arabe — العربية"
+  },
+  "phone": {
+    "errors": {
+      "empty": "Tapez votre numéro de téléphone.",
+      "tunisianLength": "Un numéro tunisien doit faire 8 chiffres — vous en avez tapé {count}.",
+      "tooShort": "Numéro trop court — il faut au moins 6 chiffres après l'indicatif {dialCode}.",
+      "tooLong": "Numéro trop long — maximum 15 chiffres après l'indicatif."
+    }
+  },
+  "attributes": {
+    "area_sqm": "Surface",
+    "rooms": "Pièces",
+    "bathrooms": "Salles de bain",
+    "floor": "Étage",
+    "year_built": "Année de construction",
+    "buildable": "Constructible",
+    "titled": "Titre foncier",
+    "serviced": "Viabilisé"
   }
 }

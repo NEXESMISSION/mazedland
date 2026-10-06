@@ -111,7 +111,7 @@ export function SignupForm() {
     setError(null);
     const check = validatePhone(dialCode, phoneNumber);
     if (!check.ok) {
-      setError(check.reason);
+      setError(t(`phone.errors.${check.code}`, check.values));
       return;
     }
     const normalizedPhone = normalizeE164(dialCode, phoneNumber);

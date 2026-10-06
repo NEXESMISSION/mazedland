@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // ============================================================================
 // i18n key check — every translation key the code asks for must exist in
-// messages/fr.json.
+// messages/fr.json, and messages/ar.json must carry exactly the same keys with
+// the same placeholders ({count}, {name}…), so no Arabic page falls back to a
+// key path or loses a value.
 //
 // next-intl does not fail a build over a missing key. In production it logs and
 // renders the KEY PATH instead — "home.heroBidCta" in the middle of a page — a
@@ -121,5 +123,41 @@ if (process.argv.includes("--unused")) {
   );
 }
 
-if (missing.length) process.exit(1);
+// ── fr ⇄ ar parity ─────────────────────────────────────────────────────────
+// Placeholder names a message uses: "{count, plural, …}" → count, "{name}" →
+// name. Plural branch bodies ("{# annonces}") and Arabic text are not \w, so
+// they are not mistaken for arguments.
+const argsOf = (msg) => new Set([...String(msg).matchAll(/\{\s*([A-Za-z_]\w*)\s*[,}]/g)].map((m) => m[1]));
+const flatten = (node, path = "", out = new Map()) => {
+  for (const [k, v] of Object.entries(node)) {
+    const full = path ? `${path}.${k}` : k;
+    if (v && typeof v === "object" && !Array.isArray(v)) flatten(v, full, out);
+    else out.set(full, v);
+  }
+  return out;
+};
+const frFlat = flatten(messages);
+const arFlat = flatten(JSON.parse(readFileSync(join(ROOT, "messages", "ar.json"), "utf8")));
+const notInAr = [...frFlat.keys()].filter((k) => !arFlat.has(k));
+const notInFr = [...arFlat.keys()].filter((k) => !frFlat.has(k));
+const argDrift = [...frFlat.keys()]
+  .filter((k) => arFlat.has(k))
+  .filter((k) => {
+    const a = argsOf(frFlat.get(k));
+    const b = argsOf(arFlat.get(k));
+    return a.size !== b.size || [...a].some((x) => !b.has(x));
+  });
+const emptyAr = [...arFlat.entries()]
+  .filter(([, v]) => typeof v === "string" && v.trim() === "")
+  .map(([k]) => k);
+
+const list = (keys) => keys.map((k) => `  ${k}`).join("\n");
+if (notInAr.length) console.log(`\n✗ ${notInAr.length} key(s) missing from messages/ar.json:\n${list(notInAr)}`);
+if (notInFr.length) console.log(`\n✗ ${notInFr.length} key(s) in messages/ar.json but not fr.json:\n${list(notInFr)}`);
+if (argDrift.length) console.log(`\n✗ ${argDrift.length} message(s) whose placeholders differ between fr and ar:\n${list(argDrift)}`);
+if (emptyAr.length) console.log(`\n✗ ${emptyAr.length} empty Arabic message(s):\n${list(emptyAr)}`);
+
+const parityProblems = notInAr.length + notInFr.length + argDrift.length + emptyAr.length;
+if (missing.length || parityProblems) process.exit(1);
 console.log("✓ every statically resolvable key exists");
+console.log(`✓ fr and ar carry the same ${frFlat.size} messages with the same placeholders`);

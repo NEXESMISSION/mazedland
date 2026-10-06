@@ -24,15 +24,13 @@ describe("validatePhone", () => {
   it("ok for a valid Tunisian number", () => {
     expect(validatePhone("+216", "20123456")).toEqual({ ok: true });
   });
-  it("explains the Tunisian 8-digit rule on failure", () => {
-    const r = validatePhone("+216", "201234");
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toContain("8 chiffres");
+  it("explains the Tunisian 8-digit rule on failure, with the count typed", () => {
+    expect(validatePhone("+216", "201234")).toEqual({ ok: false, code: "tunisianLength", values: { count: 6 } });
   });
   it("flags empty, too-short and too-long for foreign codes", () => {
-    expect(validatePhone("+216", "").ok).toBe(false);
-    expect(validatePhone("+1", "123").ok).toBe(false);
-    expect(validatePhone("+1", "1234567890123456").ok).toBe(false);
+    expect(validatePhone("+216", "")).toMatchObject({ ok: false, code: "empty" });
+    expect(validatePhone("+1", "123")).toEqual({ ok: false, code: "tooShort", values: { dialCode: "+1" } });
+    expect(validatePhone("+1", "1234567890123456")).toMatchObject({ ok: false, code: "tooLong" });
   });
 });
 
