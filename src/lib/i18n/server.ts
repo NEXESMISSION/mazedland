@@ -27,10 +27,9 @@ export function requestLocale(req: Request): AppLocale {
 }
 
 /**
- * A translator for an API route, in the requesting page's language:
- *
- *   const t = await apiTranslator(req, "api.annonces");
- *   return NextResponse.json({ error: "invalid", detail: t("titleTooShort") }, { status: 400 });
+ * A translator for an API route, in the requesting page's language. Await
+ * apiTranslator(req, "<namespace>") and use the result like getTranslations':
+ * `detail: t("<key>")` next to an unchanged `error` code.
  */
 export async function apiTranslator(req: Request, namespace: string) {
   return getTranslations({ locale: requestLocale(req), namespace });
