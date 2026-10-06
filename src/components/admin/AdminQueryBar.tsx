@@ -2,15 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { Search } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 
+/** `key` is the ?range value; `label` names its text in `admin.queryBar`. */
 const RANGES = [
-  { key: "", label: "Tout" },
-  { key: "1", label: "Aujourd'hui" },
-  { key: "7", label: "7 j" },
-  { key: "30", label: "30 j" },
-];
+  { key: "", label: "all" },
+  { key: "1", label: "today" },
+  { key: "7", label: "last7" },
+  { key: "30", label: "last30" },
+] as const;
 
 /**
  * Shared admin queue toolbar: debounced free-text search + a date-range
@@ -21,14 +23,18 @@ const RANGES = [
  */
 export function AdminQueryBar({
   total,
-  placeholder = "Rechercher…",
+  placeholder: placeholderProp,
 }: {
   total: number;
+  /** Defaults to "Rechercher…" / "بحث…". */
   placeholder?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
+  const t = useTranslations("admin");
+  const locale = useLocale();
+  const placeholder = placeholderProp ?? t("searchPlaceholder");
   const [q, setQ] = useState(sp.get("q") ?? "");
   const range = sp.get("range") ?? "";
 
@@ -57,14 +63,14 @@ export function AdminQueryBar({
   return (
     <div className="mt-4 flex flex-wrap items-center gap-2">
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" strokeWidth={2} />
+        <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" strokeWidth={2} />
         <input
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={placeholder}
           aria-label={placeholder}
-          className="h-9 w-64 rounded-lg border border-border bg-surface pl-9 pr-3 text-[13px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
+          className="h-9 w-64 rounded-lg border border-border bg-surface ps-9 pe-3 text-[13px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
         />
       </div>
 
@@ -78,13 +84,13 @@ export function AdminQueryBar({
               range === r.key ? "bg-[var(--gold)] text-white" : "text-muted hover:text-foreground"
             }`}
           >
-            {r.label}
+            {t(`queryBar.${r.label}`)}
           </button>
         ))}
       </div>
 
       <span className="mazed-tabular ms-auto text-[12px] text-muted">
-        {formatNumber(total)} résultat{total > 1 ? "s" : ""}
+        {t("queryBar.results", { count: total, n: formatNumber(total, locale) })}
       </span>
     </div>
   );

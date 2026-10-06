@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
+import { useApiError } from "@/lib/useApiError";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { StatusPill } from "@/components/admin/kit";
 import { ROW_BASE, ROW_IDLE, ROW_SELECTED, ROW_FOCUS, FLAG } from "@/components/admin/kit/surface";
@@ -52,6 +54,8 @@ export function QueueList({
 }) {
   const router = useRouter();
   const { toast } = useToast();
+  const t = useTranslations("adminListings.queue");
+  const apiError = useApiError();
   const [picking, setPicking] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
@@ -96,23 +100,28 @@ export function QueueList({
       } = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        toast(data.detail ?? data.error ?? "L'action groupée a échoué.", "error");
+        toast(apiError(data, data.error ?? t("bulkFailed")), "error");
         return;
       }
       const applied = data.applied ?? 0;
       const skipped = data.skipped ?? [];
-      const verb = action === "approve" ? "publiée" : action === "archive" ? "archivée" : "prolongée";
-      let msg = `${applied} annonce${applied === 1 ? "" : "s"} ${verb}${applied === 1 ? "" : "s"}.`;
+      let msg =
+        action === "approve"
+          ? t("bulkApproved", { count: applied })
+          : action === "archive"
+            ? t("bulkArchived", { count: applied })
+            : t("bulkExtended", { count: applied });
       if (skipped.length > 0) {
-        const why = [...new Set(skipped.map((s) => s.why))].join(", ");
-        msg += ` ${skipped.length} ignorée${skipped.length === 1 ? "" : "s"} (${why}).`;
+        // The route words each `why` in the page's language.
+        const reasons = [...new Set(skipped.map((s) => s.why))].join(t("reasonSeparator"));
+        msg += ` ${t("bulkSkipped", { count: skipped.length, reasons })}`;
       }
       toast(msg, skipped.length > 0 ? "warning" : "success");
       setSelected(new Set());
       setPicking(false);
       router.refresh();
     } catch {
-      toast("Connexion perdue. Rechargez pour voir ce qui a été appliqué.", "error");
+      toast(t("connectionLost"), "error");
     } finally {
       setBusy(null);
     }
@@ -133,7 +142,7 @@ export function QueueList({
           }`}
         >
           <ListChecks className="size-3.5" strokeWidth={2.2} />
-          Sélection
+          {t("selection")}
         </button>
 
         {picking && (
@@ -142,12 +151,12 @@ export function QueueList({
             onClick={() => setSelected(allOn ? new Set() : new Set(rows.map((r) => r.id)))}
             className="text-[11.5px] font-medium text-subtle transition hover:text-foreground"
           >
-            {allOn ? "Tout désélectionner" : "Tout sélectionner"}
+            {allOn ? t("deselectAll") : t("selectAll")}
           </button>
         )}
 
         <span className="mazed-tabular ms-auto text-[11px] text-subtle">
-          {rows.length} ligne{rows.length === 1 ? "" : "s"}
+          {t("rows", { count: rows.length })}
         </span>
       </div>
 
@@ -158,12 +167,12 @@ export function QueueList({
         <div className="hidden shrink-0 items-center gap-3 border-b border-border px-4 py-1.5 lg:flex">
           <span className="w-[14px] shrink-0" aria-hidden />
           <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_110px_150px_130px_110px_100px] items-center gap-4 text-[10px] font-bold uppercase tracking-[0.13em] text-subtle">
-            <span>Annonce</span>
-            <span>Référence</span>
-            <span>Vendeur</span>
-            <span>Catégorie</span>
-            <span className="text-end">Prix</span>
-            <span className="text-end">Échéance</span>
+            <span>{t("colListing")}</span>
+            <span>{t("colReference")}</span>
+            <span>{t("colSeller")}</span>
+            <span>{t("colCategory")}</span>
+            <span className="text-end">{t("colPrice")}</span>
+            <span className="text-end">{t("colDeadline")}</span>
           </span>
         </div>
       )}
@@ -190,7 +199,7 @@ export function QueueList({
                       type="button"
                       role="checkbox"
                       aria-checked={ticked}
-                      aria-label={ticked ? "Désélectionner" : "Sélectionner"}
+                      aria-label={ticked ? t("deselect") : t("select")}
                       onClick={(e) => {
                         // The row is a link; ticking must not navigate.
                         e.preventDefault();
@@ -269,7 +278,7 @@ export function QueueList({
       {selected.size > 0 && (
         <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-t border-[var(--gold-soft)] bg-[var(--row-selected)] px-4 py-2.5">
           <span className="mazed-tabular text-[12px] font-semibold text-foreground">
-            {selected.size} sélectionnée{selected.size === 1 ? "" : "s"}
+            {t("selected", { count: selected.size })}
           </span>
           <div className="ms-auto flex items-center gap-1.5">
             <AdminButton
@@ -278,26 +287,26 @@ export function QueueList({
               icon={<Check className="size-3.5" strokeWidth={2.8} />}
               onClick={() => bulk("approve")}
             >
-              Publier
+              {t("publish")}
             </AdminButton>
             <AdminButton
               pending={busy === "extend"}
               icon={<CalendarPlus className="size-3.5" strokeWidth={2.4} />}
               onClick={() => bulk("extend")}
             >
-              +30 j
+              {t("extend30")}
             </AdminButton>
             <AdminButton
               pending={busy === "archive"}
               icon={<Archive className="size-3.5" strokeWidth={2.4} />}
               onClick={() => bulk("archive")}
             >
-              Archiver
+              {t("archive")}
             </AdminButton>
             <button
               type="button"
               onClick={() => setSelected(new Set())}
-              aria-label="Annuler la sélection"
+              aria-label={t("cancelSelection")}
               className="grid size-7 place-items-center text-subtle transition hover:text-foreground"
             >
               <X className="size-3.5" strokeWidth={2.4} />

@@ -1,6 +1,7 @@
 import { redirect } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getAdminSession } from "@/lib/admin/session";
+import { asAppLocale } from "@/lib/i18n";
 import { AdminRail, AdminMobileBar, type AdminCounts } from "@/components/admin/AdminShell";
 
 // Admin is auth-gated and per-request — never static. Forcing dynamic here
@@ -57,11 +58,13 @@ export default async function AdminLayout({
       .eq("status", "pending_review") ?? Promise.resolve({ count: 0 }),
   ]);
 
-  const { locale } = await params;
+  // Narrowed to "fr" | "ar" rather than cast to "fr", so the redirect's type
+  // says what it does: an Arabic visitor bounced to login stays on /ar.
+  const locale = asAppLocale((await params).locale);
   const { user, isAdmin } = await getAdminSession();
 
-  if (!user) redirect({ href: "/login", locale: locale as "fr" });
-  if (!isAdmin) redirect({ href: "/", locale: locale as "fr" });
+  if (!user) redirect({ href: "/login", locale });
+  if (!isAdmin) redirect({ href: "/", locale });
 
   const [annonces, paiements] = await countsPromise;
   const counts: AdminCounts = {

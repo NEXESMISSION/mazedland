@@ -66,6 +66,29 @@ export const ACTION_LABEL: Record<string, string> = {
   "home.feature": "Mise en avant sur l'accueil",
 };
 
+/** The French label. Prefer `actionText`, which follows the reader's language. */
 export function actionLabel(action: string): string {
   return ACTION_LABEL[action] ?? action;
+}
+
+// ─── In the reader's language ───────────────────────────────────────────────
+//
+// The same labels live in the `adminActions` messages (fr + ar). next-intl
+// reads a dot in a key as nesting, so `admin.listing.approve` is stored as
+// `admin_listing_approve`. ACTION_LABEL above stays the list of what is
+// labelled; a code added here needs its message added in both files.
+
+/** The `adminActions` message key for an action code. */
+export function actionKey(action: string): string {
+  return action.replace(/\./g, "_");
+}
+
+/** A translator bound to `adminActions` — `getTranslations("adminActions")`. */
+export type ActionTranslator = { (key: string): string; has(key: string): boolean };
+
+/** `actionLabel`, translated. Unmapped codes still come back raw. */
+export function actionText(t: ActionTranslator, action: string): string {
+  if (!action) return action;
+  const key = actionKey(action);
+  return t.has(key) ? t(key) : action;
 }

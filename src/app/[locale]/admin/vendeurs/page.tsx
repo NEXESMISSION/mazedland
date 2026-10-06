@@ -1,3 +1,4 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPager } from "@/components/admin/AdminPager";
@@ -6,6 +7,9 @@ import {
 } from "@/components/admin/kit";
 import { ROW_BASE, ROW_IDLE, ROW_SELECTED, ROW_FOCUS } from "@/components/admin/kit/surface";
 import { SellerDetail, type SellerDetailData } from "./SellerDetail";
+import { Ltr } from "@/components/ui/Ltr";
+import { governorateLabel } from "@/lib/tunisia";
+import { productName } from "@/lib/products";
 import { Users, BadgeCheck } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -21,14 +25,9 @@ export const revalidate = 0;
 
 const PAGE_SIZE = 30;
 
+/** Each tab's label is `adminSellers.tabs.<key>`. */
 type TabKey = "all" | "agency" | "verified" | "banned";
 
-const TAB_LABEL: Record<TabKey, string> = {
-  all: "Tous",
-  agency: "Agences",
-  verified: "Vérifiés",
-  banned: "Suspendus",
-};
 const TAB_ORDER: TabKey[] = ["all", "agency", "verified", "banned"];
 
 export default async function AdminVendeursPage({
@@ -38,7 +37,10 @@ export default async function AdminVendeursPage({
 }) {
   const sp = await searchParams;
   const admin = getServiceSupabase();
-  if (!admin) return <p className="text-[13px] text-muted">Service non configuré.</p>;
+  const locale = await getLocale();
+  const t = await getTranslations("adminSellers");
+  const tAdmin = await getTranslations("admin");
+  if (!admin) return <p className="text-[13px] text-muted">{tAdmin("serviceNotConfigured")}</p>;
 
   const tab: TabKey = TAB_ORDER.includes(sp.status as TabKey) ? (sp.status as TabKey) : "all";
   const q = (sp.q ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
@@ -125,7 +127,11 @@ export default async function AdminVendeursPage({
     verified: verifiedRes.count ?? 0,
     banned: bannedRes.count ?? 0,
   };
-  const tabs: Tab[] = TAB_ORDER.map((t) => ({ value: t, label: TAB_LABEL[t], count: counts[t] }));
+  const tabs: Tab[] = TAB_ORDER.map((key) => ({
+    value: key,
+    label: t(`tabs.${key}`),
+    count: counts[key],
+  }));
 
   type ProfileRow = {
     id: string; full_name: string | null; phone: string | null; role: string;
@@ -151,18 +157,20 @@ export default async function AdminVendeursPage({
   const listHref = `/admin/vendeurs${base.toString() ? `?${base.toString()}` : ""}`;
 
   const openId = sp.a ?? null;
-  const detail = openId ? await loadSeller(admin, openId) : null;
+  const detail = openId
+    ? await loadSeller(admin, openId, locale, tAdmin("noName"))
+    : null;
 
   return (
     <FullBleed>
       <header className="flex h-12 shrink-0 items-center gap-4 border-b border-border px-4">
         <h1 className="shrink-0 text-[13px] font-semibold tracking-tight text-foreground">
-          Vendeurs
+          {t("title")}
         </h1>
         <Toolbar
           tabs={tabs}
           defaultTab="all"
-          searchPlaceholder="Nom ou téléphone…"
+          searchPlaceholder={t("searchPlaceholder")}
           resetParams={["page", "a"]}
         />
       </header>
@@ -180,8 +188,10 @@ export default async function AdminVendeursPage({
               <EmptyState
                 Icon={Users}
                 tone={q ? "filtered" : "idle"}
-                title={q ? "Aucun compte ne correspond" : `Rien dans « ${TAB_LABEL[tab]} »`}
-                hint={q ? "Essayez un autre nom ou numéro." : undefined}
+                title={
+                  q ? t("emptyFilteredTitle") : tAdmin("emptyTab", { tab: t(`tabs.${tab}`) })
+                }
+                hint={q ? t("emptyFilteredHint") : undefined}
               />
             </div>
           ) : (
@@ -210,7 +220,7 @@ export default async function AdminVendeursPage({
                             selected ? "font-semibold text-foreground" : "font-medium text-foreground/90"
                           }`}
                         >
-                          <span className="truncate">{r.full_name ?? "Sans nom"}</span>
+                          <span className="truncate">{r.full_name ?? tAdmin("noName")}</span>
                           {badge && (
                             <BadgeCheck
                               className="size-3 shrink-0 text-[var(--gold)]"
@@ -219,14 +229,22 @@ export default async function AdminVendeursPage({
                           )}
                         </span>
                         <span className="mt-0.5 block truncate text-[11.5px] text-subtle">
-                          {[r.phone, r.governorate].filter(Boolean).join(" · ") || "—"}
+                          {r.phone || r.governorate ? (
+                            <>
+                              {r.phone && <Ltr>{r.phone}</Ltr>}
+                              {r.phone && r.governorate ? " · " : ""}
+                              {governorateLabel(r.governorate, locale)}
+                            </>
+                          ) : (
+                            "—"
+                          )}
                         </span>
                       </span>
                       <span className="shrink-0 text-end text-[11.5px] text-subtle">
                         {r.banned_at ? (
-                          <span className="text-[var(--tone-bad)]">suspendu</span>
+                          <span className="text-[var(--tone-bad)]">{t("bannedShort")}</span>
                         ) : (
-                          TAB_LABEL.all && roleShort(r.role)
+                          t(`roleShort.${roleShort(r.role)}`)
                         )}
                       </span>
                     </Link>
@@ -251,7 +269,7 @@ export default async function AdminVendeursPage({
           ) : (
             <div className="grid w-full place-items-center px-6">
               <p className="max-w-xs text-center text-[12.5px] text-subtle">
-                Choisissez un compte à gauche.
+                {t("pickAccount")}
               </p>
             </div>
           )}
@@ -261,13 +279,19 @@ export default async function AdminVendeursPage({
   );
 }
 
-function roleShort(role: string): string {
-  return role === "agency" ? "agence" : role === "admin" ? "admin" : "particulier";
+/** The key under `adminSellers.roleShort` for a role. */
+function roleShort(role: string): "agency" | "admin" | "individual" {
+  return role === "agency" ? "agency" : role === "admin" ? "admin" : "individual";
 }
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
 
-async function loadSeller(admin: Admin, id: string): Promise<SellerDetailData | null> {
+async function loadSeller(
+  admin: Admin,
+  id: string,
+  locale: string,
+  noName: string,
+): Promise<SellerDetailData | null> {
   const { data: p } = await admin
     .from("profiles")
     .select("id, full_name, phone, role, governorate, created_at, banned_at, banned_reason")
@@ -300,7 +324,7 @@ async function loadSeller(admin: Admin, id: string): Promise<SellerDetailData | 
       admin.from("payments").select("amount").eq("user_id", id).eq("status", "captured"),
       admin
         .from("products")
-        .select("id, name_fr, listing_quota")
+        .select("id, name_fr, name_ar, listing_quota")
         .eq("kind", "listing_pack")
         .eq("is_active", true)
         .order("sort_order"),
@@ -321,7 +345,7 @@ async function loadSeller(admin: Admin, id: string): Promise<SellerDetailData | 
 
   return {
     id: p.id as string,
-    name: (p.full_name as string | null) ?? "Sans nom",
+    name: (p.full_name as string | null) ?? noName,
     phone: (p.phone as string | null) ?? null,
     role: p.role as string,
     governorate: (p.governorate as string | null) ?? null,
@@ -337,7 +361,10 @@ async function loadSeller(admin: Admin, id: string): Promise<SellerDetailData | 
     },
     packs: (packsRes.data ?? []).map((r) => ({
       id: r.id as string,
-      label: r.name_fr as string,
+      label: productName(
+        { nameFr: r.name_fr as string, nameAr: (r.name_ar as string | null) ?? null },
+        locale,
+      ),
       quota: (r.listing_quota as number | null) ?? null,
     })),
   };

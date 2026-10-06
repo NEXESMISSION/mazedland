@@ -4,11 +4,12 @@
  * This module is an async Server Component — it runs once, per request, on the
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, formatRelativeTime } from "@/lib/utils";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
-import { actionLabel } from "@/lib/admin/actions";
+import { actionText } from "@/lib/admin/actions";
 import { fetchPayeeDetails, usablePayeeMethods } from "@/lib/payments";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 
@@ -44,6 +45,9 @@ const CONSOLE_PAYMENT_KINDS = [
 
 export default async function AdminDashboard() {
   const sb = await getServerSupabase();
+  const locale = await getLocale();
+  const t = await getTranslations("adminDashboard");
+  const tActions = await getTranslations("adminActions");
 
   const now = Date.now();
   const overdue = new Date(now - OVERDUE_MS).toISOString();
@@ -104,29 +108,29 @@ export default async function AdminDashboard() {
 
   const queues = [
     {
-      label: "Annonces à valider",
-      sub: "Soumises par un vendeur",
+      label: t("queues.listings"),
+      sub: t("queues.listingsSub"),
       href: "/admin/annonces?status=pending_review",
       count: n(listingsPending),
       overdue: n(listingsOverdue),
     },
     {
-      label: "Reçus à valider",
-      sub: "Publication, packs, mises en avant",
+      label: t("queues.receipts"),
+      sub: t("queues.receiptsSub"),
       href: "/admin/paiements",
       count: n(paymentsPending),
       overdue: n(paymentsOverdue),
     },
     {
-      label: "Expirent sous 7 jours",
-      sub: "À relancer pour un renouvellement",
+      label: t("queues.expiring"),
+      sub: t("queues.expiringSub"),
       href: "/admin/annonces?status=expiring",
       count: n(expiringSoon),
       overdue: 0,
     },
     {
-      label: "Expirées",
-      sub: "Hors ligne, renouvelables",
+      label: t("queues.expired"),
+      sub: t("queues.expiredSub"),
       href: "/admin/annonces?status=expired",
       count: n(expired),
       overdue: 0,
@@ -139,9 +143,9 @@ export default async function AdminDashboard() {
   return (
     <AdminPage>
       <header>
-        <span className={EYEBROW}>Console</span>
+        <span className={EYEBROW}>{t("eyebrow")}</span>
         <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-foreground">
-          Tableau de bord
+          {t("title")}
         </h1>
       </header>
 
@@ -156,18 +160,14 @@ export default async function AdminDashboard() {
           />
           <span className="min-w-0 flex-1">
             <span className="block text-[13px] font-semibold text-foreground">
-              Aucun vendeur ne peut payer
+              {t("noPayeeTitle")}
             </span>
             <span className="mt-0.5 block text-[11.5px] leading-relaxed text-subtle">
-              Le compte bénéficiaire est encore celui du jeu de test, donc le
-              paiement est refusé au lieu d&apos;envoyer un vendeur virer de
-              l&apos;argent sur un IBAN qui n&apos;existe pas. Renseignez le nom, le RIB,
-              l&apos;IBAN et le numéro D17 dans Réglages — la publication payante
-              reprend dès l&apos;enregistrement.
+              {t("noPayeeBody")}
             </span>
           </span>
           <ArrowRight
-            className="mt-px size-3.5 shrink-0 text-subtle transition group-hover:translate-x-0.5 group-hover:text-[var(--gold)]"
+            className="mt-px size-3.5 shrink-0 text-subtle transition group-hover:translate-x-0.5 group-hover:text-[var(--gold)] rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5"
             strokeWidth={2}
           />
         </Link>
@@ -175,22 +175,26 @@ export default async function AdminDashboard() {
 
       {/* Three figures, separated by rules. No tiles. */}
       <div className="mt-7 grid grid-cols-3 border-y border-border">
-        <Figure label="En attente" value={totalPending} accent={totalPending > 0} />
         <Figure
-          label="En retard > 48 h"
-          value={totalOverdue}
+          label={t("pending")}
+          value={formatNumber(totalPending, locale)}
+          accent={totalPending > 0}
+        />
+        <Figure
+          label={t("overdue")}
+          value={formatNumber(totalOverdue, locale)}
           danger={totalOverdue > 0}
           className="border-s border-border"
         />
         <Figure
-          label="Publiées aujourd'hui"
-          value={n(listingsToday)}
+          label={t("publishedToday")}
+          value={formatNumber(n(listingsToday), locale)}
           className="border-s border-border"
         />
       </div>
 
       <section className="mt-9">
-        <h2 className={EYEBROW}>Files</h2>
+        <h2 className={EYEBROW}>{t("queuesTitle")}</h2>
         <ul className="mt-2 border-t border-border">
           {queues.map((qq) => (
             <li key={qq.href}>
@@ -214,11 +218,11 @@ export default async function AdminDashboard() {
                 {qq.overdue > 0 && (
                   <span className="inline-flex shrink-0 items-center gap-1 text-[11.5px] font-semibold text-[var(--tone-bad)]">
                     <AlertTriangle className="size-3" strokeWidth={2.6} />
-                    {qq.overdue} en retard
+                    {t("overdueCount", { count: qq.overdue })}
                   </span>
                 )}
                 <ArrowRight
-                  className="size-3.5 shrink-0 text-subtle transition group-hover:translate-x-0.5 group-hover:text-[var(--gold)]"
+                  className="size-3.5 shrink-0 text-subtle transition group-hover:translate-x-0.5 group-hover:text-[var(--gold)] rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5"
                   strokeWidth={2}
                 />
               </Link>
@@ -229,12 +233,12 @@ export default async function AdminDashboard() {
 
       <section className="mt-9">
         <div className="flex items-baseline justify-between gap-4">
-          <h2 className={EYEBROW}>Derniers gestes</h2>
+          <h2 className={EYEBROW}>{t("recentTitle")}</h2>
           <Link
             href={"/admin/activity" as "/admin"}
             className="text-[11.5px] font-medium text-subtle transition hover:text-foreground"
           >
-            Tout le journal →
+            {t("fullJournal")}
           </Link>
         </div>
         {recent.data && recent.data.length > 0 ? (
@@ -245,10 +249,10 @@ export default async function AdminDashboard() {
                 className="flex items-baseline gap-4 border-b border-border py-2"
               >
                 <span className="mazed-tabular w-24 shrink-0 text-[11.5px] text-subtle">
-                  {relative(r.created_at as string)}
+                  {formatRelativeTime(r.created_at as string, locale, now)}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-[12.5px] text-foreground">
-                  {actionLabel(r.action as string)}
+                  {actionText(tActions, r.action as string)}
                 </span>
                 {/* Auto runs this through `accountLabelFromEmail` because its
                     accounts are phone signups carrying a synthetic address that
@@ -262,7 +266,7 @@ export default async function AdminDashboard() {
           </ul>
         ) : (
           <p className="mt-3 border-t border-border pt-3 text-[12.5px] text-subtle">
-            Aucune action enregistrée pour l&apos;instant.
+            {t("noActivity")}
           </p>
         )}
       </section>
@@ -286,7 +290,8 @@ function Figure({
   className = "",
 }: {
   label: string;
-  value: number;
+  /** Already formatted for the reader's locale. */
+  value: string;
   accent?: boolean;
   danger?: boolean;
   className?: string;
@@ -299,19 +304,8 @@ function Figure({
           danger ? "text-[var(--tone-bad)]" : accent ? "text-[var(--gold)]" : "text-foreground"
         }`}
       >
-        {formatNumber(value)}
+        {value}
       </div>
     </div>
   );
-}
-
-/** "il y a 4 min" / "il y a 3 h" / "il y a 2 j" — short enough for a column. */
-function relative(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const min = Math.round(diff / 60_000);
-  if (min < 1) return "à l'instant";
-  if (min < 60) return `il y a ${min} min`;
-  const h = Math.round(min / 60);
-  if (h < 24) return `il y a ${h} h`;
-  return `il y a ${Math.round(h / 24)} j`;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useLinkStatus } from "next/link";
+import { useTranslations } from "next-intl";
 import { ChevronRight, Loader2 } from "lucide-react";
 
 /**
@@ -22,15 +23,16 @@ import { ChevronRight, Loader2 } from "lucide-react";
 /** Trailing affordance on a table row: chevron at rest, spinner in flight. */
 export function RowChevron() {
   const { pending } = useLinkStatus();
+  const t = useTranslations("admin");
   return pending ? (
     <Loader2
-      aria-label="Chargement"
+      aria-label={t("loading")}
       className="size-4 animate-spin self-center text-gold"
     />
   ) : (
     <ChevronRight
       aria-hidden
-      className="size-4 self-center text-subtle transition group-hover:text-gold"
+      className="size-4 self-center text-subtle transition group-hover:text-gold rtl:-scale-x-100"
       strokeWidth={2}
     />
   );
@@ -54,12 +56,13 @@ export function NavIcon({
   size?: string;
 }) {
   const { pending } = useLinkStatus();
+  const t = useTranslations("admin");
   const colour =
     tone === "inherit" ? "text-current" : active ? "text-[var(--gold)]" : "text-subtle";
   if (pending) {
     return (
       <Loader2
-        aria-label="Chargement"
+        aria-label={t("loading")}
         className={`${size} shrink-0 animate-spin ${tone === "inherit" ? "text-current" : "text-[var(--gold)]"}`}
       />
     );

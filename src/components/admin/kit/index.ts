@@ -26,9 +26,12 @@ export {
   statusTone,
   statusLabel,
   paymentKindLabel,
+  statusText,
+  paymentKindText,
   TONE_CLASS,
   TONE_TEXT,
   PAYMENT_KIND_LABEL,
   type Tone,
+  type AdminTranslator,
 } from "./tones";
 export { EYEBROW, COLHEAD, NUM, PANE, RULE } from "./surface";

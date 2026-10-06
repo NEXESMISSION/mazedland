@@ -110,3 +110,32 @@ export function paymentKindLabel(kind: string | null | undefined): string {
   if (!kind) return "—";
   return PAYMENT_KIND_LABEL[kind] ?? kind;
 }
+
+// ─── In the reader's language ───────────────────────────────────────────────
+//
+// `statusLabel` / `paymentKindLabel` above are the French words, kept for the
+// screens that still call them. These are the same answers through the
+// `admin` messages (`admin.status.*`, `admin.paymentKind.*`), so an Arabic page
+// gets Arabic. Same fallbacks: "—" for nothing, the raw value for something
+// unlabelled.
+
+/**
+ * A translator bound to the `admin` namespace — `useTranslations("admin")` in
+ * a component, `await getTranslations("admin")` in an async server component.
+ */
+export type AdminTranslator = { (key: string): string; has(key: string): boolean };
+
+const own = (map: Record<string, unknown>, key: string) =>
+  Object.prototype.hasOwnProperty.call(map, key);
+
+/** `statusLabel`, translated. */
+export function statusText(t: AdminTranslator, status: string | null | undefined): string {
+  if (!status) return "—";
+  return own(STATUS, status) ? t(`status.${status}`) : status;
+}
+
+/** `paymentKindLabel`, translated. */
+export function paymentKindText(t: AdminTranslator, kind: string | null | undefined): string {
+  if (!kind) return "—";
+  return own(PAYMENT_KIND_LABEL, kind) ? t(`paymentKind.${kind}`) : kind;
+}
