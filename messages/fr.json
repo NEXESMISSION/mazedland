@@ -262,5 +262,54 @@
     "unknown_action": "Action inconnue. Rechargez la page.",
     "too_large": "Fichier trop volumineux.",
     "empty_body": "Fichier vide."
+  },
+  "notifications": {
+    "listing_expiring": {
+      "title": "Votre annonce expire bientôt",
+      "body": "« {title} » reste en ligne jusqu'au {date}. Vous pourrez la renouveler dès ce jour-là."
+    },
+    "listing_expired": {
+      "title": "Annonce expirée",
+      "body": "« {title} » n'est plus visible. Renouvelez-la pour la remettre en ligne."
+    },
+    "listing_payment_received": {
+      "captured": {
+        "title": "Paiement validé",
+        "body": "« {title} » passe à la vérification. Vous serez prévenu dès sa mise en ligne."
+      }
+    },
+    "listing_payment_rejected": {
+      "title": "Reçu refusé",
+      "body": "Motif : {reason}. Vous pouvez téléverser un nouveau reçu."
+    },
+    "payment_receipt_received": {
+      "title": "Reçu reçu",
+      "body": "Votre reçu de {amount} TND a bien été reçu. Notre équipe le vérifiera sous 24-48h."
+    },
+    "admin_receipt_pending": {
+      "title": "Nouveau reçu à vérifier",
+      "body": "Un reçu de {what} ({amount} TND) attend votre validation."
+    },
+    "promo_expired": {
+      "title": "Mise en avant terminée",
+      "body": "La mise en avant de « {title} » a expiré. Votre annonce reste en ligne."
+    },
+    "credits_expired": {
+      "title": "Forfait expiré",
+      "body": "{count, plural, one {Votre publication restante a expiré.} other {Vos # publications restantes ont expiré.}}"
+    },
+    "badge_expiring": {
+      "title": "Votre badge expire bientôt",
+      "body": "Le badge « Vendeur vérifié » expire le {date}. Renouvelez-le pour le garder."
+    },
+    "paymentKinds": {
+      "listing_fee": "frais d'annonce",
+      "listing_pack": "forfait",
+      "badge": "badge vendeur",
+      "promo": "mise en avant",
+      "renewal": "renouvellement",
+      "subscription": "abonnement",
+      "other": "paiement"
+    }
   }
 }
