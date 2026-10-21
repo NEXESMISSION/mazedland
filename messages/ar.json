@@ -78,7 +78,9 @@
       "paymentsTitle": "مدفوعاتي",
       "paymentsBody": "معاليم النشر والخيارات ووصولات الدفع.",
       "adminTitle": "لوحة الإدارة",
-      "adminBody": "الإعلانات والمدفوعات والبائعون."
+      "adminBody": "الإعلانات والمدفوعات والبائعون.",
+      "requestsTitle": "طلباتي",
+      "requestsBody": "شنوّة نلوّج عليه، بالتنبيهات"
     }
   },
   "account": {
@@ -788,7 +790,10 @@
     "roomsChip": "S+{count} ولا أكثر",
     "availChip": "فارغ قبل {date}",
     "clearMore": "نحّي الفلاتر هذي",
-    "availUnconfirmed": "تاريخ التوفّر موش مذكور"
+    "availUnconfirmed": "تاريخ التوفّر موش مذكور",
+    "requestCtaTitle": "ما لقيتش اللي تحب؟",
+    "requestCtaBody": "سجّل طلب بالشروط هذي، ونعلموك أوّل ما يتنشر عقار يناسبك.",
+    "requestCta": "سجّل طلبي"
   },
   "listing": {
     "metaNotFound": "الإعلان غير موجود — Mazed Immo",
@@ -1055,6 +1060,10 @@
     "admin_listing_reported": {
       "title": "إعلان تنحّى بعد تبليغات",
       "body": "« {title} » بلّغ عليه {count} أشخاص وما عادش ظاهر. راجعو."
+    },
+    "request_match": {
+      "title": "فما عقار يناسب طلبك",
+      "body": "«{title}» تنشر توّا ويناسب طلبك."
     }
   },
   "publish": {
@@ -2712,5 +2721,82 @@
       "renewal": "التجديد",
       "subscription": "الاشتراكات"
     }
+  },
+  "requests": {
+    "unavailable": "الخدمة موش متاحة توّا.",
+    "newTitle": "سجّل طلبك",
+    "editTitle": "بدّل طلبك",
+    "newIntro": "قول شنوّة تلوّج عليه، ونعلموك أوّل ما يتنشر عقار يناسبك.",
+    "dealLabel": "تحب…",
+    "dealSale": "تشري",
+    "dealRent": "تكري",
+    "categoriesLabel": "نوع العقار",
+    "categoriesAny": "كان ما اخترت شي: كل الأنواع.",
+    "governoratesLabel": "وين؟",
+    "governoratesAdd": "زيد ولاية",
+    "governoratesAny": "كل تونس",
+    "removeGovernorate": "نحّي {name}",
+    "budgetMaxSale": "أقصى ميزانية (د.ت)",
+    "budgetMaxRent": "أقصى كراء في الشهر (د.ت)",
+    "budgetMin": "الأدنى (اختياري)",
+    "budgetHint": "الأقصى شرط: ما نبعثولكش حتى عقار فوقو.",
+    "surfaceMin": "أقل مساحة (م²)",
+    "roomsMin": "الغرف",
+    "roomsAny": "ما يهمّش",
+    "roomsAtLeast": "S+{count} ولا أكثر",
+    "furnishedLabel": "الفرش",
+    "furnished": {
+      "furnished": "مفروش",
+      "semi": "نص مفروش",
+      "unfurnished": "فارغ"
+    },
+    "moveInBy": "تدخل قبل نهار",
+    "noteLabel": "حاجات أخرى تحبها",
+    "notePlaceholder": "قريبة للمدينة، طابق أرضي، حومة هادية…",
+    "alertsLabel": "علّمني كي يتنشر عقار يناسب طلبي",
+    "submitNew": "سجّل الطلب",
+    "submitEdit": "سجّل التبديلات",
+    "saved": "تسجّل طلبك. نعلموك كي يجي عقار يناسبك.",
+    "saveFailed": "ما نجّمناش نسجّلو الطلب.",
+    "budgetMissing": "حطّ أقصى ميزانية.",
+    "listTitle": "طلباتي",
+    "listSubtitle": "{count, plural, zero {ما فماش طلبات} one {طلب واحد} two {زوز طلبات} few {# طلبات} many {# طلب} other {# طلب}}",
+    "newRequest": "طلب جديد",
+    "emptyTitle": "ما عندك حتى طلب للتوّا.",
+    "emptyBody": "الطلب هو بحث نحفظوهولك: أوّل ما يجي عقار يناسبك، نعلموك.",
+    "newBuy": "نلوّج نشري",
+    "newRent": "نلوّج نكري",
+    "kindBuy": "شراء",
+    "kindRent": "كراء",
+    "anyCategory": "كل الأنواع",
+    "anywhere": "كل تونس",
+    "upTo": "حتى {amount}",
+    "upToPerMonth": "حتى {amount} في الشهر",
+    "fromAmount": "ابتداءً من {amount}",
+    "surfaceAtLeast": "{area} م² ولا أكثر",
+    "moveInShort": "دخول قبل {date}",
+    "statusActive": "نشط",
+    "statusPaused": "موقوف",
+    "statusExpired": "انتهى",
+    "expiresOn": "حتى {date}",
+    "matchesCount": "{count, plural, zero {ما جاش حتى عقار يناسب للتوّا} one {عقار واحد يناسب} two {زوز عقارات تناسب} few {# عقارات تناسب} many {# عقار يناسب} other {# عقار يناسب}}",
+    "alertsOff": "التنبيهات مسكّرة",
+    "seeListings": "شوف الإعلانات",
+    "edit": "بدّل",
+    "pause": "وقّف",
+    "resume": "رجّعو",
+    "renew": "زيد 60 يوم",
+    "delete": "فسخ",
+    "deleteConfirm": "تفسخ الطلب هذا؟",
+    "deleted": "الطلب تفسخ.",
+    "paused": "التنبيهات وقفت.",
+    "resumed": "التنبيهات رجعت.",
+    "renewed": "الطلب تزاد 60 يوم.",
+    "actionFailed": "ما نجّمناش توّا، عاود بعد شويّة."
+  },
+  "requestsApi": {
+    "budgetRequired": "حطّ أقصى ميزانية.",
+    "budgetOrder": "الأدنى أكبر من الأقصى.",
+    "tooMany": "عندك ديجا {max} طلبات نشطة. وقّف ولا افسخ واحد."
   }
 }

@@ -16,6 +16,7 @@ import {
   FileText,
   Heart,
   Plus,
+  BellRing,
 } from "lucide-react";
 
 // Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
@@ -141,6 +142,8 @@ export default async function AccountPage() {
   const accountActions: ActionItem[] = [
     { href: "/account/listings", Icon: FileText, title: t("actions.listingsTitle"), body: t("actions.listingsBody") },
     { href: "/annonces/nouvelle", Icon: Plus, title: t("actions.publishTitle"), body: t("actions.publishBody") },
+    // What they are looking for, kept with alerts (0168).
+    { href: "/account/requests", Icon: BellRing, title: t("actions.requestsTitle"), body: t("actions.requestsBody") },
     { href: "/account/activity", Icon: Heart, title: t("actions.favoritesTitle"), body: t("actions.favoritesBody") },
     { href: "/account/payments", Icon: Wallet, title: t("actions.paymentsTitle"), body: t("actions.paymentsBody") },
   ];

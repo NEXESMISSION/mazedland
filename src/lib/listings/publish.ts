@@ -1,4 +1,5 @@
 import type { getServiceSupabase } from "@/lib/supabase/admin";
+import { notifyMatchingRequests } from "@/lib/requests/server";
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
 
@@ -79,6 +80,9 @@ export async function publishListing(
       p_payload: { vars: { title: listing.title, expires_at: expires.toISOString() } },
     })
     .then(() => {}, () => {});
+
+  // The people who asked for exactly this (0168). Never throws.
+  await notifyMatchingRequests(admin, listing.id);
 
   return { ok: true, expiresAt: expires };
 }

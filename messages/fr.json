@@ -78,7 +78,9 @@
       "paymentsTitle": "Mes paiements",
       "paymentsBody": "Frais de publication, options et reçus.",
       "adminTitle": "Console admin",
-      "adminBody": "Annonces, paiements et vendeurs."
+      "adminBody": "Annonces, paiements et vendeurs.",
+      "requestsTitle": "Mes demandes",
+      "requestsBody": "Ce que je cherche, avec alertes"
     }
   },
   "account": {
@@ -788,7 +790,10 @@
     "roomsChip": "S+{count} ou plus",
     "availChip": "Libre avant le {date}",
     "clearMore": "Effacer ces filtres",
-    "availUnconfirmed": "Date de disponibilité non précisée"
+    "availUnconfirmed": "Date de disponibilité non précisée",
+    "requestCtaTitle": "Vous ne trouvez pas ?",
+    "requestCtaBody": "Enregistrez une demande avec ces critères : on vous prévient dès qu'un bien qui correspond est publié.",
+    "requestCta": "Enregistrer ma demande"
   },
   "listing": {
     "metaNotFound": "Annonce introuvable — Mazed Immo",
@@ -1055,6 +1060,10 @@
     "admin_listing_reported": {
       "title": "Annonce retirée après signalements",
       "body": "« {title} » a été signalée par {count} personnes et n'est plus visible. Vérifiez-la."
+    },
+    "request_match": {
+      "title": "Un bien correspond à votre demande",
+      "body": "« {title} » vient d'être publié et correspond à votre demande."
     }
   },
   "publish": {
@@ -2712,5 +2721,82 @@
       "renewal": "Renouvellements",
       "subscription": "Abonnements"
     }
+  },
+  "requests": {
+    "unavailable": "Service momentanément indisponible.",
+    "newTitle": "Enregistrer une demande",
+    "editTitle": "Modifier ma demande",
+    "newIntro": "Dites ce que vous cherchez : on vous prévient dès qu'un bien qui correspond est publié.",
+    "dealLabel": "Vous voulez…",
+    "dealSale": "Acheter",
+    "dealRent": "Louer",
+    "categoriesLabel": "Type de bien",
+    "categoriesAny": "Rien de coché : tous les types.",
+    "governoratesLabel": "Où ?",
+    "governoratesAdd": "Ajouter un gouvernorat",
+    "governoratesAny": "Toute la Tunisie",
+    "removeGovernorate": "Retirer {name}",
+    "budgetMaxSale": "Budget maximum (TND)",
+    "budgetMaxRent": "Loyer maximum par mois (TND)",
+    "budgetMin": "Minimum (facultatif)",
+    "budgetHint": "Le maximum est une limite stricte : on ne vous enverra rien au-dessus.",
+    "surfaceMin": "Surface min. (m²)",
+    "roomsMin": "Pièces",
+    "roomsAny": "Peu importe",
+    "roomsAtLeast": "S+{count} ou plus",
+    "furnishedLabel": "Ameublement",
+    "furnished": {
+      "furnished": "Meublé",
+      "semi": "Semi-meublé",
+      "unfurnished": "Vide"
+    },
+    "moveInBy": "Entrée au plus tard le",
+    "noteLabel": "Autres souhaits",
+    "notePlaceholder": "Proche du centre, rez-de-chaussée, quartier calme…",
+    "alertsLabel": "Me prévenir quand un bien qui correspond est publié",
+    "submitNew": "Enregistrer ma demande",
+    "submitEdit": "Enregistrer les modifications",
+    "saved": "Demande enregistrée. On vous prévient dès qu'un bien correspond.",
+    "saveFailed": "Impossible d'enregistrer la demande.",
+    "budgetMissing": "Indiquez un budget maximum.",
+    "listTitle": "Mes demandes",
+    "listSubtitle": "{count, plural, =0 {Aucune demande} one {# demande} other {# demandes}}",
+    "newRequest": "Nouvelle demande",
+    "emptyTitle": "Vous n'avez pas encore de demande.",
+    "emptyBody": "Une demande, c'est une recherche qu'on garde pour vous : dès qu'un bien correspond, vous êtes prévenu.",
+    "newBuy": "Je cherche à acheter",
+    "newRent": "Je cherche à louer",
+    "kindBuy": "Achat",
+    "kindRent": "Location",
+    "anyCategory": "Tous types",
+    "anywhere": "Toute la Tunisie",
+    "upTo": "Jusqu'à {amount}",
+    "upToPerMonth": "Jusqu'à {amount} / mois",
+    "fromAmount": "À partir de {amount}",
+    "surfaceAtLeast": "{area} m² ou plus",
+    "moveInShort": "Entrée avant le {date}",
+    "statusActive": "Active",
+    "statusPaused": "En pause",
+    "statusExpired": "Expirée",
+    "expiresOn": "Jusqu'au {date}",
+    "matchesCount": "{count, plural, =0 {Aucun bien correspondant pour l'instant} one {# bien correspondant} other {# biens correspondants}}",
+    "alertsOff": "Alertes désactivées",
+    "seeListings": "Voir les annonces",
+    "edit": "Modifier",
+    "pause": "Mettre en pause",
+    "resume": "Réactiver",
+    "renew": "Prolonger 60 jours",
+    "delete": "Supprimer",
+    "deleteConfirm": "Supprimer cette demande ?",
+    "deleted": "Demande supprimée.",
+    "paused": "Alertes en pause.",
+    "resumed": "Alertes réactivées.",
+    "renewed": "Demande prolongée de 60 jours.",
+    "actionFailed": "Action impossible pour le moment."
+  },
+  "requestsApi": {
+    "budgetRequired": "Indiquez un budget maximum.",
+    "budgetOrder": "Le minimum dépasse le maximum.",
+    "tooMany": "Vous avez déjà {max} demandes actives. Mettez-en une en pause ou supprimez-la."
   }
 }

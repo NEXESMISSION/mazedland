@@ -9,7 +9,7 @@ import { searchTokens } from "@/lib/search";
 import { PRICE_BUCKETS, RENT_BUCKETS, TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
-import { ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, SlidersHorizontal, Wallet, X } from "lucide-react";
+import { BellRing, ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { FURNISHED, isoDay, type Furnished } from "@/lib/listings/deal";
 
 export const dynamic = "force-dynamic";
@@ -780,6 +780,21 @@ export default async function AnnoncesPage({
           })}
         </ul>
       )}
+
+      {/* Nothing here, or nothing right: keep the search as a demande and be
+          told when it is answered (0168). Same filters, nothing to retype. */}
+      <section className="mt-8 flex flex-col items-start gap-3 rounded-2xl border border-gold-soft bg-gold-faint p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[14px] font-extrabold text-foreground">{t("requestCtaTitle")}</p>
+          <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{t("requestCtaBody")}</p>
+        </div>
+        <Link
+          href={qs({ sort: undefined, q: undefined }).replace("/annonces", "/demandes/nouvelle") as never}
+          className="mazed-btn-luxe tap-target inline-flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-[13px]"
+        >
+          <BellRing className="size-4" /> {t("requestCta")}
+        </Link>
+      </section>
 
       {lastPage > 1 && (
         <nav className="mt-8 flex items-center justify-center gap-2" aria-label={t("pagination")}>

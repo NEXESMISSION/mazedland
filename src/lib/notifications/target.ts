@@ -45,6 +45,8 @@ export const NOTIFICATION_KINDS = [
   "admin_listing_pending", "admin_inspector_pending", "admin_final_payment_overdue",
   // Broadcasts
   "announcement", "promo", "maintenance", "system_alert",
+  // Demandes (0168): an annonce answered a buyer's or a tenant's demande
+  "request_match",
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
@@ -71,6 +73,7 @@ type FallbackRoute =
   | "/admin/payouts"
   | "/admin/kyc-queue"
   | "/admin/inspectors"
+  | "/account/requests"
   | null;
 
 /**
@@ -151,6 +154,8 @@ const KIND_FALLBACK: Record<NotificationKind, FallbackRoute> = {
   promo: null,
   maintenance: null,
   system_alert: null,
+  // The link is the annonce; without one, the person's demandes.
+  request_match: "/account/requests",
 };
 
 /** Last non-empty path segment, ignoring query/hash. */
@@ -229,6 +234,7 @@ const FALLBACK_SUPPORTS_FOCUS: Record<NotificationKind, boolean> = {
   admin_payout_pending: false, admin_listing_pending: false,
   admin_inspector_pending: false, admin_final_payment_overdue: false,
   announcement: false, promo: false, maintenance: false, system_alert: false,
+  request_match: false,
 };
 
 /** Pull a string `focus` id out of the notification payload, if present.
