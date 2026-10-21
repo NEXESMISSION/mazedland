@@ -5,6 +5,7 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
+import { asDealType, NO_RENT_FACTS, parseRentFacts } from "@/lib/listings/deal";
 
 /**
  * POST /api/annonces — create or update the seller's draft listing.
@@ -44,6 +45,13 @@ type Body = {
   show_phone?: unknown;
   attestation_version?: unknown;
   photos?: unknown;    // [{ storage_path, sort_order }]
+  // Sale or rent (0166). The rent facts are only read alongside deal_type.
+  deal_type?: unknown;
+  deposit_amount?: unknown;
+  charges_amount?: unknown;
+  furnished?: unknown;
+  available_from?: unknown;
+  min_lease_months?: unknown;
 };
 
 const MAX_PHOTOS = 12;
@@ -134,6 +142,13 @@ export async function POST(req: NextRequest) {
     fields.price_on_request = priceOnRequest;
   }
   if ("negotiable" in body) fields.negotiable = body.negotiable === true;
+  // A sale carries no rent facts (0166's check refuses them), so switching a
+  // draft from rent to sale clears what the seller typed for the rental.
+  if ("deal_type" in body) {
+    const deal = asDealType(body.deal_type);
+    fields.deal_type = deal;
+    Object.assign(fields, deal === "rent" ? parseRentFacts(body as Record<string, unknown>) : NO_RENT_FACTS);
+  }
   if (governorate) fields.governorate = governorate;
   if ("delegation" in body) fields.delegation = text(body.delegation, 60);
   if ("address" in body) fields.address = text(body.address, 200);

@@ -16,6 +16,7 @@ const clean: ListingFacts = {
   priceOnRequest: false,
   areaSqm: 250,
   kind: "residential",
+  dealType: "sale",
   photoCount: 5,
   duplicate: false,
 };
@@ -80,6 +81,20 @@ describe("isPriceImplausible", () => {
   it("does not judge a price on request or a missing area", () => {
     expect(isPriceImplausible({ price: null, priceOnRequest: true, areaSqm: null, kind: "land" })).toBe(false);
     expect(isPriceImplausible({ price: 90_000, priceOnRequest: false, areaSqm: null, kind: "land" })).toBe(false);
+  });
+
+  it("reads a rent as a monthly figure", () => {
+    const flat = { priceOnRequest: false, areaSqm: 110, kind: "residential" as const };
+    // 1 200 TND a month for an S+2 is a rent; the same 1 200 as a sale price is a typo.
+    expect(isPriceImplausible({ ...flat, price: 1_200, dealType: "rent" })).toBe(false);
+    expect(isPriceImplausible({ ...flat, price: 1_200, dealType: "sale" })).toBe(true);
+    // A sale price typed into a rental is caught too.
+    expect(isPriceImplausible({ ...flat, price: 350_000, dealType: "rent" })).toBe(true);
+    expect(isPriceImplausible({ ...flat, price: 20, dealType: "rent" })).toBe(true);
+    // Farmland rents by the hectare-year: only the absolute bounds apply.
+    expect(
+      isPriceImplausible({ price: 300, priceOnRequest: false, areaSqm: 50_000, kind: "land", dealType: "rent" }),
+    ).toBe(false);
   });
 });
 

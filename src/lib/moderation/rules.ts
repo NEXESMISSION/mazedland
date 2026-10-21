@@ -8,6 +8,8 @@
  * their annonce.
  */
 
+import type { DealType } from "@/lib/listings/deal";
+
 export const REVIEW_FLAGS = [
   "first_listing",
   "too_few_photos",
@@ -80,19 +82,31 @@ export function containsBannedWord(text: string, words: readonly string[]): bool
  * catch "1 000 TND for a villa" without having to know the neighbourhood.
  * Farmland in the interior really does trade at a few dinars the m², hence the
  * low floor for land.
+ *
+ * A rent is a monthly figure, a few hundred to a few thousand dinars — the
+ * sale bounds would send every rental to a human. Land rents by the
+ * hectare-year, so its per-m² figure says nothing and is not checked.
  */
 export function isPriceImplausible(input: {
   price: number | null;
   priceOnRequest: boolean;
   areaSqm: number | null;
   kind: CategoryKind | null;
+  dealType?: DealType;
 }): boolean {
   if (input.priceOnRequest || input.price == null) return false;
   const price = Number(input.price);
   if (!Number.isFinite(price)) return true;
-  if (price < 1_000 || price > 100_000_000) return true;
   const area = Number(input.areaSqm);
-  if (!Number.isFinite(area) || area <= 0) return false;
+  const hasArea = Number.isFinite(area) && area > 0;
+  if (input.dealType === "rent") {
+    if (price < 50 || price > 200_000) return true;
+    if (!hasArea || input.kind === "land") return false;
+    const perSqm = price / area;
+    return perSqm < 0.5 || perSqm > 300;
+  }
+  if (price < 1_000 || price > 100_000_000) return true;
+  if (!hasArea) return false;
   const perSqm = price / area;
   if (input.kind === "land") return perSqm < 0.5 || perSqm > 20_000;
   return perSqm < 100 || perSqm > 30_000;
@@ -105,8 +119,10 @@ export type ListingFacts = {
   priceOnRequest: boolean;
   areaSqm: number | null;
   kind: CategoryKind | null;
+  dealType: DealType;
   photoCount: number;
-  /** Another live annonce of the same seller is the same property. */
+  /** Another live annonce of the same seller is the same property, on the
+   *  same deal — a flat offered for sale and for rent at once is two offers. */
   duplicate: boolean;
 };
 

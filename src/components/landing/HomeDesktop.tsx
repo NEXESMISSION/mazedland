@@ -195,6 +195,7 @@ export async function HomeDesktop({
           l.price_on_request || l.price == null
             ? t("home.priceOnRequest")
             : formatTND(Number(l.price), locale),
+        perMonth: l.deal_type === "rent",
         endsAt: null,
         isLive: false,
       };

@@ -66,6 +66,7 @@ const STATUS_TONE: Record<string, Tone> = {
   expired: "neutral",
   archived: "neutral",
   sold: "info",
+  rented: "info",
 
   // payment_status — `pending_review` is shared with listings above and means
   // the same thing to an admin: a human has to look at it.

@@ -1,5 +1,6 @@
 import type { getServiceSupabase } from "@/lib/supabase/admin";
 import { publishListing } from "@/lib/listings/publish";
+import { asDealType } from "@/lib/listings/deal";
 import { checkListing, sameTitle, type CategoryKind, type ReviewFlag } from "./rules";
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
@@ -73,10 +74,11 @@ type ListingRow = {
   governorate: string;
   attributes: Record<string, unknown> | null;
   fee_payment_id: string | null;
+  deal_type?: string | null;
 };
 
 const LISTING_COLUMNS =
-  "id, seller_id, category_id, title, description, price, price_on_request, governorate, attributes, fee_payment_id";
+  "id, seller_id, category_id, title, description, price, price_on_request, governorate, attributes, fee_payment_id, deal_type";
 
 const area = (attrs: Record<string, unknown> | null) => {
   const n = Number(attrs?.area_sqm);
@@ -94,17 +96,19 @@ export async function reviewFlagsFor(
     admin.from("categories").select("kind").eq("id", listing.category_id).maybeSingle(),
     admin
       .from("listings")
-      .select("title, price, attributes, category_id, governorate")
+      .select("title, price, attributes, category_id, governorate, deal_type")
       .eq("seller_id", listing.seller_id)
       .neq("id", listing.id)
       .in("status", [...LIVE, "pending_payment"]),
     isTrustedSeller(admin, listing.seller_id),
   ]);
 
+  const dealType = asDealType(listing.deal_type);
   const price = listing.price == null ? null : Number(listing.price);
   const myArea = area(listing.attributes);
   const duplicate = (siblings ?? []).some(
     (o) =>
+      asDealType(o.deal_type) === dealType &&
       o.category_id === listing.category_id &&
       o.governorate === listing.governorate &&
       (sameTitle(o.title as string, listing.title) ||
@@ -122,6 +126,7 @@ export async function reviewFlagsFor(
       priceOnRequest: listing.price_on_request,
       areaSqm: myArea,
       kind: (cat?.kind as CategoryKind | undefined) ?? null,
+      dealType,
       photoCount: photoCount ?? 0,
       duplicate,
     },

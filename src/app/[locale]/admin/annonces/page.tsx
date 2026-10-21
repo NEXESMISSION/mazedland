@@ -12,7 +12,8 @@ import { adminBtn } from "@/components/admin/AdminButton";
 import { FullBleed, Toolbar, EmptyState, QueueKeys, type Tab } from "@/components/admin/kit";
 import { QueueList, type QueueRow } from "./QueueList";
 import { ListingDetail, type PanelListing } from "./ListingDetail";
-import { formatTND } from "@/lib/utils";
+import { formatDate, formatTND } from "@/lib/utils";
+import { asDealType, firstMonthCost } from "@/lib/listings/deal";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
 import { Inbox, Plus } from "lucide-react";
@@ -81,7 +82,7 @@ function tabFilters(tab: TabKey): Filter[] {
 
 const LIST_SELECT = `
   id, title, price, negotiable, price_on_request, governorate, status, review_flags,
-  created_at, published_at, expires_at,   seller_credit_id, fee_payment_id, fee_waived_by, contact_phone,
+  deal_type, created_at, published_at, expires_at,   seller_credit_id, fee_payment_id, fee_waived_by, contact_phone,
   seller:profiles!listings_seller_id_fkey (full_name, phone),
   category:categories (label_fr, label_ar),
   photos:listing_photos (storage_path, sort_order, is_cover)
@@ -187,7 +188,7 @@ export default async function AdminAnnoncesPage({
   type ListRow = {
     id: string; reference: string | null; title: string; price: number | null; negotiable: boolean;
     price_on_request: boolean; governorate: string; status: string;
-    review_flags: string[] | null;
+    review_flags: string[] | null; deal_type: string | null;
     created_at: string; published_at: string | null; expires_at: string | null;
     seller_credit_id: string | null; fee_payment_id: string | null;
     fee_waived_by: string | null; contact_phone: string | null;
@@ -202,7 +203,11 @@ export default async function AdminAnnoncesPage({
 
   const queueRows: QueueRow[] = rows.map((r) => {
     const seller = r.seller?.full_name ?? tAdmin("noName");
-    const category = categoryLabel(r.category, locale) || "—";
+    const rent = asDealType(r.deal_type) === "rent";
+    // A rental says so next to its category: the queue mixes both deals.
+    const category = [categoryLabel(r.category, locale) || "—", rent ? t("forRent") : null]
+      .filter(Boolean)
+      .join(" · ");
     const gov = governorateLabel(r.governorate, locale);
     return {
       id: r.id,
@@ -216,7 +221,9 @@ export default async function AdminAnnoncesPage({
       value: r.price_on_request
         ? t("priceOnRequest")
         : r.price != null
-          ? `${formatTND(r.price, locale)} ${tRoot("common.tnd")}`
+          ? rent
+            ? t("perMonth", { amount: `${formatTND(r.price, locale)} ${tRoot("common.tnd")}` })
+            : `${formatTND(r.price, locale)} ${tRoot("common.tnd")}`
           : "—",
       // Waiting for review: say why (0165) — the admin reads the reason, not the
       // whole annonce. Otherwise, how old it is.
@@ -347,7 +354,7 @@ function ageLabel(
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
 
 /** The root translator — `await getTranslations()`. */
-type RootT = { (key: string): string; has(key: string): boolean };
+type RootT = { (key: string, values?: Record<string, string | number>): string; has(key: string): boolean };
 
 /** A review flag (0165) in words, or the raw code if it has none yet. */
 function flagLabel(tRoot: RootT, flag: string): string {
@@ -364,6 +371,36 @@ function flagLabel(tRoot: RootT, flag: string): string {
  * A field with an `attributes.<field_key>` message reads in the page's
  * language; any other keeps the label stored on the category.
  */
+/** What a rental adds (0166), in words, for the moderator's panel. */
+function rentFactsOf(
+  r: {
+    deal_type: string | null; price: number | null; price_on_request: boolean;
+    deposit_amount: number | null; charges_amount: number | null; furnished: string | null;
+    available_from: string | null; min_lease_months: number | null;
+  },
+  locale: string,
+  tRoot: RootT,
+): { label: string; value: string }[] {
+  if (asDealType(r.deal_type) !== "rent") return [];
+  const money = (n: number) => `${formatTND(n, locale)} ${tRoot("common.tnd")}`;
+  const moveIn = firstMonthCost({
+    price: r.price == null ? null : Number(r.price),
+    priceOnRequest: r.price_on_request,
+    deposit: r.deposit_amount == null ? null : Number(r.deposit_amount),
+    charges: r.charges_amount == null ? null : Number(r.charges_amount),
+  });
+  const out: { label: string; value: string }[] = [];
+  if (r.deposit_amount != null) out.push({ label: tRoot("listing.rent.deposit"), value: money(Number(r.deposit_amount)) });
+  if (r.charges_amount != null) out.push({ label: tRoot("listing.rent.charges"), value: money(Number(r.charges_amount)) });
+  if (moveIn != null) out.push({ label: tRoot("listing.rent.moveIn"), value: money(moveIn) });
+  if (r.furnished) out.push({ label: tRoot("listing.rent.furnished"), value: tRoot(`listing.rent.furnishedValue.${r.furnished}`) });
+  if (r.available_from) out.push({ label: tRoot("listing.rent.availableFrom"), value: formatDate(r.available_from, locale, "medium") });
+  if (r.min_lease_months != null) {
+    out.push({ label: tRoot("listing.rent.minLease"), value: tRoot("listing.rent.months", { count: Number(r.min_lease_months) }) });
+  }
+  return out;
+}
+
 async function loadPanel(
   admin: Admin,
   id: string,
@@ -376,6 +413,7 @@ async function loadPanel(
       `id, title, description, price, negotiable, price_on_request,
        governorate, delegation, status, rejection_reason, category_id, review_flags,
        contact_name, contact_phone, show_phone, attributes,
+       deal_type, deposit_amount, charges_amount, furnished, available_from, min_lease_months,
        created_at, published_at, expires_at,        view_count, contact_reveal_count, renewed_count,
        seller_attestation_version, seller_attestation_at,
        seller_credit_id, fee_payment_id, fee_waived_by,
@@ -395,6 +433,8 @@ async function loadPanel(
     review_flags: string[] | null;
     contact_name: string | null; contact_phone: string | null; show_phone: boolean;
     attributes: Record<string, unknown>;
+    deal_type: string | null; deposit_amount: number | null; charges_amount: number | null;
+    furnished: string | null; available_from: string | null; min_lease_months: number | null;
     created_at: string; published_at: string | null; expires_at: string | null;
     view_count: number; contact_reveal_count: number; renewed_count: number;
     seller_attestation_version: string | null; seller_attestation_at: string | null;
@@ -489,14 +529,21 @@ async function loadPanel(
         createdAt: rep.created_at,
       }),
     ),
-    categoryLabel: categoryLabel(r.category, locale) || "—",
+    categoryLabel: [
+      categoryLabel(r.category, locale) || "—",
+      asDealType(r.deal_type) === "rent" ? tRoot("adminListings.forRent") : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
     categoryKind: r.category?.kind ?? "vehicle",
+    dealType: asDealType(r.deal_type),
     sellerName: r.seller?.full_name ?? tRoot("admin.noName"),
     sellerPhone: r.seller?.phone ?? null,
     contactName: r.contact_name,
     contactPhone: r.contact_phone,
     showPhone: r.show_phone,
-    attributes,
+    // A rental's own facts read first, before the category's questions.
+    attributes: [...rentFactsOf(r, locale, tRoot), ...attributes],
     photos,
     createdAt: r.created_at,
     publishedAt: r.published_at,

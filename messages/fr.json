@@ -104,7 +104,9 @@
         "rejected": "À corriger",
         "expired": "Expirée",
         "sold": "Vendue",
-        "archived": "Retirée"
+        "archived": "Retirée",
+        "reserved": "Réservée",
+        "rented": "Louée"
       },
       "statusHint": {
         "draft": "Pas encore envoyée.",
@@ -141,7 +143,8 @@
       "emptyTabTitle": "Rien dans « {tab} »",
       "emptyTabBody": "Vos autres annonces sont dans les onglets voisins.",
       "seeAll": "Voir toutes les annonces",
-      "freePlaces": "{used}/{limit} annonces gratuites utilisées"
+      "freePlaces": "{used}/{limit} annonces gratuites utilisées",
+      "pricePerMonth": "{amount} TND / mois"
     },
     "listingActions": {
       "mark_sold": {
@@ -167,7 +170,28 @@
       },
       "failed": "Action impossible pour le moment.",
       "networkError": "Erreur réseau — vérifiez votre connexion.",
-      "cancel": "Annuler"
+      "cancel": "Annuler",
+      "mark_rented": {
+        "label": "C'est loué",
+        "title": "Ce bien est loué ?",
+        "body": "L'annonce quitte le catalogue et passe dans « Terminées ». Tant que les jours déjà payés courent, vous pouvez la remettre en ligne gratuitement.",
+        "confirm": "Oui, c'est loué",
+        "done": "Annonce marquée louée. Félicitations !"
+      },
+      "reserve": {
+        "label": "Réservé",
+        "title": "Marquer comme réservé ?",
+        "body": "L'annonce reste en ligne avec un badge « Réservé » : quelqu'un s'est engagé mais n'a pas encore signé. Si ça ne se fait pas, retirez le badge en un clic.",
+        "confirm": "Marquer réservé",
+        "done": "Annonce marquée réservée."
+      },
+      "unreserve": {
+        "label": "Plus réservé",
+        "title": "Retirer le badge « Réservé » ?",
+        "body": "L'annonce redevient disponible pour tous les visiteurs.",
+        "confirm": "Retirer le badge",
+        "done": "L'annonce est de nouveau disponible."
+      }
     },
     "renew": {
       "failed": "Renouvellement impossible.",
@@ -242,7 +266,8 @@
       "priceOnRequest": "Prix sur demande",
       "onRequest": "Sur demande",
       "price": "{amount} TND",
-      "unavailable": "plus disponible"
+      "unavailable": "plus disponible",
+      "pricePerMonth": "{amount} TND / mois"
     },
     "deleteAccount": {
       "blockers": {
@@ -715,7 +740,10 @@
     "specBathrooms": "{count} SdB",
     "pagination": "Pagination",
     "previous": "Précédent",
-    "next": "Suivant"
+    "next": "Suivant",
+    "forRent": "À louer",
+    "reserved": "Réservé",
+    "rentAmount": "{amount} TND / mois"
   },
   "listing": {
     "metaNotFound": "Annonce introuvable — Mazed Immo",
@@ -732,7 +760,8 @@
       "rejected": "à corriger",
       "expired": "expirée",
       "sold": "vendue",
-      "archived": "retirée"
+      "archived": "retirée",
+      "rented": "louée"
     },
     "previewTitle": "Aperçu privé — {status}",
     "previewBody": "Cette annonce n'est pas visible publiquement.",
@@ -771,7 +800,7 @@
       "reasons": {
         "scam": "Arnaque ou demande d'argent suspecte",
         "wrong_info": "Informations fausses (prix, photos, surface)",
-        "sold": "Le bien est déjà vendu",
+        "sold": "Le bien n'est plus disponible (vendu ou loué)",
         "duplicate": "Annonce en double",
         "inappropriate": "Contenu inapproprié",
         "other": "Autre"
@@ -782,6 +811,27 @@
       "thanks": "Merci, votre signalement a été envoyé.",
       "failed": "Signalement impossible pour le moment.",
       "alreadySent": "Signalement envoyé. Merci."
+    },
+    "forRent": "À louer",
+    "forSale": "À vendre",
+    "reserved": "Réservé",
+    "tndPerMonth": "TND / mois",
+    "rentAmount": "{amount} TND / mois",
+    "rent": {
+      "deposit": "Caution",
+      "charges": "Charges",
+      "perMonth": "{amount} / mois",
+      "noCharges": "Aucune",
+      "moveIn": "À l'entrée (loyer, caution, charges)",
+      "furnished": "Ameublement",
+      "furnishedValue": {
+        "furnished": "Meublé",
+        "semi": "Semi-meublé",
+        "unfurnished": "Vide"
+      },
+      "availableFrom": "Libre à partir du",
+      "minLease": "Durée minimale",
+      "months": "{count, plural, one {# mois} other {# mois}}"
     }
   },
   "listingApi": {
@@ -827,7 +877,13 @@
     "year_built": "Année de construction",
     "buildable": "Constructible",
     "titled": "Titre foncier",
-    "serviced": "Viabilisé"
+    "serviced": "Viabilisé",
+    "air_conditioning": "Climatisation",
+    "heating": "Chauffage central",
+    "elevator": "Ascenseur",
+    "parking": "Parking / garage",
+    "garden": "Jardin",
+    "pool": "Piscine"
   },
   "apiErrors": {
     "auth": "Votre session a expiré. Reconnectez-vous pour continuer.",
@@ -1001,7 +1057,7 @@
     "preview": "Aperçu",
     "noPhoto": "Aucune photo",
     "priceOnRequestShort": "Sur demande",
-    "attestation": "J'atteste sur l'honneur que toutes les informations, photos et documents fournis sont exacts, complets et concernent bien ce bien. Je déclare être propriétaire ou mandaté pour le vendre. Je suis seul responsable de toute information fausse, inexacte ou trompeuse. En cas de fausse déclaration, Mazed Immo peut refuser ou retirer l'annonce et conserver les frais déjà réglés.",
+    "attestation": "J'atteste sur l'honneur que toutes les informations, photos et documents fournis sont exacts, complets et concernent bien ce bien. Je déclare être propriétaire ou mandaté pour le vendre ou le louer. Je suis seul responsable de toute information fausse, inexacte ou trompeuse. En cas de fausse déclaration, Mazed Immo peut refuser ou retirer l'annonce et conserver les frais déjà réglés.",
     "feeFromPlan": "Publication depuis votre forfait",
     "feePublication": "Publication",
     "feeLabel": "Frais de publication",
@@ -1066,7 +1122,41 @@
     "tipPriceOk": "Prix cohérent avec la surface.",
     "tipDescription": "Ajoutez quelques lignes de description : état, quartier, points forts.",
     "tipDescriptionOk": "Description rédigée.",
-    "fix": "Corriger"
+    "fix": "Corriger",
+    "dealTitle": "Vous voulez…",
+    "dealSaleCta": "Vendre",
+    "dealSaleHint": "Un prix de vente, payé une fois",
+    "dealRentCta": "Louer",
+    "dealRentHint": "Un loyer, chaque mois",
+    "dealSale": "À vendre",
+    "dealRent": "À louer",
+    "categoryTitleRent": "Que louez-vous ?",
+    "titleForRent": "{category} à louer",
+    "rentTitle": "Titre et loyer",
+    "rentHint": "Le titre est proposé d'après ce que vous avez saisi. Le loyer est le montant par mois ; le reste, remplissez ce que vous savez.",
+    "rentLabel": "Loyer mensuel",
+    "tndPerMonth": "TND / mois",
+    "depositLabel": "Caution",
+    "chargesLabel": "Charges par mois",
+    "furnishedLabel": "Ameublement",
+    "furnished": {
+      "furnished": "Meublé",
+      "semi": "Semi-meublé",
+      "unfurnished": "Vide"
+    },
+    "availableFromLabel": "Libre à partir du",
+    "minLeaseLabel": "Durée minimale",
+    "monthsUnit": "mois",
+    "rentFieldsHint": "Caution, charges et date s'affichent sur l'annonce. Avec la caution et les charges, on montre aussi ce que coûte l'entrée dans les lieux.",
+    "perMonth": "{amount} / mois",
+    "rentDepositShort": "Caution {amount}",
+    "rentChargesShort": "Charges {amount} / mois",
+    "rentNoCharges": "Sans charges",
+    "availableFromShort": "Libre le {date}",
+    "minLeaseShort": "{count, plural, one {# mois minimum} other {# mois minimum}}",
+    "moveInCost": "À l'entrée : {amount} (loyer, caution et charges)",
+    "missingRent": "Indiquez le loyer mensuel, ou cochez « prix sur demande ».",
+    "tipPriceRent": "Le loyer paraît inhabituel pour cette surface. Vérifiez que c'est bien le montant par mois."
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",
@@ -1108,7 +1198,8 @@
       "published": "en ligne",
       "expired": "expirée",
       "archived": "retirée",
-      "sold": "vendue"
+      "sold": "vendue",
+      "rented": "louée"
     },
     "contactRequired": "Ajoutez un numéro de téléphone joignable.",
     "attestationRequired": "Cochez l'attestation sur l'honneur.",
@@ -2167,7 +2258,8 @@
       "failed": "Refusé",
       "individual": "Particulier",
       "agency": "Agence",
-      "admin": "Admin"
+      "admin": "Admin",
+      "rented": "Louée"
     },
     "paymentKind": {
       "listing_fee": "Publication",
@@ -2347,8 +2439,11 @@
       "cancel": "Annuler",
       "save": "Enregistrer",
       "reviewWhy": "Pourquoi elle attend une vérification",
-      "reportsTitle": "{count, plural, one {# signalement} other {# signalements}}"
-    }
+      "reportsTitle": "{count, plural, one {# signalement} other {# signalements}}",
+      "rented": "Louée"
+    },
+    "forRent": "À louer",
+    "perMonth": "{amount} / mois"
   },
   "adminSellers": {
     "title": "Vendeurs",
@@ -2537,7 +2632,7 @@
     "reasons": {
       "scam": "Arnaque",
       "wrong_info": "Informations fausses",
-      "sold": "Déjà vendu",
+      "sold": "Déjà vendu ou loué",
       "duplicate": "Doublon",
       "inappropriate": "Contenu inapproprié",
       "other": "Autre"

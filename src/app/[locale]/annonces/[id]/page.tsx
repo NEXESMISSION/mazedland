@@ -6,7 +6,8 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { absoluteUrl } from "@/lib/siteUrl";
-import { formatDate, formatNumber, formatTND } from "@/lib/utils";
+import { cn, formatDate, formatNumber, formatTND } from "@/lib/utils";
+import { asDealType, firstMonthCost } from "@/lib/listings/deal";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
 import { routing } from "@/i18n/routing";
@@ -62,12 +63,21 @@ type Row = {
     | { id: string; label_fr: string; label_ar: string | null; kind: string }[]
     | null;
   photos: { storage_path: string; sort_order: number }[] | null;
+  deal_type: string | null;
+  deposit_amount: number | null;
+  charges_amount: number | null;
+  furnished: string | null;
+  available_from: string | null;
+  min_lease_months: number | null;
+  availability: string | null;
 };
 
 const SELECT = `
   id, title, description, price, price_on_request, negotiable,
   governorate, delegation, attributes, contact_name, show_phone, status,
   published_at, expires_at, seller_id, reference, rejection_reason,
+  deal_type, deposit_amount, charges_amount, furnished, available_from,
+  min_lease_months, availability,
   category:categories (id, label_fr, label_ar, kind),
   photos:listing_photos (storage_path, sort_order)
 `;
@@ -105,7 +115,9 @@ export async function generateMetadata({
   }
   const price =
     l.price != null && !l.price_on_request
-      ? t("priceAmount", { amount: formatNumber(Number(l.price), locale) })
+      ? t(asDealType(l.deal_type) === "rent" ? "rentAmount" : "priceAmount", {
+          amount: formatNumber(Number(l.price), locale),
+        })
       : t("priceOnRequest");
   const title = `${l.title} · ${price}`;
   const description =
@@ -164,6 +176,8 @@ export default async function AnnoncePage({
   if (!l) notFound();
 
   const category = one(l.category);
+  const rent = asDealType(l.deal_type) === "rent";
+  const reserved = l.availability === "reserved";
   const photos = (l.photos ?? [])
     .slice()
     .sort((a, b) => a.sort_order - b.sort_order)
@@ -261,11 +275,55 @@ export default async function AnnoncePage({
       url: absoluteUrl(`/${locale}/annonces/${l.id}`),
       priceCurrency: "TND",
       ...(l.price != null && !l.price_on_request ? { price: Number(l.price) } : {}),
+      // A rent is per month — said so, or a crawler reads 1 200 TND as the price of a flat.
+      ...(rent && l.price != null && !l.price_on_request
+        ? {
+            priceSpecification: {
+              "@type": "UnitPriceSpecification",
+              price: Number(l.price),
+              priceCurrency: "TND",
+              unitCode: "MON",
+            },
+          }
+        : {}),
       availability: "https://schema.org/InStock",
       areaServed: governorateLabel(l.governorate, locale),
       ...(l.expires_at ? { priceValidUntil: l.expires_at.slice(0, 10) } : {}),
     },
   };
+
+  // ── What a rental adds (0166) ─────────────────────────────────────────────
+  // Only what the owner said. "Charges : 0" is a statement and is shown; a
+  // silence is not turned into a zero, and the move-in total appears only when
+  // every part of it is known (src/lib/listings/deal.ts).
+  const money = (n: number) => `${formatTND(n, locale)} ${tRoot("common.tnd")}`;
+  const moveIn = rent
+    ? firstMonthCost({
+        price: l.price == null ? null : Number(l.price),
+        priceOnRequest: l.price_on_request,
+        deposit: l.deposit_amount == null ? null : Number(l.deposit_amount),
+        charges: l.charges_amount == null ? null : Number(l.charges_amount),
+      })
+    : null;
+  const rentFacts: { label: string; value: string; strong?: boolean }[] = rent
+    ? ([
+        l.deposit_amount != null && { label: t("rent.deposit"), value: money(Number(l.deposit_amount)) },
+        l.charges_amount != null && {
+          label: t("rent.charges"),
+          value: Number(l.charges_amount) > 0 ? t("rent.perMonth", { amount: money(Number(l.charges_amount)) }) : t("rent.noCharges"),
+        },
+        moveIn != null && { label: t("rent.moveIn"), value: money(moveIn), strong: true },
+        l.furnished && { label: t("rent.furnished"), value: t(`rent.furnishedValue.${l.furnished}`) },
+        l.available_from && {
+          label: t("rent.availableFrom"),
+          value: formatDate(l.available_from, locale, "medium"),
+        },
+        l.min_lease_months != null && {
+          label: t("rent.minLease"),
+          value: t("rent.months", { count: Number(l.min_lease_months) }),
+        },
+      ].filter(Boolean) as { label: string; value: string; strong?: boolean }[])
+    : [];
 
   // ── The pieces that appear in both layouts ────────────────────────────────
   //
@@ -284,12 +342,24 @@ export default async function AnnoncePage({
           : `${formatTND(Number(l.price), locale)} `}
         {!l.price_on_request && l.price != null && (
           <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-gold/80">
-            {tRoot("common.tnd")}
+            {rent ? t("tndPerMonth") : tRoot("common.tnd")}
           </span>
         )}
       </div>
       {l.negotiable && !l.price_on_request && (
         <p className="mt-1 text-[12px] text-muted">{t("priceNegotiable")}</p>
+      )}
+      {rentFacts.length > 0 && (
+        <dl className="mt-3 divide-y divide-border rounded-xl bg-surface-2/60 px-3 ring-1 ring-border">
+          {rentFacts.map((f) => (
+            <div key={f.label} className="flex items-center justify-between gap-3 py-2 text-[12.5px]">
+              <dt className="text-muted">{f.label}</dt>
+              <dd className={cn("text-end font-bold", f.strong ? "text-foreground" : "text-foreground/90")}>
+                {f.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
       )}
     </div>
   );
@@ -395,6 +465,19 @@ export default async function AnnoncePage({
                 <Home className="size-3" />
                 {category ? categoryLabel(category, locale) : t("categoryFallback")}
               </span>
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-extrabold ring-1",
+                  rent ? "bg-gold-faint text-gold ring-gold-soft" : "bg-surface-2 text-muted ring-border",
+                )}
+              >
+                {rent ? t("forRent") : t("forSale")}
+              </span>
+              {reserved && (
+                <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-extrabold text-amber-600 ring-1 ring-amber-500/30">
+                  {t("reserved")}
+                </span>
+              )}
               {badge === true && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-gold-faint px-2.5 py-1 text-[11px] font-extrabold text-gold ring-1 ring-gold-soft">
                   <BadgeCheck className="size-3.5" strokeWidth={2.4} /> {t("verifiedSeller")}
@@ -504,6 +587,7 @@ export default async function AnnoncePage({
         governorate={l.governorate}
         price={l.price == null ? null : Number(l.price)}
         attributes={l.attributes}
+        dealType={asDealType(l.deal_type)}
         locale={locale}
       />
     </main>

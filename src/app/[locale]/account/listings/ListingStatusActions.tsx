@@ -6,7 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { useApiError } from "@/lib/useApiError";
-import { BadgeCheck, EyeOff, RotateCw, Loader2 } from "lucide-react";
+import { BadgeCheck, EyeOff, RotateCw, Loader2, Bookmark, BookmarkX, KeyRound } from "lucide-react";
 
 /**
  * « C'est vendu » and « Retirer » - the two things a seller wants from a live
@@ -20,12 +20,26 @@ import { BadgeCheck, EyeOff, RotateCw, Loader2 } from "lucide-react";
  */
 
 /** The copy for each act is `account.listingActions.<act>.{label,title,body,confirm,done}`. */
-type Act = "mark_sold" | "withdraw" | "relist";
+type Act = "mark_sold" | "mark_rented" | "withdraw" | "relist" | "reserve" | "unreserve";
 
 const ICON: Record<Act, typeof BadgeCheck> = {
   mark_sold: BadgeCheck,
+  mark_rented: KeyRound,
   withdraw: EyeOff,
   relist: RotateCw,
+  reserve: Bookmark,
+  unreserve: BookmarkX,
+};
+
+/** « C'est loué » is the same request as « C'est vendu »: the route closes the
+ *  annonce as rented or sold from its own deal type. */
+const API_ACTION: Record<Act, string> = {
+  mark_sold: "mark_sold",
+  mark_rented: "mark_sold",
+  withdraw: "withdraw",
+  relist: "relist",
+  reserve: "reserve",
+  unreserve: "unreserve",
 };
 
 export function ListingStatusActions({
@@ -54,7 +68,7 @@ export function ListingStatusActions({
       const res = await fetch(`/api/annonces/${listingId}/status`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: act }),
+        body: JSON.stringify({ action: API_ACTION[act] }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {

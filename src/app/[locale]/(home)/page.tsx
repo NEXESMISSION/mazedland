@@ -256,6 +256,7 @@ export default async function LandingPage({
   const heroSlides = buildHeroSlides(trending, locale, liveCount, {
     liveWord: t("home.heroLive"),
     tnd: t("common.tnd"),
+    tndPerMonth: t("listing.tndPerMonth"),
     bidCta: t("home.heroBidCta"),
     browseCta: t("home.heroBrowseCta"),
     brandTitle: t("home.heroBrandTitle"),
@@ -272,6 +273,7 @@ export default async function LandingPage({
       ? buildEndingSoonSlides(trending.slice(5, 10), locale, {
           endingSoonWord: t("home.endingSoonEyebrow"),
           tnd: t("common.tnd"),
+          tndPerMonth: t("listing.tndPerMonth"),
           bidCta: t("home.heroBidCta"),
           priceOnRequest: t("home.priceOnRequest"),
         })
@@ -791,6 +793,8 @@ function buildHeroSlides(
   labels: {
     liveWord: string;
     tnd: string;
+    /** A rental's unit (0166): the slide must not show a month's rent as a price. */
+    tndPerMonth: string;
     bidCta: string;
     browseCta: string;
     brandTitle: string;
@@ -819,7 +823,7 @@ function buildHeroSlides(
       subtitle:
         l.price_on_request || l.price == null
           ? labels.priceOnRequest
-          : `${formatTND(Number(l.price), locale)} ${labels.tnd}`,
+          : `${formatTND(Number(l.price), locale)} ${l.deal_type === "rent" ? labels.tndPerMonth : labels.tnd}`,
       href: `/annonces/${l.id}`,
       ctaLabel: labels.bidCta,
     });
@@ -851,7 +855,7 @@ function buildHeroSlides(
 function buildEndingSoonSlides(
   rows: HomeListingRow[],
   locale: string,
-  labels: { endingSoonWord: string; tnd: string; bidCta: string; priceOnRequest: string },
+  labels: { endingSoonWord: string; tnd: string; tndPerMonth: string; bidCta: string; priceOnRequest: string },
 ): HeroSlide[] {
   const slides: HeroSlide[] = [];
   for (const l of rows) {
@@ -865,7 +869,7 @@ function buildEndingSoonSlides(
       subtitle:
         l.price_on_request || l.price == null
           ? labels.priceOnRequest
-          : `${formatTND(Number(l.price), locale)} ${labels.tnd}`,
+          : `${formatTND(Number(l.price), locale)} ${l.deal_type === "rent" ? labels.tndPerMonth : labels.tnd}`,
       href: `/annonces/${l.id}`,
       ctaLabel: labels.bidCta,
     });

@@ -62,6 +62,8 @@ type Row = {
   governorate: string;
   attributes: Record<string, unknown> | null;
   published_at: string | null;
+  deal_type: string | null;
+  availability: string | null;
   category:
     | { label_fr: string; label_ar: string | null; kind: string }
     | { label_fr: string; label_ar: string | null; kind: string }[]
@@ -179,6 +181,7 @@ export default async function AnnoncesPage({
     .from("listings")
     .select(
       `id, title, price, price_on_request, negotiable, governorate, attributes, published_at,
+       deal_type, availability,
        category:categories (label_fr, label_ar, kind),
        photos:listing_photos (storage_path, sort_order)`,
       { count: "exact" },
@@ -539,8 +542,14 @@ export default async function AnnoncesPage({
                   </div>
 
                   <div className="p-3">
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
+                    <span className="inline-flex flex-wrap items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
                       <Home className="size-3" /> {categoryLabel(cat, locale)}
+                      {r.deal_type === "rent" && (
+                        <span className="ms-1 rounded-full bg-gold-faint px-1.5 py-0.5 text-gold">{t("forRent")}</span>
+                      )}
+                      {r.availability === "reserved" && (
+                        <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-amber-600">{t("reserved")}</span>
+                      )}
                     </span>
                     <h2 dir="auto" className="mt-0.5 line-clamp-2 break-words text-[13.5px] font-bold leading-snug text-foreground">
                       {r.title}
@@ -549,7 +558,9 @@ export default async function AnnoncesPage({
                     <p className="mazed-tabular mt-1.5 text-[15px] font-extrabold text-foreground">
                       {r.price_on_request || r.price == null
                         ? t("priceOnRequest")
-                        : t("priceAmount", { amount: formatTND(Number(r.price), locale) })}
+                        : t(r.deal_type === "rent" ? "rentAmount" : "priceAmount", {
+                            amount: formatTND(Number(r.price), locale),
+                          })}
                       {r.negotiable && !r.price_on_request && (
                         <span className="ms-1.5 text-[10.5px] font-bold text-muted">{t("negotiable")}</span>
                       )}

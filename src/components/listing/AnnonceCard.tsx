@@ -9,6 +9,7 @@ import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { Ltr } from "@/components/ui/Ltr";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
+import { asDealType } from "@/lib/listings/deal";
 
 /**
  * One annonce, as a card.
@@ -55,6 +56,9 @@ export type AnnonceCardRow = {
     | { label_fr: string; label_ar?: string | null }[]
     | null;
   photos: { storage_path: string; sort_order: number }[] | null;
+  /** 0166. Absent on a select that predates it: read as a sale. */
+  deal_type?: string | null;
+  availability?: string | null;
 };
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
@@ -82,6 +86,8 @@ export async function AnnonceCard({
   const area = Number(attrs.area_sqm);
   const rooms = Number(attrs.rooms);
   const where = listing.delegation?.trim() || governorateLabel(listing.governorate, locale);
+  const rent = asDealType(listing.deal_type) === "rent";
+  const reserved = listing.availability === "reserved";
 
   return (
     <div className="block">
@@ -126,11 +132,25 @@ export async function AnnonceCard({
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/45 to-transparent" />
 
           {/* Top-leading — the category. Same pill the auction type used. */}
-          {category && (
-            <div className="absolute top-2.5 start-2.5">
-              <span className="mazed-gold-fill inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
-                {categoryLabel(category, locale)}
-              </span>
+          {/* With a rental's « À louer » beside it: the first thing a buyer
+              and a tenant need to tell apart on a mixed rail. */}
+          {(category || rent || reserved) && (
+            <div className="absolute top-2.5 start-2.5 end-2.5 flex flex-wrap gap-1">
+              {category && (
+                <span className="mazed-gold-fill inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
+                  {categoryLabel(category, locale)}
+                </span>
+              )}
+              {rent && (
+                <span className="inline-flex h-7 items-center rounded-full bg-black/60 px-2.5 text-[10px] font-extrabold uppercase tracking-wider text-white backdrop-blur-sm">
+                  {t("listing.forRent")}
+                </span>
+              )}
+              {reserved && (
+                <span className="inline-flex h-7 items-center rounded-full bg-amber-500/90 px-2.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                  {t("listing.reserved")}
+                </span>
+              )}
             </div>
           )}
 
@@ -181,7 +201,7 @@ export async function AnnonceCard({
               >
                 {formatTND(Number(listing.price), locale)}
                 <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
-                  {t("common.tnd")}
+                  {rent ? t("listing.tndPerMonth") : t("common.tnd")}
                 </span>
               </span>
             )}

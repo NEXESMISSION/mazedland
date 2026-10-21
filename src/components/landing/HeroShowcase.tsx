@@ -27,6 +27,8 @@ export type ShowcaseSlide = {
    *  in HomeDesktop's showcase builder. Kept so the chip logic reads plainly
    *  rather than being deleted and half-remembered. */
   isLive: boolean;
+  /** A rental's price is per month (0166). */
+  perMonth?: boolean;
 };
 
 /**
@@ -190,6 +192,7 @@ function SlideBody({
 }) {
   const t = useTranslations("landing.showcase");
   const tc = useTranslations("common");
+  const tl = useTranslations("listing");
   const [broken, setBroken] = useState(false);
   const photo =
     slide.imageUrl && !broken ? (
@@ -270,7 +273,7 @@ function SlideBody({
               {/* "Prix sur demande" takes no currency after it. */}
               {/\d/.test(slide.priceLabel) && (
                 <span className="ms-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/60">
-                  {tc("tnd")}
+                  {slide.perMonth ? tl("tndPerMonth") : tc("tnd")}
                 </span>
               )}
             </div>

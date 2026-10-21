@@ -5,6 +5,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ListingImage } from "@/components/media/ListingImage";
 import { TrendingRail } from "@/components/landing/TrendingRail";
 import { formatTND } from "@/lib/utils";
+import type { DealType } from "@/lib/listings/deal";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
 import { ArrowRight, BadgeCheck, ImageOff, MapPin } from "lucide-react";
@@ -43,6 +44,7 @@ type Row = {
   seller_id: string;
   published_at: string | null;
   attributes: Record<string, unknown> | null;
+  deal_type: string | null;
   category:
     | { label_fr: string; label_ar: string | null }
     | { label_fr: string; label_ar: string | null }[]
@@ -52,6 +54,7 @@ type Row = {
 
 const SELECT = `
   id, title, price, price_on_request, governorate, seller_id, published_at, attributes,
+  deal_type,
   category:categories (label_fr, label_ar),
   photos:listing_photos (storage_path, sort_order, is_cover)
 `;
@@ -95,6 +98,7 @@ export async function RelatedListings({
   governorate,
   price,
   attributes,
+  dealType = "sale",
   locale,
   limit = 8,
 }: {
@@ -104,6 +108,10 @@ export async function RelatedListings({
   governorate: string;
   price: number | null;
   attributes: Record<string, unknown> | null;
+  /** Rentals next to a rental, sales next to a sale (0166): a tenant has no use
+   *  for a flat at 300 000 TND, and the price closeness below would compare a
+   *  month's rent with a sale price. */
+  dealType?: DealType;
   locale: string;
   limit?: number;
 }) {
@@ -118,6 +126,7 @@ export async function RelatedListings({
     .from("listings")
     .select(SELECT)
     .eq("status", "published")
+    .eq("deal_type", dealType)
     .eq("category_id", categoryId)
     .neq("id", listingId)
     .order("published_at", { ascending: false })
@@ -138,6 +147,7 @@ export async function RelatedListings({
         .from("listings")
         .select(SELECT)
         .eq("status", "published")
+        .eq("deal_type", dealType)
         .in("category_id", ids)
         .neq("id", listingId)
         .order("published_at", { ascending: false })
@@ -257,7 +267,9 @@ async function Card({
         <p className="mazed-tabular mt-1 text-[14px] font-extrabold text-foreground">
           {listing.price_on_request || listing.price == null
             ? t("related.onRequest")
-            : t("priceAmount", { amount: formatTND(Number(listing.price), locale) })}
+            : t(listing.deal_type === "rent" ? "rentAmount" : "priceAmount", {
+                amount: formatTND(Number(listing.price), locale),
+              })}
         </p>
         <p className="mt-0.5 inline-flex items-center gap-1 text-[10.5px] text-muted">
           <MapPin className="size-3" /> {governorateLabel(listing.governorate, locale)}

@@ -54,6 +54,8 @@ export type PanelListing = {
   /** Already in the page's language (categoryLabel). */
   categoryLabel: string;
   categoryKind: string;
+  /** Sale or rent (0166): « Vendue » becomes « Louée ». */
+  dealType: "sale" | "rent";
   sellerName: string;
   sellerPhone: string | null;
   contactName: string | null;
@@ -349,7 +351,7 @@ export function ListingDetail({
               icon={<BadgeCheck className="size-3.5" strokeWidth={2.4} />}
               onClick={() => setConfirm("sold")}
             >
-              {t("sold")}
+              {t(l.dealType === "rent" ? "rented" : "sold")}
             </AdminButton>
           </>
         )}

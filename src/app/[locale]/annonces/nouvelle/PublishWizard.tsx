@@ -13,6 +13,7 @@ import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 import {
   Check, Tag, Camera, Wallet, Phone, ClipboardList, ClipboardCheck, Loader2, MapPin,
   Gift, Ticket, ImageOff, Home, ArrowLeft, ArrowRight, Lightbulb, CheckCircle2, AlertTriangle, Pencil,
+  KeyRound,
 } from "lucide-react";
 import {
   MIN_PHOTOS,
@@ -20,9 +21,23 @@ import {
   isPriceImplausible,
   type CategoryKind,
 } from "@/lib/moderation/rules";
+import {
+  FURNISHED,
+  appliesTo,
+  asDealType,
+  firstMonthCost,
+  type DealType,
+  type Furnished,
+} from "@/lib/listings/deal";
 
 /**
- * Publier une annonce — the fixed-price sell flow.
+ * Publier une annonce — the sell-or-let flow.
+ *
+ * Selling and letting share the form (0166): the first step asks which, and
+ * only the price step differs — a rental gives its monthly rent with the
+ * deposit, charges, furniture, the date it is free and the shortest lease, and
+ * the summary adds what moving in costs. The catalogue questions that only one
+ * deal asks (« titre foncier » is a buyer's question) drop out of the other.
  *
  * Four short steps — what and where, photos, price and details, summary — with
  * a progress bar that is also a way back to any step. It used to be one long
@@ -62,7 +77,7 @@ import {
  * The attestation the seller ticks lives in messages as `publish.attestation`.
  * Bump the version whenever its wording changes, in either language.
  */
-export const SELLER_ATTESTATION_VERSION = "v1";
+export const SELLER_ATTESTATION_VERSION = "v2";
 
 export type WizardCategory = {
   id: string;
@@ -82,6 +97,7 @@ const STEP_OF: Record<string, Step> = {
   "f-category": 0,
   "f-photos": 1,
   "f-price": 2,
+  "f-rent": 2,
   "f-title": 2,
   "f-details": 2,
   "f-description": 2,
@@ -97,6 +113,8 @@ export type AttributeDef = {
   options: { value: string; label: string }[] | null;
   unit: string | null;
   required: boolean;
+  /** 0166: asked only for these deals; null = both. */
+  deal_types?: string[] | null;
 };
 
 /**
@@ -121,6 +139,12 @@ export type InitialDraft = {
   contact_phone: string | null;
   updated_at: string | null;
   photos: { storage_path: string; sort_order: number }[] | null;
+  deal_type?: string | null;
+  deposit_amount?: number | string | null;
+  charges_amount?: number | string | null;
+  furnished?: string | null;
+  available_from?: string | null;
+  min_lease_months?: number | null;
 };
 
 export function PublishWizard({
@@ -135,6 +159,7 @@ export function PublishWizard({
   defaultContactPhone,
   defaultGovernorate,
   initialDraft,
+  initialDeal = "sale",
   locale,
 }: {
   categories: WizardCategory[];
@@ -151,6 +176,8 @@ export function PublishWizard({
    *  ask again. Empty for an older account that never gave one. */
   defaultGovernorate: string;
   initialDraft: InitialDraft | null;
+  /** ?deal=rent — the home page's « J'ai un bien à louer » lands here. */
+  initialDeal?: DealType;
   locale: string;
 }) {
   const d = initialDraft;
@@ -202,6 +229,17 @@ export function PublishWizard({
   const [price, setPrice] = useState(d?.price != null && Number(d.price) > 0 ? String(d.price) : "");
   const [onRequest, setOnRequest] = useState(d?.price_on_request === true);
   const [negotiable, setNegotiable] = useState(d?.negotiable !== false);
+  // Sale or rent (0166). A resumed draft says which; a new one starts from
+  // where the seller came from.
+  const [deal, setDeal] = useState<DealType>(d ? asDealType(d.deal_type) : initialDeal);
+  const [deposit, setDeposit] = useState(d?.deposit_amount != null ? String(d.deposit_amount) : "");
+  const [charges, setCharges] = useState(d?.charges_amount != null ? String(d.charges_amount) : "");
+  const [furnished, setFurnished] = useState<Furnished | "">(() =>
+    (FURNISHED as readonly string[]).includes(d?.furnished ?? "") ? (d?.furnished as Furnished) : "",
+  );
+  const [availableFrom, setAvailableFrom] = useState(d?.available_from ?? "");
+  const [minLease, setMinLease] = useState(d?.min_lease_months != null ? String(d.min_lease_months) : "");
+  const rent = deal === "rent";
   // Where the seller lives, not the first governorate in the alphabet. Most
   // people sell property in their own governorate, and "Ariana" was pre-filled
   // for all 24 of them — a wrong default nobody is prompted to correct, which
@@ -239,9 +277,13 @@ export function PublishWizard({
   const usingCredit = !freeQuota && creditsLeft > 0;
   const free = !freeQuota && !usingCredit && fee != null && fee <= 0;
 
+  // Only what this deal asks: a tenant is not asked about the titre foncier.
   const defs = useMemo<AttributeDef[]>(
-    () => (categoryId ? attributesByCategory[categoryId] ?? [] : []),
-    [categoryId, attributesByCategory],
+    () =>
+      (categoryId ? attributesByCategory[categoryId] ?? [] : []).filter((a) =>
+        appliesTo(a.deal_types, deal),
+      ),
+    [categoryId, attributesByCategory, deal],
   );
 
   /**
@@ -259,6 +301,17 @@ export function PublishWizard({
   }
 
   /**
+   * Sale ↔ rent keeps every answer both ask for. The price goes: a sale price
+   * left in a rental's monthly box is exactly the typo moderation would catch,
+   * and a rent read as a sale price is worse.
+   */
+  function switchDeal(next: DealType) {
+    if (next === deal) return;
+    setDeal(next);
+    setPrice("");
+  }
+
+  /**
    * A title nobody should have to type: it is what they just chose.
    *
    * Property listings in Tunisia are read as "type · surface · lieu", so that
@@ -269,10 +322,11 @@ export function PublishWizard({
     if (!category) return "";
     const area = attrs.area_sqm?.trim();
     const where = delegation.trim() || governorateLabel(governorate, locale);
-    return [category.label, area ? t("suggestedArea", { area }) : null, where]
+    const what = rent ? t("titleForRent", { category: category.label }) : category.label;
+    return [what, area ? t("suggestedArea", { area }) : null, where]
       .filter(Boolean)
       .join(" · ");
-  }, [category, attrs.area_sqm, delegation, governorate, locale, t]);
+  }, [category, attrs.area_sqm, delegation, governorate, locale, t, rent]);
 
   const title = titleTouched ? typedTitle : suggestedTitle;
   const setTitle = (v: string) => { setTitleTouched(true); setTypedTitle(v); };
@@ -304,7 +358,7 @@ export function PublishWizard({
     missing.push({ label: t("missingTitle"), fieldId: "f-title" });
   }
   if (!onRequest && !(Number(price) > 0)) {
-    missing.push({ label: t("missingPrice"), fieldId: "f-price" });
+    missing.push({ label: t(rent ? "missingRent" : "missingPrice"), fieldId: "f-price" });
   }
   if (contactPhone.replace(/\D/g, "").length < 8) {
     missing.push({ label: t("missingPhone"), fieldId: "f-phone" });
@@ -370,6 +424,7 @@ export function PublishWizard({
     priceOnRequest: onRequest,
     areaSqm: Number(attrs.area_sqm) > 0 ? Number(attrs.area_sqm) : null,
     kind: (category?.kind as CategoryKind | undefined) ?? null,
+    dealType: deal,
   });
   const describedEnough = description.trim().length >= 40;
   const tips: { key: string; ok: boolean; text: string; fieldId: string }[] = [
@@ -390,7 +445,7 @@ export function PublishWizard({
       fieldId: hasContactInText(title) ? "f-title" : "f-description",
     },
     ...(priceKnown
-      ? [{ key: "price", ok: priceOk, text: priceOk ? t("tipPriceOk") : t("tipPrice"), fieldId: "f-price" }]
+      ? [{ key: "price", ok: priceOk, text: priceOk ? t("tipPriceOk") : t(rent ? "tipPriceRent" : "tipPrice"), fieldId: "f-price" }]
       : []),
     {
       key: "description",
@@ -426,6 +481,12 @@ export function PublishWizard({
     setPrice("");
     setOnRequest(false);
     setNegotiable(true);
+    setDeal(initialDeal);
+    setDeposit("");
+    setCharges("");
+    setFurnished("");
+    setAvailableFrom("");
+    setMinLease("");
     setGovernorate(homeGovernorate);
     setDelegation("");
     setContactName(defaultContactName);
@@ -448,6 +509,13 @@ export function PublishWizard({
         price: onRequest ? null : Number(price) || 0,
         price_on_request: onRequest,
         negotiable,
+        deal_type: deal,
+        // Half-typed is "not said": the API drops what does not parse.
+        deposit_amount: rent && deposit.trim() !== "" ? Number(deposit) : null,
+        charges_amount: rent && charges.trim() !== "" ? Number(charges) : null,
+        furnished: rent && furnished ? furnished : null,
+        available_from: rent && availableFrom ? availableFrom : null,
+        min_lease_months: rent && minLease.trim() !== "" ? Number(minLease) : null,
         governorate,
         delegation: delegation.trim() || null,
         // Typed on the way out: the form holds strings because inputs do, but
@@ -498,6 +566,7 @@ export function PublishWizard({
   }, [
     categoryId, photos, attrs, typedTitle, titleTouched, description,
     price, onRequest, negotiable, governorate, delegation, contactName, contactPhone,
+    deal, deposit, charges, furnished, availableFrom, minLease,
   ]);
 
   async function publishNow() {
@@ -588,10 +657,40 @@ export function PublishWizard({
 
   // The price, said the way the card says it: number then currency, no LTR box
   // around the pair (an Arabic reader reads the number first).
+  const money = (n: number) => `${formatTND(n, locale)} ${tc("tnd")}`;
   const priceText =
     onRequest || !(Number(price) > 0)
       ? t("priceOnRequestShort")
-      : `${formatTND(Number(price), locale)} ${tc("tnd")}`;
+      : rent
+        ? t("perMonth", { amount: money(Number(price)) })
+        : money(Number(price));
+
+  /** What a rental adds, said the way the annonce page will list it. */
+  const rentSummary = rent
+    ? [
+        deposit.trim() !== "" ? t("rentDepositShort", { amount: money(Number(deposit)) }) : null,
+        charges.trim() === ""
+          ? null
+          : Number(charges) > 0
+            ? t("rentChargesShort", { amount: money(Number(charges)) })
+            : t("rentNoCharges"),
+        furnished ? t(`furnished.${furnished}`) : null,
+        availableFrom ? t("availableFromShort", { date: formatDate(availableFrom, locale, "medium") }) : null,
+        minLease.trim() !== "" ? t("minLeaseShort", { count: Number(minLease) }) : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
+
+  /** Rent + deposit + charges — only when all three are stated (src/lib/listings/deal.ts). */
+  const moveIn = rent
+    ? firstMonthCost({
+        price: Number(price) > 0 ? Number(price) : null,
+        priceOnRequest: onRequest,
+        deposit: deposit.trim() === "" ? null : Number(deposit),
+        charges: charges.trim() === "" ? null : Number(charges),
+      })
+    : null;
 
   /** The details the seller gave, as one line a buyer would read. */
   const attributeSummary = defs
@@ -732,11 +831,45 @@ export function PublishWizard({
           {/* ── ① What and where ── */}
           {step === 0 && (
             <>
+              {/* Sell or let — the one answer that changes the questions after it. */}
+              <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+                <SectionHead icon={Home} title={t("dealTitle")} />
+                <div role="radiogroup" aria-label={t("dealTitle")} className="mt-4 grid grid-cols-2 gap-2">
+                  {(["sale", "rent"] as const).map((k) => {
+                    const on = deal === k;
+                    const Icon = k === "rent" ? KeyRound : Tag;
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => switchDeal(k)}
+                        className={cn(
+                          "tap-target flex items-center gap-2.5 rounded-xl px-3.5 py-3 text-start transition",
+                          on ? "bg-gold-faint ring-2 ring-gold" : "bg-surface-2 ring-1 ring-border hover:ring-gold-soft",
+                        )}
+                      >
+                        <Icon className={cn("size-5 shrink-0", on ? "text-gold" : "text-muted")} />
+                        <span className="min-w-0">
+                          <span className="block text-[14px] font-extrabold text-foreground">
+                            {t(k === "rent" ? "dealRentCta" : "dealSaleCta")}
+                          </span>
+                          <span className="block text-[11.5px] leading-snug text-muted">
+                            {t(k === "rent" ? "dealRentHint" : "dealSaleHint")}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
               <section
                 id="f-category"
                 className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-category")}`}
               >
-                <SectionHead icon={Tag} title={t("categoryTitle")} />
+                <SectionHead icon={Tag} title={t(rent ? "categoryTitleRent" : "categoryTitle")} />
                 <p className="mt-1 text-[13px] text-muted">{t("categoryHint")}</p>
 
                 {usingCredit && (
@@ -886,13 +1019,17 @@ export function PublishWizard({
                 id="f-price"
                 className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-price")}`}
               >
-                <SectionHead icon={Wallet} title={t("priceTitle")} />
-                <p className="mt-1 text-[13px] text-muted">{t("priceHint")}</p>
+                <SectionHead icon={Wallet} title={t(rent ? "rentTitle" : "priceTitle")} />
+                <p className="mt-1 text-[13px] text-muted">{t(rent ? "rentHint" : "priceHint")}</p>
 
                 <div className="mt-5 space-y-4">
                   <div>
-                    <Label>{t("priceLabel")} {!onRequest && <span className="text-gold">*</span>}</Label>
-                    <div className="relative mt-1">
+                    <Label>{t(rent ? "rentLabel" : "priceLabel")} {!onRequest && <span className="text-gold">*</span>}</Label>
+                    {/* The box is left-to-right as a whole, not only the input:
+                        with just the input flipped, its padding sat on the right
+                        while the currency label followed the page to the left,
+                        and on /ar the figure ran under « د.ت ». */}
+                    <div dir="ltr" className="relative mt-1">
                       <input
                         type="number"
                         inputMode="decimal"
@@ -900,11 +1037,14 @@ export function PublishWizard({
                         value={price}
                         disabled={onRequest}
                         onChange={(e) => setPrice(e.target.value)}
-                        placeholder="250000"
-                        className="w-full rounded-xl border border-border bg-surface px-3 py-3 pe-16 text-[16px] font-bold text-foreground placeholder:font-normal placeholder:text-muted focus:border-gold focus:outline-none disabled:opacity-40"
+                        placeholder={rent ? "1200" : "250000"}
+                        className={cn(
+                          "w-full rounded-xl border border-border bg-surface px-3 py-3 text-[16px] font-bold text-foreground placeholder:font-normal placeholder:text-muted focus:border-gold focus:outline-none disabled:opacity-40",
+                          rent ? "pe-28" : "pe-16",
+                        )}
                       />
                       <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[13px] font-bold text-muted">
-                        {tc("tnd")}
+                        {rent ? t("tndPerMonth") : tc("tnd")}
                       </span>
                     </div>
                     <div className="mt-2.5 flex flex-wrap gap-2">
@@ -912,6 +1052,62 @@ export function PublishWizard({
                       <Toggle label={t("onRequest")} on={onRequest} onClick={() => setOnRequest((v) => !v)} />
                     </div>
                   </div>
+
+                  {rent && (
+                    <div id="f-rent" className="grid scroll-mt-24 gap-4 sm:grid-cols-2">
+                      <Field
+                        label={t("depositLabel")}
+                        type="number"
+                        value={deposit}
+                        onChange={setDeposit}
+                        placeholder="2400"
+                        suffix={tc("tnd")}
+                      />
+                      <Field
+                        label={t("chargesLabel")}
+                        type="number"
+                        value={charges}
+                        onChange={setCharges}
+                        placeholder="0"
+                        suffix={tc("tnd")}
+                      />
+                      <div className="sm:col-span-2">
+                        <Label>{t("furnishedLabel")}</Label>
+                        <div className="mt-1.5 flex flex-wrap gap-2">
+                          {FURNISHED.map((f) => (
+                            <button
+                              key={f}
+                              type="button"
+                              onClick={() => setFurnished(furnished === f ? "" : f)}
+                              className={cn(
+                                "tap-target rounded-full px-4 py-2 text-[13px] font-bold transition",
+                                furnished === f
+                                  ? "bg-[var(--gold)] text-white"
+                                  : "bg-surface text-muted ring-1 ring-border hover:text-foreground",
+                              )}
+                            >
+                              {t(`furnished.${f}`)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <Field
+                        label={t("availableFromLabel")}
+                        type="date"
+                        value={availableFrom}
+                        onChange={setAvailableFrom}
+                      />
+                      <Field
+                        label={t("minLeaseLabel")}
+                        type="number"
+                        value={minLease}
+                        onChange={setMinLease}
+                        placeholder="12"
+                        suffix={t("monthsUnit")}
+                      />
+                      <p className="text-[11.5px] leading-snug text-muted sm:col-span-2">{t("rentFieldsHint")}</p>
+                    </div>
+                  )}
 
                   <div id="f-title" className={`scroll-mt-24 rounded-xl${flagCls("f-title")}`}>
                     <Field
@@ -994,8 +1190,16 @@ export function PublishWizard({
                       )}
                     </div>
                     <div className="p-3">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-muted">
+                      <span className="inline-flex flex-wrap items-center gap-1 text-[10px] font-bold text-muted">
                         <Home className="size-3" /> {category?.label ?? "—"}
+                        <span
+                          className={cn(
+                            "ms-1 rounded-full px-1.5 py-0.5",
+                            rent ? "bg-gold-faint text-gold" : "bg-surface-2 text-muted",
+                          )}
+                        >
+                          {t(rent ? "dealRent" : "dealSale")}
+                        </span>
                       </span>
                       <h3 className="mt-0.5 line-clamp-2 text-[13.5px] font-bold leading-snug">{title || "—"}</h3>
                       <p className="mazed-tabular mt-1 text-[15px] font-extrabold">{priceText}</p>
@@ -1007,7 +1211,12 @@ export function PublishWizard({
 
                   <div className="space-y-3">
                     <SummaryBlock title={t("steps.where")} editLabel={t("edit")} onEdit={() => goToStep(0)}>
-                      {[category?.label ?? "—", governorateLabel(governorate, locale), delegation.trim()]
+                      {[
+                        t(rent ? "dealRent" : "dealSale"),
+                        category?.label ?? "—",
+                        governorateLabel(governorate, locale),
+                        delegation.trim(),
+                      ]
                         .filter(Boolean)
                         .join(" · ")}
                     </SummaryBlock>
@@ -1034,6 +1243,12 @@ export function PublishWizard({
                         {priceText}
                         {negotiable && !onRequest && Number(price) > 0 && ` · ${t("negotiable")}`}
                       </span>
+                      {rentSummary && <span className="mt-1 block">{rentSummary}</span>}
+                      {moveIn != null && (
+                        <span className="mt-1 block font-bold text-foreground">
+                          {t("moveInCost", { amount: money(moveIn) })}
+                        </span>
+                      )}
                       {attributeSummary && <span className="mt-1 block">{attributeSummary}</span>}
                       {description.trim() ? (
                         <span dir="auto" className="mt-1 line-clamp-3 block">{description.trim()}</span>

@@ -38,12 +38,14 @@ export type HomeListingRow = {
   created_at: string;
   category: { id: string; label_fr: string; label_ar: string | null; kind: string } | null;
   photos: { storage_path: string; sort_order: number }[] | null;
+  deal_type: string | null;
+  availability: string | null;
 };
 
 // Trimmed select — only the columns AnnonceCard and the hero builder read.
 const HOME_LISTING_SELECT = `
   id, title, price, price_on_request, negotiable, governorate, delegation,
-  reference, attributes, published_at, created_at,
+  reference, attributes, published_at, created_at, deal_type, availability,
   category:categories!listings_category_id_fkey ( id, label_fr, label_ar, kind ),
   photos:listing_photos ( storage_path, sort_order )
 `;
@@ -62,8 +64,11 @@ export type HomeFeed = {
   govs: string[];
 };
 
-/** m² price, or null when the listing cannot answer the question. */
+/** m² price, or null when the listing cannot answer the question. A rent is a
+ *  monthly figure: 1 200 TND for 110 m² is not a bargain flat, it is a month's
+ *  rent, and it would top a "cheapest per m²" rail of sales every time. */
 function pricePerSqm(r: HomeListingRow): number | null {
+  if (r.deal_type === "rent") return null;
   if (r.price_on_request || r.price == null) return null;
   const area = Number((r.attributes ?? {}).area_sqm);
   const price = Number(r.price);

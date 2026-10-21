@@ -22,6 +22,7 @@ import {
   type Product,
 } from "@/lib/products";
 import { liveListingCount, moderationSettings } from "@/lib/moderation/server";
+import { asDealType } from "@/lib/listings/deal";
 
 export const dynamic = "force-dynamic";
 
@@ -50,10 +51,12 @@ export const dynamic = "force-dynamic";
 export default async function NewListingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ draft?: string | string[] }>;
+  searchParams: Promise<{ draft?: string | string[]; deal?: string | string[] }>;
 }) {
   const sp = await searchParams;
   const wantedDraft = Array.isArray(sp.draft) ? sp.draft[0] : sp.draft;
+  // « J'ai un bien à louer » on the home page sends ?deal=rent (0166).
+  const initialDeal = asDealType(Array.isArray(sp.deal) ? sp.deal[0] : sp.deal);
   const locale = await getLocale();
   const t = await getTranslations("publish");
   const tRoot = await getTranslations();
@@ -61,7 +64,8 @@ export default async function NewListingPage({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/annonces/nouvelle`)}`);
+    const back = `/${locale}/annonces/nouvelle${initialDeal === "rent" ? "?deal=rent" : ""}`;
+    redirect(`/${locale}/login?next=${encodeURIComponent(back)}`);
   }
 
   const admin = getServiceSupabase();
@@ -81,7 +85,7 @@ export default async function NewListingPage({
       .order("sort_order"),
     admin
       .from("category_attributes")
-      .select("id, category_id, field_key, label, data_type, options, unit, required, sort_order")
+      .select("id, category_id, field_key, label, data_type, options, unit, required, sort_order, deal_types")
       .order("sort_order"),
     admin.from("products").select(PRODUCT_SELECT).eq("is_active", true),
     admin
@@ -103,6 +107,7 @@ export default async function NewListingPage({
         .select(
           `id, category_id, title, description, price, price_on_request, negotiable,
            governorate, delegation, attributes, contact_name, contact_phone, updated_at,
+           deal_type, deposit_amount, charges_amount, furnished, available_from, min_lease_months,
            photos:listing_photos (storage_path, sort_order)`,
         )
         .eq("seller_id", user!.id);
@@ -148,6 +153,7 @@ export default async function NewListingPage({
       options: a.options,
       unit: a.unit === "m²" ? tRoot("common.sqm") : a.unit,
       required: a.required,
+      deal_types: a.deal_types ?? null,
     });
   }
 
@@ -193,6 +199,7 @@ export default async function NewListingPage({
       defaultContactPhone={(profRes.data?.phone as string | null) ?? ""}
       defaultGovernorate={(profRes.data?.governorate as string | null) ?? ""}
       initialDraft={(draftRes.data as unknown as InitialDraft | null) ?? null}
+      initialDeal={initialDeal}
       locale={locale}
     />
   );

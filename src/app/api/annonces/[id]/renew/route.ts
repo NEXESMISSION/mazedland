@@ -51,7 +51,7 @@ export async function POST(
 
   // Only something that has actually come down can be renewed. A live listing
   // renewing itself would be paying twice for one publication.
-  if (!["expired", "archived", "sold"].includes(listing.status as string)) {
+  if (!["expired", "archived", "sold", "rented"].includes(listing.status as string)) {
     const t = await apiTranslator(req, "accountApi.renew");
     return NextResponse.json(
       { error: "not_renewable", detail: t("notRenewable") },

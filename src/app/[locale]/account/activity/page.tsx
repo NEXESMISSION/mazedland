@@ -38,7 +38,7 @@ export const dynamic = "force-dynamic";
 
 type ListingRow = {
     id: string; title: string; price: number | null; price_on_request: boolean;
-    governorate: string; status: string;
+    governorate: string; status: string; deal_type: string | null;
     category: { label_fr: string; label_ar: string | null } | { label_fr: string; label_ar: string | null }[] | null;
     photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
 };
@@ -64,7 +64,7 @@ export default async function ActivityPage() {
     .select(
       `listing_id,
        listing:listings (
-         id, title, price, price_on_request, governorate, status,
+         id, title, price, price_on_request, governorate, status, deal_type,
          category:categories (label_fr, label_ar),
          photos:listing_photos (storage_path, sort_order, is_cover)
        )`,
@@ -148,7 +148,9 @@ export default async function ActivityPage() {
                     <p className="mazed-tabular mt-0.5 text-[13.5px] font-extrabold text-foreground">
                       {l.price_on_request || l.price == null
                         ? t("priceOnRequest")
-                        : t("price", { amount: formatTND(Number(l.price), locale) })}
+                        : t(l.deal_type === "rent" ? "pricePerMonth" : "price", {
+                            amount: formatTND(Number(l.price), locale),
+                          })}
                     </p>
                     <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
                       <MapPin className="size-3" /> {governorateLabel(l.governorate, locale)}
@@ -225,7 +227,9 @@ export default async function ActivityPage() {
                     <p className="mazed-tabular mt-1 text-[15px] font-extrabold text-foreground">
                       {l.price_on_request || l.price == null
                         ? t("onRequest")
-                        : t("price", { amount: formatTND(Number(l.price), locale) })}
+                        : t(l.deal_type === "rent" ? "pricePerMonth" : "price", {
+                            amount: formatTND(Number(l.price), locale),
+                          })}
                     </p>
                     <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
                       <MapPin className="size-3" /> {governorateLabel(l.governorate, locale)}

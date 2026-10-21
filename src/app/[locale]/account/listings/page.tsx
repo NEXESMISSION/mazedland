@@ -6,6 +6,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatDate, formatTND } from "@/lib/utils";
+import { asDealType } from "@/lib/listings/deal";
 import { categoryLabel } from "@/lib/i18n";
 import {
   Plus, Ticket, ImageOff, Clock, CreditCard, PencilLine,
@@ -48,6 +49,7 @@ const STATUS: Record<string, { tone: string; hint?: true }> = {
   rejected:        { tone: "mazed-tone-bad" },
   expired:         { tone: "bg-surface-2 text-muted ring-1 ring-border", hint: true },
   sold:            { tone: "mazed-tone-ok" },
+  rented:          { tone: "mazed-tone-ok" },
   archived:        { tone: "bg-surface-2 text-muted ring-1 ring-border" },
 };
 
@@ -62,10 +64,10 @@ const TABS = [
   { key: "en-ligne",     label: "online",     statuses: ["published"],                          tone: "text-emerald-400" },
   { key: "verification", label: "inProgress", statuses: ["pending_payment", "pending_review"],  tone: "text-amber-400" },
   { key: "a-corriger",   label: "toFix",      statuses: ["rejected", "draft"],                  tone: "text-[var(--danger)]" },
-  { key: "terminees",    label: "ended",      statuses: ["expired", "archived", "sold"],        tone: "text-muted" },
+  { key: "terminees",    label: "ended",      statuses: ["expired", "archived", "sold", "rented"], tone: "text-muted" },
 ] as const;
 
-const RENEWABLE = ["expired", "archived", "sold"];
+const RENEWABLE = ["expired", "archived", "sold", "rented"];
 
 /** The title PublishWizard stores for a draft with none (a marker, not copy). */
 const UNTITLED_DRAFT = "Brouillon";
@@ -93,6 +95,7 @@ export default async function MyListingsPage({
       .from("listings")
       .select(
         `id, title, price, price_on_request, status, rejection_reason, published_at,
+         deal_type, availability,
          expires_at, created_at, category_id, category:categories (label_fr, label_ar),
          photos:listing_photos (storage_path, sort_order, is_cover)`,
       )
@@ -162,6 +165,7 @@ export default async function MyListingsPage({
     id: string; title: string; price: number | null; price_on_request: boolean;
     status: string; rejection_reason: string | null; published_at: string | null;
     expires_at: string | null; created_at: string;
+    deal_type: string | null; availability: string | null;
     category: Category | Category[] | null;
     category_id: string;
     photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
@@ -189,7 +193,9 @@ export default async function MyListingsPage({
   const priceOf = (l: Row) =>
     l.price_on_request || l.price == null
       ? t("priceOnRequest")
-      : t("price", { amount: formatTND(Number(l.price), locale) });
+      : t(asDealType(l.deal_type) === "rent" ? "pricePerMonth" : "price", {
+          amount: formatTND(Number(l.price), locale),
+        });
 
   const date = (v: string | null) => (v ? formatDate(v, locale, "medium") : "—");
 
@@ -231,6 +237,11 @@ export default async function MyListingsPage({
    * under review says so, instead of « À payer ».
    */
   function statusOf(l: Row) {
+    // Held for someone who has not signed yet: still online, but the seller
+    // should see at a glance which ones are spoken for.
+    if (l.status === "published" && l.availability === "reserved") {
+      return { label: t("status.reserved"), tone: "mazed-tone-warn", hint: undefined };
+    }
     if (l.status === "pending_payment" && reviewFor.has(l.id)) {
       return {
         label: t("receiptInReview"),
@@ -313,11 +324,15 @@ export default async function MyListingsPage({
         >
           {t("view")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
         </Link>
-        {/* Say it is sold, or take it down — neither was possible from here. */}
+        {/* Say it is sold or let, hold it for someone, or take it down. */}
         {l.status === "published" && (
           <ListingStatusActions
             listingId={l.id}
-            actions={["mark_sold", "withdraw"]}
+            actions={[
+              asDealType(l.deal_type) === "rent" ? "mark_rented" : "mark_sold",
+              l.availability === "reserved" ? "unreserve" : "reserve",
+              "withdraw",
+            ]}
             block={block}
           />
         )}

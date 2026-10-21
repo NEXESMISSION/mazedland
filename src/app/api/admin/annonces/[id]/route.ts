@@ -5,6 +5,7 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { publishListing } from "@/lib/listings/publish";
+import { asDealType, closedStatus } from "@/lib/listings/deal";
 
 /**
  * Everything an admin can do to one annonce.
@@ -75,7 +76,7 @@ export async function POST(
   const { data: listing } = await admin
     .from("listings")
     .select(
-      "id, seller_id, title, status, seller_credit_id, fee_payment_id, contact_phone, expires_at",
+      "id, seller_id, title, status, seller_credit_id, fee_payment_id, contact_phone, expires_at, deal_type",
     )
     .eq("id", id)
     .maybeSingle();
@@ -290,18 +291,20 @@ export async function POST(
         { status: 409 },
       );
     }
+    // A rental closes as let, not sold — the outcome counted for each deal.
+    const closed = closedStatus(asDealType(listing.deal_type));
     const { error } = await admin
       .from("listings")
       .update({
-        status: "sold",
+        status: closed,
         reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", id);
     if (error) return fail("listing_sold_failed", 500, error);
 
-    logAction(req, user, "admin.listing.mark_sold", { id });
-    return NextResponse.json({ ok: true, status: "sold" });
+    logAction(req, user, "admin.listing.mark_sold", { id, status: closed });
+    return NextResponse.json({ ok: true, status: closed });
   }
 
   // ── Edit ──────────────────────────────────────────────────────────────────

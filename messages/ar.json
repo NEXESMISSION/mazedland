@@ -104,7 +104,9 @@
         "rejected": "للتصحيح",
         "expired": "منتهي الصلاحية",
         "sold": "مُباع",
-        "archived": "مسحوب"
+        "archived": "مسحوب",
+        "reserved": "محجوز",
+        "rented": "مُؤجَّر"
       },
       "statusHint": {
         "draft": "لم يُرسل بعد.",
@@ -141,7 +143,8 @@
       "emptyTabTitle": "ما فما شي في « {tab} »",
       "emptyTabBody": "بقية إعلاناتك في الخانات الأخرى.",
       "seeAll": "شوف الإعلانات الكل",
-      "freePlaces": "{used}/{limit} إعلانات مجانية مستعملة"
+      "freePlaces": "{used}/{limit} إعلانات مجانية مستعملة",
+      "pricePerMonth": "{amount} د.ت في الشهر"
     },
     "listingActions": {
       "mark_sold": {
@@ -167,7 +170,28 @@
       },
       "failed": "تعذّر تنفيذ الإجراء حاليًا.",
       "networkError": "خطأ في الشبكة — تحقّق من اتصالك.",
-      "cancel": "إلغاء"
+      "cancel": "إلغاء",
+      "mark_rented": {
+        "label": "تكرى",
+        "title": "العقار هذا تكرى؟",
+        "body": "سيُسحب الإعلان من الموقع وينتقل إلى « منتهية ». ما دامت الأيام المدفوعة سارية، يمكنك إعادة نشره مجانًا.",
+        "confirm": "إيه، تكرى",
+        "done": "تسجّل الإعلان كمُؤجَّر. مبروك!"
+      },
+      "reserve": {
+        "label": "محجوز",
+        "title": "تعلّمو محجوز؟",
+        "body": "الإعلان يبقى في الموقع وعليه «محجوز»: فما شكون التزم أما مازال ما صحّحش. كان ما تمّش، نحّي العلامة بنقرة.",
+        "confirm": "علّمو محجوز",
+        "done": "الإعلان تعلّم محجوز."
+      },
+      "unreserve": {
+        "label": "موش محجوز",
+        "title": "تنحّي علامة «محجوز»؟",
+        "body": "الإعلان يرجع متاح لكل الزوّار.",
+        "confirm": "نحّي العلامة",
+        "done": "الإعلان رجع متاح."
+      }
     },
     "renew": {
       "failed": "تعذّر التجديد.",
@@ -242,7 +266,8 @@
       "priceOnRequest": "السعر عند الطلب",
       "onRequest": "عند الطلب",
       "price": "{amount} د.ت",
-      "unavailable": "لم يعد متاحًا"
+      "unavailable": "لم يعد متاحًا",
+      "pricePerMonth": "{amount} د.ت في الشهر"
     },
     "deleteAccount": {
       "blockers": {
@@ -715,7 +740,10 @@
     "specBathrooms": "{count, plural, zero {# حمّامات} one {حمّام واحد} two {حمّامان} few {# حمّامات} many {# حمّامًا} other {# حمّام}}",
     "pagination": "التنقّل بين الصفحات",
     "previous": "السابق",
-    "next": "التالي"
+    "next": "التالي",
+    "forRent": "للكراء",
+    "reserved": "محجوز",
+    "rentAmount": "{amount} د.ت في الشهر"
   },
   "listing": {
     "metaNotFound": "الإعلان غير موجود — Mazed Immo",
@@ -732,7 +760,8 @@
       "rejected": "بحاجة إلى تعديل",
       "expired": "منتهي الصلاحية",
       "sold": "مُباع",
-      "archived": "مسحوب من النشر"
+      "archived": "مسحوب من النشر",
+      "rented": "مُؤجَّر"
     },
     "previewTitle": "معاينة خاصة — {status}",
     "previewBody": "هذا الإعلان غير ظاهر للعموم.",
@@ -771,7 +800,7 @@
       "reasons": {
         "scam": "تحيّل ولا طلب فلوس مشبوه",
         "wrong_info": "معلومات غالطة (السعر، الصور، المساحة)",
-        "sold": "العقار تباع",
+        "sold": "العقار تباع ولا تكرى",
         "duplicate": "إعلان مكرّر",
         "inappropriate": "محتوى غير لائق",
         "other": "سبب آخر"
@@ -782,6 +811,27 @@
       "thanks": "يعيشك، التبليغ متاعك وصل.",
       "failed": "تعذّر التبليغ حاليًا.",
       "alreadySent": "التبليغ وصل. يعيشك."
+    },
+    "forRent": "للكراء",
+    "forSale": "للبيع",
+    "reserved": "محجوز",
+    "tndPerMonth": "د.ت / شهر",
+    "rentAmount": "{amount} د.ت في الشهر",
+    "rent": {
+      "deposit": "الضمان",
+      "charges": "المصاريف",
+      "perMonth": "{amount} في الشهر",
+      "noCharges": "ما فماش",
+      "moveIn": "عند الدخول (الكراء والضمان والمصاريف)",
+      "furnished": "الفرش",
+      "furnishedValue": {
+        "furnished": "مفروش",
+        "semi": "نص مفروش",
+        "unfurnished": "فارغ"
+      },
+      "availableFrom": "فارغ من نهار",
+      "minLease": "أقل مدّة",
+      "months": "{count, plural, zero {# شهر} one {شهر واحد} two {شهرين} few {# شهور} many {# شهر} other {# شهر}}"
     }
   },
   "listingApi": {
@@ -827,7 +877,13 @@
     "year_built": "سنة البناء",
     "buildable": "صالحة للبناء",
     "titled": "رسم عقاري",
-    "serviced": "مربوطة بالشبكات"
+    "serviced": "مربوطة بالشبكات",
+    "air_conditioning": "مكيّف",
+    "heating": "تدفئة مركزية",
+    "elevator": "مصعد",
+    "parking": "مأوى سيارة",
+    "garden": "جنينة",
+    "pool": "مسبح"
   },
   "apiErrors": {
     "auth": "انتهت صلاحية الجلسة. سجّل دخولك من جديد للمواصلة.",
@@ -1001,7 +1057,7 @@
     "preview": "معاينة",
     "noPhoto": "ما فماش صورة",
     "priceOnRequestShort": "عند الطلب",
-    "attestation": "أصرّح على شرفي بأنّ جميع المعلومات والصور والوثائق المقدَّمة صحيحة وكاملة وتخصّ هذا العقار فعلًا. وأصرّح بأنّني مالكه أو مفوَّض لبيعه. وأتحمّل وحدي المسؤولية عن كلّ معلومة خاطئة أو غير دقيقة أو مضلِّلة. وفي حال التصريح الكاذب، يحقّ لمنصّة Mazed Immo رفض الإعلان أو سحبه والاحتفاظ بالمعاليم التي تمّ دفعها.",
+    "attestation": "أصرّح على شرفي بأنّ جميع المعلومات والصور والوثائق المقدَّمة صحيحة وكاملة وتخصّ هذا العقار فعلًا. وأصرّح بأنّني مالكه أو مفوَّض لبيعه أو لكرائه. وأتحمّل وحدي المسؤولية عن كلّ معلومة خاطئة أو غير دقيقة أو مضلِّلة. وفي حال التصريح الكاذب، يحقّ لمنصّة Mazed Immo رفض الإعلان أو سحبه والاحتفاظ بالمعاليم التي تمّ دفعها.",
     "feeFromPlan": "النشر من باقتك",
     "feePublication": "النشر",
     "feeLabel": "معلوم النشر",
@@ -1066,7 +1122,41 @@
     "tipPriceOk": "السعر معقول بالنسبة للمساحة.",
     "tipDescription": "زيد كم سطر في الوصف: الحالة، الحومة، المزايا.",
     "tipDescriptionOk": "الوصف مكتوب.",
-    "fix": "صلّح"
+    "fix": "صلّح",
+    "dealTitle": "شنوّة تحب تعمل؟",
+    "dealSaleCta": "نبيع",
+    "dealSaleHint": "سعر بيع، يتخلّص مرّة وحدة",
+    "dealRentCta": "نكري",
+    "dealRentHint": "كراء، كل شهر",
+    "dealSale": "للبيع",
+    "dealRent": "للكراء",
+    "categoryTitleRent": "شنوّة تحب تكري؟",
+    "titleForRent": "{category} للكراء",
+    "rentTitle": "العنوان والكراء",
+    "rentHint": "نقترح العنوان حسب ما أدخلته. الكراء هو المبلغ في الشهر؛ والباقي عمّر اللي تعرفو.",
+    "rentLabel": "الكراء في الشهر",
+    "tndPerMonth": "د.ت / شهر",
+    "depositLabel": "الضمان (الكوسيون)",
+    "chargesLabel": "المصاريف في الشهر",
+    "furnishedLabel": "الفرش",
+    "furnished": {
+      "furnished": "مفروش",
+      "semi": "نص مفروش",
+      "unfurnished": "فارغ"
+    },
+    "availableFromLabel": "فارغ من نهار",
+    "minLeaseLabel": "أقل مدّة",
+    "monthsUnit": "شهر",
+    "rentFieldsHint": "الضمان والمصاريف والتاريخ يظهرو في الإعلان. وكي يكون الضمان والمصاريف مكتوبين، نوريو زادة قدّاش يكلّف الدخول.",
+    "perMonth": "{amount} في الشهر",
+    "rentDepositShort": "ضمان {amount}",
+    "rentChargesShort": "مصاريف {amount} في الشهر",
+    "rentNoCharges": "بلا مصاريف",
+    "availableFromShort": "فارغ من {date}",
+    "minLeaseShort": "{count, plural, zero {بلا أقل مدّة} one {شهر على الأقل} two {شهرين على الأقل} few {# شهور على الأقل} many {# شهر على الأقل} other {# شهر على الأقل}}",
+    "moveInCost": "عند الدخول: {amount} (الكراء والضمان والمصاريف)",
+    "missingRent": "أدخل مبلغ الكراء في الشهر، أو اختر «السعر عند الطلب».",
+    "tipPriceRent": "الكراء يبان غريب على هذه المساحة. ثبّت إلّي هو المبلغ في الشهر."
   },
   "photoUploader": {
     "addPhotos": "زيد صورك",
@@ -1108,7 +1198,8 @@
       "published": "منشور",
       "expired": "منتهي الصلاحية",
       "archived": "مؤرشف",
-      "sold": "مُباع"
+      "sold": "مُباع",
+      "rented": "مُؤجَّر"
     },
     "contactRequired": "أضف رقم هاتف يمكن الاتصال به.",
     "attestationRequired": "يجب الموافقة على التصريح على الشرف.",
@@ -2167,7 +2258,8 @@
       "failed": "مرفوض",
       "individual": "خاص",
       "agency": "وكالة عقارية",
-      "admin": "مشرف"
+      "admin": "مشرف",
+      "rented": "مُؤجَّر"
     },
     "paymentKind": {
       "listing_fee": "نشر الإعلان",
@@ -2347,8 +2439,11 @@
       "cancel": "إلغاء",
       "save": "حفظ",
       "reviewWhy": "علاش يستنّى في المراجعة",
-      "reportsTitle": "{count, plural, zero {ما فماش تبليغات} one {تبليغ واحد} two {تبليغين} few {# تبليغات} many {# تبليغًا} other {# تبليغ}}"
-    }
+      "reportsTitle": "{count, plural, zero {ما فماش تبليغات} one {تبليغ واحد} two {تبليغين} few {# تبليغات} many {# تبليغًا} other {# تبليغ}}",
+      "rented": "تمّ الكراء"
+    },
+    "forRent": "للكراء",
+    "perMonth": "{amount} في الشهر"
   },
   "adminSellers": {
     "title": "البائعون",
@@ -2537,7 +2632,7 @@
     "reasons": {
       "scam": "تحيّل",
       "wrong_info": "معلومات غالطة",
-      "sold": "تباع",
+      "sold": "تباع ولا تكرى",
       "duplicate": "مكرّر",
       "inappropriate": "محتوى غير لائق",
       "other": "سبب آخر"

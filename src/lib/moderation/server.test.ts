@@ -77,6 +77,7 @@ const listing = (over: Row = {}): Row => ({
   governorate: "Sfax",
   attributes: { area_sqm: 250 },
   fee_payment_id: null,
+  deal_type: "sale",
   status: "draft",
   review_flags: [],
   ...over,
@@ -87,12 +88,13 @@ function db({
   photos = 4,
   extraListings = [] as Row[],
   banned = false,
-}: { approvedBefore: boolean; photos?: number; extraListings?: Row[]; banned?: boolean }) {
+  main = {},
+}: { approvedBefore: boolean; photos?: number; extraListings?: Row[]; banned?: boolean; main?: Row }) {
   const previous = approvedBefore
     ? [listing({ id: "OLD", status: "expired", reviewed_by: "ADMIN", published_at: "2026-09-01", title: "Autre bien" })]
     : [];
   return fakeAdmin({
-    listings: [listing(), ...previous, ...extraListings],
+    listings: [listing(main), ...previous, ...extraListings],
     listing_photos: Array.from({ length: photos }, (_, i) => ({ id: `p${i}`, listing_id: "L1" })),
     categories: [{ id: "C-villas", kind: "residential" }],
     profiles: [{ id: "S", banned_at: banned ? "2026-10-01" : null }],
@@ -134,6 +136,23 @@ describe("publishOrQueue", () => {
     expect(await publishOrQueue(client, "L1", SETTINGS)).toEqual({
       status: "pending_review",
       flags: ["duplicate"],
+    });
+  });
+
+  it("lets the same flat be offered for sale and for rent at once", async () => {
+    const forRent = listing({ id: "L2", status: "published", deal_type: "rent", price: 1_800 });
+    const { client } = db({ approvedBefore: true, extraListings: [forRent] });
+    expect((await publishOrQueue(client, "L1", SETTINGS)).status).toBe("published");
+  });
+
+  it("judges a rental's price as a monthly rent", async () => {
+    // 1 800 TND a month for 250 m² is a rent; as a sale price it would be held.
+    const rental = db({ approvedBefore: true, main: { deal_type: "rent", price: 1_800 } });
+    expect((await publishOrQueue(rental.client, "L1", SETTINGS)).status).toBe("published");
+    const sale = db({ approvedBefore: true, main: { price: 1_800 } });
+    expect(await publishOrQueue(sale.client, "L1", SETTINGS)).toEqual({
+      status: "pending_review",
+      flags: ["price_implausible"],
     });
   });
 
