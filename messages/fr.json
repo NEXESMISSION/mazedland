@@ -2255,7 +2255,9 @@
       "closeMenu": "Fermer le menu",
       "label": "Navigation admin",
       "results": "Résultats",
-      "resultsHint": "Annonces, audience, contacts et revenus par mois"
+      "resultsHint": "Annonces, audience, contacts et revenus par mois",
+      "demandes": "Demandes",
+      "demandesHint": "Ce que cherchent acheteurs et locataires"
     },
     "siteTabs": {
       "label": "Sections du site",
@@ -2497,7 +2499,13 @@
       "rented": "Louée"
     },
     "forRent": "À louer",
-    "perMonth": "{amount} / mois"
+    "perMonth": "{amount} / mois",
+    "dealAria": "Vente ou location",
+    "deal": {
+      "all": "Tout",
+      "sale": "Vente",
+      "rent": "Location"
+    }
   },
   "adminSellers": {
     "title": "Vendeurs",
@@ -2695,7 +2703,7 @@
   "adminResults": {
     "eyebrow": "Pilotage",
     "title": "Résultats",
-    "description": "Ce que la plateforme produit, mois par mois : annonces, audience, contacts et revenus.",
+    "description": "Ce que la plateforme produit, mois par mois : annonces, audience, contacts, demandes et revenus — vente et location à part.",
     "unavailable": "Service momentanément indisponible.",
     "tnd": "TND",
     "liveNow": "Annonces en ligne",
@@ -2708,7 +2716,9 @@
       "accounts": "Nouveaux comptes",
       "views": "Vues d'annonces",
       "reveals": "Numéros affichés",
-      "revenue": "Revenus"
+      "revenue": "Revenus",
+      "demandes": "Demandes",
+      "matches": "Correspondances"
     },
     "byKindTitle": "Revenus par type, sur 6 mois",
     "noRevenue": "Aucun paiement validé sur la période.",
@@ -2720,7 +2730,12 @@
       "badge": "Badge vérifié",
       "renewal": "Renouvellements",
       "subscription": "Abonnements"
-    }
+    },
+    "liveSale": "En ligne · vente",
+    "liveRent": "En ligne · location",
+    "demandesActive": "Demandes actives",
+    "pairLegend": "vente · location",
+    "pairLegendDemandes": "achat · location"
   },
   "requests": {
     "unavailable": "Service momentanément indisponible.",
@@ -2798,5 +2813,46 @@
     "budgetRequired": "Indiquez un budget maximum.",
     "budgetOrder": "Le minimum dépasse le maximum.",
     "tooMany": "Vous avez déjà {max} demandes actives. Mettez-en une en pause ou supprimez-la."
+  },
+  "adminDemandes": {
+    "eyebrow": "Demande",
+    "title": "Demandes",
+    "description": "Ce que les acheteurs et les locataires cherchent sans l'avoir trouvé — et combien d'annonces leur ont répondu.",
+    "unavailable": "Service momentanément indisponible.",
+    "tabs": {
+      "all": "Toutes",
+      "sale": "Achat",
+      "rent": "Location"
+    },
+    "empty": "Aucune demande pour l'instant.",
+    "cols": {
+      "date": "Date",
+      "person": "Personne",
+      "search": "Recherche",
+      "budget": "Budget max",
+      "status": "État",
+      "matches": "Correspondances"
+    },
+    "noName": "Sans nom",
+    "kindBuy": "Achat",
+    "kindRent": "Location",
+    "anyCategory": "tous types",
+    "anywhere": "toute la Tunisie",
+    "surfaceAtLeast": "{area} m² ou plus",
+    "furnished": {
+      "furnished": "Meublé",
+      "semi": "Semi-meublé",
+      "unfurnished": "Vide"
+    },
+    "moveIn": "entrée avant le {date}",
+    "perMonth": "/ mois",
+    "from": "à partir de {amount}",
+    "status": {
+      "active": "Active",
+      "paused": "En pause",
+      "expired": "Expirée"
+    },
+    "alertsOff": "alertes coupées",
+    "note": "Les {max} plus récentes. Une demande appartient à la personne qui l'a laissée : cette page ne la modifie pas."
   }
 }

@@ -91,9 +91,11 @@ const LIST_SELECT = `
 export default async function AdminAnnoncesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string; deal?: string }>;
 }) {
   const sp = await searchParams;
+  // Sale, rent or both (0166): the same queue, narrowed to one deal.
+  const deal = sp.deal === "sale" || sp.deal === "rent" ? sp.deal : null;
   const admin = getServiceSupabase();
   // One binding per line, not a destructured Promise.all: scripts/i18n-check
   // only sees `const t = await getTranslations(…)`.
@@ -144,12 +146,14 @@ export default async function AdminAnnoncesPage({
    */
   const countsQuery = () => {
     let query = admin.from("listings").select("status, expires_at");
+    if (deal) query = query.eq("deal_type", deal);
     if (q) query = query.or(OR);
     return query;
   };
 
   const listQuery = () => {
     let query = admin.from("listings").select(LIST_SELECT, { count: "exact" });
+    if (deal) query = query.eq("deal_type", deal);
     for (const f of tabFilters(tab)) {
       if (f.op === "eq") query = query.eq(f.col, f.val);
       else if (f.op === "gte") query = query.gte(f.col, f.val);
@@ -253,7 +257,17 @@ export default async function AdminAnnoncesPage({
   const base = new URLSearchParams();
   if (sp.status) base.set("status", sp.status);
   if (sp.q) base.set("q", sp.q);
+  if (deal) base.set("deal", deal);
   if (sp.page) base.set("page", sp.page);
+
+  /** The deal switch keeps the tab and the search, and starts at page 1. */
+  const dealHref = (k: "all" | "sale" | "rent") => {
+    const p = new URLSearchParams();
+    if (sp.status) p.set("status", sp.status);
+    if (sp.q) p.set("q", sp.q);
+    if (k !== "all") p.set("deal", k);
+    return `/admin/annonces${p.toString() ? `?${p.toString()}` : ""}`;
+  };
   const hrefBase = `/admin/annonces?${base.toString()}${base.toString() ? "&" : ""}`;
   const listHref = `/admin/annonces${base.toString() ? `?${base.toString()}` : ""}`;
 
@@ -270,6 +284,24 @@ export default async function AdminAnnoncesPage({
           searchPlaceholder={t("searchPlaceholder")}
           resetParams={["page", "a"]}
         />
+        <nav aria-label={t("dealAria")} className="hidden shrink-0 items-center gap-0.5 rounded-lg bg-surface-2 p-0.5 md:flex">
+          {(["all", "sale", "rent"] as const).map((k) => {
+            const on = (deal ?? "all") === k;
+            return (
+              <Link
+                key={k}
+                href={dealHref(k) as never}
+                aria-current={on ? "page" : undefined}
+                className={
+                  "rounded-md px-2.5 py-1 text-[11.5px] font-semibold transition " +
+                  (on ? "bg-surface text-foreground shadow-sm" : "text-muted hover:text-foreground")
+                }
+              >
+                {t(`deal.${k}`)}
+              </Link>
+            );
+          })}
+        </nav>
         {/* The admin-side creation form never came across from Auto, so this
             pointed at a 404. It opens the seller wizard instead — the same
             form, which is what an admin taking an annonce over the phone
