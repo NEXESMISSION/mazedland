@@ -770,7 +770,25 @@
       "500-1000": "500 – 1000 د.ت",
       "1000-2000": "1000 – 2000 د.ت",
       "2000-plus": "2000 د.ت وأكثر"
-    }
+    },
+    "moreFilters": "فلاتر أخرى",
+    "moreNone": "المساحة، الغرف…",
+    "surfaceMin": "أقل مساحة (م²)",
+    "roomsMin": "الغرف",
+    "roomsAtLeast": "S+{count} ولا أكثر",
+    "anyValue": "ما يهمّش",
+    "furnishedLabel": "الفرش",
+    "furnished": {
+      "furnished": "مفروش",
+      "semi": "نص مفروش",
+      "unfurnished": "فارغ"
+    },
+    "availBy": "فارغ قبل نهار",
+    "surfaceChip": "{area} م² ولا أكثر",
+    "roomsChip": "S+{count} ولا أكثر",
+    "availChip": "فارغ قبل {date}",
+    "clearMore": "نحّي الفلاتر هذي",
+    "availUnconfirmed": "تاريخ التوفّر موش مذكور"
   },
   "listing": {
     "metaNotFound": "الإعلان غير موجود — Mazed Immo",

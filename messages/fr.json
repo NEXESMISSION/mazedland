@@ -770,7 +770,25 @@
       "500-1000": "500 – 1 000",
       "1000-2000": "1 000 – 2 000",
       "2000-plus": "2 000 et plus"
-    }
+    },
+    "moreFilters": "Plus de filtres",
+    "moreNone": "Surface, pièces…",
+    "surfaceMin": "Surface min. (m²)",
+    "roomsMin": "Pièces",
+    "roomsAtLeast": "S+{count} ou plus",
+    "anyValue": "Peu importe",
+    "furnishedLabel": "Ameublement",
+    "furnished": {
+      "furnished": "Meublé",
+      "semi": "Semi-meublé",
+      "unfurnished": "Vide"
+    },
+    "availBy": "Libre au plus tard le",
+    "surfaceChip": "≥ {area} m²",
+    "roomsChip": "S+{count} ou plus",
+    "availChip": "Libre avant le {date}",
+    "clearMore": "Effacer ces filtres",
+    "availUnconfirmed": "Date de disponibilité non précisée"
   },
   "listing": {
     "metaNotFound": "Annonce introuvable — Mazed Immo",

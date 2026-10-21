@@ -9,7 +9,8 @@ import { searchTokens } from "@/lib/search";
 import { PRICE_BUCKETS, RENT_BUCKETS, TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
-import { ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, Wallet, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, SlidersHorizontal, Wallet, X } from "lucide-react";
+import { FURNISHED, isoDay, type Furnished } from "@/lib/listings/deal";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,8 @@ export const dynamic = "force-dynamic";
  * telephones the seller.
  *
  * It reads `listings` (0146). Filters are the deal (sale or rent, 0166),
- * category, governorate, keyword and a price range; the page is written
+ * category, governorate, keyword, a price range, a minimum surface and number
+ * of rooms, and for a rental whether it is furnished and when it is free; the page is written
  * against the shared design tokens, so it takes whichever palette the site
  * defines.
  *
@@ -73,6 +75,7 @@ type Row = {
   published_at: string | null;
   deal_type: string | null;
   availability: string | null;
+  available_from: string | null;
   category:
     | { label_fr: string; label_ar: string | null; kind: string }
     | { label_fr: string; label_ar: string | null; kind: string }[]
@@ -171,6 +174,20 @@ export default async function AnnoncesPage({
   };
   const min = positive(sp.min ?? sp.min_price);
   const max = positive(sp.max ?? sp.max_price);
+  // « Plus de filtres ». Surface and rooms live in `attributes`, which the
+  // wizard requires for every category that has them, so a hard minimum loses
+  // nothing. Furnished and the date only mean something for a rental.
+  const surface = positive(sp.surface);
+  const roomsMin = (() => {
+    const n = Math.floor(Number(sp.rooms));
+    return n >= 1 && n <= 10 ? n : null;
+  })();
+  const furnished: Furnished | null =
+    deal === "rent" && (FURNISHED as readonly string[]).includes(sp.furnished ?? "")
+      ? (sp.furnished as Furnished)
+      : null;
+  const availBy = deal === "rent" ? isoDay(sp.avail) : null;
+  const moreActive = Boolean(surface || roomsMin || furnished || availBy);
   const requestedPage = Math.max(1, Math.floor(Number(sp.page)) || 1);
 
   if (!admin) {
@@ -194,7 +211,7 @@ export default async function AnnoncesPage({
     .from("listings")
     .select(
       `id, title, price, price_on_request, negotiable, governorate, attributes, published_at,
-       deal_type, availability,
+       deal_type, availability, available_from,
        category:categories (label_fr, label_ar, kind),
        photos:listing_photos (storage_path, sort_order)`,
       { count: "exact" },
@@ -209,6 +226,13 @@ export default async function AnnoncesPage({
   for (const token of searchTokens(sp.q)) q = q.ilike("search_text", `%${token}%`);
   if (min) q = q.gte("price", min);
   if (max) q = q.lte("price", max);
+  // jsonb numbers compare as numbers through the arrow operator.
+  if (surface) q = q.gte("attributes->area_sqm", surface);
+  if (roomsMin) q = q.gte("attributes->rooms", roomsMin);
+  if (furnished) q = q.eq("furnished", furnished);
+  // Free by that date — or the owner did not say: those stay in, flagged on
+  // the card as not confirmed rather than silently dropped or silently passed.
+  if (availBy) q = q.or(`available_from.is.null,available_from.lte.${availBy}`);
 
   if (sort === "cheap") q = q.order("price", { ascending: true, nullsFirst: false });
   else if (sort === "dear") q = q.order("price", { ascending: false, nullsFirst: false });
@@ -274,6 +298,10 @@ export default async function AnnoncesPage({
     const merged = {
       deal: deal ?? undefined, cat: sp.cat, gov: sp.gov, sort: sp.sort, q: sp.q,
       min: min ? String(min) : undefined, max: max ? String(max) : undefined,
+      surface: surface ? String(surface) : undefined,
+      rooms: roomsMin ? String(roomsMin) : undefined,
+      furnished: furnished ?? undefined,
+      avail: availBy ?? undefined,
       ...next,
     };
     for (const [k, v] of Object.entries(merged)) if (v) p.set(k, v);
@@ -300,6 +328,10 @@ export default async function AnnoncesPage({
         {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
         {min ? <input type="hidden" name="min" value={String(min)} /> : null}
         {max ? <input type="hidden" name="max" value={String(max)} /> : null}
+        {surface ? <input type="hidden" name="surface" value={String(surface)} /> : null}
+        {roomsMin ? <input type="hidden" name="rooms" value={String(roomsMin)} /> : null}
+        {furnished && <input type="hidden" name="furnished" value={furnished} />}
+        {availBy && <input type="hidden" name="avail" value={availBy} />}
         <Search
           aria-hidden
           className="pointer-events-none absolute start-4 top-1/2 size-4 -translate-y-1/2 text-muted"
@@ -328,7 +360,14 @@ export default async function AnnoncesPage({
               key={k}
               role="tab"
               aria-selected={on}
-              href={qs({ deal: k === "all" ? undefined : k, min: undefined, max: undefined }) as never}
+              href={qs({
+                deal: k === "all" ? undefined : k,
+                min: undefined,
+                max: undefined,
+                // Rental-only filters do not follow the visitor to the sales.
+                furnished: k === "rent" ? furnished ?? undefined : undefined,
+                avail: k === "rent" ? availBy ?? undefined : undefined,
+              }) as never}
               className={
                 "inline-flex h-9 items-center justify-center rounded-lg px-4 text-[13px] font-bold transition " +
                 (on ? "bg-[var(--gold)] text-white shadow-[var(--shadow-gold)]" : "text-muted hover:text-foreground")
@@ -483,6 +522,10 @@ export default async function AnnoncesPage({
             {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
             {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
             {sp.q && <input type="hidden" name="q" value={sp.q} />}
+            {surface ? <input type="hidden" name="surface" value={String(surface)} /> : null}
+            {roomsMin ? <input type="hidden" name="rooms" value={String(roomsMin)} /> : null}
+            {furnished && <input type="hidden" name="furnished" value={furnished} />}
+            {availBy && <input type="hidden" name="avail" value={availBy} />}
             {/* 16px, like the search field: iOS zooms into anything smaller. */}
             <label className="flex-1 basis-28 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
               {t("minLabel")}
@@ -520,6 +563,113 @@ export default async function AnnoncesPage({
         </div>
       </details>
 
+      {/* ── Plus de filtres ───────────────────────────────────────────────
+          Same shape as the budget: a GET form in a <details>, working before
+          any JavaScript. Open on arrival when one of its filters is set. */}
+      <details open={moreActive} className="mt-2 overflow-hidden rounded-2xl border border-border bg-surface">
+        <summary className="tap-target flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5">
+          <span className="inline-flex items-center gap-2 text-[12.5px] font-bold text-foreground">
+            <SlidersHorizontal className="size-4 text-muted" strokeWidth={2} />
+            {t("moreFilters")}
+          </span>
+          <span className={`text-[11.5px] font-semibold ${moreActive ? "text-gold" : "text-muted"}`}>
+            {moreActive
+              ? [
+                  surface ? t("surfaceChip", { area: formatNumber(surface, locale) }) : null,
+                  roomsMin ? t("roomsChip", { count: roomsMin }) : null,
+                  furnished ? t(`furnished.${furnished}`) : null,
+                  availBy ? t("availChip", { date: availBy.split("-").reverse().join("/") }) : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              : t("moreNone")}
+          </span>
+        </summary>
+
+        <form
+          action={`/${locale}/annonces`}
+          method="get"
+          className="grid gap-3 border-t border-border p-3 sm:grid-cols-2"
+        >
+          {deal && <input type="hidden" name="deal" value={deal} />}
+          {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
+          {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
+          {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
+          {sp.q && <input type="hidden" name="q" value={sp.q} />}
+          {min ? <input type="hidden" name="min" value={String(min)} /> : null}
+          {max ? <input type="hidden" name="max" value={String(max)} /> : null}
+
+          <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+            {t("surfaceMin")}
+            <input
+              type="number"
+              name="surface"
+              min={0}
+              step={10}
+              inputMode="numeric"
+              defaultValue={surface ? String(surface) : ""}
+              placeholder="100"
+              className="mazed-tabular mt-1 h-11 w-full rounded-xl border border-border bg-surface-2 px-3 text-[16px] font-bold text-foreground outline-none transition placeholder:font-normal placeholder:text-muted focus:border-gold-soft focus:bg-surface"
+            />
+          </label>
+
+          <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+            {t("roomsMin")}
+            <select
+              name="rooms"
+              defaultValue={roomsMin ? String(roomsMin) : ""}
+              className="mt-1 h-11 w-full appearance-none rounded-xl border border-border bg-surface-2 px-3 text-[15px] font-bold text-foreground outline-none focus:border-gold-soft"
+            >
+              <option value="">{t("anyValue")}</option>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <option key={n} value={n}>{t("roomsAtLeast", { count: n })}</option>
+              ))}
+            </select>
+          </label>
+
+          {deal === "rent" && (
+            <>
+              <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+                {t("furnishedLabel")}
+                <select
+                  name="furnished"
+                  defaultValue={furnished ?? ""}
+                  className="mt-1 h-11 w-full appearance-none rounded-xl border border-border bg-surface-2 px-3 text-[15px] font-bold text-foreground outline-none focus:border-gold-soft"
+                >
+                  <option value="">{t("anyValue")}</option>
+                  {FURNISHED.map((f) => (
+                    <option key={f} value={f}>{t(`furnished.${f}`)}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+                {t("availBy")}
+                <input
+                  type="date"
+                  name="avail"
+                  defaultValue={availBy ?? ""}
+                  className="mt-1 h-11 w-full rounded-xl border border-border bg-surface-2 px-3 text-[15px] font-bold text-foreground outline-none focus:border-gold-soft"
+                />
+              </label>
+            </>
+          )}
+
+          <div className="flex items-center gap-2 sm:col-span-2">
+            <button type="submit" className="mazed-btn-luxe tap-target h-11 px-5 text-[12.5px]">
+              {t("apply")}
+            </button>
+            {moreActive && (
+              <Link
+                href={qs({ surface: undefined, rooms: undefined, furnished: undefined, avail: undefined }) as never}
+                className="tap-target inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11.5px] font-semibold text-muted transition hover:text-foreground"
+              >
+                <X className="size-3" strokeWidth={2.5} /> {t("clearMore")}
+              </Link>
+            )}
+          </div>
+        </form>
+      </details>
+
       <p className="mt-4 text-[12.5px] text-muted">
         {t("resultCount", { count: total })}
         {sp.q?.trim() && (
@@ -543,7 +693,7 @@ export default async function AnnoncesPage({
           <p className="mt-1 text-[12.5px] text-muted">{t("emptyBody")}</p>
           {/* A way out. Seven of the eight category chips are empty at this
               catalogue size, and this state used to be text only. */}
-          {(sp.cat || sp.gov || sp.q || min || max) && (
+          {(sp.cat || sp.gov || sp.q || min || max || moreActive || deal) && (
             <Link
               href={"/annonces" as never}
               className="tap-target mt-4 inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[12.5px] font-bold text-[var(--background)]"
@@ -618,6 +768,11 @@ export default async function AnnoncesPage({
                         <MapPin className="size-3" /> {governorateLabel(r.governorate, locale)}
                       </span>
                     </div>
+                    {/* Kept in by the « libre avant » filter because the owner gave
+                        no date: say so, rather than let it pass as a match. */}
+                    {availBy && r.deal_type === "rent" && !r.available_from && (
+                      <p className="mt-1 text-[10.5px] font-semibold text-amber-600">{t("availUnconfirmed")}</p>
+                    )}
                   </div>
                 </Link>
               </li>
