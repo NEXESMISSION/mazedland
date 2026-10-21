@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
+import { publishListing } from "@/lib/listings/publish";
 
 /**
  * Everything an admin can do to one annonce.
@@ -39,31 +40,6 @@ import { apiTranslator } from "@/lib/i18n/server";
  */
 
 const DEFAULT_DURATION_DAYS = 30;
-
-type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
-
-/** How long a publication lasts: what its payment bought, else the active
- *  `listing_single` product, else 30 days. Never a constant in a caller. */
-async function publicationDays(admin: Admin, feePaymentId: string | null): Promise<number> {
-  if (feePaymentId) {
-    const { data: pay } = await admin
-      .from("payments")
-      .select("metadata")
-      .eq("id", feePaymentId)
-      .maybeSingle();
-    const d = Number((pay?.metadata as { duration_days?: unknown } | null)?.duration_days);
-    if (Number.isFinite(d) && d > 0) return d;
-  }
-  const { data: prod } = await admin
-    .from("products")
-    .select("duration_days")
-    .eq("kind", "listing_single")
-    .eq("is_active", true)
-    .limit(1)
-    .maybeSingle();
-  const d = Number(prod?.duration_days);
-  return Number.isFinite(d) && d > 0 ? d : DEFAULT_DURATION_DAYS;
-}
 
 /** Clamp a caller-supplied day count. Unbounded input here would let a typo
  *  put an annonce online until 2124. */
@@ -189,35 +165,22 @@ export async function POST(
       );
     }
 
-    const d = await publicationDays(admin, listing.fee_payment_id);
-    const now = new Date();
-    const expires = new Date(now.getTime() + d * 86_400_000);
+    // The same path the automatic publication takes (src/lib/listings/publish.ts):
+    // dates, review state cleared, pending reports resolved, seller notified.
+    const published = await publishListing(
+      admin,
+      {
+        id,
+        seller_id: listing.seller_id as string,
+        title: listing.title as string,
+        fee_payment_id: (listing.fee_payment_id as string | null) ?? null,
+      },
+      { reviewerId: user.id },
+    );
+    if (!published.ok) return fail("listing_publish_failed", 500, published.error);
+    const expires = published.expiresAt;
 
-    const { error } = await admin
-      .from("listings")
-      .update({
-        status: "published",
-        published_at: now.toISOString(),
-        expires_at: expires.toISOString(),
-        reviewed_by: user.id,
-        reviewed_at: now.toISOString(),
-        rejection_reason: null,
-      })
-      .eq("id", id);
-    if (error) return fail("listing_publish_failed", 500, error);
-
-    await admin
-      .rpc("enqueue_notification", {
-        p_user_id: listing.seller_id,
-        p_kind: "listing_published",
-        p_title: "Votre annonce est en ligne",
-        p_body: `« ${listing.title} » est visible jusqu'au ${expires.toLocaleDateString("fr-FR")}.`,
-        p_link: `/annonces/${id}`,
-        p_payload: { vars: { title: listing.title, expires_at: expires.toISOString() } },
-      })
-      .then(() => {}, () => {});
-
-    logAction(req, user, `admin.listing.${action}`, { id, days: d });
+    logAction(req, user, `admin.listing.${action}`, { id, expires_at: expires.toISOString() });
     return NextResponse.json({ ok: true, status: "published", expires_at: expires.toISOString() });
   }
 

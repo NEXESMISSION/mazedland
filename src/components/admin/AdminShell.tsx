@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
+  BarChart3,
   LayoutDashboard, Inbox, Receipt, Tag, Users, FolderTree,
   SlidersHorizontal, ExternalLink, Menu, X,
   type LucideIcon,
@@ -40,6 +41,7 @@ export type AdminCounts = Partial<Record<CountKey, number>>;
 
 const NAV: Item[] = [
   { key: "dashboard", href: "/admin", Icon: LayoutDashboard },
+  { key: "results", href: "/admin/resultats", Icon: BarChart3 },
   { key: "listings", href: "/admin/annonces", Icon: Inbox, countKey: "annonces" },
   { key: "payments", href: "/admin/paiements", Icon: Receipt, countKey: "paiements" },
   { key: "offers", href: "/admin/offres", Icon: Tag },

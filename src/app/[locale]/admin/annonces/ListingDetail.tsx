@@ -47,6 +47,10 @@ export type PanelListing = {
   delegation: string | null;
   status: string;
   rejectionReason: string | null;
+  /** Why it is waiting for a human (0165), already in words. */
+  reviewFlags: string[];
+  /** Visitors' reports nobody has dealt with yet; reasons already in words. */
+  reports: { reason: string; note: string | null; createdAt: string }[];
   /** Already in the page's language (categoryLabel). */
   categoryLabel: string;
   categoryKind: string;
@@ -172,6 +176,37 @@ export function ListingDetail({
           <p className="mt-4 border-s-2 border-[var(--tone-bad)] ps-3 text-[12.5px] text-[var(--tone-bad)]">
             <span className="font-semibold">{t("rejectionReason")}</span> {l.rejectionReason}
           </p>
+        )}
+
+        {l.status === "pending_review" && l.reviewFlags.length > 0 && (
+          <div className="mt-4 border-s-2 border-[var(--tone-warn)] ps-3 text-[12.5px]">
+            <p className="font-semibold text-foreground">{t("reviewWhy")}</p>
+            <ul className="mt-1 list-disc space-y-0.5 ps-4 text-[var(--foreground-muted)]">
+              {l.reviewFlags.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {l.reports.length > 0 && (
+          <div className="mt-4 border-s-2 border-[var(--tone-bad)] ps-3 text-[12.5px]">
+            <p className="font-semibold text-[var(--tone-bad)]">{t("reportsTitle", { count: l.reports.length })}</p>
+            <ul className="mt-1 space-y-1.5">
+              {l.reports.map((rep, i) => (
+                <li key={i} className="text-[var(--foreground-muted)]">
+                  <span className="font-semibold text-foreground">{rep.reason}</span>
+                  {" · "}
+                  {formatDate(rep.createdAt, locale, "dateTime")}
+                  {rep.note && (
+                    <span dir="auto" className="mt-0.5 block text-foreground">
+                      « {rep.note} »
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {editing && <EditForm listing={l} onDone={() => setEditing(false)} />}

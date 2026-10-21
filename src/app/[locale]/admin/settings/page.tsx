@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { Link } from "@/i18n/navigation";
 import { usablePayeeMethods } from "@/lib/payments";
 import { SettingsForm, type SettingsValues } from "./SettingsForm";
+import { ModerationSettingsForm } from "./ModerationSettingsForm";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 
@@ -20,7 +21,15 @@ export const revalidate = 0;
  * `lib/products.ts`. An admin changing a fee here saw « Réglages enregistrés »
  * and nothing on the site moved — the worst kind of setting there is.
  */
-const KEYS = ["payee_name", "payee_bank", "payee_rib", "payee_iban", "payee_d17"] as const;
+const KEYS = [
+  "payee_name",
+  "payee_bank",
+  "payee_rib",
+  "payee_iban",
+  "payee_d17",
+  "free_listing_limit",
+  "moderation_banned_words",
+] as const;
 
 export default async function AdminSettingsPage() {
   const supabase = await getServerSupabase();
@@ -77,6 +86,19 @@ export default async function AdminSettingsPage() {
 
       <div className="mt-5">
         <SettingsForm initial={initial} />
+      </div>
+
+      <div className="mt-6">
+        <ModerationSettingsForm
+          initial={{
+            freeLimit: Number.isInteger(Number(map.get("free_listing_limit")))
+              ? Number(map.get("free_listing_limit"))
+              : 2,
+            bannedWords: Array.isArray(map.get("moderation_banned_words"))
+              ? (map.get("moderation_banned_words") as unknown[]).filter((w): w is string => typeof w === "string")
+              : [],
+          }}
+        />
       </div>
     </div>
   );

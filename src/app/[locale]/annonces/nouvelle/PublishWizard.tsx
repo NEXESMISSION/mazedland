@@ -99,6 +99,8 @@ export function PublishWizard({
   attributesByCategory,
   feeByCategory,
   creditsLeft,
+  freePlacesLeft,
+  freeLimit,
   defaultContactName,
   defaultContactPhone,
   defaultGovernorate,
@@ -110,6 +112,9 @@ export function PublishWizard({
   attributesByCategory: Record<string, AttributeDef[]>;
   feeByCategory: Record<string, number | null>;
   creditsLeft: number;
+  /** Free places left (0165): while > 0 the publication costs nothing. */
+  freePlacesLeft: number;
+  freeLimit: number;
   defaultContactName: string;
   defaultContactPhone: string;
   /** From the seller's profile — signup asks for it, so the form should not
@@ -128,7 +133,13 @@ export function PublishWizard({
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<"idle" | "saving" | "ok">("idle");
   const [listingId, setListingId] = useState<string | null>(d?.id ?? null);
-  const [done, setDone] = useState<null | { paidWith: string; remaining?: number }>(null);
+  const [done, setDone] = useState<null | {
+    paidWith: string;
+    remaining?: number;
+    /** "published" when the rules let it straight online; else "pending_review". */
+    status: string;
+    id: string;
+  }>(null);
 
   const [categoryId, setCategoryId] = useState<string | null>(d?.category_id ?? null);
   const [photos, setPhotos] = useState<UploadedPhoto[]>(() =>
@@ -184,8 +195,11 @@ export function PublishWizard({
 
   const category = categories.find((c) => c.id === categoryId) ?? null;
   const fee = categoryId ? feeByCategory[categoryId] ?? null : null;
-  const usingCredit = creditsLeft > 0;
-  const free = fee != null && fee <= 0;
+  // Same order as the submit route: a free place first, then a pack credit,
+  // then the category's fee.
+  const freeQuota = freePlacesLeft > 0;
+  const usingCredit = !freeQuota && creditsLeft > 0;
+  const free = !freeQuota && !usingCredit && fee != null && fee <= 0;
 
   const defs = useMemo<AttributeDef[]>(
     () => (categoryId ? attributesByCategory[categoryId] ?? [] : []),
@@ -415,7 +429,7 @@ export function PublishWizard({
         router.push(`/payment/checkout?payment=${j.paymentId}` as never);
         return;
       }
-      setDone({ paidWith: j.paidWith ?? "free", remaining: j.remaining });
+      setDone({ paidWith: j.paidWith ?? "free", remaining: j.remaining, status: j.status ?? "pending_review", id });
     } finally {
       setBusy(false);
     }
@@ -428,20 +442,37 @@ export function PublishWizard({
         <span className="mx-auto grid size-16 place-items-center rounded-full bg-gold-faint text-gold ring-1 ring-gold-soft">
           <Check className="size-8" strokeWidth={2.6} />
         </span>
-        <h1 className="mt-5 text-[22px] font-extrabold tracking-tight">{t("doneTitle")}</h1>
+        <h1 className="mt-5 text-[22px] font-extrabold tracking-tight">
+          {done.status === "published" ? t("donePublishedTitle") : t("doneTitle")}
+        </h1>
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
-          {t("doneBody")}
+          {done.status === "published" ? t("donePublishedBody") : t("doneBody")}
           {done.paidWith === "credit" && typeof done.remaining === "number" && (
             <> {t("doneCreditsLeft", { count: done.remaining })}</>
           )}
           {done.paidWith === "free" && <> {t("doneFree")}</>}
+          {done.paidWith === "free_quota" && <> {t("doneFreeQuota")}</>}
         </p>
-        <button
-          onClick={() => router.push("/account/listings" as never)}
-          className="mazed-btn-luxe tap-target mt-7 inline-flex px-6 py-3 text-[13.5px]"
-        >
-          {t("seeMyListings")}
-        </button>
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5">
+          {done.status === "published" && (
+            <button
+              onClick={() => router.push(`/annonces/${done.id}` as never)}
+              className="mazed-btn-luxe tap-target inline-flex px-6 py-3 text-[13.5px]"
+            >
+              {t("seeListing")}
+            </button>
+          )}
+          <button
+            onClick={() => router.push("/account/listings" as never)}
+            className={
+              done.status === "published"
+                ? "tap-target inline-flex rounded-full border border-border px-6 py-3 text-[13.5px] font-bold text-foreground"
+                : "mazed-btn-luxe tap-target inline-flex px-6 py-3 text-[13.5px]"
+            }
+          >
+            {t("seeMyListings")}
+          </button>
+        </div>
       </main>
     );
   }
@@ -813,12 +844,14 @@ export function PublishWizard({
                   <span className="text-[13px] text-muted">
                     {usingCredit
                       ? t("feeFromPlan")
-                      : free
+                      : free || freeQuota
                         ? t("feePublication")
                         : t("feeLabel")}
                   </span>
                   <span className="mazed-tabular text-[18px] font-extrabold text-foreground">
-                    {usingCredit ? (
+                    {freeQuota ? (
+                      t("free")
+                    ) : usingCredit ? (
                       <Ltr>1 / {creditsLeft}</Ltr>
                     ) : fee == null ? (
                       "—"
@@ -830,11 +863,13 @@ export function PublishWizard({
                   </span>
                 </div>
                 <p className="mt-1.5 text-[11.5px] leading-snug text-muted">
-                  {usingCredit
-                    ? t("creditExplain")
-                    : free
-                      ? t("freeExplain")
-                      : t("paidExplain")}
+                  {freeQuota
+                    ? t("freeQuotaExplain", { left: freePlacesLeft, limit: freeLimit })
+                    : usingCredit
+                      ? t("creditExplain")
+                      : free
+                        ? t("freeExplain")
+                        : t("paidExplain")}
                 </p>
               </div>
             </div>
@@ -934,7 +969,9 @@ export function PublishWizard({
           )}
         </button>
         <p className="mt-2 text-center text-[11px] text-muted lg:mt-3">
-          {free
+          {freeQuota
+            ? t("freeQuotaHint")
+            : free
             ? t("freeInCategory")
             : usingCredit
               ? t("useOneCredit", { count: creditsLeft })

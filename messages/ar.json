@@ -140,7 +140,8 @@
       "publishListing": "حطّ إعلانك",
       "emptyTabTitle": "ما فما شي في « {tab} »",
       "emptyTabBody": "بقية إعلاناتك في الخانات الأخرى.",
-      "seeAll": "شوف الإعلانات الكل"
+      "seeAll": "شوف الإعلانات الكل",
+      "freePlaces": "{used}/{limit} إعلانات مجانية مستعملة"
     },
     "listingActions": {
       "mark_sold": {
@@ -175,7 +176,9 @@
       "networkError": "خطأ في الشبكة.",
       "button": "جدّد",
       "viaCredit": "إعلان واحد من الباقة",
-      "paid": "بمقابل"
+      "paid": "بمقابل",
+      "free": "بلاش",
+      "donePublished": "إعلانك رجع منشور."
     },
     "payments": {
       "eyebrow": "السجل",
@@ -759,11 +762,34 @@
       "seeAll": "شوف الكل",
       "verified": "موثّق",
       "onRequest": "عند الطلب"
+    },
+    "report": {
+      "open": "بلّغ على الإعلان",
+      "title": "التبليغ على الإعلان",
+      "description": "قلّنا شنوّة المشكل. فريقنا يراجع كل تبليغ.",
+      "reasonLegend": "سبب التبليغ",
+      "reasons": {
+        "scam": "تحيّل ولا طلب فلوس مشبوه",
+        "wrong_info": "معلومات غالطة (السعر، الصور، المساحة)",
+        "sold": "العقار تباع",
+        "duplicate": "إعلان مكرّر",
+        "inappropriate": "محتوى غير لائق",
+        "other": "سبب آخر"
+      },
+      "noteLabel": "زيد وضّح (اختياري)",
+      "notePlaceholder": "شنوّة لاحظت…",
+      "send": "ابعث التبليغ",
+      "thanks": "يعيشك، التبليغ متاعك وصل.",
+      "failed": "تعذّر التبليغ حاليًا.",
+      "alreadySent": "التبليغ وصل. يعيشك."
     }
   },
   "listingApi": {
     "tooManyReveals": "اطّلعت على عدد كبير من الأرقام من هذا الجهاز. أعد المحاولة لاحقًا.",
-    "phoneHidden": "هذا البائع لا يشارك رقمه."
+    "phoneHidden": "هذا البائع لا يشارك رقمه.",
+    "reportReasonRequired": "اختار سبب التبليغ.",
+    "tooManyReports": "تبليغات كثيرة. حاول لاحقًا.",
+    "reportOwnListing": "ما تنجمش تبلّغ على إعلانك."
   },
   "common": {
     "submit": "ابعث",
@@ -891,6 +917,10 @@
       "free": {
         "title": "إعلانك تبعث للمراجعة",
         "body": "« {title} » قيد المراجعة. النشر مجاني في هذه الفئة."
+      },
+      "freeQuota": {
+        "title": "إعلانك تبعث للمراجعة",
+        "body": "« {title} » قيد المراجعة. النشر متاعك بلاش."
       }
     },
     "listing_published": {
@@ -920,6 +950,10 @@
     "admin_email_deadletter": {
       "title": "رسائل بريد لم تصل",
       "body": "فشل إرسال {count} رسالة بريد إلكتروني مهمة (نشر / دفع) بعد {attempts} محاولات ولن تُعاد المحاولة. تثبّت من مزوّد البريد واتصل بالمستعملين المعنيين."
+    },
+    "admin_listing_reported": {
+      "title": "إعلان تنحّى بعد تبليغات",
+      "body": "« {title} » بلّغ عليه {count} أشخاص وما عادش ظاهر. راجعو."
     }
   },
   "publish": {
@@ -1000,7 +1034,13 @@
     "doneBody": "فريقنا يراجعو قبل النشر — عادةً في أقل من 24 ساعة. نعلموك أول ما يتنشر.",
     "doneCreditsLeft": "{count, plural, zero {ما بقالك حتى إعلان في الباقة.} one {بقالك إعلان واحد في الباقة.} two {بقالك زوز إعلانات في الباقة.} few {بقالك # إعلانات في الباقة.} many {بقالك # إعلانًا في الباقة.} other {بقالك # إعلان في الباقة.}}",
     "doneFree": "النشر في هذا الصنف كان مجانيًا.",
-    "seeMyListings": "شوف إعلاناتي"
+    "seeMyListings": "شوف إعلاناتي",
+    "donePublishedTitle": "إعلانك منشور توّا",
+    "donePublishedBody": "الشارين ينجمو يشوفوه من توّا.",
+    "doneFreeQuota": "النشر متاعك بلاش.",
+    "seeListing": "شوف إعلاني",
+    "freeQuotaExplain": "{left, plural, zero {ما بقاتلكش حتى إعلان مجاني} one {بقالك إعلان مجاني واحد} two {بقالك زوز إعلانات مجانية} few {بقالك # إعلانات مجانية} many {بقالك # إعلانًا مجانيًا} other {بقالك # إعلان مجاني}} من أصل {limit} منشورين في نفس الوقت.",
+    "freeQuotaHint": "النشر بلاش."
   },
   "photoUploader": {
     "addPhotos": "زيد صورك",
@@ -2006,7 +2046,21 @@
     },
     "saving": "جاري الحفظ…",
     "savedButton": "تم الحفظ",
-    "save": "سجّل"
+    "save": "سجّل",
+    "moderation": {
+      "title": "المجانية والمراقبة",
+      "hint": "هذا اللي يحدّد قدّاش من خدمة يعملها الموقع وحدو. يتطبّق من أول إعلان جاي.",
+      "freeLimitLabel": "عدد الإعلانات المجانية المنشورة في نفس الوقت لكل بائع",
+      "freeLimitHint": "أكثر من هكّا، البائع يخلّص النشر ولا يستعمل باقة. 0 = الكل بالفلوس.",
+      "bannedWordsLabel": "كلمات تبعث الإعلان للمراجعة اليدوية",
+      "bannedWordsHint": "كلمة في كل سطر. الإعلان ما يترفضش: أدمين يقراه قبل النشر.",
+      "limitInvalid": "اكتب عددًا صحيحًا بين 0 و 50.",
+      "save": "سجّل",
+      "saving": "جاري التسجيل…",
+      "saved": "تم تسجيل إعدادات المراقبة.",
+      "savedButton": "تسجّل",
+      "saveFailed": "تعذّر التسجيل."
+    }
   },
   "admin": {
     "console": "الإدارة",
@@ -2028,7 +2082,9 @@
       "exit": "الخروج من الإدارة",
       "openMenu": "فتح القائمة",
       "closeMenu": "إغلاق القائمة",
-      "label": "تنقّل الإدارة"
+      "label": "تنقّل الإدارة",
+      "results": "النتائج",
+      "resultsHint": "الإعلانات والزوّار والاتصالات والمداخيل كل شهر"
     },
     "siteTabs": {
       "label": "أقسام الموقع",
@@ -2263,7 +2319,9 @@
       "fieldName": "الاسم المعروض",
       "fieldDescription": "الوصف",
       "cancel": "إلغاء",
-      "save": "حفظ"
+      "save": "حفظ",
+      "reviewWhy": "علاش يستنّى في المراجعة",
+      "reportsTitle": "{count, plural, zero {ما فماش تبليغات} one {تبليغ واحد} two {تبليغين} few {# تبليغات} many {# تبليغًا} other {# تبليغ}}"
     }
   },
   "adminSellers": {
@@ -2388,7 +2446,16 @@
     "admin_attribute_update": "تم تعديل خاصية",
     "admin_attribute_delete": "تم حذف خاصية",
     "admin_settings_update": "تم تعديل الإعدادات",
-    "home_feature": "إبراز في الصفحة الرئيسية"
+    "home_feature": "إبراز في الصفحة الرئيسية",
+    "listing_submit_free_quota": "إعلان تبعث (مكان مجاني)",
+    "listing_submit_already_paid": "إعلان تبعث (مخلوص من قبل)",
+    "listing_submit_credit": "إعلان تبعث (باقة)",
+    "listing_submit_auto_published": "إعلان تنشر أوتوماتيكيًا",
+    "listing_renew_free_quota": "إعلان تجدّد (مكان مجاني)",
+    "listing_renew_free": "إعلان تجدّد (مجاني)",
+    "listing_renew_credit": "إعلان تجدّد (باقة)",
+    "listing_renew_payment": "إعلان تجدّد (بالفلوس)",
+    "listing_report": "إعلان بُلّغ عليه"
   },
   "adminApi": {
     "bulk": {
@@ -2430,5 +2497,54 @@
   },
   "sms": {
     "otp": "رمز التحقق متاعك في Mazed Immo: {code}. صالح لمدة 10 دقائق."
+  },
+  "moderation": {
+    "flags": {
+      "first_listing": "أول إعلان للبائع",
+      "too_few_photos": "أقل من 3 صور",
+      "contact_in_text": "معلومات اتصال في النص",
+      "banned_words": "كلمة ممنوعة",
+      "price_implausible": "سعر غير معقول",
+      "duplicate": "إعلان مكرّر",
+      "reported": "بلّغ عليه زوّار"
+    },
+    "reasons": {
+      "scam": "تحيّل",
+      "wrong_info": "معلومات غالطة",
+      "sold": "تباع",
+      "duplicate": "مكرّر",
+      "inappropriate": "محتوى غير لائق",
+      "other": "سبب آخر"
+    }
+  },
+  "adminResults": {
+    "eyebrow": "المتابعة",
+    "title": "النتائج",
+    "description": "شنوّة تنتج المنصّة شهر بشهر: إعلانات، زوّار، اتصالات ومداخيل.",
+    "unavailable": "الخدمة غير متاحة مؤقتًا.",
+    "tnd": "د.ت",
+    "liveNow": "إعلانات منشورة",
+    "waitingNow": "في انتظار المراجعة",
+    "accountsTotal": "الحسابات",
+    "revenueThisMonth": "مداخيل هذا الشهر",
+    "cols": {
+      "month": "الشهر",
+      "published": "إعلانات منشورة",
+      "accounts": "حسابات جديدة",
+      "views": "مشاهدات الإعلانات",
+      "reveals": "أرقام تطلّبت",
+      "revenue": "المداخيل"
+    },
+    "byKindTitle": "المداخيل حسب النوع، على 6 أشهر",
+    "noRevenue": "ما فماش دفعات مأكّدة في هذه الفترة.",
+    "note": "الأرقام اللي تطلّبت هي النتيجة اللي يستنّاها البائع: شاري يكلّمو.",
+    "kinds": {
+      "listing_fee": "النشر",
+      "listing_pack": "باقات الإعلانات",
+      "promo": "الإبراز",
+      "badge": "شارة التوثيق",
+      "renewal": "التجديد",
+      "subscription": "الاشتراكات"
+    }
   }
 }

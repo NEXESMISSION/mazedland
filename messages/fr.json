@@ -140,7 +140,8 @@
       "publishListing": "Publier une annonce",
       "emptyTabTitle": "Rien dans « {tab} »",
       "emptyTabBody": "Vos autres annonces sont dans les onglets voisins.",
-      "seeAll": "Voir toutes les annonces"
+      "seeAll": "Voir toutes les annonces",
+      "freePlaces": "{used}/{limit} annonces gratuites utilisées"
     },
     "listingActions": {
       "mark_sold": {
@@ -175,7 +176,9 @@
       "networkError": "Erreur réseau.",
       "button": "Renouveler",
       "viaCredit": "1 publication du forfait",
-      "paid": "payante"
+      "paid": "payante",
+      "free": "Gratuit",
+      "donePublished": "Votre annonce est de nouveau en ligne."
     },
     "payments": {
       "eyebrow": "Historique",
@@ -759,11 +762,34 @@
       "seeAll": "Tout voir",
       "verified": "vérifié",
       "onRequest": "Sur demande"
+    },
+    "report": {
+      "open": "Signaler cette annonce",
+      "title": "Signaler cette annonce",
+      "description": "Dites-nous ce qui ne va pas. Notre équipe vérifie chaque signalement.",
+      "reasonLegend": "Raison du signalement",
+      "reasons": {
+        "scam": "Arnaque ou demande d'argent suspecte",
+        "wrong_info": "Informations fausses (prix, photos, surface)",
+        "sold": "Le bien est déjà vendu",
+        "duplicate": "Annonce en double",
+        "inappropriate": "Contenu inapproprié",
+        "other": "Autre"
+      },
+      "noteLabel": "Précisez (facultatif)",
+      "notePlaceholder": "Ce que vous avez constaté…",
+      "send": "Envoyer le signalement",
+      "thanks": "Merci, votre signalement a été envoyé.",
+      "failed": "Signalement impossible pour le moment.",
+      "alreadySent": "Signalement envoyé. Merci."
     }
   },
   "listingApi": {
     "tooManyReveals": "Trop de numéros consultés depuis cet appareil. Réessayez plus tard.",
-    "phoneHidden": "Ce vendeur ne partage pas son numéro."
+    "phoneHidden": "Ce vendeur ne partage pas son numéro.",
+    "reportReasonRequired": "Choisissez la raison du signalement.",
+    "tooManyReports": "Trop de signalements. Réessayez plus tard.",
+    "reportOwnListing": "Vous ne pouvez pas signaler votre propre annonce."
   },
   "common": {
     "submit": "Envoyer",
@@ -891,6 +917,10 @@
       "free": {
         "title": "Annonce envoyée à la vérification",
         "body": "« {title} » est en cours de vérification. La publication est gratuite dans cette catégorie."
+      },
+      "freeQuota": {
+        "title": "Annonce envoyée à la vérification",
+        "body": "« {title} » est en cours de vérification. Votre publication est gratuite."
       }
     },
     "listing_published": {
@@ -920,6 +950,10 @@
     "admin_email_deadletter": {
       "title": "E-mails non délivrés",
       "body": "{count} e-mail(s) critiques (publication / paiement) ont échoué après {attempts} tentatives et ne seront plus réessayés. Vérifiez le fournisseur d'e-mail et contactez les utilisateurs concernés."
+    },
+    "admin_listing_reported": {
+      "title": "Annonce retirée après signalements",
+      "body": "« {title} » a été signalée par {count} personnes et n'est plus visible. Vérifiez-la."
     }
   },
   "publish": {
@@ -1000,7 +1034,13 @@
     "doneBody": "Notre équipe la vérifie avant publication — généralement en moins de 24 h. Vous serez prévenu dès qu'elle est en ligne.",
     "doneCreditsLeft": "{count, plural, one {Il vous reste # publication.} other {Il vous reste # publications.}}",
     "doneFree": "La publication était gratuite dans cette catégorie.",
-    "seeMyListings": "Voir mes annonces"
+    "seeMyListings": "Voir mes annonces",
+    "donePublishedTitle": "Votre annonce est en ligne",
+    "donePublishedBody": "Les acheteurs la voient dès maintenant.",
+    "doneFreeQuota": "Votre publication est gratuite.",
+    "seeListing": "Voir mon annonce",
+    "freeQuotaExplain": "{left, plural, one {Il vous reste # annonce gratuite} other {Il vous reste # annonces gratuites}} sur {limit} en ligne en même temps.",
+    "freeQuotaHint": "Publication gratuite."
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",
@@ -2006,7 +2046,21 @@
     },
     "saving": "Enregistrement…",
     "savedButton": "Enregistré",
-    "save": "Enregistrer"
+    "save": "Enregistrer",
+    "moderation": {
+      "title": "Gratuité et modération",
+      "hint": "Ce qui décide combien de travail le site fait seul. Pris en compte dès la prochaine annonce.",
+      "freeLimitLabel": "Annonces gratuites en ligne en même temps, par vendeur",
+      "freeLimitHint": "Au-delà, le vendeur paie la publication ou utilise un pack. 0 = tout est payant.",
+      "bannedWordsLabel": "Mots qui envoient une annonce en vérification manuelle",
+      "bannedWordsHint": "Un mot par ligne. L'annonce n'est pas refusée : un admin la lit avant publication.",
+      "limitInvalid": "Entrez un nombre entier entre 0 et 50.",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "Réglages de modération enregistrés.",
+      "savedButton": "Enregistré",
+      "saveFailed": "Enregistrement impossible."
+    }
   },
   "admin": {
     "console": "Console",
@@ -2028,7 +2082,9 @@
       "exit": "Quitter l'admin",
       "openMenu": "Ouvrir le menu",
       "closeMenu": "Fermer le menu",
-      "label": "Navigation admin"
+      "label": "Navigation admin",
+      "results": "Résultats",
+      "resultsHint": "Annonces, audience, contacts et revenus par mois"
     },
     "siteTabs": {
       "label": "Sections du site",
@@ -2263,7 +2319,9 @@
       "fieldName": "Nom affiché",
       "fieldDescription": "Description",
       "cancel": "Annuler",
-      "save": "Enregistrer"
+      "save": "Enregistrer",
+      "reviewWhy": "Pourquoi elle attend une vérification",
+      "reportsTitle": "{count, plural, one {# signalement} other {# signalements}}"
     }
   },
   "adminSellers": {
@@ -2388,7 +2446,16 @@
     "admin_attribute_update": "Caractéristique modifiée",
     "admin_attribute_delete": "Caractéristique supprimée",
     "admin_settings_update": "Réglages modifiés",
-    "home_feature": "Mise en avant sur l'accueil"
+    "home_feature": "Mise en avant sur l'accueil",
+    "listing_submit_free_quota": "Annonce soumise (place gratuite)",
+    "listing_submit_already_paid": "Annonce soumise (déjà payée)",
+    "listing_submit_credit": "Annonce soumise (pack)",
+    "listing_submit_auto_published": "Annonce publiée automatiquement",
+    "listing_renew_free_quota": "Annonce renouvelée (place gratuite)",
+    "listing_renew_free": "Annonce renouvelée (gratuite)",
+    "listing_renew_credit": "Annonce renouvelée (pack)",
+    "listing_renew_payment": "Annonce renouvelée (payante)",
+    "listing_report": "Annonce signalée"
   },
   "adminApi": {
     "bulk": {
@@ -2430,5 +2497,54 @@
   },
   "sms": {
     "otp": "Votre code de vérification Mazed Immo est : {code}. Valable 10 minutes."
+  },
+  "moderation": {
+    "flags": {
+      "first_listing": "Première annonce du vendeur",
+      "too_few_photos": "Moins de 3 photos",
+      "contact_in_text": "Coordonnées dans le texte",
+      "banned_words": "Mot interdit",
+      "price_implausible": "Prix peu plausible",
+      "duplicate": "Annonce en double",
+      "reported": "Signalée par des visiteurs"
+    },
+    "reasons": {
+      "scam": "Arnaque",
+      "wrong_info": "Informations fausses",
+      "sold": "Déjà vendu",
+      "duplicate": "Doublon",
+      "inappropriate": "Contenu inapproprié",
+      "other": "Autre"
+    }
+  },
+  "adminResults": {
+    "eyebrow": "Pilotage",
+    "title": "Résultats",
+    "description": "Ce que la plateforme produit, mois par mois : annonces, audience, contacts et revenus.",
+    "unavailable": "Service momentanément indisponible.",
+    "tnd": "TND",
+    "liveNow": "Annonces en ligne",
+    "waitingNow": "En attente de vérification",
+    "accountsTotal": "Comptes",
+    "revenueThisMonth": "Revenus ce mois",
+    "cols": {
+      "month": "Mois",
+      "published": "Annonces publiées",
+      "accounts": "Nouveaux comptes",
+      "views": "Vues d'annonces",
+      "reveals": "Numéros affichés",
+      "revenue": "Revenus"
+    },
+    "byKindTitle": "Revenus par type, sur 6 mois",
+    "noRevenue": "Aucun paiement validé sur la période.",
+    "note": "Les numéros affichés sont le résultat qu'un vendeur attend : un acheteur qui l'appelle.",
+    "kinds": {
+      "listing_fee": "Publication",
+      "listing_pack": "Packs d'annonces",
+      "promo": "Mises en avant",
+      "badge": "Badge vérifié",
+      "renewal": "Renouvellements",
+      "subscription": "Abonnements"
+    }
   }
 }

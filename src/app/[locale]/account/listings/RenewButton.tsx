@@ -10,17 +10,20 @@ import { RotateCw, Loader2 } from "lucide-react";
 /**
  * Renew an expired annonce.
  *
- * The button says which way it will be paid before it is pressed — a credit
- * from the seller's forfait, or the fee — because "Renouveler" that silently
- * spends one of five prepaid publications is the kind of surprise that turns
- * into a support message.
+ * The button says which way it will be paid before it is pressed — free while
+ * the seller has a free place left, else a credit from their forfait, else the
+ * fee — because "Renouveler" that silently spends one of five prepaid
+ * publications is the kind of surprise that turns into a support message.
  */
 export function RenewButton({
   listingId,
+  free = false,
   usesCredit,
   feeLabel,
 }: {
   listingId: string;
+  /** A free place is available (0165): the renewal costs nothing. */
+  free?: boolean;
   usesCredit: boolean;
   feeLabel: string | null;
 }) {
@@ -48,9 +51,11 @@ export function RenewButton({
       // unconditionally announced « undefined publication(s) restante(s) » on
       // every free or paid renewal.
       toast(
-        typeof j.remaining === "number"
-          ? t("doneWithCredits", { remaining: j.remaining })
-          : t("done"),
+        j.status === "published"
+          ? t("donePublished")
+          : typeof j.remaining === "number"
+            ? t("doneWithCredits", { remaining: j.remaining })
+            : t("done"),
         "success",
       );
       router.refresh();
@@ -71,7 +76,7 @@ export function RenewButton({
       {busy ? <Loader2 className="size-3.5 animate-spin" /> : <RotateCw className="size-3.5" />}
       {t("button")}
       <span className="font-semibold opacity-80">
-        · {usesCredit ? t("viaCredit") : feeLabel ?? t("paid")}
+        · {free ? t("free") : usesCredit ? t("viaCredit") : feeLabel ?? t("paid")}
       </span>
     </button>
   );

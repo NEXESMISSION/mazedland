@@ -105,12 +105,20 @@ export async function POST(req: NextRequest) {
           reviewed_by: user.id,
           reviewed_at: now.toISOString(),
           rejection_reason: null,
+          review_flags: [],
         })
         .eq("id", r.id);
       if (error) {
         skipped.push({ id: r.id, title: r.title, why: t("skipServerError") });
         continue;
       }
+      // Reports that were waiting on it have been dealt with (as in publishListing).
+      await admin
+        .from("listing_reports")
+        .update({ resolved_at: now.toISOString() })
+        .eq("listing_id", r.id)
+        .is("resolved_at", null)
+        .then(() => {}, () => {});
       ok.push(r.id);
       await admin
         .rpc("enqueue_notification", {

@@ -13,6 +13,7 @@ import { routing } from "@/i18n/routing";
 import { Ltr } from "@/components/ui/Ltr";
 import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
 import { ContactReveal } from "./ContactReveal";
+import { ReportListing } from "./ReportListing";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { RelatedListings } from "@/components/listing/RelatedListings";
 import { ViewTracker } from "@/components/listing/ViewTracker";
@@ -335,7 +336,11 @@ export default async function AnnoncePage({
   const safetyNote = (
     <section className="flex items-start gap-2.5 rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
       <ShieldAlert className="mt-0.5 size-4 shrink-0 text-muted" />
-      <p className="text-[12.5px] leading-relaxed text-muted">{t("safetyNote")}</p>
+      <div>
+        <p className="text-[12.5px] leading-relaxed text-muted">{t("safetyNote")}</p>
+        {/* Only a live annonce can be reported, and never by its own seller. */}
+        {!isPreview && !isOwner && <ReportListing listingId={l.id} />}
+      </div>
     </section>
   );
 

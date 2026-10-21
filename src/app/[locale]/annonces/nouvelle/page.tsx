@@ -21,6 +21,7 @@ import {
   toProduct,
   type Product,
 } from "@/lib/products";
+import { liveListingCount, moderationSettings } from "@/lib/moderation/server";
 
 export const dynamic = "force-dynamic";
 
@@ -169,6 +170,13 @@ export default async function NewListingPage({
     return n + Math.max(0, (c.quota_total as number) - (c.quota_used as number));
   }, 0);
 
+  // Free places (0165): an individual publishes for free while they have fewer
+  // than the limit live. The submit route decides for real; this is so the
+  // form says "Gratuit" instead of showing a fee nobody will be asked for.
+  const settings = await moderationSettings(admin);
+  const live = await liveListingCount(admin, user!.id, "00000000-0000-0000-0000-000000000000");
+  const freePlacesLeft = Math.max(0, settings.freeLimit - live);
+
   const groups = parents.map((p) => ({ id: p.id, label: categoryLabel(p, locale) }));
 
   return (
@@ -178,6 +186,8 @@ export default async function NewListingPage({
       attributesByCategory={attributesByCategory}
       feeByCategory={feeByCategory}
       creditsLeft={creditsLeft}
+      freePlacesLeft={freePlacesLeft}
+      freeLimit={settings.freeLimit}
       defaultContactName={(profRes.data?.full_name as string | null) ?? ""}
       defaultContactPhone={(profRes.data?.phone as string | null) ?? ""}
       defaultGovernorate={(profRes.data?.governorate as string | null) ?? ""}

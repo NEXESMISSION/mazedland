@@ -80,7 +80,7 @@ function tabFilters(tab: TabKey): Filter[] {
 }
 
 const LIST_SELECT = `
-  id, title, price, negotiable, price_on_request, governorate, status,
+  id, title, price, negotiable, price_on_request, governorate, status, review_flags,
   created_at, published_at, expires_at,   seller_credit_id, fee_payment_id, fee_waived_by, contact_phone,
   seller:profiles!listings_seller_id_fkey (full_name, phone),
   category:categories (label_fr, label_ar),
@@ -187,6 +187,7 @@ export default async function AdminAnnoncesPage({
   type ListRow = {
     id: string; reference: string | null; title: string; price: number | null; negotiable: boolean;
     price_on_request: boolean; governorate: string; status: string;
+    review_flags: string[] | null;
     created_at: string; published_at: string | null; expires_at: string | null;
     seller_credit_id: string | null; fee_payment_id: string | null;
     fee_waived_by: string | null; contact_phone: string | null;
@@ -217,12 +218,18 @@ export default async function AdminAnnoncesPage({
         : r.price != null
           ? `${formatTND(r.price, locale)} ${tRoot("common.tnd")}`
           : "—",
-      hint: ageLabel(r.status === "published" ? r.expires_at : r.created_at, r.status, t),
+      // Waiting for review: say why (0165) — the admin reads the reason, not the
+      // whole annonce. Otherwise, how old it is.
+      hint:
+        r.status === "pending_review" && (r.review_flags?.length ?? 0) > 0
+          ? (r.review_flags ?? []).map((f) => flagLabel(tRoot, f)).join(" · ")
+          : ageLabel(r.status === "published" ? r.expires_at : r.created_at, r.status, t),
       status: r.status,
       // Flag what needs a human before it can move: an annonce with no phone can
-      // never be published, and one waiting on money is waiting on us to look.
+      // never be published, one reported by visitors may be a scam, and one
+      // waiting on money is waiting on us to look.
       flag:
-        r.status === "pending_review" && !r.contact_phone
+        r.status === "pending_review" && (!r.contact_phone || r.review_flags?.includes("reported"))
           ? "bad"
           : r.status === "pending_payment"
             ? "warn"
@@ -342,6 +349,12 @@ type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
 /** The root translator — `await getTranslations()`. */
 type RootT = { (key: string): string; has(key: string): boolean };
 
+/** A review flag (0165) in words, or the raw code if it has none yet. */
+function flagLabel(tRoot: RootT, flag: string): string {
+  const key = `moderation.flags.${flag}`;
+  return tRoot.has(key) ? tRoot(key) : flag;
+}
+
 /**
  * Everything the drawer shows, for one annonce.
  *
@@ -361,7 +374,7 @@ async function loadPanel(
     .from("listings")
     .select(
       `id, title, description, price, negotiable, price_on_request,
-       governorate, delegation, status, rejection_reason, category_id,
+       governorate, delegation, status, rejection_reason, category_id, review_flags,
        contact_name, contact_phone, show_phone, attributes,
        created_at, published_at, expires_at,        view_count, contact_reveal_count, renewed_count,
        seller_attestation_version, seller_attestation_at,
@@ -379,6 +392,7 @@ async function loadPanel(
     negotiable: boolean; price_on_request: boolean;
     governorate: string; delegation: string | null; status: string;
     rejection_reason: string | null; category_id: string;
+    review_flags: string[] | null;
     contact_name: string | null; contact_phone: string | null; show_phone: boolean;
     attributes: Record<string, unknown>;
     created_at: string; published_at: string | null; expires_at: string | null;
@@ -390,7 +404,7 @@ async function loadPanel(
     photos: { storage_path: string; sort_order: number; is_cover: boolean }[] | null;
   };
 
-  const [attrRes, payRes] = await Promise.all([
+  const [attrRes, payRes, reportRes] = await Promise.all([
     admin
       .from("category_attributes")
       .select("field_key, label, unit, options, sort_order")
@@ -403,6 +417,14 @@ async function loadPanel(
           .eq("id", r.fee_payment_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+    // Reports nobody has dealt with yet (0165), newest first.
+    admin
+      .from("listing_reports")
+      .select("reason, note, created_at")
+      .eq("listing_id", r.id)
+      .is("resolved_at", null)
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
   type Attr = {
@@ -457,6 +479,16 @@ async function loadPanel(
     delegation: r.delegation,
     status: r.status,
     rejectionReason: r.rejection_reason,
+    reviewFlags: (r.review_flags ?? []).map((f) => flagLabel(tRoot, f)),
+    reports: ((reportRes.data ?? []) as { reason: string; note: string | null; created_at: string }[]).map(
+      (rep) => ({
+        reason: tRoot.has(`moderation.reasons.${rep.reason}`)
+          ? tRoot(`moderation.reasons.${rep.reason}`)
+          : rep.reason,
+        note: rep.note,
+        createdAt: rep.created_at,
+      }),
+    ),
     categoryLabel: categoryLabel(r.category, locale) || "—",
     categoryKind: r.category?.kind ?? "vehicle",
     sellerName: r.seller?.full_name ?? tRoot("admin.noName"),

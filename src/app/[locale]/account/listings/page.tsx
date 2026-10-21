@@ -12,6 +12,7 @@ import {
   ArrowRight, AlertTriangle, Inbox,
 } from "lucide-react";
 import { RenewButton } from "./RenewButton";
+import { moderationSettings } from "@/lib/moderation/server";
 import { ListingStatusActions } from "./ListingStatusActions";
 import { PaySubmitButton } from "@/components/payments/PaySubmitButton";
 import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct, type Product } from "@/lib/products";
@@ -148,6 +149,14 @@ export default async function MyListingsPage({
     return n + Math.max(0, (c.quota_total as number) - (c.quota_used as number));
   }, 0);
 
+  // Free places (0165): annonces live or waiting count against the limit. The
+  // renew and submit routes decide for real; this is what the page shows.
+  const freeLimit = admin ? (await moderationSettings(admin)).freeLimit : 2;
+  const liveCount = (listRes.data ?? []).filter((l) =>
+    ["pending_review", "published"].includes(l.status as string),
+  ).length;
+  const freePlacesLeft = Math.max(0, freeLimit - liveCount);
+
   type Category = { label_fr: string; label_ar: string | null };
   type Row = {
     id: string; title: string; price: number | null; price_on_request: boolean;
@@ -283,7 +292,14 @@ export default async function MyListingsPage({
       if (withinPaidWindow(l)) {
         return <ListingStatusActions listingId={l.id} actions={["relist"]} block={block} primary />;
       }
-      return <RenewButton listingId={l.id} usesCredit={creditsLeft > 0} feeLabel={renewLabel(l)} />;
+      return (
+        <RenewButton
+          listingId={l.id}
+          free={freePlacesLeft > 0}
+          usesCredit={creditsLeft > 0}
+          feeLabel={renewLabel(l)}
+        />
+      );
     }
     return (
       <>
@@ -321,7 +337,12 @@ export default async function MyListingsPage({
               : t("subtitleCount", { count: all.length })}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {freeLimit > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-xl bg-surface-2 px-3 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-border">
+              {t("freePlaces", { used: Math.min(liveCount, freeLimit), limit: freeLimit })}
+            </span>
+          )}
           {creditsLeft > 0 && (
             <span className="inline-flex items-center gap-1.5 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft">
               <Ticket className="size-4" />
