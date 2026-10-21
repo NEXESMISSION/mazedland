@@ -130,6 +130,7 @@ export default async function NewListingPage({
         label: categoryLabel(c, locale),
         groupId: parent?.id ?? "other",
         groupLabel: parent ? categoryLabel(parent, locale) : t("otherGroup"),
+        kind: c.kind,
       };
     });
 

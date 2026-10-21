@@ -11,17 +11,30 @@ import { Ltr } from "@/components/ui/Ltr";
 import { formatTND, formatDate, cn } from "@/lib/utils";
 import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 import {
-  Check, Tag, Camera, Wallet, Phone, ClipboardList, Loader2, MapPin,
-  Gift, Ticket, ImageOff, Home,
+  Check, Tag, Camera, Wallet, Phone, ClipboardList, ClipboardCheck, Loader2, MapPin,
+  Gift, Ticket, ImageOff, Home, ArrowLeft, ArrowRight, Lightbulb, CheckCircle2, AlertTriangle, Pencil,
 } from "lucide-react";
+import {
+  MIN_PHOTOS,
+  hasContactInText,
+  isPriceImplausible,
+  type CategoryKind,
+} from "@/lib/moderation/rules";
 
 /**
  * Publier une annonce — the fixed-price sell flow.
  *
- * One page, top to bottom, rather than a five-screen wizard. A classified is a
- * short form: you should be able to see that it wants a photo before you have
- * answered two screens of questions, and fixing a price should not mean walking
- * the whole chain again.
+ * Four short steps — what and where, photos, price and details, summary — with
+ * a progress bar that is also a way back to any step. It used to be one long
+ * page; on a phone that read as a wall of questions, and the seller never saw
+ * their annonce as a buyer would before sending it. The summary does that: the
+ * card a buyer will see, every answer with "Modifier" next to it, and the same
+ * rules the moderation applies (src/lib/moderation/rules.ts) said first, as
+ * tips, so a seller fixes them here instead of waiting on a reviewer.
+ *
+ * "Continuer" only checks the step on screen, and never waits for photos still
+ * uploading — they finish in the background while the rest is typed. Every
+ * answer is still reachable from the summary, so nothing is a dead end.
  *
  * The decisions worth keeping from Mazed Auto's version, which this follows:
  *
@@ -57,6 +70,23 @@ export type WizardCategory = {
   label: string;
   groupId: string;
   groupLabel: string;
+  /** residential | land | commercial — the summary's price check uses it. */
+  kind: string;
+};
+
+const STEPS = ["where", "photos", "details", "review"] as const;
+type Step = 0 | 1 | 2 | 3;
+
+/** Which step each field lives on, so "missing" and "Modifier" land there. */
+const STEP_OF: Record<string, Step> = {
+  "f-category": 0,
+  "f-photos": 1,
+  "f-price": 2,
+  "f-title": 2,
+  "f-details": 2,
+  "f-description": 2,
+  "f-phone": 3,
+  "f-contact": 3,
 };
 
 /** One question, as `/admin/catalogue` defines it. */
@@ -185,6 +215,14 @@ export function PublishWizard({
   const [contactPhone, setContactPhone] = useState(d?.contact_phone ?? defaultContactPhone);
   const [attested, setAttested] = useState(false);
   const [resumed, setResumed] = useState(Boolean(d));
+  // A resumed draft opens where it was left: the first step still missing
+  // something, or the summary.
+  const [step, setStep] = useState<Step>(() => {
+    if (!d?.category_id) return 0;
+    if (!(d.photos?.length)) return 1;
+    if (!d.price_on_request && !(Number(d.price) > 0)) return 2;
+    return 3;
+  });
 
   // Which group's chips are showing. Seeded from the draft so a resumed terrain
   // does not come back on the Résidentiel side.
@@ -285,11 +323,82 @@ export function PublishWizard({
     // Mark it before scrolling: by the time the smooth scroll lands the field
     // is already outlined, so it is obvious which one was meant.
     setFlagged((f) => (f.includes(id) ? f : [...f, id]));
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-    el.querySelector<HTMLElement>("input, select, textarea, button")?.focus({ preventScroll: true });
+    const target = STEP_OF[id];
+    if (target !== undefined && target !== step) setStep(target);
+    // After the step has rendered, if it had to change.
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.querySelector<HTMLElement>("input, select, textarea, button")?.focus({ preventScroll: true });
+    }, 60);
   }
+
+  function goToStep(s: Step) {
+    setStep(s);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  /** On to the next step, unless this one still lacks something. */
+  function next() {
+    const pending = missing.filter(
+      (m) =>
+        STEP_OF[m.fieldId] === step &&
+        // Photos still uploading finish in the background; only "none at all"
+        // holds the seller here.
+        !(m.fieldId === "f-photos" && photosUploading > 0),
+    );
+    if (pending.length > 0) {
+      setFlagged((f) => Array.from(new Set([...f, ...pending.map((m) => m.fieldId)])));
+      goToField(pending[0].fieldId);
+      toast(t("stepMissing", { count: pending.length }), "warning");
+      return;
+    }
+    goToStep(Math.min(3, step + 1) as Step);
+  }
+
+  function back() {
+    goToStep(Math.max(0, step - 1) as Step);
+  }
+
+  // ─── Tips: the moderation rules, said before the moderation does ──────────
+  const textForRules = title + "\n" + description;
+  const contactInText = hasContactInText(textForRules);
+  const priceKnown = onRequest || Number(price) > 0;
+  const priceOk = !isPriceImplausible({
+    price: onRequest ? null : Number(price),
+    priceOnRequest: onRequest,
+    areaSqm: Number(attrs.area_sqm) > 0 ? Number(attrs.area_sqm) : null,
+    kind: (category?.kind as CategoryKind | undefined) ?? null,
+  });
+  const describedEnough = description.trim().length >= 40;
+  const tips: { key: string; ok: boolean; text: string; fieldId: string }[] = [
+    {
+      key: "photos",
+      ok: photos.length >= MIN_PHOTOS,
+      text:
+        photos.length >= MIN_PHOTOS
+          ? t("tipPhotosOk", { count: photos.length })
+          : t("tipPhotos", { min: MIN_PHOTOS }),
+      fieldId: "f-photos",
+    },
+    {
+      key: "contact",
+      ok: !contactInText,
+      text: contactInText ? t("tipContact") : t("tipContactOk"),
+      // The title sits with the price; the description with the details.
+      fieldId: hasContactInText(title) ? "f-title" : "f-description",
+    },
+    ...(priceKnown
+      ? [{ key: "price", ok: priceOk, text: priceOk ? t("tipPriceOk") : t("tipPrice"), fieldId: "f-price" }]
+      : []),
+    {
+      key: "description",
+      ok: describedEnough,
+      text: describedEnough ? t("tipDescriptionOk") : t("tipDescription"),
+      fieldId: "f-description",
+    },
+  ];
 
   /**
    * A red outline for a field the seller asked to be shown and has not filled.
@@ -477,508 +586,609 @@ export function PublishWizard({
     );
   }
 
+  // The price, said the way the card says it: number then currency, no LTR box
+  // around the pair (an Arabic reader reads the number first).
+  const priceText =
+    onRequest || !(Number(price) > 0)
+      ? t("priceOnRequestShort")
+      : `${formatTND(Number(price), locale)} ${tc("tnd")}`;
+
+  /** The details the seller gave, as one line a buyer would read. */
+  const attributeSummary = defs
+    .map((def) => {
+      const raw = attrs[def.field_key];
+      if (raw == null || String(raw).trim() === "") return null;
+      const value =
+        def.data_type === "boolean"
+          ? raw === "true" || raw === "1"
+            ? t("yes")
+            : t("no")
+          : def.options?.find((o) => o.value === raw)?.label ?? raw;
+      return `${def.label} : ${value}${def.unit ? ` ${def.unit}` : ""}`;
+    })
+    .filter(Boolean)
+    .join(" · ");
+
+  const backButton = step > 0 && (
+    <button
+      type="button"
+      onClick={back}
+      className="tap-target inline-flex h-12 shrink-0 items-center justify-center gap-1.5 rounded-full border border-border px-5 text-[13.5px] font-bold text-foreground transition hover:bg-surface-2"
+    >
+      <ArrowLeft className="size-4 rtl:-scale-x-100" />
+      {t("back")}
+    </button>
+  );
+
+  const forwardButton =
+    step < 3 ? (
+      <button
+        type="button"
+        onClick={next}
+        className="mazed-btn-luxe tap-target inline-flex h-12 flex-1 items-center justify-center gap-1.5 px-7 text-[14px] lg:flex-none"
+      >
+        {t("next")}
+        <ArrowRight className="size-4 rtl:-scale-x-100" />
+      </button>
+    ) : (
+      <button
+        type="button"
+        onClick={publishNow}
+        disabled={busy || photosUploading > 0}
+        className="mazed-btn-luxe tap-target inline-flex h-12 flex-1 items-center justify-center gap-1.5 px-7 text-[14px] disabled:opacity-60 lg:flex-none"
+      >
+        {busy ? (
+          <><Loader2 className="size-4 animate-spin" /> {t("oneMoment")}</>
+        ) : photosUploading > 0 ? (
+          <><Loader2 className="size-4 animate-spin" /> {t("sendingPhotos")}</>
+        ) : (
+          <>{t("publishCta")}</>
+        )}
+      </button>
+    );
+
+  const feeHint = freeQuota
+    ? t("freeQuotaHint")
+    : free
+      ? t("freeInCategory")
+      : usingCredit
+        ? t("useOneCredit", { count: creditsLeft })
+        : fee != null
+          ? t("feeAfterReviewPlain", { amount: `${formatTND(fee, locale)} ${tc("tnd")}` })
+          : t("feeShownAfterCategory");
+
   return (
-    <main className="mx-auto max-w-[var(--max-w-wide)] px-4 pb-32 pt-4 lg:px-6 lg:pb-12 lg:pt-8">
-      <div className="flex items-start justify-between gap-3 pt-2">
-        <div>
-          <h1 className="text-[24px] font-extrabold tracking-tight">{t("title")}</h1>
-          <p className="mt-1 text-[13px] text-muted">
-            {t("subtitle")}
-          </p>
+    <main className="mx-auto max-w-[var(--max-w-wide)] px-4 pb-44 pt-4 lg:px-6 lg:pb-12 lg:pt-8">
+      <div className="mx-auto max-w-3xl">
+        <div className="flex items-start justify-between gap-3 pt-2">
+          <div>
+            <h1 className="text-[24px] font-extrabold tracking-tight">{t("title")}</h1>
+            <p className="mt-1 text-[13px] text-muted">{t("subtitle")}</p>
+          </div>
+          {saved === "saving" && (
+            <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-[11px] text-muted">
+              <Loader2 className="size-3 animate-spin" /> {t("saving")}
+            </span>
+          )}
+          {saved === "ok" && (
+            <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-[11px] text-muted">
+              <Check className="size-3" /> {t("draftSaved")}
+            </span>
+          )}
         </div>
-        {saved === "saving" && (
-          <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-[11px] text-muted">
-            <Loader2 className="size-3 animate-spin" /> {t("saving")}
-          </span>
-        )}
-        {saved === "ok" && (
-          <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-[11px] text-muted">
-            <Check className="size-3" /> {t("draftSaved")}
-          </span>
-        )}
-      </div>
 
-      {resumed && (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold-soft bg-gold-faint px-4 py-3">
-          <p className="text-[12.5px] font-semibold text-gold">
-            {d?.updated_at
-              ? t("resumedOn", { date: formatDate(d.updated_at, locale, "short") })
-              : t("resumed")}
+        {resumed && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold-soft bg-gold-faint px-4 py-3">
+            <p className="text-[12.5px] font-semibold text-gold">
+              {d?.updated_at
+                ? t("resumedOn", { date: formatDate(d.updated_at, locale, "short") })
+                : t("resumed")}
+            </p>
+            <button
+              type="button"
+              onClick={startOver}
+              className="text-[12px] font-bold text-muted underline hover:text-foreground"
+            >
+              {t("startOver")}
+            </button>
+          </div>
+        )}
+
+        {/* Where the seller is. Each segment is a way back to that step. */}
+        <nav aria-label={t("stepsAria")} className="mt-5">
+          <p className="text-[11.5px] font-bold text-muted">
+            {t("stepOf", { current: step + 1, total: STEPS.length })}
           </p>
-          <button
-            type="button"
-            onClick={startOver}
-            className="text-[12px] font-bold text-muted underline hover:text-foreground"
-          >
-            {t("startOver")}
-          </button>
-        </div>
-      )}
-
-      <div className="mx-auto mt-5 max-w-3xl">
-        <div className="space-y-4">
-          {/* ── Category ── */}
-          <section
-            id="f-category"
-            className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-category")}`}
-          >
-            <SectionHead icon={Tag} title={t("categoryTitle")} />
-            <p className="mt-1 text-[13px] text-muted">
-              {t("categoryHint")}
-            </p>
-
-            {usingCredit && (
-              <p className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft">
-                <Ticket className="size-4" />
-                {t("creditsInPlan", { count: creditsLeft })}
-              </p>
-            )}
-
-            {/* Family first, then the category. One choice, so a segmented
-                control — the shape every OS uses to say "one of these" — rather
-                than a grid of tiles, which reads as a multi-select. */}
-            <div className="mt-4">
-              <div
-                role="radiogroup"
-                aria-label={t("groupAria")}
-                className="grid gap-1 rounded-xl bg-surface-2 p-1"
-                style={{ gridTemplateColumns: `repeat(${Math.max(1, groups.length)}, minmax(0, 1fr))` }}
-              >
-                {groups.map((g) => {
-                  const on = groupId === g.id;
-                  return (
-                    <button
-                      key={g.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={on}
-                      onClick={() => {
-                        setGroupId(g.id);
-                        // Keep a category only while it still belongs to the
-                        // family on screen, or the form asks for a floor
-                        // number on a plot of land.
-                        if (category && category.groupId !== g.id) setCategoryId(null);
-                      }}
-                      className={cn(
-                        "inline-flex h-10 items-center justify-center gap-2 rounded-lg px-2 text-[13.5px] font-bold transition",
-                        on
-                          ? "bg-[var(--gold)] text-white shadow-[var(--shadow-gold)]"
-                          : "text-muted hover:text-foreground",
-                      )}
-                    >
-                      {g.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div role="radiogroup" aria-label={t("categoryAria")} className="mt-2.5 flex flex-wrap gap-1.5">
-                {categories
-                  .filter((c) => c.groupId === groupId)
-                  .map((c) => {
-                    const active = categoryId === c.id;
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={active}
-                        onClick={() => switchCategory(c)}
-                        className={cn(
-                          "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold transition",
-                          active
-                            ? "bg-gold-faint text-gold ring-1 ring-gold"
-                            : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground",
-                        )}
-                      >
-                        {active && <Check className="size-3.5" />}
-                        {c.label}
-                      </button>
-                    );
-                  })}
-              </div>
-
-              {/* The price of publishing, said once, instead of repeated on
-                  every tile. */}
-              {category && fee != null && (
-                <p
-                  className={cn(
-                    "mt-2.5 inline-flex items-center gap-1.5 text-[12.5px] font-bold",
-                    free ? "text-[var(--tone-ok)]" : "text-muted",
-                  )}
-                >
-                  {free ? (
-                    <><Gift className="size-3.5" /> {t("freeInCategory")}</>
-                  ) : (
-                    // One flex item, as the plain text was: the <Ltr> on its
-                    // own would pick up the row's gap.
-                    <span>
-                      {t.rich("feeLine", {
-                        amount: formatTND(fee, locale),
-                        ltr: (chunks) => <Ltr>{chunks}</Ltr>,
-                      })}
-                    </span>
-                  )}
-                </p>
-              )}
-            </div>
-          </section>
-
-          {/* ── Photos ── */}
-          <section
-            id="f-photos"
-            className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-photos")}`}
-          >
-            <SectionHead icon={Camera} title={t("photosTitle")} />
-            <p className="mt-1 text-[13px] text-muted">
-              {t("photosHint")}
-            </p>
-            <div className="mt-5">
-              <PhotoUploader
-                photos={photos}
-                onChange={setPhotos}
-                onPendingChange={setPhotosUploading}
-              />
-            </div>
-          </section>
-
-          {/* ── Details, generated from category_attributes ── */}
-          <section
-            id="f-details"
-            className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-details")}`}
-          >
-            <SectionHead icon={ClipboardList} title={t("detailsTitle")} />
-            <p className="mt-1 text-[13px] text-muted">
-              {categoryId ? t("detailsHint") : t("detailsPickCategory")}
-            </p>
-
-            {defs.length > 0 ? (
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                {defs.map((def) => (
-                  <AttributeField
-                    key={def.field_key}
-                    def={def}
-                    value={attrs[def.field_key] ?? ""}
-                    onChange={(v) => setAttrs((s) => ({ ...s, [def.field_key]: v }))}
-                  />
-                ))}
-              </div>
-            ) : (
-              categoryId && (
-                <p className="mt-5 rounded-xl bg-surface-2 px-3 py-2.5 text-[12.5px] text-muted">
-                  {t("detailsNone")}
-                </p>
-              )
-            )}
-          </section>
-
-          {/* ── Title & price ── */}
-          <section
-            id="f-price"
-            className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-price")}`}
-          >
-            <SectionHead icon={Wallet} title={t("priceTitle")} />
-            <p className="mt-1 text-[13px] text-muted">
-              {t("priceHint")}
-            </p>
-
-            <div className="mt-5 space-y-4">
-              <div id="f-title" className={`scroll-mt-24 rounded-xl${flagCls("f-title")}`}>
-                <Field
-                  label={t("titleLabel")}
-                  required
-                  value={title}
-                  onChange={setTitle}
-                  placeholder={t("titlePlaceholder")}
-                />
-              </div>
-
-              <div>
-                <Label>{t("priceLabel")} {!onRequest && <span className="text-gold">*</span>}</Label>
-                <div className="relative mt-1">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={price}
-                    disabled={onRequest}
-                    onChange={(e) => setPrice(e.target.value)}
-                    placeholder="250000"
-                    className="w-full rounded-xl border border-border bg-surface px-3 py-3 pe-16 text-[16px] font-bold text-foreground placeholder:font-normal placeholder:text-muted focus:border-gold focus:outline-none disabled:opacity-40"
-                  />
-                  <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[13px] font-bold text-muted">
-                    {tc("tnd")}
-                  </span>
-                </div>
-                <div className="mt-2.5 flex flex-wrap gap-2">
-                  <Toggle label={t("negotiable")} on={negotiable} onClick={() => setNegotiable((v) => !v)} />
-                  <Toggle label={t("onRequest")} on={onRequest} onClick={() => setOnRequest((v) => !v)} />
-                </div>
-              </div>
-
-              <div>
-                <Label>{t("descriptionLabel")}</Label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={5}
-                  maxLength={4000}
-                  placeholder={t("descriptionPlaceholder")}
-                  className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13.5px] leading-relaxed text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
-                />
-                <p className="mt-1 text-end text-[10.5px] text-muted">
-                  <Ltr>{description.length} / 4000</Ltr>
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* ── Contact, preview, publish ── */}
-          <section
-            id="f-contact"
-            className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-contact")}`}
-          >
-            <SectionHead icon={Phone} title={t("contactTitle")} />
-            <p className="mt-1 text-[13px] text-muted">
-              {t("contactHint")}
-            </p>
-
-            <div className="mt-5 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <Field
-                  label={t("contactNameLabel")}
-                  value={contactName}
-                  onChange={setContactName}
-                  placeholder={t("contactNamePlaceholder")}
-                />
-                <div id="f-phone" className={`scroll-mt-24 rounded-xl${flagCls("f-phone")}`}>
-                  {/* dir="ltr": "+216 98 124 111" typed into a right-to-left
-                      field comes out as "111 124 98 216+". */}
-                  <Field
-                    label={t("phoneLabel")}
-                    required
-                    value={contactPhone}
-                    onChange={setContactPhone}
-                    placeholder="+216 …"
-                    dir="ltr"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>{t("governorate")} <span className="text-gold">*</span></Label>
-                  <div className="relative mt-1">
-                    <MapPin className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                    <select
-                      value={governorate}
-                      onChange={(e) => setGovernorate(e.target.value)}
-                      className="w-full appearance-none rounded-xl border border-border bg-surface py-3 ps-9 pe-3 text-[14px] text-foreground focus:border-gold focus:outline-none"
-                    >
-                      {TUNISIAN_GOVERNORATES.map((g) => (
-                        <option key={g} value={g}>{governorateLabel(g, locale)}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                {/* Free text on purpose. A délégation list for all 24
-                    governorates is 260 rows that would go stale, and getting it
-                    wrong costs a filter nobody uses — the governorate is what
-                    search actually keys on. */}
-                <Field
-                  label={t("delegationLabel")}
-                  value={delegation}
-                  onChange={setDelegation}
-                  placeholder={t("delegationPlaceholder")}
-                />
-              </div>
-
-              {/* Preview — the exact card a buyer will see, using the same
-                  ListingImage every real card uses so a portrait photo behaves
-                  here the way it will there. */}
-              <div>
-                <Label>{t("preview")}</Label>
-                <div className="mt-1 w-[180px] overflow-hidden rounded-2xl border border-border bg-surface">
-                  <div className="relative aspect-[4/3] bg-surface-2">
-                    {photos[0] ? (
-                      <ListingImage path={photos[0].path} alt="" sizes="180px" />
-                    ) : (
-                      <span className="grid size-full place-items-center gap-1 text-center text-muted">
-                        <ImageOff className="mx-auto size-5" />
-                        <span className="px-2 text-[10px] leading-tight">{t("noPhoto")}</span>
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-2.5">
-                    <span className="inline-flex items-center gap-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-muted">
-                      <Home className="size-2.5" /> {category?.label}
-                    </span>
-                    <h3 className="mt-0.5 line-clamp-2 text-[12.5px] font-bold leading-snug">
-                      {title || "—"}
-                    </h3>
-                    <p className="mazed-tabular mt-1 text-[13px] font-extrabold">
-                      {onRequest || !(Number(price) > 0) ? (
-                        t("priceOnRequestShort")
-                      ) : (
-                        <Ltr>{formatTND(Number(price), locale)} {tc("tnd")}</Ltr>
-                      )}
-                    </p>
-                    <p className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-muted">
-                      <MapPin className="size-2.5" /> {delegation.trim() || governorateLabel(governorate, locale)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-surface-2/40 p-3.5">
-                <input
-                  type="checkbox"
-                  checked={attested}
-                  onChange={(e) => setAttested(e.target.checked)}
-                  className="mt-0.5 size-5 shrink-0 accent-[var(--gold)]"
-                />
-                <span className="text-[12.5px] leading-relaxed text-foreground">{t("attestation")}</span>
-              </label>
-
-              <div className="rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[13px] text-muted">
-                    {usingCredit
-                      ? t("feeFromPlan")
-                      : free || freeQuota
-                        ? t("feePublication")
-                        : t("feeLabel")}
-                  </span>
-                  <span className="mazed-tabular text-[18px] font-extrabold text-foreground">
-                    {freeQuota ? (
-                      t("free")
-                    ) : usingCredit ? (
-                      <Ltr>1 / {creditsLeft}</Ltr>
-                    ) : fee == null ? (
-                      "—"
-                    ) : free ? (
-                      t("free")
-                    ) : (
-                      <Ltr>{formatTND(fee, locale)} {tc("tnd")}</Ltr>
-                    )}
-                  </span>
-                </div>
-                <p className="mt-1.5 text-[11.5px] leading-snug text-muted">
-                  {freeQuota
-                    ? t("freeQuotaExplain", { left: freePlacesLeft, limit: freeLimit })
-                    : usingCredit
-                      ? t("creditExplain")
-                      : free
-                        ? t("freeExplain")
-                        : t("paidExplain")}
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Everything you need before publishing, at the END of the form. A
-              form is read top to bottom and submitted at the end; a panel
-              parked beside it is something you have to notice. */}
-          <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-surface">
-            <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-4 sm:p-5">
-              <div className="min-w-0">
-                <span className="block text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted">
-                  {t("beforePublish")}
-                </span>
-                {missing.length === 0 ? (
-                  <p className="mt-1 flex items-center gap-1.5 text-[14.5px] font-extrabold text-foreground">
-                    <Check className="size-4 shrink-0 text-gold" strokeWidth={3} />
-                    {t("allReady")}
-                  </p>
-                ) : (
-                  <p className="mt-1 text-[14.5px] font-extrabold text-foreground">
-                    {t("itemsToComplete", { count: missing.length })}
-                  </p>
-                )}
-              </div>
-
-              {/* lg only: below that the floating bar carries this button, and
-                  two "Publier" buttons on one screen is a question, not a
-                  convenience.
-
-                  `hidden` sits on this WRAPPER, not on the button:
-                  `.mazed-btn-luxe` sets `display: inline-flex` from globals.css,
-                  which is unlayered CSS and outranks anything in
-                  `@layer utilities` — so `hidden` on the button itself loses the
-                  cascade and both buttons show at every width. */}
-              <div className="hidden shrink-0 lg:block">
+          <ol className="mt-2 grid grid-cols-4 gap-1.5">
+            {STEPS.map((key, i) => (
+              <li key={key}>
                 <button
                   type="button"
-                  onClick={publishNow}
-                  disabled={busy || photosUploading > 0}
-                  className="mazed-btn-luxe tap-target h-11 shrink-0 items-center justify-center gap-1.5 px-7 text-[13.5px] disabled:opacity-60"
+                  onClick={() => goToStep(i as Step)}
+                  aria-current={i === step ? "step" : undefined}
+                  className="flex w-full flex-col items-start gap-1.5 text-start"
                 >
-                  {busy ? (
-                    <><Loader2 className="size-4 animate-spin" /> {t("oneMoment")}</>
-                  ) : photosUploading > 0 ? (
-                    <><Loader2 className="size-4 animate-spin" /> {t("sendingPhotos")}</>
-                  ) : (
-                    <>{t("publishCta")}</>
-                  )}
+                  <span
+                    className={cn(
+                      "h-1.5 w-full rounded-full transition",
+                      i <= step ? "bg-[var(--gold)]" : "bg-surface-2 ring-1 ring-border",
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "w-full truncate text-[11.5px] font-bold",
+                      i === step ? "text-foreground" : "text-muted",
+                    )}
+                  >
+                    {t(`steps.${key}`)}
+                  </span>
                 </button>
-              </div>
-            </div>
+              </li>
+            ))}
+          </ol>
+        </nav>
 
-            {missing.length > 0 && (
-              <ul className="grid border-t border-border p-2 sm:grid-cols-2 sm:p-3">
-                {missing.map((m) => (
-                  <li key={m.label}>
-                    <button
-                      type="button"
-                      onClick={() => goToField(m.fieldId)}
+        <div className="mt-5 space-y-4">
+          {/* ── ① What and where ── */}
+          {step === 0 && (
+            <>
+              <section
+                id="f-category"
+                className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-category")}`}
+              >
+                <SectionHead icon={Tag} title={t("categoryTitle")} />
+                <p className="mt-1 text-[13px] text-muted">{t("categoryHint")}</p>
+
+                {usingCredit && (
+                  <p className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft">
+                    <Ticket className="size-4" />
+                    {t("creditsInPlan", { count: creditsLeft })}
+                  </p>
+                )}
+
+                {/* Family first, then the category. One choice, so a segmented
+                    control — the shape every OS uses to say "one of these" —
+                    rather than a grid of tiles, which reads as a multi-select. */}
+                <div className="mt-4">
+                  <div
+                    role="radiogroup"
+                    aria-label={t("groupAria")}
+                    className="grid gap-1 rounded-xl bg-surface-2 p-1"
+                    style={{ gridTemplateColumns: `repeat(${Math.max(1, groups.length)}, minmax(0, 1fr))` }}
+                  >
+                    {groups.map((g) => {
+                      const on = groupId === g.id;
+                      return (
+                        <button
+                          key={g.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={on}
+                          onClick={() => {
+                            setGroupId(g.id);
+                            // Keep a category only while it still belongs to the
+                            // family on screen, or the form asks for a floor
+                            // number on a plot of land.
+                            if (category && category.groupId !== g.id) setCategoryId(null);
+                          }}
+                          className={cn(
+                            "inline-flex h-10 items-center justify-center gap-2 rounded-lg px-2 text-[13.5px] font-bold transition",
+                            on
+                              ? "bg-[var(--gold)] text-white shadow-[var(--shadow-gold)]"
+                              : "text-muted hover:text-foreground",
+                          )}
+                        >
+                          {g.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div role="radiogroup" aria-label={t("categoryAria")} className="mt-2.5 flex flex-wrap gap-1.5">
+                    {categories
+                      .filter((c) => c.groupId === groupId)
+                      .map((c) => {
+                        const active = categoryId === c.id;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={active}
+                            onClick={() => switchCategory(c)}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold transition",
+                              active
+                                ? "bg-gold-faint text-gold ring-1 ring-gold"
+                                : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground",
+                            )}
+                          >
+                            {active && <Check className="size-3.5" />}
+                            {c.label}
+                          </button>
+                        );
+                      })}
+                  </div>
+
+                  {/* What publishing costs, said once — free for most sellers. */}
+                  {category && (freeQuota || fee != null) && (
+                    <p
                       className={cn(
-                        "flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-start text-[12.5px] transition hover:bg-surface-2",
-                        flaggedNow.has(m.fieldId)
-                          ? "font-bold text-danger"
-                          : "text-muted hover:text-foreground",
+                        "mt-2.5 inline-flex items-center gap-1.5 text-[12.5px] font-bold",
+                        freeQuota || free ? "text-[var(--tone-ok)]" : "text-muted",
                       )}
                     >
-                      <span
-                        className={cn(
-                          "mt-1.5 size-1.5 shrink-0 rounded-full",
-                          flaggedNow.has(m.fieldId) ? "bg-danger" : "bg-[var(--gold)]",
-                        )}
+                      {freeQuota || free ? (
+                        <><Gift className="size-3.5" /> {freeQuota ? t("freeQuotaHint") : t("freeInCategory")}</>
+                      ) : (
+                        <span>{t("feeLinePlain", { amount: `${formatTND(fee ?? 0, locale)} ${tc("tnd")}` })}</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+                <SectionHead icon={MapPin} title={t("locationTitle")} />
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>{t("governorate")} <span className="text-gold">*</span></Label>
+                    <div className="relative mt-1">
+                      <MapPin className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                      <select
+                        value={governorate}
+                        onChange={(e) => setGovernorate(e.target.value)}
+                        className="w-full appearance-none rounded-xl border border-border bg-surface py-3 ps-9 pe-3 text-[14px] text-foreground focus:border-gold focus:outline-none"
+                      >
+                        {TUNISIAN_GOVERNORATES.map((g) => (
+                          <option key={g} value={g}>{governorateLabel(g, locale)}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  {/* Free text on purpose. A délégation list for all 24
+                      governorates is 260 rows that would go stale, and getting it
+                      wrong costs a filter nobody uses — the governorate is what
+                      search actually keys on. */}
+                  <Field
+                    label={t("delegationLabel")}
+                    value={delegation}
+                    onChange={setDelegation}
+                    placeholder={t("delegationPlaceholder")}
+                  />
+                </div>
+              </section>
+            </>
+          )}
+
+          {/* ── ② Photos ── */}
+          {step === 1 && (
+            <section
+              id="f-photos"
+              className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-photos")}`}
+            >
+              <SectionHead icon={Camera} title={t("photosTitle")} />
+              <p className="mt-1 text-[13px] text-muted">{t("photosHint")}</p>
+              <div className="mt-5">
+                <PhotoUploader
+                  photos={photos}
+                  onChange={setPhotos}
+                  onPendingChange={setPhotosUploading}
+                />
+              </div>
+            </section>
+          )}
+
+          {/* ── ③ Price and details ── */}
+          {step === 2 && (
+            <>
+              <section
+                id="f-price"
+                className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-price")}`}
+              >
+                <SectionHead icon={Wallet} title={t("priceTitle")} />
+                <p className="mt-1 text-[13px] text-muted">{t("priceHint")}</p>
+
+                <div className="mt-5 space-y-4">
+                  <div>
+                    <Label>{t("priceLabel")} {!onRequest && <span className="text-gold">*</span>}</Label>
+                    <div className="relative mt-1">
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        dir="ltr"
+                        value={price}
+                        disabled={onRequest}
+                        onChange={(e) => setPrice(e.target.value)}
+                        placeholder="250000"
+                        className="w-full rounded-xl border border-border bg-surface px-3 py-3 pe-16 text-[16px] font-bold text-foreground placeholder:font-normal placeholder:text-muted focus:border-gold focus:outline-none disabled:opacity-40"
                       />
-                      {m.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+                      <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[13px] font-bold text-muted">
+                        {tc("tnd")}
+                      </span>
+                    </div>
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      <Toggle label={t("negotiable")} on={negotiable} onClick={() => setNegotiable((v) => !v)} />
+                      <Toggle label={t("onRequest")} on={onRequest} onClick={() => setOnRequest((v) => !v)} />
+                    </div>
+                  </div>
+
+                  <div id="f-title" className={`scroll-mt-24 rounded-xl${flagCls("f-title")}`}>
+                    <Field
+                      label={t("titleLabel")}
+                      required
+                      value={title}
+                      onChange={setTitle}
+                      placeholder={t("titlePlaceholder")}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section
+                id="f-details"
+                className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-details")}`}
+              >
+                <SectionHead icon={ClipboardList} title={t("detailsTitle")} />
+                <p className="mt-1 text-[13px] text-muted">
+                  {categoryId ? t("detailsHint") : t("detailsPickCategory")}
+                </p>
+
+                {defs.length > 0 ? (
+                  <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                    {defs.map((def) => (
+                      <AttributeField
+                        key={def.field_key}
+                        def={def}
+                        value={attrs[def.field_key] ?? ""}
+                        onChange={(v) => setAttrs((s) => ({ ...s, [def.field_key]: v }))}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  categoryId && (
+                    <p className="mt-5 rounded-xl bg-surface-2 px-3 py-2.5 text-[12.5px] text-muted">
+                      {t("detailsNone")}
+                    </p>
+                  )
+                )}
+
+                <div id="f-description" className="mt-5 scroll-mt-24">
+                  <Label>{t("descriptionLabel")}</Label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={4}
+                    maxLength={4000}
+                    dir="auto"
+                    placeholder={t("descriptionPlaceholder")}
+                    className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13.5px] leading-relaxed text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
+                  />
+                  <p className="mt-1 text-end text-[10.5px] text-muted">
+                    <Ltr>{description.length} / 4000</Ltr>
+                  </p>
+                </div>
+              </section>
+            </>
+          )}
+
+          {/* ── ④ Summary: what a buyer will see, and what to fix first ── */}
+          {step === 3 && (
+            <>
+              <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+                <SectionHead icon={ClipboardCheck} title={t("reviewTitle")} />
+                <p className="mt-1 text-[13px] text-muted">{t("reviewHint")}</p>
+
+                <div className="mt-5 grid gap-5 sm:grid-cols-[220px_1fr]">
+                  {/* The card as the catalogue draws it, same ListingImage, so a
+                      portrait photo behaves here the way it will there. */}
+                  <div className="w-full max-w-[260px] self-start overflow-hidden rounded-2xl border border-border bg-surface">
+                    <div className="relative aspect-[4/3] bg-surface-2">
+                      {photos[0] ? (
+                        <ListingImage path={photos[0].path} alt="" sizes="260px" />
+                      ) : (
+                        <span className="grid size-full place-items-center gap-1 text-center text-muted">
+                          <ImageOff className="mx-auto size-5" />
+                          <span className="px-2 text-[10px] leading-tight">{t("noPhoto")}</span>
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-muted">
+                        <Home className="size-3" /> {category?.label ?? "—"}
+                      </span>
+                      <h3 className="mt-0.5 line-clamp-2 text-[13.5px] font-bold leading-snug">{title || "—"}</h3>
+                      <p className="mazed-tabular mt-1 text-[15px] font-extrabold">{priceText}</p>
+                      <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
+                        <MapPin className="size-3" /> {delegation.trim() || governorateLabel(governorate, locale)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <SummaryBlock title={t("steps.where")} editLabel={t("edit")} onEdit={() => goToStep(0)}>
+                      {[category?.label ?? "—", governorateLabel(governorate, locale), delegation.trim()]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </SummaryBlock>
+
+                    <SummaryBlock title={t("steps.photos")} editLabel={t("edit")} onEdit={() => goToStep(1)}>
+                      {photos.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {photos.slice(0, 6).map((p) => (
+                            <span key={p.path} className="relative block size-12 overflow-hidden rounded-lg bg-surface-2">
+                              <ListingImage path={p.path} alt="" sizes="48px" />
+                            </span>
+                          ))}
+                          {photos.length > 6 && (
+                            <span className="text-[12px] font-bold text-muted">+{photos.length - 6}</span>
+                          )}
+                        </div>
+                      ) : (
+                        t("noPhoto")
+                      )}
+                    </SummaryBlock>
+
+                    <SummaryBlock title={t("steps.details")} editLabel={t("edit")} onEdit={() => goToStep(2)}>
+                      <span className="block font-bold text-foreground">
+                        {priceText}
+                        {negotiable && !onRequest && Number(price) > 0 && ` · ${t("negotiable")}`}
+                      </span>
+                      {attributeSummary && <span className="mt-1 block">{attributeSummary}</span>}
+                      {description.trim() ? (
+                        <span dir="auto" className="mt-1 line-clamp-3 block">{description.trim()}</span>
+                      ) : (
+                        <span className="mt-1 block italic">{t("noDescription")}</span>
+                      )}
+                    </SummaryBlock>
+                  </div>
+                </div>
+              </section>
+
+              {/* The same rules the moderation applies, said before it does:
+                  fix them here and a trusted seller goes online at once. */}
+              <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+                <SectionHead icon={Lightbulb} title={t("tipsTitle")} />
+                <ul className="mt-3 space-y-2.5">
+                  {tips.map((tip) => (
+                    <li key={tip.key} className="flex items-start gap-2 text-[12.5px] leading-snug">
+                      {tip.ok ? (
+                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[var(--tone-ok)]" />
+                      ) : (
+                        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--tone-warn)]" />
+                      )}
+                      <span className={tip.ok ? "text-muted" : "text-foreground"}>{tip.text}</span>
+                      {!tip.ok && (
+                        <button
+                          type="button"
+                          onClick={() => goToField(tip.fieldId)}
+                          className="ms-auto shrink-0 text-[12px] font-bold text-gold underline underline-offset-2"
+                        >
+                          {t("fix")}
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <section
+                id="f-contact"
+                className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-contact")}`}
+              >
+                <SectionHead icon={Phone} title={t("contactTitle")} />
+                <p className="mt-1 text-[13px] text-muted">{t("contactHint")}</p>
+
+                <div className="mt-5 space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field
+                      label={t("contactNameLabel")}
+                      value={contactName}
+                      onChange={setContactName}
+                      placeholder={t("contactNamePlaceholder")}
+                    />
+                    <div id="f-phone" className={`scroll-mt-24 rounded-xl${flagCls("f-phone")}`}>
+                      {/* dir="ltr": "+216 98 124 111" typed into a right-to-left
+                          field comes out as "111 124 98 216+". */}
+                      <Field
+                        label={t("phoneLabel")}
+                        required
+                        value={contactPhone}
+                        onChange={setContactPhone}
+                        placeholder="+216 …"
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+
+                  <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-surface-2/40 p-3.5">
+                    <input
+                      type="checkbox"
+                      checked={attested}
+                      onChange={(e) => setAttested(e.target.checked)}
+                      className="mt-0.5 size-5 shrink-0 accent-[var(--gold)]"
+                    />
+                    <span className="text-[12.5px] leading-relaxed text-foreground">{t("attestation")}</span>
+                  </label>
+
+                  <div className="rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[13px] text-muted">
+                        {usingCredit ? t("feeFromPlan") : free || freeQuota ? t("feePublication") : t("feeLabel")}
+                      </span>
+                      <span className="mazed-tabular text-[18px] font-extrabold text-foreground">
+                        {freeQuota || free ? (
+                          t("free")
+                        ) : usingCredit ? (
+                          <Ltr>1 / {creditsLeft}</Ltr>
+                        ) : fee == null ? (
+                          "—"
+                        ) : (
+                          `${formatTND(fee, locale)} ${tc("tnd")}`
+                        )}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-[11.5px] leading-snug text-muted">
+                      {freeQuota
+                        ? t("freeQuotaExplain", { left: freePlacesLeft, limit: freeLimit })
+                        : usingCredit
+                          ? t("creditExplain")
+                          : free
+                            ? t("freeExplain")
+                            : t("paidExplain")}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {missing.length > 0 && (
+                <section className="overflow-hidden rounded-2xl border border-border bg-surface">
+                  <p className="p-4 pb-2 text-[14px] font-extrabold text-foreground">
+                    {t("itemsToComplete", { count: missing.length })}
+                  </p>
+                  <ul className="grid p-2 sm:grid-cols-2 sm:p-3">
+                    {missing.map((m) => (
+                      <li key={m.label}>
+                        <button
+                          type="button"
+                          onClick={() => goToField(m.fieldId)}
+                          className={cn(
+                            "flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-start text-[12.5px] transition hover:bg-surface-2",
+                            flaggedNow.has(m.fieldId) ? "font-bold text-danger" : "text-muted hover:text-foreground",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "mt-1.5 size-1.5 shrink-0 rounded-full",
+                              flaggedNow.has(m.fieldId) ? "bg-danger" : "bg-[var(--gold)]",
+                            )}
+                          />
+                          {m.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </>
+          )}
         </div>
+
+        {/* Wide screens: the buttons sit under the step. */}
+        <div className="mt-5 hidden items-center justify-between gap-3 lg:flex">
+          <div>{backButton}</div>
+          {forwardButton}
+        </div>
+        {step === 3 && <p className="mt-2 hidden text-end text-[11px] text-muted lg:block">{feeHint}</p>}
       </div>
 
+      {/* Phones: the buttons are always under the thumb. */}
       <div className="fixed inset-x-0 bottom-[calc(var(--mazed-bottombar-h,64px)+env(safe-area-inset-bottom))] z-20 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-md lg:hidden">
-        <button
-          type="button"
-          onClick={publishNow}
-          disabled={busy || photosUploading > 0}
-          className="mazed-btn-luxe tap-target inline-flex h-12 w-full items-center justify-center gap-1.5 text-[14px] disabled:opacity-60"
-        >
-          {busy ? (
-            <><Loader2 className="size-4 animate-spin" /> {t("oneMoment")}</>
-          ) : photosUploading > 0 ? (
-            <><Loader2 className="size-4 animate-spin" /> {t("sendingPhotos")}</>
-          ) : (
-            <>{t("publishCta")}</>
-          )}
-        </button>
-        <p className="mt-2 text-center text-[11px] text-muted lg:mt-3">
-          {freeQuota
-            ? t("freeQuotaHint")
-            : free
-            ? t("freeInCategory")
-            : usingCredit
-              ? t("useOneCredit", { count: creditsLeft })
-              : fee != null
-                ? t.rich("feeAfterReview", { amount: fee, ltr: (chunks) => <Ltr>{chunks}</Ltr> })
-                : t("feeShownAfterCategory")}
-        </p>
+        <div className="flex items-center gap-2.5">
+          {backButton}
+          {forwardButton}
+        </div>
+        {step === 3 && <p className="mt-2 text-center text-[11px] text-muted">{feeHint}</p>}
       </div>
     </main>
   );
@@ -1091,6 +1301,36 @@ function AttributeField({
  * these can be filled in any sequence — and numbered blocks down one column
  * read as a checklist someone else wrote rather than a form you are filling in.
  */
+/** One answered step on the summary, with the way back to change it. */
+function SummaryBlock({
+  title,
+  editLabel,
+  onEdit,
+  children,
+}: {
+  title: string;
+  editLabel: string;
+  onEdit: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl bg-surface-2/60 p-3 ring-1 ring-border">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[11.5px] font-bold text-muted">{title}</span>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="inline-flex items-center gap-1 text-[12px] font-bold text-gold hover:underline"
+        >
+          <Pencil className="size-3" />
+          {editLabel}
+        </button>
+      </div>
+      <div className="mt-1.5 text-[12.5px] leading-relaxed text-muted">{children}</div>
+    </div>
+  );
+}
+
 function SectionHead({
   icon: Icon, title,
 }: {
