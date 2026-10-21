@@ -17,6 +17,7 @@ import {
   Heart,
   Plus,
   BellRing,
+  Settings,
 } from "lucide-react";
 
 // Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
@@ -146,6 +147,7 @@ export default async function AccountPage() {
     { href: "/account/requests", Icon: BellRing, title: t("actions.requestsTitle"), body: t("actions.requestsBody") },
     { href: "/account/activity", Icon: Heart, title: t("actions.favoritesTitle"), body: t("actions.favoritesBody") },
     { href: "/account/payments", Icon: Wallet, title: t("actions.paymentsTitle"), body: t("actions.paymentsBody") },
+    { href: "/account/settings", Icon: Settings, title: t("actions.settingsTitle"), body: t("actions.settingsBody") },
   ];
   if (role === "admin") {
     accountActions.push({ href: "/admin", Icon: LayoutDashboard, title: t("actions.adminTitle"), body: t("actions.adminBody") });

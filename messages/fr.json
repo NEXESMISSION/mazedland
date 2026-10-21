@@ -80,7 +80,9 @@
       "adminTitle": "Console admin",
       "adminBody": "Annonces, paiements et vendeurs.",
       "requestsTitle": "Mes demandes",
-      "requestsBody": "Ce que je cherche, avec alertes"
+      "requestsBody": "Ce que je cherche, avec alertes",
+      "settingsTitle": "Paramètres",
+      "settingsBody": "Profil, notifications, confidentialité"
     }
   },
   "account": {
@@ -2854,5 +2856,28 @@
     },
     "alertsOff": "alertes coupées",
     "note": "Les {max} plus récentes. Une demande appartient à la personne qui l'a laissée : cette page ne la modifie pas."
+  },
+  "accountSettings": {
+    "title": "Paramètres",
+    "subtitle": "Votre profil, vos notifications et ce que le site montre de vous.",
+    "profileTitle": "Profil",
+    "phoneLine": "Numéro du compte :",
+    "nameLabel": "Nom affiché",
+    "governorateLabel": "Gouvernorat",
+    "governorateNone": "Non précisé",
+    "profileHint": "Ils pré-remplissent chaque nouvelle annonce ; vous pouvez toujours les changer dans l'annonce.",
+    "save": "Enregistrer",
+    "saved": "Profil enregistré.",
+    "saveFailed": "Impossible d'enregistrer le profil.",
+    "nameInvalid": "Le nom doit faire entre 2 et 80 caractères.",
+    "notificationsTitle": "Notifications",
+    "requestAlerts": "Les alertes de mes demandes",
+    "privacyTitle": "Ce que le site montre de vous",
+    "privacyPhone": "Votre numéro n'apparaît pas dans la page : un acheteur le voit seulement en appuyant sur « Voir le numéro », et chaque affichage est compté.",
+    "privacyRequests": "Vos demandes restent privées : aucun vendeur ne les voit. C'est vous qu'on prévient quand un bien correspond.",
+    "privacyReports": "Un signalement ne dit pas au vendeur qui l'a fait.",
+    "privacyPolicy": "Politique de confidentialité",
+    "deleteTitle": "Supprimer mon compte",
+    "deleteBody": "Vos annonces sont retirées du site et votre compte est fermé. C'est définitif."
   }
 }
