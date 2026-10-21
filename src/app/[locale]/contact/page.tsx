@@ -30,8 +30,13 @@ export const dynamic = "force-static";
  * Set NEXT_PUBLIC_CONTACT_EMAIL / NEXT_PUBLIC_CONTACT_PHONE and the rows come
  * back. Until one of them is set the page says so, which is honest and is also
  * hard to miss.
+ *
+ * The e-mail now has a real mailbox behind it: contact@mazed.immo, the
+ * company's own (Google Workspace, given by the owner on 2026-10-21). It is
+ * the default, so the page shows it without a dashboard setting; the env var
+ * still overrides it.
  */
-const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim();
+const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || "contact@mazed.immo";
 const CONTACT_PHONE = process.env.NEXT_PUBLIC_CONTACT_PHONE?.trim();
 
 /** tel: wants digits and a leading +, not the spaces that make it readable. */
