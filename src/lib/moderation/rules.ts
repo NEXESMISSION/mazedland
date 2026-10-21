@@ -63,6 +63,18 @@ export function hasContactInText(text: string): boolean {
   return PHONE.test(t) || EMAIL.test(t) || URL_LIKE.test(t) || MESSENGERS.test(t);
 }
 
+/**
+ * The same patterns, taken out: for text that leaves the site (the AI
+ * assistant, src/lib/ai) — a phone number or an e-mail has no business going
+ * to a third party, and the model needs neither to read a property.
+ */
+export function redactContacts(text: string): string {
+  return latinDigits(text)
+    .replace(new RegExp(PHONE.source, "g"), "[…]")
+    .replace(new RegExp(EMAIL.source, "gi"), "[…]")
+    .replace(new RegExp(URL_LIKE.source, "gi"), "[…]");
+}
+
 /** Whole-word match for Latin words, substring for Arabic (which attaches
  *  articles and prepositions to the word). */
 export function containsBannedWord(text: string, words: readonly string[]): boolean {

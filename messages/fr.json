@@ -1212,7 +1212,17 @@
     "minLeaseShort": "{count, plural, one {# mois minimum} other {# mois minimum}}",
     "moveInCost": "À l'entrée : {amount} (loyer, caution et charges)",
     "missingRent": "Indiquez le loyer mensuel, ou cochez « prix sur demande ».",
-    "tipPriceRent": "Le loyer paraît inhabituel pour cette surface. Vérifiez que c'est bien le montant par mois."
+    "tipPriceRent": "Le loyer paraît inhabituel pour cette surface. Vérifiez que c'est bien le montant par mois.",
+    "aiTitle": "Décrivez votre bien en une phrase",
+    "aiHint": "Écrivez comme vous le diriez : « Maison à Sfax, route de Gremda, 180 m², à vendre 350 000 DT ». On remplit les étapes, vous vérifiez.",
+    "aiPlaceholder": "Ex. : Appartement S+2 à Sousse, 110 m², 2e étage, à louer 1 200 DT par mois, meublé.",
+    "aiCta": "Remplir pour moi",
+    "aiWorking": "Lecture…",
+    "aiDone": "On a rempli ce qu'on a compris. Vérifiez chaque étape avant de publier.",
+    "aiFailed": "Impossible de lire la phrase pour le moment. Remplissez le formulaire normalement.",
+    "aiTooShort": "Écrivez une phrase un peu plus longue.",
+    "aiQuestions": "Pour compléter l'annonce, dites-nous aussi :",
+    "aiPrivacy": "Votre numéro et vos e-mails ne sont jamais envoyés. Rien n'est publié sans que vous l'ayez vérifié."
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",
@@ -2879,5 +2889,11 @@
     "privacyPolicy": "Politique de confidentialité",
     "deleteTitle": "Supprimer mon compte",
     "deleteBody": "Vos annonces sont retirées du site et votre compte est fermé. C'est définitif."
+  },
+  "aiApi": {
+    "tooShort": "Écrivez une phrase un peu plus longue.",
+    "rateLimited": "Trop de demandes en peu de temps. Réessayez dans une heure, ou remplissez le formulaire.",
+    "unavailable": "L'assistant n'est pas disponible pour le moment. Remplissez le formulaire normalement.",
+    "failed": "Impossible de lire la phrase pour le moment. Remplissez le formulaire normalement."
   }
 }

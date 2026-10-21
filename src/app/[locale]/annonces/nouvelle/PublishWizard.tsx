@@ -13,7 +13,7 @@ import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 import {
   Check, Tag, Camera, Wallet, Phone, ClipboardList, ClipboardCheck, Loader2, MapPin,
   Gift, Ticket, ImageOff, Home, ArrowLeft, ArrowRight, Lightbulb, CheckCircle2, AlertTriangle, Pencil,
-  KeyRound,
+  KeyRound, Sparkles,
 } from "lucide-react";
 import {
   MIN_PHOTOS,
@@ -29,6 +29,7 @@ import {
   type DealType,
   type Furnished,
 } from "@/lib/listings/deal";
+import type { ListingDraft } from "@/lib/ai/listing";
 
 /**
  * Publier une annonce — the sell-or-let flow.
@@ -160,6 +161,7 @@ export function PublishWizard({
   defaultGovernorate,
   initialDraft,
   initialDeal = "sale",
+  aiAvailable = false,
   locale,
 }: {
   categories: WizardCategory[];
@@ -178,6 +180,8 @@ export function PublishWizard({
   initialDraft: InitialDraft | null;
   /** ?deal=rent — the home page's « J'ai un bien à louer » lands here. */
   initialDeal?: DealType;
+  /** The listing assistant can be offered (key set, switched on, budget left). */
+  aiAvailable?: boolean;
   locale: string;
 }) {
   const d = initialDraft;
@@ -240,6 +244,11 @@ export function PublishWizard({
   const [availableFrom, setAvailableFrom] = useState(d?.available_from ?? "");
   const [minLease, setMinLease] = useState(d?.min_lease_months != null ? String(d.min_lease_months) : "");
   const rent = deal === "rent";
+  // The listing assistant (src/lib/ai/listing.ts): one sentence in, the
+  // fields below filled, the seller still reviewing every step.
+  const [aiText, setAiText] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiQuestions, setAiQuestions] = useState<string[]>([]);
   // Where the seller lives, not the first governorate in the alphabet. Most
   // people sell property in their own governorate, and "Ariana" was pre-filled
   // for all 24 of them — a wrong default nobody is prompted to correct, which
@@ -309,6 +318,68 @@ export function PublishWizard({
     if (next === deal) return;
     setDeal(next);
     setPrice("");
+  }
+
+  /**
+   * Fill the form from the seller's sentence. Only what the assistant could
+   * read is set — every other field keeps what the seller typed — and what it
+   * could not becomes the questions shown under the box. Nothing is saved
+   * here that the seller would not see on the way to the summary.
+   */
+  async function fillFromSentence() {
+    const text = aiText.trim();
+    if (text.length < 12) {
+      toast(t("aiTooShort"), "warning");
+      return;
+    }
+    setAiBusy(true);
+    try {
+      const res = await fetch("/api/ai/listing-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { draft?: ListingDraft };
+      if (!res.ok || !j.draft) {
+        toast(apiError(j, t("aiFailed")), "error");
+        return;
+      }
+      const dr = j.draft;
+      setDeal(dr.deal);
+      const cat = dr.categorySlug ? categories.find((c) => c.slug === dr.categorySlug) : undefined;
+      if (cat) {
+        setGroupId(cat.groupId);
+        setCategoryId(cat.id);
+      }
+      if (dr.governorate) setGovernorate(dr.governorate);
+      if (dr.delegation) setDelegation(dr.delegation);
+      if (dr.price != null) {
+        setPrice(String(dr.price));
+        setOnRequest(false);
+      }
+      const read: Record<string, string> = {};
+      if (dr.areaSqm != null) read.area_sqm = String(dr.areaSqm);
+      if (dr.rooms != null) read.rooms = String(dr.rooms);
+      if (dr.bathrooms != null) read.bathrooms = String(dr.bathrooms);
+      if (dr.floor != null) read.floor = String(dr.floor);
+      for (const [k, v] of Object.entries(dr.legal)) read[k] = v ? "true" : "false";
+      setAttrs((a) => ({ ...a, ...read }));
+      if (dr.deal === "rent") {
+        if (dr.deposit != null) setDeposit(String(dr.deposit));
+        if (dr.charges != null) setCharges(String(dr.charges));
+        if (dr.furnished) setFurnished(dr.furnished);
+        if (dr.availableFrom) setAvailableFrom(dr.availableFrom);
+        if (dr.minLeaseMonths != null) setMinLease(String(dr.minLeaseMonths));
+      }
+      if (dr.title) setTitle(dr.title);
+      if (dr.description) setDescription(dr.description);
+      setAiQuestions(dr.questions);
+      toast(t("aiDone"), "success");
+    } catch {
+      toast(t("aiFailed"), "error");
+    } finally {
+      setAiBusy(false);
+    }
   }
 
   /**
@@ -831,6 +902,44 @@ export function PublishWizard({
           {/* ── ① What and where ── */}
           {step === 0 && (
             <>
+              {/* Say it in a sentence — the assistant fills the steps, the
+                  seller checks them. Only offered when it can answer. */}
+              {aiAvailable && (
+                <section className="rounded-2xl border border-gold-soft bg-gold-faint p-4 sm:p-5">
+                  <SectionHead icon={Sparkles} title={t("aiTitle")} />
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{t("aiHint")}</p>
+                  <textarea
+                    value={aiText}
+                    onChange={(e) => setAiText(e.target.value)}
+                    rows={3}
+                    maxLength={800}
+                    dir="auto"
+                    placeholder={t("aiPlaceholder")}
+                    className="mt-3 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[14px] leading-relaxed text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={fillFromSentence}
+                    disabled={aiBusy}
+                    className="mazed-btn-luxe tap-target mt-2 inline-flex h-11 items-center gap-2 px-5 text-[13px] disabled:opacity-60"
+                  >
+                    {aiBusy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                    {aiBusy ? t("aiWorking") : t("aiCta")}
+                  </button>
+                  {aiQuestions.length > 0 && (
+                    <div className="mt-3 rounded-xl bg-surface p-3 ring-1 ring-border">
+                      <p className="text-[12px] font-bold text-foreground">{t("aiQuestions")}</p>
+                      <ul className="mt-1 list-disc space-y-0.5 ps-5 text-[12.5px] text-foreground">
+                        {aiQuestions.map((q) => (
+                          <li key={q} dir="auto">{q}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <p className="mt-2 text-[11px] leading-snug text-muted">{t("aiPrivacy")}</p>
+                </section>
+              )}
+
               {/* Sell or let — the one answer that changes the questions after it. */}
               <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
                 <SectionHead icon={Home} title={t("dealTitle")} />

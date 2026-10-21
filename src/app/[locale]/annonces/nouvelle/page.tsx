@@ -23,6 +23,7 @@ import {
 } from "@/lib/products";
 import { liveListingCount, moderationSettings } from "@/lib/moderation/server";
 import { asDealType } from "@/lib/listings/deal";
+import { aiAvailable } from "@/lib/ai/server";
 
 export const dynamic = "force-dynamic";
 
@@ -200,6 +201,7 @@ export default async function NewListingPage({
       defaultGovernorate={(profRes.data?.governorate as string | null) ?? ""}
       initialDraft={(draftRes.data as unknown as InitialDraft | null) ?? null}
       initialDeal={initialDeal}
+      aiAvailable={await aiAvailable(admin)}
       locale={locale}
     />
   );
