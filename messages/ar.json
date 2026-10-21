@@ -562,7 +562,7 @@
     "heroLive": "متاح",
     "heroBidCta": "شوف الإعلان",
     "heroBrowseCta": "تصفّح الإعلانات",
-    "heroBrandTitle": "اشري وبيع عقارك في تونس",
+    "heroBrandTitle": "اشري، بيع وكري عقارك في تونس",
     "heroBrandEyebrow": "{count, plural, zero {ما فماش إعلانات منشورة توّا} one {إعلان واحد منشور} two {إعلانين منشورين} few {# إعلانات منشورة} many {# إعلانًا منشورًا} other {# إعلان منشور}}",
     "soldChip": "تباع",
     "howItWorksEyebrow": "الخطوات",
@@ -613,7 +613,19 @@
     "protectedNumberTitle": "رقم محمي",
     "protectedNumberSub": "يظهر عند الطلب",
     "browseEyebrow": "تصفّح",
-    "browseTitle": "لقى عقارك"
+    "browseTitle": "لقى عقارك",
+    "intentTitle": "شنوّة تحب تعمل؟",
+    "intentSell": "نحب نبيع",
+    "intentSellHint": "حطّ عقارك للبيع",
+    "intentBuy": "نحب نشري",
+    "intentBuyHint": "العقارات للبيع",
+    "intentRent": "نحب نكري",
+    "intentRentHint": "تكري ولا تلوّج",
+    "intentRentQuestion": "عندك عقار تحب تكريه، ولا تلوّج على كراء؟",
+    "intentRentOwner": "عندي عقار نكريه",
+    "intentRentOwnerHint": "انشر إعلان كراء",
+    "intentRentSeeker": "نلوّج على كراء",
+    "intentRentSeekerHint": "شوف العقارات للكراء"
   },
   "search": {
     "placeholder": "لوّج على عقار…",
@@ -743,7 +755,22 @@
     "next": "التالي",
     "forRent": "للكراء",
     "reserved": "محجوز",
-    "rentAmount": "{amount} د.ت في الشهر"
+    "rentAmount": "{amount} د.ت في الشهر",
+    "metaTitleSale": "عقارات للبيع",
+    "metaTitleRent": "عقارات للكراء",
+    "dealAria": "للبيع ولا للكراء",
+    "deal": {
+      "all": "الكل",
+      "sale": "للبيع",
+      "rent": "للكراء"
+    },
+    "budgetRent": "الكراء في الشهر",
+    "rentBuckets": {
+      "under-500": "أقل من 500 د.ت",
+      "500-1000": "500 – 1000 د.ت",
+      "1000-2000": "1000 – 2000 د.ت",
+      "2000-plus": "2000 د.ت وأكثر"
+    }
   },
   "listing": {
     "metaNotFound": "الإعلان غير موجود — Mazed Immo",

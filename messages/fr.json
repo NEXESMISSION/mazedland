@@ -562,7 +562,7 @@
     "heroLive": "En ligne",
     "heroBidCta": "Voir l’annonce",
     "heroBrowseCta": "Explorer les annonces",
-    "heroBrandTitle": "Acheter et vendre un bien en Tunisie",
+    "heroBrandTitle": "Acheter, vendre et louer un bien en Tunisie",
     "heroBrandEyebrow": "{count, plural, one {# annonce en ligne} other {# annonces en ligne}}",
     "soldChip": "Vendu",
     "howItWorksEyebrow": "Le parcours",
@@ -613,7 +613,19 @@
     "protectedNumberTitle": "Numéro protégé",
     "protectedNumberSub": "Affiché à la demande",
     "browseEyebrow": "Parcourir",
-    "browseTitle": "Trouvez votre bien"
+    "browseTitle": "Trouvez votre bien",
+    "intentTitle": "Que voulez-vous faire ?",
+    "intentSell": "Je vends",
+    "intentSellHint": "Publier mon bien",
+    "intentBuy": "J'achète",
+    "intentBuyHint": "Les biens à vendre",
+    "intentRent": "Je loue",
+    "intentRentHint": "Louer ou trouver",
+    "intentRentQuestion": "Vous avez un bien à louer, ou vous cherchez une location ?",
+    "intentRentOwner": "J'ai un bien à louer",
+    "intentRentOwnerHint": "Publier une annonce de location",
+    "intentRentSeeker": "Je cherche une location",
+    "intentRentSeekerHint": "Voir les biens à louer"
   },
   "search": {
     "placeholder": "Rechercher un bien…",
@@ -743,7 +755,22 @@
     "next": "Suivant",
     "forRent": "À louer",
     "reserved": "Réservé",
-    "rentAmount": "{amount} TND / mois"
+    "rentAmount": "{amount} TND / mois",
+    "metaTitleSale": "Biens à vendre",
+    "metaTitleRent": "Biens à louer",
+    "dealAria": "À vendre ou à louer",
+    "deal": {
+      "all": "Tout",
+      "sale": "À vendre",
+      "rent": "À louer"
+    },
+    "budgetRent": "Loyer par mois",
+    "rentBuckets": {
+      "under-500": "Moins de 500",
+      "500-1000": "500 – 1 000",
+      "1000-2000": "1 000 – 2 000",
+      "2000-plus": "2 000 et plus"
+    }
   },
   "listing": {
     "metaNotFound": "Annonce introuvable — Mazed Immo",

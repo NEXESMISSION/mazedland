@@ -5,6 +5,7 @@ import { HeroShowcase, type ShowcaseSlide } from "@/components/landing/HeroShowc
 import { BELOW_LG } from "@/components/ui/HiddenAt";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeSearch } from "@/components/landing/HomeSearch";
+import { IntentChooser } from "@/components/landing/IntentChooser";
 import { AnnonceCard } from "@/components/listing/AnnonceCard";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatNumber, formatTND } from "@/lib/utils";
@@ -254,22 +255,12 @@ export async function HomeDesktop({
               {t("brand.slogan")}
             </p>
 
-            {/* Primary action — the hero-left had no CTA of its own; the only
-                button lived inside the showcase card. */}
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                href="/annonces"
-                className="mazed-gold-fill inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[13px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
-              >
-                {t("home.heroBrowseCta")}
-                <ArrowUpRight className="size-4 rtl:-scale-x-100" strokeWidth={2.5} />
-              </Link>
-              <Link
-                href="/annonces/nouvelle"
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-6 py-3.5 text-[13px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-gold-faint"
-              >
-                {t("home.sellProperty")}
-              </Link>
+            {/* Primary action: sell, buy or rent. It replaces « Explorer » and
+                « Vendre un bien » — buying is the catalogue narrowed to sales,
+                selling is the same publish form — and adds the third reason
+                people come, which had no door at all. */}
+            <div className="mt-8 max-w-xl">
+              <IntentChooser layout="hero" />
             </div>
 
             {/* Trust signals — separated by a hairline so they read as proof,

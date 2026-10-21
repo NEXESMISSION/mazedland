@@ -6,7 +6,7 @@ import { coverPhoto } from "@/lib/listingCover";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatNumber, formatTND } from "@/lib/utils";
 import { searchTokens } from "@/lib/search";
-import { PRICE_BUCKETS, TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
+import { PRICE_BUCKETS, RENT_BUCKETS, TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
 import { ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, Wallet, X } from "lucide-react";
@@ -17,9 +17,10 @@ export const dynamic = "force-dynamic";
  * Annonces — the fixed-price catalogue: a price is shown and the buyer
  * telephones the seller.
  *
- * It reads `listings` (0146). Filters are category, governorate, keyword and a
- * price range; the page is written against the shared design tokens, so it
- * takes whichever palette the site defines.
+ * It reads `listings` (0146). Filters are the deal (sale or rent, 0166),
+ * category, governorate, keyword and a price range; the page is written
+ * against the shared design tokens, so it takes whichever palette the site
+ * defines.
  *
  * PAGINATION. This used to `.limit(60)` and print `rows.length` as the total.
  * Harmless at a dozen annonces, and two bugs the day there are sixty-one: the
@@ -46,6 +47,14 @@ function firstValues(
   }
   return out;
 }
+
+/** ?deal=sale | rent narrows to one deal; anything else shows both. */
+function dealOf(v: string | undefined): "sale" | "rent" | null {
+  return v === "sale" || v === "rent" ? v : null;
+}
+
+/** The deal tabs, in order; the text is `catalogue.deal.<key>`. */
+const DEALS = ["all", "sale", "rent"] as const;
 
 /** Annonces per page — four rows of the desktop grid. */
 const PAGE_SIZE = 24;
@@ -118,7 +127,8 @@ export async function generateMetadata({
   const sp = firstValues(rawSp);
   const t = await getTranslations({ locale, namespace: "catalogue" });
   const admin = getServiceSupabase();
-  let what = t("metaTitleDefault");
+  const deal = dealOf(sp.deal);
+  let what = t(deal === "rent" ? "metaTitleRent" : deal === "sale" ? "metaTitleSale" : "metaTitleDefault");
   if (sp.cat && admin) {
     const { data } = await admin
       .from("categories")
@@ -148,6 +158,9 @@ export default async function AnnoncesPage({
   const admin = getServiceSupabase();
 
   const sort = (SORTS.find((s) => s === sp.sort) ?? "recent") as string;
+  const deal = dealOf(sp.deal);
+  // A rent is a monthly figure: its brackets are in hundreds, not thousands.
+  const buckets = deal === "rent" ? RENT_BUCKETS : PRICE_BUCKETS;
 
   // Price range, in TND. `min_price` / `max_price` are the names the home
   // page's price tiles sent before they pointed here; they are still read so a
@@ -188,6 +201,7 @@ export default async function AnnoncesPage({
     )
     .eq("status", "published");
 
+  if (deal) q = q.eq("deal_type", deal);
   if (active) q = q.eq("category_id", active.id);
   if (sp.gov) q = q.eq("governorate", sp.gov);
   // One ILIKE per word, against the accent-folded column: every word has to
@@ -258,7 +272,7 @@ export default async function AnnoncesPage({
     // `page` is deliberately absent from the defaults: changing any filter
     // returns to page 1, and only the pager passes a page explicitly.
     const merged = {
-      cat: sp.cat, gov: sp.gov, sort: sp.sort, q: sp.q,
+      deal: deal ?? undefined, cat: sp.cat, gov: sp.gov, sort: sp.sort, q: sp.q,
       min: min ? String(min) : undefined, max: max ? String(max) : undefined,
       ...next,
     };
@@ -280,6 +294,7 @@ export default async function AnnoncesPage({
           phone could reach the catalogue but never search it. A plain GET form:
           it works before hydration and carries the active filters along. */}
       <form action={`/${locale}/annonces`} method="get" role="search" className="relative lg:hidden">
+        {deal && <input type="hidden" name="deal" value={deal} />}
         {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
         {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
         {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
@@ -302,9 +317,32 @@ export default async function AnnoncesPage({
         />
       </form>
 
+      {/* Buy or rent first: the one question that changes every other filter
+          (a rent is per month, its budget is in hundreds). Changing it clears
+          the price, which belongs to the other deal's scale. */}
+      <div role="tablist" aria-label={t("dealAria")} className="mt-5 grid grid-cols-3 gap-1 rounded-xl bg-surface-2 p-1 sm:inline-grid sm:w-auto">
+        {DEALS.map((k) => {
+          const on = (deal ?? "all") === k;
+          return (
+            <Link
+              key={k}
+              role="tab"
+              aria-selected={on}
+              href={qs({ deal: k === "all" ? undefined : k, min: undefined, max: undefined }) as never}
+              className={
+                "inline-flex h-9 items-center justify-center rounded-lg px-4 text-[13px] font-bold transition " +
+                (on ? "bg-[var(--gold)] text-white shadow-[var(--shadow-gold)]" : "text-muted hover:text-foreground")
+              }
+            >
+              {t(`deal.${k}`)}
+            </Link>
+          );
+        })}
+      </div>
+
       {/* Filters. Property is filtered by what it IS and where it is — the two
           questions a buyer actually starts from. */}
-      <div className="mt-5 flex flex-wrap items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <Link
           href={qs({ cat: undefined }) as never}
           className={
@@ -393,7 +431,7 @@ export default async function AnnoncesPage({
         <summary className="tap-target flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5">
           <span className="inline-flex items-center gap-2 text-[12.5px] font-bold text-foreground">
             <Wallet className="size-4 text-muted" strokeWidth={2} />
-            {t("budget")}
+            {t(deal === "rent" ? "budgetRent" : "budget")}
           </span>
           <span
             className={`mazed-tabular text-[11.5px] font-semibold ${priceLabel ? "text-gold" : "text-muted"}`}
@@ -404,7 +442,7 @@ export default async function AnnoncesPage({
 
         <div className="border-t border-border p-3">
           <div className="flex flex-wrap gap-1.5">
-            {PRICE_BUCKETS.map((b) => {
+            {buckets.map((b) => {
               const on = (b.min ?? 0) === (min ?? 0) && (b.max ?? 0) === (max ?? 0);
               return (
                 <Link
@@ -420,7 +458,7 @@ export default async function AnnoncesPage({
                       : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
                   }
                 >
-                  {t(`priceBuckets.${b.key}`)}
+                  {t(deal === "rent" ? `rentBuckets.${b.key}` : `priceBuckets.${b.key}`)}
                 </Link>
               );
             })}
@@ -440,6 +478,7 @@ export default async function AnnoncesPage({
             method="get"
             className="mt-3 flex flex-wrap items-end gap-2 border-t border-border pt-3"
           >
+            {deal && <input type="hidden" name="deal" value={deal} />}
             {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
             {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
             {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
@@ -451,7 +490,7 @@ export default async function AnnoncesPage({
                 type="number"
                 name="min"
                 min={0}
-                step={1000}
+                step={deal === "rent" ? 50 : 1000}
                 inputMode="numeric"
                 defaultValue={min ? String(min) : ""}
                 placeholder="0"
@@ -464,7 +503,7 @@ export default async function AnnoncesPage({
                 type="number"
                 name="max"
                 min={0}
-                step={1000}
+                step={deal === "rent" ? 50 : 1000}
                 inputMode="numeric"
                 defaultValue={max ? String(max) : ""}
                 placeholder={t("maxPlaceholder")}

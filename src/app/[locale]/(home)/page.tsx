@@ -4,6 +4,7 @@ import { TrendingRail } from "@/components/landing/TrendingRail";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeDesktop } from "@/components/landing/HomeDesktop";
 import { HomeSearch } from "@/components/landing/HomeSearch";
+import { IntentChooser } from "@/components/landing/IntentChooser";
 import { LG_UP } from "@/components/ui/HiddenAt";
 import { AnnonceCard } from "@/components/listing/AnnonceCard";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
@@ -303,6 +304,12 @@ export default async function LandingPage({
           auction. Fallback brand slides kick in when the DB has nothing
           live so the carousel never renders empty. */}
       <HeroBanner slides={heroSlides} isRTL={isRTL} priority hiddenAt={LG_UP} />
+
+      {/* Sell, buy or rent — the three reasons to be here, first thing under
+          the carousel. The search and every rail stay below it. */}
+      <div className="mt-4 px-4">
+        <IntentChooser />
+      </div>
 
       {/* Search. The desktop header has a search box and the desktop hero has
           this component; the phone layout had neither, so a visitor could
