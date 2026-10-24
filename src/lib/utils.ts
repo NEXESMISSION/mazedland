@@ -8,6 +8,10 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Format a TND amount with locale-correct grouping. The plan caps prices in
  * the millions, so we never need decimals — properties trade in whole dinars.
+ *
+ * ar-TN groups thousands with a dot, but in Tunisia a dot separates dinars
+ * from millimes: "350.000 د.ت" reads as 350 dinars. Arabic amounts keep the
+ * ar-TN Latin digits and compact words but group with a space, like French.
  */
 export function formatTND(
   amount: number,
@@ -15,12 +19,13 @@ export function formatTND(
   options: { compact?: boolean } = {},
 ) {
   const localeTag = locale === "ar" ? "ar-TN" : locale === "en" ? "en-US" : "fr-TN";
+  const parts = new Intl.NumberFormat(localeTag, {
+    style: "decimal",
+    maximumFractionDigits: 0,
+    notation: options.compact ? "compact" : "standard",
+  }).formatToParts(amount);
   return readableSpaces(
-    new Intl.NumberFormat(localeTag, {
-      style: "decimal",
-      maximumFractionDigits: 0,
-      notation: options.compact ? "compact" : "standard",
-    }).format(amount),
+    parts.map((p) => (locale === "ar" && p.type === "group" ? " " : p.value)).join(""),
   );
 }
 
