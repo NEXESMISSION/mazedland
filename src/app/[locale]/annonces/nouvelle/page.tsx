@@ -24,6 +24,7 @@ import {
 import { liveListingCount, moderationSettings } from "@/lib/moderation/server";
 import { asDealType } from "@/lib/listings/deal";
 import { aiAvailable } from "@/lib/ai/server";
+import { asPendingEdit } from "@/lib/listings/edit";
 
 export const dynamic = "force-dynamic";
 
@@ -52,10 +53,12 @@ export const dynamic = "force-dynamic";
 export default async function NewListingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ draft?: string | string[]; deal?: string | string[] }>;
+  searchParams: Promise<{ draft?: string | string[]; deal?: string | string[]; edit?: string | string[] }>;
 }) {
   const sp = await searchParams;
   const wantedDraft = Array.isArray(sp.draft) ? sp.draft[0] : sp.draft;
+  // « Modifier » on an annonce that is online (0172): the same form, in edit mode.
+  const wantedEdit = Array.isArray(sp.edit) ? sp.edit[0] : sp.edit;
   // « J'ai un bien à louer » on the home page sends ?deal=rent (0166).
   const initialDeal = asDealType(Array.isArray(sp.deal) ? sp.deal[0] : sp.deal);
   const locale = await getLocale();
@@ -65,7 +68,9 @@ export default async function NewListingPage({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    const back = `/${locale}/annonces/nouvelle${initialDeal === "rent" ? "?deal=rent" : ""}`;
+    const back = wantedEdit
+      ? `/${locale}/annonces/nouvelle?edit=${encodeURIComponent(wantedEdit)}`
+      : `/${locale}/annonces/nouvelle${initialDeal === "rent" ? "?deal=rent" : ""}`;
     redirect(`/${locale}/login?next=${encodeURIComponent(back)}`);
   }
 
@@ -109,9 +114,11 @@ export default async function NewListingPage({
           `id, category_id, title, description, price, price_on_request, negotiable,
            governorate, delegation, attributes, contact_name, contact_phone, updated_at,
            deal_type, deposit_amount, charges_amount, furnished, available_from, min_lease_months,
+           pending_edit,
            photos:listing_photos (storage_path, sort_order)`,
         )
         .eq("seller_id", user!.id);
+      if (wantedEdit) return q.eq("id", wantedEdit).eq("status", "published").maybeSingle();
       return wantedDraft
         ? // Only the seller's own annonce, and only one still editable here.
           q.eq("id", wantedDraft).in("status", ["draft", "rejected", "pending_payment"]).maybeSingle()
@@ -187,6 +194,20 @@ export default async function NewListingPage({
 
   const groups = parents.map((p) => ({ id: p.id, label: categoryLabel(p, locale) }));
 
+  // Editing: an annonce that is not online (or not theirs) has no edit form —
+  // back to their annonces. An edit already waiting for an admin opens as the
+  // seller left it, not as the live version, so they can correct it.
+  const row = draftRes.data as (InitialDraft & { pending_edit?: unknown }) | null;
+  if (wantedEdit && !row) redirect(`/${locale}/account/listings`);
+  const pending = wantedEdit ? asPendingEdit(row?.pending_edit) : null;
+  const initialDraft: InitialDraft | null = row
+    ? {
+        ...row,
+        ...(pending ? (pending.fields as Partial<InitialDraft>) : {}),
+        photos: pending?.photos ?? row.photos,
+      }
+    : null;
+
   return (
     <PublishWizard
       categories={categories}
@@ -199,9 +220,11 @@ export default async function NewListingPage({
       defaultContactName={(profRes.data?.full_name as string | null) ?? ""}
       defaultContactPhone={(profRes.data?.phone as string | null) ?? ""}
       defaultGovernorate={(profRes.data?.governorate as string | null) ?? ""}
-      initialDraft={(draftRes.data as unknown as InitialDraft | null) ?? null}
+      initialDraft={initialDraft}
       initialDeal={initialDeal}
-      aiAvailable={await aiAvailable(admin)}
+      aiAvailable={wantedEdit ? false : await aiAvailable(admin)}
+      mode={wantedEdit ? "edit" : "create"}
+      editPending={Boolean(pending)}
       locale={locale}
     />
   );

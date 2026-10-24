@@ -149,7 +149,9 @@
       "seeAll": "Voir toutes les annonces",
       "freePlaces": "{used}/{limit} annonces gratuites utilisées",
       "pricePerMonth": "{amount} TND / mois",
-      "promote": "Promouvoir"
+      "promote": "Promouvoir",
+      "edit": "Modifier",
+      "editPending": "Modification en attente"
     },
     "listingActions": {
       "mark_sold": {
@@ -1083,6 +1085,18 @@
     "admin_social_attention": {
       "title": "Publication à reprendre",
       "body": "{title}"
+    },
+    "listing_edit_applied": {
+      "title": "Modification publiée",
+      "body": "Vos modifications de « {title} » sont en ligne."
+    },
+    "listing_edit_rejected": {
+      "title": "Modification refusée",
+      "body": "Les modifications de « {title} » n'ont pas été publiées. Motif : {reason}"
+    },
+    "admin_listing_edit_pending": {
+      "title": "Modification à vérifier",
+      "body": "« {title} » — le vendeur a modifié son annonce en ligne."
     }
   },
   "publish": {
@@ -1239,7 +1253,18 @@
     "aiFailed": "Impossible de lire la phrase pour le moment. Remplissez le formulaire normalement.",
     "aiTooShort": "Écrivez une phrase un peu plus longue.",
     "aiQuestions": "Pour compléter l'annonce, dites-nous aussi :",
-    "aiPrivacy": "Votre numéro et vos e-mails ne sont jamais envoyés. Rien n'est publié sans que vous l'ayez vérifié."
+    "aiPrivacy": "Votre numéro et vos e-mails ne sont jamais envoyés. Rien n'est publié sans que vous l'ayez vérifié.",
+    "editTitle": "Modifier mon annonce",
+    "editSubtitle": "Corrigez ce qui doit l'être. L'annonce reste en ligne pendant ce temps.",
+    "editBanner": "Vous modifiez une annonce en ligne. Rien ne change tant que vous n'avez pas enregistré.",
+    "editPendingBanner": "Votre dernière modification attend une vérification : vous la voyez telle que vous l'avez envoyée.",
+    "saveChanges": "Enregistrer les modifications",
+    "editFreeNote": "Modifier une annonce est gratuit et ne change pas sa date de fin. Si une modification doit être vérifiée, l'annonce reste en ligne telle quelle en attendant.",
+    "editFailed": "Impossible d'enregistrer les modifications pour le moment.",
+    "editAppliedTitle": "Modifications en ligne",
+    "editAppliedBody": "Votre annonce affiche déjà la nouvelle version.",
+    "editPendingTitle": "Modifications envoyées",
+    "editPendingBody": "Notre équipe vérifie ces modifications. Votre annonce reste en ligne telle qu'elle était, et vous êtes prévenu dès qu'elles sont publiées."
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",
@@ -1286,7 +1311,8 @@
     },
     "contactRequired": "Ajoutez un numéro de téléphone joignable.",
     "attestationRequired": "Cochez l'attestation sur l'honneur.",
-    "photoRequired": "Ajoutez au moins une photo."
+    "photoRequired": "Ajoutez au moins une photo.",
+    "editOnlyLive": "Seule une annonce en ligne se modifie ici."
   },
   "auth": {
     "hero": {
@@ -2405,7 +2431,8 @@
       "expiring": "Expirent bientôt",
       "expired": "Expirées",
       "rejected": "Refusées",
-      "all": "Toutes"
+      "all": "Toutes",
+      "edits": "Modifications"
     },
     "searchPlaceholder": "Référence MZ-00042, titre, téléphone…",
     "create": "Créer",
@@ -2529,7 +2556,16 @@
       "save": "Enregistrer",
       "reviewWhy": "Pourquoi elle attend une vérification",
       "reportsTitle": "{count, plural, one {# signalement} other {# signalements}}",
-      "rented": "Louée"
+      "rented": "Louée",
+      "pendingEditTitle": "Modification envoyée par le vendeur le {date}",
+      "pendingEditWhy": "À vérifier :",
+      "pendingEditPhotos": "{count, plural, one {Nouvelle galerie : # photo} other {Nouvelle galerie : # photos}}",
+      "approveEdit": "Publier la modification",
+      "rejectEdit": "Refuser la modification",
+      "editApproved": "Modification publiée.",
+      "editRejected": "Modification refusée.",
+      "rejectEditTitle": "Refuser cette modification ?",
+      "rejectEditBody": "L'annonce reste en ligne telle qu'elle était. Le vendeur reçoit le motif."
     },
     "forRent": "À louer",
     "perMonth": "{amount} / mois",
@@ -2538,6 +2574,29 @@
       "all": "Tout",
       "sale": "Vente",
       "rent": "Location"
+    },
+    "editWaiting": "Modification à vérifier · {why}",
+    "editFields": {
+      "title": "Titre",
+      "description": "Description",
+      "price": "Prix",
+      "price_on_request": "Prix sur demande",
+      "negotiable": "Négociable",
+      "governorate": "Gouvernorat",
+      "delegation": "Délégation",
+      "address": "Adresse",
+      "attributes": "Caractéristiques",
+      "deal_type": "Opération",
+      "deposit_amount": "Caution",
+      "charges_amount": "Charges",
+      "furnished": "Meublé",
+      "available_from": "Disponible le",
+      "min_lease_months": "Durée minimale",
+      "contact_name": "Nom du contact",
+      "contact_phone": "Téléphone",
+      "contact_whatsapp": "WhatsApp",
+      "category_id": "Catégorie",
+      "show_phone": "Numéro affiché"
     }
   },
   "adminSellers": {
@@ -2694,7 +2753,9 @@
       "notSellable": "Une annonce « {status} » ne peut pas être marquée vendue.",
       "phoneRequiredLive": "Une annonce en ligne doit garder un numéro.",
       "publishedNotDeletable": "Archivez d'abord : supprimer une annonce en ligne casse les liens partagés.",
-      "paidNotDeletable": "Cette annonce a été payée. Archivez-la — la trace du paiement doit rester."
+      "paidNotDeletable": "Cette annonce a été payée. Archivez-la — la trace du paiement doit rester.",
+      "noPendingEdit": "Aucune modification en attente sur cette annonce.",
+      "editNotLive": "L'annonce n'est plus en ligne : la modification ne peut pas être publiée."
     },
     "sellers": {
       "unknownRole": "Rôle inconnu.",

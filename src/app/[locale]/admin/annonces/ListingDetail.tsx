@@ -73,6 +73,14 @@ export type PanelListing = {
   attestation: { version: string; at: string | null } | null;
   payment: { amount: number; status: string; kind: string; uploadedAt: string | null } | null;
   paidWith: "credit" | "payment" | "waived" | "none";
+  /** The seller's edit of this live annonce, waiting for an admin (0172). */
+  pendingEdit: {
+    flags: string[];
+    submittedAt: string;
+    changes: { label: string; before: string; after: string }[];
+    /** The new gallery, when the edit changes the photos. */
+    photos: string[] | null;
+  } | null;
 };
 
 /** `paidWith` is worded by `adminListings.detail.paidWith.<value>`. */
@@ -110,7 +118,7 @@ export function ListingDetail({
   const tAdmin = useTranslations("admin");
   const tCommon = useTranslations("common");
   const locale = useLocale();
-  const [confirm, setConfirm] = useState<null | "reject" | "delete" | "archive" | "sold">(null);
+  const [confirm, setConfirm] = useState<null | "reject" | "delete" | "archive" | "sold" | "rejectEdit">(null);
   const [editing, setEditing] = useState(false);
 
   const l = listing;
@@ -172,6 +180,44 @@ export function ListingDetail({
             <ImageOff className="size-4" strokeWidth={2} />
             {t("noPhotos")}
           </div>
+        )}
+
+        {l.pendingEdit && (
+          <section className="mt-4 border-s-2 border-[var(--tone-warn)] ps-3">
+            <p className="text-[12.5px] font-semibold text-foreground">
+              {t("pendingEditTitle", { date: dt(l.pendingEdit.submittedAt, locale) })}
+            </p>
+            {l.pendingEdit.flags.length > 0 && (
+              <p className="mt-0.5 text-[12px] text-[var(--foreground-muted)]">
+                {t("pendingEditWhy")} {l.pendingEdit.flags.join(" · ")}
+              </p>
+            )}
+            <dl className="mt-2 space-y-1.5">
+              {l.pendingEdit.changes.map((c) => (
+                <div key={c.label} className="text-[12px]">
+                  <dt className="text-[11.5px] text-subtle">{c.label}</dt>
+                  <dd className="min-w-0 break-words">
+                    <span className="text-[var(--foreground-muted)] line-through" dir="auto">{c.before}</span>
+                    <span className="mx-1.5 text-subtle">→</span>
+                    <span className="font-semibold text-foreground" dir="auto">{c.after}</span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            {l.pendingEdit.photos && (
+              <div className="mt-2">
+                <p className="text-[11.5px] text-subtle">{t("pendingEditPhotos", { count: l.pendingEdit.photos.length })}</p>
+                <div className="mt-1 flex gap-1.5 overflow-x-auto pb-1">
+                  {l.pendingEdit.photos.map((p, i) => (
+                    <div key={`${p}-${i}`} className="aspect-[4/3] w-[110px] shrink-0 overflow-hidden bg-surface-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={propertyPhotoUrl(p, { transform: { width: 240, quality: 60 } })} alt="" className="size-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
         )}
 
         {l.rejectionReason && (
@@ -299,6 +345,25 @@ export function ListingDetail({
       </div>
 
       <footer className="flex shrink-0 flex-wrap items-center gap-1.5 border-t border-border px-5 py-3">
+        {l.pendingEdit && (
+          <>
+            <AdminButton
+              variant="primary"
+              pending={pending}
+              icon={<Check className="size-3.5" strokeWidth={2.8} />}
+              onClick={() => act({ action: "approve_edit" }, t("editApproved"))}
+            >
+              {t("approveEdit")}
+            </AdminButton>
+            <AdminButton
+              variant="danger"
+              icon={<X className="size-3.5" strokeWidth={2.6} />}
+              onClick={() => setConfirm("rejectEdit")}
+            >
+              {t("rejectEdit")}
+            </AdminButton>
+          </>
+        )}
         {l.status === "pending_review" && (
           <>
             <AdminButton
@@ -409,6 +474,18 @@ export function ListingDetail({
         onCancel={() => setConfirm(null)}
         onConfirm={async (reason) => {
           if (await act({ action: "reject", reason }, t("rejected"))) setConfirm(null);
+        }}
+      />
+      <Confirm
+        open={confirm === "rejectEdit"}
+        title={t("rejectEditTitle")}
+        body={t("rejectEditBody")}
+        confirmLabel={t("rejectEdit")}
+        pending={pending}
+        reason={{ label: t("rejectReasonLabel"), placeholder: t("rejectReasonPlaceholder"), required: true }}
+        onCancel={() => setConfirm(null)}
+        onConfirm={async (reason) => {
+          if (await act({ action: "reject_edit", reason }, t("editRejected"))) setConfirm(null);
         }}
       />
       <Confirm

@@ -63,7 +63,7 @@ export async function isTrustedSeller(admin: Admin, sellerId: string): Promise<b
   return !profile?.banned_at && (approved ?? 0) > 0 && (held ?? 0) === 0;
 }
 
-type ListingRow = {
+export type ListingRow = {
   id: string;
   seller_id: string;
   category_id: string;
@@ -77,7 +77,7 @@ type ListingRow = {
   deal_type?: string | null;
 };
 
-const LISTING_COLUMNS =
+export const LISTING_COLUMNS =
   "id, seller_id, category_id, title, description, price, price_on_request, governorate, attributes, fee_payment_id, deal_type";
 
 const area = (attrs: Record<string, unknown> | null) => {
@@ -85,13 +85,18 @@ const area = (attrs: Record<string, unknown> | null) => {
   return Number.isFinite(n) && n > 0 ? n : null;
 };
 
-/** Every reason this annonce cannot publish itself. Empty means it may. */
+/**
+ * Every reason this annonce cannot publish itself. Empty means it may.
+ * `photoCount` judges a gallery that is not saved yet (an edit of a
+ * published annonce, 0172) instead of the one in the database.
+ */
 export async function reviewFlagsFor(
   admin: Admin,
   listing: ListingRow,
   settings: ModerationSettings,
+  opts: { photoCount?: number } = {},
 ): Promise<ReviewFlag[]> {
-  const [{ count: photoCount }, { data: cat }, { data: siblings }, trusted] = await Promise.all([
+  const [{ count: savedPhotos }, { data: cat }, { data: siblings }, trusted] = await Promise.all([
     admin.from("listing_photos").select("id", { count: "exact", head: true }).eq("listing_id", listing.id),
     admin.from("categories").select("kind").eq("id", listing.category_id).maybeSingle(),
     admin
@@ -127,7 +132,7 @@ export async function reviewFlagsFor(
       areaSqm: myArea,
       kind: (cat?.kind as CategoryKind | undefined) ?? null,
       dealType,
-      photoCount: photoCount ?? 0,
+      photoCount: opts.photoCount ?? savedPhotos ?? 0,
       duplicate,
     },
     settings.bannedWords,

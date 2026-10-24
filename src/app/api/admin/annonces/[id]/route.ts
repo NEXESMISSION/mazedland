@@ -6,6 +6,7 @@ import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { publishListing } from "@/lib/listings/publish";
 import { asDealType, closedStatus } from "@/lib/listings/deal";
+import { applyEdit, asPendingEdit } from "@/lib/listings/edit";
 
 /**
  * Everything an admin can do to one annonce.
@@ -76,7 +77,7 @@ export async function POST(
   const { data: listing } = await admin
     .from("listings")
     .select(
-      "id, seller_id, title, status, seller_credit_id, fee_payment_id, contact_phone, expires_at, deal_type",
+      "id, seller_id, title, status, seller_credit_id, fee_payment_id, contact_phone, expires_at, deal_type, pending_edit",
     )
     .eq("id", id)
     .maybeSingle();
@@ -349,6 +350,51 @@ export async function POST(
     if (error) return fail("listing_edit_failed", 500, error);
 
     logAction(req, user, "admin.listing.edit", { id, fields: Object.keys(patch) });
+    return NextResponse.json({ ok: true });
+  }
+
+  // ── A seller's edit of a live annonce, held by the rules (0172) ───────────
+  // Approve writes exactly what the seller sent; refuse discards it with a
+  // reason the seller reads. Either way the annonce stayed online meanwhile.
+  if (action === "approve_edit" || action === "reject_edit") {
+    const edit = asPendingEdit(listing.pending_edit);
+    if (!edit) return NextResponse.json({ error: "no_pending_edit", detail: t("noPendingEdit") }, { status: 409 });
+
+    if (action === "approve_edit") {
+      if (listing.status !== "published") {
+        return NextResponse.json({ error: "not_published", detail: t("editNotLive") }, { status: 409 });
+      }
+      const out = await applyEdit(admin, id, edit);
+      if (!out.ok) return fail("listing_edit_failed", 500, out.error);
+      await admin
+        .rpc("enqueue_notification", {
+          p_user_id: listing.seller_id,
+          p_kind: "listing_edit_applied",
+          p_title: "Modification publiée",
+          p_body: `Vos modifications de « ${listing.title} » sont en ligne.`,
+          p_link: `/annonces/${id}`,
+          p_payload: { vars: { title: listing.title } },
+        })
+        .then(() => {}, () => {});
+      logAction(req, user, "admin.listing.approve_edit", { id });
+      return NextResponse.json({ ok: true });
+    }
+
+    const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
+    if (!reason) return NextResponse.json({ error: "reason_required", detail: t("reasonRequired") }, { status: 400 });
+    const { error } = await admin.from("listings").update({ pending_edit: null, pending_edit_at: null }).eq("id", id);
+    if (error) return fail("listing_edit_failed", 500, error);
+    await admin
+      .rpc("enqueue_notification", {
+        p_user_id: listing.seller_id,
+        p_kind: "listing_edit_rejected",
+        p_title: "Modification refusée",
+        p_body: `Les modifications de « ${listing.title} » n'ont pas été publiées. Motif : ${reason}`,
+        p_link: "/account/listings",
+        p_payload: { vars: { title: listing.title, reason } },
+      })
+      .then(() => {}, () => {});
+    logAction(req, user, "admin.listing.reject_edit", { id });
     return NextResponse.json({ ok: true });
   }
 

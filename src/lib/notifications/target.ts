@@ -49,6 +49,8 @@ export const NOTIFICATION_KINDS = [
   "request_match",
   // Social Publisher (0170): the seller's promotion, and the admins' queue
   "social_published", "social_rejected", "admin_social_pending", "admin_social_attention",
+  // Editing a published annonce (0172): the seller hears the verdict, admins the queue
+  "listing_edit_applied", "listing_edit_rejected", "admin_listing_edit_pending",
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
@@ -78,6 +80,7 @@ type FallbackRoute =
   | "/account/requests"
   | "/account/listings"
   | "/admin/social"
+  | "/admin/annonces"
   | null;
 
 /**
@@ -165,6 +168,9 @@ const KIND_FALLBACK: Record<NotificationKind, FallbackRoute> = {
   social_rejected: "/account/listings",
   admin_social_pending: "/admin/social",
   admin_social_attention: "/admin/social",
+  listing_edit_applied: "/account/listings",
+  listing_edit_rejected: "/account/listings",
+  admin_listing_edit_pending: "/admin/annonces",
 };
 
 /** Last non-empty path segment, ignoring query/hash. */
@@ -246,6 +252,7 @@ const FALLBACK_SUPPORTS_FOCUS: Record<NotificationKind, boolean> = {
   request_match: false,
   social_published: false, social_rejected: false,
   admin_social_pending: false, admin_social_attention: false,
+  listing_edit_applied: false, listing_edit_rejected: false, admin_listing_edit_pending: false,
 };
 
 /** Pull a string `focus` id out of the notification payload, if present.

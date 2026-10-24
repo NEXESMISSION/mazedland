@@ -95,7 +95,7 @@ export default async function MyListingsPage({
       .from("listings")
       .select(
         `id, title, price, price_on_request, status, rejection_reason, published_at,
-         deal_type, availability,
+         deal_type, availability, pending_edit_at,
          expires_at, created_at, category_id, category:categories (label_fr, label_ar),
          photos:listing_photos (storage_path, sort_order, is_cover)`,
       )
@@ -165,7 +165,7 @@ export default async function MyListingsPage({
     id: string; title: string; price: number | null; price_on_request: boolean;
     status: string; rejection_reason: string | null; published_at: string | null;
     expires_at: string | null; created_at: string;
-    deal_type: string | null; availability: string | null;
+    deal_type: string | null; availability: string | null; pending_edit_at: string | null;
     category: Category | Category[] | null;
     category_id: string;
     photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
@@ -324,6 +324,19 @@ export default async function MyListingsPage({
         >
           {t("view")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
         </Link>
+        {/* Edit what is online (0172): checked by the rules before it replaces it. */}
+        {l.status === "published" && (
+          <Link
+            href={`/annonces/nouvelle?edit=${l.id}` as never}
+            className={
+              block
+                ? "mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2.5 text-[12.5px] font-bold text-foreground hover:border-gold-soft"
+                : "inline-flex items-center gap-1 text-[12.5px] font-bold text-foreground hover:underline"
+            }
+          >
+            <PencilLine className="size-3.5" /> {l.pending_edit_at ? t("editPending") : t("edit")}
+          </Link>
+        )}
         {/* On Mazed Immo's Facebook page, Instagram and the groups (0170). */}
         {l.status === "published" && (
           <Link

@@ -17,6 +17,7 @@ import { asDealType, firstMonthCost } from "@/lib/listings/deal";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
 import { Inbox, Plus } from "lucide-react";
+import { asPendingEdit, changedKeys } from "@/lib/listings/edit";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -41,11 +42,12 @@ const EXPIRING_DAYS = 7;
 
 /** Each tab's label is `adminListings.tabs.<key>`. */
 type TabKey =
-  | "pending_review" | "pending_payment" | "published"
+  | "pending_review" | "edits" | "pending_payment" | "published"
   | "expiring" | "expired" | "rejected" | "all";
 
+/** `edits`: published annonces whose seller's edit waits for an admin (0172). */
 const TAB_ORDER: TabKey[] = [
-  "pending_review", "pending_payment", "published", "expiring", "expired", "rejected", "all",
+  "pending_review", "edits", "pending_payment", "published", "expiring", "expired", "rejected", "all",
 ];
 
 /**
@@ -73,6 +75,8 @@ function tabFilters(tab: TabKey): Filter[] {
         { op: "gte", col: "expires_at", val: now.toISOString() },
         { op: "lte", col: "expires_at", val: soon.toISOString() },
       ];
+    case "edits":
+      return [{ op: "notNull", col: "pending_edit_at" }];
     case "all":
       return [];
     default:
@@ -82,7 +86,7 @@ function tabFilters(tab: TabKey): Filter[] {
 
 const LIST_SELECT = `
   id, title, price, negotiable, price_on_request, governorate, status, review_flags,
-  deal_type, created_at, published_at, expires_at,   seller_credit_id, fee_payment_id, fee_waived_by, contact_phone,
+  deal_type, created_at, published_at, expires_at, pending_edit_at, pending_edit, seller_credit_id, fee_payment_id, fee_waived_by, contact_phone,
   seller:profiles!listings_seller_id_fkey (full_name, phone),
   category:categories (label_fr, label_ar),
   photos:listing_photos (storage_path, sort_order, is_cover)
@@ -145,7 +149,7 @@ export default async function AdminAnnoncesPage({
    * that it stops being seven.
    */
   const countsQuery = () => {
-    let query = admin.from("listings").select("status, expires_at");
+    let query = admin.from("listings").select("status, expires_at, pending_edit_at");
     if (deal) query = query.eq("deal_type", deal);
     if (q) query = query.or(OR);
     return query;
@@ -171,11 +175,12 @@ export default async function AdminAnnoncesPage({
   const now = Date.now();
   const soonMs = now + EXPIRING_DAYS * 86_400_000;
   const tally: Record<TabKey, number> = {
-    pending_review: 0, pending_payment: 0, published: 0,
+    pending_review: 0, edits: 0, pending_payment: 0, published: 0,
     expiring: 0, expired: 0, rejected: 0, all: 0,
   };
-  for (const row of (countsRes.data ?? []) as { status: string; expires_at: string | null }[]) {
+  for (const row of (countsRes.data ?? []) as { status: string; expires_at: string | null; pending_edit_at: string | null }[]) {
     tally.all += 1;
+    if (row.pending_edit_at) tally.edits += 1;
     if (row.status in tally) tally[row.status as TabKey] += 1;
     if (row.status === "published" && row.expires_at) {
       const at = new Date(row.expires_at).getTime();
@@ -194,6 +199,7 @@ export default async function AdminAnnoncesPage({
     price_on_request: boolean; governorate: string; status: string;
     review_flags: string[] | null; deal_type: string | null;
     created_at: string; published_at: string | null; expires_at: string | null;
+    pending_edit_at: string | null; pending_edit: unknown;
     seller_credit_id: string | null; fee_payment_id: string | null;
     fee_waived_by: string | null; contact_phone: string | null;
     seller: { full_name: string | null; phone: string | null } | null;
@@ -232,7 +238,9 @@ export default async function AdminAnnoncesPage({
       // Waiting for review: say why (0165) — the admin reads the reason, not the
       // whole annonce. Otherwise, how old it is.
       hint:
-        r.status === "pending_review" && (r.review_flags?.length ?? 0) > 0
+        r.pending_edit_at
+          ? t("editWaiting", { why: (asPendingEdit(r.pending_edit)?.flags ?? []).map((f) => flagLabel(tRoot, f)).join(" · ") || "—" })
+          : r.status === "pending_review" && (r.review_flags?.length ?? 0) > 0
           ? (r.review_flags ?? []).map((f) => flagLabel(tRoot, f)).join(" · ")
           : ageLabel(r.status === "published" ? r.expires_at : r.created_at, r.status, t),
       status: r.status,
@@ -448,7 +456,7 @@ async function loadPanel(
        deal_type, deposit_amount, charges_amount, furnished, available_from, min_lease_months,
        created_at, published_at, expires_at,        view_count, contact_reveal_count, renewed_count,
        seller_attestation_version, seller_attestation_at,
-       seller_credit_id, fee_payment_id, fee_waived_by,
+       seller_credit_id, fee_payment_id, fee_waived_by, pending_edit,
        seller:profiles!listings_seller_id_fkey (full_name, phone),
        category:categories (label_fr, label_ar, kind),
        photos:listing_photos (storage_path, sort_order, is_cover)`,
@@ -471,6 +479,7 @@ async function loadPanel(
     view_count: number; contact_reveal_count: number; renewed_count: number;
     seller_attestation_version: string | null; seller_attestation_at: string | null;
     seller_credit_id: string | null; fee_payment_id: string | null; fee_waived_by: string | null;
+    pending_edit: unknown;
     seller: { full_name: string | null; phone: string | null } | null;
     category: { label_fr: string; label_ar: string | null; kind: string } | null;
     photos: { storage_path: string; sort_order: number; is_cover: boolean }[] | null;
@@ -595,5 +604,50 @@ async function loadPanel(
         }
       : null,
     paidWith,
+    pendingEdit: pendingEditView(r as unknown as Record<string, unknown>, r.pending_edit, photos.map((p) => p.path), locale, tRoot),
+  };
+}
+
+/**
+ * A seller's edit waiting for an admin (0172), as « before → after » lines in
+ * words, for the fields it changes. Attributes are listed by key: a changed
+ * surface or room count reads plainly enough.
+ */
+function pendingEditView(
+  current: Record<string, unknown>,
+  raw: unknown,
+  currentPhotos: string[],
+  locale: string,
+  tRoot: RootT,
+): PanelListing["pendingEdit"] {
+  const edit = asPendingEdit(raw);
+  if (!edit) return null;
+  const show = (k: string, v: unknown): string => {
+    if (v === null || v === undefined || v === "") return "—";
+    if ((k === "price" || k === "deposit_amount" || k === "charges_amount") && Number.isFinite(Number(v))) {
+      return `${formatTND(Number(v), locale)} ${tRoot("common.tnd")}`;
+    }
+    if (typeof v === "boolean") return tRoot(v ? "adminListings.yes" : "adminListings.no");
+    if (k === "governorate") return governorateLabel(String(v), locale);
+    if (k === "deal_type") return tRoot(v === "rent" ? "adminListings.deal.rent" : "adminListings.deal.sale");
+    if (typeof v === "object") {
+      return Object.entries(v as Record<string, unknown>)
+        .map(([a, b]) => `${a}: ${String(b)}`)
+        .join(" · ");
+    }
+    return String(v);
+  };
+  const keys = changedKeys(current, edit, currentPhotos);
+  return {
+    flags: edit.flags.map((f) => flagLabel(tRoot, f)),
+    submittedAt: edit.submittedAt,
+    changes: keys
+      .filter((k) => k !== "photos")
+      .map((k) => ({
+        label: tRoot.has(`adminListings.editFields.${k}`) ? tRoot(`adminListings.editFields.${k}`) : k,
+        before: show(k, current[k]),
+        after: show(k, edit.fields[k]),
+      })),
+    photos: keys.includes("photos") ? (edit.photos ?? []).map((p) => p.storage_path) : null,
   };
 }

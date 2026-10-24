@@ -162,6 +162,8 @@ export function PublishWizard({
   initialDraft,
   initialDeal = "sale",
   aiAvailable = false,
+  mode = "create",
+  editPending = false,
   locale,
 }: {
   categories: WizardCategory[];
@@ -182,9 +184,18 @@ export function PublishWizard({
   initialDeal?: DealType;
   /** The listing assistant can be offered (key set, switched on, budget left). */
   aiAvailable?: boolean;
+  /**
+   * "edit": the annonce is online and this is the seller's new version (0172).
+   * Nothing is saved while they type — the annonce stays as it is until they
+   * send the whole form, and the rules decide whether it goes straight online.
+   */
+  mode?: "create" | "edit";
+  /** The form shows an edit already waiting for an admin, not the live version. */
+  editPending?: boolean;
   locale: string;
 }) {
   const d = initialDraft;
+  const editing = mode === "edit";
   const router = useRouter();
   const { toast } = useToast();
   const apiError = useApiError();
@@ -197,7 +208,8 @@ export function PublishWizard({
   const [done, setDone] = useState<null | {
     paidWith: string;
     remaining?: number;
-    /** "published" when the rules let it straight online; else "pending_review". */
+    /** "published" when the rules let it straight online; else "pending_review".
+     *  An edit: "applied" (online now) or "pending" (an admin looks first). */
     status: string;
     id: string;
   }>(null);
@@ -434,7 +446,8 @@ export function PublishWizard({
   if (contactPhone.replace(/\D/g, "").length < 8) {
     missing.push({ label: t("missingPhone"), fieldId: "f-phone" });
   }
-  if (!attested) {
+  // An edit does not re-sign: the attestation was given when it went online.
+  if (!attested && !editing) {
     missing.push({ label: t("missingAttestation"), fieldId: "f-contact" });
   }
 
@@ -616,6 +629,9 @@ export function PublishWizard({
   const firstRun = useRef(true);
 
   useEffect(() => {
+    // An edit of a live annonce is sent whole at the end; writing it as the
+    // seller types would change what buyers see before anything checked it.
+    if (editing) return;
     if (!categoryId) return;
     // The row requires a 3-140 character title (0146). saveDraft substitutes
     // "Brouillon" for an empty one, so the only gap left is the moment between
@@ -653,7 +669,49 @@ export function PublishWizard({
     return publish();
   }
 
+  /** Send the new version of a live annonce (POST /api/annonces/:id/edit). */
+  async function sendEdit() {
+    if (!listingId) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/annonces/${listingId}/edit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category_id: categoryId,
+          title: title.trim(),
+          description: description.trim() || null,
+          price: onRequest ? null : Number(price) || 0,
+          price_on_request: onRequest,
+          negotiable,
+          deal_type: deal,
+          deposit_amount: rent && deposit.trim() !== "" ? Number(deposit) : null,
+          charges_amount: rent && charges.trim() !== "" ? Number(charges) : null,
+          furnished: rent && furnished ? furnished : null,
+          available_from: rent && availableFrom ? availableFrom : null,
+          min_lease_months: rent && minLease.trim() !== "" ? Number(minLease) : null,
+          governorate,
+          delegation: delegation.trim() || null,
+          attributes: typedAttributes(defs, attrs),
+          photos: photos.map((p, i) => ({ storage_path: p.path, sort_order: i })),
+          contact_name: contactName.trim() || null,
+          contact_phone: contactPhone.trim(),
+          contact_whatsapp: contactPhone.trim(),
+        }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { status?: string; error?: string; detail?: string };
+      if (!res.ok) {
+        toast(apiError(j, t("editFailed")), "error");
+        return;
+      }
+      setDone({ paidWith: "none", status: j.status ?? "pending", id: listingId });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function publish() {
+    if (editing) return sendEdit();
     setBusy(true);
     try {
       const id = await saveDraft({
@@ -692,10 +750,22 @@ export function PublishWizard({
           <Check className="size-8" strokeWidth={2.6} />
         </span>
         <h1 className="mt-5 text-[22px] font-extrabold tracking-tight">
-          {done.status === "published" ? t("donePublishedTitle") : t("doneTitle")}
+          {done.status === "applied"
+            ? t("editAppliedTitle")
+            : done.status === "pending"
+              ? t("editPendingTitle")
+              : done.status === "published"
+                ? t("donePublishedTitle")
+                : t("doneTitle")}
         </h1>
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
-          {done.status === "published" ? t("donePublishedBody") : t("doneBody")}
+          {done.status === "applied"
+            ? t("editAppliedBody")
+            : done.status === "pending"
+              ? t("editPendingBody")
+              : done.status === "published"
+                ? t("donePublishedBody")
+                : t("doneBody")}
           {done.paidWith === "credit" && typeof done.remaining === "number" && (
             <> {t("doneCreditsLeft", { count: done.remaining })}</>
           )}
@@ -703,7 +773,7 @@ export function PublishWizard({
           {done.paidWith === "free_quota" && <> {t("doneFreeQuota")}</>}
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5">
-          {done.status === "published" && (
+          {(done.status === "published" || done.status === "applied" || done.status === "pending") && (
             <button
               onClick={() => router.push(`/annonces/${done.id}` as never)}
               className="mazed-btn-luxe tap-target inline-flex px-6 py-3 text-[13.5px]"
@@ -812,12 +882,14 @@ export function PublishWizard({
         ) : photosUploading > 0 ? (
           <><Loader2 className="size-4 animate-spin" /> {t("sendingPhotos")}</>
         ) : (
-          <>{t("publishCta")}</>
+          <>{editing ? t("saveChanges") : t("publishCta")}</>
         )}
       </button>
     );
 
-  const feeHint = freeQuota
+  const feeHint = editing
+    ? t("editFreeNote")
+    : freeQuota
     ? t("freeQuotaHint")
     : free
       ? t("freeInCategory")
@@ -832,8 +904,8 @@ export function PublishWizard({
       <div className="mx-auto max-w-3xl">
         <div className="flex items-start justify-between gap-3 pt-2">
           <div>
-            <h1 className="text-[24px] font-extrabold tracking-tight">{t("title")}</h1>
-            <p className="mt-1 text-[13px] text-muted">{t("subtitle")}</p>
+            <h1 className="text-[24px] font-extrabold tracking-tight">{editing ? t("editTitle") : t("title")}</h1>
+            <p className="mt-1 text-[13px] text-muted">{editing ? t("editSubtitle") : t("subtitle")}</p>
           </div>
           {saved === "saving" && (
             <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-[11px] text-muted">
@@ -847,7 +919,14 @@ export function PublishWizard({
           )}
         </div>
 
-        {resumed && (
+        {editing && (
+          <div className="mt-4 rounded-2xl border border-gold-soft bg-gold-faint px-4 py-3 text-[12.5px] leading-relaxed text-foreground">
+            <p className="font-semibold">{t("editBanner")}</p>
+            {editPending && <p className="mt-0.5 text-muted">{t("editPendingBanner")}</p>}
+          </div>
+        )}
+
+        {resumed && !editing && (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold-soft bg-gold-faint px-4 py-3">
             <p className="text-[12.5px] font-semibold text-gold">
               {d?.updated_at
@@ -1425,6 +1504,12 @@ export function PublishWizard({
                     </div>
                   </div>
 
+                  {editing ? (
+                    <p className="rounded-2xl bg-surface-2 p-4 text-[12.5px] leading-relaxed text-muted ring-1 ring-border">
+                      {t("editFreeNote")}
+                    </p>
+                  ) : (
+                  <>
                   <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-surface-2/40 p-3.5">
                     <input
                       type="checkbox"
@@ -1462,6 +1547,8 @@ export function PublishWizard({
                             : t("paidExplain")}
                     </p>
                   </div>
+                  </>
+                  )}
                 </div>
               </section>
 

@@ -149,7 +149,9 @@
       "seeAll": "شوف الإعلانات الكل",
       "freePlaces": "{used}/{limit} إعلانات مجانية مستعملة",
       "pricePerMonth": "{amount} د.ت في الشهر",
-      "promote": "روّج"
+      "promote": "روّج",
+      "edit": "بدّل",
+      "editPending": "تبديل في الانتظار"
     },
     "listingActions": {
       "mark_sold": {
@@ -1083,6 +1085,18 @@
     "admin_social_attention": {
       "title": "منشور لازم يتعاود",
       "body": "{title}"
+    },
+    "listing_edit_applied": {
+      "title": "التبديل تنشر",
+      "body": "تبديلات «{title}» منشورة توّا."
+    },
+    "listing_edit_rejected": {
+      "title": "التبديل ترفض",
+      "body": "تبديلات «{title}» ما تنشرتش. السبب: {reason}"
+    },
+    "admin_listing_edit_pending": {
+      "title": "تبديل للمراجعة",
+      "body": "«{title}» — البائع بدّل إعلانو المنشور."
     }
   },
   "publish": {
@@ -1239,7 +1253,18 @@
     "aiFailed": "ما نجّمناش نقراو الجملة توّا. عمّر الإعلان عادي.",
     "aiTooShort": "اكتب جملة أطول شويّة.",
     "aiQuestions": "باش يكمل الإعلان، قلّنا زادة:",
-    "aiPrivacy": "رقمك والإيميل ما يتبعثو لحتى حد. وما يتنشر شي قبل ما تثبّتو انت."
+    "aiPrivacy": "رقمك والإيميل ما يتبعثو لحتى حد. وما يتنشر شي قبل ما تثبّتو انت.",
+    "editTitle": "بدّل إعلاني",
+    "editSubtitle": "صلّح اللي يلزم. الإعلان يقعد منشور في الأثناء.",
+    "editBanner": "راك تبدّل في إعلان منشور. حتى شي ما يتبدّل قبل ما تسجّل.",
+    "editPendingBanner": "التبديل الأخير متاعك يستنّى المراجعة: تشوفو كيف ما بعثتو.",
+    "saveChanges": "سجّل التبديلات",
+    "editFreeNote": "تبديل الإعلان بلاش وما يبدّلش تاريخ نهايتو. كان التبديل لازمو مراجعة، الإعلان يقعد منشور كيما هو في الأثناء.",
+    "editFailed": "ما نجّمناش نسجّلو التبديلات توّا.",
+    "editAppliedTitle": "التبديلات منشورة",
+    "editAppliedBody": "إعلانك يورّي النسخة الجديدة توّا.",
+    "editPendingTitle": "التبديلات تبعثت",
+    "editPendingBody": "الفريق متاعنا يراجع التبديلات. إعلانك يقعد منشور كيما كان، ونعلموك كي تتنشر."
   },
   "photoUploader": {
     "addPhotos": "زيد صورك",
@@ -1286,7 +1311,8 @@
     },
     "contactRequired": "أضف رقم هاتف يمكن الاتصال به.",
     "attestationRequired": "يجب الموافقة على التصريح على الشرف.",
-    "photoRequired": "أضف صورة واحدة على الأقل."
+    "photoRequired": "أضف صورة واحدة على الأقل.",
+    "editOnlyLive": "كان الإعلان المنشور ينجم يتبدّل من هنا."
   },
   "auth": {
     "hero": {
@@ -2405,7 +2431,8 @@
       "expiring": "تنتهي قريبًا",
       "expired": "منتهية الصلاحية",
       "rejected": "مرفوضة",
-      "all": "الكل"
+      "all": "الكل",
+      "edits": "التبديلات"
     },
     "searchPlaceholder": "المرجع MZ-00042، العنوان، الهاتف…",
     "create": "إنشاء",
@@ -2529,7 +2556,16 @@
       "save": "حفظ",
       "reviewWhy": "علاش يستنّى في المراجعة",
       "reportsTitle": "{count, plural, zero {ما فماش تبليغات} one {تبليغ واحد} two {تبليغين} few {# تبليغات} many {# تبليغًا} other {# تبليغ}}",
-      "rented": "تمّ الكراء"
+      "rented": "تمّ الكراء",
+      "pendingEditTitle": "تبديل بعثو البائع نهار {date}",
+      "pendingEditWhy": "للمراجعة:",
+      "pendingEditPhotos": "{count, plural, one {تصاور جديدة: تصويرة وحدة} other {تصاور جديدة: #}}",
+      "approveEdit": "انشر التبديل",
+      "rejectEdit": "ارفض التبديل",
+      "editApproved": "التبديل تنشر.",
+      "editRejected": "التبديل ترفض.",
+      "rejectEditTitle": "ترفض التبديل هذا؟",
+      "rejectEditBody": "الإعلان يقعد منشور كيما كان، والبائع يوصلو السبب."
     },
     "forRent": "للكراء",
     "perMonth": "{amount} في الشهر",
@@ -2538,6 +2574,29 @@
       "all": "الكل",
       "sale": "بيع",
       "rent": "كراء"
+    },
+    "editWaiting": "تبديل للمراجعة · {why}",
+    "editFields": {
+      "title": "العنوان",
+      "description": "الوصف",
+      "price": "السعر",
+      "price_on_request": "السعر عند الطلب",
+      "negotiable": "قابل للتفاوض",
+      "governorate": "الولاية",
+      "delegation": "المعتمدية",
+      "address": "العنوان التقريبي",
+      "attributes": "الخصائص",
+      "deal_type": "نوع العملية",
+      "deposit_amount": "الضمان",
+      "charges_amount": "المصاريف",
+      "furnished": "مفروش",
+      "available_from": "متوفّر من",
+      "min_lease_months": "أقل مدّة",
+      "contact_name": "اسم المتّصل",
+      "contact_phone": "الهاتف",
+      "contact_whatsapp": "واتساب",
+      "category_id": "الصنف",
+      "show_phone": "الرقم ظاهر"
     }
   },
   "adminSellers": {
@@ -2694,7 +2753,9 @@
       "notSellable": "لا يمكن تسجيل إعلان بحالة « {status} » كمُباع.",
       "phoneRequiredLive": "يجب أن يحتفظ الإعلان المنشور برقم هاتف.",
       "publishedNotDeletable": "قم بالأرشفة أولًا: حذف إعلان منشور يعطّل الروابط المشاركة.",
-      "paidNotDeletable": "تم دفع هذا الإعلان. قم بأرشفته — يجب أن يبقى أثر الدفع."
+      "paidNotDeletable": "تم دفع هذا الإعلان. قم بأرشفته — يجب أن يبقى أثر الدفع.",
+      "noPendingEdit": "ما فما حتى تبديل يستنّى على الإعلان هذا.",
+      "editNotLive": "الإعلان ما عادش منشور: التبديل ما ينجمش يتنشر."
     },
     "sellers": {
       "unknownRole": "دور غير معروف.",
