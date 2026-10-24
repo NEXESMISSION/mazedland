@@ -54,7 +54,8 @@ const LEDGER = path.join(ROOT, "scripts", "watermarked-photos.json");
 const MARK_HEIGHT_RATIO = 0.13;
 const MAX_MARK_WIDTH_RATIO = 0.16;
 const MIN_MARK_PX = 48;
-const MARGIN_RATIO = 0.035;
+const MARGIN_TOP_RATIO = 0.04;
+const MARGIN_RIGHT_RATIO = 0.08;
 const MARK_OPACITY = 0.92;
 
 const COMMIT = process.argv.includes("--commit");
@@ -128,8 +129,7 @@ async function markBox(width, height) {
     w = maxW;
     h = Math.round(w * aspect);
   }
-  const margin = Math.round(Math.min(width, height) * MARGIN_RATIO);
-  return { x: width - w - margin, y: margin, w };
+  return { x: width - w - Math.round(width * MARGIN_RIGHT_RATIO), y: Math.round(height * MARGIN_TOP_RATIO), w };
 }
 
 async function stamp(buf) {
@@ -154,7 +154,7 @@ const res = await fetch(`${SB_URL}/rest/v1/listing_photos?select=id,storage_path
 if (!res.ok) throw new Error(`listing_photos read failed: ${res.status} ${await res.text()}`);
 const rows = await res.json();
 
-const SETTINGS = `gold-corner-h${MARK_HEIGHT_RATIO}-o${MARK_OPACITY}`;
+const SETTINGS = `gold-corner-h${MARK_HEIGHT_RATIO}-o${MARK_OPACITY}-r${MARGIN_RIGHT_RATIO}`;
 const saved = fs.existsSync(LEDGER) ? JSON.parse(fs.readFileSync(LEDGER, "utf8")) : { done: [] };
 // A ledger written at a different strength describes files that have since
 // been restored from git; it must not be read as "already done".

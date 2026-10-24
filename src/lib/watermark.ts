@@ -17,8 +17,12 @@
  *
  * HOW BIG. 13% of the photo's height, never more than 16% of its width: on a
  * 1600 × 1200 photo that is a lockup about 115 × 155 px, a signature rather
- * than a stamp. The margin is 3.5% of the shorter side, so the logo clears the
- * rounded corners of the cards and survives the slight crop of a 4:3 card.
+ * than a stamp.
+ *
+ * WHERE EXACTLY. 4% of the height from the top, 8% of the width from the
+ * right. Most photos are 3:2 and the listing page and the cards show them in
+ * a 4:3 frame, which crops about 5.6% off each side: at 8% the logo survives
+ * that crop whole instead of being cut in half at the edge.
  *
  * WHY IT IS DRAWN, NOT COMPOSITED SERVER-SIDE. Photos go straight from the
  * browser to storage on a signed URL — the bytes never pass through our
@@ -35,8 +39,10 @@ const MARK_HEIGHT_RATIO = 0.13;
 const MAX_MARK_WIDTH_RATIO = 0.16;
 /** A floor so the logo stays readable on a small upload. */
 const MIN_MARK_PX = 48;
-/** Gap to the top and right edges, as a fraction of the shorter side. */
-const MARGIN_RATIO = 0.035;
+/** Gap to the top edge, as a fraction of the height. */
+const MARGIN_TOP_RATIO = 0.04;
+/** Gap to the right edge, as a fraction of the width — clears a 4:3 crop of a 3:2 photo. */
+const MARGIN_RIGHT_RATIO = 0.08;
 /** Nearly solid: a small signature has to be seen. */
 const MARK_OPACITY = 0.92;
 /**
@@ -84,8 +90,7 @@ export function markBox(
     w = maxW;
     h = Math.round(w * aspect);
   }
-  const margin = Math.round(Math.min(width, height) * MARGIN_RATIO);
-  return { x: width - w - margin, y: margin, w, h };
+  return { x: width - w - Math.round(width * MARGIN_RIGHT_RATIO), y: Math.round(height * MARGIN_TOP_RATIO), w, h };
 }
 
 /**
