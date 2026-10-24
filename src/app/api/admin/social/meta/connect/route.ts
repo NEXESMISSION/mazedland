@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   }
   const state = randomBytes(24).toString("base64url");
   const res = NextResponse.redirect(
-    oauthDialogUrl({ appId: config.appId, redirectUri: callbackUrl(req.nextUrl.origin), state }),
+    oauthDialogUrl({ appId: config.appId, redirectUri: callbackUrl(req.nextUrl.origin), state, configId: config.loginConfigId }),
   );
   res.cookies.set(STATE_COOKIE, `${state}.${locale}`, {
     httpOnly: true,

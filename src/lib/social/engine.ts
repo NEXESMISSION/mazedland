@@ -397,6 +397,42 @@ async function run(admin: Admin, job: JobRow, deps: EngineDeps): Promise<Outcome
   return "retry";
 }
 
+/**
+ * « Tester la connexion »: read-only calls with the stored token — the page's
+ * name, or the Instagram account and its 24 h quota. Nothing is posted. A
+ * token Meta refuses marks the account expired, as a failed post would.
+ */
+export async function checkSocialAccount(
+  admin: Admin,
+  accountId: string,
+  deps: EngineDeps = {},
+): Promise<{ ok: true; name: string; quota: { used: number; total: number } | null } | { ok: false; error: string }> {
+  const { data: acc } = await admin.from("social_accounts").select("platform").eq("id", accountId).maybeSingle();
+  if (!acc) return { ok: false, error: "missing" };
+  const client = await clientFor(admin, accountId, deps);
+  if ("error" in client) return { ok: false, error: client.error };
+  const now = new Date().toISOString();
+  try {
+    if (acc.platform === "instagram") {
+      const ig = await client.g.get<{ username?: string }>(`/${client.externalId}`, { fields: "username" });
+      const quota = await igPublishingLimit(client.g, client.externalId);
+      await admin.from("social_accounts").update({ last_checked_at: now, last_error: null }).eq("id", accountId);
+      return { ok: true, name: ig.username ? `@${ig.username}` : client.externalId, quota };
+    }
+    const page = await client.g.get<{ name?: string }>(`/${client.externalId}`, { fields: "name" });
+    await admin.from("social_accounts").update({ last_checked_at: now, last_error: null }).eq("id", accountId);
+    return { ok: true, name: page.name ?? client.externalId, quota: null };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const expired = err instanceof GraphError && err.kind === "auth";
+    await admin
+      .from("social_accounts")
+      .update({ last_checked_at: now, last_error: message.slice(0, 500), ...(expired ? { status: "expired" } : {}) })
+      .eq("id", accountId);
+    return { ok: false, error: expired ? "expired" : "failed" };
+  }
+}
+
 /** One run of the worker: take up to `limit` due jobs and do them, one at a time. */
 export async function runDueSocialJobs(admin: Admin, opts: EngineDeps & { limit?: number } = {}) {
   const { data, error } = await admin.rpc("claim_social_jobs", { p_limit: opts.limit ?? 5 });

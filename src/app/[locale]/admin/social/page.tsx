@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -13,7 +14,7 @@ import type { SocialChannel, SocialLanguage } from "@/lib/social/channels";
 import { trackedUrl } from "@/lib/social/content";
 import { callbackUrl, missingMetaConfig } from "@/lib/social/connect";
 import { socialOrigin, socialSettings } from "@/lib/social/server";
-import { AccountActions, GroupActions, GroupForm, JobActions, ReviewActions, VariantEditor } from "./SocialActions";
+import { AccountActions, AccountTest, GroupActions, GroupForm, JobActions, ReviewActions, VariantEditor } from "./SocialActions";
 
 export const dynamic = "force-dynamic";
 
@@ -337,6 +338,11 @@ export default async function AdminSocialPage({
       last_error: string | null; connected_at: string; parent_account_id: string | null;
     }[];
     const missing = missingMetaConfig();
+    // The address to register is the one the admin is using (see callbackUrl).
+    const h = await headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
+    const proto = h.get("x-forwarded-proto") ?? (/^(localhost|127.0.0.1)(:d+)?$/.test(host) ? "http" : "https");
+    const here = host ? `${proto}://${host}` : socialOrigin();
     return (
       <div className="mt-4 space-y-4">
         {sp.connected && <p className="rounded-xl mazed-tone-ok px-4 py-3 text-[12.5px] font-semibold">{t("connectedOk", { count: Number(sp.connected) || 1 })}</p>}
@@ -366,7 +372,7 @@ export default async function AdminSocialPage({
                 <li>{t("setup1")}</li>
                 <li>{t("setup2")}</li>
                 <li>
-                  {t("setup3")} <Ltr className="font-mono break-all text-foreground">{callbackUrl(socialOrigin())}</Ltr>
+                  {t("setup3")} <Ltr className="font-mono break-all text-foreground">{callbackUrl(here)}</Ltr>
                 </li>
                 <li>
                   {t("setup4")} <Ltr className="font-mono break-all text-foreground">{missing.join(", ")}</Ltr>
@@ -396,7 +402,10 @@ export default async function AdminSocialPage({
                   </p>
                   {a.last_error && <p className="mt-1 font-mono text-[11px] text-muted" dir="ltr">{a.last_error}</p>}
                 </div>
-                {a.status === "connected" && !a.parent_account_id && <AccountActions accountId={a.id} />}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {a.status === "connected" && <AccountTest accountId={a.id} />}
+                  {a.status === "connected" && !a.parent_account_id && <AccountActions accountId={a.id} />}
+                </div>
               </li>
             ))}
           </ul>

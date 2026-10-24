@@ -6,6 +6,7 @@ import { Check, Copy, ExternalLink, Play, RotateCcw } from "lucide-react";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { Confirm } from "@/components/admin/kit";
 import { useAdminAction } from "@/components/admin/kit/useAdminAction";
+import { useToast } from "@/components/ui/Toast";
 import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 
 /**
@@ -185,6 +186,31 @@ export function JobActions({
         </div>
       )}
     </div>
+  );
+}
+
+/** Read-only check that the stored token still works; says what it found. */
+export function AccountTest({ accountId }: { accountId: string }) {
+  const t = useTranslations("adminSocial");
+  const { toast } = useToast();
+  const { run, pending } = useAdminAction();
+  return (
+    <AdminButton
+      pending={pending}
+      onClick={() =>
+        run({
+          url: `/api/admin/social/accounts/${accountId}/test`,
+          method: "POST",
+          success: null,
+          onSuccess: (data) => {
+            const d = data as { name?: string; quota?: { used: number; total: number } | null };
+            toast(d.quota ? t("testOkQuota", { name: d.name ?? "", used: d.quota.used, total: d.quota.total }) : t("testOk", { name: d.name ?? "" }), "success");
+          },
+        })
+      }
+    >
+      {t("test")}
+    </AdminButton>
   );
 }
 

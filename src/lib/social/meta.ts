@@ -263,14 +263,19 @@ export const META_SCOPES = [
   "instagram_content_publish",
 ] as const;
 
-export function oauthDialogUrl(opts: { appId: string; redirectUri: string; state: string }): string {
+/**
+ * The Facebook dialog. A « Facebook Login for Business » app names its
+ * permissions in a configuration (config_id); a classic one asks for scopes.
+ */
+export function oauthDialogUrl(opts: { appId: string; redirectUri: string; state: string; configId?: string | null }): string {
   const q = new URLSearchParams({
     client_id: opts.appId,
     redirect_uri: opts.redirectUri,
     state: opts.state,
     response_type: "code",
-    scope: META_SCOPES.join(","),
   });
+  if (opts.configId) q.set("config_id", opts.configId);
+  else q.set("scope", META_SCOPES.join(","));
   return `https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth?${q}`;
 }
 
@@ -320,6 +325,8 @@ export async function userTokenFromCode(
 export type ManagedPage = {
   id: string;
   name: string;
+  /** The page's vanity name (facebook.com/<username>), when it has one. */
+  username: string | null;
   /** A page token from a long-lived user token does not expire. */
   accessToken: string;
   instagram: { id: string; username: string | null } | null;
@@ -328,11 +335,12 @@ export type ManagedPage = {
 /** The pages the person manages, each with its token and linked Instagram account. */
 export async function managedPages(g: GraphClient): Promise<ManagedPage[]> {
   const r = await g.get<{
-    data?: { id: string; name: string; access_token: string; instagram_business_account?: { id: string; username?: string } }[];
-  }>("/me/accounts", { fields: "id,name,access_token,instagram_business_account{id,username}", limit: 50 });
+    data?: { id: string; name: string; username?: string; access_token: string; instagram_business_account?: { id: string; username?: string } }[];
+  }>("/me/accounts", { fields: "id,name,username,access_token,instagram_business_account{id,username}", limit: 50 });
   return (r.data ?? []).map((p) => ({
     id: p.id,
     name: p.name,
+    username: p.username ?? null,
     accessToken: p.access_token,
     instagram: p.instagram_business_account
       ? { id: p.instagram_business_account.id, username: p.instagram_business_account.username ?? null }

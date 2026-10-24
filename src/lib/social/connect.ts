@@ -6,15 +6,19 @@
  * browser:
  *   META_APP_ID, META_APP_SECRET   the Meta app (developers.facebook.com)
  *   SOCIAL_TOKEN_KEY               the key that seals the page token (crypto.ts)
- * Optional: META_PAGE_ID, to keep only that page when the person who connects
- * manages several.
+ * Optional:
+ *   META_PAGE_ID           keep only that page when the person who connects
+ *                          manages several — its id or its username
+ *                          (« mazedonline » for facebook.com/mazedonline)
+ *   META_LOGIN_CONFIG_ID   a « Facebook Login for Business » configuration;
+ *                          without it the dialog asks for the scopes itself
  *
- * The redirect URI to register in the Meta app is
- *   <site>/api/admin/social/meta/callback
+ * The redirect URI to register in the Meta app is the address the admin uses,
+ * + /api/admin/social/meta/callback — one line per address (the site, and
+ * http://localhost:3001 to try it locally).
  */
 import type { getServiceSupabase } from "@/lib/supabase/admin";
 import { hasTokenKey, sealToken } from "./crypto";
-import { siteUrl } from "@/lib/siteUrl";
 import type { ManagedPage } from "./meta";
 import { dueNow } from "./server";
 
@@ -22,13 +26,18 @@ type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
 
 export const STATE_COOKIE = "mz_meta_state";
 
-export type MetaConfig = { appId: string; appSecret: string; pageId: string | null };
+export type MetaConfig = { appId: string; appSecret: string; pageId: string | null; loginConfigId: string | null };
 
 export function metaConfig(env: Record<string, string | undefined> = process.env): MetaConfig | null {
   const appId = env.META_APP_ID?.trim();
   const appSecret = env.META_APP_SECRET?.trim();
   if (!appId || !appSecret || !hasTokenKey(env)) return null;
-  return { appId, appSecret, pageId: env.META_PAGE_ID?.trim() || null };
+  return {
+    appId,
+    appSecret,
+    pageId: env.META_PAGE_ID?.trim().replace(/^@/, "") || null,
+    loginConfigId: env.META_LOGIN_CONFIG_ID?.trim() || null,
+  };
 }
 
 /** What is missing before « Connecter » can work — shown in the console. */
@@ -40,8 +49,20 @@ export function missingMetaConfig(env: Record<string, string | undefined> = proc
   return missing;
 }
 
+/**
+ * Where Facebook sends the admin back: the address they started from. The
+ * one-time state cookie lives on that host, so going back anywhere else (the
+ * canonical domain while they used the vercel.app one) would lose it.
+ */
 export function callbackUrl(requestOrigin: string): string {
-  return `${siteUrl() ?? requestOrigin}/api/admin/social/meta/callback`;
+  return `${requestOrigin.replace(/\/+$/, "")}/api/admin/social/meta/callback`;
+}
+
+/** Whether a managed page is the one META_PAGE_ID names (id or username). */
+export function isWantedPage(page: Pick<ManagedPage, "id" | "username">, wanted: string | null): boolean {
+  if (!wanted) return true;
+  const w = wanted.toLowerCase();
+  return page.id === wanted || (page.username ?? "").toLowerCase() === w;
 }
 
 /**
@@ -53,7 +74,7 @@ export async function saveConnectedPages(
   pages: ManagedPage[],
   opts: { adminId: string; scopes: string[]; pageId: string | null },
 ): Promise<number> {
-  const keep = opts.pageId ? pages.filter((p) => p.id === opts.pageId) : pages;
+  const keep = pages.filter((p) => isWantedPage(p, opts.pageId));
   const now = new Date().toISOString();
   for (const page of keep) {
     const { data: fb } = await admin
