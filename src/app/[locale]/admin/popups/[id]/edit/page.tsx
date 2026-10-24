@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { notFound } from "next/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { Popup } from "@/lib/popups/schema";
@@ -16,6 +17,7 @@ export default async function EditPopupPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const supabase = await getServerSupabase();
   const { data, error } = await supabase

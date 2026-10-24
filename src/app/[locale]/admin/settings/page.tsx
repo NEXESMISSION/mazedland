@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { Link } from "@/i18n/navigation";
 import { usablePayeeMethods } from "@/lib/payments";
@@ -22,6 +23,7 @@ export const revalidate = 0;
 const KEYS = ["payee_name", "payee_bank", "payee_rib", "payee_iban", "payee_d17"] as const;
 
 export default async function AdminSettingsPage() {
+  await requireAdmin();
   const supabase = await getServerSupabase();
   const { data } = await supabase
     .from("app_settings")

@@ -4,6 +4,7 @@
  * This module is an async Server Component — it runs once, per request, on the
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
+import { requireAdmin } from "@/lib/admin/session";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { formatNumber } from "@/lib/utils";
@@ -43,6 +44,7 @@ const CONSOLE_PAYMENT_KINDS = [
 ];
 
 export default async function AdminDashboard() {
+  await requireAdmin();
   const sb = await getServerSupabase();
 
   const now = Date.now();

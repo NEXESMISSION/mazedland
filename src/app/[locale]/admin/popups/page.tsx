@@ -4,6 +4,7 @@
  * This module is an async Server Component — it runs once, per request, on the
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
+import { requireAdmin } from "@/lib/admin/session";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { formatNumber } from "@/lib/utils";
@@ -27,6 +28,7 @@ export const revalidate = 0;
  * Auth is enforced by the admin layout one level up (role=admin redirect).
  */
 export default async function AdminPopupsPage() {
+  await requireAdmin();
   const supabase = await getServerSupabase();
   const { data: rows } = await supabase
     .from("popups")

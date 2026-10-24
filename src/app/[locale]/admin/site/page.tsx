@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { formatNumber } from "@/lib/utils";
@@ -28,6 +29,7 @@ type Card = {
 };
 
 export default async function AdminSiteHub() {
+  await requireAdmin();
   const sb = await getServerSupabase();
   const head = (t: string) => sb.from(t).select("*", { count: "exact", head: true });
 

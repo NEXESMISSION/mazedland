@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { PopupForm } from "../PopupForm";
 
 export const dynamic = "force-dynamic";
@@ -5,7 +6,8 @@ export const dynamic = "force-dynamic";
 /**
  * /admin/popups/new — blank form. Auth is enforced by the admin layout.
  */
-export default function NewPopupPage() {
+export default async function NewPopupPage() {
+  await requireAdmin();
   return (
     <div>
       <span className="mazed-eyebrow">Diffusion</span>

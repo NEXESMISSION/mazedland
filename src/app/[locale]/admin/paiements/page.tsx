@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminPager } from "@/components/admin/AdminPager";
@@ -59,6 +60,7 @@ export default async function AdminPaiementsPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string }>;
 }) {
+  await requireAdmin();
   const sp = await searchParams;
   const admin = getServiceSupabase();
   if (!admin) return <p className="text-[13px] text-muted">Service non configuré.</p>;

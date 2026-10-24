@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { AdminNotificationsClient } from "./AdminNotificationsClient";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
@@ -15,7 +16,8 @@ import { SiteTabs } from "@/components/admin/kit/SiteTabs";
  * and live refreshes after sending. RLS + same-origin checks on the
  * /api/admin/notifications/* routes block non-admin access.
  */
-export default function AdminNotificationsPage() {
+export default async function AdminNotificationsPage() {
+  await requireAdmin();
   return (
     <div>
       <SiteTabs />
