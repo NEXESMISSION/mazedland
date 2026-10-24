@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getAdminSession } from "@/lib/admin/session";
@@ -9,6 +10,13 @@ import { AdminRail, AdminMobileBar, type AdminCounts } from "@/components/admin/
 // which would run this layout's Supabase calls at build and fail when no
 // Supabase env is present, e.g. CI without secrets).
 export const dynamic = "force-dynamic";
+
+// Installed from here (« Installer l'app » in the rail), the console is its
+// own app: it opens on /admin, under its own name, beside the public one.
+export const metadata: Metadata = {
+  manifest: "/admin.webmanifest",
+  appleWebApp: { capable: true, title: "Mazed Admin", statusBarStyle: "default" },
+};
 
 /** The kinds `/admin/paiements` can actually settle — the classifieds line. */
 const CONSOLE_PAYMENT_KINDS = [

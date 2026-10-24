@@ -2368,7 +2368,12 @@
     },
     "actionFailed": "L'action a échoué.",
     "actionDone": "C'est fait.",
-    "connectionLost": "Connexion perdue. Vérifiez le réseau et rechargez."
+    "connectionLost": "Connexion perdue. Vérifiez le réseau et rechargez.",
+    "install": {
+      "label": "Installer l'app",
+      "installed": "App installée",
+      "iosHint": "Sur iPhone ou iPad : touchez Partager, puis « Sur l'écran d'accueil »."
+    }
   },
   "adminDashboard": {
     "eyebrow": "Console",

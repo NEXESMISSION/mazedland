@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { NavIcon } from "./kit/LinkPending";
+import { InstallAppButton } from "./InstallAppButton";
 
 /**
  * Console navigation.
@@ -152,6 +153,7 @@ export function AdminRail({ counts }: { counts: AdminCounts }) {
       </header>
       <NavList counts={counts} />
       <footer className="border-t border-border py-2">
+        <InstallAppButton />
         <ExitLink />
       </footer>
     </aside>
@@ -191,15 +193,18 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
     <div className="lg:hidden">
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-background px-4">
         <BrandMark />
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label={t("openMenu")}
-          aria-expanded={open}
-          className="tap-target grid size-9 place-items-center rounded text-muted transition hover:text-foreground"
-        >
-          <Menu className="size-5" strokeWidth={2.2} />
-        </button>
+        <div className="flex items-center gap-1">
+          <InstallAppButton variant="icon" />
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label={t("openMenu")}
+            aria-expanded={open}
+            className="tap-target grid size-9 place-items-center rounded text-muted transition hover:text-foreground"
+          >
+            <Menu className="size-5" strokeWidth={2.2} />
+          </button>
+        </div>
       </header>
 
       {open && (
