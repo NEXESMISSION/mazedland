@@ -148,7 +148,8 @@
       "emptyTabBody": "بقية إعلاناتك في الخانات الأخرى.",
       "seeAll": "شوف الإعلانات الكل",
       "freePlaces": "{used}/{limit} إعلانات مجانية مستعملة",
-      "pricePerMonth": "{amount} د.ت في الشهر"
+      "pricePerMonth": "{amount} د.ت في الشهر",
+      "promote": "روّج"
     },
     "listingActions": {
       "mark_sold": {
@@ -1066,6 +1067,22 @@
     "request_match": {
       "title": "فما عقار يناسب طلبك",
       "body": "«{title}» تنشر توّا ويناسب طلبك."
+    },
+    "social_published": {
+      "title": "إعلانك على الشبكات",
+      "body": "تنشر على الشبكات متاع Mazed Immo. الروابط في صفحة الترويج."
+    },
+    "social_rejected": {
+      "title": "الترويج ما تقبلش",
+      "body": "ترويج «{title}» ما تقبلش: {reason}"
+    },
+    "admin_social_pending": {
+      "title": "ترويج للمراجعة",
+      "body": "«{title}» — للنشر على الشبكات."
+    },
+    "admin_social_attention": {
+      "title": "منشور لازم يتعاود",
+      "body": "{title}"
     }
   },
   "publish": {
@@ -2269,7 +2286,9 @@
       "results": "النتائج",
       "resultsHint": "الإعلانات والزوّار والاتصالات والمداخيل كل شهر",
       "demandes": "الطلبات",
-      "demandesHint": "شنوّة يلوّجو عليه الشارين والكرّاية"
+      "demandesHint": "شنوّة يلوّجو عليه الشارين والكرّاية",
+      "social": "الشبكات",
+      "socialHint": "ترويج فيسبوك، إنستغرام، الغروبات"
     },
     "siteTabs": {
       "label": "أقسام الموقع",
@@ -2895,5 +2914,281 @@
     "rateLimited": "برشا طلبات في وقت قصير. عاود بعد ساعة، ولا عمّر الإعلان عادي.",
     "unavailable": "المساعد موش متاح توّا. عمّر الإعلان عادي.",
     "failed": "ما نجّمناش نقراو الجملة توّا. عمّر الإعلان عادي."
+  },
+  "promote": {
+    "back": "إعلاناتي",
+    "title": "روّج عقارك",
+    "whereTitle": "وين تحب تنشروه؟",
+    "whereHint": "اختار شبكة ولا أكثر. ما اخترنالك حتى شي.",
+    "channels": {
+      "facebook_page": {
+        "name": "صفحة Mazed Immo على فيسبوك",
+        "hint": "ننشروها احنا على صفحتنا، بتصاورك."
+      },
+      "instagram": {
+        "name": "Mazed Immo على إنستغرام",
+        "hint": "منشور بتصاورك على الحساب متاعنا."
+      },
+      "facebook_groups": {
+        "name": "غروبات فيسبوك",
+        "hint": "الفريق متاعنا يشاركها بيدو في غروبات العقارات متاع جهتك."
+      },
+      "tiktok": {
+        "name": "تيك توك",
+        "hint": "قريب."
+      }
+    },
+    "instagramNeedsPhoto": "إنستغرام يحتاج على الأقل تصويرة. زيد تصويرة للإعلان.",
+    "languageTitle": "لغة المنشورات",
+    "languages": {
+      "both": "عربي وفرنسي",
+      "ar": "عربي",
+      "fr": "فرنسي"
+    },
+    "previewTitle": "كيفاش باش يبان",
+    "previewEmpty": "اختار على الأقل شبكة باش تشوف المنشور.",
+    "previewNote": "المرجع (MZ-…) يتعطى كي تبعث الطلب. رقمك ما يبانش أبدًا: اللي يحب يتصل بيك من الإعلان.",
+    "priceTitle": "السوم",
+    "freeLaunch": "بلاش في فترة الإطلاق",
+    "price": "{amount} د.ت",
+    "consent": "نوافق اللي Mazed Immo تنشر الإعلان هذا — التصاور، السوم، نوع العقار والبلاصة، وأبدًا رقمي — على الشبكات اللي اخترتهم. نجم ننحّيه وقت ما نحب من الصفحة هذي.",
+    "reviewNote": "الفريق متاعنا يقرا كل منشور قبل ما يتنشر.",
+    "confirm": "أكّد الترويج",
+    "sent": "الطلب تبعث. نعلموك كي يتنشر.",
+    "sentScheduled": "تثبّت: المنشور يخرج بعد دقايق.",
+    "failed": "ما نجّمناش نبعثو الطلب توّا.",
+    "askedOn": "طلب نهار {date}",
+    "status": {
+      "draft": "مسودة",
+      "pending_approval": "في انتظار المراجعة",
+      "scheduled": "مبرمج",
+      "published": "منشور",
+      "failed": "فشل",
+      "rejected": "مرفوض",
+      "cancelled": "ملغى",
+      "withdrawn": "منحّى"
+    },
+    "statusHint": {
+      "draft": "الطلب مازال ما تبعثش.",
+      "pending_approval": "الفريق متاعنا يراجع المنشور. نعلموك كي يتنشر.",
+      "scheduled": "تثبّت. يخرج في الوقت المبرمج، والغروبات يشاركهم الفريق متاعنا بيدو.",
+      "published": "إعلانك على الشبكات متاعنا. الزيارات اللي جابها محسوبة لوطة.",
+      "failed": "المنشور ما خرجش. الفريق متاعنا يتلهّى بيه.",
+      "rejected": "الفريق متاعنا ما قبلش الترويج هذا.",
+      "cancelled": "انت ألغيت الطلب هذا.",
+      "withdrawn": "الإعلان تنحّى من الشبكات."
+    },
+    "job": {
+      "scheduled": "مبرمج",
+      "running": "جاري",
+      "published": "منشور",
+      "done": "تعمل",
+      "failed": "الفريق متاعنا باش يعاودو",
+      "manual_action_required": "يحضّرو الفريق متاعنا",
+      "cancelled": "ملغى",
+      "groups": "يحضّرو الفريق متاعنا"
+    },
+    "groupsShared": "{count, plural, one {تشارك في غروب واحد} other {تشارك في # غروبات}}",
+    "seePost": "شوف المنشور",
+    "visits": "زيارات من الشبكات",
+    "contacts": "أرقام تشافت",
+    "ref": "المرجع",
+    "free": "بلاش",
+    "paid": "{amount} د.ت",
+    "cancel": "ألغِ الطلب",
+    "withdraw": "نحّيه من الشبكات",
+    "cancelConfirm": "تحب تلغي طلب الترويج هذا؟",
+    "withdrawConfirm": "تحب تنحّي الإعلان من الشبكات؟ منشور فيسبوك يتفسخ، والباقي ينحّيه الفريق متاعنا.",
+    "cancelled": "الطلب تلغى.",
+    "withdrawn": "تسجّل: الإعلان باش يتنحّى من الشبكات.",
+    "notOnline": "الإعلان لازم يكون منشور باش تروّجو. ارجع لهنا كي يتنشر.",
+    "disabled": "الترويج على الشبكات مسكّر توّا.",
+    "lastRejected": "الطلب الأخير متاعك ما تقبلش."
+  },
+  "socialApi": {
+    "disabled": "الترويج على الشبكات مسكّر توّا.",
+    "notFound": "الإعلان ما لقيناهش.",
+    "notOnline": "الإعلان لازم يكون منشور باش تروّجو.",
+    "noChannel": "اختار على الأقل شبكة.",
+    "consent": "علّم على خانة الموافقة باش تبعث الطلب.",
+    "alreadyOpen": "الإعلان هذا عندو ترويج جاري.",
+    "noPhoto": "إنستغرام يحتاج على الأقل تصويرة.",
+    "failed": "ما نجّمناش نبعثو الطلب توّا.",
+    "closed": "الطلب هذا تسكّر."
+  },
+  "adminSocial": {
+    "unavailable": "قاعدة البيانات غير متاحة.",
+    "eyebrow": "الشبكات",
+    "title": "Social Publisher",
+    "description": "الإعلانات اللي البائعين يحبوها على صفحة فيسبوك، إنستغرام والغروبات. {price} · {mode}.",
+    "priceFree": "مجاني",
+    "pricePaid": "{amount} د.ت للترويج",
+    "modeReview": "كل طلب يثبّتو أدمين",
+    "modeAuto": "تثبيت أوتوماتيكي",
+    "tabs": {
+      "valider": "للمراجعة",
+      "file": "الطابور",
+      "publies": "المنشورة",
+      "comptes": "الحسابات",
+      "groupes": "الغروبات"
+    },
+    "channels": {
+      "facebook_page": "صفحة فيسبوك",
+      "instagram": "إنستغرام",
+      "facebook_groups": "غروب فيسبوك",
+      "tiktok": "تيك توك"
+    },
+    "languages": {
+      "both": "عربي + فرنسي",
+      "ar": "عربي",
+      "fr": "فرنسي"
+    },
+    "noName": "بلا اسم",
+    "consentOn": "موافقة بتاريخ {date}",
+    "scheduleAt": "برمج",
+    "approve": "ثبّت وانشر",
+    "approveLater": "ثبّت للتاريخ هذا",
+    "approved": "تثبّت: المنشور خارج توّا.",
+    "approvedLater": "تثبّت: يخرج في الوقت المختار.",
+    "reject": "ارفض",
+    "rejectTitle": "ترفض الترويج هذا؟",
+    "rejectBody": "البائع يوصلو السبب، وينجم يعاود يطلب.",
+    "rejectReason": "السبب",
+    "rejectPlaceholder": "مثلًا: التصاور مظلمة، السوم موش منطقي…",
+    "rejected": "الطلب ترفض.",
+    "edited": "تبدّل",
+    "save": "سجّل النص",
+    "saved": "النص تسجّل.",
+    "saveFailed": "ما نجّمناش نسجّلو.",
+    "emptyReview": "ما فما حتى طلب للمراجعة.",
+    "emptyQueue": "ما فما شي في الانتظار.",
+    "emptyPublished": "ما فما حتى إعلان منشور على الشبكات للتوّا.",
+    "emptyAccounts": "ما فما حتى حساب مربوط.",
+    "emptyGroups": "ما فما حتى غروب. زيد غروبات العقارات اللي الفريق يشارك فيهم الإعلانات.",
+    "actions": {
+      "publish": "نشر",
+      "mark_closed": "تعليم تباع / تكرى",
+      "remove": "تنحية"
+    },
+    "jobStatus": {
+      "scheduled": "مبرمج",
+      "running": "جاري",
+      "published": "منشور",
+      "done": "تعمل",
+      "failed": "فشل",
+      "manual_action_required": "يتعمل باليد",
+      "cancelled": "ملغى"
+    },
+    "manualReason": {
+      "no_account": "ما فما حتى حساب مربوط",
+      "account_expired": "الربط وفى — عاود اربط الحساب",
+      "groups_manual": "غروب: يتشارك باليد",
+      "not_supported": "الـ API ما يسمحش بيها",
+      "limit_reached": "وصلنا لحد المنشورات",
+      "media_rejected": "الشبكة رفضت التصويرة"
+    },
+    "runAfter": "ابتداءً من {date}",
+    "attempts": "محاولة {n}/{max}",
+    "runNow": "انشر توّا",
+    "ran": "بدا.",
+    "retry": "عاود",
+    "requeued": "رجع للطابور.",
+    "cancelJob": "ألغِ",
+    "cancelled": "تلغى.",
+    "copy": "انسخ النص",
+    "copied": "تنسخ",
+    "openGroup": "حلّ الغروب",
+    "postUrlPlaceholder": "رابط المنشور (اختياري)",
+    "markDone": "علّم كي تعمل",
+    "markedDone": "تسجّل كي تعمل.",
+    "noLinks": "الغروب هذا ما يقبلش الروابط: النص يتنسخ بلا رابط.",
+    "linksOk": "يقبل الروابط",
+    "cols": {
+      "listing": "الإعلان",
+      "posts": "المنشورات",
+      "visits": "الزيارات",
+      "contacts": "أرقام تشافت",
+      "status": "الحالة"
+    },
+    "requestStatus": {
+      "draft": "مسودة",
+      "pending_approval": "للمراجعة",
+      "scheduled": "مبرمج",
+      "published": "منشور",
+      "failed": "فشل",
+      "rejected": "مرفوض",
+      "cancelled": "ملغى",
+      "withdrawn": "منحّى"
+    },
+    "closedOn": "تتبّع بتاريخ {date}",
+    "connectTitle": "صفحة فيسبوك وإنستغرام",
+    "connectBody": "اربط صفحة Mazed Immo على فيسبوك؛ حساب إنستغرام المهني المربوط بيها يتربط معاها. المفتاح يتشفّر قبل ما يتسجّل.",
+    "connect": "اربط فيسبوك",
+    "reconnect": "عاود اربط",
+    "notConfigured": "مازال ما تضبطش",
+    "setupTitle": "باش تربط الصفحة:",
+    "setup1": "اعمل تطبيق Meta (developers.facebook.com) من نوع Business، مع Facebook Login.",
+    "setup2": "اربط حساب إنستغرام المهني بصفحة Mazed Immo على فيسبوك.",
+    "setup3": "في التطبيق، زيد عنوان الرجوع هذا:",
+    "setup4": "زيد في Vercel المتغيرات:",
+    "connectedOk": "{count, plural, one {الصفحة تربطت.} other {# صفحات تربطو.}}",
+    "connectError": {
+      "denied": "الربط ترفض على فيسبوك.",
+      "state": "الربط وفى وقتو. عاود من الأول.",
+      "not_configured": "تطبيق Meta مازال ما تضبطش.",
+      "no_page": "ما لقينا حتى صفحة فيسبوك على الحساب هذا.",
+      "failed": "الربط ما نجحش. عاود."
+    },
+    "accountStatus": {
+      "connected": "مربوط",
+      "expired": "منتهي",
+      "revoked": "ملغى",
+      "disconnected": "مفصول"
+    },
+    "connectedOn": "تربط بتاريخ {date}",
+    "expiresOn": "يوفى بتاريخ {date}",
+    "noExpiry": "ما يوفاش",
+    "disconnect": "افصل",
+    "disconnectTitle": "تفصل الحساب هذا؟",
+    "disconnectBody": "المفتاح يتفسخ. المنشورات المبرمجة تولّي تتعمل باليد حتى تعاود تربط.",
+    "disconnected": "الحساب تفصل.",
+    "addGroup": "زيد الغروب",
+    "groupName": "اسم الغروب",
+    "groupDeals": "الإعلانات المقبولة",
+    "groupKindsHint": "كان ما اخترت حتى نوع: العقارات الكل.",
+    "groupGovernorates": "الولايات",
+    "groupGovernoratesHint": "كان ما اخترت حتى ولاية: تونس الكل.",
+    "groupMembers": "الأعضاء",
+    "groupRules": "قوانين الغروب (اختياري)",
+    "groupAllowsLinks": "الغروب يقبل الروابط",
+    "groupAdded": "الغروب تزاد.",
+    "groupDeleted": "الغروب تفسخ.",
+    "deal": {
+      "sale": "بيع",
+      "rent": "كراء"
+    },
+    "kind": {
+      "residential": "سكني",
+      "land": "أراضي",
+      "commercial": "مهني"
+    },
+    "allTunisia": "تونس الكل",
+    "members": "{count} عضو",
+    "lastShared": "آخر مشاركة بتاريخ {date}",
+    "neverShared": "عمرو ما تشارك",
+    "pause": "وقّف",
+    "resume": "رجّعو",
+    "delete": "افسخ",
+    "deleteGroupTitle": "تفسخ الغروب هذا؟",
+    "deleteGroupBody": "المشاركات اللي تعملت تبقى في السجل.",
+    "errors": {
+      "length": "النص لازم يكون بين 10 و2200 حرف.",
+      "reference": "خلّي المرجع MZ-… في النص: هو اللي يمنع التكرار.",
+      "contact": "حتى رقم تليفون ولا إيميل في منشور.",
+      "url": "حط رابط المنشور (facebook.com، instagram.com…).",
+      "name": "عطي اسم للغروب.",
+      "deal_types": "اختار بيع، كراء ولا الزوز.",
+      "exists": "الغروب هذا موجود في القائمة."
+    }
   }
 }

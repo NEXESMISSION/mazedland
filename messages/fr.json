@@ -148,7 +148,8 @@
       "emptyTabBody": "Vos autres annonces sont dans les onglets voisins.",
       "seeAll": "Voir toutes les annonces",
       "freePlaces": "{used}/{limit} annonces gratuites utilisées",
-      "pricePerMonth": "{amount} TND / mois"
+      "pricePerMonth": "{amount} TND / mois",
+      "promote": "Promouvoir"
     },
     "listingActions": {
       "mark_sold": {
@@ -1066,6 +1067,22 @@
     "request_match": {
       "title": "Un bien correspond à votre demande",
       "body": "« {title} » vient d'être publié et correspond à votre demande."
+    },
+    "social_published": {
+      "title": "Votre annonce est sur les réseaux",
+      "body": "Elle a été publiée sur les réseaux de Mazed Immo. Les liens sont sur la page de promotion."
+    },
+    "social_rejected": {
+      "title": "Promotion non retenue",
+      "body": "La promotion de « {title} » n'a pas été retenue : {reason}"
+    },
+    "admin_social_pending": {
+      "title": "Promotion à valider",
+      "body": "« {title} » — à publier sur les réseaux."
+    },
+    "admin_social_attention": {
+      "title": "Publication à reprendre",
+      "body": "{title}"
     }
   },
   "publish": {
@@ -2269,7 +2286,9 @@
       "results": "Résultats",
       "resultsHint": "Annonces, audience, contacts et revenus par mois",
       "demandes": "Demandes",
-      "demandesHint": "Ce que cherchent acheteurs et locataires"
+      "demandesHint": "Ce que cherchent acheteurs et locataires",
+      "social": "Réseaux",
+      "socialHint": "Promotions Facebook, Instagram, groupes"
     },
     "siteTabs": {
       "label": "Sections du site",
@@ -2895,5 +2914,281 @@
     "rateLimited": "Trop de demandes en peu de temps. Réessayez dans une heure, ou remplissez le formulaire.",
     "unavailable": "L'assistant n'est pas disponible pour le moment. Remplissez le formulaire normalement.",
     "failed": "Impossible de lire la phrase pour le moment. Remplissez le formulaire normalement."
+  },
+  "promote": {
+    "back": "Mes annonces",
+    "title": "Promouvoir mon annonce",
+    "whereTitle": "Où la publier ?",
+    "whereHint": "Choisissez un ou plusieurs réseaux. Rien n'est coché pour vous.",
+    "channels": {
+      "facebook_page": {
+        "name": "Page Facebook Mazed Immo",
+        "hint": "Publiée par nous sur notre page, avec vos photos."
+      },
+      "instagram": {
+        "name": "Instagram Mazed Immo",
+        "hint": "Une publication avec vos photos sur notre compte."
+      },
+      "facebook_groups": {
+        "name": "Groupes Facebook",
+        "hint": "Partagée à la main par notre équipe dans les groupes immobiliers de votre région."
+      },
+      "tiktok": {
+        "name": "TikTok",
+        "hint": "Bientôt."
+      }
+    },
+    "instagramNeedsPhoto": "Instagram a besoin d'au moins une photo. Ajoutez-en une à l'annonce.",
+    "languageTitle": "Langue des publications",
+    "languages": {
+      "both": "Arabe et français",
+      "ar": "Arabe",
+      "fr": "Français"
+    },
+    "previewTitle": "Aperçu",
+    "previewEmpty": "Choisissez au moins un réseau pour voir la publication.",
+    "previewNote": "La référence (MZ-…) est attribuée à l'envoi. Votre numéro n'apparaît jamais : les intéressés vous contactent depuis l'annonce.",
+    "priceTitle": "Prix",
+    "freeLaunch": "Gratuit pendant le lancement",
+    "price": "{amount} DT",
+    "consent": "J'accepte que Mazed Immo publie cette annonce — photos, prix, type de bien et localisation, jamais mon numéro — sur les réseaux choisis. Je peux la retirer à tout moment depuis cette page.",
+    "reviewNote": "Notre équipe relit chaque publication avant sa mise en ligne.",
+    "confirm": "Confirmer la promotion",
+    "sent": "Demande envoyée. Nous vous prévenons dès que c'est en ligne.",
+    "sentScheduled": "C'est validé : la publication part dans quelques minutes.",
+    "failed": "Impossible d'envoyer la demande pour le moment.",
+    "askedOn": "Demande du {date}",
+    "status": {
+      "draft": "Brouillon",
+      "pending_approval": "En attente de validation",
+      "scheduled": "Programmée",
+      "published": "En ligne",
+      "failed": "Échec",
+      "rejected": "Refusée",
+      "cancelled": "Annulée",
+      "withdrawn": "Retirée"
+    },
+    "statusHint": {
+      "draft": "La demande n'est pas encore envoyée.",
+      "pending_approval": "Notre équipe relit la publication. Vous êtes prévenu dès qu'elle est en ligne.",
+      "scheduled": "Validée. Elle part à l'heure prévue ; les groupes sont partagés à la main par notre équipe.",
+      "published": "Votre annonce est sur nos réseaux. Les visites qu'elle amène sont comptées ci-dessous.",
+      "failed": "La publication n'a pas pu partir. Notre équipe s'en occupe.",
+      "rejected": "Notre équipe n'a pas retenu cette promotion.",
+      "cancelled": "Vous avez annulé cette demande.",
+      "withdrawn": "L'annonce a été retirée des réseaux."
+    },
+    "job": {
+      "scheduled": "Programmée",
+      "running": "En cours",
+      "published": "En ligne",
+      "done": "Fait",
+      "failed": "À reprendre par notre équipe",
+      "manual_action_required": "Préparée par notre équipe",
+      "cancelled": "Annulée",
+      "groups": "Préparée par notre équipe"
+    },
+    "groupsShared": "{count, plural, one {Partagée dans # groupe} other {Partagée dans # groupes}}",
+    "seePost": "Voir la publication",
+    "visits": "Visites depuis les réseaux",
+    "contacts": "Numéros affichés",
+    "ref": "Réf.",
+    "free": "Gratuit",
+    "paid": "{amount} DT",
+    "cancel": "Annuler la demande",
+    "withdraw": "Retirer des réseaux",
+    "cancelConfirm": "Annuler cette demande de promotion ?",
+    "withdrawConfirm": "Retirer l'annonce des réseaux ? La publication Facebook est supprimée, le reste est retiré par notre équipe.",
+    "cancelled": "Demande annulée.",
+    "withdrawn": "C'est noté : l'annonce est retirée des réseaux.",
+    "notOnline": "L'annonce doit être en ligne pour être promue. Revenez ici une fois qu'elle est publiée.",
+    "disabled": "La promotion sur les réseaux est momentanément fermée.",
+    "lastRejected": "Votre dernière demande n'a pas été retenue."
+  },
+  "socialApi": {
+    "disabled": "La promotion sur les réseaux est momentanément fermée.",
+    "notFound": "Annonce introuvable.",
+    "notOnline": "L'annonce doit être en ligne pour être promue.",
+    "noChannel": "Choisissez au moins un réseau.",
+    "consent": "Cochez la case d'accord pour envoyer la demande.",
+    "alreadyOpen": "Cette annonce a déjà une promotion en cours.",
+    "noPhoto": "Instagram a besoin d'au moins une photo.",
+    "failed": "Impossible d'envoyer la demande pour le moment.",
+    "closed": "Cette demande est déjà close."
+  },
+  "adminSocial": {
+    "unavailable": "Base de données indisponible.",
+    "eyebrow": "Réseaux",
+    "title": "Social Publisher",
+    "description": "Les annonces que les vendeurs veulent sur la page Facebook, Instagram et les groupes. {price} · {mode}.",
+    "priceFree": "Gratuit",
+    "pricePaid": "{amount} DT par promotion",
+    "modeReview": "chaque demande est validée par un admin",
+    "modeAuto": "validation automatique",
+    "tabs": {
+      "valider": "À valider",
+      "file": "File",
+      "publies": "Publiés",
+      "comptes": "Comptes",
+      "groupes": "Groupes"
+    },
+    "channels": {
+      "facebook_page": "Page Facebook",
+      "instagram": "Instagram",
+      "facebook_groups": "Groupe Facebook",
+      "tiktok": "TikTok"
+    },
+    "languages": {
+      "both": "arabe + français",
+      "ar": "arabe",
+      "fr": "français"
+    },
+    "noName": "Sans nom",
+    "consentOn": "accord du {date}",
+    "scheduleAt": "Programmer",
+    "approve": "Valider et publier",
+    "approveLater": "Valider pour cette date",
+    "approved": "Validée : la publication part maintenant.",
+    "approvedLater": "Validée : elle partira à l'heure choisie.",
+    "reject": "Refuser",
+    "rejectTitle": "Refuser cette promotion ?",
+    "rejectBody": "Le vendeur reçoit le motif. Il pourra refaire une demande.",
+    "rejectReason": "Motif",
+    "rejectPlaceholder": "Ex. : photos trop sombres, prix incohérent…",
+    "rejected": "Demande refusée.",
+    "edited": "modifié",
+    "save": "Enregistrer le texte",
+    "saved": "Texte enregistré.",
+    "saveFailed": "Enregistrement impossible.",
+    "emptyReview": "Aucune demande à valider.",
+    "emptyQueue": "Rien en attente.",
+    "emptyPublished": "Aucune annonce publiée sur les réseaux pour le moment.",
+    "emptyAccounts": "Aucun compte connecté.",
+    "emptyGroups": "Aucun groupe. Ajoutez les groupes immobiliers où l'équipe partage les annonces.",
+    "actions": {
+      "publish": "Publier",
+      "mark_closed": "Marquer vendu / loué",
+      "remove": "Retirer"
+    },
+    "jobStatus": {
+      "scheduled": "Programmée",
+      "running": "En cours",
+      "published": "Publiée",
+      "done": "Fait",
+      "failed": "Échec",
+      "manual_action_required": "À faire à la main",
+      "cancelled": "Annulée"
+    },
+    "manualReason": {
+      "no_account": "aucun compte connecté",
+      "account_expired": "connexion expirée — reconnectez le compte",
+      "groups_manual": "groupe : à partager à la main",
+      "not_supported": "l'API ne le permet pas",
+      "limit_reached": "limite de publications atteinte",
+      "media_rejected": "photo refusée par le réseau"
+    },
+    "runAfter": "à partir du {date}",
+    "attempts": "essai {n}/{max}",
+    "runNow": "Publier maintenant",
+    "ran": "Lancé.",
+    "retry": "Relancer",
+    "requeued": "Remise dans la file.",
+    "cancelJob": "Annuler",
+    "cancelled": "Annulée.",
+    "copy": "Copier le texte",
+    "copied": "Copié",
+    "openGroup": "Ouvrir le groupe",
+    "postUrlPlaceholder": "Lien de la publication (facultatif)",
+    "markDone": "Marquer comme fait",
+    "markedDone": "Noté comme fait.",
+    "noLinks": "Ce groupe refuse les liens : le texte est copié sans lien.",
+    "linksOk": "liens acceptés",
+    "cols": {
+      "listing": "Annonce",
+      "posts": "Publications",
+      "visits": "Visites",
+      "contacts": "Numéros affichés",
+      "status": "État"
+    },
+    "requestStatus": {
+      "draft": "Brouillon",
+      "pending_approval": "À valider",
+      "scheduled": "Programmée",
+      "published": "En ligne",
+      "failed": "Échec",
+      "rejected": "Refusée",
+      "cancelled": "Annulée",
+      "withdrawn": "Retirée"
+    },
+    "closedOn": "suivi le {date}",
+    "connectTitle": "Page Facebook et Instagram",
+    "connectBody": "Connectez la page Facebook de Mazed Immo ; le compte Instagram professionnel qui lui est lié est connecté avec. Le jeton est chiffré avant d'être enregistré.",
+    "connect": "Connecter Facebook",
+    "reconnect": "Reconnecter",
+    "notConfigured": "Pas encore configuré",
+    "setupTitle": "Pour connecter la page :",
+    "setup1": "Créer une application Meta (developers.facebook.com) de type Business, avec Facebook Login.",
+    "setup2": "Lier le compte Instagram professionnel à la page Facebook de Mazed Immo.",
+    "setup3": "Dans l'application, ajouter cette adresse de redirection :",
+    "setup4": "Ajouter dans Vercel les variables :",
+    "connectedOk": "{count, plural, one {Page connectée.} other {# pages connectées.}}",
+    "connectError": {
+      "denied": "La connexion a été refusée sur Facebook.",
+      "state": "La connexion a expiré. Recommencez.",
+      "not_configured": "L'application Meta n'est pas configurée.",
+      "no_page": "Aucune page Facebook trouvée sur ce compte.",
+      "failed": "La connexion a échoué. Réessayez."
+    },
+    "accountStatus": {
+      "connected": "Connecté",
+      "expired": "Expiré",
+      "revoked": "Révoqué",
+      "disconnected": "Déconnecté"
+    },
+    "connectedOn": "connecté le {date}",
+    "expiresOn": "expire le {date}",
+    "noExpiry": "sans expiration",
+    "disconnect": "Déconnecter",
+    "disconnectTitle": "Déconnecter ce compte ?",
+    "disconnectBody": "Le jeton est effacé. Les publications prévues passent à la main jusqu'à la reconnexion.",
+    "disconnected": "Compte déconnecté.",
+    "addGroup": "Ajouter le groupe",
+    "groupName": "Nom du groupe",
+    "groupDeals": "Annonces acceptées",
+    "groupKindsHint": "Sans type coché : tous les biens.",
+    "groupGovernorates": "Gouvernorats",
+    "groupGovernoratesHint": "Aucun coché : toute la Tunisie.",
+    "groupMembers": "Membres",
+    "groupRules": "Règles du groupe (facultatif)",
+    "groupAllowsLinks": "Le groupe accepte les liens",
+    "groupAdded": "Groupe ajouté.",
+    "groupDeleted": "Groupe supprimé.",
+    "deal": {
+      "sale": "Vente",
+      "rent": "Location"
+    },
+    "kind": {
+      "residential": "Résidentiel",
+      "land": "Terrains",
+      "commercial": "Professionnel"
+    },
+    "allTunisia": "toute la Tunisie",
+    "members": "{count} membres",
+    "lastShared": "dernier partage le {date}",
+    "neverShared": "jamais partagé",
+    "pause": "Mettre en pause",
+    "resume": "Réactiver",
+    "delete": "Supprimer",
+    "deleteGroupTitle": "Supprimer ce groupe ?",
+    "deleteGroupBody": "Les partages déjà faits restent dans l'historique.",
+    "errors": {
+      "length": "Le texte doit faire entre 10 et 2 200 caractères.",
+      "reference": "Gardez la référence MZ-… dans le texte : elle évite les doublons.",
+      "contact": "Pas de numéro de téléphone ni d'e-mail dans une publication.",
+      "url": "Collez le lien de la publication (facebook.com, instagram.com…).",
+      "name": "Donnez un nom au groupe.",
+      "deal_types": "Choisissez vente, location ou les deux.",
+      "exists": "Ce groupe est déjà dans la liste."
+    }
   }
 }

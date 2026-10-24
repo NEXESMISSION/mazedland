@@ -10,7 +10,7 @@ import { asDealType } from "@/lib/listings/deal";
 import { categoryLabel } from "@/lib/i18n";
 import {
   Plus, Ticket, ImageOff, Clock, CreditCard, PencilLine,
-  ArrowRight, AlertTriangle, Inbox,
+  ArrowRight, AlertTriangle, Inbox, Megaphone,
 } from "lucide-react";
 import { RenewButton } from "./RenewButton";
 import { moderationSettings } from "@/lib/moderation/server";
@@ -324,6 +324,19 @@ export default async function MyListingsPage({
         >
           {t("view")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
         </Link>
+        {/* On Mazed Immo's Facebook page, Instagram and the groups (0170). */}
+        {l.status === "published" && (
+          <Link
+            href={`/account/listings/${l.id}/promote` as never}
+            className={
+              block
+                ? "mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gold-soft bg-gold-faint px-3 py-2.5 text-[12.5px] font-bold text-gold"
+                : "inline-flex items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
+            }
+          >
+            <Megaphone className="size-3.5" /> {t("promote")}
+          </Link>
+        )}
         {/* Say it is sold or let, hold it for someone, or take it down. */}
         {l.status === "published" && (
           <ListingStatusActions

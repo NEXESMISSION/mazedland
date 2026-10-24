@@ -56,6 +56,9 @@ export default async function AdminLayout({
     head("payments")
       ?.in("kind", CONSOLE_PAYMENT_KINDS)
       .eq("status", "pending_review") ?? Promise.resolve({ count: 0 }),
+    // Social Publisher (0170): asks to review, and posts waiting for a person.
+    head("social_publication_requests")?.eq("status", "pending_approval") ?? Promise.resolve({ count: 0 }),
+    head("social_publication_jobs")?.in("status", ["manual_action_required", "failed"]) ?? Promise.resolve({ count: 0 }),
   ]);
 
   // Narrowed to "fr" | "ar" rather than cast to "fr", so the redirect's type
@@ -66,10 +69,11 @@ export default async function AdminLayout({
   if (!user) redirect({ href: "/login", locale });
   if (!isAdmin) redirect({ href: "/", locale });
 
-  const [annonces, paiements] = await countsPromise;
+  const [annonces, paiements, socialAsks, socialTasks] = await countsPromise;
   const counts: AdminCounts = {
     annonces: annonces.count ?? 0,
     paiements: paiements.count ?? 0,
+    social: (socialAsks.count ?? 0) + (socialTasks.count ?? 0),
   };
 
   return (

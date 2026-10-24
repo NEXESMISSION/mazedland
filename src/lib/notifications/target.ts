@@ -47,6 +47,8 @@ export const NOTIFICATION_KINDS = [
   "announcement", "promo", "maintenance", "system_alert",
   // Demandes (0168): an annonce answered a buyer's or a tenant's demande
   "request_match",
+  // Social Publisher (0170): the seller's promotion, and the admins' queue
+  "social_published", "social_rejected", "admin_social_pending", "admin_social_attention",
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
@@ -74,6 +76,8 @@ type FallbackRoute =
   | "/admin/kyc-queue"
   | "/admin/inspectors"
   | "/account/requests"
+  | "/account/listings"
+  | "/admin/social"
   | null;
 
 /**
@@ -156,6 +160,11 @@ const KIND_FALLBACK: Record<NotificationKind, FallbackRoute> = {
   system_alert: null,
   // The link is the annonce; without one, the person's demandes.
   request_match: "/account/requests",
+  // The link is the annonce's promotion page; without one, the seller's annonces.
+  social_published: "/account/listings",
+  social_rejected: "/account/listings",
+  admin_social_pending: "/admin/social",
+  admin_social_attention: "/admin/social",
 };
 
 /** Last non-empty path segment, ignoring query/hash. */
@@ -235,6 +244,8 @@ const FALLBACK_SUPPORTS_FOCUS: Record<NotificationKind, boolean> = {
   admin_inspector_pending: false, admin_final_payment_overdue: false,
   announcement: false, promo: false, maintenance: false, system_alert: false,
   request_match: false,
+  social_published: false, social_rejected: false,
+  admin_social_pending: false, admin_social_attention: false,
 };
 
 /** Pull a string `focus` id out of the notification payload, if present.

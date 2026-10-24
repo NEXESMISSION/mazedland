@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useToast } from "@/components/ui/Toast";
 import { useApiError } from "@/lib/useApiError";
 import { Ltr } from "@/components/ui/Ltr";
 import { Phone, MessageCircle, Loader2 } from "lucide-react";
+import { recordSocialContact, recordSocialVisit } from "@/lib/social/visit";
 
 /**
  * "Afficher le numéro".
@@ -35,6 +36,12 @@ export function ContactReveal({
   const [busy, setBusy] = useState(false);
   const [contact, setContact] = useState<{ phone: string; whatsapp: string | null } | null>(null);
 
+  // A visit that came from a Mazed Immo post (UTM tags) is counted for that
+  // post — the Social Publisher's report (src/lib/social/visit.ts).
+  useEffect(() => {
+    recordSocialVisit(listingId, window.location.search);
+  }, [listingId]);
+
   async function reveal() {
     setBusy(true);
     try {
@@ -47,6 +54,7 @@ export function ContactReveal({
         return;
       }
       setContact({ phone: j.phone, whatsapp: j.whatsapp ?? null });
+      recordSocialContact(listingId);
     } catch {
       toast(t("networkError"), "error");
     } finally {
