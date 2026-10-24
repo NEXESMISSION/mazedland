@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — KYC audit hardening (post-0015 follow-ups).
+-- Mazed Immo — KYC audit hardening (post-0015 follow-ups).
 --
 -- The 0015 fix unblocked first-time KYC submission, but the audit pass
 -- surfaced three more issues in the same surface:

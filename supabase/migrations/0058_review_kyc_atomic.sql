@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — make KYC review atomic.
+-- Mazed Immo — make KYC review atomic.
 --
 -- The admin KYC route updated two tables in sequence:
 --   1) kyc_submissions.status = verdict

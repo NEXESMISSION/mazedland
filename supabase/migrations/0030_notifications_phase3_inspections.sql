@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Phase 3: in-app notifications for the inspection lifecycle.
+-- Mazed Immo — Phase 3: in-app notifications for the inspection lifecycle.
 --
 -- Inspections are created and mutated through Supabase RLS directly
 -- (no dedicated API routes), so we drive these notifications from a

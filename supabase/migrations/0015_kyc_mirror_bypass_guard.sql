@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — fix kyc_submissions upsert blocked by profile guard.
+-- Mazed Immo — fix kyc_submissions upsert blocked by profile guard.
 --
 -- Repro: a freshly-signed-up user (kyc_status='none') completes the KYC
 -- flow and the processing page upserts kyc_submissions. The AFTER INSERT

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Per-type characteristics: clearer names + essential additions
+-- Mazed Immo — Per-type characteristics: clearer names + essential additions
 --
 -- Refines the catalog seeded in 0037. Two kinds of change:
 --   1. Clearer labels (e.g. "Surface" → "Surface habitable" / "Surface bâtie"

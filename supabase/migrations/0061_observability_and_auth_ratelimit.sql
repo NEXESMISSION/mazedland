@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — observability error sink + robust auth rate-limit.
+-- Mazed Immo — observability error sink + robust auth rate-limit.
 --
 -- 1) Widen activity_log.type to allow 'error' so server + client errors persist
 --    to a queryable table AND show up in the existing /admin/activity viewer

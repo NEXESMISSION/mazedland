@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Phase 1: in-app notifications for the auction lifecycle.
+-- Mazed Immo — Phase 1: in-app notifications for the auction lifecycle.
 --
 -- Existing 0024 already shipped: notifications table, RLS, realtime, RPC.
 -- Existing wiring: KYC verdicts, payment receipt verdicts, listing-fee

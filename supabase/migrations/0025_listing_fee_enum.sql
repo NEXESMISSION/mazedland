@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Pay-per-post: add listing_fee + buy_now + final_payment to the
+-- Mazed Immo — Pay-per-post: add listing_fee + buy_now + final_payment to the
 -- payment_kind enum.
 --
 -- buy_now and final_payment were already used by code (see checkout flow)

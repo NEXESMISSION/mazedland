@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — kyc_submissions column alignment for the new multi-step
+-- Mazed Immo — kyc_submissions column alignment for the new multi-step
 -- KYC flow ported from mazed-auto.
 --
 -- The original schema (0001_init.sql) used:

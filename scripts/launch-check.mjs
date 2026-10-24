@@ -94,7 +94,7 @@ async function checkPayee() {
     (data ?? []).map((r) => [r.key, typeof r.value === "string" ? r.value : r.value == null ? "" : String(r.value)]),
   );
   const name = m.get("payee_name") ?? "";
-  const nameOk = name.trim() !== "" && !/batta/i.test(name);
+  const nameOk = name.trim() !== "";
   const real = (key, example) => norm(m.get(key)) !== "" && norm(m.get(key)) !== norm(example);
   const bank = nameOk && real("payee_rib", EXAMPLE_PAYEE.rib) && real("payee_iban", EXAMPLE_PAYEE.iban);
   const d17 = nameOk && real("payee_d17", EXAMPLE_PAYEE.d17);

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — close the payout double-pay race (deep-audit HIGH finding).
+-- Mazed Immo — close the payout double-pay race (deep-audit HIGH finding).
 --
 -- The admin payout route re-validated the seller's balance before marking a
 -- payout 'paid', but the read-compute-write happened on the user client with

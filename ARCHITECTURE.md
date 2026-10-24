@@ -1,6 +1,6 @@
 # Architecture
 
-Batta.tn — a Tunisian real-estate auction & direct-sale marketplace. This doc
+Mazed Immo — a Tunisian real-estate auction & direct-sale marketplace. This doc
 is the map: what the pieces are, where they live, and the non-obvious rules
 that keep the app fast, cheap, and safe at scale.
 

@@ -2,7 +2,7 @@
 -- MONETIZATION — make the platform commission admin-parametrable (project rule:
 -- never hardcode fees; route through app_settings).
 --
--- batta_commission_rate() returned a hardcoded 0.05. It now reads app_settings
+-- mazed_commission_rate() returned a hardcoded 0.05. It now reads app_settings
 -- key='commission' (value shape {"rate": 0.05}) with a 0.05 fallback, so an
 -- admin can change the cut without a migration — matching how deposit/listing
 -- fees already work. A regex guard makes a malformed admin value fall back to
@@ -12,7 +12,7 @@
 -- seller_balance) are already STABLE, so this composes cleanly.
 -- ============================================================================
 
-create or replace function public.batta_commission_rate()
+create or replace function public.mazed_commission_rate()
 returns numeric
 language sql
 stable

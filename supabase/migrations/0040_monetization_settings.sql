@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Parametrable monetization.
+-- Mazed Immo — Parametrable monetization.
 --
 -- The owner can tune, entirely from /admin/settings:
 --   • posting fee per listing type (free / fixed TND / — for direct — percent

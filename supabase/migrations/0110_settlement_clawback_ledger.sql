@@ -79,7 +79,7 @@ begin
     -- Cash paid to the seller beyond their (post-reversal) lifetime net. >0
     -- means a settlement was reversed after payout → recover it out-of-band.
     'clawback_owed', greatest(0, v_paid_out - v_net),
-    'commission_rate', public.batta_commission_rate()
+    'commission_rate', public.mazed_commission_rate()
   );
 end;
 $$;

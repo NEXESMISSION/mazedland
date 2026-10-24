@@ -1,4 +1,4 @@
-# Batta.tn — Re-Benchmark (2026-06-09)
+# Mazed Immo — Re-Benchmark (2026-06-09)
 
 **Scope:** Re-run of the 2026-06-07 deep audit (`DEEP-AUDIT-2026-06.md`) against the current
 `fix/scale-audit-blockers` branch — *did the launch blockers actually get fixed, and what's the new score?*
@@ -101,7 +101,7 @@ against a real local Postgres in CI, **plus** a live-exploit security gate.
    an in-app+email admin alert, but **stale-heartbeat paging** is a manual "point an uptime monitor at
    `/api/health`" step in `RUNBOOK.md`. Confirm pg_cron is enabled in the deployed Supabase project (non-email
    crons depend on it) and wire the external monitor before launch.
-4. **🟠 Commission rate is parametrable only at the SQL layer** (`batta_commission_rate()` reads `app_settings`
+4. **🟠 Commission rate is parametrable only at the SQL layer** (`mazed_commission_rate()` reads `app_settings`
    and is clamped to [0, 0.95]), but there is **no admin-UI/API write path** — it's omitted from the
    `admin/settings` allowlist. This violates the *monetization-stays-parametrable* rule at the product level
    (an admin must edit the row via raw SQL). Add `commission` to the settings allowlist + form.

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Add 'bank_transfer' to the payment_provider enum.
+-- Mazed Immo — Add 'bank_transfer' to the payment_provider enum.
 --
 -- The app's manual payment flow offers two methods at checkout: "RIB / IBAN"
 -- (provider = 'bank_transfer') and "Mobile money" (provider = 'd17'). The

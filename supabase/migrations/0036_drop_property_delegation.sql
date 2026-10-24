@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Drop the `delegation` column from properties.
+-- Mazed Immo — Drop the `delegation` column from properties.
 --
 -- The sell form has been simplified: governorate + address is enough for
 -- buyer-facing geography (the address line already captures sub-district

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Deposit refund tracking + manual home curation.
+-- Mazed Immo — Deposit refund tracking + manual home curation.
 --
 -- 1) auction_deposits gains a refund record so the team can manage the
 --    money-back-to-losers step after an auction ends (it was untracked, the

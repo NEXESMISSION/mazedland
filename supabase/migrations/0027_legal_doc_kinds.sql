@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Admin-controlled catalog of legal document kinds per property
+-- Mazed Immo — Admin-controlled catalog of legal document kinds per property
 -- type. Replaces the hardcoded DOC_KINDS array in src/components/sell/SellForm
 -- with a database-backed list the admin can edit from /admin/legal-docs.
 --

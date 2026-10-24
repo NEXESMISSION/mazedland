@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — seed the initial admin account.
+-- Mazed Immo — seed the initial admin account.
 --
 -- Every "promote user to admin" path goes through admin-only checks, so
 -- the very first admin has to be seeded out-of-band. Once the /admin

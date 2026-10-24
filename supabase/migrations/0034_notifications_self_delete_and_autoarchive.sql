@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Notifications: self-delete + auto-archive of stale reads.
+-- Mazed Immo — Notifications: self-delete + auto-archive of stale reads.
 --
 -- Adds:
 --   * `notifications_self_delete` RLS policy — users can delete their own
@@ -55,11 +55,11 @@ grant execute on function public.prune_read_notifications() to service_role;
 do $$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    if exists (select 1 from cron.job where jobname = 'batta-prune-notifications') then
-      perform cron.unschedule('batta-prune-notifications');
+    if exists (select 1 from cron.job where jobname = 'mazed-prune-notifications') then
+      perform cron.unschedule('mazed-prune-notifications');
     end if;
     perform cron.schedule(
-      'batta-prune-notifications',
+      'mazed-prune-notifications',
       '30 3 * * *',
       $cron$ select public.prune_read_notifications(); $cron$
     );

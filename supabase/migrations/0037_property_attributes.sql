@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Per-type property characteristics
+-- Mazed Immo — Per-type property characteristics
 --
 -- Two changes:
 --   1. properties.attributes jsonb — flexible bag holding every

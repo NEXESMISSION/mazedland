@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Phase 4: scheduled & lifecycle notifications.
+-- Mazed Immo — Phase 4: scheduled & lifecycle notifications.
 --
 -- Three additions:
 --
@@ -57,7 +57,7 @@ begin
     perform public.enqueue_notification(
       v_inserted_id,
       'welcome',
-      'Bienvenue sur Batta.tn',
+      'Bienvenue sur Mazed Immo',
       'Pour commencer, vérifiez votre identité et complétez votre profil.',
       '/kyc/start'
     );
@@ -225,11 +225,11 @@ grant execute on function public.expire_listing_promotions() to service_role;
 do $$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    if exists (select 1 from cron.job where jobname = 'batta-ending-soon') then
-      perform cron.unschedule('batta-ending-soon');
+    if exists (select 1 from cron.job where jobname = 'mazed-ending-soon') then
+      perform cron.unschedule('mazed-ending-soon');
     end if;
     perform cron.schedule(
-      'batta-ending-soon',
+      'mazed-ending-soon',
       '*/10 * * * *',
       $cron$ select public.notify_auctions_ending_soon(); $cron$
     );

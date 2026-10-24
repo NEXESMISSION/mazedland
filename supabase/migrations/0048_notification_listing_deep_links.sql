@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Deep-link listing_published / listing_expired notifications.
+-- Mazed Immo — Deep-link listing_published / listing_expired notifications.
 --
 -- accept_listing_payment() (last redefined in 0028) and
 -- expire_listing_promotions() (defined in 0031) both notify the seller but
@@ -132,7 +132,7 @@ begin
     v_pay.user_id,
     'listing_published',
     'Annonce publiée',
-    'Votre paiement a été validé. Votre annonce est désormais visible sur Batta.tn.',
+    'Votre paiement a été validé. Votre annonce est désormais visible sur Mazed Immo.',
     '/sell/' || v_pay.property_id::text
   );
 end;

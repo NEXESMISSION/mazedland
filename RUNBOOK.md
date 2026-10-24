@@ -1,4 +1,4 @@
-# Batta.tn — Operations Runbook
+# Mazed Immo — Operations Runbook
 
 The on-call reference: how to tell the system is healthy, find an incident, and
 recover. Pairs with [ARCHITECTURE.md](ARCHITECTURE.md) (how it's built) and the

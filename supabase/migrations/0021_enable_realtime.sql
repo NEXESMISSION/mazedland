@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — enable Realtime for the live-bidding tables.
+-- Mazed Immo — enable Realtime for the live-bidding tables.
 --
 -- Supabase's `supabase_realtime` publication is empty by default.
 -- Without explicit ALTER PUBLICATION ADD TABLE, client-side

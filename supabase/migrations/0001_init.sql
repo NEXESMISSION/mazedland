@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — initial schema
+-- Mazed Immo — initial schema
 --
 -- Domain model derived from the business plan §6, §7, §8, §9, §16.
 -- Every table is RLS-enabled; the policies at the bottom open public-read

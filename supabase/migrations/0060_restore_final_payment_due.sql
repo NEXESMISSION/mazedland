@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — restore the final-payment deadline stamp (deep-audit regression).
+-- Mazed Immo — restore the final-payment deadline stamp (deep-audit regression).
 --
 -- Migration 0032 stamped auctions.final_payment_due_at when an English/sealed
 -- auction transitioned to 'awarded' (= now + 14 days), and
