@@ -8,27 +8,44 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Format a TND amount with locale-correct grouping. The plan caps prices in
  * the millions, so we never need decimals — properties trade in whole dinars.
+ *
+ * ar-TN groups thousands with a dot, but in Tunisia a dot separates dinars
+ * from millimes: "350.000 د.ت" reads as 350 dinars. Arabic amounts keep the
+ * ar-TN Latin digits and compact words but group with a space, like French.
  */
 export function formatTND(
   amount: number,
   locale: string = "fr-TN",
   options: { compact?: boolean } = {},
 ) {
-  return readableSpaces(
+  return groupForTunisia(
+    intlTag(locale),
     new Intl.NumberFormat(intlTag(locale), {
       style: "decimal",
       maximumFractionDigits: 0,
       notation: options.compact ? "compact" : "standard",
-    }).format(amount),
+    }),
+    amount,
   );
 }
 
 /**
- * A whole number with the locale's digit grouping — 13 000 in French, 13.000 in
- * Tunisian Arabic (Latin digits either way) — for surfaces and counts.
+ * A whole number grouped with a space — 13 000 in French and in Tunisian
+ * Arabic alike (Latin digits either way) — for surfaces and counts. A dot
+ * would read as a decimal: « 1.200 م² » looks like one square metre.
  */
 export function formatNumber(value: number, locale: string = "fr"): string {
-  return readableSpaces(new Intl.NumberFormat(intlTag(locale), { maximumFractionDigits: 0 }).format(value));
+  return groupForTunisia(intlTag(locale), new Intl.NumberFormat(intlTag(locale), { maximumFractionDigits: 0 }), value);
+}
+
+/**
+ * Format with the locale's words and digits, but group thousands with a
+ * no-break space when ar-TN would use a dot: in Tunisia a dot separates
+ * dinars from millimes, so « 350.000 د.ت » reads as 350 dinars.
+ */
+function groupForTunisia(tag: string, format: Intl.NumberFormat, value: number): string {
+  const parts = format.formatToParts(value);
+  return readableSpaces(parts.map((p) => (tag === "ar-TN" && p.type === "group" ? "\u00a0" : p.value)).join(""));
 }
 
 /**
