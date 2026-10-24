@@ -185,8 +185,8 @@ export async function proxy(req: NextRequest) {
   // yet. Fails closed — an error above leaves isAdmin false.
   if (adminMatch && !isAdmin) {
     const target = authUserId
-      ? new URL(`/${adminMatch[1]}`, req.url)
-      : new URL(`/${adminMatch[1]}/login?next=${encodeURIComponent(`${pathname}${search}`)}`, req.url);
+      ? new URL(`/${adminMatch[1].toLowerCase()}`, req.url)
+      : new URL(`/${adminMatch[1].toLowerCase()}/login?next=${encodeURIComponent(`${pathname}${search}`)}`, req.url);
     mwLog.info(`admin-gate ${pathname} → ${target.pathname}`);
     return NextResponse.redirect(target, 307);
   }
