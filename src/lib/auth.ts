@@ -18,7 +18,7 @@ export interface AppUser {
   firstName: string;
   lastName: string;
   phone: string | null;
-  role: "individual" | "agency" | "bank" | "bailiff" | "inspector" | "admin";
+  role: "individual" | "agency" | "admin";
   kycStatus: "none" | "submitted" | "pending" | "verified" | "rejected";
   language: "ar" | "fr" | "en";
 }

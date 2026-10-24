@@ -14,7 +14,7 @@ import { fail } from "@/lib/http/errors";
  *     link?: string,
  *     audience: {
  *       type: "all" | "role" | "users",
- *       role?: "individual" | "agency" | "bank" | "bailiff" | "inspector" | "admin",
+ *       role?: "individual" | "agency" | "admin",
  *       ids?: string[],
  *     },
  *     test?: boolean,   // if true, override audience to [caller_id] for dry-run
@@ -74,7 +74,8 @@ export async function POST(req: NextRequest) {
     }
     audience = { type: "users", ids: cleanIds };
   } else if (audience.type === "role") {
-    const ROLES = ["individual", "agency", "bank", "bailiff", "inspector", "admin"];
+    // The auction roles (bank, bailiff, inspector) are retired (0171).
+    const ROLES = ["individual", "agency", "admin"];
     if (!ROLES.includes(audience.role)) {
       return NextResponse.json({ error: "invalid_role" }, { status: 400 });
     }

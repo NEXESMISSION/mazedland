@@ -1950,9 +1950,6 @@
       "roles": {
         "individual": "Particuliers",
         "agency": "Agences",
-        "bank": "Banques",
-        "bailiff": "Huissiers",
-        "inspector": "Inspecteurs",
         "admin": "Admins"
       },
       "errors": {

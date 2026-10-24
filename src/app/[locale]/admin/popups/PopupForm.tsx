@@ -694,7 +694,7 @@ function RoleMultiSelect({
 }) {
   const t = useTranslations("adminPopups.form.roles");
   // Role values are stored identifiers; their labels live in messages.
-  const ROLES = ["individual", "agency", "bank", "bailiff", "inspector", "admin"] as const;
+  const ROLES = ["individual", "agency", "admin"] as const;
   return (
     <div className="flex flex-wrap gap-1.5">
       {ROLES.map((r) => {

@@ -49,7 +49,7 @@ type ListResponse = {
   stats: { last24h: number; last7d: number; unread: number };
 };
 
-const ROLES = ["individual", "agency", "bank", "bailiff", "inspector", "admin"] as const;
+const ROLES = ["individual", "agency", "admin"] as const;
 
 export function AdminNotificationsClient() {
   const t = useTranslations("adminNotifications");

@@ -26,3 +26,6 @@ verify-*.log
 
 # KYC export (identity documents — never commit)
 kyc-export-*/
+
+# Local copies of the live data (scripts/backup-db.mjs) — personal data, never committed.
+/backups/
