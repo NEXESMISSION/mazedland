@@ -33,9 +33,10 @@ const SIZES: Record<AdminButtonSize, string> = {
 };
 
 const VARIANTS: Record<string, string> = {
-  // The single filled element on any screen.
+  // The single filled element on any screen. --gold is ink (#27272a) since
+  // the palette went monochrome, so the label is the page colour, not black.
   primary:
-    "bg-[var(--gold)] text-black hover:bg-[var(--gold-bright)] disabled:hover:bg-[var(--gold)]",
+    "bg-[var(--gold)] text-[var(--background)] hover:bg-[var(--gold-bright)] disabled:hover:bg-[var(--gold)]",
   // Hairline outline — the default for everything else.
   default:
     "border border-border text-foreground hover:border-[var(--gold-soft)] hover:text-[var(--gold)]",

@@ -393,7 +393,7 @@ export function PhotoUploader({
               <img src={propertyPhotoUrl(p.path)} alt="" className="size-full object-contain" />
 
               {i === 0 && (
-                <span className="absolute inset-x-1 top-1 inline-flex items-center justify-center gap-1 rounded-md bg-[var(--gold)] py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-black">
+                <span className="absolute inset-x-1 top-1 inline-flex items-center justify-center gap-1 rounded-md bg-[var(--gold)] py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-[var(--background)]">
                   <Star className="size-2.5" /> {t("cover")}
                 </span>
               )}
@@ -467,7 +467,7 @@ export function PhotoUploader({
                   <button
                     type="button"
                     onClick={() => retry(p.id)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-[var(--gold)] px-2 py-1 text-[10px] font-extrabold text-black"
+                    className="inline-flex items-center gap-1 rounded-lg bg-[var(--gold)] px-2 py-1 text-[10px] font-extrabold text-[var(--background)]"
                   >
                     <RotateCw className="size-3" /> {t("retry")}
                   </button>

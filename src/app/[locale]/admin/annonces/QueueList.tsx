@@ -208,7 +208,7 @@ export function QueueList({
                       }}
                       className={`grid size-[14px] place-items-center border transition ${
                         ticked
-                          ? "border-[var(--gold)] bg-[var(--gold)] text-black"
+                          ? "border-[var(--gold)] bg-[var(--gold)] text-[var(--background)]"
                           : "border-border text-transparent hover:border-[var(--gold-soft)]"
                       }`}
                     >

@@ -358,7 +358,7 @@ export default async function AdminSocialPage({
               // A full navigation to an API route that redirects to Facebook,
               // not a page: <Link> would try to render it client-side.
               // eslint-disable-next-line @next/next/no-html-link-for-pages
-              <a href="/api/admin/social/meta/connect" className="inline-flex h-8 items-center rounded bg-[var(--gold)] px-3 text-[12.5px] font-semibold text-black hover:bg-[var(--gold-bright)]">
+              <a href="/api/admin/social/meta/connect" className="inline-flex h-8 items-center rounded bg-[var(--gold)] px-3 text-[12.5px] font-semibold text-[var(--background)] hover:bg-[var(--gold-bright)]">
                 {t(accounts.some((a) => a.platform === "facebook_page") ? "reconnect" : "connect")}
               </a>
             ) : (
