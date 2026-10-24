@@ -138,7 +138,7 @@ export function PhotoUploader({
         out = file; // compression is an optimisation, not a gate
       }
 
-      // Stamp the wordmark in the middle. AFTER compression, not inside it:
+      // Stamp the gold logo in the top-right corner. AFTER compression, not inside it:
       // `compressImage` returns the input untouched on several paths (an
       // already-small modern format, an input over its byte ceiling), so a
       // watermark folded into that function would silently skip exactly the

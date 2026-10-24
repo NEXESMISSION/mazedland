@@ -1,6 +1,11 @@
 /**
- * Stamp the lockup into every listing photo published before
- * `src/lib/watermark.ts` existed.
+ * Stamp the gold logo, small, in the top-right corner of every catalogue
+ * photo — the same mark `src/lib/watermark.ts` puts on new uploads.
+ *
+ * 2026-10-24: the mark moved from a faint white lockup in the middle of the
+ * photo to the gold logo in the corner (see watermark.ts for why). The files
+ * were restored from the commit before the first stamp (f07ea03^) and
+ * stamped once from those originals.
  *
  * New uploads are stamped in the browser on their way to storage. The 29
  * photos already in the catalogue are not, and those are the ones that have
@@ -41,14 +46,16 @@ import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const MARK = path.join(ROOT, "public", "logo-watermark.png");
+// logo.png with its faint alpha haze cleared — see MARK_SRC in watermark.ts.
+const MARK = path.join(ROOT, "public", "logo-stamp.png");
 const LEDGER = path.join(ROOT, "scripts", "watermarked-photos.json");
 
 // Must match src/lib/watermark.ts.
-const MARK_HEIGHT_RATIO = 0.22;
-const MAX_MARK_WIDTH_RATIO = 0.32;
-const MIN_MARK_PX = 96;
-const MARK_OPACITY = 0.15;
+const MARK_HEIGHT_RATIO = 0.13;
+const MAX_MARK_WIDTH_RATIO = 0.16;
+const MIN_MARK_PX = 48;
+const MARGIN_RATIO = 0.035;
+const MARK_OPACITY = 0.92;
 
 const COMMIT = process.argv.includes("--commit");
 
@@ -61,6 +68,10 @@ if (!SB_URL || !SB_KEY) {
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
 
 let cache = null;
+/**
+ * The logo at this width, under MARK_OPACITY, and its soft shadow on a canvas
+ * padded so the blur is not clipped at the logo's edges.
+ */
 async function markAt(width) {
   if (cache?.width === width) return cache;
 
@@ -75,64 +86,66 @@ async function markAt(width) {
     .png()
     .toBuffer();
 
-  // The canvas shadow, under the same globalAlpha. It is what carries a white
-  // wordmark over a photographed survey plan.
-  const blur = Math.max(6, Math.round(width * 0.035));
-  const shadowAlpha = await sharp(resized)
-    .extractChannel(3)
+  // The canvas shadow: rgba(0,0,0,0.45), blur 6% of the width, under the
+  // same globalAlpha. It lifts the gold off a white wall or a bright sky.
+  const blur = Math.max(4, Math.round(width * 0.06));
+  const pad = blur * 2;
+  // Built from raw bytes: the logo's own alpha, padded, blurred as one
+  // channel, then laid under black. (Letting sharp pad and join channels
+  // gave an opaque black box.)
+  const pw = info.width + 2 * pad;
+  const ph = info.height + 2 * pad;
+  const padded = Buffer.alloc(pw * ph);
+  for (let y = 0; y < info.height; y++) {
+    for (let x = 0; x < info.width; x++) {
+      padded[(y + pad) * pw + (x + pad)] = data[(y * info.width + x) * 4 + 3];
+    }
+  }
+  // One channel out, explicitly: sharp widens a blurred single channel to
+  // three, and reading that as one stripes the shadow across the logo's box.
+  const blurred = await sharp(padded, { raw: { width: pw, height: ph, channels: 1 } })
     .blur(blur / 2)
-    .linear(0.55 * MARK_OPACITY, 0)
+    .extractChannel(0)
+    .raw()
     .toBuffer();
-  const shadow = await sharp({
-    create: { width: info.width, height: info.height, channels: 3, background: "#000" },
-  })
-    .joinChannel(shadowAlpha)
-    .png()
-    .toBuffer();
+  if (blurred.length !== pw * ph) throw new Error(`shadow: expected one channel, got ${blurred.length / (pw * ph)}`);
+  const rgba = Buffer.alloc(pw * ph * 4);
+  for (let i = 0; i < pw * ph; i++) rgba[i * 4 + 3] = Math.round(blurred[i] * 0.45 * MARK_OPACITY);
+  const shadow = await sharp(rgba, { raw: { width: pw, height: ph, channels: 4 } }).png().toBuffer();
 
-  cache = { mark, shadow, width: info.width, height: info.height };
+  cache = { mark, shadow, pad, offset: Math.max(1, Math.round(width * 0.015)), width: info.width, height: info.height };
   return cache;
 }
 
-/**
- * The mark's width, clamped so it always fits inside the photo.
- *
- * Driven off the photo's HEIGHT, like the browser path: the lockup is a
- * portrait 0.74:1, so sizing it on the width would give a landscape photo a
- * stamp 40% of its height and a portrait one a stamp barely a fifth.
- *
- * `MIN_MARK_PX` is a floor on legibility, not a promise that the photo is big
- * enough to hold it. The catalogue contains a 120x120 thumbnail; asking for a
- * 160px mark on it made sharp refuse the whole composite ("Image to composite
- * must have same dimensions or smaller") and the browser, which does not
- * refuse, would have branded it with a cropped fragment of a logo.
- */
-async function fittedWidth(width, height) {
+/** Where the logo goes and how big — the same box as markBox() in watermark.ts. */
+async function markBox(width, height) {
   const meta = await sharp(MARK).metadata();
-  const aspect = meta.height / meta.width;               // h / w, > 1 here
-  const h = Math.min(Math.max(MIN_MARK_PX, Math.round(height * MARK_HEIGHT_RATIO)), height);
-  return Math.min(Math.round(h / aspect), Math.round(width * MAX_MARK_WIDTH_RATIO), width);
+  const aspect = meta.height / meta.width;
+  let h = Math.min(Math.max(MIN_MARK_PX, Math.round(height * MARK_HEIGHT_RATIO)), Math.round(height * 0.5));
+  let w = Math.round(h / aspect);
+  const maxW = Math.round(width * MAX_MARK_WIDTH_RATIO);
+  if (w > maxW) {
+    w = maxW;
+    h = Math.round(w * aspect);
+  }
+  const margin = Math.round(Math.min(width, height) * MARGIN_RATIO);
+  return { x: width - w - margin, y: margin, w };
 }
 
 async function stamp(buf) {
   const meta = await sharp(buf).metadata();
-  const markW = await fittedWidth(meta.width, meta.height);
-  const { mark, shadow, height: markH } = await markAt(markW);
-  return sharp(buf)
-    .composite([
-      {
-        input: shadow,
-        left: Math.round((meta.width - markW) / 2),
-        top: Math.round((meta.height - markH) / 2) + Math.max(1, Math.round(markW * 0.006)),
-      },
-      {
-        input: mark,
-        left: Math.round((meta.width - markW) / 2),
-        top: Math.round((meta.height - markH) / 2),
-      },
-    ])
-    .webp({ quality: 90 })
-    .toBuffer();
+  const box = await markBox(meta.width, meta.height);
+  const { mark, shadow, pad, offset } = await markAt(box.w);
+  const layers = [];
+  // The shadow only where it fits whole; sharp refuses an overlay that does not.
+  const sx = box.x - pad;
+  const sy = box.y - pad + offset;
+  const sMeta = await sharp(shadow).metadata();
+  if (sx >= 0 && sy >= 0 && sx + sMeta.width <= meta.width && sy + sMeta.height <= meta.height) {
+    layers.push({ input: shadow, left: sx, top: sy });
+  }
+  layers.push({ input: mark, left: box.x, top: box.y });
+  return sharp(buf).composite(layers).webp({ quality: 90 }).toBuffer();
 }
 
 const res = await fetch(`${SB_URL}/rest/v1/listing_photos?select=id,storage_path&order=id`, {
@@ -141,7 +154,7 @@ const res = await fetch(`${SB_URL}/rest/v1/listing_photos?select=id,storage_path
 if (!res.ok) throw new Error(`listing_photos read failed: ${res.status} ${await res.text()}`);
 const rows = await res.json();
 
-const SETTINGS = `h${MARK_HEIGHT_RATIO}-o${MARK_OPACITY}-mazed`;
+const SETTINGS = `gold-corner-h${MARK_HEIGHT_RATIO}-o${MARK_OPACITY}`;
 const saved = fs.existsSync(LEDGER) ? JSON.parse(fs.readFileSync(LEDGER, "utf8")) : { done: [] };
 // A ledger written at a different strength describes files that have since
 // been restored from git; it must not be read as "already done".
