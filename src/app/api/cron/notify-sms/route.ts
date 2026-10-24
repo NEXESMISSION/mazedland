@@ -7,6 +7,7 @@ import { fail } from "@/lib/http/errors";
 import { SMS_KINDS, CAPPED_KINDS } from "@/lib/sms-kinds";
 import { getTranslations } from "next-intl/server";
 import { renderNotification } from "@/lib/notifications/render";
+import { PRODUCTION_ORIGIN, siteUrl } from "@/lib/siteUrl";
 import { asAppLocale, type AppLocale } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -38,18 +39,13 @@ const PER_USER_DAILY = 6; // cap SMS per user / 24h (anti-spam + cost)
 // is MAZED for both apps, so the body must carry the brand).
 const BRAND = "Mazed Immo";
 
-function siteUrl(): string {
-  // Prefer an explicit, NON-localhost site URL; else the Vercel deployment URL,
-  // else the production domain. A stale `NEXT_PUBLIC_SITE_URL=localhost` on
-  // Vercel was putting localhost links into SMS — skip any localhost value.
-  for (const c of [
-    process.env.NEXT_PUBLIC_SITE_URL,
-    process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`,
-    process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
-  ]) {
-    if (c && !/localhost|127\.0\.0\.1/i.test(c)) return c.replace(/\/$/, "");
-  }
-  return "https://mazedimmo.tn";
+/**
+ * The site's address for the links in an SMS: the shared rule
+ * (src/lib/siteUrl.ts) — the real domain in production, never a vercel.app
+ * host or a stale localhost.
+ */
+function linkOrigin(): string {
+  return siteUrl() ?? PRODUCTION_ORIGIN;
 }
 
 async function run(req: NextRequest) {
@@ -130,7 +126,7 @@ async function run(req: NextRequest) {
     ar: await getTranslations({ locale: "ar", namespace: "notifications" }),
   };
 
-  const base = siteUrl();
+  const base = linkOrigin();
   let sent = 0;
   let failed = 0;
   let skipped = 0;

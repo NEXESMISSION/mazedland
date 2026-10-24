@@ -7,7 +7,7 @@
  * checked who is asking.
  */
 import type { getServiceSupabase } from "@/lib/supabase/admin";
-import { siteUrl } from "@/lib/siteUrl";
+import { PRODUCTION_ORIGIN, siteUrl } from "@/lib/siteUrl";
 import { coverPhoto } from "@/lib/listingCover";
 import { asDealType, type DealType } from "@/lib/listings/deal";
 import {
@@ -41,7 +41,7 @@ export async function socialSettings(admin: Admin): Promise<SocialSettings> {
 
 /** The site's address for the links in a post; the request's own origin when it has none (local). */
 export function socialOrigin(fallback?: string | null): string {
-  return siteUrl() ?? fallback?.replace(/\/+$/, "") ?? "https://mazedland.vercel.app";
+  return siteUrl() ?? fallback?.replace(/\/+$/, "") ?? PRODUCTION_ORIGIN;
 }
 
 /**
