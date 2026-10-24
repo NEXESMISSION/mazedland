@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { formatNumber, formatTND, intlTag } from "@/lib/utils";
@@ -50,6 +51,7 @@ type Month = {
 const dealOf = (v: unknown): Deal => (v === "rent" ? "rent" : "sale");
 
 export default async function AdminResults() {
+  await requireAdmin();
   const t = await getTranslations("adminResults");
   const locale = await getLocale();
   const admin = getServiceSupabase();

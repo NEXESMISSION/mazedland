@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
@@ -32,6 +33,7 @@ export default async function AdminCataloguePage({
 }: {
   searchParams: Promise<{ a?: string }>;
 }) {
+  await requireAdmin();
   const sp = await searchParams;
   const t = await getTranslations("adminCatalogue");
   const locale = await getLocale();

@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { AdminNotificationsClient } from "./AdminNotificationsClient";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
@@ -17,6 +18,7 @@ import { getTranslations } from "next-intl/server";
  * /api/admin/notifications/* routes block non-admin access.
  */
 export default async function AdminNotificationsPage() {
+  await requireAdmin();
   const t = await getTranslations("adminNotifications");
   return (
     <div>

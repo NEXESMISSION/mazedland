@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -29,6 +30,7 @@ type Card = {
 };
 
 export default async function AdminSiteHub() {
+  await requireAdmin();
   const t = await getTranslations("adminSite");
   const locale = await getLocale();
   const sb = await getServerSupabase();

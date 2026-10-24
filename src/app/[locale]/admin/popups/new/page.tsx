@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { getTranslations } from "next-intl/server";
 import { PopupForm } from "../PopupForm";
 
@@ -7,6 +8,7 @@ export const dynamic = "force-dynamic";
  * /admin/popups/new — blank form. Auth is enforced by the admin layout.
  */
 export default async function NewPopupPage() {
+  await requireAdmin();
   const t = await getTranslations("adminPopups");
   return (
     <div>

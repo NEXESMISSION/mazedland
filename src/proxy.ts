@@ -80,7 +80,16 @@ export async function proxy(req: NextRequest) {
     req.headers.get("next-router-prefetch") === "1" ||
     req.headers.get("purpose") === "prefetch" ||
     req.headers.get("x-purpose") === "prefetch";
-  if (isPrefetch) {
+  // The console is never skipped: a prefetch header is a header anyone can send.
+  // Matched on the decoded path, since /fr/%61dmin routes to /fr/admin too.
+  let decodedPath = pathname;
+  try {
+    decodedPath = decodeURIComponent(pathname);
+  } catch {
+    // A malformed escape routes nowhere; the raw path is matched as is.
+  }
+  const adminMatch = decodedPath.match(/^\/+(fr|ar|en)\/+admin(?:\/.*)?$/i);
+  if (isPrefetch && !adminMatch) {
     mwLog.debug(`prefetch ${pathname} · auth skipped`, {
       ms: Math.round(performance.now() - t0),
     });
@@ -106,6 +115,7 @@ export async function proxy(req: NextRequest) {
 
   let authUserId: string | null = null;
   let authUserEmail: string | null = null;
+  let isAdmin = false;
 
   if (hasAuthCookie) {
     const supabase = createServerClient(url, key, {
@@ -129,6 +139,10 @@ export async function proxy(req: NextRequest) {
       const { data } = await supabase.auth.getUser();
       authUserId = data.user?.id ?? null;
       authUserEmail = data.user?.email ?? null;
+      if (adminMatch && authUserId) {
+        const { data: profile } = await supabase.from("profiles").select("role").eq("id", authUserId).maybeSingle();
+        isAdmin = profile?.role === "admin";
+      }
     } catch (err) {
       mwLog.warn(`session refresh failed: ${err instanceof Error ? err.message : err}`);
     } finally {
@@ -161,6 +175,19 @@ export async function proxy(req: NextRequest) {
       req.url,
     );
     mwLog.info(`account-gate ${pathname} → ${target.pathname}`);
+    return NextResponse.redirect(target, 307);
+  }
+
+  // Console gate. The admin layout redirects a non-admin too, but Next renders
+  // a layout and its page in parallel, so the page's data was already in the
+  // response when that redirect arrived: an anonymous request for
+  // /admin/vendeurs carried sellers' phone numbers. Here nothing has rendered
+  // yet. Fails closed — an error above leaves isAdmin false.
+  if (adminMatch && !isAdmin) {
+    const target = authUserId
+      ? new URL(`/${adminMatch[1]}`, req.url)
+      : new URL(`/${adminMatch[1]}/login?next=${encodeURIComponent(`${pathname}${search}`)}`, req.url);
+    mwLog.info(`admin-gate ${pathname} → ${target.pathname}`);
     return NextResponse.redirect(target, 307);
   }
 

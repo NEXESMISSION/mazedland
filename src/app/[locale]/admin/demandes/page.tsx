@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/purity -- Server Component: the clock tells an
  * expired demande from a live one, and there is no client render to replay. */
+import { requireAdmin } from "@/lib/admin/session";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -44,6 +45,7 @@ export default async function AdminDemandesPage({
 }: {
   searchParams: Promise<{ deal?: string }>;
 }) {
+  await requireAdmin();
   const sp = await searchParams;
   const locale = await getLocale();
   const t = await getTranslations("adminDemandes");

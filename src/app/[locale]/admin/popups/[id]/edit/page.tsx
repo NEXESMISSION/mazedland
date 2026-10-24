@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Ltr } from "@/components/ui/Ltr";
@@ -18,6 +19,7 @@ export default async function EditPopupPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const supabase = await getServerSupabase();
   const { data, error } = await supabase

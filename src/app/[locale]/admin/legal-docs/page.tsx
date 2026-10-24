@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { PropertyType } from "@/lib/types";
@@ -14,6 +15,7 @@ const PROPERTY_TYPES: PropertyType[] = [
 ];
 
 export default async function AdminLegalDocsPage() {
+  await requireAdmin();
   const supabase = await getServerSupabase();
   const { data } = await supabase
     .from("legal_doc_kinds")

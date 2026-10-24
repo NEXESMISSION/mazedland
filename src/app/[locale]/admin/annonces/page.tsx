@@ -4,6 +4,7 @@
  * This module is an async Server Component — it runs once, per request, on the
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
+import { requireAdmin } from "@/lib/admin/session";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
@@ -97,6 +98,7 @@ export default async function AdminAnnoncesPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string; deal?: string }>;
 }) {
+  await requireAdmin();
   const sp = await searchParams;
   // Sale, rent or both (0166): the same queue, narrowed to one deal.
   const deal = sp.deal === "sale" || sp.deal === "rent" ? sp.deal : null;

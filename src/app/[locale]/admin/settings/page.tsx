@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { Link } from "@/i18n/navigation";
@@ -32,6 +33,7 @@ const KEYS = [
 ] as const;
 
 export default async function AdminSettingsPage() {
+  await requireAdmin();
   const supabase = await getServerSupabase();
   const { data } = await supabase
     .from("app_settings")

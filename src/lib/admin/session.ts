@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { notFound } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -45,3 +46,19 @@ export const getAdminSession = cache(async (): Promise<AdminSession> => {
 
   return { supabase, user, isAdmin: profile?.role === "admin" };
 });
+
+/**
+ * The gate every admin page runs itself, before its first query.
+ *
+ * The admin layout redirects whoever is not an admin, but Next renders a
+ * layout and its page in parallel: by the time the layout's redirect reached
+ * the browser, the page had already streamed its data into the same response.
+ * An anonymous `curl` of /admin/vendeurs came back with sellers' phone
+ * numbers. The proxy now turns such a request away before anything renders;
+ * this is the second lock, for any path the proxy's matcher does not see.
+ */
+export async function requireAdmin(): Promise<AdminSession & { user: User }> {
+  const session = await getAdminSession();
+  if (!session.user || !session.isAdmin) notFound();
+  return session as AdminSession & { user: User };
+}

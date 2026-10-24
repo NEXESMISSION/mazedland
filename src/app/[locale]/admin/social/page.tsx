@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { headers } from "next/headers";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
@@ -40,6 +41,7 @@ export default async function AdminSocialPage({
 }: {
   searchParams: Promise<{ tab?: string; connected?: string; error?: string }>;
 }) {
+  await requireAdmin();
   const sp = await searchParams;
   const locale = await getLocale();
   const t = await getTranslations("adminSocial");
