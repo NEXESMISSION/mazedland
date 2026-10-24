@@ -6,6 +6,7 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { listingFields, listingPhotos, num, text, type ListingBody } from "@/lib/listings/input";
+import { can, roleIn } from "@/lib/pro/shops";
 
 /**
  * POST /api/annonces — create or update the seller's draft listing.
@@ -85,6 +86,20 @@ export async function POST(req: NextRequest) {
   }
 
   const fields = listingFields(body);
+
+  // Published for a shop (0173): only one the seller may publish for.
+  if ("shop_id" in body) {
+    const shopId = text((body as Record<string, unknown>).shop_id, 40);
+    if (shopId) {
+      const [role, { data: shop }] = await Promise.all([
+        roleIn(admin, shopId, user.id),
+        admin.from("shops").select("status").eq("id", shopId).maybeSingle(),
+      ]);
+      // A shop that is not open has no page to show the annonce on.
+      if (!can(role, "publish") || shop?.status !== "approved") return NextResponse.json({ error: "not_owner" }, { status: 403 });
+    }
+    fields.shop_id = shopId;
+  }
 
   let listingId = id;
 

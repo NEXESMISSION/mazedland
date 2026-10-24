@@ -1,0 +1,176 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
+import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { governorateLabel } from "@/lib/tunisia";
+import { absoluteUrl } from "@/lib/siteUrl";
+import { AnnonceCard, type AnnonceCardRow } from "@/components/listing/AnnonceCard";
+import { Ltr } from "@/components/ui/Ltr";
+import { BadgeCheck, Clock, Globe, Mail, MapPin, Phone, Store } from "lucide-react";
+
+export const dynamic = "force-dynamic";
+
+type Shop = {
+  id: string; slug: string; name: string; kind: string; description: string | null; logo_path: string | null; cover_path: string | null;
+  governorate: string; city: string | null; phone: string | null; email: string | null; website: string | null; hours: string | null;
+  verified_at: string | null;
+};
+
+async function loadShop(slug: string): Promise<Shop | null> {
+  const admin = getServiceSupabase();
+  if (!admin || !/^[a-z0-9-]{3,60}$/.test(slug)) return null;
+  const { data } = await admin
+    .from("shops")
+    .select("id, slug, name, kind, description, logo_path, cover_path, governorate, city, phone, email, website, hours, verified_at")
+    .eq("slug", slug)
+    .eq("status", "approved")
+    .maybeSingle();
+  return (data as Shop | null) ?? null;
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const shop = await loadShop(slug);
+  if (!shop) return {};
+  const t = await getTranslations("shops");
+  return {
+    title: shop.name,
+    description: shop.description?.slice(0, 160) ?? t("shopMetaDescription", { name: shop.name }),
+    alternates: { canonical: `/boutiques/${shop.slug}` },
+    openGraph: shop.logo_path ? { images: [propertyPhotoUrl(shop.logo_path)] } : undefined,
+  };
+}
+
+const LISTING_SELECT = `
+  id, title, price, price_on_request, negotiable, governorate, delegation,
+  reference, attributes, deal_type, availability,
+  category:categories!listings_category_id_fkey ( label_fr, label_ar ),
+  photos:listing_photos ( storage_path, sort_order )
+`;
+
+/**
+ * A shop's page (0173): who they are, how to reach them, and their annonces —
+ * the same rows as the marketplace, filtered by shop, for sale or for rent.
+ * Only an approved shop has a page; « vérifié » shows only when an admin
+ * checked their papers.
+ */
+export default async function ShopPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ deal?: string }> }) {
+  const { slug } = await params;
+  const sp = await searchParams;
+  const shop = await loadShop(slug);
+  if (!shop) notFound();
+  const locale = await getLocale();
+  const t = await getTranslations("shops");
+  const tKinds = await getTranslations("pro.kinds");
+  const admin = getServiceSupabase()!;
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const deal = sp.deal === "sale" || sp.deal === "rent" ? sp.deal : null;
+  let q = admin.from("listings").select(LISTING_SELECT).eq("shop_id", shop.id).eq("status", "published").order("published_at", { ascending: false }).limit(60);
+  if (deal) q = q.eq("deal_type", deal);
+  const { data: rows } = await q;
+  const listings = (rows ?? []) as unknown as AnnonceCardRow[];
+
+  const place = `${shop.city ? `${shop.city}, ` : ""}${governorateLabel(shop.governorate, locale)}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateAgent",
+    name: shop.name,
+    url: absoluteUrl(`/${locale}/boutiques/${shop.slug}`),
+    ...(shop.logo_path ? { logo: absoluteUrl(propertyPhotoUrl(shop.logo_path)) } : {}),
+    ...(shop.phone ? { telephone: shop.phone } : {}),
+    address: { "@type": "PostalAddress", addressRegion: shop.governorate, ...(shop.city ? { addressLocality: shop.city } : {}), addressCountry: "TN" },
+  };
+
+  return (
+    <main className="mx-auto max-w-6xl pb-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <div className="relative aspect-[3/1] max-h-72 w-full overflow-hidden bg-surface-2 lg:rounded-b-3xl">
+        {shop.cover_path && (
+          // eslint-disable-next-line @next/next/no-img-element -- the shop's own banner
+          <img src={propertyPhotoUrl(shop.cover_path, { transform: { width: 1600, quality: 75 } })} alt="" className="size-full object-cover" />
+        )}
+      </div>
+      <div className="px-4 lg:px-8">
+        <header className="-mt-10 flex flex-wrap items-end gap-4">
+          <span className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-2xl bg-surface shadow-md ring-4 ring-[var(--background)]">
+            {shop.logo_path ? (
+              // eslint-disable-next-line @next/next/no-img-element -- the shop's logo
+              <img src={propertyPhotoUrl(shop.logo_path, { transform: { width: 200, quality: 80 } })} alt={shop.name} className="size-full object-cover" />
+            ) : (
+              <Store className="size-8 text-muted" />
+            )}
+          </span>
+          <div className="min-w-0 pb-1">
+            <h1 className="flex items-center gap-2 text-[24px] font-extrabold tracking-tight lg:text-[30px]" dir="auto">
+              {shop.name}
+              {shop.verified_at && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-gold-faint px-2 py-0.5 text-[11.5px] font-bold text-foreground ring-1 ring-gold-soft">
+                  <BadgeCheck className="size-3.5 text-gold" /> {t("verified")}
+                </span>
+              )}
+            </h1>
+            <p className="text-[13px] text-muted">{tKinds(shop.kind)} · {place}</p>
+          </div>
+        </header>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_300px]">
+          <div className="order-2 lg:order-1">
+            <nav className="flex gap-1.5">
+              {([null, "sale", "rent"] as const).map((d) => (
+                <Link
+                  key={d ?? "all"}
+                  href={(d ? `/boutiques/${shop.slug}?deal=${d}` : `/boutiques/${shop.slug}`) as never}
+                  aria-current={deal === d ? "page" : undefined}
+                  className={`rounded-full px-3 py-1.5 text-[12.5px] font-bold ring-1 ${deal === d ? "bg-gold-faint text-foreground ring-gold-soft" : "text-muted ring-border"}`}
+                >
+                  {t(`deal.${d ?? "all"}`)}
+                </Link>
+              ))}
+            </nav>
+            {listings.length === 0 ? (
+              <p className="mt-6 rounded-2xl border border-dashed border-border p-8 text-center text-[13px] text-muted">{t("noListings")}</p>
+            ) : (
+              <ul className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:gap-5">
+                {listings.map((l) => (
+                  <li key={l.id}>
+                    <AnnonceCard listing={l} loggedIn={!!user} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <aside className="order-1 space-y-3 lg:order-2">
+            {shop.description && (
+              <p className="whitespace-pre-line rounded-2xl border border-border bg-surface p-4 text-[13px] leading-relaxed text-foreground" dir="auto">
+                {shop.description}
+              </p>
+            )}
+            <ul className="space-y-2 rounded-2xl border border-border bg-surface p-4 text-[13px]">
+              <li className="flex items-center gap-2 text-foreground"><MapPin className="size-4 text-muted" /> {place}</li>
+              {shop.phone && (
+                <li className="flex items-center gap-2">
+                  <Phone className="size-4 text-muted" />
+                  <a href={`tel:${shop.phone}`} className="font-bold text-foreground hover:underline"><Ltr>{shop.phone}</Ltr></a>
+                </li>
+              )}
+              {shop.email && (
+                <li className="flex items-center gap-2"><Mail className="size-4 text-muted" /> <a href={`mailto:${shop.email}`} className="truncate text-foreground hover:underline" dir="ltr">{shop.email}</a></li>
+              )}
+              {shop.website && (
+                <li className="flex items-center gap-2"><Globe className="size-4 text-muted" /> <a href={shop.website} target="_blank" rel="noreferrer nofollow" className="truncate text-foreground hover:underline" dir="ltr">{shop.website.replace(/^https?:\/\//, "")}</a></li>
+              )}
+              {shop.hours && <li className="flex items-center gap-2 text-foreground"><Clock className="size-4 text-muted" /> <span dir="auto">{shop.hours}</span></li>}
+            </ul>
+            <p className="px-1 text-[11px] leading-snug text-muted">{shop.verified_at ? t("verifiedMeans") : t("notVerifiedMeans")}</p>
+          </aside>
+        </div>
+      </div>
+    </main>
+  );
+}

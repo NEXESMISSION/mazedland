@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
+import { nextPeriodStart } from "@/lib/pro/shops";
 
 /**
  * Receipt review — the v3 money queue.
@@ -100,7 +101,7 @@ export async function POST(
       .in("status", ["pending", "pending_review"]);
     if (error) return fail("capture_failed", 500, error);
 
-    const meta = (pay.metadata ?? {}) as { product_id?: string };
+    const meta = (pay.metadata ?? {}) as { product_id?: string; shop_id?: string };
     let granted: string | null = null;
 
     // A pack is only worth money if the credits actually appear. Nothing in
@@ -133,6 +134,36 @@ export async function POST(
         if (credErr) return fail("credit_grant_failed", 500, credErr);
         granted = `${quota} publications`;
       }
+    }
+
+    // A plan (0173): one period of the plan for the shop, starting today or
+    // when the period still running ends. The payment id is unique on the
+    // period, so the same receipt never grants twice.
+    if (pay.kind === "subscription" && meta.product_id && meta.shop_id) {
+      const { data: product } = await admin
+        .from("products")
+        .select("listing_quota, duration_days, name_fr")
+        .eq("id", meta.product_id)
+        .maybeSingle();
+      const quota = Number(product?.listing_quota);
+      const days = Number(product?.duration_days);
+      if (!(Number.isFinite(quota) && quota > 0)) return fail("subscription_product_invalid", 500);
+      const starts = await nextPeriodStart(admin, meta.shop_id);
+      const ends = new Date(starts.getTime() + (Number.isFinite(days) && days > 0 ? days : 30) * 86_400_000);
+      const { error: subErr } = await admin.from("shop_subscriptions").upsert(
+        {
+          shop_id: meta.shop_id,
+          product_id: meta.product_id,
+          payment_id: pay.id,
+          listing_quota: quota,
+          starts_at: starts.toISOString(),
+          ends_at: ends.toISOString(),
+          granted_by: user.id,
+        },
+        { onConflict: "payment_id", ignoreDuplicates: true },
+      );
+      if (subErr) return fail("subscription_grant_failed", 500, subErr);
+      granted = `${product?.name_fr ?? "Pro"} jusqu'au ${ends.toISOString().slice(0, 10)}`;
     }
 
     if (pay.kind === "badge" && meta.product_id) {

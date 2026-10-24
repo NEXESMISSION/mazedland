@@ -25,6 +25,7 @@ import { liveListingCount, moderationSettings } from "@/lib/moderation/server";
 import { asDealType } from "@/lib/listings/deal";
 import { aiAvailable } from "@/lib/ai/server";
 import { asPendingEdit } from "@/lib/listings/edit";
+import { activePlan, can, membershipsOf, shopLiveCount } from "@/lib/pro/shops";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,7 @@ export const dynamic = "force-dynamic";
 export default async function NewListingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ draft?: string | string[]; deal?: string | string[]; edit?: string | string[] }>;
+  searchParams: Promise<{ draft?: string | string[]; deal?: string | string[]; edit?: string | string[]; shop?: string | string[] }>;
 }) {
   const sp = await searchParams;
   const wantedDraft = Array.isArray(sp.draft) ? sp.draft[0] : sp.draft;
@@ -61,6 +62,8 @@ export default async function NewListingPage({
   const wantedEdit = Array.isArray(sp.edit) ? sp.edit[0] : sp.edit;
   // « J'ai un bien à louer » on the home page sends ?deal=rent (0166).
   const initialDeal = asDealType(Array.isArray(sp.deal) ? sp.deal[0] : sp.deal);
+  // « Publier pour la boutique » in the Espace Pro sends ?shop=<id> (0173).
+  const initialShopId = (Array.isArray(sp.shop) ? sp.shop[0] : sp.shop) ?? null;
   const locale = await getLocale();
   const t = await getTranslations("publish");
   const tRoot = await getTranslations();
@@ -114,7 +117,7 @@ export default async function NewListingPage({
           `id, category_id, title, description, price, price_on_request, negotiable,
            governorate, delegation, attributes, contact_name, contact_phone, updated_at,
            deal_type, deposit_amount, charges_amount, furnished, available_from, min_lease_months,
-           pending_edit,
+           pending_edit, shop_id,
            photos:listing_photos (storage_path, sort_order)`,
         )
         .eq("seller_id", user!.id);
@@ -194,6 +197,20 @@ export default async function NewListingPage({
 
   const groups = parents.map((p) => ({ id: p.id, label: categoryLabel(p, locale) }));
 
+  // The shops this seller publishes for (0173): open ones, where their role
+  // allows it, each with what its running plan still covers.
+  const shops = wantedEdit
+    ? []
+    : await Promise.all(
+        (await membershipsOf(admin, user!.id))
+          .filter((m) => m.shop.status === "approved" && can(m.role, "publish"))
+          .map(async ({ shop }) => {
+            const plan = await activePlan(admin, shop.id);
+            const used = plan ? await shopLiveCount(admin, shop.id) : 0;
+            return { id: shop.id, name: shop.name, planLeft: plan ? Math.max(0, plan.quota - used) : null };
+          }),
+      );
+
   // Editing: an annonce that is not online (or not theirs) has no edit form —
   // back to their annonces. An edit already waiting for an admin opens as the
   // seller left it, not as the live version, so they can correct it.
@@ -225,6 +242,8 @@ export default async function NewListingPage({
       aiAvailable={wantedEdit ? false : await aiAvailable(admin)}
       mode={wantedEdit ? "edit" : "create"}
       editPending={Boolean(pending)}
+      shops={shops}
+      initialShopId={initialShopId}
       locale={locale}
     />
   );

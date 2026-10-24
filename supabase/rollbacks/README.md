@@ -10,6 +10,7 @@ node scripts/backup-db.mjs
 
 | Migration | Rollback | What is lost |
 |---|---|---|
+| 0173 pro shops | `0173_pro_shops.down.sql` | shops, teams, subscription periods (annonces stay, unlinked) |
 | 0172 pending edit | `0172_listing_pending_edit.down.sql` | edits waiting for an admin (the annonces are untouched) |
 | 0171 retire legacy roles | `0171_retire_legacy_roles.down.sql` | nothing: the six seed accounts get their old roles back |
 | 0170 social publisher | `0170_social_publisher.down.sql` | every promotion request, post id and link, group, sealed token, tracking event |

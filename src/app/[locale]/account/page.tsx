@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import { SmsNotificationsToggle } from "@/components/account/SmsNotificationsToggle";
@@ -18,6 +19,7 @@ import {
   Plus,
   BellRing,
   Settings,
+  Store,
 } from "lucide-react";
 
 // Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
@@ -43,6 +45,7 @@ export default async function AccountPage() {
   let userPhone: string | null = null;
   let role: string = "individual";
   let smsEnabled = true;
+  let inAShop = false;
 
   try {
     const supabase = await getServerSupabase();
@@ -59,6 +62,12 @@ export default async function AccountPage() {
       userPhone = (profile?.phone as string | null) ?? null;
       role = profile?.role ?? "individual";
       smsEnabled = profile?.sms_notifications_enabled ?? true;
+      // Shop memberships are server-only (0173), so the service client reads them.
+      const { count } = (await getServiceSupabase()
+        ?.from("shop_members")
+        .select("user_id", { count: "exact", head: true })
+        .eq("user_id", user.id)) ?? { count: 0 };
+      inAShop = (count ?? 0) > 0;
     }
   } catch {
     // env missing — fall through to guest UI.
@@ -147,6 +156,9 @@ export default async function AccountPage() {
     { href: "/account/requests", Icon: BellRing, title: t("actions.requestsTitle"), body: t("actions.requestsBody") },
     { href: "/account/activity", Icon: Heart, title: t("actions.favoritesTitle"), body: t("actions.favoritesBody") },
     { href: "/account/payments", Icon: Wallet, title: t("actions.paymentsTitle"), body: t("actions.paymentsBody") },
+    inAShop
+      ? { href: "/pro/dashboard", Icon: Store, title: t("actions.proTitle"), body: t("actions.proBody") }
+      : { href: "/pro", Icon: Store, title: t("actions.proOpenTitle"), body: t("actions.proOpenBody") },
     { href: "/account/settings", Icon: Settings, title: t("actions.settingsTitle"), body: t("actions.settingsBody") },
   ];
   if (role === "admin") {

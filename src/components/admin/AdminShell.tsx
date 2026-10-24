@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
-  BarChart3, BellRing, Megaphone,
+  BarChart3, BellRing, Megaphone, Store,
   LayoutDashboard, Inbox, Receipt, Tag, Users, FolderTree,
   SlidersHorizontal, ExternalLink, Menu, X,
   type LucideIcon,
@@ -37,7 +37,7 @@ type Item = {
   countKey?: CountKey;
 };
 
-export type CountKey = "annonces" | "paiements" | "social";
+export type CountKey = "annonces" | "paiements" | "social" | "boutiques";
 export type AdminCounts = Partial<Record<CountKey, number>>;
 
 const NAV: Item[] = [
@@ -47,6 +47,7 @@ const NAV: Item[] = [
   { key: "demandes", href: "/admin/demandes", Icon: BellRing },
   { key: "social", href: "/admin/social", Icon: Megaphone, countKey: "social" },
   { key: "payments", href: "/admin/paiements", Icon: Receipt, countKey: "paiements" },
+  { key: "shops", href: "/admin/boutiques", Icon: Store, countKey: "boutiques" },
   { key: "offers", href: "/admin/offres", Icon: Tag },
   { key: "sellers", href: "/admin/vendeurs", Icon: Users },
   { key: "catalogue", href: "/admin/catalogue", Icon: FolderTree },

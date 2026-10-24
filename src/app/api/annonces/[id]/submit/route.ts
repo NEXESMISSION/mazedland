@@ -7,6 +7,7 @@ import { fail } from "@/lib/http/errors";
 import { PRODUCT_SELECT, resolveListingFee, toProduct } from "@/lib/products";
 import { apiTranslator } from "@/lib/i18n/server";
 import { liveListingCount, moderationSettings, publishOrQueue } from "@/lib/moderation/server";
+import { planCovers } from "@/lib/pro/shops";
 
 /**
  * POST /api/annonces/[id]/submit — send a draft listing for publication.
@@ -47,7 +48,7 @@ export async function POST(
 
   const { data: listing } = await admin
     .from("listings")
-    .select("id, seller_id, category_id, status, title, contact_phone, seller_attestation_version, fee_payment_id")
+    .select("id, seller_id, category_id, status, title, contact_phone, seller_attestation_version, fee_payment_id, shop_id")
     .eq("id", id)
     .maybeSingle();
   if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
@@ -100,7 +101,7 @@ export async function POST(
   }
 
   const settings = await moderationSettings(admin);
-  let paidWith: "already_paid" | "free_quota" | "credit" | "free";
+  let paidWith: "already_paid" | "free_quota" | "credit" | "free" | "subscription";
   let remaining: number | undefined;
 
   // ── 0. A fee that was already captured ────────────────────────────────────
@@ -116,8 +117,18 @@ export async function POST(
     alreadyPaid = paid?.status === "captured";
   }
 
+  // A shop's annonce (0173) goes online under the shop's plan while it has
+  // room. Without a running plan, or once it is full, it falls back to the
+  // seller's own free places, credits or fee, like any annonce.
+  const shopPlan = listing.shop_id
+    ? await planCovers(admin, listing.shop_id as string, user.id, id)
+    : null;
+
   if (alreadyPaid) {
     paidWith = "already_paid";
+  } else if (shopPlan?.ok) {
+    paidWith = "subscription";
+    remaining = shopPlan.left;
   } else if ((await liveListingCount(admin, user.id, id)) < settings.freeLimit) {
     // ── 1. Within the free places ───────────────────────────────────────────
     // An individual publishes for free while they have fewer than
@@ -241,6 +252,7 @@ export async function POST(
     credit: `« ${listing.title} » est en cours de vérification. Il vous reste ${remaining} publication(s).`,
     free: `« ${listing.title} » est en cours de vérification. La publication est gratuite dans cette catégorie.`,
     freeQuota: `« ${listing.title} » est en cours de vérification. Votre publication est gratuite.`,
+    subscription: `« ${listing.title} » est en cours de vérification. Elle compte dans l'abonnement de votre boutique.`,
   }[variant];
 
   await admin

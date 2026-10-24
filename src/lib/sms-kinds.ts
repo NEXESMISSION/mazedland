@@ -50,6 +50,8 @@ export const SMS_KINDS = new Set<string>([
   "inspection_completed",
   // Inspector onboarding — approval only; "inspector_application_received" is an on-site ack.
   "inspector_approved",
+  // Mazed Immo Pro (0173) — the verdict on a shop; joining a team stays in-app.
+  "shop_approved", "shop_rejected",
 ]);
 
 // The per-user daily cap applies ONLY to these higher-frequency kinds (so an

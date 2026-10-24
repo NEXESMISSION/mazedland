@@ -82,7 +82,11 @@
       "requestsTitle": "Mes demandes",
       "requestsBody": "Ce que je cherche, avec alertes",
       "settingsTitle": "Paramètres",
-      "settingsBody": "Profil, notifications, confidentialité"
+      "settingsBody": "Profil, notifications, confidentialité",
+      "proTitle": "Espace Pro",
+      "proBody": "Votre boutique, son équipe, son abonnement.",
+      "proOpenTitle": "Ouvrir une boutique",
+      "proOpenBody": "Agence ou promoteur : votre page et vos annonces sur Mazed Immo."
     }
   },
   "account": {
@@ -887,7 +891,10 @@
       "availableFrom": "Libre à partir du",
       "minLease": "Durée minimale",
       "months": "{count, plural, one {# mois} other {# mois}}"
-    }
+    },
+    "shopLabel": "Boutique",
+    "verifiedShop": "Boutique vérifiée",
+    "seeShop": "Voir la boutique et ses annonces"
   },
   "listingApi": {
     "tooManyReveals": "Trop de numéros consultés depuis cet appareil. Réessayez plus tard.",
@@ -1032,6 +1039,10 @@
       "freeQuota": {
         "title": "Annonce envoyée à la vérification",
         "body": "« {title} » est en cours de vérification. Votre publication est gratuite."
+      },
+      "subscription": {
+        "title": "Annonce envoyée à la vérification",
+        "body": "« {title} » est en cours de vérification. Elle compte dans l'abonnement de votre boutique."
       }
     },
     "listing_published": {
@@ -1097,6 +1108,28 @@
     "admin_listing_edit_pending": {
       "title": "Modification à vérifier",
       "body": "« {title} » — le vendeur a modifié son annonce en ligne."
+    },
+    "shop_approved": {
+      "title": "Boutique ouverte",
+      "body": "« {name} » est ouverte sur Mazed Immo. Vous pouvez publier pour la boutique."
+    },
+    "shop_rejected": {
+      "rejected": {
+        "title": "Boutique non retenue",
+        "body": "« {name} » n'a pas été retenue. Motif : {reason}"
+      },
+      "suspended": {
+        "title": "Boutique suspendue",
+        "body": "« {name} » est suspendue. Motif : {reason}"
+      }
+    },
+    "shop_member_added": {
+      "title": "Vous faites partie d'une boutique",
+      "body": "Vous avez été ajouté à « {name} ». Retrouvez-la dans votre Espace Pro."
+    },
+    "admin_shop_pending": {
+      "title": "Boutique à examiner",
+      "body": "« {name} » demande à ouvrir sa boutique."
     }
   },
   "publish": {
@@ -1264,7 +1297,17 @@
     "editAppliedTitle": "Modifications en ligne",
     "editAppliedBody": "Votre annonce affiche déjà la nouvelle version.",
     "editPendingTitle": "Modifications envoyées",
-    "editPendingBody": "Notre équipe vérifie ces modifications. Votre annonce reste en ligne telle qu'elle était, et vous êtes prévenu dès qu'elles sont publiées."
+    "editPendingBody": "Notre équipe vérifie ces modifications. Votre annonce reste en ligne telle qu'elle était, et vous êtes prévenu dès qu'elles sont publiées.",
+    "publishFor": "Publier pour",
+    "publishForMe": "Moi-même",
+    "publishForMeHint": "Annonce de particulier",
+    "publishForNoPlan": "Sans abonnement : vos règles de particulier",
+    "publishForPlanLeft": "{count, plural, =0 {Abonnement complet} one {# annonce restante dans l'abonnement} other {# annonces restantes dans l'abonnement}}",
+    "feeShopPlan": "Abonnement de la boutique",
+    "included": "Inclus",
+    "shopPlanExplain": "Publiée pour « {name} », elle compte dans son abonnement. {count, plural, one {Il reste # annonce.} other {Il reste # annonces.}}",
+    "planHint": "Comprise dans l'abonnement de « {name} ».",
+    "doneSubscription": "{count, plural, =0 {L'abonnement de la boutique est maintenant complet.} one {Il reste # annonce dans l'abonnement de la boutique.} other {Il reste # annonces dans l'abonnement de la boutique.}}"
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",
@@ -2311,7 +2354,9 @@
       "demandes": "Demandes",
       "demandesHint": "Ce que cherchent acheteurs et locataires",
       "social": "Réseaux",
-      "socialHint": "Promotions Facebook, Instagram, groupes"
+      "socialHint": "Promotions Facebook, Instagram, groupes",
+      "shops": "Boutiques",
+      "shopsHint": "Agences et promoteurs : ouvrir, vérifier, suspendre"
     },
     "siteTabs": {
       "label": "Sections du site",
@@ -3259,5 +3304,256 @@
     "test": "Tester la connexion",
     "testOk": "Connexion OK : {name}.",
     "testOkQuota": "Connexion OK : {name} — {used}/{total} publications sur 24 h."
+  },
+  "pro": {
+    "kinds": {
+      "agency": "Agence immobilière",
+      "promoter": "Promoteur",
+      "land_developer": "Lotisseur",
+      "property_manager": "Gestionnaire de biens"
+    },
+    "roles": {
+      "owner": "Propriétaire",
+      "admin": "Administrateur",
+      "agent": "Agent"
+    },
+    "status": {
+      "pending": "En attente",
+      "approved": "Ouverte",
+      "rejected": "Non retenue",
+      "suspended": "Suspendue",
+      "hint": {
+        "pending": "Votre boutique est en cours de vérification par l'équipe Mazed Immo. Vous serez prévenu dès qu'elle est ouverte.",
+        "rejected": "Votre boutique n'a pas été retenue. Corrigez ce qui est indiqué ci-dessous puis écrivez-nous.",
+        "suspended": "Votre boutique est suspendue : sa page et ses annonces ne sont plus visibles."
+      }
+    },
+    "documents": {
+      "rne": "Extrait RNE",
+      "patente": "Patente",
+      "identity": "Pièce d'identité du gérant",
+      "other": "Autre document"
+    },
+    "landing": {
+      "metaTitle": "Mazed Immo Pro — votre boutique immobilière",
+      "metaDescription": "Agences, promoteurs et lotisseurs : une page à votre nom, vos annonces dans le catalogue Mazed Immo et une équipe qui publie avec vous.",
+      "title": "Votre agence a sa vitrine sur Mazed Immo",
+      "subtitle": "Une page à votre nom, toutes vos annonces au même endroit, une équipe qui publie avec vous et un abonnement mensuel sans commission.",
+      "ctaCreate": "Ouvrir ma boutique",
+      "ctaDashboard": "Aller à mon Espace Pro",
+      "benefits": {
+        "shop": {
+          "title": "Votre page",
+          "body": "Logo, bannière, description, contacts et horaires : une adresse à partager, à votre nom."
+        },
+        "marketplace": {
+          "title": "Le catalogue entier",
+          "body": "Vos annonces apparaissent aussi dans la recherche Mazed Immo, comme toutes les autres."
+        },
+        "team": {
+          "title": "Votre équipe",
+          "body": "Ajoutez vos agents : chacun publie pour la boutique, vous gardez la main."
+        },
+        "matches": {
+          "title": "Les demandes",
+          "body": "Les acheteurs et locataires qui cherchent ce que vous proposez sont prévenus de vos annonces."
+        }
+      },
+      "plansTitle": "Trois abonnements, sans engagement",
+      "perMonth": "DT / mois",
+      "quota": "{count, plural, one {# annonce en ligne} other {# annonces en ligne}}",
+      "included": {
+        "shopPage": "Page boutique publique",
+        "inCatalogue": "Annonces dans le catalogue",
+        "noCommission": "Aucune commission sur vos ventes"
+      },
+      "verifiedNote": "Le badge « vérifié » s'affiche une fois vos documents (RNE, patente) contrôlés par notre équipe."
+    },
+    "create": {
+      "title": "Ouvrir ma boutique",
+      "subtitle": "Quelques informations suffisent. L'équipe Mazed Immo vérifie chaque boutique avant de l'ouvrir, en général sous 24 heures."
+    },
+    "form": {
+      "imageTooBig": "Image trop lourde (10 Mo au maximum).",
+      "uploadFailed": "L'image n'a pas pu être envoyée. Réessayez.",
+      "saveFailed": "Enregistrement impossible. Réessayez.",
+      "created": "Boutique envoyée à la vérification.",
+      "saved": "Boutique enregistrée.",
+      "logo": "Logo",
+      "cover": "Bannière",
+      "imagesHint": "Logo carré et bannière large (3:1). JPG, PNG ou WebP.",
+      "name": "Nom de la boutique",
+      "kind": "Activité",
+      "governorate": "Gouvernorat",
+      "city": "Ville",
+      "description": "Présentation",
+      "descriptionPlaceholder": "Votre agence, vos zones, votre façon de travailler…",
+      "phone": "Téléphone",
+      "email": "E-mail",
+      "website": "Site web",
+      "hours": "Horaires",
+      "hoursPlaceholder": "Lun–Sam, 9h–18h",
+      "legalName": "Raison sociale",
+      "legalId": "Matricule fiscal / RNE",
+      "slug": "Adresse de la page",
+      "slugHint": "Lettres minuscules, chiffres et tirets. Changer l'adresse casse les liens déjà partagés.",
+      "legalHint": "La raison sociale et le matricule ne sont pas publiés : ils servent à vérifier la boutique.",
+      "submitCreate": "Envoyer ma boutique",
+      "submitSave": "Enregistrer"
+    },
+    "dashboard": {
+      "unavailable": "Service momentanément indisponible.",
+      "eyebrow": "Espace Pro",
+      "verified": "Boutique vérifiée",
+      "yourRole": "Vous : {role}",
+      "publicPage": "Voir la page",
+      "tabs": {
+        "apercu": "Aperçu",
+        "annonces": "Annonces",
+        "equipe": "Équipe",
+        "abonnement": "Abonnement",
+        "boutique": "Boutique",
+        "documents": "Documents"
+      },
+      "planLabel": "Abonnement",
+      "noPlan": "Aucun",
+      "until": "Jusqu'au {date}",
+      "quotaLabel": "Annonces en ligne",
+      "quotaSub": "En ligne et en vérification",
+      "viewsLabel": "Vues",
+      "revealsLabel": "Numéros affichés",
+      "nextTitle": "Et maintenant",
+      "publishForShop": "Publier pour la boutique",
+      "choosePlan": "Choisir un abonnement",
+      "getVerified": "Faire vérifier la boutique",
+      "noListings": "Aucune annonce publiée pour la boutique.",
+      "listingStatus": {
+        "draft": "Brouillon",
+        "pending_payment": "En attente de paiement",
+        "pending_review": "En vérification",
+        "published": "En ligne",
+        "rejected": "Refusée",
+        "expired": "Expirée",
+        "archived": "En pause",
+        "sold": "Vendue",
+        "rented": "Louée"
+      },
+      "onRequest": "Prix sur demande",
+      "perMonth": "DT / mois",
+      "tnd": "DT",
+      "viewsShort": "{count, plural, one {# vue} other {# vues}}",
+      "edit": "Modifier",
+      "view": "Voir",
+      "noName": "Sans nom",
+      "planRunning": "Abonnement {name} en cours jusqu'au {date}. Un nouveau paiement prolonge à partir de cette date.",
+      "planNone": "Aucun abonnement en cours : vos annonces suivent les règles d'un particulier (annonces gratuites, puis frais par annonce).",
+      "perMonthTnd": "DT / mois",
+      "planQuota": "{count, plural, one {# annonce en ligne} other {# annonces en ligne}}",
+      "renewWith": "Prolonger avec celui-ci",
+      "choose": "Choisir",
+      "planAfterApproval": "Les abonnements sont disponibles dès que la boutique est ouverte.",
+      "planHow": "Paiement par D17 ou virement, comme les autres paiements Mazed Immo. L'abonnement démarre dès que le reçu est validé, pour 30 jours.",
+      "history": "Historique",
+      "verifiedYes": "Boutique vérifiée : le badge s'affiche sur votre page et vos annonces.",
+      "verifiedHow": "Envoyez l'extrait RNE ou la patente : une fois contrôlés, le badge « vérifié » s'affiche sur votre page.",
+      "documentsPrivate": "Vos documents restent privés : seule l'équipe Mazed Immo peut les ouvrir.",
+      "actionFailed": "Action impossible. Réessayez.",
+      "memberAdded": "Membre ajouté.",
+      "memberPhone": "Téléphone du compte Mazed Immo",
+      "memberRole": "Rôle",
+      "addMember": "Ajouter",
+      "memberHint": "La personne doit déjà avoir un compte Mazed Immo avec ce numéro.",
+      "removeConfirm": "Retirer ce membre de la boutique ?",
+      "memberRemoved": "Membre retiré.",
+      "removeMember": "Retirer",
+      "fileTooBig": "Fichier trop lourd (10 Mo au maximum).",
+      "documentSent": "Document envoyé.",
+      "documentKind": "Type de document",
+      "sendDocument": "Envoyer un document"
+    }
+  },
+  "proApi": {
+    "oneShop": "Vous avez déjà une boutique.",
+    "errors": {
+      "name": "Le nom doit compter au moins 2 caractères.",
+      "kind": "Choisissez une activité.",
+      "governorate": "Choisissez un gouvernorat.",
+      "phone": "Numéro de téléphone invalide.",
+      "email": "Adresse e-mail invalide.",
+      "website": "Adresse du site invalide (https://…).",
+      "fileType": "Format accepté : PDF, JPG, PNG ou WebP.",
+      "document": "Document invalide.",
+      "role": "Vous ne pouvez pas attribuer ce rôle.",
+      "noAccount": "Aucun compte Mazed Immo avec ce numéro.",
+      "alreadyMember": "Cette personne fait déjà partie de la boutique.",
+      "slug": "Adresse invalide : 3 à 60 lettres minuscules, chiffres ou tirets.",
+      "slugTaken": "Cette adresse est déjà prise.",
+      "notApproved": "La boutique doit être ouverte pour souscrire un abonnement.",
+      "plan": "Abonnement inconnu.",
+      "reason": "Indiquez un motif."
+    }
+  },
+  "shops": {
+    "metaTitle": "Agences et promoteurs immobiliers en Tunisie",
+    "metaDescription": "Les boutiques Mazed Immo : agences, promoteurs et lotisseurs, avec leurs annonces à vendre et à louer.",
+    "unavailable": "Service momentanément indisponible.",
+    "title": "Les boutiques",
+    "subtitle": "Agences, promoteurs et lotisseurs présents sur Mazed Immo.",
+    "openYours": "Ouvrir votre boutique",
+    "empty": "Aucune boutique pour l'instant.",
+    "verified": "Vérifiée",
+    "listingsCount": "{count, plural, =0 {Aucune annonce} one {# annonce} other {# annonces}}",
+    "shopMetaDescription": "{name} sur Mazed Immo : annonces à vendre et à louer, contacts et horaires.",
+    "deal": {
+      "all": "Toutes",
+      "sale": "À vendre",
+      "rent": "À louer"
+    },
+    "noListings": "Aucune annonce en ligne pour le moment.",
+    "verifiedMeans": "« Vérifiée » : l'équipe Mazed Immo a contrôlé les documents de l'entreprise (RNE ou patente).",
+    "notVerifiedMeans": "Les documents de cette boutique n'ont pas encore été contrôlés par Mazed Immo."
+  },
+  "adminShops": {
+    "unavailable": "Service indisponible.",
+    "eyebrow": "Mazed Immo Pro",
+    "title": "Boutiques",
+    "description": "Ouvrir une boutique rend sa page publique ; la vérifier atteste que vous avez lu ses documents.",
+    "tabs": {
+      "pending": "À examiner",
+      "approved": "Ouvertes",
+      "suspended": "Suspendues",
+      "rejected": "Non retenues",
+      "all": "Toutes"
+    },
+    "empty": "Rien ici.",
+    "verifiedOn": "vérifiée le {date}",
+    "publicPage": "Page publique",
+    "owner": "Propriétaire",
+    "kind": "Activité",
+    "place": "Lieu",
+    "contacts": "Contacts",
+    "legal": "Identité légale",
+    "plan": "Abonnement",
+    "planValue": "{name} · {used} / {quota} annonces · jusqu'au {date}",
+    "noPlan": "Aucun",
+    "members": "Membres",
+    "documents": "Documents",
+    "noDocuments": "Aucun document envoyé.",
+    "approve": "Ouvrir",
+    "approved": "Boutique ouverte.",
+    "reject": "Refuser",
+    "rejected": "Boutique refusée.",
+    "suspend": "Suspendre",
+    "suspended": "Boutique suspendue.",
+    "reinstate": "Rouvrir",
+    "reinstated": "Boutique rouverte.",
+    "verify": "Marquer vérifiée",
+    "verifiedDone": "Boutique vérifiée.",
+    "unverify": "Retirer la vérification",
+    "unverified": "Vérification retirée.",
+    "rejectTitle": "Refuser cette boutique ?",
+    "suspendTitle": "Suspendre cette boutique ?",
+    "reasonBody": "Le motif est envoyé au propriétaire de la boutique.",
+    "reason": "Motif"
   }
 }

@@ -18,7 +18,7 @@ import { ReportListing } from "./ReportListing";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { RelatedListings } from "@/components/listing/RelatedListings";
 import { ViewTracker } from "@/components/listing/ViewTracker";
-import { BadgeCheck, MapPin, Clock, ShieldAlert, Hash, Home } from "lucide-react";
+import { BadgeCheck, MapPin, Clock, ShieldAlert, Hash, Home, Store } from "lucide-react";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -70,6 +70,7 @@ type Row = {
   available_from: string | null;
   min_lease_months: number | null;
   availability: string | null;
+  shop_id: string | null;
 };
 
 const SELECT = `
@@ -77,7 +78,7 @@ const SELECT = `
   governorate, delegation, attributes, contact_name, show_phone, status,
   published_at, expires_at, seller_id, reference, rejection_reason,
   deal_type, deposit_amount, charges_amount, furnished, available_from,
-  min_lease_months, availability,
+  min_lease_months, availability, shop_id,
   category:categories (id, label_fr, label_ar, kind),
   photos:listing_photos (storage_path, sort_order)
 `;
@@ -216,7 +217,7 @@ export default async function AnnoncePage({
     saved = !!w;
   }
 
-  const [{ data: badge }, { data: attrDefs }] = await Promise.all([
+  const [{ data: badge }, { data: attrDefs }, { data: shopRow }] = await Promise.all([
     admin
       ? admin.rpc("has_verified_badge", { p_seller: l.seller_id })
       : Promise.resolve({ data: false }),
@@ -227,7 +228,12 @@ export default async function AnnoncePage({
           .eq("category_id", category.id)
           .order("sort_order")
       : Promise.resolve({ data: [] }),
+    // Published for a shop (0173): its card replaces the private seller's, while the shop is open.
+    admin && l.shop_id
+      ? admin.from("shops").select("slug, name, logo_path, verified_at").eq("id", l.shop_id).eq("status", "approved").maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+  const shop = shopRow as { slug: string; name: string; logo_path: string | null; verified_at: string | null } | null;
 
   // Only the attributes the seller actually filled, labelled the way the
   // category defines them — a raw jsonb dump ("titre_foncier: true") is not
@@ -364,7 +370,37 @@ export default async function AnnoncePage({
     </div>
   );
 
-  const sellerCard = (
+  const sellerCard = shop ? (
+    <section className="rounded-2xl border border-border bg-surface p-4">
+      <div className="flex items-center gap-3">
+        <Link href={`/boutiques/${shop.slug}` as never} className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border">
+          {shop.logo_path ? (
+            // eslint-disable-next-line @next/next/no-img-element -- the shop's logo
+            <img src={propertyPhotoUrl(shop.logo_path, { transform: { width: 100, quality: 75 } })} alt="" className="size-full object-cover" />
+          ) : (
+            <Store className="size-5 text-muted" />
+          )}
+        </Link>
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">{t("shopLabel")}</div>
+          <div className="flex items-center gap-1.5">
+            <Link href={`/boutiques/${shop.slug}` as never} dir="auto" className="truncate text-[14.5px] font-bold text-foreground hover:underline">
+              {shop.name}
+            </Link>
+            {shop.verified_at && <BadgeCheck className="size-4 shrink-0 text-gold" strokeWidth={2.4} aria-label={t("verifiedShop")} />}
+          </div>
+          {l.contact_name && <div dir="auto" className="truncate text-[12px] text-muted">{l.contact_name}</div>}
+        </div>
+        <FavoriteButton listingId={l.id} initialSaved={saved} loggedIn={user !== null} />
+      </div>
+      <div className="mt-4">
+        <ContactReveal listingId={l.id} showPhone={l.show_phone} />
+      </div>
+      <Link href={`/boutiques/${shop.slug}` as never} className="mt-3 block text-center text-[12.5px] font-bold text-gold hover:underline">
+        {t("seeShop")}
+      </Link>
+    </section>
+  ) : (
     <section className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center gap-3">
         {/* An initial, not a photo: Mazed Immo has no avatars bucket, and an empty

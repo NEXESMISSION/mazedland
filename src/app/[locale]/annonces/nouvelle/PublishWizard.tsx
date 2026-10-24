@@ -13,7 +13,7 @@ import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 import {
   Check, Tag, Camera, Wallet, Phone, ClipboardList, ClipboardCheck, Loader2, MapPin,
   Gift, Ticket, ImageOff, Home, ArrowLeft, ArrowRight, Lightbulb, CheckCircle2, AlertTriangle, Pencil,
-  KeyRound, Sparkles,
+  KeyRound, Sparkles, Store, User,
 } from "lucide-react";
 import {
   MIN_PHOTOS,
@@ -146,7 +146,11 @@ export type InitialDraft = {
   furnished?: string | null;
   available_from?: string | null;
   min_lease_months?: number | null;
+  shop_id?: string | null;
 };
+
+/** A shop the seller may publish for (0173), and how many annonces its plan still covers. */
+export type WizardShop = { id: string; name: string; planLeft: number | null };
 
 export function PublishWizard({
   categories,
@@ -164,6 +168,8 @@ export function PublishWizard({
   aiAvailable = false,
   mode = "create",
   editPending = false,
+  shops = [],
+  initialShopId = null,
   locale,
 }: {
   categories: WizardCategory[];
@@ -192,6 +198,10 @@ export function PublishWizard({
   mode?: "create" | "edit";
   /** The form shows an edit already waiting for an admin, not the live version. */
   editPending?: boolean;
+  /** Approved shops where this seller has the right to publish. */
+  shops?: WizardShop[];
+  /** ?shop= from the Espace Pro's « Publier pour la boutique ». */
+  initialShopId?: string | null;
   locale: string;
 }) {
   const d = initialDraft;
@@ -205,6 +215,11 @@ export function PublishWizard({
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<"idle" | "saving" | "ok">("idle");
   const [listingId, setListingId] = useState<string | null>(d?.id ?? null);
+  // "" is the seller themselves. A shop that is no longer theirs to publish for is dropped.
+  const [shopId, setShopId] = useState<string>(() => {
+    const wanted = d?.shop_id ?? initialShopId ?? "";
+    return shops.some((s) => s.id === wanted) ? wanted : "";
+  });
   const [done, setDone] = useState<null | {
     paidWith: string;
     remaining?: number;
@@ -294,9 +309,12 @@ export function PublishWizard({
   const fee = categoryId ? feeByCategory[categoryId] ?? null : null;
   // Same order as the submit route: a free place first, then a pack credit,
   // then the category's fee.
-  const freeQuota = freePlacesLeft > 0;
-  const usingCredit = !freeQuota && creditsLeft > 0;
-  const free = !freeQuota && !usingCredit && fee != null && fee <= 0;
+  // A shop's plan comes before all of it, while it has room.
+  const shop = shops.find((s) => s.id === shopId) ?? null;
+  const viaPlan = !!shop && (shop.planLeft ?? 0) > 0;
+  const freeQuota = !viaPlan && freePlacesLeft > 0;
+  const usingCredit = !viaPlan && !freeQuota && creditsLeft > 0;
+  const free = !viaPlan && !freeQuota && !usingCredit && fee != null && fee <= 0;
 
   // Only what this deal asks: a tenant is not asked about the titre foncier.
   const defs = useMemo<AttributeDef[]>(
@@ -606,6 +624,8 @@ export function PublishWizard({
         // `attributes` feeds the filters, and "120" is not 120 to a range query.
         attributes: typedAttributes(defs, attrs),
         photos: photos.map((p, i) => ({ storage_path: p.path, sort_order: i })),
+        // Only sent when there is a choice to make, so a seller with no shop never touches it.
+        ...(shops.length > 0 || d?.shop_id ? { shop_id: shopId || null } : {}),
         ...extra,
       }),
     });
@@ -771,6 +791,9 @@ export function PublishWizard({
           )}
           {done.paidWith === "free" && <> {t("doneFree")}</>}
           {done.paidWith === "free_quota" && <> {t("doneFreeQuota")}</>}
+          {done.paidWith === "subscription" && typeof done.remaining === "number" && (
+            <> {t("doneSubscription", { count: done.remaining })}</>
+          )}
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5">
           {(done.status === "published" || done.status === "applied" || done.status === "pending") && (
@@ -889,6 +912,8 @@ export function PublishWizard({
 
   const feeHint = editing
     ? t("editFreeNote")
+    : viaPlan
+    ? t("planHint", { name: shop!.name })
     : freeQuota
     ? t("freeQuotaHint")
     : free
@@ -1510,6 +1535,43 @@ export function PublishWizard({
                     </p>
                   ) : (
                   <>
+                  {shops.length > 0 && (
+                    <div>
+                      <p className="text-[12.5px] font-bold text-foreground">{t("publishFor")}</p>
+                      <div role="radiogroup" aria-label={t("publishFor")} className="mt-2 grid gap-2 sm:grid-cols-2">
+                        {[{ id: "", name: t("publishForMe"), planLeft: null }, ...shops].map((s) => {
+                          const on = shopId === s.id;
+                          const Icon = s.id ? Store : User;
+                          return (
+                            <button
+                              key={s.id || "me"}
+                              type="button"
+                              role="radio"
+                              aria-checked={on}
+                              onClick={() => setShopId(s.id)}
+                              className={cn(
+                                "tap-target flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-start transition",
+                                on ? "bg-gold-faint ring-2 ring-gold" : "bg-surface-2 ring-1 ring-border hover:ring-gold-soft",
+                              )}
+                            >
+                              <Icon className={cn("size-4.5 shrink-0", on ? "text-gold" : "text-muted")} />
+                              <span className="min-w-0">
+                                <span className="block truncate text-[13.5px] font-extrabold text-foreground" dir="auto">{s.name}</span>
+                                <span className="block text-[11.5px] leading-snug text-muted">
+                                  {!s.id
+                                    ? t("publishForMeHint")
+                                    : (s.planLeft ?? 0) > 0
+                                      ? t("publishForPlanLeft", { count: s.planLeft ?? 0 })
+                                      : t("publishForNoPlan")}
+                                </span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-surface-2/40 p-3.5">
                     <input
                       type="checkbox"
@@ -1523,10 +1585,12 @@ export function PublishWizard({
                   <div className="rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-[13px] text-muted">
-                        {usingCredit ? t("feeFromPlan") : free || freeQuota ? t("feePublication") : t("feeLabel")}
+                        {viaPlan ? t("feeShopPlan") : usingCredit ? t("feeFromPlan") : free || freeQuota ? t("feePublication") : t("feeLabel")}
                       </span>
                       <span className="mazed-tabular text-[18px] font-extrabold text-foreground">
-                        {freeQuota || free ? (
+                        {viaPlan ? (
+                          t("included")
+                        ) : freeQuota || free ? (
                           t("free")
                         ) : usingCredit ? (
                           <Ltr>1 / {creditsLeft}</Ltr>
@@ -1538,7 +1602,9 @@ export function PublishWizard({
                       </span>
                     </div>
                     <p className="mt-1.5 text-[11.5px] leading-snug text-muted">
-                      {freeQuota
+                      {viaPlan
+                        ? t("shopPlanExplain", { name: shop!.name, count: shop!.planLeft ?? 0 })
+                        : freeQuota
                         ? t("freeQuotaExplain", { left: freePlacesLeft, limit: freeLimit })
                         : usingCredit
                           ? t("creditExplain")
