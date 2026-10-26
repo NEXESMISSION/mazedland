@@ -22,11 +22,12 @@ export const REVIEW_FLAGS = [
 
 export type ReviewFlag = (typeof REVIEW_FLAGS)[number];
 
-/** Fewer photos than this, and a human looks first. */
+/**
+ * Fewer photos than this, and a human looks first. The default only: what
+ * applies is `moderation_min_photos` (/admin/settings), which the server hands
+ * to `checkListing`.
+ */
 export const MIN_PHOTOS = 3;
-
-/** Distinct reporters that take a published annonce off the catalogue. */
-export const REPORT_THRESHOLD = 3;
 
 export type CategoryKind = "residential" | "land" | "commercial";
 
@@ -138,13 +139,16 @@ export type ListingFacts = {
   duplicate: boolean;
 };
 
+/** The part of the rules an admin sets in /admin/settings → Modération. */
+export type ListingRules = { minPhotos: number; bannedWords: readonly string[] };
+
 /** Every rule the annonce fails, in a stable order. Empty means it passes. */
-export function checkListing(facts: ListingFacts, bannedWords: readonly string[]): ReviewFlag[] {
+export function checkListing(facts: ListingFacts, rules: ListingRules): ReviewFlag[] {
   const flags: ReviewFlag[] = [];
   const text = `${facts.title}\n${facts.description ?? ""}`;
-  if (facts.photoCount < MIN_PHOTOS) flags.push("too_few_photos");
+  if (facts.photoCount < rules.minPhotos) flags.push("too_few_photos");
   if (hasContactInText(text)) flags.push("contact_in_text");
-  if (containsBannedWord(text, bannedWords)) flags.push("banned_words");
+  if (containsBannedWord(text, rules.bannedWords)) flags.push("banned_words");
   if (isPriceImplausible(facts)) flags.push("price_implausible");
   if (facts.duplicate) flags.push("duplicate");
   return flags;

@@ -7,6 +7,7 @@ import { apiTranslator } from "@/lib/i18n/server";
 import { publishListing } from "@/lib/listings/publish";
 import { asDealType, closedStatus } from "@/lib/listings/deal";
 import { applyEdit, asPendingEdit, dropEdit } from "@/lib/listings/edit";
+import { getSettings } from "@/lib/settings/server";
 
 /**
  * Everything an admin can do to one annonce.
@@ -17,7 +18,7 @@ import { applyEdit, asPendingEdit, dropEdit } from "@/lib/listings/edit";
  *   POST { action: "mark_paid" }            → capture the receipt, queue for review
  *   POST { action: "waive_fee" }            → comp it, queue for review
  *   POST { action: "republish" }            → expired/archived/rejected → live again
- *   POST { action: "extend", days? }        → push `expires_at` out (default 30)
+ *   POST { action: "extend", days? }        → push `expires_at` out (default `listing_default_days`)
  *   POST { action: "feature", days? }       → put it on the home page
  *   POST { action: "unfeature" }            → take it off
  *   POST { action: "mark_sold" }            → the car is gone, keep the record
@@ -40,8 +41,6 @@ import { applyEdit, asPendingEdit, dropEdit } from "@/lib/listings/edit";
  *   below refuses loudly rather than pretending, so the day packs ship this
  *   fails visibly instead of quietly keeping a seller's publication.
  */
-
-const DEFAULT_DURATION_DAYS = 30;
 
 /** Clamp a caller-supplied day count. Unbounded input here would let a typo
  *  put an annonce online until 2124. */
@@ -275,7 +274,7 @@ export async function POST(
         { status: 409 },
       );
     }
-    const d = days(body.days, DEFAULT_DURATION_DAYS);
+    const d = days(body.days, (await getSettings()).listing_default_days);
     const from = Math.max(Date.now(), new Date(listing.expires_at ?? 0).getTime());
     const expires = new Date(from + d * 86_400_000);
 

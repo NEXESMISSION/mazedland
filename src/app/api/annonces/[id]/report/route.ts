@@ -7,22 +7,25 @@ import { clientIp } from "@/lib/clientIp";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
-import { REPORT_THRESHOLD } from "@/lib/moderation/rules";
+import { featureOff } from "@/lib/settings/gate";
+import { getSettings } from "@/lib/settings/server";
 
 /**
  * POST /api/annonces/[id]/report  { reason, note? }
  *
  * Anyone — signed in or not — can report a published annonce. One report per
  * person per annonce (a signed-in user by id, a visitor by a salted hash of
- * their IP). When REPORT_THRESHOLD different people have reported it and no
- * admin has dealt with it since, the annonce leaves the catalogue
+ * their IP). When `moderation_report_threshold` different people have reported
+ * it and no admin has dealt with it since, the annonce leaves the catalogue
  * (`pending_review`, flagged `reported`) and the admins are told. The seller is
  * not: a scammer warned is a scammer who re-posts.
+ *
+ * The threshold and the hourly limit per reporter are set in /admin/settings,
+ * where reports can be switched off too: reports already made stay with the
+ * admins, new ones are refused.
  */
 const REASONS = ["scam", "wrong_info", "sold", "duplicate", "inappropriate", "other"] as const;
 type Reason = (typeof REASONS)[number];
-
-const MAX_REPORTS_PER_HOUR = 10;
 
 function hashIp(ip: string): string {
   // Same salt as the phone-reveal log, so one table cannot be reversed into IPs.
@@ -37,10 +40,13 @@ export async function POST(
   if (!isSameOrigin(req)) {
     return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
   }
+  const off = await featureOff("feature_reports");
+  if (off) return off;
   const { id } = await ctx.params;
 
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
+  const settings = await getSettings();
 
   const body = (await req.json().catch(() => ({}))) as { reason?: unknown; note?: unknown };
   const reason = REASONS.includes(body.reason as Reason) ? (body.reason as Reason) : null;
@@ -56,7 +62,7 @@ export async function POST(
 
   const { data: over } = await admin.rpc("check_rate_limit", {
     p_key: `report:${reporterKey}`,
-    p_max: MAX_REPORTS_PER_HOUR,
+    p_max: settings.limit_reports_per_hour,
     p_window_secs: 3600,
   });
   if (over === true) {
@@ -91,7 +97,8 @@ export async function POST(
     .is("resolved_at", null);
 
   let hidden = false;
-  if ((count ?? 0) >= REPORT_THRESHOLD) {
+  const threshold = settings.moderation_report_threshold;
+  if ((count ?? 0) >= threshold) {
     const flags = Array.from(new Set([...((listing.review_flags as string[] | null) ?? []), "reported"]));
     const { data: updated } = await admin
       .from("listings")
@@ -108,7 +115,7 @@ export async function POST(
           p_title: "Annonce retirée après signalements",
           p_body: `« ${listing.title} » a été signalée par ${count} personnes et n'est plus visible. Vérifiez-la.`,
           p_link: `/admin/annonces?a=${id}`,
-          p_payload: { vars: { title: listing.title, count: count ?? REPORT_THRESHOLD } },
+          p_payload: { vars: { title: listing.title, count: count ?? threshold } },
         })
         .then(() => {}, () => {});
     }

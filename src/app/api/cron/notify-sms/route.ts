@@ -9,6 +9,7 @@ import { getTranslations } from "next-intl/server";
 import { renderNotification } from "@/lib/notifications/render";
 import { PRODUCTION_ORIGIN, siteUrl } from "@/lib/siteUrl";
 import { asAppLocale, type AppLocale } from "@/lib/i18n";
+import { getSettings } from "@/lib/settings/server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -33,7 +34,8 @@ const MAX_PER_RUN = 100;
 const MAX_ATTEMPTS = 3;
 const CONCURRENCY = 4;
 const LOOKBACK_DAYS = 2; // stale SMS is pointless; never blast old rows
-const PER_USER_DAILY = 6; // cap SMS per user / 24h (anti-spam + cost)
+// The per-user cap per 24 h (anti-spam + cost) is `sms_daily_cap` in
+// /admin/settings; 0 there switches SMS off.
 
 // First line of every SMS so the user can tell which app sent it (the sender ID
 // is MAZED for both apps, so the body must carry the brand).
@@ -78,6 +80,7 @@ async function run(req: NextRequest) {
     await stampHeartbeat();
     return NextResponse.json({ ok: true, skipped: "sms_not_configured" });
   }
+  const dailyCap = (await getSettings()).sms_daily_cap;
 
   const sinceIso = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
   // Atomic claim (twin of claim_emailable_notifications): SELECT … FOR UPDATE
@@ -148,6 +151,14 @@ async function run(req: NextRequest) {
       return "skipped";
     }
 
+    // A cap of 0 is SMS switched off: every kind is suppressed the way one over
+    // the cap is, so the bell and the e-mail still carry it, and switching SMS
+    // back on does not send what piled up in between.
+    if (dailyCap === 0) {
+      await db.from("notifications").update({ sms_sent_at: new Date().toISOString() }).eq("id", row.id);
+      return "skipped";
+    }
+
     // Per-user daily cap — applies ONLY to high-frequency kinds (CAPPED_KINDS),
     // so a critical "you won" / payment / KYC SMS is NEVER suppressed because an
     // earlier outbid storm used up the quota. check_rate_limit records a hit when
@@ -156,7 +167,7 @@ async function run(req: NextRequest) {
     if (CAPPED_KINDS.has(row.kind)) {
       const { data: capped } = await db.rpc("check_rate_limit", {
         p_key: `sms:${row.user_id}`,
-        p_max: PER_USER_DAILY,
+        p_max: dailyCap,
         p_window_secs: 86400,
       });
       // Over the daily cap → suppress. The user still has the bell and the
