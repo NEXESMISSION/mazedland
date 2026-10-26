@@ -3734,14 +3734,31 @@
         "visit": "Visite",
         "manual": "Ajouté",
         "suggestion": "Demande"
-      }
+      },
+      "quickLabel": "Ajouter à la note",
+      "quick": {
+        "called": "Rappelé",
+        "visit_planned": "Visite prévue",
+        "offer_made": "Offre faite",
+        "not_interested": "Pas intéressé"
+      },
+      "when": {
+        "tomorrow": "Demain",
+        "in3": "Dans 3 jours",
+        "nextWeek": "Dans une semaine"
+      },
+      "otherDay": "Un autre jour"
     },
     "demandes": {
-      "choose": "Annonce à proposer",
+      "choose": "Vos annonces pour cette demande",
       "offer": "Proposer",
       "sent": "Annonce proposée. La personne est prévenue.",
       "failed": "Proposition impossible. Réessayez.",
-      "noneToOffer": "Aucune annonce en ligne de la boutique pour cette offre."
+      "noneToOffer": "Aucune annonce en ligne de la boutique pour cette offre.",
+      "fullMatch": "Remplit toutes ses conditions · {score} %",
+      "partialMatch": "Correspond à {score} %",
+      "showAll": "{count, plural, one {Voir l'autre annonce} other {Voir les # autres annonces}}",
+      "noneLeft": "Vous avez déjà proposé {max} annonces pour cette demande : c'est le maximum."
     }
   },
   "proApi": {
