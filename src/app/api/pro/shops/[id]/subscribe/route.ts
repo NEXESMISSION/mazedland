@@ -3,6 +3,7 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { proGate } from "@/lib/pro/api";
+import { paymentsClosed } from "@/lib/payments/server";
 
 /**
  * POST /api/pro/shops/:id/subscribe  { plan: "pro-starter" | "pro-pro" | "pro-business" }
@@ -18,6 +19,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const gate = await proGate(req, { id, action: "subscribe" });
   if (gate instanceof NextResponse) return gate;
   const { user, admin } = gate;
+  // No payee to pay yet: no payment either (src/lib/payments/server.ts).
+  const closed = await paymentsClosed();
+  if (closed) return closed;
   const t = await apiTranslator(req, "proApi");
 
   const body = (await req.json().catch(() => ({}))) as { plan?: unknown };

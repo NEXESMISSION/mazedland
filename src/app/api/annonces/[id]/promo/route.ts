@@ -8,6 +8,7 @@ import { apiTranslator } from "@/lib/i18n/server";
 import { formatDate } from "@/lib/utils";
 import { canBuy, placementOf } from "@/lib/promo";
 import { featureOff } from "@/lib/settings/gate";
+import { paymentsClosed } from "@/lib/payments/server";
 
 /**
  * POST /api/annonces/:id/promo  { product: "promo-accueil" | "promo-top-recherche" | "promo-banniere" }
@@ -25,6 +26,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
+  // Before anything is created: with no payee to pay, the checkout this leads
+  // to can only say « indisponible », and the pending payment made here would
+  // sit in « Mes paiements » with no way to pay it.
+  const closed = await paymentsClosed();
+  if (closed) return closed;
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
   const { id } = await params;

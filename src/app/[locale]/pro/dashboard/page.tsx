@@ -18,6 +18,8 @@ import { VisitCard } from "@/components/visits/VisitCard";
 import { loadVisits } from "@/lib/visits-server";
 import type { LeadStage } from "@/lib/visits";
 import { getSettings } from "@/lib/settings/server";
+import { paymentsAreOpen } from "@/lib/payments/server";
+import { PaymentsClosedNotice } from "@/components/payments/PaymentsClosedNotice";
 import { BadgeCheck, ExternalLink, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -423,16 +425,23 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
   }
 
   async function PlanTab({ shopId, role: actor, approved, current: running }: { shopId: string; role: ShopRole; approved: boolean; current: Awaited<ReturnType<typeof activePlan>> }) {
-    const [{ data: planRows }, { data: periods }] = await Promise.all([
+    const [{ data: planRows }, { data: periods }, open] = await Promise.all([
       admin!.from("products").select("slug, name_fr, name_ar, price, listing_quota").eq("kind", "subscription").eq("is_active", true).order("price"),
       admin!.from("shop_subscriptions").select("starts_at, ends_at, listing_quota, product:products (name_fr)").eq("shop_id", shopId).order("starts_at", { ascending: false }).limit(12),
+      paymentsAreOpen(),
     ]);
     const plans = (planRows ?? []) as { slug: string; name_fr: string; name_ar: string | null; price: number | string; listing_quota: number }[];
+    // With no payee to pay, « Choisir » created a payment and only the checkout
+    // then said « indisponible ». The tab says it first, in place of the buttons.
+    const mayBuy = can(actor, "subscribe") && approved;
     return (
       <section className="mt-5 space-y-5">
         <p className="rounded-2xl bg-surface-2 px-4 py-3 text-[12.5px] leading-relaxed text-foreground ring-1 ring-border">
           {running ? t("planRunning", { name: running.name, date: formatDate(running.endsAt, locale, "medium") }) : t("planNone")}
         </p>
+        {mayBuy && !open && (
+          <PaymentsClosedNotice title={t("closed.title")} body={t("closed.body")} contactLabel={t("closed.contact")} />
+        )}
         <div className="grid gap-3 md:grid-cols-3">
           {plans.map((p) => (
             <div key={p.slug} className="rounded-2xl border border-border bg-surface p-4">
@@ -441,9 +450,12 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
                 {formatTND(Number(p.price), locale)} <span className="text-[12px] font-normal text-muted">{t("perMonthTnd")}</span>
               </p>
               <p className="text-[12.5px] font-bold text-gold">{t("planQuota", { count: p.listing_quota })}</p>
-              {can(actor, "subscribe") && approved && (
-                <ChoosePlan shopId={shopId} plan={p.slug} label={running ? t("renewWith") : t("choose")} />
-              )}
+              {mayBuy &&
+                (open ? (
+                  <ChoosePlan shopId={shopId} plan={p.slug} label={running ? t("renewWith") : t("choose")} />
+                ) : (
+                  <p className="mt-3 text-[12px] font-semibold text-muted">{t("closed.row")}</p>
+                ))}
             </div>
           ))}
         </div>

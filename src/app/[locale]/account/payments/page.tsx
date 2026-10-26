@@ -5,6 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { Wallet } from "lucide-react";
 import { FocusRowHighlight } from "@/components/ui/FocusRowHighlight";
+import { paymentsAreOpen } from "@/lib/payments/server";
 import {
   PaymentsClient,
   type PaymentVM,
@@ -189,6 +190,11 @@ export default async function MyPaymentsPage({
   // « Caution bloquée · 0 TND » tile for a product that no longer exists.
   const summary: PaymentsSummary = { actionCount, reviewCount, spentTotal };
 
+  // « Téléverser le reçu » opened the checkout, which then said « Paiement
+  // momentanément indisponible ». The list says it first, in place of the
+  // button, while no payee method is usable.
+  const open = await paymentsAreOpen();
+
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-16 lg:max-w-[var(--max-w-content)]">
       <FocusRowHighlight idPrefix="pay-" />
@@ -198,7 +204,7 @@ export default async function MyPaymentsPage({
         {t("subtitle")}
       </p>
 
-      <PaymentsClient payments={vms} summary={summary} locale={dateLocale} />
+      <PaymentsClient payments={vms} summary={summary} locale={dateLocale} paymentsOpen={open} />
     </div>
   );
 }
