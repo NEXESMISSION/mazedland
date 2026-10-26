@@ -1290,7 +1290,7 @@
     "stepOf": "Étape {current} sur {total}",
     "next": "Continuer",
     "back": "Retour",
-    "stepMissing": "{count, plural, one {Il manque # information à cette étape.} other {Il manque # informations à cette étape.}}",
+    "stepMissing": "{count, plural, one {Il manque une information : {fields}.} other {Il manque # informations : {fields}.}}",
     "locationTitle": "Où se trouve le bien ?",
     "reviewTitle": "Vérifiez votre annonce",
     "reviewHint": "Voici ce que verront les acheteurs. Modifiez ce que vous voulez avant de publier.",
@@ -1406,7 +1406,16 @@
       "keepsDraft": "Le brouillon reste dans « Mes annonces »."
     },
     "priceNotGiven": "Prix non renseigné",
-    "rentNotGiven": "Loyer non renseigné"
+    "rentNotGiven": "Loyer non renseigné",
+    "fieldName": {
+      "category": "le type de bien",
+      "photos": "une photo",
+      "title": "le titre",
+      "price": "le prix",
+      "rent": "le loyer",
+      "phone": "le téléphone",
+      "attestation": "l'attestation"
+    }
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",
