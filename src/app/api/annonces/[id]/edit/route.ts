@@ -7,6 +7,8 @@ import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { listingFields, listingPhotos, type ListingBody } from "@/lib/listings/input";
 import { dropEdit, editWaiting, isEditable, proposeEdit } from "@/lib/listings/edit";
+import { featureOff } from "@/lib/settings/gate";
+import { getSettings } from "@/lib/settings/server";
 
 /**
  * POST /api/annonces/:id/edit — the seller's new version of an annonce that is
@@ -27,11 +29,16 @@ import { dropEdit, editWaiting, isEditable, proposeEdit } from "@/lib/listings/e
  *
  * DELETE /api/annonces/:id/edit — withdraw an edit still waiting for an admin:
  * the approved version goes back online as it was.
+ *
+ * With editing switched off in /admin/settings, POST refuses; DELETE still
+ * works, so an edit sent before the switch can be taken back.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
   }
+  const off = await featureOff("feature_listing_edit");
+  if (off) return off;
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
@@ -39,10 +46,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!admin) return fail("server_misconfigured", 500);
   const { id } = await params;
   const t = await apiTranslator(req, "publishApi");
+  const settings = await getSettings();
 
   const { data: over } = await admin.rpc("check_rate_limit", {
     p_key: `listing-edit:${user.id}`,
-    p_max: 20,
+    p_max: settings.limit_edits_per_hour,
     p_window_secs: 3600,
   });
   if (over === true) return NextResponse.json({ error: "rate_limited" }, { status: 429 });

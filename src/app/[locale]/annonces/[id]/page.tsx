@@ -19,6 +19,7 @@ import { VisitRequest } from "./VisitRequest";
 import { CompareToggle } from "@/components/compare/CompareToggle";
 import type { VisitSlot, VisitStatus } from "@/lib/visits";
 import { isEditable } from "@/lib/listings/edit";
+import { getSettings } from "@/lib/settings/server";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { RelatedListings } from "@/components/listing/RelatedListings";
 import { ViewTracker } from "@/components/listing/ViewTracker";
@@ -402,9 +403,11 @@ export default async function AnnoncePage({
     </div>
   );
 
-  // Its seller sees the way to correct it, not « call » and « visit » (0172).
+  // Its seller sees the way to correct it, not « call » and « visit » (0172) —
+  // unless an admin has switched editing off.
+  const editOn = (await getSettings()).feature_listing_edit;
   const ownerCard =
-    isOwner && isEditable(l) ? (
+    isOwner && editOn && isEditable(l) ? (
       <section className="rounded-2xl border border-border bg-surface p-4">
         <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">{t("yourListing")}</p>
         <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{t("yourListingHint")}</p>

@@ -6,21 +6,24 @@ import { Flag, Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useApiError } from "@/lib/useApiError";
+import { useSetting } from "@/components/settings/SettingsProvider";
 
 const REASONS = ["scam", "wrong_info", "sold", "duplicate", "inappropriate", "other"] as const;
 type Reason = (typeof REASONS)[number];
 
 /**
  * "Signaler cette annonce". Visitors are the moderators of what the rules let
- * through: three reports from different people take an annonce down until an
- * admin looks (src/app/api/annonces/[id]/report). No sign-in needed — the
- * person who has just been asked for a deposit on a house that does not exist
- * is rarely logged in.
+ * through: a few reports from different people (the threshold set in
+ * /admin/settings) take an annonce down until an admin looks
+ * (src/app/api/annonces/[id]/report). No sign-in needed — the person who has
+ * just been asked for a deposit on a house that does not exist is rarely
+ * logged in. Gone entirely when an admin switches reports off.
  */
 export function ReportListing({ listingId }: { listingId: string }) {
   const t = useTranslations("listing.report");
   const { toast } = useToast();
   const apiError = useApiError();
+  const enabled = useSetting("feature_reports");
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<Reason | null>(null);
   const [note, setNote] = useState("");
@@ -51,6 +54,7 @@ export function ReportListing({ listingId }: { listingId: string }) {
     }
   }
 
+  if (!enabled) return null;
   if (sent) {
     return <p className="mt-2 text-[12px] font-semibold text-muted">{t("alreadySent")}</p>;
   }

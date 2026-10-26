@@ -64,7 +64,13 @@ function fakeAdmin(tables: Record<string, Row[]>) {
   return { client: { from, rpc } as never, updates };
 }
 
-const SETTINGS: ModerationSettings = { freeLimit: 2, bannedWords: ["casino"] };
+const SETTINGS: ModerationSettings = {
+  freeLimit: 2,
+  autoPublish: true,
+  minPhotos: 3,
+  reportThreshold: 3,
+  bannedWords: ["casino"],
+};
 
 const listing = (over: Row = {}): Row => ({
   id: "L1",
@@ -128,6 +134,34 @@ describe("publishOrQueue", () => {
       status: "pending_review",
       flags: ["too_few_photos"],
     });
+  });
+
+  it("publishes nothing by itself when an admin switched auto-publication off", async () => {
+    const off = { ...SETTINGS, autoPublish: false };
+    const clean = db({ approvedBefore: true });
+    expect(await publishOrQueue(clean.client, "L1", off)).toEqual({ status: "pending_review", flags: [] });
+    expect(statusOf(clean.updates)).toEqual(["pending_review"]);
+
+    // The reasons are still worked out and kept, for the admin who reads it.
+    const thin = db({ approvedBefore: true, photos: 1 });
+    expect(await publishOrQueue(thin.client, "L1", off)).toEqual({
+      status: "pending_review",
+      flags: ["too_few_photos"],
+    });
+    expect(thin.updates.find((u) => u.table === "listings")!.values).toMatchObject({
+      status: "pending_review",
+      review_flags: ["too_few_photos"],
+    });
+  });
+
+  it("counts photos against the minimum an admin set", async () => {
+    const strict = db({ approvedBefore: true, photos: 4 });
+    expect(await publishOrQueue(strict.client, "L1", { ...SETTINGS, minPhotos: 5 })).toEqual({
+      status: "pending_review",
+      flags: ["too_few_photos"],
+    });
+    const lenient = db({ approvedBefore: true, photos: 1 });
+    expect((await publishOrQueue(lenient.client, "L1", { ...SETTINGS, minPhotos: 1 })).status).toBe("published");
   });
 
   it("spots the same property posted twice", async () => {
