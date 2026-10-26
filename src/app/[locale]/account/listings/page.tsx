@@ -168,12 +168,16 @@ export default async function MyListingsPage({
       ? all
       : all.filter((r) => (active.statuses as readonly string[]).includes(r.status));
 
+  // A draft saved before the price was typed stores 0: that is « non
+  // renseigné », not « 0 TND », and not « Sur demande » either.
   const priceOf = (l: Row) =>
-    l.price_on_request || l.price == null
+    l.price_on_request
       ? t("priceOnRequest")
-      : t(asDealType(l.deal_type) === "rent" ? "pricePerMonth" : "price", {
-          amount: formatTND(Number(l.price), locale),
-        });
+      : !(Number(l.price) > 0)
+        ? t("priceNotGiven")
+        : t(asDealType(l.deal_type) === "rent" ? "pricePerMonth" : "price", {
+            amount: formatTND(Number(l.price), locale),
+          });
 
   const date = (v: string | null) => (v ? formatDate(v, locale, "medium") : "—");
 

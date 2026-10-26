@@ -158,7 +158,8 @@
       "promote": "Promouvoir",
       "edit": "Modifier",
       "editPending": "Modification en attente",
-      "boost": "Mettre en avant"
+      "boost": "Mettre en avant",
+      "priceNotGiven": "Prix non renseigné"
     },
     "listingActions": {
       "mark_sold": {
@@ -1403,7 +1404,9 @@
       },
       "savedOn": "Enregistré le {date}",
       "keepsDraft": "Le brouillon reste dans « Mes annonces »."
-    }
+    },
+    "priceNotGiven": "Prix non renseigné",
+    "rentNotGiven": "Loyer non renseigné"
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",

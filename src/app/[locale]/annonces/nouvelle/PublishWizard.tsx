@@ -999,9 +999,12 @@ export function PublishWizard({
   // The price, said the way the card says it: number then currency, no LTR box
   // around the pair (an Arabic reader reads the number first).
   const money = (n: number) => `${formatTND(n, locale)} ${tc("tnd")}`;
-  const priceText =
-    onRequest || !(Number(price) > 0)
-      ? t("priceOnRequestShort")
+  // « Sur demande » only when the seller chose it. An empty price used to
+  // read as « Sur demande » here while the list below still asked for one.
+  const priceText = onRequest
+    ? t("priceOnRequestShort")
+    : !(Number(price) > 0)
+      ? t(rent ? "rentNotGiven" : "priceNotGiven")
       : rent
         ? t("perMonth", { amount: money(Number(price)) })
         : money(Number(price));
@@ -1653,7 +1656,14 @@ export function PublishWizard({
                         </span>
                       </span>
                       <h3 className="mt-0.5 line-clamp-2 text-[13.5px] font-bold leading-snug">{title || "—"}</h3>
-                      <p className="mazed-tabular mt-1 text-[15px] font-extrabold">{priceText}</p>
+                      <p
+                        className={cn(
+                          "mazed-tabular mt-1",
+                          priceKnown ? "text-[15px] font-extrabold" : "text-[13px] font-semibold italic text-muted",
+                        )}
+                      >
+                        {priceText}
+                      </p>
                       <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
                         <MapPin className="size-3" /> {delegation.trim() || governorateLabel(governorate, locale)}
                       </p>
@@ -1690,7 +1700,7 @@ export function PublishWizard({
                     </SummaryBlock>
 
                     <SummaryBlock title={t("steps.details")} editLabel={t("edit")} onEdit={() => goToStep(2)}>
-                      <span className="block font-bold text-foreground">
+                      <span className={cn("block", priceKnown ? "font-bold text-foreground" : "italic")}>
                         {priceText}
                         {negotiable && !onRequest && Number(price) > 0 && ` · ${t("negotiable")}`}
                       </span>

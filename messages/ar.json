@@ -158,7 +158,8 @@
       "promote": "روّج",
       "edit": "بدّل",
       "editPending": "تبديل في الانتظار",
-      "boost": "برّز الإعلان"
+      "boost": "برّز الإعلان",
+      "priceNotGiven": "السعر مازال ما تكتبش"
     },
     "listingActions": {
       "mark_sold": {
@@ -1403,7 +1404,9 @@
       },
       "savedOn": "مسجّلة نهار {date}",
       "keepsDraft": "المسودة تقعد في «إعلاناتي»."
-    }
+    },
+    "priceNotGiven": "السعر مازال ما تكتبش",
+    "rentNotGiven": "مبلغ الكراء مازال ما تكتبش"
   },
   "photoUploader": {
     "addPhotos": "زيد صورك",
