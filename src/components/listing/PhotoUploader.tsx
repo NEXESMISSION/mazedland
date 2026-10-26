@@ -6,6 +6,7 @@ import { compressImage } from "@/lib/imageCompress";
 import { watermarkImage } from "@/lib/watermark";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { useToast } from "@/components/ui/Toast";
+import { useSetting } from "@/components/settings/SettingsProvider";
 import {
   ArrowLeft, ArrowRight, Camera, CircleAlert, Loader2, RotateCw, Star, Trash2, X,
 } from "lucide-react";
@@ -51,7 +52,6 @@ export function PhotoUploader({
   photos,
   onChange,
   onPendingChange,
-  max = 12,
   disabled = false,
 }: {
   photos: UploadedPhoto[];
@@ -63,12 +63,15 @@ export function PhotoUploader({
   onChange: React.Dispatch<React.SetStateAction<UploadedPhoto[]>>;
   /** Lets the step above know uploads are still in flight. */
   onPendingChange?: (pending: number) => void;
-  max?: number;
   disabled?: boolean;
 }) {
   const { toast } = useToast();
   const t = useTranslations("photoUploader");
   const tc = useTranslations("common");
+  // From /admin/settings. The routes that save the gallery keep only this
+  // many, so the picker stops at the same number.
+  const max = useSetting("listing_max_photos");
+  const watermark = useSetting("feature_watermark");
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<Pending[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -142,8 +145,9 @@ export function PhotoUploader({
       // `compressImage` returns the input untouched on several paths (an
       // already-small modern format, an input over its byte ceiling), so a
       // watermark folded into that function would silently skip exactly the
-      // photos most worth protecting — the big clean ones.
-      out = await watermarkImage(out);
+      // photos most worth protecting — the big clean ones. Switched off in
+      // /admin/settings, new photos go up clean; those already sent keep theirs.
+      if (watermark) out = await watermarkImage(out);
 
       mark({ phase: "sending" });
 
@@ -217,7 +221,7 @@ export function PhotoUploader({
         done();
       }
     },
-    [t],
+    [t, watermark],
   );
 
   const accept = useCallback(

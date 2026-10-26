@@ -7,6 +7,7 @@ import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { listingFields, listingPhotos, type ListingBody } from "@/lib/listings/input";
 import { dropEdit, editWaiting, isEditable, proposeEdit } from "@/lib/listings/edit";
+import { getSettings } from "@/lib/settings/server";
 
 /**
  * POST /api/annonces/:id/edit — the seller's new version of an annonce that is
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const body = (await req.json().catch(() => ({}))) as ListingBody;
   const fields = listingFields(body);
-  const photos = listingPhotos(body);
+  const photos = listingPhotos(body, (await getSettings()).listing_max_photos);
 
   // What a live annonce cannot lose: a title, a place, a price (or « sur
   // demande »), a way to call, a photo.

@@ -36,6 +36,7 @@ export type ListingBody = {
   min_lease_months?: unknown;
 };
 
+/** `listing_max_photos` when nothing is stored; the routes pass the setting. */
 export const MAX_PHOTOS = 12;
 
 export function text(v: unknown, max: number): string | null {
@@ -101,11 +102,14 @@ export function listingFields(body: ListingBody): Record<string, unknown> {
 
 export type PhotoRow = { storage_path: string; sort_order: number };
 
-/** The gallery as it should end up, in order — or null when the body sends none. */
-export function listingPhotos(body: ListingBody): PhotoRow[] | null {
+/**
+ * The gallery as it should end up, in order — or null when the body sends none.
+ * At most `max` photos: what an admin allows per annonce in /admin/settings.
+ */
+export function listingPhotos(body: ListingBody, max = MAX_PHOTOS): PhotoRow[] | null {
   if (!Array.isArray(body.photos)) return null;
   return body.photos
-    .slice(0, MAX_PHOTOS)
+    .slice(0, max)
     .map((p) => text(((p ?? {}) as Record<string, unknown>).storage_path, 300))
     .filter((path): path is string => !!path)
     .map((storage_path, sort_order) => ({ storage_path, sort_order }));
