@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useSetting } from "@/components/settings/SettingsProvider";
 import { formatTND, formatDate, cn } from "@/lib/utils";
 import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
+import { canonicalDelegation, delegationLabel, delegationsOf } from "@/lib/delegations";
 import {
   Check, Tag, Camera, Wallet, Phone, ClipboardList, ClipboardCheck, Loader2, MapPin,
   Gift, Ticket, ImageOff, Home, ArrowLeft, ArrowRight, Lightbulb, CheckCircle2, AlertTriangle, Pencil,
@@ -131,6 +132,8 @@ export type InitialDraft = {
   negotiable: boolean | null;
   governorate: string | null;
   delegation: string | null;
+  /** The quartier: a neighbourhood, more precise than the délégation. */
+  address?: string | null;
   attributes: Record<string, unknown> | null;
   contact_name: string | null;
   contact_phone: string | null;
@@ -302,7 +305,21 @@ export function PublishWizard({
     ? defaultGovernorate
     : TUNISIAN_GOVERNORATES[0];
   const [governorate, setGovernorate] = useState<string>(d?.governorate ?? homeGovernorate);
-  const [delegation, setDelegation] = useState(d?.delegation ?? "");
+  // One of the governorate's délégations (src/lib/delegations.ts). One typed
+  // by hand before there was a list — « Ennasr » — is a neighbourhood: it
+  // opens in « Quartier » rather than being lost.
+  const [delegation, setDelegation] = useState(() => canonicalDelegation(d?.governorate ?? homeGovernorate, d?.delegation) ?? "");
+  const [quartier, setQuartier] = useState(() =>
+    d?.address?.trim() || (d?.delegation && !canonicalDelegation(d?.governorate ?? homeGovernorate, d.delegation) ? d.delegation : ""),
+  );
+  // Sorted the way the reader reads them: by the Arabic name on /ar.
+  const delegationOptions = useMemo(
+    () =>
+      delegationsOf(governorate)
+        .map((value) => ({ value, label: delegationLabel(value, locale) }))
+        .sort((a, b) => a.label.localeCompare(b.label, locale)),
+    [governorate, locale],
+  );
   const [contactName, setContactName] = useState(d?.contact_name ?? defaultContactName);
   const [contactPhone, setContactPhone] = useState(d?.contact_phone ?? defaultContactPhone);
   const [attested, setAttested] = useState(false);
@@ -404,7 +421,11 @@ export function PublishWizard({
         setCategoryId(cat.id);
       }
       if (dr.governorate) setGovernorate(dr.governorate);
-      if (dr.delegation) setDelegation(dr.delegation);
+      if (dr.delegation) {
+        const listed = canonicalDelegation(dr.governorate ?? governorate, dr.delegation);
+        if (listed) setDelegation(listed);
+        else setQuartier(dr.delegation);
+      }
       if (dr.price != null) {
         setPrice(String(dr.price));
         setOnRequest(false);
@@ -444,7 +465,7 @@ export function PublishWizard({
   const suggestedTitle = useMemo(() => {
     if (!category) return "";
     const area = attrs.area_sqm?.trim();
-    const where = delegation.trim() || governorateLabel(governorate, locale);
+    const where = delegation ? delegationLabel(delegation, locale) : governorateLabel(governorate, locale);
     const what = rent ? t("titleForRent", { category: category.label }) : category.label;
     return [what, area ? t("suggestedArea", { area }) : null, where]
       .filter(Boolean)
@@ -672,6 +693,7 @@ export function PublishWizard({
     setMinLease("");
     setGovernorate(homeGovernorate);
     setDelegation("");
+    setQuartier("");
     setContactName(defaultContactName);
     setContactPhone(defaultContactPhone);
     setAttested(false);
@@ -700,7 +722,8 @@ export function PublishWizard({
         available_from: rent && availableFrom ? availableFrom : null,
         min_lease_months: rent && minLease.trim() !== "" ? Number(minLease) : null,
         governorate,
-        delegation: delegation.trim() || null,
+        delegation: delegation || null,
+        address: quartier.trim() || null,
         // Typed on the way out: the form holds strings because inputs do, but
         // `attributes` feeds the filters, and "120" is not 120 to a range query.
         attributes: typedAttributes(defs, attrs),
@@ -753,7 +776,7 @@ export function PublishWizard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     categoryId, photos, attrs, typedTitle, titleTouched, description,
-    price, onRequest, negotiable, governorate, delegation, contactName, contactPhone,
+    price, onRequest, negotiable, governorate, delegation, quartier, contactName, contactPhone,
     deal, deposit, charges, furnished, availableFrom, minLease,
   ]);
 
@@ -792,7 +815,8 @@ export function PublishWizard({
           available_from: rent && availableFrom ? availableFrom : null,
           min_lease_months: rent && minLease.trim() !== "" ? Number(minLease) : null,
           governorate,
-          delegation: delegation.trim() || null,
+          delegation: delegation || null,
+          address: quartier.trim() || null,
           attributes: typedAttributes(defs, attrs),
           photos: photos.map((p, i) => ({ storage_path: p.path, sort_order: i })),
           contact_name: contactName.trim() || null,
@@ -1407,7 +1431,11 @@ export function PublishWizard({
                         id="f-governorate"
                         aria-required="true"
                         value={governorate}
-                        onChange={(e) => setGovernorate(e.target.value)}
+                        onChange={(e) => {
+                          setGovernorate(e.target.value);
+                          // A délégation belongs to one governorate.
+                          if (!delegationsOf(e.target.value).includes(delegation)) setDelegation("");
+                        }}
                         className="w-full appearance-none rounded-xl border border-border bg-surface py-3 ps-9 pe-3 text-[14px] text-foreground focus:border-gold focus:outline-none"
                       >
                         {TUNISIAN_GOVERNORATES.map((g) => (
@@ -1416,16 +1444,32 @@ export function PublishWizard({
                       </select>
                     </div>
                   </div>
-                  {/* Free text on purpose. A délégation list for all 24
-                      governorates is 260 rows that would go stale, and getting it
-                      wrong costs a filter nobody uses — the governorate is what
-                      search actually keys on. */}
-                  <Field
-                    label={t("delegationLabel")}
-                    value={delegation}
-                    onChange={setDelegation}
-                    placeholder={t("delegationPlaceholder")}
-                  />
+                  {/* The governorate's délégations, the way a Tunisian address is
+                      written; the catalogue filters on it. */}
+                  <div>
+                    <Label htmlFor="f-delegation">{t("delegationLabel")}</Label>
+                    <div className="relative mt-1">
+                      <select
+                        id="f-delegation"
+                        value={delegation}
+                        onChange={(e) => setDelegation(e.target.value)}
+                        className="w-full appearance-none rounded-xl border border-border bg-surface px-3 py-3 text-[14px] text-foreground focus:border-gold focus:outline-none"
+                      >
+                        <option value="">{t("delegationPlaceholder")}</option>
+                        {delegationOptions.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <Field
+                      label={t("quartierLabel")}
+                      value={quartier}
+                      onChange={setQuartier}
+                      placeholder={t("quartierPlaceholder")}
+                    />
+                  </div>
                 </div>
               </section>
             </>
@@ -1721,7 +1765,7 @@ export function PublishWizard({
                         {priceText}
                       </p>
                       <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
-                        <MapPin className="size-3" /> {delegation.trim() || governorateLabel(governorate, locale)}
+                        <MapPin className="size-3" /> {delegation ? delegationLabel(delegation, locale) : governorateLabel(governorate, locale)}
                       </p>
                     </div>
                   </div>
@@ -1732,7 +1776,8 @@ export function PublishWizard({
                         t(rent ? "dealRent" : "dealSale"),
                         category?.label ?? "—",
                         governorateLabel(governorate, locale),
-                        delegation.trim(),
+                        delegation ? delegationLabel(delegation, locale) : "",
+                        quartier.trim(),
                       ]
                         .filter(Boolean)
                         .join(" · ")}

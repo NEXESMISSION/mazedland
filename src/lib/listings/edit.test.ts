@@ -62,6 +62,16 @@ describe("the form, as the server reads it", () => {
     expect(f.deposit_amount).toBeNull();
     expect(f.furnished).toBeNull();
   });
+  it("keeps a délégation of the governorate, in its stored spelling", () => {
+    expect(listingFields({ governorate: "Tunis", delegation: "la marsa" }).delegation).toBe("La Marsa");
+    expect(listingFields({ governorate: "Tunis", delegation: "المرسى" }).delegation).toBe("La Marsa");
+  });
+  it("turns a délégation off the list into the quartier, unless one is given", () => {
+    expect(listingFields({ governorate: "Ariana", delegation: "Ennasr" })).toMatchObject({ delegation: null, address: "Ennasr" });
+    expect(listingFields({ governorate: "Ariana", delegation: "La Marsa" })).toMatchObject({ delegation: null, address: "La Marsa" });
+    expect(listingFields({ governorate: "Ariana", delegation: "Ennasr", address: "Ennasr 2" })).toMatchObject({ delegation: null, address: "Ennasr 2" });
+    expect(listingFields({ governorate: "Ariana", delegation: "" })).toMatchObject({ delegation: null });
+  });
   it("drops a phone number that is not one, and a price on request has no price", () => {
     expect(listingFields({ contact_phone: "abc" }).contact_phone).toBeNull();
     expect(listingFields({ price: 5000, price_on_request: true }).price).toBeNull();

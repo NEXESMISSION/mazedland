@@ -1,4 +1,5 @@
 import { asDealType, NO_RENT_FACTS, parseRentFacts } from "./deal";
+import { canonicalDelegation, governorateOfDelegation } from "@/lib/delegations";
 
 /**
  * What the publish wizard sends, read the way the server trusts it — shared by
@@ -84,8 +85,17 @@ export function listingFields(body: ListingBody): Record<string, unknown> {
     Object.assign(fields, deal === "rent" ? parseRentFacts(body as Record<string, unknown>) : NO_RENT_FACTS);
   }
   if (governorate) fields.governorate = governorate;
-  if ("delegation" in body) fields.delegation = text(body.delegation, 60);
   if ("address" in body) fields.address = text(body.address, 200);
+  // The délégation is one of the governorate's (src/lib/delegations.ts), in
+  // its stored spelling. A name off the list — a neighbourhood typed in the
+  // old free field, « Ennasr » — is not lost: it becomes the quartier, unless
+  // one was sent.
+  if ("delegation" in body) {
+    const typed = text(body.delegation, 80);
+    const listed = canonicalDelegation(governorate ?? governorateOfDelegation(typed), typed);
+    fields.delegation = listed;
+    if (typed && !listed && !fields.address) fields.address = typed.slice(0, 200);
+  }
   if ("attributes" in body && body.attributes && typeof body.attributes === "object" && !Array.isArray(body.attributes)) {
     fields.attributes = body.attributes;
   }

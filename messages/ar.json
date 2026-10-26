@@ -1239,8 +1239,8 @@
     "contactNamePlaceholder": "كريم ب.",
     "phoneLabel": "الهاتف",
     "governorate": "الولاية",
-    "delegationLabel": "المعتمدية / الحي",
-    "delegationPlaceholder": "المرسى",
+    "delegationLabel": "المعتمدية",
+    "delegationPlaceholder": "اختار المعتمدية",
     "preview": "معاينة",
     "noPhoto": "ما فماش صورة",
     "priceOnRequestShort": "عند الطلب",
@@ -1420,7 +1420,9 @@
       "rent": "مبلغ الكراء",
       "phone": "رقم التليفون",
       "attestation": "التصريح على الشرف"
-    }
+    },
+    "quartierLabel": "الحي (اختياري)",
+    "quartierPlaceholder": "النصر، طريق العين، البحيرة…"
   },
   "photoUploader": {
     "addPhotos": "زيد صورك",

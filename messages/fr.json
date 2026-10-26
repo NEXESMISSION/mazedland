@@ -1239,8 +1239,8 @@
     "contactNamePlaceholder": "Karim B.",
     "phoneLabel": "Téléphone",
     "governorate": "Gouvernorat",
-    "delegationLabel": "Délégation / quartier",
-    "delegationPlaceholder": "La Marsa",
+    "delegationLabel": "Délégation",
+    "delegationPlaceholder": "Choisir la délégation",
     "preview": "Aperçu",
     "noPhoto": "Aucune photo",
     "priceOnRequestShort": "Sur demande",
@@ -1420,7 +1420,9 @@
       "rent": "le loyer",
       "phone": "le téléphone",
       "attestation": "l'attestation"
-    }
+    },
+    "quartierLabel": "Quartier (facultatif)",
+    "quartierPlaceholder": "Ennasr, Route El Ain, Les Berges du Lac…"
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",
