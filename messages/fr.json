@@ -3867,7 +3867,9 @@
     "perMonth": "/ mois",
     "negotiable": "négociable",
     "best": "Le meilleur sur cette ligne",
-    "bestNote": "Le trophée marque le prix et le prix au m² les plus bas, la plus grande surface et le plus de pièces — quand au moins deux annonces les indiquent."
+    "bestNote": "Le trophée marque le prix et le prix au m² les plus bas, la plus grande surface et le plus de pièces — quand au moins deux annonces les indiquent. Un loyer ne se compare pas à un prix de vente : entre une vente et une location, les deux lignes de prix n'ont pas de trophée.",
+    "perSqmSale": "{amount} TND/m²",
+    "perSqmRent": "{amount} TND/m²/mois"
   },
   "whatsapp": {
     "help": "Une question ? Écrivez-nous sur WhatsApp :",

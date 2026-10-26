@@ -132,7 +132,16 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         items[i].price == null ? t("onRequest") : `${money(items[i].price!)}${asDealType(r.deal_type) === "rent" ? ` ${t("perMonth")}` : ""}${r.negotiable ? ` · ${t("negotiable")}` : ""}`,
       ),
     },
-    { label: t("perSqm"), bestId: best.perSqm, cells: items.map((c) => (pricePerSqm(c) != null ? money(pricePerSqm(c)!) : "—")) },
+    {
+      label: t("perSqm"),
+      bestId: best.perSqm,
+      // A rent's per-m² is per month: « 15 TND/m²/mois », so it is not read as
+      // a sale price per m².
+      cells: items.map((c) => {
+        const v = pricePerSqm(c);
+        return v == null ? "—" : t(c.deal === "rent" ? "perSqmRent" : "perSqmSale", { amount: formatTND(v, locale) });
+      }),
+    },
     { label: t("area"), bestId: best.area, cells: items.map((c) => (c.area != null ? `${formatNumber(c.area, locale)} ${tRoot("common.sqm")}` : "—")) },
     { label: t("rooms"), bestId: best.rooms, cells: items.map((c) => (c.rooms != null ? <Ltr key={c.id}>S+{c.rooms}</Ltr> : "—")) },
     { label: t("place"), cells: rows.map((r) => [r.delegation, governorateLabel(r.governorate, locale)].filter(Boolean).join(", ") || "—") },
