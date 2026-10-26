@@ -6,6 +6,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { governorateLabel } from "@/lib/tunisia";
+import { delegationLabel } from "@/lib/delegations";
 import { absoluteUrl } from "@/lib/siteUrl";
 import { AnnonceCard, type AnnonceCardRow } from "@/components/listing/AnnonceCard";
 import { Ltr } from "@/components/ui/Ltr";
@@ -80,7 +81,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
   const { data: rows } = await q;
   const listings = (rows ?? []) as unknown as AnnonceCardRow[];
 
-  const place = `${shop.city ? `${shop.city}, ` : ""}${governorateLabel(shop.governorate, locale)}`;
+  const place = `${shop.city ? `${delegationLabel(shop.city, locale)}, ` : ""}${governorateLabel(shop.governorate, locale)}`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "RealEstateAgent",

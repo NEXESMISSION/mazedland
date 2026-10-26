@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { governorateLabel } from "@/lib/tunisia";
+import { delegationLabel } from "@/lib/delegations";
 import { BadgeCheck, Store } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -77,7 +78,7 @@ export default async function ShopsPage() {
                     {s.verified_at && <BadgeCheck className="size-4 shrink-0 text-gold" aria-label={t("verified")} />}
                   </span>
                   <span className="block truncate text-[12px] text-muted">
-                    {tKinds(s.kind)} · {s.city ? `${s.city}, ` : ""}{governorateLabel(s.governorate, locale)}
+                    {tKinds(s.kind)} · {s.city ? `${delegationLabel(s.city, locale)}, ` : ""}{governorateLabel(s.governorate, locale)}
                   </span>
                   <span className="block text-[12px] font-bold text-gold">{t("listingsCount", { count: counts.get(s.id) ?? 0 })}</span>
                 </span>
