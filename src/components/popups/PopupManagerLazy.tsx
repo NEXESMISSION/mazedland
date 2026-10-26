@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { Optional } from "@/components/ui/Optional";
 
 /**
  * Client wrapper that lazy-loads PopupManager with ssr:false. PopupManager
@@ -15,5 +16,9 @@ const PopupManager = dynamic(
 );
 
 export function PopupManagerLazy() {
-  return <PopupManager />;
+  return (
+    <Optional name="popups">
+      <PopupManager />
+    </Optional>
+  );
 }

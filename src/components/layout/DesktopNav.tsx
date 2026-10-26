@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { Optional } from "@/components/ui/Optional";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
@@ -171,7 +172,9 @@ export function DesktopNav() {
 
         {/* ── Right zone: notifications, account, sell CTA ── */}
         <div className="flex shrink-0 items-center gap-2">
-          <NotificationBell />
+          <Optional name="bell" fallback={<span className="inline-block h-9 w-9" />}>
+            <NotificationBell />
+          </Optional>
           <LocaleSwitcher />
           <AccountMenu />
           <Link
