@@ -97,7 +97,7 @@ export function listingFields(body: ListingBody): Record<string, unknown> {
     if (typed && !listed && !fields.address) fields.address = typed.slice(0, 200);
   }
   if ("attributes" in body && body.attributes && typeof body.attributes === "object" && !Array.isArray(body.attributes)) {
-    fields.attributes = body.attributes;
+    fields.attributes = saneAttributes(body.attributes as Record<string, unknown>);
   }
   if ("contact_name" in body) fields.contact_name = text(body.contact_name, 80);
   if ("contact_phone" in body) fields.contact_phone = phone(body.contact_phone);
@@ -123,4 +123,33 @@ export function listingPhotos(body: ListingBody, max = MAX_PHOTOS): PhotoRow[] |
     .map((p) => text(((p ?? {}) as Record<string, unknown>).storage_path, 300))
     .filter((path): path is string => !!path)
     .map((storage_path, sort_order) => ({ storage_path, sort_order }));
+}
+
+/**
+ * The figures a property can have. A value outside them was a slip — « 13 »
+ * typed for the year it was built, a surface with three zeros too many — and
+ * is dropped rather than shown on the annonce and fed to the filters. Other
+ * answers (yes/no, an admin's own questions) pass as sent.
+ */
+const ATTRIBUTE_BOUNDS: Record<string, [min: number, max: number]> = {
+  area_sqm: [1, 10_000_000],
+  rooms: [0, 50],
+  bathrooms: [0, 20],
+  floor: [-3, 100],
+  year_built: [1850, new Date().getFullYear() + 3],
+};
+
+export function saneAttributes(attrs: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(attrs)) {
+    const bounds = ATTRIBUTE_BOUNDS[k];
+    if (bounds && v !== null && v !== "") {
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < bounds[0] || n > bounds[1]) continue;
+      out[k] = n;
+      continue;
+    }
+    out[k] = v;
+  }
+  return out;
 }

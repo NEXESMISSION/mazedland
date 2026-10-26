@@ -72,6 +72,11 @@ describe("the form, as the server reads it", () => {
     expect(listingFields({ governorate: "Ariana", delegation: "Ennasr", address: "Ennasr 2" })).toMatchObject({ delegation: null, address: "Ennasr 2" });
     expect(listingFields({ governorate: "Ariana", delegation: "" })).toMatchObject({ delegation: null });
   });
+  it("drops a figure no property has, and keeps the rest of the answers", () => {
+    const f = listingFields({ attributes: { year_built: 13, area_sqm: "120", rooms: 3, floor: 0, elevator: true, view: "mer" } });
+    expect(f.attributes).toEqual({ area_sqm: 120, rooms: 3, floor: 0, elevator: true, view: "mer" });
+    expect(listingFields({ attributes: { year_built: 2015 } }).attributes).toEqual({ year_built: 2015 });
+  });
   it("drops a phone number that is not one, and a price on request has no price", () => {
     expect(listingFields({ contact_phone: "abc" }).contact_phone).toBeNull();
     expect(listingFields({ price: 5000, price_on_request: true }).price).toBeNull();
