@@ -3059,11 +3059,9 @@
     "dealSale": "Acheter",
     "dealRent": "Louer",
     "categoriesLabel": "Type de bien",
-    "categoriesAny": "Rien de coché : tous les types.",
     "governoratesLabel": "Où ?",
     "governoratesAdd": "Ajouter un gouvernorat",
     "governoratesAny": "Toute la Tunisie",
-    "removeGovernorate": "Retirer {name}",
     "budgetMaxSale": "Budget maximum (TND)",
     "budgetMaxRent": "Loyer maximum par mois (TND)",
     "budgetMin": "Minimum (facultatif)",
@@ -3134,7 +3132,21 @@
     "summaryNoteLine": "Autres souhaits : « {note} »",
     "summaryWords": "Les mots de votre recherche sont gardés dans « Autres souhaits » : les alertes ne les vérifient pas.",
     "summaryWordsDropped": "Les mots de votre recherche, « {words} », ne seront pas gardés.",
-    "summaryNote": "« Autres souhaits » vous sert de mémo : les alertes ne le vérifient pas."
+    "summaryNote": "« Autres souhaits » vous sert de mémo : les alertes ne le vérifient pas.",
+    "budgetOther": "Autre budget",
+    "surfaceChip": "{area} m²",
+    "surfaceOther": "Autre",
+    "roomsChip": "S+{count}",
+    "moveInOther": "Autre date",
+    "governoratesMax": "{max} au maximum : retirez-en un pour en choisir un autre.",
+    "notePhrasesLabel": "Suggestions",
+    "notePhrases": {
+      "seaView": "Vue mer",
+      "schools": "Proche des écoles",
+      "groundFloor": "Rez-de-chaussée",
+      "parking": "Avec parking",
+      "furnished": "Meublé"
+    }
   },
   "requestsApi": {
     "budgetRequired": "Indiquez un budget maximum.",

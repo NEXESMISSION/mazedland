@@ -3059,11 +3059,9 @@
     "dealSale": "تشري",
     "dealRent": "تكري",
     "categoriesLabel": "نوع العقار",
-    "categoriesAny": "كان ما اخترت شي: كل الأنواع.",
     "governoratesLabel": "وين؟",
     "governoratesAdd": "زيد ولاية",
     "governoratesAny": "كل تونس",
-    "removeGovernorate": "نحّي {name}",
     "budgetMaxSale": "أقصى ميزانية (د.ت)",
     "budgetMaxRent": "أقصى كراء في الشهر (د.ت)",
     "budgetMin": "الأدنى (اختياري)",
@@ -3134,7 +3132,21 @@
     "summaryNoteLine": "حاجات أخرى تحبها: «{note}»",
     "summaryWords": "الكلمات اللي لوّجت بيها محفوظة في «حاجات أخرى تحبها»: التنبيهات ما تثبّتش فيها.",
     "summaryWordsDropped": "الكلمات اللي لوّجت بيها، «{words}»، موش باش تتحفظ.",
-    "summaryNote": "«حاجات أخرى تحبها» تفكرة ليك برك: التنبيهات ما تثبّتش فيها."
+    "summaryNote": "«حاجات أخرى تحبها» تفكرة ليك برك: التنبيهات ما تثبّتش فيها.",
+    "budgetOther": "ميزانية أخرى",
+    "surfaceChip": "{area} م²",
+    "surfaceOther": "آخر",
+    "roomsChip": "S+{count}",
+    "moveInOther": "تاريخ آخر",
+    "governoratesMax": "{max} ولايات على الأكثر: نحّي وحدة باش تختار أخرى.",
+    "notePhrasesLabel": "اقتراحات",
+    "notePhrases": {
+      "seaView": "تطلّ على البحر",
+      "schools": "قريبة للمدارس",
+      "groundFloor": "طابق أرضي",
+      "parking": "فيها باركينغ",
+      "furnished": "مفروشة"
+    }
   },
   "requestsApi": {
     "budgetRequired": "حطّ أقصى ميزانية.",
