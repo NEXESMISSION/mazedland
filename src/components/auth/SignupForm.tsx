@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { stripLocalePrefix } from "@/i18n/routing";
 import { safeInternalPath } from "@/lib/safePath";
 import { PhoneInput } from "./PhoneInput";
+import { OtpCodeInput } from "./OtpCodeInput";
+import { forgetPhone, useRememberedPhone } from "./rememberedPhone";
 import { Loader2, Smartphone } from "lucide-react";
 import { TUNISIAN_GOVERNORATES, governorateLabel, normalizeE164, validatePhone } from "@/lib/tunisia";
 import { Modal } from "@/components/ui/Modal";
@@ -38,8 +40,14 @@ export function SignupForm() {
   const next = stripLocalePrefix(safeInternalPath(searchParams.get("next"), "/account"));
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [dialCode, setDialCode] = useState("+216");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  // The number tried on the login form (no account yet), until another is typed.
+  const remembered = useRememberedPhone();
+  const [typedPhone, setTypedPhone] = useState<{ dialCode: string; number: string } | null>(null);
+  const dialCode = typedPhone?.dialCode ?? remembered?.dialCode ?? "+216";
+  const phoneNumber = typedPhone?.number ?? remembered?.number ?? "";
+  // Functional updates: PhoneInput may set the code and the number in one go.
+  const setDialCode = (code: string) => setTypedPhone((s) => ({ dialCode: code, number: s?.number ?? phoneNumber }));
+  const setPhoneNumber = (number: string) => setTypedPhone((s) => ({ dialCode: s?.dialCode ?? dialCode, number }));
   const [governorate, setGovernorate] = useState("");
   const [accepted, setAccepted] = useState(false);
   const [legalModal, setLegalModal] = useState<null | "terms" | "privacy">(null);
@@ -103,6 +111,7 @@ export function SignupForm() {
     // Where they were going before they were asked to sign up — « Vendre »
     // sends visitors through login, whose « Créer un compte » link carries
     // `next` along. Signing up used to drop it and land on /account.
+    forgetPhone();
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload so the first render carries the new cookie
     window.location.assign(`/${locale}${next}`);
   }
@@ -291,6 +300,7 @@ export function SignupForm() {
           value={governorate}
           onChange={(e) => setGovernorate(e.target.value)}
           required
+          autoComplete="address-level1"
           className="mt-1.5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-2.5 text-sm text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
         >
           <option value="" disabled className="bg-mazed-surface-2">
@@ -424,18 +434,7 @@ function PhoneVerify({
         })}
       </p>
 
-      <input
-        type="text"
-        dir="ltr"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        maxLength={6}
-        value={code}
-        onChange={(e) => onCodeChange(e.target.value.replace(/\D/g, ""))}
-        placeholder="••••••"
-        aria-label={t("codeLabel")}
-        className="mt-5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-3 text-center text-[22px] font-bold tracking-[0.4em] text-mazed-cream placeholder:text-mazed-muted focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
-      />
+      <OtpCodeInput value={code} onChange={onCodeChange} ariaLabel={t("codeLabel")} />
 
       {error && (
         <p role="alert" aria-live="assertive" className="mazed-tone-bad mt-3 rounded-lg px-3 py-2 text-xs">{error}</p>
