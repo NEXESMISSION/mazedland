@@ -28,6 +28,10 @@ const KEYS = [
   "payee_rib",
   "payee_iban",
   "payee_d17",
+  "company_name",
+  "company_tax_id",
+  "company_address",
+  "invoice_vat_rate",
   "free_listing_limit",
   "moderation_banned_words",
 ] as const;
@@ -49,6 +53,11 @@ export default async function AdminSettingsPage() {
     payee_rib: strFrom(map.get("payee_rib")),
     payee_iban: strFrom(map.get("payee_iban")),
     payee_d17: strFrom(map.get("payee_d17")),
+    company_name: strFrom(map.get("company_name")),
+    company_tax_id: strFrom(map.get("company_tax_id")),
+    company_address: strFrom(map.get("company_address")),
+    // Stored as a number once set; an empty field means no VAT line.
+    invoice_vat_rate: map.get("invoice_vat_rate") == null || map.get("invoice_vat_rate") === "" ? "" : String(map.get("invoice_vat_rate")),
   };
 
   const usable = usablePayeeMethods({

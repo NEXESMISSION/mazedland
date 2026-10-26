@@ -10,6 +10,10 @@ const TEXT_KEYS = [
   "payee_rib",
   "payee_iban",
   "payee_d17",
+  // Invoices (0175): copied into each one when it is issued.
+  "company_name",
+  "company_tax_id",
+  "company_address",
 ] as const;
 
 /**
@@ -41,6 +45,20 @@ export async function PUT(req: NextRequest) {
   }
 
   // ── Free places and moderation (0165) ────────────────────────────────
+  // Empty means « no VAT shown »; otherwise a rate in percent.
+  if ("invoice_vat_rate" in body) {
+    const raw = body.invoice_vat_rate;
+    if (raw === "" || raw === null) {
+      rows.push({ key: "invoice_vat_rate", value: "", updated_by: user.id });
+    } else {
+      const n = Number(raw);
+      if (!Number.isFinite(n) || n < 0 || n > 50) {
+        return NextResponse.json({ error: "invalid_number", key: "invoice_vat_rate" }, { status: 400 });
+      }
+      rows.push({ key: "invoice_vat_rate", value: n, updated_by: user.id });
+    }
+  }
+
   if ("free_listing_limit" in body) {
     const n = Number(body.free_listing_limit);
     if (!Number.isInteger(n) || n < 0 || n > 50) {

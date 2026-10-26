@@ -53,6 +53,8 @@ export type PaymentVM = {
   adminNotes: string | null;
   /** Signed, time-limited URL for the uploaded receipt (private bucket). */
   receiptUrl: string | null;
+  /** Its invoice — or receipt, before the company's identity is set (0175). */
+  invoice: { id: string; type: "invoice" | "receipt" } | null;
   /** The annonce this payment was for, from `payments.metadata.listing_id`. */
   listingId: string | null;
   title: string | null;
@@ -400,7 +402,7 @@ function PaymentRow({
   const canCancel = p.status === "pending";
   const aHref = actionHref(p);
   const entityHref = p.listingId ? (`/annonces/${p.listingId}` as `/annonces/${string}`) : null;
-  const showFooter = (canResume && aHref) || canCancel || p.receiptUrl || entityHref;
+  const showFooter = (canResume && aHref) || canCancel || p.receiptUrl || entityHref || p.invoice;
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl bg-surface ring-1 ring-border">
@@ -511,6 +513,15 @@ function PaymentRow({
               <FileText className="size-3" strokeWidth={2} />
               {t("receipt")}
             </a>
+          )}
+          {p.invoice && (
+            <Link
+              href={`/factures/${p.invoice.id}` as never}
+              className="tap-target inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[11px] font-semibold text-foreground hover:border-gold-soft/50"
+            >
+              <FileText className="size-3" strokeWidth={2} />
+              {t(p.invoice.type === "invoice" ? "invoice" : "invoiceReceipt")}
+            </Link>
           )}
           {entityHref && (
             <Link

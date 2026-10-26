@@ -1209,3 +1209,13 @@ html[dir="rtl"] .mazed-marquee-reverse { animation-name: mazed-marquee; }
 @media (prefers-reduced-motion: reduce) {
   .skel { animation: none; background-image: none; }
 }
+
+/* Printing an invoice (0175): only the document, on white, without the site
+   around it. A page marks what it prints with data-print-area. */
+@media print {
+  body:has([data-print-area]) * { visibility: hidden; }
+  [data-print-area], [data-print-area] * { visibility: visible; }
+  [data-print-area] { position: absolute; inset: 0 auto auto 0; width: 100%; box-shadow: none !important; }
+  [data-print-hide] { display: none !important; }
+  body { background: #fff !important; }
+}

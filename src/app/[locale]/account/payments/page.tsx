@@ -1,5 +1,6 @@
 import { redirect, Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getLocale, getTranslations } from "next-intl/server";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { Wallet } from "lucide-react";
@@ -139,6 +140,17 @@ export default async function MyPaymentsPage({
       }),
   );
 
+  // ── Their invoice or receipt (0175), issued when each was captured. ──
+  const docs = new Map<string, { id: string; type: "invoice" | "receipt" }>();
+  const service = getServiceSupabase();
+  const captured = payments.filter((p) => p.status === "captured").map((p) => p.id);
+  if (service && captured.length) {
+    const { data: inv } = await service.from("invoices").select("id, payment_id, doc_type").in("payment_id", captured);
+    for (const d of (inv ?? []) as { id: string; payment_id: string; doc_type: "invoice" | "receipt" }[]) {
+      docs.set(d.payment_id, { id: d.id, type: d.doc_type });
+    }
+  }
+
   // ── Build view-models + summary. ──
   const vms: PaymentVM[] = payments.map((p) => {
     const listingId = p.metadata?.listing_id ?? null;
@@ -152,6 +164,7 @@ export default async function MyPaymentsPage({
       createdAt: p.created_at,
       adminNotes: p.admin_notes ?? null,
       receiptUrl: signed.get(p.id) ?? null,
+      invoice: docs.get(p.id) ?? null,
       listingId,
       title: entity?.title ?? null,
       governorate: entity?.governorate ?? null,

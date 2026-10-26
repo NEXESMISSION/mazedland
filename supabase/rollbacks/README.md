@@ -10,6 +10,7 @@ node scripts/backup-db.mjs
 
 | Migration | Rollback | What is lost |
 |---|---|---|
+| 0175 invoices | `0175_invoices.down.sql` | every issued invoice and the numbering (reissue by hand) |
 | 0174 visits and leads | `0174_visits_and_leads.down.sql` | every visit request and every shop client |
 | 0173 pro shops | `0173_pro_shops.down.sql` | shops, teams, subscription periods (annonces stay, unlinked) |
 | 0172 pending edit | `0172_listing_pending_edit.down.sql` | edits waiting for an admin (the annonces are untouched) |

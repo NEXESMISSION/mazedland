@@ -269,7 +269,9 @@
       "no": "Non",
       "cancel": "Annuler",
       "receipt": "Reçu",
-      "viewListing": "Voir l'annonce"
+      "viewListing": "Voir l'annonce",
+      "invoice": "Facture",
+      "invoiceReceipt": "Reçu"
     },
     "favorites": {
       "title": "Mes favoris",
@@ -2381,7 +2383,11 @@
       "bank": "Banque",
       "rib": "RIB",
       "iban": "IBAN",
-      "d17": "Numéro D17"
+      "d17": "Numéro D17",
+      "companyName": "Raison sociale",
+      "companyTaxId": "Matricule fiscal",
+      "companyAddress": "Adresse",
+      "vatRate": "TVA en % (vide : pas de ligne TVA)"
     },
     "saving": "Enregistrement…",
     "savedButton": "Enregistré",
@@ -2399,7 +2405,9 @@
       "saved": "Réglages de modération enregistrés.",
       "savedButton": "Enregistré",
       "saveFailed": "Enregistrement impossible."
-    }
+    },
+    "companyTitle": "Société (factures)",
+    "companyHint": "Copiés dans chaque facture au moment où elle est émise. Tant que le nom et le matricule fiscal sont vides, Mazed Immo émet des reçus de paiement, pas des factures."
   },
   "admin": {
     "console": "Console",
@@ -3910,5 +3918,27 @@
     "product": "Mise en avant inconnue.",
     "notOnline": "Seule une annonce en ligne peut être mise en avant.",
     "oneAtATime": "Une autre mise en avant court jusqu'au {date} : une à la fois."
+  },
+  "invoice": {
+    "metaTitle": "Facture — Mazed Immo",
+    "back": "Mes paiements",
+    "print": "Imprimer / PDF",
+    "invoice": "Facture",
+    "receipt": "Reçu de paiement",
+    "issuedOn": "Émise le {date}",
+    "taxId": "Matricule fiscal",
+    "billedTo": "Client",
+    "item": "Désignation",
+    "ht": "Montant HT",
+    "vat": "TVA {rate} %",
+    "ttc": "Total TTC",
+    "total": "Total payé",
+    "paidBy": "Payé par {method}",
+    "d17": "D17",
+    "transfer": "virement bancaire",
+    "paidOn": "validé le {date}",
+    "reference": "Référence du paiement",
+    "noVat": "Montant toutes taxes comprises.",
+    "receiptNote": "Ce reçu atteste le paiement. Il ne tient pas lieu de facture."
   }
 }

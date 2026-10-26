@@ -13,6 +13,11 @@ export type SettingsValues = {
   payee_rib: string;
   payee_iban: string;
   payee_d17: string;
+  /** Invoices (0175): copied into each one when it is issued. */
+  company_name: string;
+  company_tax_id: string;
+  company_address: string;
+  invoice_vat_rate: string;
 };
 
 export function SettingsForm({ initial }: { initial: SettingsValues }) {
@@ -56,6 +61,13 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
         <TextField label={t("fields.rib")} mono value={v.payee_rib} onChange={(x) => patch("payee_rib", x)} />
         <TextField label={t("fields.iban")} mono value={v.payee_iban} onChange={(x) => patch("payee_iban", x)} />
         <TextField label={t("fields.d17")} mono value={v.payee_d17} onChange={(x) => patch("payee_d17", x)} />
+      </Section>
+
+      <Section title={t("companyTitle")} hint={t("companyHint")}>
+        <TextField label={t("fields.companyName")} value={v.company_name} onChange={(x) => patch("company_name", x)} />
+        <TextField label={t("fields.companyTaxId")} mono value={v.company_tax_id} onChange={(x) => patch("company_tax_id", x)} />
+        <TextField label={t("fields.companyAddress")} value={v.company_address} onChange={(x) => patch("company_address", x)} />
+        <TextField label={t("fields.vatRate")} mono value={v.invoice_vat_rate} onChange={(x) => patch("invoice_vat_rate", x)} />
       </Section>
 
       <div className="sticky bottom-3 z-10">
