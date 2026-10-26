@@ -81,6 +81,7 @@ type Row = {
   deal_type: string | null;
   availability: string | null;
   available_from: string | null;
+  promo_top_listed?: boolean | null;
   category:
     | { label_fr: string; label_ar: string | null; kind: string }
     | { label_fr: string; label_ar: string | null; kind: string }[]
@@ -254,6 +255,7 @@ export default async function AnnoncesPage({
       `id, title, price, price_on_request, negotiable, governorate, attributes, published_at,
        deal_type, availability, available_from,
        category:categories (label_fr, label_ar, kind),
+       promo_top_listed,
        photos:listing_photos (storage_path, sort_order)`,
       { count: "exact" },
     )
@@ -277,7 +279,9 @@ export default async function AnnoncesPage({
 
   if (sort === "cheap") q = q.order("price", { ascending: true, nullsFirst: false });
   else if (sort === "dear") q = q.order("price", { ascending: false, nullsFirst: false });
-  else q = q.order("published_at", { ascending: false });
+  // The default order puts the paid « Top de la recherche » first (0156); the
+  // expiry job clears the flag when the period ends.
+  else q = q.order("promo_top_listed", { ascending: false }).order("published_at", { ascending: false });
   // A unique last key. Bulk approval stamps a whole batch with the same
   // published_at and prices tie, so without it the order was undefined between
   // pages: one annonce could show up on both, another on neither.
@@ -791,6 +795,9 @@ export default async function AnnoncesPage({
                       <Home className="size-3" /> {categoryLabel(cat, locale)}
                       {r.deal_type === "rent" && (
                         <span className="ms-1 rounded-full bg-gold-faint px-1.5 py-0.5 text-gold">{t("forRent")}</span>
+                      )}
+                      {r.promo_top_listed && (
+                        <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-foreground ring-1 ring-border">{t("promoted")}</span>
                       )}
                       {r.availability === "reserved" && (
                         <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-amber-600">{t("reserved")}</span>

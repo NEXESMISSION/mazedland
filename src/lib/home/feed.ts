@@ -46,6 +46,7 @@ export type HomeListingRow = {
 const HOME_LISTING_SELECT = `
   id, title, price, price_on_request, negotiable, governorate, delegation,
   reference, attributes, published_at, created_at, deal_type, availability,
+  promo_home_featured, promo_banner,
   category:categories!listings_category_id_fkey ( id, label_fr, label_ar, kind ),
   photos:listing_photos ( storage_path, sort_order )
 `;
@@ -105,6 +106,8 @@ export const getHomeFeed = unstable_cache(
           // "Les biens du moment": paid home placement, then what people open.
           // Sorted by date it was the same list, in the same order, as
           // "Fraîchement publiés" two rails further down.
+          // The banner placement (0156) opens the hero carousel, built from the first of these.
+          .order("promo_banner", { ascending: false, nullsFirst: false })
           .order("promo_home_featured", { ascending: false, nullsFirst: false })
           .order("view_count", { ascending: false, nullsFirst: false })
           .order("published_at", { ascending: false, nullsFirst: false })

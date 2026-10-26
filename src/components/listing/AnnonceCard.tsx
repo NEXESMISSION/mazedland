@@ -60,6 +60,10 @@ export type AnnonceCardRow = {
   /** 0166. Absent on a select that predates it: read as a sale. */
   deal_type?: string | null;
   availability?: string | null;
+  /** Paid placements (0156), when the caller's select includes them. */
+  promo_home_featured?: boolean | null;
+  promo_banner?: boolean | null;
+  promo_top_listed?: boolean | null;
 };
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
@@ -88,6 +92,7 @@ export async function AnnonceCard({
   const rooms = Number(attrs.rooms);
   const where = listing.delegation?.trim() || governorateLabel(listing.governorate, locale);
   const rent = asDealType(listing.deal_type) === "rent";
+  const promoted = Boolean(listing.promo_home_featured || listing.promo_banner || listing.promo_top_listed);
   const reserved = listing.availability === "reserved";
 
   return (
@@ -135,8 +140,14 @@ export async function AnnonceCard({
           {/* Top-leading — the category. Same pill the auction type used. */}
           {/* With a rental's « À louer » beside it: the first thing a buyer
               and a tenant need to tell apart on a mixed rail. */}
-          {(category || rent || reserved) && (
+          {(category || rent || reserved || promoted) && (
             <div className="absolute top-2.5 start-2.5 end-2.5 flex flex-wrap gap-1">
+              {/* A paid placement says it is one. */}
+              {promoted && (
+                <span className="inline-flex h-7 items-center rounded-full bg-white/90 px-2.5 text-[10px] font-extrabold uppercase tracking-wider text-foreground backdrop-blur-sm">
+                  {t("listing.promoted")}
+                </span>
+              )}
               {category && (
                 <span className="mazed-gold-fill inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
                   {categoryLabel(category, locale)}

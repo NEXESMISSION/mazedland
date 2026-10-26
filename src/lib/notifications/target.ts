@@ -57,6 +57,8 @@ export const NOTIFICATION_KINDS = [
   "visit_requested", "visit_confirmed", "visit_declined", "visit_cancelled",
   // A shop answers a demande (P3); the person stays anonymous to the shop
   "request_suggestion",
+  // A paid placement ended (0156): written by expire_listing_promotions()
+  "promo_expired",
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
@@ -189,6 +191,7 @@ const KIND_FALLBACK: Record<NotificationKind, FallbackRoute> = {
   visit_declined: "/account/visites",
   visit_cancelled: "/account/visites",
   request_suggestion: "/account/requests",
+  promo_expired: "/account/listings",
 };
 
 /** Last non-empty path segment, ignoring query/hash. */
@@ -274,6 +277,7 @@ const FALLBACK_SUPPORTS_FOCUS: Record<NotificationKind, boolean> = {
   shop_approved: false, shop_rejected: false, shop_member_added: false, admin_shop_pending: false,
   visit_requested: false, visit_confirmed: false, visit_declined: false, visit_cancelled: false,
   request_suggestion: false,
+  promo_expired: false,
 };
 
 /** Pull a string `focus` id out of the notification payload, if present.

@@ -157,7 +157,8 @@
       "pricePerMonth": "{amount} TND / mois",
       "promote": "Promouvoir",
       "edit": "Modifier",
-      "editPending": "Modification en attente"
+      "editPending": "Modification en attente",
+      "boost": "Mettre en avant"
     },
     "listingActions": {
       "mark_sold": {
@@ -806,7 +807,8 @@
     "requestCtaBody": "Enregistrez une demande avec ces critères : on vous prévient dès qu'un bien qui correspond est publié.",
     "requestCta": "Enregistrer ma demande",
     "understood": "Recherche comprise : « {query} » — les filtres ci-dessous ont été remplis.",
-    "searchAsTyped": "Chercher le texte tel quel"
+    "searchAsTyped": "Chercher le texte tel quel",
+    "promoted": "Mise en avant"
   },
   "listing": {
     "metaNotFound": "Annonce introuvable — Mazed Immo",
@@ -902,7 +904,8 @@
     "yourListing": "Votre annonce",
     "yourListingHint": "Une erreur dans le prix, la surface ou les photos ? Corrigez-la : une correction simple est en ligne tout de suite.",
     "editYourListing": "Modifier l'annonce",
-    "yourListings": "Mes annonces"
+    "yourListings": "Mes annonces",
+    "promoted": "Mise en avant"
   },
   "listingApi": {
     "tooManyReveals": "Trop de numéros consultés depuis cet appareil. Réessayez plus tard.",
@@ -1175,6 +1178,16 @@
     "request_suggestion": {
       "title": "Une agence vous propose un bien",
       "body": "{shop} pense que « {title} » correspond à votre demande."
+    },
+    "payment_accepted": {
+      "plain": {
+        "title": "Paiement validé",
+        "body": "Votre paiement de {amount} pour {what} est validé."
+      },
+      "promo": {
+        "title": "Mise en avant active",
+        "body": "La mise en avant de « {title} » est active jusqu'au {fullDate}."
+      }
     }
   },
   "publish": {
@@ -2897,7 +2910,8 @@
     "lead_update": "Client mis à jour (boutique)",
     "lead_delete": "Client supprimé (boutique)",
     "shop_suggest": "Annonce proposée à une demande (boutique)",
-    "listing_edit_waiting": "Annonce corrigée avant vérification"
+    "listing_edit_waiting": "Annonce corrigée avant vérification",
+    "listing_promo": "Mise en avant demandée"
   },
   "adminApi": {
     "bulk": {
@@ -3862,5 +3876,39 @@
     "opening": "Bonjour Mazed Immo, ",
     "openingPayment": "Bonjour Mazed Immo, j'ai une question sur un paiement : ",
     "openingPro": "Bonjour Mazed Immo, j'ai une question sur Mazed Immo Pro : "
+  },
+  "promo": {
+    "unavailable": "Service momentanément indisponible.",
+    "back": "Mes annonces",
+    "title": "Mettre en avant",
+    "subtitle": "Votre annonce vue avant les autres, le temps que vous choisissez. Elle reste en ligne comme avant ; la mise en avant s'y ajoute et le dit (« Mise en avant »).",
+    "running": "En cours : {what}, jusqu'au {date}.",
+    "where": {
+      "promo_home_featured": {
+        "name": "Mise en avant sur l'accueil",
+        "body": "En tête des « biens du moment » sur la page d'accueil."
+      },
+      "promo_top_listed": {
+        "name": "Top de la recherche",
+        "body": "Avant les autres annonces dans le catalogue, dans l'ordre par défaut."
+      },
+      "promo_banner": {
+        "name": "Bannière d'accueil",
+        "body": "Dans le grand bandeau qui ouvre la page d'accueil, avec votre photo."
+      }
+    },
+    "days": "{count, plural, one {# jour} other {# jours}}",
+    "choose": "Choisir",
+    "extend": "Prolonger",
+    "continuePayment": "Continuer le paiement",
+    "receiptSent": "Reçu envoyé — en vérification",
+    "oneAtATime": "Une mise en avant à la fois : celle en cours doit se terminer d'abord.",
+    "how": "Paiement par D17 ou virement, comme les autres paiements Mazed Immo. La mise en avant démarre dès que le reçu est validé ; prolongée, elle repart de sa date de fin.",
+    "failed": "Impossible pour le moment. Réessayez."
+  },
+  "promoApi": {
+    "product": "Mise en avant inconnue.",
+    "notOnline": "Seule une annonce en ligne peut être mise en avant.",
+    "oneAtATime": "Une autre mise en avant court jusqu'au {date} : une à la fois."
   }
 }

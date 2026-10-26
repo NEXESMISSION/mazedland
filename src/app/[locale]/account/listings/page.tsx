@@ -11,7 +11,7 @@ import { isEditable } from "@/lib/listings/edit";
 import { categoryLabel } from "@/lib/i18n";
 import {
   Plus, Ticket, ImageOff, Clock, CreditCard, PencilLine,
-  ArrowRight, AlertTriangle, Inbox, Megaphone,
+  ArrowRight, AlertTriangle, Inbox, Megaphone, Sparkles,
 } from "lucide-react";
 import { RenewButton } from "./RenewButton";
 import { moderationSettings } from "@/lib/moderation/server";
@@ -351,6 +351,19 @@ export default async function MyListingsPage({
             }
           >
             <Megaphone className="size-3.5" /> {t("promote")}
+          </Link>
+        )}
+        {/* Paid placements: home page, top of search, the home banner (0156). */}
+        {l.status === "published" && (
+          <Link
+            href={`/account/listings/${l.id}/mise-en-avant` as never}
+            className={
+              block
+                ? "mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2.5 text-[12.5px] font-bold text-foreground hover:border-gold-soft"
+                : "inline-flex items-center gap-1 text-[12.5px] font-bold text-foreground hover:underline"
+            }
+          >
+            <Sparkles className="size-3.5" /> {t("boost")}
           </Link>
         )}
         {/* Say it is sold or let, hold it for someone, or take it down. */}
