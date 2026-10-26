@@ -52,6 +52,8 @@ export const SMS_KINDS = new Set<string>([
   "inspector_approved",
   // Mazed Immo Pro (0173) — the verdict on a shop; joining a team stays in-app.
   "shop_approved", "shop_rejected",
+  // Visits (0174) — each one moves a date in somebody's diary, so each goes out.
+  "visit_requested", "visit_confirmed", "visit_declined", "visit_cancelled",
 ]);
 
 // The per-user daily cap applies ONLY to these higher-frequency kinds (so an

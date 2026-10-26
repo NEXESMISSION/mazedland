@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
-import { normalizeE164 } from "@/lib/tunisia";
+import { anyPhoneToE164 } from "@/lib/tunisia";
 import { proGate } from "@/lib/pro/api";
 import { canAssign, SHOP_ROLES, type ShopRole } from "@/lib/pro/shops";
 
@@ -17,17 +17,6 @@ function asRole(v: unknown): ShopRole | null {
   return SHOP_ROLES.find((r) => r === v) ?? null;
 }
 
-/** +216 and 8 digits, or a full international number. */
-function phoneOf(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
-  const s = raw.trim();
-  if (s.startsWith("+") && !s.startsWith("+216")) {
-    const digits = s.replace(/\D/g, "");
-    return digits.length >= 8 ? `+${digits}` : null;
-  }
-  return normalizeE164("+216", s.replace(/^\+?216/, ""));
-}
-
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const gate = await proGate(req, { id, action: "manage_members" });
@@ -38,7 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const body = (await req.json().catch(() => ({}))) as { phone?: unknown; role?: unknown };
   const role = asRole(body.role);
   if (!role || !actor || !canAssign(actor, role)) return NextResponse.json({ error: "forbidden", detail: t("errors.role") }, { status: 403 });
-  const phone = phoneOf(body.phone);
+  const phone = anyPhoneToE164(body.phone);
   if (!phone) return NextResponse.json({ error: "invalid", detail: t("errors.phone") }, { status: 400 });
 
   const { data: person } = await admin.from("profiles").select("id, full_name").eq("phone", phone).maybeSingle();

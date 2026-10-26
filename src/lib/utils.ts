@@ -72,6 +72,8 @@ const DATE_PRESETS = {
   dateTime: { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" },
   /** 15:30 */
   time: { hour: "2-digit", minute: "2-digit" },
+  /** mercredi 28 octobre · الأربعاء 28 أكتوبر — a visit day (0174) */
+  weekday: { weekday: "long", day: "numeric", month: "long" },
 } as const satisfies Record<string, Intl.DateTimeFormatOptions>;
 
 export type DatePreset = keyof typeof DATE_PRESETS;

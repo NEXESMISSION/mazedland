@@ -29,12 +29,13 @@ export type ShopAction =
   | "manage_members"   // add, change or remove a member
   | "edit_shop"        // the shop's page and contacts
   | "subscribe"        // choose and pay a plan
-  | "documents";       // send the papers behind « vérifié »
+  | "documents"        // send the papers behind « vérifié »
+  | "clients";         // the visits and the client pipeline (0174)
 
 const RIGHTS: Record<ShopRole, readonly ShopAction[]> = {
-  owner: ["publish", "manage_listings", "manage_members", "edit_shop", "subscribe", "documents"],
-  admin: ["publish", "manage_listings", "manage_members", "edit_shop"],
-  agent: ["publish"],
+  owner: ["publish", "manage_listings", "manage_members", "edit_shop", "subscribe", "documents", "clients"],
+  admin: ["publish", "manage_listings", "manage_members", "edit_shop", "clients"],
+  agent: ["publish", "clients"],
 };
 
 /** Whether a member with this role may do this. The owner alone pays and sends the papers. */

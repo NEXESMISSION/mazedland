@@ -86,7 +86,9 @@
       "proTitle": "Espace Pro",
       "proBody": "Votre boutique, son équipe, son abonnement.",
       "proOpenTitle": "Ouvrir une boutique",
-      "proOpenBody": "Agence ou promoteur : votre page et vos annonces sur Mazed Immo."
+      "proOpenBody": "Agence ou promoteur : votre page et vos annonces sur Mazed Immo.",
+      "visitsTitle": "Mes visites",
+      "visitsBody": "Les visites demandées et reçues, et leurs réponses."
     }
   },
   "account": {
@@ -1130,6 +1132,39 @@
     "admin_shop_pending": {
       "title": "Boutique à examiner",
       "body": "« {name} » demande à ouvrir sa boutique."
+    },
+    "visitParts": {
+      "morning": "le matin",
+      "afternoon": "l'après-midi",
+      "evening": "en fin de journée"
+    },
+    "visit_requested": {
+      "title": "Demande de visite",
+      "body": "{name} souhaite visiter « {title} ». Répondez depuis Mes visites."
+    },
+    "visit_confirmed": {
+      "plain": {
+        "title": "Visite confirmée",
+        "body": "Votre visite de « {title} » est confirmée : {when}."
+      },
+      "with_note": {
+        "title": "Visite confirmée",
+        "body": "Votre visite de « {title} » est confirmée : {when}. Le vendeur : {note}"
+      }
+    },
+    "visit_declined": {
+      "plain": {
+        "title": "Visite non retenue",
+        "body": "La visite de « {title} » n'aura pas lieu."
+      },
+      "with_note": {
+        "title": "Visite non retenue",
+        "body": "La visite de « {title} » n'aura pas lieu. Le vendeur : {note}"
+      }
+    },
+    "visit_cancelled": {
+      "title": "Visite annulée",
+      "body": "{name} a annulé sa visite de « {title} »."
     }
   },
   "publish": {
@@ -2827,7 +2862,15 @@
     "social_account_test": "Compte réseau testé",
     "social_group_create": "Groupe ajouté",
     "social_group_update": "Groupe modifié",
-    "social_group_delete": "Groupe supprimé"
+    "social_group_delete": "Groupe supprimé",
+    "visit_request": "Visite demandée",
+    "visit_confirm": "Visite confirmée",
+    "visit_decline": "Visite refusée",
+    "visit_done": "Visite faite",
+    "visit_cancel": "Visite annulée",
+    "lead_create": "Client ajouté (boutique)",
+    "lead_update": "Client mis à jour (boutique)",
+    "lead_delete": "Client supprimé (boutique)"
   },
   "adminApi": {
     "bulk": {
@@ -3465,7 +3508,9 @@
         "equipe": "Équipe",
         "abonnement": "Abonnement",
         "boutique": "Boutique",
-        "documents": "Documents"
+        "documents": "Documents",
+        "visites": "Visites",
+        "clients": "Clients"
       },
       "planLabel": "Abonnement",
       "noPlan": "Aucun",
@@ -3521,7 +3566,45 @@
       "fileTooBig": "Fichier trop lourd (10 Mo au maximum).",
       "documentSent": "Document envoyé.",
       "documentKind": "Type de document",
-      "sendDocument": "Envoyer un document"
+      "sendDocument": "Envoyer un document",
+      "noVisits": "Aucune demande de visite sur les annonces de la boutique pour l'instant.",
+      "visitsWaiting": "{count, plural, one {# visite à confirmer} other {# visites à confirmer}}",
+      "clientUpdated": "Mis à jour le {date}"
+    },
+    "clients": {
+      "open": "En cours",
+      "add": "Ajouter un client",
+      "name": "Nom",
+      "phone": "Téléphone",
+      "listing": "Annonce",
+      "noListing": "Sans annonce précise",
+      "note": "Note",
+      "notePlaceholder": "Ce qu'il cherche, ce qui a été dit…",
+      "save": "Enregistrer",
+      "added": "Client ajouté.",
+      "saved": "Enregistré.",
+      "moved": "Étape changée.",
+      "stage": "Étape",
+      "callBack": "Rappeler le",
+      "delete": "Supprimer",
+      "deleteConfirm": "Supprimer ce client ?",
+      "deleted": "Client supprimé.",
+      "failed": "Action impossible. Réessayez.",
+      "empty": "Aucun client pour l'instant. Une demande de visite sur une annonce de la boutique en ajoute un ; vous pouvez aussi en ajouter à la main.",
+      "emptyFilter": "Aucun client à cette étape.",
+      "stages": {
+        "new": "Nouveau",
+        "contacted": "Contacté",
+        "visit": "Visite",
+        "negotiation": "Négociation",
+        "won": "Conclu",
+        "lost": "Perdu"
+      },
+      "sources": {
+        "visit": "Visite",
+        "manual": "Ajouté",
+        "suggestion": "Demande"
+      }
     }
   },
   "proApi": {
@@ -3543,6 +3626,12 @@
       "notApproved": "La boutique doit être ouverte pour souscrire un abonnement.",
       "plan": "Abonnement inconnu.",
       "reason": "Indiquez un motif."
+    },
+    "leadErrors": {
+      "name": "Indiquez un nom (2 lettres au moins).",
+      "phone": "Numéro de téléphone invalide.",
+      "date": "Date de rappel invalide.",
+      "patch": "Rien à enregistrer."
     }
   },
   "shops": {
@@ -3607,5 +3696,84 @@
     "suspendTitle": "Suspendre cette boutique ?",
     "reasonBody": "Le motif est envoyé au propriétaire de la boutique.",
     "reason": "Motif"
+  },
+  "visits": {
+    "parts": {
+      "morning": "le matin",
+      "afternoon": "l'après-midi",
+      "evening": "en fin de journée"
+    },
+    "status": {
+      "requested": "En attente",
+      "confirmed": "Confirmée",
+      "declined": "Non retenue",
+      "cancelled": "Annulée",
+      "done": "Faite"
+    },
+    "request": {
+      "cta": "Demander une visite",
+      "title": "Demander une visite",
+      "close": "Fermer",
+      "slotsHint": "Proposez jusqu'à {max} moments : le vendeur en choisit un.",
+      "day": "Jour",
+      "part": "Moment",
+      "addSlot": "Proposer un autre moment",
+      "removeSlot": "Retirer ce moment",
+      "name": "Votre nom",
+      "phone": "Votre numéro",
+      "message": "Un mot pour le vendeur (facultatif)",
+      "shared": "Le vendeur recevra votre nom et votre numéro pour organiser la visite.",
+      "send": "Envoyer la demande",
+      "sentToast": "Demande envoyée au vendeur.",
+      "failed": "La demande n'a pas pu être envoyée. Réessayez.",
+      "sentTitle": "Visite demandée",
+      "confirmedTitle": "Visite confirmée",
+      "sentBody": "Le vendeur vous répondra ici et par SMS.",
+      "follow": "Suivre dans Mes visites"
+    },
+    "actions": {
+      "pickSlot": "Moment retenu",
+      "note": "Un mot pour l'acheteur",
+      "notePlaceholder": "Ex. : 10 h, devant la résidence (facultatif)",
+      "confirm": "Confirmer",
+      "decline": "Refuser",
+      "done": "Visite faite",
+      "cancel": "Annuler",
+      "confirmed": "Visite confirmée, l'acheteur est prévenu.",
+      "declined": "Demande refusée, l'acheteur est prévenu.",
+      "doneToast": "Visite marquée comme faite.",
+      "cancelled": "Visite annulée.",
+      "cancelConfirm": "Annuler cette visite ?",
+      "cancelSellerConfirm": "Annuler cette visite ? L'acheteur sera prévenu.",
+      "failed": "Action impossible. Réessayez."
+    },
+    "card": {
+      "asked": "Demandée le {date}",
+      "listingGone": "Annonce supprimée",
+      "yourNote": "Votre mot :",
+      "sellerNote": "Le vendeur :"
+    },
+    "page": {
+      "title": "Mes visites",
+      "subtitle": "Les visites demandées sur vos annonces, et celles que vous avez demandées.",
+      "unavailable": "Service momentanément indisponible.",
+      "tabs": {
+        "received": "Reçues",
+        "sent": "Envoyées"
+      },
+      "emptyReceived": "Aucune demande de visite sur vos annonces pour l'instant.",
+      "emptySent": "Vous n'avez demandé aucune visite. Sur une annonce, « Demander une visite » propose vos moments au vendeur."
+    }
+  },
+  "visitsApi": {
+    "tooMany": "Trop de demandes de visite aujourd'hui. Réessayez demain.",
+    "slots": "Choisissez de 1 à 3 moments, d'aujourd'hui à 30 jours.",
+    "phone": "Numéro de téléphone invalide.",
+    "name": "Indiquez votre nom.",
+    "notOnline": "Cette annonce n'est plus en ligne.",
+    "own": "C'est votre annonce.",
+    "alreadyOpen": "Vous avez déjà une demande en cours pour cette annonce.",
+    "transition": "Cette visite a déjà changé d'état. Rechargez la page.",
+    "slot": "Choisissez un des moments proposés."
   }
 }

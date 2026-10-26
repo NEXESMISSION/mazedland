@@ -53,6 +53,8 @@ export const NOTIFICATION_KINDS = [
   "listing_edit_applied", "listing_edit_rejected", "admin_listing_edit_pending",
   // Mazed Immo Pro (0173): the shop hears the verdict and who joined it, admins the queue
   "shop_approved", "shop_rejected", "shop_member_added", "admin_shop_pending",
+  // Visits (0174): the seller hears the request and a cancellation, the buyer the answer
+  "visit_requested", "visit_confirmed", "visit_declined", "visit_cancelled",
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
@@ -85,6 +87,7 @@ type FallbackRoute =
   | "/admin/annonces"
   | "/pro/dashboard"
   | "/admin/boutiques"
+  | "/account/visites"
   | null;
 
 /**
@@ -179,6 +182,10 @@ const KIND_FALLBACK: Record<NotificationKind, FallbackRoute> = {
   shop_rejected: "/pro/dashboard",
   shop_member_added: "/pro/dashboard",
   admin_shop_pending: "/admin/boutiques",
+  visit_requested: "/account/visites",
+  visit_confirmed: "/account/visites",
+  visit_declined: "/account/visites",
+  visit_cancelled: "/account/visites",
 };
 
 /** Last non-empty path segment, ignoring query/hash. */
@@ -262,6 +269,7 @@ const FALLBACK_SUPPORTS_FOCUS: Record<NotificationKind, boolean> = {
   admin_social_pending: false, admin_social_attention: false,
   listing_edit_applied: false, listing_edit_rejected: false, admin_listing_edit_pending: false,
   shop_approved: false, shop_rejected: false, shop_member_added: false, admin_shop_pending: false,
+  visit_requested: false, visit_confirmed: false, visit_declined: false, visit_cancelled: false,
 };
 
 /** Pull a string `focus` id out of the notification payload, if present.

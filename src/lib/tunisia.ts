@@ -144,6 +144,21 @@ export function normalizeE164(
 }
 
 /**
+ * A number typed in a free field, as E.164: « 98 124 111 », « +216 98… » and
+ * « 0021698… » are Tunisian; any other « +… » is kept as an international
+ * number. Null when it is neither.
+ */
+export function anyPhoneToE164(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const s = raw.trim().replace(/^00/, "+");
+  if (s.startsWith("+") && !s.startsWith("+216")) {
+    const digits = s.replace(/\D/g, "");
+    return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : null;
+  }
+  return normalizeE164("+216", s.replace(/^\+?216/, ""));
+}
+
+/**
  * Phone validator for the signup/login forms. Mirrors normalizeE164's rules
  * but says "what's wrong" instead of just null — as a key under the shared
  * `phone.errors` namespace plus its values, which the form renders with

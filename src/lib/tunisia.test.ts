@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeE164, validatePhone, splitE164, TUNISIAN_GOVERNORATES } from "./tunisia";
+import { anyPhoneToE164, normalizeE164, validatePhone, splitE164, TUNISIAN_GOVERNORATES } from "./tunisia";
 
 describe("normalizeE164", () => {
   it("accepts an 8-digit Tunisian number and strips leading zeros/spaces", () => {
@@ -49,5 +49,18 @@ describe("TUNISIAN_GOVERNORATES", () => {
     expect(TUNISIAN_GOVERNORATES.length).toBe(24);
     expect(TUNISIAN_GOVERNORATES).toContain("Tunis");
     expect(TUNISIAN_GOVERNORATES).toContain("Sfax");
+  });
+});
+
+describe("anyPhoneToE164", () => {
+  it("reads Tunisian numbers however they are typed", () => {
+    expect(anyPhoneToE164("98 124 111")).toBe("+21698124111");
+    expect(anyPhoneToE164("+216 98 124 111")).toBe("+21698124111");
+    expect(anyPhoneToE164("0021698124111")).toBe("+21698124111");
+  });
+  it("keeps a foreign number, refuses a short or empty one", () => {
+    expect(anyPhoneToE164("+33 6 12 34 56 78")).toBe("+33612345678");
+    expect(anyPhoneToE164("98 124")).toBeNull();
+    expect(anyPhoneToE164(42)).toBeNull();
   });
 });

@@ -82,6 +82,21 @@ export function renderNotification(
       values.fullDate = parts.full;
     }
   }
+  // A visit (0174): the day and the half-day, in the reader's words —
+  // « mercredi 28 octobre · le matin ».
+  if (typeof vars.visit_day === "string") {
+    const d = new Date(`${vars.visit_day}T12:00:00Z`);
+    if (!Number.isNaN(d.getTime())) {
+      const day = d.toLocaleDateString(locale === "ar" ? "ar-TN" : "fr-TN", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        timeZone: TZ,
+      });
+      const partKey = `visitParts.${String(vars.visit_part ?? "")}`;
+      values.when = t.has(partKey) ? `${day} · ${t(partKey)}` : day;
+    }
+  }
   if (vars.amount !== undefined && vars.amount !== null && Number.isFinite(Number(vars.amount))) {
     values.amount = formatTND(Number(vars.amount), locale);
   }

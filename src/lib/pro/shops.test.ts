@@ -4,13 +4,15 @@ import { can, canAssign, parseShopInput, slugify } from "./shops";
 const USER = "11111111-2222-3333-4444-555555555555";
 
 describe("rights in a shop", () => {
-  it("lets the owner do everything and an agent only publish", () => {
+  it("lets the owner do everything and an agent only publish and follow clients", () => {
     expect(can("owner", "subscribe")).toBe(true);
     expect(can("admin", "manage_members")).toBe(true);
     expect(can("admin", "subscribe")).toBe(false);
     expect(can("admin", "documents")).toBe(false);
     expect(can("agent", "publish")).toBe(true);
     expect(can("agent", "edit_shop")).toBe(false);
+    expect(can("agent", "clients")).toBe(true);
+    expect(can("agent", "manage_listings")).toBe(false);
     expect(can(null, "publish")).toBe(false);
   });
   it("never makes a second owner, and an admin only adds agents", () => {

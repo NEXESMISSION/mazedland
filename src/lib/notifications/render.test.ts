@@ -92,4 +92,15 @@ describe("renderNotification", () => {
     const broadcast = { kind: "announcement", title: "Maintenance ce soir", body: "…", payload: { vars: { x: 1 } } };
     expect(renderNotification(broadcast, tr("ar"), "ar")).toEqual({ title: broadcast.title, body: broadcast.body });
   });
+
+  it("says a visit's day and half-day in the reader's words (0174)", () => {
+    const n = {
+      kind: "visit_confirmed",
+      title: "x",
+      body: "x",
+      payload: { vars: { title: "S+2 La Marsa", visit_day: "2026-10-28", visit_part: "morning", note: "", variant: "plain" } },
+    };
+    expect(renderNotification(n, tr("fr"), "fr").body).toBe("Votre visite de « S+2 La Marsa » est confirmée : mercredi 28 octobre · le matin.");
+    expect(renderNotification(n, tr("ar"), "ar").body).toContain("الصباح");
+  });
 });

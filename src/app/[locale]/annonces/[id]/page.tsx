@@ -15,6 +15,8 @@ import { Ltr } from "@/components/ui/Ltr";
 import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
 import { ContactReveal } from "./ContactReveal";
 import { ReportListing } from "./ReportListing";
+import { VisitRequest } from "./VisitRequest";
+import type { VisitSlot, VisitStatus } from "@/lib/visits";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { RelatedListings } from "@/components/listing/RelatedListings";
 import { ViewTracker } from "@/components/listing/ViewTracker";
@@ -206,6 +208,33 @@ export default async function AnnoncePage({
   }
   if (isPreview && !isOwner && !isAdmin) notFound();
 
+  // « Demander une visite » (0174): the buyer's name and number to start from,
+  // and the request they already have open on this annonce, if any.
+  let visitDefaults = { name: "", phone: "" };
+  let openVisit: { status: VisitStatus; when: string | null } | null = null;
+  if (user && !isOwner && !isPreview && admin) {
+    const [{ data: me }, { data: v }] = await Promise.all([
+      admin.from("profiles").select("full_name, phone").eq("id", user.id).maybeSingle(),
+      admin
+        .from("visit_requests")
+        .select("status, confirmed_slot")
+        .eq("listing_id", l.id)
+        .eq("buyer_id", user.id)
+        .in("status", ["requested", "confirmed"])
+        .maybeSingle(),
+    ]);
+    visitDefaults = { name: (me?.full_name as string | null) ?? "", phone: (me?.phone as string | null) ?? "" };
+    if (v) {
+      const slot = v.confirmed_slot as VisitSlot | null;
+      openVisit = {
+        status: v.status as VisitStatus,
+        when: slot
+          ? `${formatDate(`${slot.day}T12:00:00Z`, locale, "weekday")} · ${tRoot(`visits.parts.${slot.part}`)}`
+          : null,
+      };
+    }
+  }
+
   let saved = false;
   if (user) {
     const { data: w } = await userClient
@@ -395,6 +424,9 @@ export default async function AnnoncePage({
       </div>
       <div className="mt-4">
         <ContactReveal listingId={l.id} showPhone={l.show_phone} />
+        {!isOwner && !isPreview && (
+          <VisitRequest listingId={l.id} loggedIn={!!user} defaultName={visitDefaults.name} defaultPhone={visitDefaults.phone} open={openVisit} />
+        )}
       </div>
       <Link href={`/boutiques/${shop.slug}` as never} className="mt-3 block text-center text-[12.5px] font-bold text-gold hover:underline">
         {t("seeShop")}
@@ -435,6 +467,9 @@ export default async function AnnoncePage({
 
       <div className="mt-4">
         <ContactReveal listingId={l.id} showPhone={l.show_phone} />
+        {!isOwner && !isPreview && (
+          <VisitRequest listingId={l.id} loggedIn={!!user} defaultName={visitDefaults.name} defaultPhone={visitDefaults.phone} open={openVisit} />
+        )}
       </div>
     </section>
   );

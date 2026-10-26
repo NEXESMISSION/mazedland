@@ -9,11 +9,15 @@ import { asDealType } from "@/lib/listings/deal";
 import { activePlan, can, membershipsOf, shopLiveCount, type ShopRole } from "@/lib/pro/shops";
 import { ShopForm } from "@/components/pro/ShopForm";
 import { AddMember, ChoosePlan, RemoveMember, SendDocument } from "./ProActions";
+import { ProClients, type ClientRow } from "./ProClients";
+import { VisitCard } from "@/components/visits/VisitCard";
+import { loadVisits } from "@/lib/visits-server";
+import type { LeadStage } from "@/lib/visits";
 import { BadgeCheck, ExternalLink, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-const TABS = ["apercu", "annonces", "equipe", "abonnement", "boutique", "documents"] as const;
+const TABS = ["apercu", "annonces", "visites", "clients", "equipe", "abonnement", "boutique", "documents"] as const;
 type TabKey = (typeof TABS)[number];
 
 const STATUS_TONE: Record<string, string> = {
@@ -49,11 +53,11 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
   const tab: TabKey = (TABS as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as TabKey) : "apercu";
   // Everyone sees the plan; only those who may act on the page or the papers see those tabs.
   const visibleTabs = TABS.filter((k) =>
-    k === "boutique" ? can(role, "edit_shop") : k === "documents" ? can(role, "documents") : true,
+    k === "boutique" ? can(role, "edit_shop") : k === "documents" ? can(role, "documents") : k === "visites" || k === "clients" ? can(role, "clients") : true,
   );
   const href = (k: TabKey) => `/pro/dashboard?shop=${shop.id}&tab=${k}`;
 
-  const [plan, used, { data: listingRows }] = await Promise.all([
+  const [plan, used, { data: listingRows }, { count: visitsWaiting }] = await Promise.all([
     activePlan(admin, shop.id),
     shopLiveCount(admin, shop.id),
     admin
@@ -62,6 +66,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
       .eq("shop_id", shop.id)
       .order("created_at", { ascending: false })
       .limit(100),
+    admin.from("visit_requests").select("id", { count: "exact", head: true }).eq("shop_id", shop.id).eq("status", "requested"),
   ]);
   const listings = (listingRows ?? []) as {
     id: string; seller_id: string; title: string; status: string; price: number | null; price_on_request: boolean; deal_type: string | null;
@@ -126,6 +131,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
               }`}
             >
               {t(`tabs.${k}`)}
+              {k === "visites" && (visitsWaiting ?? 0) > 0 && <span className="mazed-tabular ms-1 text-[11px] text-[var(--tone-warn)]">{visitsWaiting}</span>}
             </Link>
           ))}
         </div>
@@ -148,6 +154,11 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
               {!plan && can(role, "subscribe") && shop.status === "approved" && (
                 <Link href={href("abonnement") as never} className="tap-target inline-flex h-10 items-center rounded-xl border border-border px-4 text-[13px] font-bold">
                   {t("choosePlan")}
+                </Link>
+              )}
+              {(visitsWaiting ?? 0) > 0 && (
+                <Link href={href("visites") as never} className="tap-target inline-flex h-10 items-center rounded-xl border border-border px-4 text-[13px] font-bold">
+                  {t("visitsWaiting", { count: visitsWaiting ?? 0 })}
                 </Link>
               )}
               {can(role, "documents") && !shop.verified_at && (
@@ -190,6 +201,10 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
         </section>
       )}
 
+      {tab === "visites" && can(role, "clients") && <VisitsTab shopId={shop.id} />}
+
+      {tab === "clients" && can(role, "clients") && <ClientsTab shopId={shop.id} />}
+
       {tab === "equipe" && <TeamTab shopId={shop.id} role={role} />}
 
       {tab === "abonnement" && <PlanTab shopId={shop.id} role={role} approved={shop.status === "approved"} current={plan} />}
@@ -224,6 +239,44 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
   );
 
   // ── Tabs that read more ────────────────────────────────────────────────────
+  async function VisitsTab({ shopId }: { shopId: string }) {
+    const visits = await loadVisits(admin!, { shop: shopId });
+    return visits.length === 0 ? (
+      <p className="mt-5 rounded-2xl border border-dashed border-border p-8 text-center text-[13px] text-muted">{t("noVisits")}</p>
+    ) : (
+      <section className="mt-5 space-y-3">
+        {visits.map((v) => (
+          <VisitCard key={v.id} visit={v} side="seller" locale={locale} />
+        ))}
+      </section>
+    );
+  }
+
+  async function ClientsTab({ shopId }: { shopId: string }) {
+    const [{ data: leadRows }, { data: own }] = await Promise.all([
+      admin!
+        .from("leads")
+        .select("id, name, phone, stage, source, note, next_action_at, updated_at, listing:listings!leads_listing_id_fkey (id, title)")
+        .eq("shop_id", shopId)
+        .order("updated_at", { ascending: false })
+        .limit(300),
+      admin!.from("listings").select("id, title").eq("shop_id", shopId).in("status", ["published", "pending_review"]).order("created_at", { ascending: false }).limit(200),
+    ]);
+    type Raw = Omit<ClientRow, "listing" | "updated_label"> & { updated_at: string; listing: { id: string; title: string } | { id: string; title: string }[] | null };
+    const clients: ClientRow[] = ((leadRows ?? []) as unknown as Raw[]).map((r) => ({
+      id: r.id,
+      name: r.name,
+      phone: r.phone,
+      stage: r.stage as LeadStage,
+      source: r.source,
+      note: r.note,
+      next_action_at: r.next_action_at,
+      listing: Array.isArray(r.listing) ? r.listing[0] ?? null : r.listing,
+      updated_label: t("clientUpdated", { date: formatDate(r.updated_at, locale, "dayMonth") }),
+    }));
+    return <ProClients shopId={shopId} clients={clients} listings={(own ?? []) as { id: string; title: string }[]} />;
+  }
+
   async function TeamTab({ shopId, role: actor }: { shopId: string; role: ShopRole }) {
     const { data } = await admin!
       .from("shop_members")
