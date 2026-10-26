@@ -817,7 +817,12 @@
     "requestCta": "Enregistrer ma demande",
     "understood": "Recherche comprise : « {query} » — les filtres ci-dessous ont été remplis.",
     "searchAsTyped": "Chercher le texte tel quel",
-    "promoted": "Mise en avant"
+    "promoted": "Mise en avant",
+    "rangeInverted": "Le maximum doit être supérieur ou égal au minimum.",
+    "budgetToFix": "À corriger",
+    "filtersToggle": "Filtrer",
+    "filtersNone": "Type, lieu, budget, tri…",
+    "filtersBudgetToFix": "Budget à corriger"
   },
   "listing": {
     "metaNotFound": "Annonce introuvable — Mazed Immo",
@@ -1642,7 +1647,7 @@
         },
         "sharing": {
           "title": "4. Partage",
-          "body": "Vos données ne sont pas vendues. Elles peuvent être partagées avec des prestataires strictement nécessaires (hébergement, envoi de SMS et d'e-mails) et avec les autorités lorsque la loi l'exige."
+          "body": "Vos données ne sont pas vendues. Elles peuvent être partagées avec des prestataires strictement nécessaires (hébergement, envoi de SMS et d'e-mails) et avec les autorités lorsque la loi l'exige. Lorsqu'une demande est active et que ses alertes sont activées, ses critères (type de bien, lieu, budget, surface…) sont visibles par les agences Pro, afin qu'elles puissent proposer un bien par l'intermédiaire de Mazed Immo ; le nom et le numéro de la personne ne leur sont jamais communiqués."
         },
         "retention": {
           "title": "5. Conservation et sécurité",
@@ -3105,11 +3110,24 @@
     "resumed": "Alertes réactivées.",
     "renewed": "Demande prolongée de {days} jours.",
     "actionFailed": "Action impossible pour le moment.",
-    "alertsShops": "Les agences Pro peuvent aussi voir ce que vous cherchez — jamais votre nom ni votre numéro — et vous proposer un bien."
+    "alertsShops": "Avec les alertes, les agences Pro voient aussi vos critères — jamais votre nom, votre numéro ni vos autres souhaits — et peuvent vous proposer un bien : c'est Mazed Immo qui vous le transmet.",
+    "budgetOrder": "Le maximum doit être supérieur ou égal au minimum.",
+    "anyDealHint": "Votre recherche montrait la vente et la location ; une demande est l'une ou l'autre : choisissez ci-dessus.",
+    "summaryTitle": "Ce qui sera enregistré",
+    "summaryDeal": "Offre",
+    "summaryWhere": "Lieu",
+    "summaryBudget": "Budget",
+    "summaryBudgetMissing": "À indiquer",
+    "summarySurface": "Surface",
+    "summaryNotCriteria": "Pas un critère",
+    "summaryNoteLine": "Autres souhaits : « {note} »",
+    "summaryWords": "Les mots de votre recherche sont gardés dans « Autres souhaits » : les alertes ne les vérifient pas.",
+    "summaryWordsDropped": "Les mots de votre recherche, « {words} », ne seront pas gardés.",
+    "summaryNote": "« Autres souhaits » vous sert de mémo : les alertes ne le vérifient pas."
   },
   "requestsApi": {
     "budgetRequired": "Indiquez un budget maximum.",
-    "budgetOrder": "Le minimum dépasse le maximum.",
+    "budgetOrder": "Le maximum doit être supérieur ou égal au minimum.",
     "tooMany": "Vous avez déjà {max} demandes actives. Mettez-en une en pause ou supprimez-la."
   },
   "adminDemandes": {
@@ -3170,7 +3188,7 @@
     "requestAlerts": "Les alertes de mes demandes",
     "privacyTitle": "Ce que le site montre de vous",
     "privacyPhone": "Votre numéro n'apparaît pas dans la page : un acheteur le voit seulement en appuyant sur « Voir le numéro », et chaque affichage est compté.",
-    "privacyRequests": "Vos demandes restent privées : aucun vendeur ne les voit. C'est vous qu'on prévient quand un bien correspond.",
+    "privacyRequests": "Vos demandes : les agences Pro voient vos critères (type de bien, lieu, budget…) pour vous proposer un bien, jamais votre nom ni votre numéro. Une demande en pause, expirée ou sans alertes n'est montrée à aucune agence.",
     "privacyReports": "Un signalement ne dit pas au vendeur qui l'a fait.",
     "privacyPolicy": "Politique de confidentialité",
     "deleteTitle": "Supprimer mon compte",
@@ -3515,7 +3533,7 @@
         },
         "matches": {
           "title": "Les demandes",
-          "body": "Les acheteurs et locataires qui cherchent ce que vous proposez sont prévenus de vos annonces."
+          "body": "Les acheteurs et locataires qui cherchent ce que vous proposez sont prévenus de vos annonces. Vous voyez aussi leurs critères, jamais leur nom ni leur numéro, et pouvez leur proposer un bien."
         }
       },
       "plansTitle": "Trois abonnements, sans engagement",
@@ -3891,7 +3909,9 @@
     "perMonth": "/ mois",
     "negotiable": "négociable",
     "best": "Le meilleur sur cette ligne",
-    "bestNote": "Le trophée marque le prix et le prix au m² les plus bas, la plus grande surface et le plus de pièces — quand au moins deux annonces les indiquent."
+    "bestNote": "Le trophée marque le prix et le prix au m² les plus bas, la plus grande surface et le plus de pièces — quand au moins deux annonces les indiquent. Un loyer ne se compare pas à un prix de vente : entre une vente et une location, les deux lignes de prix n'ont pas de trophée.",
+    "perSqmSale": "{amount} TND/m²",
+    "perSqmRent": "{amount} TND/m²/mois"
   },
   "whatsapp": {
     "help": "Une question ? Écrivez-nous sur WhatsApp :",

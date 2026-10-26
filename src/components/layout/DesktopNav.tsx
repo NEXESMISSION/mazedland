@@ -3,7 +3,8 @@
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { Optional } from "@/components/ui/Optional";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { AccountMenu } from "./AccountMenu";
@@ -69,6 +70,30 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+/**
+ * Puts the address's `q` in the search box, and keeps it there.
+ *
+ * It used to be read once per path. Clearing a search on the catalogue (the
+ * « × » on the chip, « Effacer les filtres »), a link to another search and
+ * the back button all change the query and not the path, so the box went on
+ * showing « Teniour » over the unfiltered list.
+ *
+ * A child of its own, in a Suspense with nothing as fallback: useSearchParams
+ * in the bar itself would make every statically generated page (the home
+ * page among them) render on the client. Here only this, which draws nothing,
+ * waits for the browser.
+ */
+function QueryFromUrl({ onQuery }: { onQuery: (q: string) => void }) {
+  const q = useSearchParams().get("q") ?? "";
+  const pathname = usePathname();
+  // The path too: words typed and not sent are dropped on leaving the page,
+  // as before.
+  useEffect(() => {
+    onQuery(q);
+  }, [q, pathname, onQuery]);
+  return null;
+}
+
 export function DesktopNav() {
   const t = useTranslations("shell.tabs");
   const ts = useTranslations("search");
@@ -77,16 +102,8 @@ export function DesktopNav() {
   const router = useRouter();
   const locale = useLocale();
   const arabicRedirect = useSetting("feature_arabic_redirect");
+  // What the results are filtered by; QueryFromUrl keeps it on the address.
   const [q, setQ] = useState("");
-
-  // Show what the results are filtered by. Read from the URL after mount
-  // rather than with useSearchParams: this bar renders on the statically
-  // generated home page, which would otherwise have to be client-rendered.
-  useEffect(() => {
-    const current = new URLSearchParams(window.location.search).get("q") ?? "";
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reading the URL is synchronising with an external system.
-    setQ(current);
-  }, [pathname]);
 
   function submitSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -172,6 +189,9 @@ export function DesktopNav() {
         </div>
 
         {/* ── Center zone: real search — submits to the explore surface ── */}
+        <Suspense fallback={null}>
+          <QueryFromUrl onQuery={setQ} />
+        </Suspense>
         <form onSubmit={submitSearch} className="flex flex-1 justify-center" role="search">
           <div className="relative flex w-full max-w-md items-center">
             <Search

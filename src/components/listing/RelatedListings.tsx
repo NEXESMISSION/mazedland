@@ -10,6 +10,7 @@ import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
 import { ArrowRight, BadgeCheck, ImageOff, MapPin } from "lucide-react";
 import { LinkBusy } from "@/components/ui/LinkBusy";
+import { catalogueHrefFor } from "@/lib/catalog/browse";
 
 /**
  * "Annonces similaires" — the bottom of a listing page.
@@ -122,15 +123,21 @@ export async function RelatedListings({
   const thisMake = makeOf(attributes, isPart);
 
   // Same category first. 48 is enough to rank from without reading the table.
-  let { data } = await admin
-    .from("listings")
-    .select(SELECT)
-    .eq("status", "published")
-    .eq("deal_type", dealType)
-    .eq("category_id", categoryId)
-    .neq("id", listingId)
-    .order("published_at", { ascending: false })
-    .limit(48);
+  // The slug is for « Tout voir »: the catalogue filters by slug, and an id
+  // there used to open every annonce.
+  const [{ data: first }, { data: category }] = await Promise.all([
+    admin
+      .from("listings")
+      .select(SELECT)
+      .eq("status", "published")
+      .eq("deal_type", dealType)
+      .eq("category_id", categoryId)
+      .neq("id", listingId)
+      .order("published_at", { ascending: false })
+      .limit(48),
+    admin.from("categories").select("slug").eq("id", categoryId).maybeSingle(),
+  ]);
+  let data = first;
 
   let pool = (data ?? []) as unknown as Row[];
 
@@ -190,7 +197,7 @@ export async function RelatedListings({
           </h2>
         </div>
         <Link
-          href={`/annonces?cat=${categoryId}` as never}
+          href={catalogueHrefFor({ cat: (category?.slug as string | undefined) ?? null, deal: dealType }) as never}
           className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
         >
           {t("seeAll")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />

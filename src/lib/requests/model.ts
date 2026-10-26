@@ -13,6 +13,7 @@
  */
 import { asDealType, FURNISHED, isoDay, type DealType, type Furnished } from "@/lib/listings/deal";
 import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
+import { rangeInverted } from "@/lib/range";
 
 /**
  * When a demande made or renewed now stops: `days` is the console's
@@ -82,7 +83,9 @@ export function parseRequestInput(
   // The ceiling is the one thing a demande cannot do without: it is what makes
   // every match worth sending.
   if (value.budget_max == null) return { ok: false, error: "budget_required" };
-  if (value.budget_min != null && value.budget_min > value.budget_max) {
+  // The same rule as the catalogue's budget and the form (src/lib/range.ts):
+  // a floor above the ceiling would never match, so no alert would ever go.
+  if (rangeInverted(value.budget_min, value.budget_max)) {
     return { ok: false, error: "budget_order" };
   }
   return { ok: true, value };

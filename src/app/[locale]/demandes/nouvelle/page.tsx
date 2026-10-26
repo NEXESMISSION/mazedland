@@ -3,10 +3,10 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { categoryLabel } from "@/lib/i18n";
-import { asDealType, FURNISHED, isoDay, type Furnished } from "@/lib/listings/deal";
-import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
+import { asDealType, type Furnished } from "@/lib/listings/deal";
+import { requestFormFromSearch, type RequestFormValue } from "@/lib/requests/prefill";
 import { getSettings } from "@/lib/settings/server";
-import { RequestForm, type RequestFormValue } from "./RequestForm";
+import { RequestForm } from "./RequestForm";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +14,10 @@ export const dynamic = "force-dynamic";
  * Enregistrer une demande (0168) — "ce que je cherche", kept, with an alert.
  *
  * Arrives pre-filled from wherever the person was: the catalogue's « Vous ne
- * trouvez pas ? » passes its filters, so the demande is the search they just
- * ran and nothing has to be typed twice. ?id=<demande> edits one of theirs.
+ * trouvez pas ? » passes its search, so the demande is the search they just
+ * ran and nothing has to be typed twice — the filters as criteria, the words
+ * in « Autres souhaits » (src/lib/requests/prefill.ts). ?id=<demande> edits
+ * one of theirs.
  * With demandes switched off in the console, it sends to the catalogue.
  */
 export default async function NewRequestPage({
@@ -63,13 +65,9 @@ export default async function NewRequestPage({
       label: categoryLabel(c as { label_fr: string; label_ar: string | null }, locale),
     }));
 
-  const positive = (v: string | undefined) => {
-    const n = Math.floor(Number(v));
-    return Number.isFinite(n) && n > 0 ? String(n) : "";
-  };
-
   let id: string | null = null;
   let initial: RequestFormValue;
+  let fromSearch: { words: string | null; anyDeal: boolean } = { words: null, anyDeal: false };
 
   const { data: existing } = sp.id
     ? await admin
@@ -97,32 +95,24 @@ export default async function NewRequestPage({
       alerts: existing.alerts !== false,
     };
   } else {
-    const deal = asDealType(sp.deal);
-    const cat = categories.find((c) => c.slug === sp.cat);
-    initial = {
-      deal_type: deal,
-      category_ids: cat ? [cat.id] : [],
-      governorates:
-        sp.gov && (TUNISIAN_GOVERNORATES as readonly string[]).includes(sp.gov) ? [sp.gov] : [],
-      budget_min: positive(sp.min),
-      budget_max: positive(sp.max),
-      surface_min: positive(sp.surface),
-      rooms_min: positive(sp.rooms),
-      furnished:
-        deal === "rent" && (FURNISHED as readonly string[]).includes(sp.furnished ?? "")
-          ? (sp.furnished as Furnished)
-          : "",
-      move_in_by: deal === "rent" ? isoDay(sp.avail) ?? "" : "",
-      note: "",
-      alerts: true,
-    };
+    // The search it came from: its filters as criteria, its words as the note.
+    const prefill = requestFormFromSearch(sp, categories);
+    initial = prefill.value;
+    fromSearch = { words: prefill.words, anyDeal: prefill.anyDeal };
   }
 
   return (
     <main className="mx-auto max-w-2xl px-4 pb-40 pt-6 lg:pb-12 lg:pt-8">
       <h1 className="text-[24px] font-extrabold tracking-tight">{id ? t("editTitle") : t("newTitle")}</h1>
       <p className="mt-1 text-[13px] leading-relaxed text-muted">{t("newIntro")}</p>
-      <RequestForm id={id} initial={initial} categories={categories} locale={locale} />
+      <RequestForm
+        id={id}
+        initial={initial}
+        categories={categories}
+        locale={locale}
+        searchWords={fromSearch.words}
+        anyDeal={fromSearch.anyDeal}
+      />
     </main>
   );
 }
