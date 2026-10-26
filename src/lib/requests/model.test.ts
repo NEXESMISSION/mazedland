@@ -72,6 +72,16 @@ describe("parseRequestInput", () => {
       ok: false,
       error: "budget_order",
     });
+    // The form sends strings; the order is checked on the numbers.
+    expect(parseRequestInput({ deal_type: "sale", budget_min: "500000", budget_max: "100000" })).toEqual({
+      ok: false,
+      error: "budget_order",
+    });
+  });
+
+  it("takes a floor equal to the ceiling", () => {
+    const out = parseRequestInput({ deal_type: "rent", budget_min: 800, budget_max: 800 });
+    expect(out.ok && [out.value.budget_min, out.value.budget_max]).toEqual([800, 800]);
   });
 });
 

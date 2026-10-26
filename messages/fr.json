@@ -811,7 +811,9 @@
     "requestCta": "Enregistrer ma demande",
     "understood": "Recherche comprise : « {query} » — les filtres ci-dessous ont été remplis.",
     "searchAsTyped": "Chercher le texte tel quel",
-    "promoted": "Mise en avant"
+    "promoted": "Mise en avant",
+    "rangeInverted": "Le maximum doit être supérieur ou égal au minimum.",
+    "budgetToFix": "À corriger"
   },
   "listing": {
     "metaNotFound": "Annonce introuvable — Mazed Immo",
@@ -3066,11 +3068,12 @@
     "resumed": "Alertes réactivées.",
     "renewed": "Demande prolongée de {days} jours.",
     "actionFailed": "Action impossible pour le moment.",
-    "alertsShops": "Avec les alertes, les agences Pro voient aussi vos critères — jamais votre nom, votre numéro ni vos autres souhaits — et peuvent vous proposer un bien : c'est Mazed Immo qui vous le transmet."
+    "alertsShops": "Avec les alertes, les agences Pro voient aussi vos critères — jamais votre nom, votre numéro ni vos autres souhaits — et peuvent vous proposer un bien : c'est Mazed Immo qui vous le transmet.",
+    "budgetOrder": "Le maximum doit être supérieur ou égal au minimum."
   },
   "requestsApi": {
     "budgetRequired": "Indiquez un budget maximum.",
-    "budgetOrder": "Le minimum dépasse le maximum.",
+    "budgetOrder": "Le maximum doit être supérieur ou égal au minimum.",
     "tooMany": "Vous avez déjà {max} demandes actives. Mettez-en une en pause ou supprimez-la."
   },
   "adminDemandes": {

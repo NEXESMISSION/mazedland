@@ -8,6 +8,7 @@ import { useApiError } from "@/lib/useApiError";
 import { cn } from "@/lib/utils";
 import { FURNISHED, type DealType, type Furnished } from "@/lib/listings/deal";
 import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
+import { inputsInverted } from "@/lib/range";
 import { Bell, Check, KeyRound, Loader2, MapPin, Search, X } from "lucide-react";
 
 /** The form holds strings, because inputs do; the API types them. */
@@ -50,6 +51,10 @@ export function RequestForm({
   const [v, setV] = useState<RequestFormValue>(initial);
   const [busy, setBusy] = useState(false);
   const [budgetFlag, setBudgetFlag] = useState(false);
+  // A minimum above the maximum, said on a blur or a submit — not while the
+  // ceiling is still being typed. Shown at once if it arrived that way.
+  const [orderChecked, setOrderChecked] = useState(() => inputsInverted(initial.budget_min, initial.budget_max));
+  const orderError = orderChecked && inputsInverted(v.budget_min, v.budget_max);
   const rent = v.deal_type === "rent";
   const set = <K extends keyof RequestFormValue>(k: K, value: RequestFormValue[K]) =>
     setV((s) => ({ ...s, [k]: value }));
@@ -69,6 +74,13 @@ export function RequestForm({
       setBudgetFlag(true);
       document.getElementById("r-budget")?.focus();
       toast(t("budgetMissing"), "warning");
+      return;
+    }
+    // The API refuses it too (budget_order); said here, next to the field,
+    // before anything is sent.
+    if (inputsInverted(v.budget_min, v.budget_max)) {
+      setOrderChecked(true);
+      document.getElementById("r-budget-min")?.focus();
       return;
     }
     setBusy(true);
@@ -211,24 +223,36 @@ export function RequestForm({
               inputMode="numeric"
               min={0}
               value={v.budget_max}
-              onChange={(e) => { set("budget_max", e.target.value); setBudgetFlag(false); }}
+              onChange={(e) => { set("budget_max", e.target.value); setBudgetFlag(false); setOrderChecked(false); }}
+              onBlur={() => setOrderChecked(true)}
               placeholder={rent ? "800" : "200000"}
-              className={cn(field, "mazed-tabular font-bold", budgetFlag && "outline outline-2 outline-offset-2 outline-danger")}
+              aria-invalid={orderError || undefined}
+              aria-describedby={orderError ? "r-budget-order" : undefined}
+              className={cn(field, "mazed-tabular font-bold", (budgetFlag || orderError) && "outline outline-2 outline-offset-2 outline-danger")}
             />
           </label>
           <label className={label}>
             {t("budgetMin")}
             <input
+              id="r-budget-min"
               type="number"
               inputMode="numeric"
               min={0}
               value={v.budget_min}
-              onChange={(e) => set("budget_min", e.target.value)}
+              onChange={(e) => { set("budget_min", e.target.value); setOrderChecked(false); }}
+              onBlur={() => setOrderChecked(true)}
               placeholder="0"
-              className={cn(field, "mazed-tabular")}
+              aria-invalid={orderError || undefined}
+              aria-describedby={orderError ? "r-budget-order" : undefined}
+              className={cn(field, "mazed-tabular", orderError && "outline outline-2 outline-offset-2 outline-danger")}
             />
           </label>
         </div>
+        {orderError && (
+          <p id="r-budget-order" role="alert" className="mt-1.5 text-[12px] font-semibold text-[var(--danger)]">
+            {t("budgetOrder")}
+          </p>
+        )}
         <p className="mt-1.5 text-[11.5px] text-muted">{t("budgetHint")}</p>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">

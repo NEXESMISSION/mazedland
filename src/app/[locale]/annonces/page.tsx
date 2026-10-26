@@ -17,6 +17,8 @@ import { understand, understoodSomething } from "@/lib/search/understand";
 import { isMostlyArabic } from "@/lib/search/script";
 import { Sparkles } from "lucide-react";
 import { getSettings } from "@/lib/settings/server";
+import { usableRange } from "@/lib/range";
+import { BudgetFields } from "./BudgetFields";
 
 export const dynamic = "force-dynamic";
 
@@ -217,8 +219,12 @@ export default async function AnnoncesPage({
     const n = Math.floor(Number(v));
     return Number.isFinite(n) && n > 0 ? n : null;
   };
-  const min = positive(sp.min ?? sp.min_price);
-  const max = positive(sp.max ?? sp.max_price);
+  const minAsked = positive(sp.min ?? sp.min_price);
+  const maxAsked = positive(sp.max ?? sp.max_price);
+  // A minimum above the maximum matches nothing: it is not applied, and the
+  // budget opens on the two numbers with the reason (src/lib/range.ts),
+  // instead of « 0 bien » under a chip reading « 500 000 – 100 000 TND ».
+  const { min, max, inverted: priceInverted } = usableRange(minAsked, maxAsked);
   // « Plus de filtres ». Surface and rooms live in `attributes`, which the
   // wizard requires for every category that has them, so a hard minimum loses
   // nothing. Furnished and the date only mean something for a rental.
@@ -524,16 +530,18 @@ export default async function AnnoncesPage({
           A <details> with a GET form inside: it opens, applies and clears
           before any JavaScript has run, which is also what the keyword
           search above it does. */}
-      <details className="mt-3 overflow-hidden rounded-2xl border border-border bg-surface">
+      <details open={priceInverted} className="mt-3 overflow-hidden rounded-2xl border border-border bg-surface">
         <summary className="tap-target flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5">
           <span className="inline-flex items-center gap-2 text-[12.5px] font-bold text-foreground">
             <Wallet className="size-4 text-muted" strokeWidth={2} />
             {t(deal === "rent" ? "budgetRent" : "budget")}
           </span>
           <span
-            className={`mazed-tabular text-[11.5px] font-semibold ${priceLabel ? "text-gold" : "text-muted"}`}
+            className={`mazed-tabular text-[11.5px] font-semibold ${
+              priceInverted ? "text-[var(--danger)]" : priceLabel ? "text-gold" : "text-muted"
+            }`}
           >
-            {priceLabel ?? t("allPrices")}
+            {priceInverted ? t("budgetToFix") : priceLabel ?? t("allPrices")}
           </span>
         </summary>
 
@@ -559,7 +567,7 @@ export default async function AnnoncesPage({
                 </Link>
               );
             })}
-            {(min || max) && (
+            {(min || max || priceInverted) && (
               <Link
                 href={qs({ min: undefined, max: undefined }) as never}
                 className="tap-target inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold text-muted transition hover:text-foreground"
@@ -584,33 +592,18 @@ export default async function AnnoncesPage({
             {roomsMin ? <input type="hidden" name="rooms" value={String(roomsMin)} /> : null}
             {furnished && <input type="hidden" name="furnished" value={furnished} />}
             {availBy && <input type="hidden" name="avail" value={availBy} />}
-            {/* 16px, like the search field: iOS zooms into anything smaller. */}
-            <label className="flex-1 basis-28 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
-              {t("minLabel")}
-              <input
-                type="number"
-                name="min"
-                min={0}
-                step={deal === "rent" ? 50 : 1000}
-                inputMode="numeric"
-                defaultValue={min ? String(min) : ""}
-                placeholder="0"
-                className="mazed-tabular mt-1 h-11 w-full rounded-xl border border-border bg-surface-2 px-3 text-[16px] font-bold text-foreground outline-none transition placeholder:font-normal placeholder:text-muted focus:border-gold-soft focus:bg-surface"
-              />
-            </label>
-            <label className="flex-1 basis-28 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
-              {t("maxLabel")}
-              <input
-                type="number"
-                name="max"
-                min={0}
-                step={deal === "rent" ? 50 : 1000}
-                inputMode="numeric"
-                defaultValue={max ? String(max) : ""}
-                placeholder={t("maxPlaceholder")}
-                className="mazed-tabular mt-1 h-11 w-full rounded-xl border border-border bg-surface-2 px-3 text-[16px] font-bold text-foreground outline-none transition placeholder:font-normal placeholder:text-muted focus:border-gold-soft focus:bg-surface"
-              />
-            </label>
+            {/* Keyed on the address: a bracket chip or « Tous les prix » is a
+                client navigation, and the numbers must follow it. */}
+            <BudgetFields
+              key={`${minAsked ?? ""}-${maxAsked ?? ""}`}
+              defaultMin={minAsked ? String(minAsked) : ""}
+              defaultMax={maxAsked ? String(maxAsked) : ""}
+              minLabel={t("minLabel")}
+              maxLabel={t("maxLabel")}
+              maxPlaceholder={t("maxPlaceholder")}
+              step={deal === "rent" ? 50 : 1000}
+              invertedMessage={t("rangeInverted")}
+            />
             <button
               type="submit"
               className="mazed-btn-luxe tap-target h-11 shrink-0 px-4 text-[12.5px]"
