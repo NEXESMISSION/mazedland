@@ -822,7 +822,9 @@
     "budgetToFix": "À corriger",
     "filtersToggle": "Filtrer",
     "filtersNone": "Type, lieu, budget, tri…",
-    "filtersBudgetToFix": "Budget à corriger"
+    "filtersBudgetToFix": "Budget à corriger",
+    "allDelegations": "Toutes les délégations",
+    "delegationsLabel": "Délégations"
   },
   "listing": {
     "metaNotFound": "Annonce introuvable — Mazed Immo",

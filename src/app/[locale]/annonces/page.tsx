@@ -9,6 +9,7 @@ import { searchTokens } from "@/lib/search";
 import { PRICE_BUCKETS, RENT_BUCKETS, TYPE_TO_CATEGORY, findCategory } from "@/lib/catalog/browse";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
+import { canonicalDelegation, delegationLabel } from "@/lib/delegations";
 import { BellRing, ChevronDown, ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { FURNISHED, isoDay, type Furnished } from "@/lib/listings/deal";
 import { CompareToggle } from "@/components/compare/CompareToggle";
@@ -76,6 +77,7 @@ type Row = {
   price_on_request: boolean;
   negotiable: boolean;
   governorate: string;
+  delegation: string | null;
   attributes: Record<string, unknown> | null;
   published_at: string | null;
   deal_type: string | null;
@@ -166,6 +168,9 @@ export default async function AnnoncesPage({
   const t = await getTranslations("catalogue");
   const admin = getServiceSupabase();
   const settings = await getSettings();
+  // A délégation of the chosen governorate (src/lib/delegations.ts), in its
+  // stored spelling; anything else is no filter.
+  const del = sp.gov ? canonicalDelegation(sp.gov, sp.del) : null;
   // Annonces per page (/admin/settings → Publication).
   const pageSize = settings.catalogue_page_size;
 
@@ -196,6 +201,7 @@ export default async function AnnoncesPage({
       put("deal", u.deal);
       put("cat", u.cat);
       put("gov", u.gov);
+      put("del", u.del);
       put("rooms", u.rooms);
       put("surface", u.surface);
       put("min", u.min);
@@ -270,7 +276,7 @@ export default async function AnnoncesPage({
   let q = admin
     .from("listings")
     .select(
-      `id, title, price, price_on_request, negotiable, governorate, attributes, published_at,
+      `id, title, price, price_on_request, negotiable, governorate, delegation, attributes, published_at,
        deal_type, availability, available_from,
        category:categories (label_fr, label_ar, kind),
        promo_top_listed,
@@ -282,6 +288,7 @@ export default async function AnnoncesPage({
   if (deal) q = q.eq("deal_type", deal);
   if (active) q = q.eq("category_id", active.id);
   if (sp.gov) q = q.eq("governorate", sp.gov);
+  if (del) q = q.eq("delegation", del);
   // One ILIKE per word, against the accent-folded column: every word has to
   // appear, in any order. See searchTokens.
   for (const token of searchTokens(sp.q)) q = q.ilike("search_text", `%${token}%`);
@@ -343,6 +350,21 @@ export default async function AnnoncesPage({
     .eq("status", "published");
   const govs = [...new Set((govRows ?? []).map((g) => g.governorate as string))].sort();
 
+  // The chosen governorate's délégations that have annonces online, in the
+  // reader's alphabet — plus the one asked, even with nothing left in it.
+  const dels: string[] = [];
+  if (sp.gov) {
+    const { data: delRows } = await admin
+      .from("listings")
+      .select("delegation")
+      .eq("status", "published")
+      .eq("governorate", sp.gov)
+      .not("delegation", "is", null);
+    const found = new Set((delRows ?? []).map((r) => canonicalDelegation(sp.gov, r.delegation as string)).filter((d): d is string => !!d));
+    if (del) found.add(del);
+    dels.push(...[...found].sort((a, b) => delegationLabel(a, locale).localeCompare(delegationLabel(b, locale), locale)));
+  }
+
   // What the Budget row reads when it is closed — the whole state of the
   // filter in one line, so it does not have to be opened to be understood.
   const priceLabel =
@@ -368,6 +390,7 @@ export default async function AnnoncesPage({
     priceInverted ? t("filtersBudgetToFix") : null,
     active ? categoryLabel(active, locale) : null,
     sp.gov ? governorateLabel(sp.gov, locale) : null,
+    del ? delegationLabel(del, locale) : null,
     priceLabel,
     ...moreChips,
     sort !== "recent" ? t(`sort.${sort}`) : null,
@@ -378,7 +401,7 @@ export default async function AnnoncesPage({
     // `page` is deliberately absent from the defaults: changing any filter
     // returns to page 1, and only the pager passes a page explicitly.
     const merged = {
-      deal: deal ?? undefined, cat: sp.cat, gov: sp.gov, sort: sp.sort, q: sp.q,
+      deal: deal ?? undefined, cat: sp.cat, gov: sp.gov, del: del ?? undefined, sort: sp.sort, q: sp.q,
       min: min ? String(min) : undefined, max: max ? String(max) : undefined,
       surface: surface ? String(surface) : undefined,
       rooms: roomsMin ? String(roomsMin) : undefined,
@@ -408,6 +431,7 @@ export default async function AnnoncesPage({
         {deal && <input type="hidden" name="deal" value={deal} />}
         {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
         {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
+        {del && <input type="hidden" name="del" value={del} />}
         {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
         {min ? <input type="hidden" name="min" value={String(min)} /> : null}
         {max ? <input type="hidden" name="max" value={String(max)} /> : null}
@@ -531,7 +555,7 @@ export default async function AnnoncesPage({
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Link
-            href={qs({ gov: undefined }) as never}
+            href={qs({ gov: undefined, del: undefined }) as never}
             className={
               "whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
               (!sp.gov
@@ -544,7 +568,7 @@ export default async function AnnoncesPage({
           {govs.map((g) => (
             <Link
               key={g}
-              href={qs({ gov: g }) as never}
+              href={qs({ gov: g, del: undefined }) as never}
               className={
                 "whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
                 (sp.gov === g
@@ -576,6 +600,39 @@ export default async function AnnoncesPage({
             ))}
           </span>
         </div>
+
+        {/* The governorate's délégations, once one is chosen — the ones with
+            annonces online, so no chip leads to an empty page. */}
+        {sp.gov && dels.length > 0 && (
+          <nav aria-label={t("delegationsLabel")} className="mt-2 flex flex-wrap items-center gap-1.5">
+            <Link
+              href={qs({ del: undefined }) as never}
+              className={
+                "whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold transition " +
+                (!del
+                  ? "bg-foreground text-[var(--background)]"
+                  : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
+              }
+            >
+              {t("allDelegations")}
+            </Link>
+            {dels.map((d) => (
+              <Link
+                key={d}
+                href={qs({ del: d }) as never}
+                aria-current={del === d ? "true" : undefined}
+                className={
+                  "whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold transition " +
+                  (del === d
+                    ? "bg-foreground text-[var(--background)]"
+                    : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
+                }
+              >
+                {delegationLabel(d, locale)}
+              </Link>
+            ))}
+          </nav>
+        )}
 
         {/* ── Budget ───────────────────────────────────────────────────────
             The catalogue already filtered on `min`/`max` — the home page's
@@ -642,6 +699,7 @@ export default async function AnnoncesPage({
               {deal && <input type="hidden" name="deal" value={deal} />}
               {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
               {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
+              {del && <input type="hidden" name="del" value={del} />}
               {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
               {sp.q && <input type="hidden" name="q" value={sp.q} />}
               {surface ? <input type="hidden" name="surface" value={String(surface)} /> : null}
@@ -692,6 +750,7 @@ export default async function AnnoncesPage({
             {deal && <input type="hidden" name="deal" value={deal} />}
             {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
             {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
+            {del && <input type="hidden" name="del" value={del} />}
             {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
             {sp.q && <input type="hidden" name="q" value={sp.q} />}
             {min ? <input type="hidden" name="min" value={String(min)} /> : null}
@@ -881,7 +940,7 @@ export default async function AnnoncesPage({
                         </span>
                       )}
                       <span className="inline-flex items-center gap-1">
-                        <MapPin className="size-3" /> {governorateLabel(r.governorate, locale)}
+                        <MapPin className="size-3" /> {r.delegation ? `${delegationLabel(r.delegation, locale)}, ` : ""}{governorateLabel(r.governorate, locale)}
                       </span>
                     </div>
                     {/* Kept in by the « libre avant » filter because the owner gave

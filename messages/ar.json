@@ -822,7 +822,9 @@
     "budgetToFix": "لازم تتصلّح",
     "filtersToggle": "الفلاتر",
     "filtersNone": "النوع، البلاصة، الميزانية، الترتيب…",
-    "filtersBudgetToFix": "الميزانية لازم تتصلّح"
+    "filtersBudgetToFix": "الميزانية لازم تتصلّح",
+    "allDelegations": "المعتمديات الكل",
+    "delegationsLabel": "المعتمديات"
   },
   "listing": {
     "metaNotFound": "الإعلان غير موجود — Mazed Immo",
