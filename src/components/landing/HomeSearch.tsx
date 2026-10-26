@@ -141,8 +141,11 @@ export function HomeSearch({
     );
   }
 
+  // No side padding of its own: the home page's wrapper already gives it the
+  // 16px gutter the cards above it have. With both, the card sat 32px in from
+  // each edge, narrower than everything around it.
   return (
-    <section className="px-4">
+    <section>
       <form
         onSubmit={submit}
         className="rounded-2xl bg-surface p-2 ring-1 ring-gold/20"
@@ -150,7 +153,7 @@ export function HomeSearch({
         {/* Top row: keyword box + submit. Stays single-row even on
             narrow phones — the type + governorate pickers drop below. */}
         <div className="flex items-center gap-2">
-          <div className="relative flex-1">
+          <div className="relative min-w-0 flex-1">
             <Search
               className="pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted ltr:left-3.5 rtl:right-3.5"
               strokeWidth={2}
@@ -174,9 +177,15 @@ export function HomeSearch({
         </div>
 
         {/* Second row: two soft-pill custom dropdowns (matching menus,
-            chevron affordance, gold-checked selection). */}
-        <div className="mt-2 flex gap-2">
-          <div className="flex-1">
+            chevron affordance, gold-checked selection).
+            They wrap. Side by side they need about 330px, and « Tous les
+            gouvernorats » would not shrink below its text: at 320px the row
+            ran 50px past the screen and the whole page scrolled sideways. Now
+            each pill is at least 10rem and `min-w-0`, so under ~380px they
+            stack full width, and above it a long label truncates inside its
+            pill instead of pushing it out. */}
+        <div className="mt-2 flex flex-wrap gap-2">
+          <div className="min-w-0 flex-[1_1_10rem]">
             <SelectMenu
               value={gov}
               onChange={setGov}
@@ -186,7 +195,7 @@ export function HomeSearch({
               triggerClassName="tap-target flex w-full items-center gap-2 rounded-full bg-surface-2 px-3 py-2.5 text-[12px] font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40"
             />
           </div>
-          <div className="flex-1">
+          <div className="min-w-0 flex-[1_1_10rem]">
             <SelectMenu
               value={type}
               onChange={setType}
