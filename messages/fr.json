@@ -3204,7 +3204,8 @@
     "privacyReports": "Un signalement ne dit pas au vendeur qui l'a fait.",
     "privacyPolicy": "Politique de confidentialité",
     "deleteTitle": "Supprimer mon compte",
-    "deleteBody": "Vos annonces sont retirées du site et votre compte est fermé. C'est définitif."
+    "deleteBody": "Vos annonces sont retirées du site et votre compte est fermé. C'est définitif.",
+    "governorateFromListing": "{governorate}, comme votre dernière annonce"
   },
   "aiApi": {
     "tooShort": "Écrivez une phrase un peu plus longue.",
