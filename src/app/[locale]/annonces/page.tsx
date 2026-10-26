@@ -850,7 +850,9 @@ export default async function AnnoncesPage({
       )}
 
       {/* Nothing here, or nothing right: keep the search as a demande and be
-          told when it is answered (0168). Same filters, nothing to retype. */}
+          told when it is answered (0168). Same filters, nothing to retype —
+          the words too: the form keeps them in « Autres souhaits » and says
+          they are not a criterion (src/lib/requests/prefill.ts). */}
       {settings.feature_requests && (
         <section className="mt-8 flex flex-col items-start gap-3 rounded-2xl border border-gold-soft bg-gold-faint p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -858,7 +860,7 @@ export default async function AnnoncesPage({
             <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{t("requestCtaBody")}</p>
           </div>
           <Link
-            href={qs({ sort: undefined, q: undefined }).replace("/annonces", "/demandes/nouvelle") as never}
+            href={qs({ sort: undefined }).replace("/annonces", "/demandes/nouvelle") as never}
             className="mazed-btn-luxe tap-target inline-flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-[13px]"
           >
             <BellRing className="size-4" /> {t("requestCta")}

@@ -1,30 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { useApiError } from "@/lib/useApiError";
-import { cn } from "@/lib/utils";
-import { FURNISHED, type DealType, type Furnished } from "@/lib/listings/deal";
+import { cn, formatNumber, formatTND } from "@/lib/utils";
+import { FURNISHED, type Furnished } from "@/lib/listings/deal";
 import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 import { inputsInverted } from "@/lib/range";
-import { Bell, Check, KeyRound, Loader2, MapPin, Search, X } from "lucide-react";
-
-/** The form holds strings, because inputs do; the API types them. */
-export type RequestFormValue = {
-  deal_type: DealType;
-  category_ids: string[];
-  governorates: string[];
-  budget_min: string;
-  budget_max: string;
-  surface_min: string;
-  rooms_min: string;
-  furnished: Furnished | "";
-  move_in_by: string;
-  note: string;
-  alerts: boolean;
-};
+import { NOTE_MAX, type RequestFormValue } from "@/lib/requests/prefill";
+import { Bell, Check, KeyRound, ListChecks, Loader2, MapPin, Search, X } from "lucide-react";
 
 const MAX_GOVERNORATES = 5;
 
@@ -32,24 +18,36 @@ const MAX_GOVERNORATES = 5;
  * One demande, on one screen: short on purpose — a buyer should be able to
  * leave their criteria in under a minute. Only the ceiling is required; every
  * other answer narrows the alerts and can be left empty ("any").
+ *
+ * Above the button, what will be saved, read back in plain words — and what
+ * is not a criterion: « Autres souhaits », where the words of the search it
+ * came from (`searchWords`) are kept, is never checked by an alert.
  */
 export function RequestForm({
   id,
   initial,
   categories,
   locale,
+  searchWords = null,
+  anyDeal = false,
 }: {
   id: string | null;
   initial: RequestFormValue;
   categories: { id: string; slug: string; label: string }[];
   locale: string;
+  /** The words of the catalogue search this demande started from. */
+  searchWords?: string | null;
+  /** That search showed sales and rentals: ask which this demande is. */
+  anyDeal?: boolean;
 }) {
   const t = useTranslations("requests");
+  const tc = useTranslations("common");
   const router = useRouter();
   const { toast } = useToast();
   const apiError = useApiError();
   const [v, setV] = useState<RequestFormValue>(initial);
   const [busy, setBusy] = useState(false);
+  const [dealPicked, setDealPicked] = useState(false);
   const [budgetFlag, setBudgetFlag] = useState(false);
   // A minimum above the maximum, said on a blur or a submit — not while the
   // ceiling is still being typed. Shown at once if it arrived that way.
@@ -126,6 +124,31 @@ export function RequestForm({
       on ? "bg-gold-faint text-gold ring-1 ring-gold" : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground",
     );
 
+  // The summary: the criteria an alert checks, in the words « Mes demandes »
+  // uses for them, then the note on its own.
+  const money = (s: string) => `${formatTND(Number(s), locale)} ${tc("tnd")}`;
+  const picked = categories.filter((c) => v.category_ids.includes(c.id)).map((c) => c.label);
+  const budget = Number(v.budget_max) > 0
+    ? [
+        Number(v.budget_min) > 0 ? t("fromAmount", { amount: money(v.budget_min) }) : null,
+        t(rent ? "upToPerMonth" : "upTo", { amount: money(v.budget_max) }),
+      ].filter(Boolean).join(" · ")
+    : t("summaryBudgetMissing");
+  const summary: [string, string][] = [
+    [t("summaryDeal"), t(rent ? "kindRent" : "kindBuy")],
+    [t("categoriesLabel"), picked.length ? picked.join(", ") : t("anyCategory")],
+    [t("summaryWhere"), v.governorates.length ? v.governorates.map((g) => governorateLabel(g, locale)).join(", ") : t("anywhere")],
+    [t("summaryBudget"), budget],
+  ];
+  if (Number(v.surface_min) > 0) {
+    summary.push([t("summarySurface"), t("surfaceAtLeast", { area: formatNumber(Number(v.surface_min), locale) })]);
+  }
+  if (Number(v.rooms_min) > 0) summary.push([t("roomsMin"), t("roomsAtLeast", { count: Number(v.rooms_min) })]);
+  if (rent && v.furnished) summary.push([t("furnishedLabel"), t(`furnished.${v.furnished}`)]);
+  // Written from the ISO day itself: a Date would move it a day in some time zones.
+  if (rent && v.move_in_by) summary.push([t("moveInBy"), v.move_in_by.split("-").reverse().join("/")]);
+  const note = v.note.trim();
+
   return (
     <form onSubmit={submit} className="mt-5 space-y-4">
       {/* Buy or rent — it decides the budget's scale and the rental questions. */}
@@ -141,14 +164,15 @@ export function RequestForm({
                 type="button"
                 role="radio"
                 aria-checked={on}
-                onClick={() =>
+                onClick={() => {
+                  setDealPicked(true);
                   setV((s) =>
                     s.deal_type === k
                       ? s
                       : // The budget belongs to the other scale; rental questions go with rent.
                         { ...s, deal_type: k, budget_min: "", budget_max: "", furnished: "", move_in_by: "" },
-                  )
-                }
+                  );
+                }}
                 className={cn(
                   "tap-target flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-[14px] font-extrabold transition",
                   on ? "bg-gold-faint text-gold ring-2 ring-gold" : "bg-surface-2 text-muted ring-1 ring-border",
@@ -160,6 +184,9 @@ export function RequestForm({
             );
           })}
         </div>
+        {/* The search showed both; a demande is one. Said until it is chosen,
+            rather than letting the default pass for the person's answer. */}
+        {anyDeal && !dealPicked && <p className="mt-2 text-[12px] font-semibold text-gold">{t("anyDealHint")}</p>}
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
@@ -311,7 +338,7 @@ export function RequestForm({
           <textarea
             value={v.note}
             onChange={(e) => set("note", e.target.value)}
-            maxLength={500}
+            maxLength={NOTE_MAX}
             rows={3}
             dir="auto"
             placeholder={t("notePlaceholder")}
@@ -336,6 +363,33 @@ export function RequestForm({
           </span>
         </span>
       </label>
+
+      {/* What « Enregistrer » keeps, read back before it is pressed — and,
+          apart, what is not a criterion: the note, where a search's words land. */}
+      <section aria-labelledby="r-summary" className="rounded-2xl border border-gold-soft bg-gold-faint p-4">
+        <p id="r-summary" className={cn(label, "inline-flex items-center gap-1.5 text-gold")}>
+          <ListChecks className="size-3.5" /> {t("summaryTitle")}
+        </p>
+        <dl className="mt-2 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-1 text-[13px]">
+          {summary.map(([term, value]) => (
+            <Fragment key={term}>
+              <dt className="text-muted">{term}</dt>
+              <dd className="mazed-tabular break-words font-bold text-foreground">{value}</dd>
+            </Fragment>
+          ))}
+        </dl>
+        {(note || searchWords) && (
+          <div className="mt-3 border-t border-gold-soft pt-3 text-[12px] leading-relaxed">
+            <p className="font-bold text-foreground">{t("summaryNotCriteria")}</p>
+            {note && <p className="mt-0.5 break-words text-foreground">{t("summaryNoteLine", { note })}</p>}
+            <p className="mt-0.5 text-muted">
+              {searchWords && !note.includes(searchWords)
+                ? t("summaryWordsDropped", { words: searchWords })
+                : t(searchWords ? "summaryWords" : "summaryNote")}
+            </p>
+          </div>
+        )}
+      </section>
 
       <button
         type="submit"

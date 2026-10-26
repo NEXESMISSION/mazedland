@@ -3069,7 +3069,19 @@
     "renewed": "Demande prolongée de {days} jours.",
     "actionFailed": "Action impossible pour le moment.",
     "alertsShops": "Avec les alertes, les agences Pro voient aussi vos critères — jamais votre nom, votre numéro ni vos autres souhaits — et peuvent vous proposer un bien : c'est Mazed Immo qui vous le transmet.",
-    "budgetOrder": "Le maximum doit être supérieur ou égal au minimum."
+    "budgetOrder": "Le maximum doit être supérieur ou égal au minimum.",
+    "anyDealHint": "Votre recherche montrait la vente et la location ; une demande est l'une ou l'autre : choisissez ci-dessus.",
+    "summaryTitle": "Ce qui sera enregistré",
+    "summaryDeal": "Offre",
+    "summaryWhere": "Lieu",
+    "summaryBudget": "Budget",
+    "summaryBudgetMissing": "À indiquer",
+    "summarySurface": "Surface",
+    "summaryNotCriteria": "Pas un critère",
+    "summaryNoteLine": "Autres souhaits : « {note} »",
+    "summaryWords": "Les mots de votre recherche sont gardés dans « Autres souhaits » : les alertes ne les vérifient pas.",
+    "summaryWordsDropped": "Les mots de votre recherche, « {words} », ne seront pas gardés.",
+    "summaryNote": "« Autres souhaits » vous sert de mémo : les alertes ne le vérifient pas."
   },
   "requestsApi": {
     "budgetRequired": "Indiquez un budget maximum.",
