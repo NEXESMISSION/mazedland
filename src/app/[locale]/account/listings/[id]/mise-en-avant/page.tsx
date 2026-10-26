@@ -6,6 +6,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatDate, formatTND } from "@/lib/utils";
 import { activePromo, canBuy, placementOf, type PromoColumn } from "@/lib/promo";
+import { getSettings } from "@/lib/settings/server";
 import { ArrowLeft, Home as HomeIcon, LayoutPanelTop, Search, Sparkles } from "lucide-react";
 import { BuyPromo } from "./BuyPromo";
 
@@ -25,6 +26,9 @@ const ICON: Record<PromoColumn, typeof Search> = {
 export default async function BoostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const locale = await getLocale();
+  // Placements switched off in the console: nothing to buy here. One already
+  // bought runs its course.
+  if (!(await getSettings()).feature_promos) redirect(`/${locale}/account/listings`);
   const t = await getTranslations("promo");
   const tc = await getTranslations("common");
   const supabase = await getServerSupabase();
