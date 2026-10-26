@@ -6,7 +6,7 @@ import { coverPhoto } from "@/lib/listingCover";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatNumber, formatTND } from "@/lib/utils";
 import { searchTokens } from "@/lib/search";
-import { PRICE_BUCKETS, RENT_BUCKETS, TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
+import { PRICE_BUCKETS, RENT_BUCKETS, TYPE_TO_CATEGORY, findCategory } from "@/lib/catalog/browse";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
 import { BellRing, ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, SlidersHorizontal, Wallet, X } from "lucide-react";
@@ -250,7 +250,16 @@ export default async function AnnoncesPage({
     .order("sort_order");
   const cats = (catRows ?? []) as Cat[];
   const leaves = cats.filter((c) => c.parent_id);
-  const active = leaves.find((c) => c.slug === sp.cat) ?? null;
+  const active = findCategory(sp.cat, leaves);
+  // A category named by its id (the old « Tout voir » links) goes to the same
+  // search written with the slug, so a filter has one address and every chip
+  // and link below reads it the same way.
+  if (active && sp.cat !== active.slug) {
+    const next = new URLSearchParams();
+    for (const [k, v] of Object.entries(sp)) if (v != null) next.set(k, v);
+    next.set("cat", active.slug);
+    redirect(`/${locale}/annonces?${next.toString()}`);
+  }
 
   let q = admin
     .from("listings")
