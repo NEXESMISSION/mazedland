@@ -1165,6 +1165,10 @@
     "visit_cancelled": {
       "title": "Visite annulée",
       "body": "{name} a annulé sa visite de « {title} »."
+    },
+    "request_suggestion": {
+      "title": "Une agence vous propose un bien",
+      "body": "{shop} pense que « {title} » correspond à votre demande."
     }
   },
   "publish": {
@@ -2870,7 +2874,8 @@
     "visit_cancel": "Visite annulée",
     "lead_create": "Client ajouté (boutique)",
     "lead_update": "Client mis à jour (boutique)",
-    "lead_delete": "Client supprimé (boutique)"
+    "lead_delete": "Client supprimé (boutique)",
+    "shop_suggest": "Annonce proposée à une demande (boutique)"
   },
   "adminApi": {
     "bulk": {
@@ -3041,7 +3046,8 @@
     "paused": "Alertes en pause.",
     "resumed": "Alertes réactivées.",
     "renewed": "Demande prolongée de 60 jours.",
-    "actionFailed": "Action impossible pour le moment."
+    "actionFailed": "Action impossible pour le moment.",
+    "alertsShops": "Les agences Pro peuvent aussi voir ce que vous cherchez — jamais votre nom ni votre numéro — et vous proposer un bien."
   },
   "requestsApi": {
     "budgetRequired": "Indiquez un budget maximum.",
@@ -3510,7 +3516,8 @@
         "boutique": "Boutique",
         "documents": "Documents",
         "visites": "Visites",
-        "clients": "Clients"
+        "clients": "Clients",
+        "demandes": "Demandes"
       },
       "planLabel": "Abonnement",
       "noPlan": "Aucun",
@@ -3569,7 +3576,10 @@
       "sendDocument": "Envoyer un document",
       "noVisits": "Aucune demande de visite sur les annonces de la boutique pour l'instant.",
       "visitsWaiting": "{count, plural, one {# visite à confirmer} other {# visites à confirmer}}",
-      "clientUpdated": "Mis à jour le {date}"
+      "clientUpdated": "Mis à jour le {date}",
+      "noDemandes": "Aucune demande ouverte près de la boutique ou à laquelle ses annonces répondent, pour l'instant.",
+      "demandesHint": "Ce que cherchent les acheteurs et locataires qui ont demandé des alertes. Vous ne voyez ni leur nom ni leur numéro : proposez une annonce, Mazed Immo la leur transmet. ✓ = elle remplit toutes leurs conditions.",
+      "alreadyOffered": "Déjà proposé : {titles}"
     },
     "clients": {
       "open": "En cours",
@@ -3605,6 +3615,13 @@
         "manual": "Ajouté",
         "suggestion": "Demande"
       }
+    },
+    "demandes": {
+      "choose": "Annonce à proposer",
+      "offer": "Proposer",
+      "sent": "Annonce proposée. La personne est prévenue.",
+      "failed": "Proposition impossible. Réessayez.",
+      "noneToOffer": "Aucune annonce en ligne de la boutique pour cette offre."
     }
   },
   "proApi": {
@@ -3632,6 +3649,15 @@
       "phone": "Numéro de téléphone invalide.",
       "date": "Date de rappel invalide.",
       "patch": "Rien à enregistrer."
+    },
+    "suggest": {
+      "shopClosed": "La boutique doit être ouverte pour proposer des annonces.",
+      "listing": "Choisissez une annonce en ligne de la boutique.",
+      "closed": "Cette demande n'est plus ouverte.",
+      "deal": "Cette annonce n'est pas pour la même offre (vente ou location).",
+      "perRequest": "Vous avez déjà proposé {max} annonces pour cette demande.",
+      "perDay": "Limite de {max} propositions par jour atteinte. Réessayez demain.",
+      "already": "Cette annonce a déjà été proposée pour cette demande."
     }
   },
   "shops": {

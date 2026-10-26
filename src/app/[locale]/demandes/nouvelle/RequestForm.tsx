@@ -305,7 +305,11 @@ export function RequestForm({
         />
         <span className="flex items-start gap-2 text-[13px] leading-relaxed text-foreground">
           <Bell className="mt-0.5 size-4 shrink-0 text-gold" />
-          {t("alertsLabel")}
+          <span>
+            {t("alertsLabel")}
+            {/* Said where it is decided: an alert also lets shops answer (P3). */}
+            <span className="mt-0.5 block text-[11.5px] leading-snug text-muted">{t("alertsShops")}</span>
+          </span>
         </span>
       </label>
 

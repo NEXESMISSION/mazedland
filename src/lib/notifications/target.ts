@@ -55,6 +55,8 @@ export const NOTIFICATION_KINDS = [
   "shop_approved", "shop_rejected", "shop_member_added", "admin_shop_pending",
   // Visits (0174): the seller hears the request and a cancellation, the buyer the answer
   "visit_requested", "visit_confirmed", "visit_declined", "visit_cancelled",
+  // A shop answers a demande (P3); the person stays anonymous to the shop
+  "request_suggestion",
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
@@ -186,6 +188,7 @@ const KIND_FALLBACK: Record<NotificationKind, FallbackRoute> = {
   visit_confirmed: "/account/visites",
   visit_declined: "/account/visites",
   visit_cancelled: "/account/visites",
+  request_suggestion: "/account/requests",
 };
 
 /** Last non-empty path segment, ignoring query/hash. */
@@ -270,6 +273,7 @@ const FALLBACK_SUPPORTS_FOCUS: Record<NotificationKind, boolean> = {
   listing_edit_applied: false, listing_edit_rejected: false, admin_listing_edit_pending: false,
   shop_approved: false, shop_rejected: false, shop_member_added: false, admin_shop_pending: false,
   visit_requested: false, visit_confirmed: false, visit_declined: false, visit_cancelled: false,
+  request_suggestion: false,
 };
 
 /** Pull a string `focus` id out of the notification payload, if present.

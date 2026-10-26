@@ -10,6 +10,10 @@ import { activePlan, can, membershipsOf, shopLiveCount, type ShopRole } from "@/
 import { ShopForm } from "@/components/pro/ShopForm";
 import { AddMember, ChoosePlan, RemoveMember, SendDocument } from "./ProActions";
 import { ProClients, type ClientRow } from "./ProClients";
+import { SuggestListing } from "./SuggestListing";
+import { rankForRequest } from "@/lib/pro/suggest";
+import { toMatchable } from "@/lib/requests/server";
+import { categoryLabel } from "@/lib/i18n";
 import { VisitCard } from "@/components/visits/VisitCard";
 import { loadVisits } from "@/lib/visits-server";
 import type { LeadStage } from "@/lib/visits";
@@ -17,7 +21,7 @@ import { BadgeCheck, ExternalLink, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-const TABS = ["apercu", "annonces", "visites", "clients", "equipe", "abonnement", "boutique", "documents"] as const;
+const TABS = ["apercu", "annonces", "visites", "clients", "demandes", "equipe", "abonnement", "boutique", "documents"] as const;
 type TabKey = (typeof TABS)[number];
 
 const STATUS_TONE: Record<string, string> = {
@@ -53,7 +57,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
   const tab: TabKey = (TABS as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as TabKey) : "apercu";
   // Everyone sees the plan; only those who may act on the page or the papers see those tabs.
   const visibleTabs = TABS.filter((k) =>
-    k === "boutique" ? can(role, "edit_shop") : k === "documents" ? can(role, "documents") : k === "visites" || k === "clients" ? can(role, "clients") : true,
+    k === "boutique" ? can(role, "edit_shop") : k === "documents" ? can(role, "documents") : k === "visites" || k === "clients" || k === "demandes" ? can(role, "clients") : true,
   );
   const href = (k: TabKey) => `/pro/dashboard?shop=${shop.id}&tab=${k}`;
 
@@ -205,6 +209,8 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
 
       {tab === "clients" && can(role, "clients") && <ClientsTab shopId={shop.id} />}
 
+      {tab === "demandes" && can(role, "clients") && <DemandesTab shopId={shop.id} shopGovernorate={shop.governorate} approved={shop.status === "approved"} />}
+
       {tab === "equipe" && <TeamTab shopId={shop.id} role={role} />}
 
       {tab === "abonnement" && <PlanTab shopId={shop.id} role={role} approved={shop.status === "approved"} current={plan} />}
@@ -248,6 +254,105 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
         {visits.map((v) => (
           <VisitCard key={v.id} visit={v} side="seller" locale={locale} />
         ))}
+      </section>
+    );
+  }
+
+  /**
+   * What buyers and tenants are looking for, without who they are: the open
+   * demandes that asked for alerts, near the shop or answered by one of its
+   * annonces, those it can answer fully first.
+   */
+  async function DemandesTab({ shopId, shopGovernorate, approved }: { shopId: string; shopGovernorate: string; approved: boolean }) {
+    const tReq = await getTranslations("requests");
+    const tc = await getTranslations("common");
+    const [{ data: reqRows }, { data: own }, { data: catRows }] = await Promise.all([
+      admin!
+        .from("property_requests")
+        .select("id, deal_type, category_ids, governorates, budget_min, budget_max, surface_min, rooms_min, furnished, move_in_by, created_at")
+        .eq("status", "active")
+        .eq("alerts", true)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(300),
+      admin!
+        .from("listings")
+        .select("id, title, deal_type, category_id, governorate, price, price_on_request, attributes, furnished, available_from")
+        .eq("shop_id", shopId)
+        .eq("status", "published")
+        .limit(200),
+      admin!.from("categories").select("id, label_fr, label_ar"),
+    ]);
+    type Req = { id: string; deal_type: string; category_ids: string[] | null; governorates: string[] | null; budget_min: number | string | null; budget_max: number | string | null; surface_min: number | string | null; rooms_min: number | null; furnished: string | null; move_in_by: string | null; created_at: string };
+    type Lst = { id: string; title: string; deal_type: string | null; category_id: string; governorate: string; price: number | null; price_on_request: boolean; attributes: Record<string, unknown> | null; furnished: string | null; available_from: string | null };
+    const requests = (reqRows ?? []) as Req[];
+    const listings = ((own ?? []) as Lst[]).map((l) => ({ ...l, price: l.price == null ? null : Number(l.price) }));
+    const cats = new Map(((catRows ?? []) as { id: string; label_fr: string; label_ar: string | null }[]).map((c) => [c.id, c]));
+    const shopPlaces = new Set([shopGovernorate, ...listings.map((l) => l.governorate)]);
+
+    const { data: matchRows } = requests.length && listings.length
+      ? await admin!.from("matches").select("request_id, listing_id").in("request_id", requests.map((r) => r.id)).in("listing_id", listings.map((l) => l.id))
+      : { data: [] };
+    const offered = new Map<string, string[]>();
+    for (const m of (matchRows ?? []) as { request_id: string; listing_id: string }[]) {
+      offered.set(m.request_id, [...(offered.get(m.request_id) ?? []), m.listing_id]);
+    }
+
+    const money = (v: number | string) => `${formatTND(Number(v), locale)} ${tc("tnd")}`;
+    const cards = requests
+      .map((r) => {
+        const ranked = rankForRequest(listings, toMatchable(r));
+        const near = !(r.governorates ?? []).length || (r.governorates ?? []).some((g) => shopPlaces.has(g));
+        return { r, ranked, full: ranked.some((x) => x.match.ok), near };
+      })
+      .filter((c) => c.full || c.near)
+      .sort((a, b) => Number(b.full) - Number(a.full))
+      .slice(0, 60);
+
+    if (cards.length === 0) {
+      return <p className="mt-5 rounded-2xl border border-dashed border-border p-8 text-center text-[13px] leading-relaxed text-muted">{t("noDemandes")}</p>;
+    }
+    return (
+      <section className="mt-5 space-y-3">
+        <p className="text-[12px] leading-relaxed text-muted">{t("demandesHint")}</p>
+        {!approved && <p className="text-[12px] text-muted">{t("planAfterApproval")}</p>}
+        {cards.map(({ r, ranked, full }) => {
+          const rent = r.deal_type === "rent";
+          const what = (r.category_ids ?? []).length
+            ? (r.category_ids ?? []).map((id) => (cats.get(id) ? categoryLabel(cats.get(id)!, locale) : null)).filter(Boolean).join(", ")
+            : tReq("anyCategory");
+          const where = (r.governorates ?? []).length ? (r.governorates ?? []).map((g) => governorateLabel(g, locale)).join(", ") : tReq("anywhere");
+          const extra = [
+            r.budget_max != null ? tReq(rent ? "upToPerMonth" : "upTo", { amount: money(r.budget_max) }) : null,
+            r.budget_min != null ? tReq("fromAmount", { amount: money(r.budget_min) }) : null,
+            r.surface_min != null ? tReq("surfaceAtLeast", { area: formatNumber(Number(r.surface_min), locale) }) : null,
+            r.rooms_min != null ? tReq("roomsAtLeast", { count: r.rooms_min }) : null,
+            rent && r.furnished ? tReq(`furnished.${r.furnished}`) : null,
+            rent && r.move_in_by ? tReq("moveInShort", { date: formatDate(r.move_in_by, locale, "medium") }) : null,
+          ].filter(Boolean);
+          const done = offered.get(r.id) ?? [];
+          const options = ranked
+            .filter((x) => !done.includes(x.listing.id))
+            .map((x) => ({ id: x.listing.id, label: `${x.match.ok ? "✓ " : ""}${x.listing.title} · ${x.match.score} %` }));
+          return (
+            <article key={r.id} className={`rounded-2xl bg-surface p-4 ring-1 ${full ? "ring-gold-soft" : "ring-border"}`}>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-gold">{tReq(rent ? "kindRent" : "kindBuy")}</p>
+                  <p className="mt-0.5 text-[14px] font-bold text-foreground">{what} · {where}</p>
+                  {extra.length > 0 && <p className="mt-0.5 text-[12.5px] text-muted">{extra.join(" · ")}</p>}
+                </div>
+                <span className="shrink-0 text-[11px] text-muted">{formatDate(r.created_at, locale, "dayMonth")}</span>
+              </div>
+              {done.length > 0 && (
+                <p className="mt-2 text-[12px] text-muted">
+                  {t("alreadyOffered", { titles: done.map((id) => listings.find((l) => l.id === id)?.title ?? "").filter(Boolean).join(", ") })}
+                </p>
+              )}
+              {approved && <div className="mt-3"><SuggestListing shopId={shopId} requestId={r.id} options={options} /></div>}
+            </article>
+          );
+        })}
       </section>
     );
   }
