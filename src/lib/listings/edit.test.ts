@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { asPendingEdit, changedKeys, newFlags } from "./edit";
+import { asPendingEdit, changedKeys, isEditable, newFlags } from "./edit";
 import { listingFields, listingPhotos } from "./input";
 
 describe("newFlags", () => {
@@ -72,5 +72,17 @@ describe("the form, as the server reads it", () => {
       { storage_path: "b", sort_order: 1 },
     ]);
     expect(listingPhotos({})).toBeNull();
+  });
+});
+
+describe("isEditable", () => {
+  it("lets the seller correct an annonce online or waiting for an admin", () => {
+    expect(isEditable({ status: "published" })).toBe(true);
+    expect(isEditable({ status: "pending_review", review_flags: ["first_listing"] })).toBe(true);
+  });
+
+  it("never one held after reports, nor a draft, a sale or an expiry", () => {
+    expect(isEditable({ status: "pending_review", review_flags: ["reported"] })).toBe(false);
+    for (const status of ["draft", "sold", "expired", "rejected", "archived"]) expect(isEditable({ status })).toBe(false);
   });
 });

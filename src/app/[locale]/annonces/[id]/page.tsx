@@ -18,10 +18,11 @@ import { ReportListing } from "./ReportListing";
 import { VisitRequest } from "./VisitRequest";
 import { CompareToggle } from "@/components/compare/CompareToggle";
 import type { VisitSlot, VisitStatus } from "@/lib/visits";
+import { isEditable } from "@/lib/listings/edit";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { RelatedListings } from "@/components/listing/RelatedListings";
 import { ViewTracker } from "@/components/listing/ViewTracker";
-import { BadgeCheck, MapPin, Clock, ShieldAlert, Hash, Home, Store } from "lucide-react";
+import { BadgeCheck, MapPin, Clock, ShieldAlert, Hash, Home, Store, PencilLine } from "lucide-react";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -74,12 +75,13 @@ type Row = {
   min_lease_months: number | null;
   availability: string | null;
   shop_id: string | null;
+  review_flags: string[] | null;
 };
 
 const SELECT = `
   id, title, description, price, price_on_request, negotiable,
   governorate, delegation, attributes, contact_name, show_phone, status,
-  published_at, expires_at, seller_id, reference, rejection_reason,
+  published_at, expires_at, seller_id, reference, rejection_reason, review_flags,
   deal_type, deposit_amount, charges_amount, furnished, available_from,
   min_lease_months, availability, shop_id,
   category:categories (id, label_fr, label_ar, kind),
@@ -400,6 +402,24 @@ export default async function AnnoncePage({
     </div>
   );
 
+  // Its seller sees the way to correct it, not « call » and « visit » (0172).
+  const ownerCard =
+    isOwner && isEditable(l) ? (
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">{t("yourListing")}</p>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{t("yourListingHint")}</p>
+        <Link
+          href={`/annonces/nouvelle?edit=${l.id}` as never}
+          className="mazed-btn-luxe tap-target mt-3 flex h-11 w-full items-center justify-center gap-2 text-[13.5px]"
+        >
+          <PencilLine className="size-4" /> {t("editYourListing")}
+        </Link>
+        <Link href={"/account/listings" as never} className="mt-2 block text-center text-[12.5px] font-bold text-muted hover:text-foreground">
+          {t("yourListings")}
+        </Link>
+      </section>
+    ) : null;
+
   const sellerCard = shop ? (
     <section className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center gap-3">
@@ -600,7 +620,7 @@ export default async function AnnoncePage({
             {/* On a phone the price and the seller sit here, in reading order.
                 On a desktop they are in the rail instead. */}
             <div className="mt-3 lg:hidden">{priceBlock}</div>
-            <div className="mt-5 lg:hidden">{sellerCard}</div>
+            <div className="mt-5 lg:hidden">{ownerCard ?? sellerCard}</div>
 
             {specs.length > 0 && (
               <section className="mt-6">
@@ -655,7 +675,7 @@ export default async function AnnoncePage({
                not after scrolling back up to find the button. ── */}
         <aside className="hidden lg:sticky lg:top-24 lg:block">
           {priceBlock}
-          <div className="mt-4">{sellerCard}</div>
+          <div className="mt-4">{ownerCard ?? sellerCard}</div>
           <div className="mt-4">{safetyNote}</div>
         </aside>
       </div>

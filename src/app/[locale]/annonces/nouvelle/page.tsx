@@ -24,8 +24,9 @@ import {
 import { liveListingCount, moderationSettings } from "@/lib/moderation/server";
 import { asDealType } from "@/lib/listings/deal";
 import { aiAvailable } from "@/lib/ai/server";
-import { asPendingEdit } from "@/lib/listings/edit";
+import { asPendingEdit, isEditable } from "@/lib/listings/edit";
 import { activePlan, can, membershipsOf, shopLiveCount } from "@/lib/pro/shops";
+import { median, type PriceRef } from "@/lib/listings/priceCheck";
 
 export const dynamic = "force-dynamic";
 
@@ -86,7 +87,7 @@ export default async function NewListingPage({
     );
   }
 
-  const [catRes, attrRes, prodRes, creditRes, profRes, draftRes] = await Promise.all([
+  const [catRes, attrRes, prodRes, creditRes, profRes, draftRes, pricedRes] = await Promise.all([
     admin
       .from("categories")
       .select("id, parent_id, slug, label_fr, label_ar, kind, sort_order")
@@ -117,16 +118,25 @@ export default async function NewListingPage({
           `id, category_id, title, description, price, price_on_request, negotiable,
            governorate, delegation, attributes, contact_name, contact_phone, updated_at,
            deal_type, deposit_amount, charges_amount, furnished, available_from, min_lease_months,
-           pending_edit, shop_id,
+           pending_edit, shop_id, status, review_flags,
            photos:listing_photos (storage_path, sort_order)`,
         )
         .eq("seller_id", user!.id);
-      if (wantedEdit) return q.eq("id", wantedEdit).eq("status", "published").maybeSingle();
+      // Online, or still waiting for an admin (a typo is noticed right after sending).
+      if (wantedEdit) return q.eq("id", wantedEdit).in("status", ["published", "pending_review"]).maybeSingle();
       return wantedDraft
         ? // Only the seller's own annonce, and only one still editable here.
           q.eq("id", wantedDraft).in("status", ["draft", "rejected", "pending_payment"]).maybeSingle()
         : q.eq("status", "draft").order("updated_at", { ascending: false }).limit(1).maybeSingle();
     })(),
+    // What annonces like this one ask (online, same category and offer): the
+    // form compares a typed price with it to catch a zero too many or too few.
+    admin
+      .from("listings")
+      .select("category_id, deal_type, price, attributes")
+      .eq("status", "published")
+      .eq("price_on_request", false)
+      .limit(3000),
   ]);
 
   type CatRow = {
@@ -197,6 +207,20 @@ export default async function NewListingPage({
 
   const groups = parents.map((p) => ({ id: p.id, label: categoryLabel(p, locale) }));
 
+  const byKey = new Map<string, { prices: number[]; perSqm: number[] }>();
+  for (const r of (pricedRes.data ?? []) as { category_id: string; deal_type: string | null; price: number | string | null; attributes: Record<string, unknown> | null }[]) {
+    const p = Number(r.price);
+    if (!(p > 0)) continue;
+    const key = `${r.category_id}:${asDealType(r.deal_type)}`;
+    const bucket = byKey.get(key) ?? { prices: [], perSqm: [] };
+    bucket.prices.push(p);
+    const area = Number((r.attributes ?? {}).area_sqm);
+    if (area > 0) bucket.perSqm.push(p / area);
+    byKey.set(key, bucket);
+  }
+  const priceRefs: Record<string, PriceRef> = {};
+  for (const [key, b] of byKey) priceRefs[key] = { median: median(b.prices), perSqm: median(b.perSqm) };
+
   // The shops this seller publishes for (0173): open ones, where their role
   // allows it, each with what its running plan still covers.
   const shops = wantedEdit
@@ -211,11 +235,14 @@ export default async function NewListingPage({
           }),
       );
 
-  // Editing: an annonce that is not online (or not theirs) has no edit form —
-  // back to their annonces. An edit already waiting for an admin opens as the
-  // seller left it, not as the live version, so they can correct it.
-  const row = draftRes.data as (InitialDraft & { pending_edit?: unknown }) | null;
-  if (wantedEdit && !row) redirect(`/${locale}/account/listings`);
+  // Editing: an annonce that is not online or waiting (or not theirs), or one
+  // held after reports, has no edit form — back to their annonces. An edit
+  // already waiting for an admin opens as the seller left it, not as the live
+  // version, so they can correct it.
+  const row = draftRes.data as
+    | (InitialDraft & { pending_edit?: unknown; status: string; review_flags: string[] | null })
+    | null;
+  if (wantedEdit && (!row || !isEditable(row))) redirect(`/${locale}/account/listings`);
   const pending = wantedEdit ? asPendingEdit(row?.pending_edit) : null;
   const initialDraft: InitialDraft | null = row
     ? {
@@ -227,6 +254,9 @@ export default async function NewListingPage({
 
   return (
     <PublishWizard
+      // « Corriger » on the done screen comes back here with ?edit=: a new
+      // form, not the done screen kept by a component that stayed mounted.
+      key={wantedEdit ? `edit:${wantedEdit}` : `create:${wantedDraft ?? ""}`}
       categories={categories}
       groups={groups}
       attributesByCategory={attributesByCategory}
@@ -242,8 +272,10 @@ export default async function NewListingPage({
       aiAvailable={wantedEdit ? false : await aiAvailable(admin)}
       mode={wantedEdit ? "edit" : "create"}
       editPending={Boolean(pending)}
+      editWaiting={Boolean(wantedEdit) && row?.status === "pending_review"}
       shops={shops}
       initialShopId={initialShopId}
+      priceRefs={priceRefs}
       locale={locale}
     />
   );

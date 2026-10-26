@@ -30,6 +30,7 @@ import {
   type Furnished,
 } from "@/lib/listings/deal";
 import type { ListingDraft } from "@/lib/ai/listing";
+import { priceInWords, suggestPriceFix, type PriceRef } from "@/lib/listings/priceCheck";
 
 /**
  * Publier une annonce — the sell-or-let flow.
@@ -168,8 +169,10 @@ export function PublishWizard({
   aiAvailable = false,
   mode = "create",
   editPending = false,
+  editWaiting = false,
   shops = [],
   initialShopId = null,
+  priceRefs = {},
   locale,
 }: {
   categories: WizardCategory[];
@@ -191,21 +194,28 @@ export function PublishWizard({
   /** The listing assistant can be offered (key set, switched on, budget left). */
   aiAvailable?: boolean;
   /**
-   * "edit": the annonce is online and this is the seller's new version (0172).
+   * "edit": the annonce is online, or waiting for an admin, and this is the
+   * seller's new version (0172).
    * Nothing is saved while they type — the annonce stays as it is until they
    * send the whole form, and the rules decide whether it goes straight online.
    */
   mode?: "create" | "edit";
   /** The form shows an edit already waiting for an admin, not the live version. */
   editPending?: boolean;
+  /** The annonce being edited is not online yet: it waits for an admin. */
+  editWaiting?: boolean;
   /** Approved shops where this seller has the right to publish. */
   shops?: WizardShop[];
   /** ?shop= from the Espace Pro's « Publier pour la boutique ». */
   initialShopId?: string | null;
+  /** What annonces like it ask, by `${categoryId}:${deal}` — to catch a zero too many. */
+  priceRefs?: Record<string, PriceRef>;
   locale: string;
 }) {
   const d = initialDraft;
   const editing = mode === "edit";
+  // Still waiting for an admin? A correction sent from here can put it online.
+  const [waiting, setWaiting] = useState(editWaiting);
   const router = useRouter();
   const { toast } = useToast();
   const apiError = useApiError();
@@ -529,6 +539,23 @@ export function PublishWizard({
     dealType: deal,
   });
   const describedEnough = description.trim().length >= 40;
+
+  // A zero too many or too few (src/lib/listings/priceCheck.ts): the figure
+  // read back in words, and a ×10 / ÷10 offered when it is ten times off what
+  // annonces like it ask. « C'est bien ça » silences it for that figure.
+  const [keptPrices, setKeptPrices] = useState<string[]>([]);
+  const priceNumber = Number(price);
+  const priceWords = !onRequest && priceNumber > 0 ? priceInWords(priceNumber, locale) : null;
+  const priceFix =
+    !onRequest && priceNumber > 0 && !keptPrices.includes(price)
+      ? suggestPriceFix({
+          price: priceNumber,
+          areaSqm: Number(attrs.area_sqm) > 0 ? Number(attrs.area_sqm) : null,
+          ref: categoryId ? priceRefs[`${categoryId}:${deal}`] ?? null : null,
+          kind: (category?.kind as CategoryKind | undefined) ?? null,
+          dealType: deal,
+        })
+      : null;
   const tips: { key: string; ok: boolean; text: string; fieldId: string }[] = [
     {
       key: "photos",
@@ -547,7 +574,11 @@ export function PublishWizard({
       fieldId: hasContactInText(title) ? "f-title" : "f-description",
     },
     ...(priceKnown
-      ? [{ key: "price", ok: priceOk, text: priceOk ? t("tipPriceOk") : t(rent ? "tipPriceRent" : "tipPrice"), fieldId: "f-price" }]
+      ? [
+          priceFix != null
+            ? { key: "price", ok: false, text: t("tipPriceTypo", { fix: `${formatTND(priceFix, locale)} ${tc("tnd")}` }), fieldId: "f-price" }
+            : { key: "price", ok: priceOk, text: priceOk ? t("tipPriceOk") : t(rent ? "tipPriceRent" : "tipPrice"), fieldId: "f-price" },
+        ]
       : []),
     {
       key: "description",
@@ -725,6 +756,7 @@ export function PublishWizard({
         return;
       }
       setDone({ paidWith: "none", status: j.status ?? "pending", id: listingId });
+      if (j.status === "published") setWaiting(false);
     } finally {
       setBusy(false);
     }
@@ -772,6 +804,8 @@ export function PublishWizard({
         <h1 className="mt-5 text-[22px] font-extrabold tracking-tight">
           {done.status === "applied"
             ? t("editAppliedTitle")
+            : done.paidWith === "none" && done.status === "pending_review"
+              ? t("editWaitingTitle")
             : done.status === "pending"
               ? t("editPendingTitle")
               : done.status === "published"
@@ -781,6 +815,8 @@ export function PublishWizard({
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
           {done.status === "applied"
             ? t("editAppliedBody")
+            : done.paidWith === "none" && done.status === "pending_review"
+              ? t("editWaitingBody")
             : done.status === "pending"
               ? t("editPendingBody")
               : done.status === "published"
@@ -796,6 +832,16 @@ export function PublishWizard({
           )}
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5">
+          {/* A typo seen on this screen — a zero too many — is one tap from fixed. */}
+          {(done.status === "published" || done.status === "pending_review") && (
+            <button
+              // Already editing it: back to the form as just sent.
+              onClick={() => (editing ? setDone(null) : router.push(`/annonces/nouvelle?edit=${done.id}` as never))}
+              className="tap-target inline-flex items-center gap-1.5 rounded-full border border-border px-6 py-3 text-[13.5px] font-bold text-foreground"
+            >
+              <Pencil className="size-4" /> {t("correct")}
+            </button>
+          )}
           {(done.status === "published" || done.status === "applied" || done.status === "pending") && (
             <button
               onClick={() => router.push(`/annonces/${done.id}` as never)}
@@ -910,8 +956,9 @@ export function PublishWizard({
       </button>
     );
 
+  const editNote = waiting ? t("editWaitingNote") : t("editFreeNote");
   const feeHint = editing
-    ? t("editFreeNote")
+    ? editNote
     : viaPlan
     ? t("planHint", { name: shop!.name })
     : freeQuota
@@ -930,7 +977,9 @@ export function PublishWizard({
         <div className="flex items-start justify-between gap-3 pt-2">
           <div>
             <h1 className="text-[24px] font-extrabold tracking-tight">{editing ? t("editTitle") : t("title")}</h1>
-            <p className="mt-1 text-[13px] text-muted">{editing ? t("editSubtitle") : t("subtitle")}</p>
+            <p className="mt-1 text-[13px] text-muted">
+              {editing ? (waiting ? t("editWaitingSubtitle") : t("editSubtitle")) : t("subtitle")}
+            </p>
           </div>
           {saved === "saving" && (
             <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-[11px] text-muted">
@@ -946,7 +995,7 @@ export function PublishWizard({
 
         {editing && (
           <div className="mt-4 rounded-2xl border border-gold-soft bg-gold-faint px-4 py-3 text-[12.5px] leading-relaxed text-foreground">
-            <p className="font-semibold">{t("editBanner")}</p>
+            <p className="font-semibold">{waiting ? t("editWaitingBanner") : t("editBanner")}</p>
             {editPending && <p className="mt-0.5 text-muted">{t("editPendingBanner")}</p>}
           </div>
         )}
@@ -1260,6 +1309,41 @@ export function PublishWizard({
                         {rent ? t("tndPerMonth") : tc("tnd")}
                       </span>
                     </div>
+                    {priceWords && (
+                      <p className="mt-1.5 text-[12.5px] font-semibold text-muted" aria-live="polite">
+                        = {priceWords}
+                        {rent ? ` ${t("perMonthWords")}` : ""}
+                      </p>
+                    )}
+                    {priceFix != null && (
+                      <div role="alert" className="mt-2.5 rounded-xl bg-[var(--tone-warn-bg)] p-3 text-[12.5px] leading-relaxed text-foreground ring-1 ring-[var(--tone-warn-ring)]">
+                        <p className="flex items-start gap-1.5 font-bold">
+                          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--tone-warn)]" /> {t("priceFixTitle")}
+                        </p>
+                        <p className="mt-1">
+                          {t("priceFixBody", {
+                            typed: `${formatTND(priceNumber, locale)} ${tc("tnd")}`,
+                            fix: `${formatTND(priceFix, locale)} ${tc("tnd")}`,
+                          })}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPrice(String(priceFix))}
+                            className="tap-target inline-flex h-9 items-center rounded-full bg-foreground px-3.5 text-[12.5px] font-bold text-[var(--background)]"
+                          >
+                            {t("priceFixApply", { fix: `${formatTND(priceFix, locale)} ${tc("tnd")}` })}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setKeptPrices((k) => [...k, price])}
+                            className="tap-target inline-flex h-9 items-center rounded-full border border-border bg-surface px-3.5 text-[12.5px] font-bold text-foreground"
+                          >
+                            {t("priceFixKeep")}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <div className="mt-2.5 flex flex-wrap gap-2">
                       <Toggle label={t("negotiable")} on={negotiable} onClick={() => setNegotiable((v) => !v)} />
                       <Toggle label={t("onRequest")} on={onRequest} onClick={() => setOnRequest((v) => !v)} />
@@ -1531,7 +1615,7 @@ export function PublishWizard({
 
                   {editing ? (
                     <p className="rounded-2xl bg-surface-2 p-4 text-[12.5px] leading-relaxed text-muted ring-1 ring-border">
-                      {t("editFreeNote")}
+                      {editNote}
                     </p>
                   ) : (
                   <>

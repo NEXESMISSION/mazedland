@@ -13,7 +13,7 @@
  * correcting the price does not buy thirty more days.
  */
 import type { getServiceSupabase } from "@/lib/supabase/admin";
-import { LISTING_COLUMNS, moderationSettings, reviewFlagsFor, type ListingRow } from "@/lib/moderation/server";
+import { LISTING_COLUMNS, moderationSettings, publishOrQueue, reviewFlagsFor, type ListingRow } from "@/lib/moderation/server";
 import type { ReviewFlag } from "@/lib/moderation/rules";
 import { notifyMatchingRequests } from "@/lib/requests/server";
 import type { PhotoRow } from "./input";
@@ -22,6 +22,16 @@ type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
 
 export type ListingEdit = { fields: Record<string, unknown>; photos: PhotoRow[] | null };
 export type PendingEdit = ListingEdit & { flags: ReviewFlag[]; submittedAt: string };
+
+/**
+ * Whether the seller may correct this annonce now: online, or waiting for an
+ * admin — but not one taken offline after visitors' reports, which an admin
+ * judges as it was reported.
+ */
+export function isEditable(l: { status: string; review_flags?: readonly string[] | null }): boolean {
+  if (l.status === "published") return true;
+  return l.status === "pending_review" && !(l.review_flags ?? []).includes("reported");
+}
 
 /** What the new version trips that the live one did not. */
 export function newFlags(before: readonly ReviewFlag[], after: readonly ReviewFlag[]): ReviewFlag[] {
@@ -140,4 +150,40 @@ export async function proposeEdit(
     })
     .then(() => {}, () => {});
   return { status: "pending", flags };
+}
+
+/**
+ * A correction to an annonce still waiting for an admin (pending_review). It is
+ * not online, so there is nothing to protect: the seller's new version — the
+ * price with one zero fewer, a better photo — is written straight into it, and
+ * the moderation decision runs again. Clean now, it goes online at once;
+ * otherwise it keeps waiting, with the reasons as they now stand.
+ *
+ * Never one held after reports (see isEditable): rewriting it would drop the
+ * `reported` flag with the rest, and a second edit could put it back online.
+ */
+export async function editWaiting(
+  admin: Admin,
+  listingId: string,
+  edit: ListingEdit,
+): Promise<{ status: "published" } | { status: "pending_review"; flags: ReviewFlag[] } | { status: "error"; error: unknown }> {
+  const { data: moved, error } = await admin
+    .from("listings")
+    .update({ ...edit.fields, pending_edit: null, pending_edit_at: null })
+    .eq("id", listingId)
+    .eq("status", "pending_review")
+    .not("review_flags", "cs", "{reported}")
+    .select("id");
+  if (error) return { status: "error", error };
+  if (!moved || moved.length === 0) return { status: "error", error: new Error("listing_not_waiting") };
+  if (edit.photos) {
+    await admin.from("listing_photos").delete().eq("listing_id", listingId);
+    if (edit.photos.length > 0) {
+      const { error: pErr } = await admin.from("listing_photos").insert(edit.photos.map((p) => ({ ...p, listing_id: listingId })));
+      if (pErr) return { status: "error", error: pErr };
+    }
+  }
+  const out = await publishOrQueue(admin, listingId, await moderationSettings(admin));
+  if (out.status === "error") return out;
+  return out.status === "published" ? { status: "published" } : { status: "pending_review", flags: out.flags };
 }

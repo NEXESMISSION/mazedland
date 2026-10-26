@@ -6,7 +6,7 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { listingFields, listingPhotos, type ListingBody } from "@/lib/listings/input";
-import { proposeEdit } from "@/lib/listings/edit";
+import { editWaiting, isEditable, proposeEdit } from "@/lib/listings/edit";
 
 /**
  * POST /api/annonces/:id/edit — the seller's new version of an annonce that is
@@ -16,6 +16,13 @@ import { proposeEdit } from "@/lib/listings/edit";
  *   → { status: "applied" }            clean: it is online now
  *   → { status: "pending", flags }     an admin looks first; the annonce stays
  *                                      online as it was meanwhile
+ *
+ * An annonce still waiting for an admin can be corrected too — a zero too
+ * many on the price is noticed right after sending. It is not online, so the
+ * new version replaces it and the moderation runs again:
+ *   → { status: "published" }          clean now: online
+ *   → { status: "pending_review" }     still waiting, reasons updated
+ * Not one taken offline after reports: an admin judges it as it was reported.
  *
  * DELETE /api/annonces/:id/edit — withdraw an edit still waiting for an admin.
  */
@@ -38,10 +45,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
   if (over === true) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
-  const { data: listing } = await admin.from("listings").select("id, seller_id, status").eq("id", id).maybeSingle();
+  const { data: listing } = await admin
+    .from("listings")
+    .select("id, seller_id, status, review_flags")
+    .eq("id", id)
+    .maybeSingle();
   if (!listing || listing.seller_id !== user.id) return NextResponse.json({ error: "not_owner" }, { status: 403 });
-  if (listing.status !== "published") {
-    return NextResponse.json({ error: "not_editable", detail: t("editOnlyLive") }, { status: 409 });
+  if (!isEditable(listing)) {
+    const held = listing.status === "pending_review";
+    return NextResponse.json({ error: "not_editable", detail: t(held ? "editHeldReported" : "editOnlyLive") }, { status: 409 });
   }
 
   const body = (await req.json().catch(() => ({}))) as ListingBody;
@@ -70,6 +82,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   // The attestation was given when it went online; an edit does not re-sign it.
   delete fields.seller_attestation_version;
+
+  if (listing.status === "pending_review") {
+    const waiting = await editWaiting(admin, id, { fields, photos });
+    if (waiting.status === "error") return fail("listing_edit_failed", 500, waiting.error);
+    logAction(req, user, "listing.edit_waiting", { id, status: waiting.status });
+    return NextResponse.json({ ok: true, status: waiting.status });
+  }
 
   const result = await proposeEdit(admin, id, { fields, photos });
   if (result.status === "error") return fail("listing_edit_failed", 500, result.error);

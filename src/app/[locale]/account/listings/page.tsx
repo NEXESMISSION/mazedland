@@ -7,6 +7,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatDate, formatTND } from "@/lib/utils";
 import { asDealType } from "@/lib/listings/deal";
+import { isEditable } from "@/lib/listings/edit";
 import { categoryLabel } from "@/lib/i18n";
 import {
   Plus, Ticket, ImageOff, Clock, CreditCard, PencilLine,
@@ -95,7 +96,7 @@ export default async function MyListingsPage({
       .from("listings")
       .select(
         `id, title, price, price_on_request, status, rejection_reason, published_at,
-         deal_type, availability, pending_edit_at,
+         deal_type, availability, pending_edit_at, review_flags,
          expires_at, created_at, category_id, category:categories (label_fr, label_ar),
          photos:listing_photos (storage_path, sort_order, is_cover)`,
       )
@@ -166,6 +167,7 @@ export default async function MyListingsPage({
     status: string; rejection_reason: string | null; published_at: string | null;
     expires_at: string | null; created_at: string;
     deal_type: string | null; availability: string | null; pending_edit_at: string | null;
+    review_flags: string[] | null;
     category: Category | Category[] | null;
     category_id: string;
     photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
@@ -324,8 +326,9 @@ export default async function MyListingsPage({
         >
           {t("view")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
         </Link>
-        {/* Edit what is online (0172): checked by the rules before it replaces it. */}
-        {l.status === "published" && (
+        {/* Edit what is online (0172), or what is still waiting for an admin —
+            a zero too many is often noticed right after sending. */}
+        {isEditable(l) && (
           <Link
             href={`/annonces/nouvelle?edit=${l.id}` as never}
             className={
