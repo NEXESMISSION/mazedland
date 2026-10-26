@@ -6,20 +6,27 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { anyPhoneToE164 } from "@/lib/tunisia";
-import { parseSlots } from "@/lib/visits";
+import { parseSlots, tunisDay } from "@/lib/visits";
 import { leadForVisit, VISIT_COLUMNS, type VisitRow } from "@/lib/visits-server";
+import { featureOff } from "@/lib/settings/gate";
+import { getSettings } from "@/lib/settings/server";
 
 /**
  * POST /api/visites — ask to visit an annonce (0174).
  *
- *   { listingId, slots: [{ day, part }] (1–3), name, phone, message? }
+ *   { listingId, slots: [{ day, part }] (1–visits_max_slots), name, phone, message? }
  *
  * Signed in only, never on one's own annonce, one open request per annonce.
  * The name and number go to the seller: that is the point, and the form says
  * so. On a shop's annonce the buyer also becomes one of the shop's clients.
+ * Switched off, no new request; those already made are still answered
+ * (PATCH /api/visites/:id).
  */
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
+  const off = await featureOff("feature_visits");
+  if (off) return off;
+  const settings = await getSettings();
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
@@ -27,14 +34,15 @@ export async function POST(req: NextRequest) {
   if (!admin) return fail("server_misconfigured", 500);
   const t = await apiTranslator(req, "visitsApi");
 
-  // Ten a day is a buyer who is looking hard; more is someone filling sellers' diaries.
-  const { data: over } = await admin.rpc("check_rate_limit", { p_key: `visit:${user.id}`, p_max: 10, p_window_secs: 86_400 });
+  // Ten a day (the default) is a buyer who is looking hard; more is someone filling sellers' diaries.
+  const { data: over } = await admin.rpc("check_rate_limit", { p_key: `visit:${user.id}`, p_max: settings.limit_visits_per_day, p_window_secs: 86_400 });
   if (over === true) return NextResponse.json({ error: "rate_limited", detail: t("tooMany") }, { status: 429 });
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const listingId = typeof body.listingId === "string" && /^[0-9a-f-]{36}$/i.test(body.listingId) ? body.listingId : null;
-  const slots = parseSlots(body.slots);
-  if (!slots) return NextResponse.json({ error: "invalid", detail: t("slots") }, { status: 400 });
+  const rules = { maxSlots: settings.visits_max_slots, horizonDays: settings.visits_horizon_days };
+  const slots = parseSlots(body.slots, tunisDay(), rules);
+  if (!slots) return NextResponse.json({ error: "invalid", detail: t("slots", { max: rules.maxSlots, days: rules.horizonDays }) }, { status: 400 });
   const phone = anyPhoneToE164(body.phone);
   if (!phone) return NextResponse.json({ error: "invalid", detail: t("phone") }, { status: 400 });
   const name = typeof body.name === "string" ? body.name.trim().replace(/\s+/g, " ").slice(0, 120) : "";

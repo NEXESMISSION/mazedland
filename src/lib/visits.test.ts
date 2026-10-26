@@ -29,6 +29,17 @@ describe("parseSlots", () => {
     expect(parseSlots([d("2026-02-30")], "2026-02-01")).toBeNull();
     expect(parseSlots([d("2026-10-27", "night")], TODAY)).toBeNull();
   });
+
+  it("follows the console's number of slots and horizon", () => {
+    const d = (day: string, part = "morning") => ({ day, part });
+    const five = [d("2026-10-27"), d("2026-10-28"), d("2026-10-29"), d("2026-10-30"), d("2026-10-31")];
+    expect(parseSlots(five, TODAY, { maxSlots: 5, horizonDays: 30 })).toHaveLength(5);
+    expect(parseSlots(five.slice(0, 2), TODAY, { maxSlots: 1, horizonDays: 30 })).toBeNull();
+    expect(parseSlots([d("2026-10-29")], TODAY, { maxSlots: 3, horizonDays: 3 })).toHaveLength(1);
+    expect(parseSlots([d("2026-10-30")], TODAY, { maxSlots: 3, horizonDays: 3 })).toBeNull();
+    expect(parseSlots([d("2027-01-24")], TODAY, { maxSlots: 3, horizonDays: 90 })).toHaveLength(1);
+    expect(parseSlots([d("2027-01-25")], TODAY, { maxSlots: 3, horizonDays: 90 })).toBeNull();
+  });
 });
 
 describe("nextStatus", () => {

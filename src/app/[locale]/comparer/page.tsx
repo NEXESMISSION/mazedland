@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
@@ -8,6 +9,7 @@ import { governorateLabel } from "@/lib/tunisia";
 import { formatDate, formatNumber, formatTND } from "@/lib/utils";
 import { asDealType } from "@/lib/listings/deal";
 import { bestOf, comparable, parseCompareIds, pricePerSqm } from "@/lib/compare";
+import { getSettings } from "@/lib/settings/server";
 import { Ltr } from "@/components/ui/Ltr";
 import { Home, Scale, Trophy } from "lucide-react";
 import { CompareSync, RemoveFromCompare } from "./CompareControls";
@@ -39,17 +41,20 @@ type Row = {
 };
 
 /**
- * Comparer (P3): two or three annonces side by side — price, price per m²,
- * surface, rooms, place, the rent terms, then every detail either seller
- * filled. The best on each of the first four lines is marked. The ids live
- * in the address, so a comparison can be sent to someone.
+ * Comparer (P3): two annonces side by side, or up to the console's
+ * `compare_max` — price, price per m², surface, rooms, place, the rent terms,
+ * then every detail either seller filled. The best on each of the first four
+ * lines is marked. The ids live in the address, so a comparison can be sent
+ * to someone. Switched off in the console, the page is not there.
  */
 export default async function ComparePage({ searchParams }: { searchParams: Promise<{ ids?: string | string[] }> }) {
+  const settings = await getSettings();
+  if (!settings.feature_compare) notFound();
   const sp = await searchParams;
   const locale = await getLocale();
   const t = await getTranslations("compare");
   const tRoot = await getTranslations();
-  const ids = parseCompareIds(sp.ids);
+  const ids = parseCompareIds(sp.ids, settings.compare_max);
   const admin = getServiceSupabase();
 
   let rows: Row[] = [];

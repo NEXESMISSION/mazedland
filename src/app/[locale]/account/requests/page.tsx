@@ -11,6 +11,7 @@ import { governorateLabel } from "@/lib/tunisia";
 import { formatDate, formatNumber, formatTND } from "@/lib/utils";
 import { catalogueQueryFor } from "@/lib/requests/model";
 import { toMatchable } from "@/lib/requests/server";
+import { getSettings } from "@/lib/settings/server";
 import { BellOff, KeyRound, Plus, Search } from "lucide-react";
 import { RequestActions } from "./RequestActions";
 
@@ -38,7 +39,8 @@ type Row = {
  * Mes demandes (0168): each one in a line a person would say — « Location ·
  * Appartements · Sfax · jusqu'à 800 TND / mois » — with how many annonces
  * have matched it, the catalogue search it stands for, and the ways to pause,
- * prolong, edit or delete it.
+ * prolong, edit or delete it. With demandes switched off in the console the
+ * list stays, to pause or delete from, without the ways to make or edit one.
  */
 export default async function MyRequestsPage() {
   const locale = await getLocale();
@@ -47,6 +49,8 @@ export default async function MyRequestsPage() {
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/account/requests`)}`);
+  const settings = await getSettings();
+  const on = settings.feature_requests;
 
   const admin = getServiceSupabase();
   const db = admin ?? supabase;
@@ -87,26 +91,30 @@ export default async function MyRequestsPage() {
           <h1 className="text-[24px] font-extrabold tracking-tight">{t("listTitle")}</h1>
           <p className="mt-1 text-[13px] text-muted">{t("listSubtitle", { count: requests.length })}</p>
         </div>
-        <Link
-          href={"/demandes/nouvelle" as never}
-          className="mazed-btn-luxe tap-target inline-flex items-center gap-1.5 px-4 py-2.5 text-[13px]"
-        >
-          <Plus className="size-4" /> {t("newRequest")}
-        </Link>
+        {on && (
+          <Link
+            href={"/demandes/nouvelle" as never}
+            className="mazed-btn-luxe tap-target inline-flex items-center gap-1.5 px-4 py-2.5 text-[13px]"
+          >
+            <Plus className="size-4" /> {t("newRequest")}
+          </Link>
+        )}
       </div>
 
       {requests.length === 0 ? (
         <section className="mt-6 rounded-2xl border border-dashed border-border bg-surface-2/40 p-8 text-center">
           <p className="text-[14px] font-bold text-foreground">{t("emptyTitle")}</p>
           <p className="mx-auto mt-1 max-w-md text-[12.5px] leading-relaxed text-muted">{t("emptyBody")}</p>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-            <Link href={"/demandes/nouvelle?deal=sale" as never} className="tap-target inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[12.5px] font-bold text-[var(--background)]">
-              <Search className="size-3.5" /> {t("newBuy")}
-            </Link>
-            <Link href={"/demandes/nouvelle?deal=rent" as never} className="tap-target inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[12.5px] font-bold text-[var(--background)]">
-              <KeyRound className="size-3.5" /> {t("newRent")}
-            </Link>
-          </div>
+          {on && (
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <Link href={"/demandes/nouvelle?deal=sale" as never} className="tap-target inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[12.5px] font-bold text-[var(--background)]">
+                <Search className="size-3.5" /> {t("newBuy")}
+              </Link>
+              <Link href={"/demandes/nouvelle?deal=rent" as never} className="tap-target inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[12.5px] font-bold text-[var(--background)]">
+                <KeyRound className="size-3.5" /> {t("newRent")}
+              </Link>
+            </div>
+          )}
         </section>
       ) : (
         <ul className="mt-5 space-y-3">
@@ -174,13 +182,15 @@ export default async function MyRequestsPage() {
                   >
                     <Search className="size-3.5" /> {t("seeListings")}
                   </Link>
-                  <Link
-                    href={`/demandes/nouvelle?id=${r.id}` as never}
-                    className="tap-target inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-bold text-muted ring-1 ring-border hover:text-foreground"
-                  >
-                    {t("edit")}
-                  </Link>
-                  <RequestActions id={r.id} state={state} />
+                  {on && (
+                    <Link
+                      href={`/demandes/nouvelle?id=${r.id}` as never}
+                      className="tap-target inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-bold text-muted ring-1 ring-border hover:text-foreground"
+                    >
+                      {t("edit")}
+                    </Link>
+                  )}
+                  <RequestActions id={r.id} state={state} days={settings.requests_days} />
                 </div>
               </li>
             );

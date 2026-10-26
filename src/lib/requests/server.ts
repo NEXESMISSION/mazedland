@@ -1,5 +1,6 @@
 import type { getServiceSupabase } from "@/lib/supabase/admin";
 import { asDealType, type Furnished } from "@/lib/listings/deal";
+import { loadSettings } from "@/lib/settings/server";
 import { matchRequest, type MatchableListing, type MatchableRequest } from "./model";
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
@@ -42,10 +43,12 @@ export function toMatchable(r: Omit<RequestRow, "id" | "user_id">): MatchableReq
  * match is recorded once per (demande, annonce), so a renewal or a relist does
  * not send it again; a person with several matching demandes gets one
  * notification. The seller is never told about their own annonce. Never
- * throws: a failed alert must not undo a publication.
+ * throws: a failed alert must not undo a publication. With demandes switched
+ * off in the console, nobody is told and no match is recorded.
  */
 export async function notifyMatchingRequests(admin: Admin, listingId: string): Promise<number> {
   try {
+    if (!(await loadSettings(admin)).feature_requests) return 0;
     const { data: l } = await admin
       .from("listings")
       .select(

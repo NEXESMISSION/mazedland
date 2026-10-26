@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { catalogueQueryFor, matchRequest, parseRequestInput, type MatchableListing, type MatchableRequest } from "./model";
+import {
+  catalogueQueryFor,
+  matchRequest,
+  parseRequestInput,
+  requestExpiresAt,
+  type MatchableListing,
+  type MatchableRequest,
+} from "./model";
 
 const FLAT = "11111111-1111-4111-8111-111111111111";
 const VILLA = "22222222-2222-4222-8222-222222222222";
@@ -131,5 +138,13 @@ describe("catalogueQueryFor", () => {
       new Map([[FLAT, "appartements"]]),
     );
     expect(q).toBe("/annonces?deal=rent&cat=appartements&gov=Sfax&max=800&rooms=2&furnished=furnished&avail=2026-12-01");
+  });
+});
+
+describe("requestExpiresAt", () => {
+  it("counts the console's number of days from now", () => {
+    const now = Date.parse("2026-10-26T10:00:00Z");
+    expect(requestExpiresAt(60, now)).toBe("2026-12-25T10:00:00.000Z");
+    expect(requestExpiresAt(7, now)).toBe("2026-11-02T10:00:00.000Z");
   });
 });

@@ -14,8 +14,13 @@
 import { asDealType, FURNISHED, isoDay, type DealType, type Furnished } from "@/lib/listings/deal";
 import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
 
-export const MAX_ACTIVE_REQUESTS = 10;
-export const REQUEST_DAYS = 60;
+/**
+ * When a demande made or renewed now stops: `days` is the console's
+ * `requests_days` (60 by default), read by the route and passed in.
+ */
+export function requestExpiresAt(days: number, now: number = Date.now()): string {
+  return new Date(now + days * 86_400_000).toISOString();
+}
 
 export type RequestInput = {
   deal_type: DealType;
