@@ -12,7 +12,15 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("pro.landing");
-  return { title: t("metaTitle"), description: t("metaDescription") };
+  const locale = await getLocale();
+  return {
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+    alternates: {
+      canonical: `/${locale}/pro`,
+      languages: { fr: "/fr/pro", ar: "/ar/pro", "x-default": "/fr/pro" },
+    },
+  };
 }
 
 type Plan = { slug: string; name_fr: string; name_ar: string | null; description: string | null; description_ar: string | null; price: number | string; listing_quota: number };

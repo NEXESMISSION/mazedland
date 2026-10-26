@@ -5,7 +5,11 @@ import { routing } from "@/i18n/routing";
 const SITE_URL = siteUrl();
 
 // Authenticated / transactional surfaces, kept out of the index in every locale.
-const PRIVATE = ["/admin", "/account", "/payment", "/login", "/signup", "/forgot-password", "/reset-password"];
+const PRIVATE = [
+  "/admin", "/account", "/payment", "/login", "/signup", "/forgot-password", "/reset-password",
+  // A person's invoices, a seller's Espace Pro and the publish form (0173–0175).
+  "/factures", "/pro/dashboard", "/pro/creer", "/annonces/nouvelle",
+];
 
 /**
  * /robots.txt — let crawlers index the public marketplace, keep them out of

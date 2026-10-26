@@ -10,7 +10,15 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("shops");
-  return { title: t("metaTitle"), description: t("metaDescription") };
+  const locale = await getLocale();
+  return {
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+    alternates: {
+      canonical: `/${locale}/boutiques`,
+      languages: { fr: `/fr/boutiques`, ar: `/ar/boutiques`, "x-default": `/fr/boutiques` },
+    },
+  };
 }
 
 /** Les boutiques (0173): the open shops, verified ones first, each with its count of annonces online. */

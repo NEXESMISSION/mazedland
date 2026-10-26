@@ -43,6 +43,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...localized(base, "/terms", { changeFrequency: "yearly", priority: 0.2 }),
     ...localized(base, "/privacy", { changeFrequency: "yearly", priority: 0.2 }),
     ...localized(base, "/contact", { changeFrequency: "monthly", priority: 0.3 }),
+    // Pro (0173): what it is, and the directory of open shops.
+    ...localized(base, "/pro", { changeFrequency: "monthly", priority: 0.5 }),
+    ...localized(base, "/boutiques", { changeFrequency: "daily", priority: 0.6 }),
   ];
 
   const sb = getServiceSupabase();
@@ -85,7 +88,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     });
 
-    return [...staticRoutes, ...listingRoutes];
+    // Each open shop's page (0173).
+    const { data: shops } = await sb.from("shops").select("slug, updated_at").eq("status", "approved").limit(2000);
+    const shopRoutes: MetadataRoute.Sitemap = ((shops ?? []) as { slug: string; updated_at: string | null }[]).flatMap((s) =>
+      localized(base, `/boutiques/${s.slug}`, { lastModified: s.updated_at ?? undefined, changeFrequency: "daily" as const, priority: 0.6 }),
+    );
+
+    return [...staticRoutes, ...shopRoutes, ...listingRoutes];
   } catch {
     // Never let a DB hiccup 500 the sitemap — degrade to static routes.
     return staticRoutes;

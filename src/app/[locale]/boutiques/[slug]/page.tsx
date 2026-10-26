@@ -36,10 +36,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const shop = await loadShop(slug);
   if (!shop) return {};
   const t = await getTranslations("shops");
+  const locale = await getLocale();
   return {
     title: shop.name,
     description: shop.description?.slice(0, 160) ?? t("shopMetaDescription", { name: shop.name }),
-    alternates: { canonical: `/boutiques/${shop.slug}` },
+    // With the locale: « /boutiques/x » redirects, and a canonical must not.
+    alternates: {
+      canonical: `/${locale}/boutiques/${shop.slug}`,
+      languages: { fr: `/fr/boutiques/${shop.slug}`, ar: `/ar/boutiques/${shop.slug}`, "x-default": `/fr/boutiques/${shop.slug}` },
+    },
     openGraph: shop.logo_path ? { images: [propertyPhotoUrl(shop.logo_path)] } : undefined,
   };
 }
