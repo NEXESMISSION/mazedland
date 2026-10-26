@@ -11,6 +11,7 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatNumber, formatTND } from "@/lib/utils";
 import { isRtl } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
+import { delegationLabel } from "@/lib/delegations";
 import { getHomeFeed, type HomeListingRow } from "@/lib/home/feed";
 import { log } from "@/lib/log";
 import { PerfProbe } from "@/components/dev/PerfProbe";
@@ -818,7 +819,7 @@ function buildHeroSlides(
     const photo = (l.photos ?? []).slice().sort((p, q) => p.sort_order - q.sort_order)[0];
     if (!photo) continue;
     const area = Number((l.attributes ?? {}).area_sqm);
-    const where = l.delegation?.trim() || governorateLabel(l.governorate, locale);
+    const where = l.delegation?.trim() ? delegationLabel(l.delegation, locale) : governorateLabel(l.governorate, locale);
     slides.push({
       id: l.id,
       imageUrl: propertyPhotoUrl(photo.storage_path),
@@ -871,7 +872,7 @@ function buildEndingSoonSlides(
     slides.push({
       id: l.id,
       imageUrl: propertyPhotoUrl(photo.storage_path),
-      eyebrow: `${labels.endingSoonWord} · ${l.delegation?.trim() || governorateLabel(l.governorate, locale)}`,
+      eyebrow: `${labels.endingSoonWord} · ${l.delegation?.trim() ? delegationLabel(l.delegation, locale) : governorateLabel(l.governorate, locale)}`,
       title: l.title,
       subtitle:
         l.price_on_request || l.price == null

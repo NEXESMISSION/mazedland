@@ -6,6 +6,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
+import { delegationLabel } from "@/lib/delegations";
 import { formatDate, formatNumber, formatTND } from "@/lib/utils";
 import { asDealType } from "@/lib/listings/deal";
 import { bestOf, comparable, parseCompareIds, pricePerSqm } from "@/lib/compare";
@@ -144,7 +145,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
     },
     { label: t("area"), bestId: best.area, cells: items.map((c) => (c.area != null ? `${formatNumber(c.area, locale)} ${tRoot("common.sqm")}` : "—")) },
     { label: t("rooms"), bestId: best.rooms, cells: items.map((c) => (c.rooms != null ? <Ltr key={c.id}>S+{c.rooms}</Ltr> : "—")) },
-    { label: t("place"), cells: rows.map((r) => [r.delegation, governorateLabel(r.governorate, locale)].filter(Boolean).join(", ") || "—") },
+    { label: t("place"), cells: rows.map((r) => [r.delegation ? delegationLabel(r.delegation, locale) : null, governorateLabel(r.governorate, locale)].filter(Boolean).join(", ") || "—") },
     { label: t("category"), cells: rows.map((r) => (one(r.category) ? categoryLabel(one(r.category)!, locale) : "—")) },
     { label: t("deal"), cells: rows.map((r) => t(asDealType(r.deal_type) === "rent" ? "rent" : "sale")) },
     ...(anyRent

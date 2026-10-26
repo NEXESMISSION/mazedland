@@ -55,12 +55,13 @@ export default async function ProLandingPage() {
   // stay on show, and whoever runs a shop still gets to its dashboard.
   const showCta = hasShop || settings.feature_pro_signup;
 
-  const benefits = [
+  // « Les demandes » is only a benefit while demandes are on in the console.
+  const benefits = ([
     { Icon: Store, key: "shop" },
     { Icon: LayoutGrid, key: "marketplace" },
     { Icon: Users, key: "team" },
     { Icon: Sparkles, key: "matches" },
-  ] as const;
+  ] as const).filter((b) => b.key !== "matches" || settings.feature_requests);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 lg:py-14">

@@ -10,6 +10,7 @@ import { cn, formatDate, formatNumber, formatTND } from "@/lib/utils";
 import { asDealType, firstMonthCost } from "@/lib/listings/deal";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
+import { delegationLabel } from "@/lib/delegations";
 import { routing } from "@/i18n/routing";
 import { Ltr } from "@/components/ui/Ltr";
 import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
@@ -57,7 +58,7 @@ export const dynamic = "force-dynamic";
 type Row = {
   id: string; title: string; description: string | null;
   price: number | null; price_on_request: boolean; negotiable: boolean;
-  governorate: string; delegation: string | null;
+  governorate: string; delegation: string | null; address: string | null;
   attributes: Record<string, unknown> | null;
   contact_name: string | null; show_phone: boolean;
   status: string; published_at: string | null; expires_at: string | null;
@@ -82,7 +83,7 @@ type Row = {
 
 const SELECT = `
   id, title, description, price, price_on_request, negotiable,
-  governorate, delegation, attributes, contact_name, show_phone, status,
+  governorate, delegation, address, attributes, contact_name, show_phone, status,
   published_at, expires_at, seller_id, reference, rejection_reason, review_flags,
   deal_type, deposit_amount, charges_amount, furnished, available_from,
   min_lease_months, availability, shop_id,
@@ -602,7 +603,8 @@ export default async function AnnoncePage({
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-muted">
               <span className="inline-flex items-center gap-1">
                 <MapPin className="size-3.5" /> {governorateLabel(l.governorate, locale)}
-                {l.delegation ? ` · ${l.delegation}` : ""}
+                {l.delegation ? ` · ${delegationLabel(l.delegation, locale)}` : ""}
+                {l.address ? ` · ${l.address}` : ""}
               </span>
               {l.published_at && (
                 <span className="inline-flex items-center gap-1">

@@ -39,7 +39,7 @@ export function IntentChooser({ layout = "compact" }: { layout?: "compact" | "he
       </p>
 
       <div className="mt-2.5 grid grid-cols-3 gap-2">
-        <Link href={"/annonces/nouvelle" as never} className={cn(tile, quiet)}>
+        <Link href={"/annonces/nouvelle?deal=sale" as never} className={cn(tile, quiet)}>
           <span className={icon}>
             <Tag className="size-[18px]" />
           </span>
