@@ -93,6 +93,9 @@ export function DesktopNav() {
       pathname === "/annonces" ? window.location.search : "",
     );
     params.delete("page");
+    // New words are read afresh (src/lib/search/understand.ts).
+    params.delete("nlq");
+    params.delete("nl");
     if (clean) params.set("q", clean);
     else params.delete("q");
     const qs = params.toString();

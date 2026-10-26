@@ -804,7 +804,9 @@
     "availUnconfirmed": "تاريخ التوفّر موش مذكور",
     "requestCtaTitle": "ما لقيتش اللي تحب؟",
     "requestCtaBody": "سجّل طلب بالشروط هذي، ونعلموك أوّل ما يتنشر عقار يناسبك.",
-    "requestCta": "سجّل طلبي"
+    "requestCta": "سجّل طلبي",
+    "understood": "فهمنا البحث: « {query} » — الفلاتر اللوطة تعمّرت.",
+    "searchAsTyped": "لوّج على النص كيف ما هو"
   },
   "listing": {
     "metaNotFound": "الإعلان غير موجود — Mazed Immo",

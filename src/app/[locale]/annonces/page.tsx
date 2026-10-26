@@ -12,6 +12,9 @@ import { governorateLabel } from "@/lib/tunisia";
 import { BellRing, ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { FURNISHED, isoDay, type Furnished } from "@/lib/listings/deal";
 import { CompareToggle } from "@/components/compare/CompareToggle";
+import { redirect } from "next/navigation";
+import { understand, understoodSomething } from "@/lib/search/understand";
+import { Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -160,6 +163,33 @@ export default async function AnnoncesPage({
   const locale = await getLocale();
   const t = await getTranslations("catalogue");
   const admin = getServiceSupabase();
+
+  // A search typed the way people talk (P3): « S+2 meublé à louer Tunis
+  // 1200 dt » becomes the filters below — once, through a redirect, so every
+  // control on the page shows what was understood and can be changed. What
+  // was not understood stays the keyword; ?nl=0 searches the words as typed,
+  // and `nlq` (the original words) marks a search already read.
+  if (sp.q?.trim() && sp.nl !== "0" && !sp.nlq) {
+    const u = understand(sp.q);
+    if (understoodSomething(u)) {
+      const next = new URLSearchParams();
+      for (const [k, v] of Object.entries(sp)) if (v != null && k !== "page" && k !== "q") next.set(k, v);
+      const put = (k: string, v: string | number | undefined) => {
+        if (v != null && !next.has(k)) next.set(k, String(v));
+      };
+      put("deal", u.deal);
+      put("cat", u.cat);
+      put("gov", u.gov);
+      put("rooms", u.rooms);
+      put("surface", u.surface);
+      put("min", u.min);
+      put("max", u.max);
+      put("furnished", u.furnished);
+      if (u.rest) next.set("q", u.rest);
+      next.set("nlq", sp.q.trim().slice(0, 200));
+      redirect(`/${locale}/annonces?${next.toString()}`);
+    }
+  }
 
   const sort = (SORTS.find((s) => s === sp.sort) ?? "recent") as string;
   const deal = dealOf(sp.deal);
@@ -670,6 +700,16 @@ export default async function AnnoncesPage({
           </div>
         </form>
       </details>
+
+      {sp.nlq && (
+        <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] text-foreground ring-1 ring-gold-soft">
+          <Sparkles className="size-3.5 shrink-0 text-gold" />
+          <span>{t("understood", { query: sp.nlq })}</span>
+          <Link href={`/annonces?q=${encodeURIComponent(sp.nlq)}&nl=0` as never} className="font-bold text-gold underline-offset-2 hover:underline">
+            {t("searchAsTyped")}
+          </Link>
+        </p>
+      )}
 
       <p className="mt-4 text-[12.5px] text-muted">
         {t("resultCount", { count: total })}

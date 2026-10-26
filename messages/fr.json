@@ -804,7 +804,9 @@
     "availUnconfirmed": "Date de disponibilité non précisée",
     "requestCtaTitle": "Vous ne trouvez pas ?",
     "requestCtaBody": "Enregistrez une demande avec ces critères : on vous prévient dès qu'un bien qui correspond est publié.",
-    "requestCta": "Enregistrer ma demande"
+    "requestCta": "Enregistrer ma demande",
+    "understood": "Recherche comprise : « {query} » — les filtres ci-dessous ont été remplis.",
+    "searchAsTyped": "Chercher le texte tel quel"
   },
   "listing": {
     "metaNotFound": "Annonce introuvable — Mazed Immo",
