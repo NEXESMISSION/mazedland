@@ -14,6 +14,7 @@ import { FURNISHED, isoDay, type Furnished } from "@/lib/listings/deal";
 import { CompareToggle } from "@/components/compare/CompareToggle";
 import { redirect } from "next/navigation";
 import { understand, understoodSomething } from "@/lib/search/understand";
+import { isMostlyArabic } from "@/lib/search/script";
 import { Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -163,6 +164,15 @@ export default async function AnnoncesPage({
   const locale = await getLocale();
   const t = await getTranslations("catalogue");
   const admin = getServiceSupabase();
+
+  // The catalogue's own search box (via=search) typed in Arabic on the French
+  // site: the same search, in Arabic. The /ar page sets the language cookie.
+  if (sp.via === "search") {
+    const next = new URLSearchParams();
+    for (const [k, v] of Object.entries(sp)) if (v != null && k !== "via" && k !== "page") next.set(k, v);
+    if (locale === "fr" && isMostlyArabic(sp.q)) redirect(`/ar/annonces?${next.toString()}`);
+    redirect(`/${locale}/annonces?${next.toString()}`);
+  }
 
   // A search typed the way people talk (P3): « S+2 meublé à louer Tunis
   // 1200 dt » becomes the filters below — once, through a redirect, so every
@@ -353,6 +363,7 @@ export default async function AnnoncesPage({
           phone could reach the catalogue but never search it. A plain GET form:
           it works before hydration and carries the active filters along. */}
       <form action={`/${locale}/annonces`} method="get" role="search" className="relative lg:hidden">
+        <input type="hidden" name="via" value="search" />
         {deal && <input type="hidden" name="deal" value={deal} />}
         {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
         {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}

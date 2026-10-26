@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { normalizeSearchQuery } from "@/lib/search";
+import { isMostlyArabic } from "@/lib/search/script";
 import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 import { Search, MapPin } from "lucide-react";
 import { SelectMenu, type SelectOption } from "@/components/ui/SelectMenu";
@@ -69,6 +70,17 @@ export function HomeSearch({
     // never reads it, so choosing « Villa » searched everything.
     if (type && TYPE_TO_CATEGORY[type]) params.set("cat", TYPE_TO_CATEGORY[type]);
     const qs = params.toString();
+    // Typed in Arabic on the French site: answered in Arabic, and remembered.
+    if (locale === "fr" && isMostlyArabic(cleanQ)) {
+      fetch("/api/account/language", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ language: "ar" }),
+        keepalive: true,
+      }).catch(() => {});
+      router.push((qs ? `/annonces?${qs}` : "/annonces") as `/annonces`, { locale: "ar" });
+      return;
+    }
     router.push((qs ? `/annonces?${qs}` : "/annonces") as `/annonces`);
   }
 
