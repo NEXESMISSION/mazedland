@@ -555,7 +555,8 @@
       "live": "مباشر",
       "forSale": "للبيع",
       "price": "السعر",
-      "view": "شوف"
+      "view": "شوف",
+      "forRent": "للكراء"
     },
     "countdown": {
       "ended": "انتهى",

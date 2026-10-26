@@ -31,6 +31,16 @@ export function closedStatus(deal: DealType): "sold" | "rented" {
   return deal === "rent" ? "rented" : "sold";
 }
 
+/**
+ * The message key for a deal's badge — « À vendre » or « À louer ». Every
+ * namespace that labels an annonce names the pair this way (`listing`,
+ * `landing.showcase`), so a surface never hard-codes « À vendre » and shows it
+ * on a rental, which is what the home showcase did.
+ */
+export function dealLabelKey(deal: unknown): "forSale" | "forRent" {
+  return asDealType(deal) === "rent" ? "forRent" : "forSale";
+}
+
 export type RentFacts = {
   deposit_amount: number | null;
   charges_amount: number | null;

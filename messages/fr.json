@@ -555,7 +555,8 @@
       "live": "En direct",
       "forSale": "À vendre",
       "price": "Prix",
-      "view": "Voir"
+      "view": "Voir",
+      "forRent": "À louer"
     },
     "countdown": {
       "ended": "ended",
