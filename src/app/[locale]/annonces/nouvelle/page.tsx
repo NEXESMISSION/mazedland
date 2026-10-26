@@ -15,12 +15,6 @@ import {
   type WizardCategory,
   type AttributeDef,
 } from "./PublishWizard";
-import {
-  PRODUCT_SELECT,
-  resolveListingFee,
-  toProduct,
-  type Product,
-} from "@/lib/products";
 import { liveListingCount, moderationSettings } from "@/lib/moderation/server";
 import { asDealType } from "@/lib/listings/deal";
 import { aiAvailable } from "@/lib/ai/server";
@@ -87,7 +81,7 @@ export default async function NewListingPage({
     );
   }
 
-  const [catRes, attrRes, prodRes, creditRes, profRes, draftRes, pricedRes] = await Promise.all([
+  const [catRes, attrRes, creditRes, profRes, draftRes, pricedRes] = await Promise.all([
     admin
       .from("categories")
       .select("id, parent_id, slug, label_fr, label_ar, kind, sort_order")
@@ -97,7 +91,6 @@ export default async function NewListingPage({
       .from("category_attributes")
       .select("id, category_id, field_key, label, data_type, options, unit, required, sort_order, deal_types")
       .order("sort_order"),
-    admin.from("products").select(PRODUCT_SELECT).eq("is_active", true),
     admin
       .from("seller_credits")
       .select("quota_total, quota_used, expires_at, status")
@@ -178,29 +171,15 @@ export default async function NewListingPage({
     });
   }
 
-  const products: Product[] = (prodRes.data ?? []).map((r) =>
-    toProduct(r as Parameters<typeof toProduct>[0]),
-  );
-
-  // What each category costs, resolved here so the wizard never guesses. The
-  // parent goes in too: a price set on « Terrains » covers all of its
-  // sub-categories without being retyped on each.
-  const parentOf = new Map(catRows.map((c) => [c.id, c.parent_id]));
-  const feeByCategory: Record<string, number | null> = {};
-  for (const c of categories) {
-    feeByCategory[c.id] =
-      resolveListingFee(products, c.id, parentOf.get(c.id) ?? null)?.price ?? null;
-  }
-
   const now = Date.now();
   const creditsLeft = (creditRes.data ?? []).reduce((n, c) => {
     if (new Date(c.expires_at as string).getTime() <= now) return n;
     return n + Math.max(0, (c.quota_total as number) - (c.quota_used as number));
   }, 0);
 
-  // Free places (0165): an individual publishes for free while they have fewer
-  // than the limit live. The submit route decides for real; this is so the
-  // form says "Gratuit" instead of showing a fee nobody will be asked for.
+  // Free places (0165): every account publishes for free while it has fewer
+  // than the limit live, and past it the way on is a Pro plan. The submit route
+  // decides for real; this is so the form says which before the seller starts.
   const settings = await moderationSettings(admin);
   const live = await liveListingCount(admin, user!.id, "00000000-0000-0000-0000-000000000000");
   const freePlacesLeft = Math.max(0, settings.freeLimit - live);
@@ -267,7 +246,6 @@ export default async function NewListingPage({
       categories={categories}
       groups={groups}
       attributesByCategory={attributesByCategory}
-      feeByCategory={feeByCategory}
       creditsLeft={creditsLeft}
       freePlacesLeft={freePlacesLeft}
       freeLimit={settings.freeLimit}
