@@ -1603,7 +1603,7 @@
         },
         "sharing": {
           "title": "4. Partage",
-          "body": "Vos données ne sont pas vendues. Elles peuvent être partagées avec des prestataires strictement nécessaires (hébergement, envoi de SMS et d'e-mails) et avec les autorités lorsque la loi l'exige."
+          "body": "Vos données ne sont pas vendues. Elles peuvent être partagées avec des prestataires strictement nécessaires (hébergement, envoi de SMS et d'e-mails) et avec les autorités lorsque la loi l'exige. Lorsqu'une demande est active et que ses alertes sont activées, ses critères (type de bien, lieu, budget, surface…) sont visibles par les agences Pro, afin qu'elles puissent proposer un bien par l'intermédiaire de Mazed Immo ; le nom et le numéro de la personne ne leur sont jamais communiqués."
         },
         "retention": {
           "title": "5. Conservation et sécurité",
@@ -3066,7 +3066,7 @@
     "resumed": "Alertes réactivées.",
     "renewed": "Demande prolongée de {days} jours.",
     "actionFailed": "Action impossible pour le moment.",
-    "alertsShops": "Les agences Pro peuvent aussi voir ce que vous cherchez — jamais votre nom ni votre numéro — et vous proposer un bien."
+    "alertsShops": "Avec les alertes, les agences Pro voient aussi vos critères — jamais votre nom, votre numéro ni vos autres souhaits — et peuvent vous proposer un bien : c'est Mazed Immo qui vous le transmet."
   },
   "requestsApi": {
     "budgetRequired": "Indiquez un budget maximum.",
@@ -3131,7 +3131,7 @@
     "requestAlerts": "Les alertes de mes demandes",
     "privacyTitle": "Ce que le site montre de vous",
     "privacyPhone": "Votre numéro n'apparaît pas dans la page : un acheteur le voit seulement en appuyant sur « Voir le numéro », et chaque affichage est compté.",
-    "privacyRequests": "Vos demandes restent privées : aucun vendeur ne les voit. C'est vous qu'on prévient quand un bien correspond.",
+    "privacyRequests": "Vos demandes : les agences Pro voient vos critères (type de bien, lieu, budget…) pour vous proposer un bien, jamais votre nom ni votre numéro. Une demande en pause, expirée ou sans alertes n'est montrée à aucune agence.",
     "privacyReports": "Un signalement ne dit pas au vendeur qui l'a fait.",
     "privacyPolicy": "Politique de confidentialité",
     "deleteTitle": "Supprimer mon compte",
@@ -3476,7 +3476,7 @@
         },
         "matches": {
           "title": "Les demandes",
-          "body": "Les acheteurs et locataires qui cherchent ce que vous proposez sont prévenus de vos annonces."
+          "body": "Les acheteurs et locataires qui cherchent ce que vous proposez sont prévenus de vos annonces. Vous voyez aussi leurs critères, jamais leur nom ni leur numéro, et pouvez leur proposer un bien."
         }
       },
       "plansTitle": "Trois abonnements, sans engagement",
