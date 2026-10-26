@@ -3216,7 +3216,7 @@
     "back": "Mes annonces",
     "title": "Promouvoir mon annonce",
     "whereTitle": "Où la publier ?",
-    "whereHint": "Choisissez un ou plusieurs réseaux. Rien n'est coché pour vous.",
+    "whereHint": "Tous les réseaux possibles sont cochés. Décochez ceux que vous ne voulez pas.",
     "channels": {
       "facebook_page": {
         "name": "Page Facebook Mazed Immo",
@@ -3250,7 +3250,6 @@
     "price": "{amount} DT",
     "consent": "J'accepte que Mazed Immo publie cette annonce — photos, prix, type de bien et localisation, jamais mon numéro — sur les réseaux choisis. Je peux la retirer à tout moment depuis cette page.",
     "reviewNote": "Notre équipe relit chaque publication avant sa mise en ligne.",
-    "confirm": "Confirmer la promotion",
     "sent": "Demande envoyée. Nous vous prévenons dès que c'est en ligne.",
     "sentScheduled": "C'est validé : la publication part dans quelques minutes.",
     "failed": "Impossible d'envoyer la demande pour le moment.",
@@ -3305,7 +3304,8 @@
       "title": "Paiement momentanément indisponible",
       "body": "La promotion sur les réseaux est payante, et nos coordonnées de paiement sont en cours de mise à jour. Vous pourrez la demander dès qu'elles seront en ligne.",
       "contact": "Nous contacter"
-    }
+    },
+    "acceptAndSend": "J'accepte et j'envoie"
   },
   "socialApi": {
     "disabled": "La promotion sur les réseaux est momentanément fermée.",
