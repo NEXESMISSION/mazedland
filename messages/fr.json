@@ -104,7 +104,8 @@
         "online": "En ligne",
         "inProgress": "En cours",
         "toFix": "À corriger",
-        "ended": "Terminées"
+        "ended": "Terminées",
+        "drafts": "Brouillons"
       },
       "status": {
         "draft": "Brouillon",
@@ -119,10 +120,11 @@
         "rented": "Louée"
       },
       "statusHint": {
-        "draft": "Pas encore envoyée.",
+        "draft": "Jamais envoyée : reprenez-la pour la publier.",
         "pending_payment": "Réglez les frais pour lancer la vérification.",
         "pending_review": "Notre équipe la contrôle — moins de 24 h.",
-        "expired": "Renouvelez-la pour la remettre en ligne."
+        "expired": "Renouvelez-la pour la remettre en ligne.",
+        "rejected": "Refusée par notre équipe : corrigez-la, puis renvoyez-la."
       },
       "receiptInReview": "Reçu en vérification",
       "receiptInReviewHint": "Nous validons votre reçu — moins de 24 h.",
@@ -159,7 +161,8 @@
       "edit": "Modifier",
       "editPending": "Modification en attente",
       "boost": "Mettre en avant",
-      "priceNotGiven": "Prix non renseigné"
+      "priceNotGiven": "Prix non renseigné",
+      "rejectedPrefix": "Refusée :"
     },
     "listingActions": {
       "mark_sold": {

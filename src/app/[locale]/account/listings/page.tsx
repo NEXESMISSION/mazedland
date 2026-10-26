@@ -45,7 +45,7 @@ const STATUS: Record<string, { tone: string; hint?: true }> = {
   pending_payment: { tone: "mazed-tone-warn", hint: true },
   pending_review:  { tone: "mazed-tone-warn", hint: true },
   published:       { tone: "mazed-tone-ok" },
-  rejected:        { tone: "mazed-tone-bad" },
+  rejected:        { tone: "mazed-tone-bad", hint: true },
   expired:         { tone: "bg-surface-2 text-muted ring-1 ring-border", hint: true },
   sold:            { tone: "mazed-tone-ok" },
   rented:          { tone: "mazed-tone-ok" },
@@ -57,12 +57,18 @@ const STATUS: Record<string, { tone: string; hint?: true }> = {
  * seller who bookmarks "mes annonces à corriger" should not be looking at
  * `?statut=action_required`. It stays French on /ar too; `label` is the
  * message key under `account.listings.tabs`.
+ *
+ * Drafts and refused annonces are both "waiting on me", but not for the same
+ * reason: a draft was never sent, a refused one came back from our team with
+ * something to fix. One « À corriger » tab for both read as if every draft
+ * had been refused.
  */
 const TABS = [
   { key: "",             label: "all",        statuses: null,                                   tone: "text-foreground" },
   { key: "en-ligne",     label: "online",     statuses: ["published"],                          tone: "text-emerald-400" },
   { key: "verification", label: "inProgress", statuses: ["pending_payment", "pending_review"],  tone: "text-amber-400" },
-  { key: "a-corriger",   label: "toFix",      statuses: ["rejected", "draft"],                  tone: "text-[var(--danger)]" },
+  { key: "a-corriger",   label: "toFix",      statuses: ["rejected"],                           tone: "text-[var(--danger)]" },
+  { key: "brouillons",   label: "drafts",     statuses: ["draft"],                              tone: "text-muted" },
   { key: "terminees",    label: "ended",      statuses: ["expired", "archived", "sold", "rented"], tone: "text-muted" },
 ] as const;
 
@@ -464,7 +470,11 @@ export default async function MyListingsPage({
               {l.rejection_reason ? (
                 <p className="mt-2.5 flex items-start gap-1.5 rounded-lg bg-[var(--accent-faint)] px-2.5 py-1.5 text-[11.5px] leading-relaxed text-[var(--accent-deep)]">
                   <AlertTriangle className="mt-px size-3.5 shrink-0" />
-                  <span>{l.rejection_reason}</span>
+                  <span>
+                    {/* Why it is under « À corriger »: our team sent it back. */}
+                    {l.status === "rejected" && <span className="font-bold">{t("rejectedPrefix")} </span>}
+                    {l.rejection_reason}
+                  </span>
                 </p>
               ) : st.hint ? (
                 <p className="mt-2.5 text-[11.5px] text-muted">{st.hint}</p>
@@ -542,6 +552,7 @@ export default async function MyListingsPage({
                     </span>
                     {l.rejection_reason ? (
                       <div className="mt-1 max-w-[26ch] truncate text-[11px] text-[var(--accent-deep)]" title={l.rejection_reason}>
+                        {l.status === "rejected" && <span className="font-bold">{t("rejectedPrefix")} </span>}
                         {l.rejection_reason}
                       </div>
                     ) : st.hint ? (

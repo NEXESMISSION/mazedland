@@ -104,7 +104,8 @@
         "online": "منشورة",
         "inProgress": "قيد المعالجة",
         "toFix": "للتصحيح",
-        "ended": "منتهية"
+        "ended": "منتهية",
+        "drafts": "مسودات"
       },
       "status": {
         "draft": "مسودة",
@@ -119,10 +120,11 @@
         "rented": "مُؤجَّر"
       },
       "statusHint": {
-        "draft": "لم يُرسل بعد.",
+        "draft": "مازال ما تبعثش: كمّلو باش تنشرو.",
         "pending_payment": "ادفع معلوم النشر لبدء المراجعة.",
         "pending_review": "فريقنا يراجعه — في أقل من 24 ساعة.",
-        "expired": "جدّده لإعادة نشره."
+        "expired": "جدّده لإعادة نشره.",
+        "rejected": "فريقنا رفضو: صلّحو وابعثو من جديد."
       },
       "receiptInReview": "الوصل قيد المراجعة",
       "receiptInReviewHint": "نحن بصدد مراجعة وصلك — في أقل من 24 ساعة.",
@@ -159,7 +161,8 @@
       "edit": "بدّل",
       "editPending": "تبديل في الانتظار",
       "boost": "برّز الإعلان",
-      "priceNotGiven": "السعر مازال ما تكتبش"
+      "priceNotGiven": "السعر مازال ما تكتبش",
+      "rejectedPrefix": "مرفوض:"
     },
     "listingActions": {
       "mark_sold": {
