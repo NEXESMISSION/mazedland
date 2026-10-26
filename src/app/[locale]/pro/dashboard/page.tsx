@@ -57,7 +57,8 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
   const { shop, role } = current;
   const tab: TabKey = (TABS as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as TabKey) : "apercu";
   // With demandes switched off in the console, there are none to answer.
-  const demandesOn = (await getSettings()).feature_requests;
+  const settings = await getSettings();
+  const demandesOn = settings.feature_requests;
   // Everyone sees the plan; only those who may act on the page or the papers see those tabs.
   const visibleTabs = TABS.filter((k) =>
     k === "boutique" ? can(role, "edit_shop") : k === "documents" ? can(role, "documents") : k === "demandes" ? demandesOn && can(role, "clients") : k === "visites" || k === "clients" ? can(role, "clients") : true,
@@ -198,7 +199,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
                   </div>
                   <div className="flex items-center gap-3 text-[12.5px] font-bold">
                     {/* The edit form is its author's (0172). */}
-                    {l.status === "published" && l.seller_id === user!.id && <Link href={`/annonces/nouvelle?edit=${l.id}` as never} className="text-foreground hover:underline">{t("edit")}</Link>}
+                    {settings.feature_listing_edit && l.status === "published" && l.seller_id === user!.id && <Link href={`/annonces/nouvelle?edit=${l.id}` as never} className="text-foreground hover:underline">{t("edit")}</Link>}
                     {l.status === "published" && <Link href={`/annonces/${l.id}` as never} className="text-gold hover:underline">{t("view")}</Link>}
                   </div>
                 </li>

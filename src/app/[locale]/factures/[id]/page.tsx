@@ -8,6 +8,7 @@ import { paymentReference } from "@/lib/payments";
 import { formatDate } from "@/lib/utils";
 import { Ltr } from "@/components/ui/Ltr";
 import { PrintButton } from "./PrintButton";
+import { getSettings } from "@/lib/settings/server";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   const inv = row as Invoice | null;
   if (!inv || (inv.user_id !== user!.id && me?.role !== "admin")) notFound();
   const { data: pay } = await admin.from("payments").select("provider, reviewed_at, created_at").eq("id", inv.payment_id).maybeSingle();
+  const contactEmail = (await getSettings()).contact_email;
 
   const isInvoice = inv.doc_type === "invoice";
   const hasVat = inv.vat_rate != null && inv.amount_ht != null;
@@ -76,7 +78,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             <p className="mt-3 text-[13px] font-extrabold">{inv.issuer.name ?? "Mazed Immo"}</p>
             {inv.issuer.tax_id && <p className="text-[12px]">{t("taxId")} : <Ltr>{inv.issuer.tax_id}</Ltr></p>}
             {inv.issuer.address && <p className="max-w-xs whitespace-pre-line text-[12px]">{inv.issuer.address}</p>}
-            <p className="text-[12px]">www.mazed.immo · contact@mazed.immo</p>
+            <p className="text-[12px]">www.mazed.immo · {contactEmail}</p>
           </div>
           <div className="text-end">
             <h1 className="text-[22px] font-extrabold uppercase tracking-wide">{t(isInvoice ? "invoice" : "receipt")}</h1>

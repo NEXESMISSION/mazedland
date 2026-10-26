@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSettings } from "@/lib/settings/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
     const fallbackDays =
       Number.isFinite(Number(prod?.duration_days)) && Number(prod?.duration_days) > 0
         ? Number(prod!.duration_days)
-        : 30;
+        : (await getSettings()).listing_default_days;
 
     const now = new Date();
     for (const r of found) {

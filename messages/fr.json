@@ -905,7 +905,7 @@
     "verifiedShop": "Boutique vérifiée",
     "seeShop": "Voir la boutique et ses annonces",
     "yourListing": "Votre annonce",
-    "yourListingHint": "Une erreur dans le prix, la surface ou les photos ? Corrigez-la : une correction simple est en ligne tout de suite.",
+    "yourListingHint": "Une erreur dans le prix, la surface ou les photos ? Corrigez-la : notre équipe vérifie la modification, et l'annonce revient en ligne dès qu'elle est validée.",
     "editYourListing": "Modifier l'annonce",
     "yourListings": "Mes annonces",
     "promoted": "Mise en avant"
@@ -1296,7 +1296,7 @@
     "edit": "Modifier",
     "noDescription": "Pas encore de description.",
     "tipsTitle": "Pour une annonce publiée plus vite",
-    "tipPhotos": "Ajoutez au moins {min} photos : en dessous, l'annonce passe par une vérification manuelle.",
+    "tipPhotos": "Ajoutez au moins {min, plural, one {# photo} other {# photos}} : en dessous, l'annonce passe par une vérification manuelle.",
     "tipPhotosOk": "{count, plural, one {# photo} other {# photos}} — parfait.",
     "tipContact": "Retirez le numéro, l'e-mail ou le lien du titre et de la description : les acheteurs vous joignent avec le bouton « Voir le numéro ».",
     "tipContactOk": "Pas de coordonnées dans le texte : votre numéro reste protégé.",
@@ -2942,7 +2942,7 @@
   "moderation": {
     "flags": {
       "first_listing": "Première annonce du vendeur",
-      "too_few_photos": "Moins de 3 photos",
+      "too_few_photos": "Pas assez de photos",
       "contact_in_text": "Coordonnées dans le texte",
       "banned_words": "Mot interdit",
       "price_implausible": "Prix peu plausible",
@@ -3058,13 +3058,13 @@
     "edit": "Modifier",
     "pause": "Mettre en pause",
     "resume": "Réactiver",
-    "renew": "Prolonger 60 jours",
+    "renew": "Prolonger {days} jours",
     "delete": "Supprimer",
     "deleteConfirm": "Supprimer cette demande ?",
     "deleted": "Demande supprimée.",
     "paused": "Alertes en pause.",
     "resumed": "Alertes réactivées.",
-    "renewed": "Demande prolongée de 60 jours.",
+    "renewed": "Demande prolongée de {days} jours.",
     "actionFailed": "Action impossible pour le moment.",
     "alertsShops": "Les agences Pro peuvent aussi voir ce que vous cherchez — jamais votre nom ni votre numéro — et vous proposer un bien."
   },
@@ -3812,7 +3812,7 @@
   },
   "visitsApi": {
     "tooMany": "Trop de demandes de visite aujourd'hui. Réessayez demain.",
-    "slots": "Choisissez de 1 à 3 moments, d'aujourd'hui à 30 jours.",
+    "slots": "Choisissez de 1 à {max} moments, d'aujourd'hui à {days} jours.",
     "phone": "Numéro de téléphone invalide.",
     "name": "Indiquez votre nom.",
     "notOnline": "Cette annonce n'est plus en ligne.",

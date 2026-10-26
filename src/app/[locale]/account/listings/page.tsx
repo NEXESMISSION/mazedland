@@ -317,7 +317,7 @@ export default async function MyListingsPage({
           </Link>
         )}
         {/* On Mazed Immo's Facebook page, Instagram and the groups (0170). */}
-        {l.status === "published" && (
+        {settings.social_enabled && l.status === "published" && (
           <Link
             href={`/account/listings/${l.id}/promote` as never}
             className={
