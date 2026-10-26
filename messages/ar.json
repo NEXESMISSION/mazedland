@@ -436,13 +436,13 @@
     "stepUpload": "ارفع وصل التحويل",
     "fileSize": "{size} ك.ب",
     "removeFile": "إزالة {name}",
-    "chooseFile": "اختار صورة ولا PDF",
+    "chooseFile": "اختار صورة الوصل ولا PDF",
     "addAnother": "زيد صورة أخرى",
     "uploadHint": "JPG · PNG · HEIC · PDF · الحدّ الأقصى {maxMb} ميغابايت · حتى {max, plural, zero {0 صور} one {صورة واحدة} two {صورتين} few {# صور} many {# صورة} other {# صورة}} ({used}/{max})",
     "sending": "جاري الإرسال…",
     "send": "{count, plural, zero {ابعث الوصل} one {ابعث الوصل} two {ابعث الوصلين} few {ابعث الـ# وصولات} many {ابعث الـ# وصلًا} other {ابعث الـ# وصل}}",
     "hintReady": "المصادقة في أقل من 24 ساعة — سيصلك إشعار.",
-    "hintEmpty": "ارفع الوصل أولًا لتفعيل الزر.",
+    "hintEmpty": "الوصل يتبعث كيف تختارو. المصادقة في أقل من 24 ساعة.",
     "cancelling": "جاري الإلغاء…",
     "cancelPayment": "إلغاء عملية الدفع هذه",
     "instructions": {
@@ -460,7 +460,8 @@
       "bank": "البنك",
       "amount": "المبلغ",
       "amountValue": "{amount} د.ت"
-    }
+    },
+    "sendAnother": "موش الملف الصحيح؟ ابعث وصل آخر"
   },
   "accountApi": {
     "renew": {

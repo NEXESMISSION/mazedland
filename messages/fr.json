@@ -436,13 +436,13 @@
     "stepUpload": "Téléversez le reçu du virement",
     "fileSize": "{size} Ko",
     "removeFile": "Retirer {name}",
-    "chooseFile": "Choisir une photo ou un PDF",
+    "chooseFile": "Choisir la photo ou le PDF du reçu",
     "addAnother": "Ajouter une autre image",
     "uploadHint": "JPG · PNG · HEIC · PDF · max {maxMb} Mo · jusqu'à {max} images ({used}/{max})",
     "sending": "Envoi…",
     "send": "{count, plural, one {Envoyer le reçu} other {Envoyer les # reçus}}",
     "hintReady": "Validation sous 24 h — vous serez notifié(e).",
-    "hintEmpty": "Téléversez d'abord le reçu pour activer le bouton.",
+    "hintEmpty": "Le reçu part dès que vous l'avez choisi. Validation sous 24 h.",
     "cancelling": "Annulation…",
     "cancelPayment": "Annuler ce paiement",
     "instructions": {
@@ -460,7 +460,8 @@
       "bank": "Banque",
       "amount": "Montant",
       "amountValue": "{amount} TND"
-    }
+    },
+    "sendAnother": "Pas le bon fichier ? Envoyer un autre reçu"
   },
   "accountApi": {
     "renew": {
