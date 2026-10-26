@@ -1,3 +1,5 @@
+import { CompareBar } from "@/components/compare/CompareBar";
+import { Optional } from "@/components/ui/Optional";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -146,6 +148,10 @@ export default async function LocaleLayout({
                 Self-skips admin routes so previews don't compete with live
                 broadcasts. See PopupManager.tsx for the lifecycle. */}
             <PopupManagerLazy />
+            {/* The comparison tray (P3): shows once an annonce is picked. */}
+            <Optional name="compare">
+              <CompareBar />
+            </Optional>
           </ToastProvider>
         </NextIntlClientProvider>
         <PWARegister />

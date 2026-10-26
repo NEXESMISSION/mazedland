@@ -6,6 +6,7 @@ import { ArrowUpRight, MapPin, Ruler, BedDouble } from "lucide-react";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
+import { CompareToggle } from "@/components/compare/CompareToggle";
 import { Ltr } from "@/components/ui/Ltr";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
@@ -156,8 +157,9 @@ export async function AnnonceCard({
 
           {/* Bottom-leading — favourite. z-20 keeps it ABOVE the stretched
               card link (z-10) so its button still receives clicks. */}
-          <div className="absolute bottom-2.5 start-2.5 z-20">
+          <div className="absolute bottom-2.5 start-2.5 z-20 flex items-center gap-1.5">
             <FavoriteButton listingId={listing.id} initialSaved={saved} loggedIn={loggedIn} />
+            <CompareToggle listingId={listing.id} />
           </div>
 
           {/* Bottom-trailing — polished-brass arrow chip, rotates on hover. */}

@@ -11,6 +11,7 @@ import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
 import { BellRing, ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { FURNISHED, isoDay, type Furnished } from "@/lib/listings/deal";
+import { CompareToggle } from "@/components/compare/CompareToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -709,7 +710,11 @@ export default async function AnnoncesPage({
             const cover = coverPhoto(r.photos);
             const specs = specLine(r, t, locale);
             return (
-              <li key={r.id}>
+              <li key={r.id} className="relative">
+                {/* Outside the card link: a button cannot sit inside an <a>. */}
+                <div className="absolute end-2 top-2 z-10">
+                  <CompareToggle listingId={r.id} />
+                </div>
                 <Link
                   href={`/annonces/${r.id}` as never}
                   className="group block overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-gold-soft hover:shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)]"

@@ -16,6 +16,7 @@ import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
 import { ContactReveal } from "./ContactReveal";
 import { ReportListing } from "./ReportListing";
 import { VisitRequest } from "./VisitRequest";
+import { CompareToggle } from "@/components/compare/CompareToggle";
 import type { VisitSlot, VisitStatus } from "@/lib/visits";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { RelatedListings } from "@/components/listing/RelatedListings";
@@ -427,6 +428,11 @@ export default async function AnnoncePage({
         {!isOwner && !isPreview && (
           <VisitRequest listingId={l.id} loggedIn={!!user} defaultName={visitDefaults.name} defaultPhone={visitDefaults.phone} open={openVisit} />
         )}
+        {!isPreview && (
+          <div className="mt-3 flex justify-center">
+            <CompareToggle listingId={l.id} variant="pill" />
+          </div>
+        )}
       </div>
       <Link href={`/boutiques/${shop.slug}` as never} className="mt-3 block text-center text-[12.5px] font-bold text-gold hover:underline">
         {t("seeShop")}
@@ -469,6 +475,11 @@ export default async function AnnoncePage({
         <ContactReveal listingId={l.id} showPhone={l.show_phone} />
         {!isOwner && !isPreview && (
           <VisitRequest listingId={l.id} loggedIn={!!user} defaultName={visitDefaults.name} defaultPhone={visitDefaults.phone} open={openVisit} />
+        )}
+        {!isPreview && (
+          <div className="mt-3 flex justify-center">
+            <CompareToggle listingId={l.id} variant="pill" />
+          </div>
         )}
       </div>
     </section>
