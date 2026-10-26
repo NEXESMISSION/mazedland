@@ -5,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ListingImage } from "@/components/media/ListingImage";
-import { formatDate, formatTND } from "@/lib/utils";
+import { cn, formatDate, formatTND } from "@/lib/utils";
 import { asDealType } from "@/lib/listings/deal";
 import { isEditable } from "@/lib/listings/edit";
 import { categoryLabel } from "@/lib/i18n";
@@ -320,23 +320,29 @@ export default async function MyListingsPage({
             className={
               block
                 ? "mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2.5 text-[12.5px] font-bold text-foreground hover:border-gold-soft"
-                : "inline-flex items-center gap-1 text-[12.5px] font-bold text-foreground hover:underline"
+                : "ms-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-foreground hover:underline"
             }
           >
             <PencilLine className="size-3.5" /> {l.pending_edit_at ? t("editPending") : t("edit")}
           </Link>
         )}
+        {/* « Promouvoir » and « Mettre en avant » both sound like "more people
+            see it", so each says where, under its name — in the link itself,
+            so it reads the same on a phone, with no tooltip to hover. */}
         {/* On Mazed Immo's Facebook page, Instagram and the groups (0170). */}
         {settings.social_enabled && l.status === "published" && (
           <Link
             href={`/account/listings/${l.id}/promote` as never}
             className={
               block
-                ? "mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gold-soft bg-gold-faint px-3 py-2.5 text-[12.5px] font-bold text-gold"
-                : "inline-flex items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
+                ? "mt-2 flex w-full flex-col items-center rounded-xl border border-gold-soft bg-gold-faint px-3 py-2 text-center text-gold"
+                : "group mt-1.5 flex flex-col items-end text-end text-gold"
             }
           >
-            <Megaphone className="size-3.5" /> {t("promote")}
+            <span className={cn("inline-flex items-center gap-1.5 text-[12.5px] font-bold", !block && "group-hover:underline")}>
+              <Megaphone className="size-3.5" /> {t("promote")}
+            </span>
+            <span className="max-w-[32ch] text-[11px] leading-snug text-muted">{t("promoteHint")}</span>
           </Link>
         )}
         {/* Paid placements: home page, top of search, the home banner (0156),
@@ -346,11 +352,14 @@ export default async function MyListingsPage({
             href={`/account/listings/${l.id}/mise-en-avant` as never}
             className={
               block
-                ? "mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2.5 text-[12.5px] font-bold text-foreground hover:border-gold-soft"
-                : "inline-flex items-center gap-1 text-[12.5px] font-bold text-foreground hover:underline"
+                ? "mt-2 flex w-full flex-col items-center rounded-xl border border-border px-3 py-2 text-center text-foreground hover:border-gold-soft"
+                : "group mt-1.5 flex flex-col items-end text-end text-foreground"
             }
           >
-            <Sparkles className="size-3.5" /> {t("boost")}
+            <span className={cn("inline-flex items-center gap-1.5 text-[12.5px] font-bold", !block && "group-hover:underline")}>
+              <Sparkles className="size-3.5" /> {t("boost")}
+            </span>
+            <span className="max-w-[32ch] text-[11px] leading-snug text-muted">{t("boostHint")}</span>
           </Link>
         )}
         {/* Say it is sold or let, hold it for someone, or take it down. */}

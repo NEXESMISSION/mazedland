@@ -162,7 +162,9 @@
       "editPending": "Modification en attente",
       "boost": "Mettre en avant",
       "priceNotGiven": "Prix non renseigné",
-      "rejectedPrefix": "Refusée :"
+      "rejectedPrefix": "Refusée :",
+      "promoteHint": "Partagée sur nos réseaux : Facebook, Instagram",
+      "boostHint": "Placement payant sur le site : accueil, haut des résultats"
     },
     "listingActions": {
       "mark_sold": {

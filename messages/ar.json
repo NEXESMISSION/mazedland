@@ -162,7 +162,9 @@
       "editPending": "تبديل في الانتظار",
       "boost": "برّز الإعلان",
       "priceNotGiven": "السعر مازال ما تكتبش",
-      "rejectedPrefix": "مرفوض:"
+      "rejectedPrefix": "مرفوض:",
+      "promoteHint": "ننشروه على صفحاتنا في فيسبوك وإنستغرام",
+      "boostHint": "بلاصة بالخلاص في السيت: الصفحة الرئيسية وأوّل البحث"
     },
     "listingActions": {
       "mark_sold": {
