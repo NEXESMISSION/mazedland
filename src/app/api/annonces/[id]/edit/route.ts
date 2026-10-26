@@ -68,7 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const body = (await req.json().catch(() => ({}))) as ListingBody;
   const fields = listingFields(body);
-  const photos = listingPhotos(body);
+  const photos = listingPhotos(body, settings.listing_max_photos);
 
   // What a live annonce cannot lose: a title, a place, a price (or « sur
   // demande »), a way to call, a photo.

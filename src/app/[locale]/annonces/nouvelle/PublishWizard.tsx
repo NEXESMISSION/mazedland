@@ -9,6 +9,7 @@ import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUpl
 import { ListingImage } from "@/components/media/ListingImage";
 import { Ltr } from "@/components/ui/Ltr";
 import { Modal } from "@/components/ui/Modal";
+import { useSetting } from "@/components/settings/SettingsProvider";
 import { formatTND, formatDate, cn } from "@/lib/utils";
 import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 import {
@@ -17,7 +18,6 @@ import {
   KeyRound, Sparkles, Store, User,
 } from "lucide-react";
 import {
-  MIN_PHOTOS,
   hasContactInText,
   isPriceImplausible,
   type CategoryKind,
@@ -221,6 +221,11 @@ export function PublishWizard({
   const apiError = useApiError();
   const t = useTranslations("publish");
   const tc = useTranslations("common");
+  // As an admin set them in /admin/settings: the photo count below which an
+  // annonce waits for a human, the price help, and « Corriger » once sent.
+  const minPhotos = useSetting("moderation_min_photos");
+  const priceHelp = useSetting("feature_price_help");
+  const canEdit = useSetting("feature_listing_edit");
 
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<"idle" | "saving" | "ok">("idle");
@@ -557,11 +562,15 @@ export function PublishWizard({
   const nationalRef = categoryId ? priceRefs[`${categoryId}:${deal}`] : undefined;
   const priceRef = (localRef?.median != null ? localRef : null) ?? nationalRef ?? null;
   const areaNumber = Number(attrs.area_sqm) > 0 ? Number(attrs.area_sqm) : null;
-  const estimate = estimateRange(localRef?.perSqmLow ? localRef : nationalRef ?? null, areaNumber, rent);
+  // Price help switched off: no estimate, no figure in words, no « un zéro de
+  // trop » here or in the summary's tips. The price field itself stays.
+  const estimate = priceHelp
+    ? estimateRange(localRef?.perSqmLow ? localRef : nationalRef ?? null, areaNumber, rent)
+    : null;
   const estimateIsLocal = !!(localRef?.perSqmLow && areaNumber);
-  const priceWords = !onRequest && priceNumber > 0 ? priceInWords(priceNumber, locale) : null;
+  const priceWords = priceHelp && !onRequest && priceNumber > 0 ? priceInWords(priceNumber, locale) : null;
   const priceFix =
-    !onRequest && priceNumber > 0 && !keptPrices.includes(price)
+    priceHelp && !onRequest && priceNumber > 0 && !keptPrices.includes(price)
       ? suggestPriceFix({
           price: priceNumber,
           areaSqm: Number(attrs.area_sqm) > 0 ? Number(attrs.area_sqm) : null,
@@ -573,11 +582,11 @@ export function PublishWizard({
   const tips: { key: string; ok: boolean; text: string; fieldId: string }[] = [
     {
       key: "photos",
-      ok: photos.length >= MIN_PHOTOS,
+      ok: photos.length >= minPhotos,
       text:
-        photos.length >= MIN_PHOTOS
+        photos.length >= minPhotos
           ? t("tipPhotosOk", { count: photos.length })
-          : t("tipPhotos", { min: MIN_PHOTOS }),
+          : t("tipPhotos", { min: minPhotos }),
       fieldId: "f-photos",
     },
     {
@@ -872,8 +881,9 @@ export function PublishWizard({
           </div>
         )}
         <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5">
-          {/* A typo seen on this screen — a zero too many — is one tap from fixed. */}
-          {(done.status === "published" || done.status === "pending_review") && (
+          {/* A typo seen on this screen — a zero too many — is one tap from
+              fixed, while an admin lets annonces be edited at all. */}
+          {canEdit && (done.status === "published" || done.status === "pending_review") && (
             <button
               // Already editing it: back to the form as just sent.
               onClick={() => (editing ? setDone(null) : router.push(`/annonces/nouvelle?edit=${done.id}` as never))}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { asPendingEdit, changedKeys, isEditable, newFlags } from "./edit";
-import { listingFields, listingPhotos } from "./input";
+import { MAX_PHOTOS, listingFields, listingPhotos } from "./input";
 
 describe("newFlags", () => {
   it("holds back only what the edit itself trips", () => {
@@ -72,6 +72,14 @@ describe("the form, as the server reads it", () => {
       { storage_path: "b", sort_order: 1 },
     ]);
     expect(listingPhotos({})).toBeNull();
+  });
+  it("keeps at most the photos an admin allows, twelve by default", () => {
+    const sent = { photos: Array.from({ length: 20 }, (_, i) => ({ storage_path: `p${i}` })) };
+    expect(listingPhotos(sent)).toHaveLength(MAX_PHOTOS);
+    const five = listingPhotos(sent, 5);
+    expect(five).toHaveLength(5);
+    expect(five?.[4]).toEqual({ storage_path: "p4", sort_order: 4 });
+    expect(listingPhotos(sent, 30)).toHaveLength(20);
   });
 });
 

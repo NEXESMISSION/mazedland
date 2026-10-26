@@ -15,7 +15,8 @@ import {
   type WizardCategory,
   type AttributeDef,
 } from "./PublishWizard";
-import { liveListingCount, moderationSettings } from "@/lib/moderation/server";
+import { liveListingCount } from "@/lib/moderation/server";
+import { getSettings } from "@/lib/settings/server";
 import { asDealType } from "@/lib/listings/deal";
 import { aiAvailable } from "@/lib/ai/server";
 import { asPendingEdit, isEditable } from "@/lib/listings/edit";
@@ -64,6 +65,12 @@ export default async function NewListingPage({
   const tRoot = await getTranslations();
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
+  const settings = await getSettings();
+
+  // Editing switched off in /admin/settings: « Modifier » is gone from the
+  // seller's annonces, and a link kept from before lands there too. Drafts
+  // (?draft=) still open — they are not online yet.
+  if (wantedEdit && !settings.feature_listing_edit) redirect(`/${locale}/account/listings`);
 
   if (!user) {
     const back = wantedEdit
@@ -124,12 +131,15 @@ export default async function NewListingPage({
     })(),
     // What annonces like this one ask (online, same category and offer): the
     // form compares a typed price with it to catch a zero too many or too few.
-    admin
-      .from("listings")
-      .select("category_id, deal_type, governorate, price, attributes")
-      .eq("status", "published")
-      .eq("price_on_request", false)
-      .limit(3000),
+    // Not read at all while the price help is switched off.
+    settings.feature_price_help
+      ? admin
+          .from("listings")
+          .select("category_id, deal_type, governorate, price, attributes")
+          .eq("status", "published")
+          .eq("price_on_request", false)
+          .limit(3000)
+      : Promise.resolve({ data: [] }),
   ]);
 
   type CatRow = {
@@ -180,9 +190,8 @@ export default async function NewListingPage({
   // Free places (0165): every account publishes for free while it has fewer
   // than the limit live, and past it the way on is a Pro plan. The submit route
   // decides for real; this is so the form says which before the seller starts.
-  const settings = await moderationSettings(admin);
   const live = await liveListingCount(admin, user!.id, "00000000-0000-0000-0000-000000000000");
-  const freePlacesLeft = Math.max(0, settings.freeLimit - live);
+  const freePlacesLeft = Math.max(0, settings.free_listing_limit - live);
 
   const groups = parents.map((p) => ({ id: p.id, label: categoryLabel(p, locale) }));
 
@@ -248,7 +257,7 @@ export default async function NewListingPage({
       attributesByCategory={attributesByCategory}
       creditsLeft={creditsLeft}
       freePlacesLeft={freePlacesLeft}
-      freeLimit={settings.freeLimit}
+      freeLimit={settings.free_listing_limit}
       defaultContactName={(profRes.data?.full_name as string | null) ?? ""}
       defaultContactPhone={(profRes.data?.phone as string | null) ?? ""}
       defaultGovernorate={(profRes.data?.governorate as string | null) ?? ""}
