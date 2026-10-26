@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useApiError } from "@/lib/useApiError";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -1206,9 +1206,11 @@ export function PublishWizard({
                   seller checks them. Only offered when it can answer. */}
               {aiAvailable && (
                 <section className="rounded-2xl border border-gold-soft bg-gold-faint p-4 sm:p-5">
-                  <SectionHead icon={Sparkles} title={t("aiTitle")} />
-                  <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{t("aiHint")}</p>
+                  <SectionHead id="f-ai-title" icon={Sparkles} title={t("aiTitle")} />
+                  <p id="f-ai-hint" className="mt-1 text-[12.5px] leading-relaxed text-muted">{t("aiHint")}</p>
                   <textarea
+                    aria-labelledby="f-ai-title"
+                    aria-describedby="f-ai-hint f-ai-privacy"
                     value={aiText}
                     onChange={(e) => setAiText(e.target.value)}
                     rows={3}
@@ -1236,7 +1238,7 @@ export function PublishWizard({
                       </ul>
                     </div>
                   )}
-                  <p className="mt-2 text-[11px] leading-snug text-muted">{t("aiPrivacy")}</p>
+                  <p id="f-ai-privacy" className="mt-2 text-[11px] leading-snug text-muted">{t("aiPrivacy")}</p>
                 </section>
               )}
 
@@ -1326,7 +1328,12 @@ export function PublishWizard({
                     })}
                   </div>
 
-                  <div role="radiogroup" aria-label={t("categoryAria")} className="mt-2.5 flex flex-wrap gap-1.5">
+                  <div
+                    role="radiogroup"
+                    aria-label={t("categoryAria")}
+                    aria-required="true"
+                    className="mt-2.5 flex flex-wrap gap-1.5"
+                  >
                     {categories
                       .filter((c) => c.groupId === groupId)
                       .map((c) => {
@@ -1374,10 +1381,12 @@ export function PublishWizard({
                 <SectionHead icon={MapPin} title={t("locationTitle")} />
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <div>
-                    <Label>{t("governorate")} <span className="text-gold">*</span></Label>
+                    <Label htmlFor="f-governorate">{t("governorate")} <Req /></Label>
                     <div className="relative mt-1">
                       <MapPin className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
                       <select
+                        id="f-governorate"
+                        aria-required="true"
                         value={governorate}
                         onChange={(e) => setGovernorate(e.target.value)}
                         className="w-full appearance-none rounded-xl border border-border bg-surface py-3 ps-9 pe-3 text-[14px] text-foreground focus:border-gold focus:outline-none"
@@ -1433,13 +1442,27 @@ export function PublishWizard({
 
                 <div className="mt-5 space-y-4">
                   <div>
-                    <Label>{t(rent ? "rentLabel" : "priceLabel")} {!onRequest && <span className="text-gold">*</span>}</Label>
+                    <Label htmlFor="f-price-input">{t(rent ? "rentLabel" : "priceLabel")} {!onRequest && <Req />}</Label>
                     {/* The box is left-to-right as a whole, not only the input:
                         with just the input flipped, its padding sat on the right
                         while the currency label followed the page to the left,
                         and on /ar the figure ran under « د.ت ». */}
                     <div dir="ltr" className="relative mt-1">
                       <input
+                        id="f-price-input"
+                        // The currency, and the estimate and the figure in words
+                        // while they show: read after the name, as a sighted
+                        // seller reads them around the box.
+                        aria-describedby={
+                          [
+                            "f-price-unit",
+                            estimate && !onRequest ? "f-price-estimate" : null,
+                            priceWords ? "f-price-words" : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")
+                        }
+                        aria-required={!onRequest}
                         type="number"
                         inputMode="decimal"
                         dir="ltr"
@@ -1452,12 +1475,12 @@ export function PublishWizard({
                           rent ? "pe-28" : "pe-16",
                         )}
                       />
-                      <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[13px] font-bold text-muted">
+                      <span id="f-price-unit" className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[13px] font-bold text-muted">
                         {rent ? t("tndPerMonth") : tc("tnd")}
                       </span>
                     </div>
                     {estimate && !onRequest && (
-                      <p className="mt-1.5 text-[12px] leading-snug text-muted">
+                      <p id="f-price-estimate" className="mt-1.5 text-[12px] leading-snug text-muted">
                         {t(estimateIsLocal ? "estimateLocal" : "estimateNational", {
                           low: `${formatTND(estimate.low, locale)}`,
                           high: `${formatTND(estimate.high, locale)} ${rent ? t("tndPerMonth") : tc("tnd")}`,
@@ -1467,7 +1490,7 @@ export function PublishWizard({
                       </p>
                     )}
                     {priceWords && (
-                      <p className="mt-1.5 text-[12.5px] font-semibold text-muted" aria-live="polite">
+                      <p id="f-price-words" className="mt-1.5 text-[12.5px] font-semibold text-muted" aria-live="polite">
                         = {priceWords}
                         {rent ? ` ${t("perMonthWords")}` : ""}
                       </p>
@@ -1526,12 +1549,14 @@ export function PublishWizard({
                         suffix={tc("tnd")}
                       />
                       <div className="sm:col-span-2">
-                        <Label>{t("furnishedLabel")}</Label>
-                        <div className="mt-1.5 flex flex-wrap gap-2">
+                        <Label id="f-furnished-label">{t("furnishedLabel")}</Label>
+                        <div role="radiogroup" aria-labelledby="f-furnished-label" className="mt-1.5 flex flex-wrap gap-2">
                           {FURNISHED.map((f) => (
                             <button
                               key={f}
                               type="button"
+                              role="radio"
+                              aria-checked={furnished === f}
                               onClick={() => setFurnished(furnished === f ? "" : f)}
                               className={cn(
                                 "tap-target rounded-full px-4 py-2 text-[13px] font-bold transition",
@@ -1604,8 +1629,10 @@ export function PublishWizard({
                 )}
 
                 <div id="f-description" className="mt-5 scroll-mt-24">
-                  <Label>{t("descriptionLabel")}</Label>
+                  <Label htmlFor="f-description-input">{t("descriptionLabel")}</Label>
                   <textarea
+                    id="f-description-input"
+                    aria-describedby="f-description-count"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={4}
@@ -1614,7 +1641,7 @@ export function PublishWizard({
                     placeholder={t("descriptionPlaceholder")}
                     className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13.5px] leading-relaxed text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
                   />
-                  <p className="mt-1 text-end text-[10.5px] text-muted">
+                  <p id="f-description-count" className="mt-1 text-end text-[10.5px] text-muted">
                     <Ltr>{description.length} / 4000</Ltr>
                   </p>
                 </div>
@@ -1762,6 +1789,7 @@ export function PublishWizard({
                       value={contactName}
                       onChange={setContactName}
                       placeholder={t("contactNamePlaceholder")}
+                      autoComplete="name"
                     />
                     <div id="f-phone" className={`scroll-mt-24 rounded-xl${flagCls("f-phone")}`}>
                       {/* dir="ltr": "+216 98 124 111" typed into a right-to-left
@@ -1769,6 +1797,8 @@ export function PublishWizard({
                       <Field
                         label={t("phoneLabel")}
                         required
+                        type="tel"
+                        autoComplete="tel"
                         value={contactPhone}
                         onChange={setContactPhone}
                         placeholder="+216 …"
@@ -1823,6 +1853,7 @@ export function PublishWizard({
                   <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-surface-2/40 p-3.5">
                     <input
                       type="checkbox"
+                      aria-required="true"
                       checked={attested}
                       onChange={(e) => setAttested(e.target.checked)}
                       className="mt-0.5 size-5 shrink-0 accent-[var(--gold)]"
@@ -1985,6 +2016,8 @@ function AttributeField({
   onChange: (v: string) => void;
 }) {
   const t = useTranslations("publish");
+  // Ties the visible label to its control: an admin's question has no fixed id.
+  const id = useId();
   if (def.data_type === "boolean") {
     // A yes/no is a switch, not a dropdown with two options in it. Clicking the
     // active side again clears the answer, because "not stated" is a real third
@@ -1992,8 +2025,13 @@ function AttributeField({
     // foncier is registered must not be forced to claim either.
     return (
       <div>
-        <Label>{def.label} {def.required && <span className="text-gold">*</span>}</Label>
-        <div className="mt-1.5 flex gap-2">
+        <Label id={`${id}-label`}>{def.label} {def.required && <Req />}</Label>
+        <div
+          role="radiogroup"
+          aria-labelledby={`${id}-label`}
+          aria-required={def.required || undefined}
+          className="mt-1.5 flex gap-2"
+        >
           {[
             { v: "true", label: t("yes") },
             { v: "false", label: t("no") },
@@ -2001,6 +2039,8 @@ function AttributeField({
             <button
               key={o.v}
               type="button"
+              role="radio"
+              aria-checked={value === o.v}
               onClick={() => onChange(value === o.v ? "" : o.v)}
               className={cn(
                 "tap-target rounded-full px-4 py-2 text-[13px] font-bold transition",
@@ -2020,8 +2060,10 @@ function AttributeField({
   if (def.data_type === "select" && def.options?.length) {
     return (
       <div>
-        <Label>{def.label} {def.required && <span className="text-gold">*</span>}</Label>
+        <Label htmlFor={id}>{def.label} {def.required && <Req />}</Label>
         <select
+          id={id}
+          aria-required={def.required || undefined}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="mt-1 w-full appearance-none rounded-xl border border-border bg-surface px-3 py-3 text-[14px] text-foreground focus:border-gold focus:outline-none"
@@ -2102,16 +2144,31 @@ function SectionHead({
   );
 }
 
-function Label({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted">
-      {children}
-    </span>
+/**
+ * A field's visible name. With `htmlFor` it is that control's <label>; with
+ * only `id`, it names a group of buttons through aria-labelledby. A heading
+ * sitting next to a field is not its name to a screen reader — the price box
+ * read as a bare "numeric field" until it was tied to its label.
+ */
+function Label({ children, htmlFor, id }: { children: React.ReactNode; htmlFor?: string; id?: string }) {
+  const cls = "text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted";
+  return htmlFor ? (
+    <label htmlFor={htmlFor} id={id} className={cls}>{children}</label>
+  ) : (
+    <span id={id} className={cls}>{children}</span>
   );
 }
 
+/**
+ * The asterisk of a required field. Hidden from screen readers, which hear
+ * "required" from the control itself (aria-required) rather than "star".
+ */
+function Req() {
+  return <span aria-hidden="true" className="text-gold">*</span>;
+}
+
 function Field({
-  label, value, onChange, placeholder, type = "text", required, suffix, compact, dir,
+  label, value, onChange, placeholder, type = "text", required, suffix, compact, dir, autoComplete,
 }: {
   label?: string;
   value: string;
@@ -2122,12 +2179,21 @@ function Field({
   suffix?: string;
   compact?: boolean;
   dir?: "ltr" | "rtl";
+  autoComplete?: string;
 }) {
+  const id = useId();
+  // The unit is read as the field's description, not as part of its name:
+  // "Caution, TND" rather than a label that ends in "TND".
+  const unitId = suffix ? `${id}-unit` : undefined;
   return (
-    <label className="block">
-      {label && <Label>{label} {required && <span className="text-gold">*</span>}</Label>}
+    <div>
+      {label && <Label htmlFor={id}>{label} {required && <Req />}</Label>}
       <div className="relative mt-1">
         <input
+          id={id}
+          aria-required={required || undefined}
+          aria-describedby={unitId}
+          autoComplete={autoComplete}
           type={type}
           inputMode={type === "number" ? "numeric" : undefined}
           dir={dir}
@@ -2141,19 +2207,21 @@ function Field({
           )}
         />
         {suffix && (
-          <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[12.5px] font-bold text-muted">
+          <span id={unitId} className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[12.5px] font-bold text-muted">
             {suffix}
           </span>
         )}
       </div>
-    </label>
+    </div>
   );
 }
 
+/** An on/off chip (« Négociable », « Prix sur demande »): a toggle button, pressed or not. */
 function Toggle({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
+      aria-pressed={on}
       onClick={onClick}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition",
