@@ -17,6 +17,7 @@ import { categoryLabel } from "@/lib/i18n";
 import { VisitCard } from "@/components/visits/VisitCard";
 import { loadVisits } from "@/lib/visits-server";
 import type { LeadStage } from "@/lib/visits";
+import { getSettings } from "@/lib/settings/server";
 import { BadgeCheck, ExternalLink, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -55,9 +56,11 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
   const current = memberships.find((m) => m.shop.id === sp.shop) ?? memberships[0];
   const { shop, role } = current;
   const tab: TabKey = (TABS as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as TabKey) : "apercu";
+  // With demandes switched off in the console, there are none to answer.
+  const demandesOn = (await getSettings()).feature_requests;
   // Everyone sees the plan; only those who may act on the page or the papers see those tabs.
   const visibleTabs = TABS.filter((k) =>
-    k === "boutique" ? can(role, "edit_shop") : k === "documents" ? can(role, "documents") : k === "visites" || k === "clients" || k === "demandes" ? can(role, "clients") : true,
+    k === "boutique" ? can(role, "edit_shop") : k === "documents" ? can(role, "documents") : k === "demandes" ? demandesOn && can(role, "clients") : k === "visites" || k === "clients" ? can(role, "clients") : true,
   );
   const href = (k: TabKey) => `/pro/dashboard?shop=${shop.id}&tab=${k}`;
 
@@ -209,7 +212,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
 
       {tab === "clients" && can(role, "clients") && <ClientsTab shopId={shop.id} />}
 
-      {tab === "demandes" && can(role, "clients") && <DemandesTab shopId={shop.id} shopGovernorate={shop.governorate} approved={shop.status === "approved"} />}
+      {tab === "demandes" && demandesOn && can(role, "clients") && <DemandesTab shopId={shop.id} shopGovernorate={shop.governorate} approved={shop.status === "approved"} />}
 
       {tab === "equipe" && <TeamTab shopId={shop.id} role={role} />}
 

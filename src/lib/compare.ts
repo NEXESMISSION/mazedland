@@ -1,18 +1,17 @@
 /**
- * Comparer des annonces (P3): up to three side by side. Pure — which ids a
- * link may carry, the price per m², and which annonce is best on what.
+ * Comparer des annonces (P3): a few side by side, as many as the console's
+ * `compare_max` (three by default). Pure — which ids a link may carry, the
+ * price per m², and which annonce is best on what.
  */
 
-export const COMPARE_MAX = 3;
-
-/** The ids in « ?ids=a,b,c »: real uuids, each once, three at most. */
-export function parseCompareIds(raw: string | string[] | undefined): string[] {
+/** The ids in « ?ids=a,b,c »: real uuids, each once, `max` at most. */
+export function parseCompareIds(raw: string | string[] | undefined, max = 3): string[] {
   const s = Array.isArray(raw) ? raw.join(",") : raw ?? "";
   const out: string[] = [];
   for (const id of s.split(",")) {
     const v = id.trim().toLowerCase();
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v) && !out.includes(v)) out.push(v);
-    if (out.length === COMPARE_MAX) break;
+    if (out.length >= max) break;
   }
   return out;
 }

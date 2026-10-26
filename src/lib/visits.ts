@@ -1,5 +1,5 @@
 /**
- * Visit requests (0174): a buyer proposes up to three half-days, the seller's
+ * Visit requests (0174): a buyer proposes a few half-days, the seller's
  * side confirms one, declines, or marks the visit done; the buyer can cancel.
  *
  * Pure — the slots, the moves allowed from each status, the client stages —
@@ -16,9 +16,12 @@ export type VisitStatus = (typeof VISIT_STATUSES)[number];
 /** Still waiting on someone: the ones a buyer cannot open twice. */
 export const OPEN_VISIT_STATUSES: readonly VisitStatus[] = ["requested", "confirmed"];
 
-export const MAX_SLOTS = 3;
-/** How far ahead a visit can be proposed. */
-export const SLOT_HORIZON_DAYS = 30;
+/**
+ * How many half-days a buyer may propose, and how far ahead: set in the
+ * console (`visits_max_slots`, `visits_horizon_days`), these by default.
+ */
+export type SlotRules = { maxSlots: number; horizonDays: number };
+export const DEFAULT_SLOT_RULES: SlotRules = { maxSlots: 3, horizonDays: 30 };
 
 /** Today in Tunisia, as YYYY-MM-DD — the day a slot is compared with. */
 export function tunisDay(now: Date = new Date()): string {
@@ -32,12 +35,17 @@ function addDays(day: string, n: number): string {
 }
 
 /**
- * 1 to 3 distinct half-days, from today to 30 days out, in the order given.
- * Null when there is none, or one of them is not a real day in that window.
+ * 1 to `maxSlots` distinct half-days, from today to `horizonDays` out, in the
+ * order given. Null when there is none, or one of them is not a real day in
+ * that window.
  */
-export function parseSlots(raw: unknown, today: string = tunisDay()): VisitSlot[] | null {
-  if (!Array.isArray(raw) || raw.length === 0 || raw.length > MAX_SLOTS) return null;
-  const last = addDays(today, SLOT_HORIZON_DAYS);
+export function parseSlots(
+  raw: unknown,
+  today: string = tunisDay(),
+  { maxSlots, horizonDays }: SlotRules = DEFAULT_SLOT_RULES,
+): VisitSlot[] | null {
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > maxSlots) return null;
+  const last = addDays(today, horizonDays);
   const seen = new Set<string>();
   const out: VisitSlot[] = [];
   for (const item of raw) {

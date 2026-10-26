@@ -5,18 +5,21 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { useApiError } from "@/lib/useApiError";
+import { useSetting } from "@/components/settings/SettingsProvider";
 import { Loader2 } from "lucide-react";
 
 /**
- * Pause, resume, prolong or delete one demande. Delete asks first — it takes
- * the matches with it — the others are one tap and can be undone with the
- * next one.
+ * Pause, resume, prolong (by `days`, the console's length of a demande) or
+ * delete one demande. Delete asks first — it takes the matches with it — the
+ * others are one tap and can be undone with the next one. With demandes
+ * switched off, only pause and delete are left.
  */
-export function RequestActions({ id, state }: { id: string; state: "active" | "paused" | "expired" }) {
+export function RequestActions({ id, state, days }: { id: string; state: "active" | "paused" | "expired"; days: number }) {
   const t = useTranslations("requests");
   const router = useRouter();
   const { toast } = useToast();
   const apiError = useApiError();
+  const on = useSetting("feature_requests");
   const [busy, setBusy] = useState<string | null>(null);
 
   async function run(action: "pause" | "resume" | "renew" | "delete") {
@@ -34,7 +37,7 @@ export function RequestActions({ id, state }: { id: string; state: "active" | "p
         return;
       }
       toast(
-        t(action === "delete" ? "deleted" : action === "pause" ? "paused" : action === "resume" ? "resumed" : "renewed"),
+        t(action === "delete" ? "deleted" : action === "pause" ? "paused" : action === "resume" ? "resumed" : "renewed", { days }),
         "success",
       );
       router.refresh();
@@ -56,14 +59,16 @@ export function RequestActions({ id, state }: { id: string; state: "active" | "p
           {spin("pause")} {t("pause")}
         </button>
       )}
-      {state === "paused" && (
+      {on && state === "paused" && (
         <button type="button" disabled={!!busy} onClick={() => run("resume")} className={btn}>
           {spin("resume")} {t("resume")}
         </button>
       )}
-      <button type="button" disabled={!!busy} onClick={() => run("renew")} className={btn}>
-        {spin("renew")} {t("renew")}
-      </button>
+      {on && (
+        <button type="button" disabled={!!busy} onClick={() => run("renew")} className={btn}>
+          {spin("renew")} {t("renew", { days })}
+        </button>
+      )}
       <button
         type="button"
         disabled={!!busy}

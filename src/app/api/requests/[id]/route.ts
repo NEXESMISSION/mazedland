@@ -4,14 +4,18 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
-import { REQUEST_DAYS } from "@/lib/requests/model";
+import { requestExpiresAt } from "@/lib/requests/model";
+import { featureOff } from "@/lib/settings/gate";
+import { getSettings } from "@/lib/settings/server";
 
 /**
  * PATCH  /api/requests/[id]  { action: "pause" | "resume" | "renew" }
  * DELETE /api/requests/[id]
  *
  * A demande's owner pauses its alerts, turns them back on, gives it another
- * REQUEST_DAYS from today, or deletes it (its matches go with it).
+ * `requests_days` from today, or deletes it (its matches go with it). With
+ * demandes switched off, pausing and deleting still work; turning one back
+ * on or prolonging it waits until they are on again.
  */
 type Action = "pause" | "resume" | "renew";
 
@@ -42,13 +46,17 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
   const body = (await req.json().catch(() => ({}))) as { action?: string };
   const action = body.action as Action | undefined;
+  if (action === "resume" || action === "renew") {
+    const off = await featureOff("feature_requests");
+    if (off) return off;
+  }
   const patch =
     action === "pause"
       ? { status: "paused" }
       : action === "resume"
         ? { status: "active" }
         : action === "renew"
-          ? { status: "active", expires_at: new Date(Date.now() + REQUEST_DAYS * 86_400_000).toISOString() }
+          ? { status: "active", expires_at: requestExpiresAt((await getSettings()).requests_days) }
           : null;
   if (!patch) return NextResponse.json({ error: "unknown_action" }, { status: 400 });
 

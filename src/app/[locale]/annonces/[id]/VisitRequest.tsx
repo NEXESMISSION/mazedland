@@ -6,7 +6,8 @@ import { CalendarCheck, Loader2, Plus, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { useApiError } from "@/lib/useApiError";
-import { MAX_SLOTS, SLOT_HORIZON_DAYS, VISIT_PARTS, type VisitPart, type VisitStatus } from "@/lib/visits";
+import { useSetting } from "@/components/settings/SettingsProvider";
+import { VISIT_PARTS, type VisitPart, type VisitStatus } from "@/lib/visits";
 
 type Slot = { day: string; part: VisitPart };
 
@@ -17,9 +18,11 @@ function dayPlus(n: number): string {
 }
 
 /**
- * « Demander une visite » (0174): up to three half-days, the buyer's name and
- * number, a word for the seller. Signed out, it leads to sign-in and back.
- * With a request already open, it says where that one stands instead.
+ * « Demander une visite » (0174): a few half-days (how many and how far ahead
+ * is set in the console), the buyer's name and number, a word for the seller.
+ * Signed out, it leads to sign-in and back. With a request already open, it
+ * says where that one stands instead. Switched off, nothing: requests already
+ * made stay in « Mes visites ».
  */
 export function VisitRequest({
   listingId,
@@ -47,6 +50,11 @@ export function VisitRequest({
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState<null | { status: VisitStatus; when: string | null }>(open);
+  const on = useSetting("feature_visits");
+  const maxSlots = useSetting("visits_max_slots");
+  const horizon = useSetting("visits_horizon_days");
+
+  if (!on) return null;
 
   if (sent) {
     return (
@@ -125,14 +133,14 @@ export function VisitRequest({
           <X className="size-4" />
         </button>
       </div>
-      <p className="text-[11.5px] leading-snug text-muted">{t("slotsHint", { max: MAX_SLOTS })}</p>
+      <p className="text-[11.5px] leading-snug text-muted">{t("slotsHint", { max: maxSlots })}</p>
       {slots.map((s, i) => (
         <div key={i} className="flex items-center gap-2">
           <input
             type="date"
             required
             min={dayPlus(0)}
-            max={dayPlus(SLOT_HORIZON_DAYS)}
+            max={dayPlus(horizon)}
             value={s.day}
             onChange={(e) => setSlot(i, { day: e.target.value })}
             className={field}
@@ -150,10 +158,11 @@ export function VisitRequest({
           )}
         </div>
       ))}
-      {slots.length < MAX_SLOTS && (
+      {slots.length < maxSlots && (
         <button
           type="button"
-          onClick={() => setSlots((x) => [...x, { day: dayPlus(x.length + 1), part: "afternoon" }])}
+          // The next day by default, never past the last day a visit may be proposed.
+          onClick={() => setSlots((x) => [...x, { day: dayPlus(Math.min(x.length + 1, horizon)), part: "afternoon" }])}
           className="inline-flex items-center gap-1 text-[12px] font-bold text-gold hover:underline"
         >
           <Plus className="size-3.5" /> {t("addSlot")}

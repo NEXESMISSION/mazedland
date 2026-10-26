@@ -7,10 +7,15 @@ const C = "8751310c-9c5a-41de-8e37-e74aba9d2b57";
 const D = "2c8b1edb-98d0-4dbc-bdd2-c517515ddb18";
 
 describe("parseCompareIds", () => {
-  it("keeps real ids, once each, three at most", () => {
+  it("keeps real ids, once each, three at most by default", () => {
     expect(parseCompareIds(`${A},${B},${A},nope,${C},${D}`)).toEqual([A, B, C]);
     expect(parseCompareIds(undefined)).toEqual([]);
     expect(parseCompareIds([A, B])).toEqual([A, B]);
+  });
+
+  it("follows the console's maximum", () => {
+    expect(parseCompareIds(`${A},${B},${C},${D}`, 4)).toEqual([A, B, C, D]);
+    expect(parseCompareIds(`${A},${B},${A},${C}`, 2)).toEqual([A, B]);
   });
 });
 

@@ -5,6 +5,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { categoryLabel } from "@/lib/i18n";
 import { asDealType, FURNISHED, isoDay, type Furnished } from "@/lib/listings/deal";
 import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
+import { getSettings } from "@/lib/settings/server";
 import { RequestForm, type RequestFormValue } from "./RequestForm";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ export const dynamic = "force-dynamic";
  * Arrives pre-filled from wherever the person was: the catalogue's « Vous ne
  * trouvez pas ? » passes its filters, so the demande is the search they just
  * ran and nothing has to be typed twice. ?id=<demande> edits one of theirs.
+ * With demandes switched off in the console, it sends to the catalogue.
  */
 export default async function NewRequestPage({
   searchParams,
@@ -26,6 +28,7 @@ export default async function NewRequestPage({
     Object.entries(raw).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]),
   ) as Record<string, string | undefined>;
   const locale = await getLocale();
+  if (!(await getSettings()).feature_requests) redirect(`/${locale}/annonces`);
   const t = await getTranslations("requests");
 
   const supabase = await getServerSupabase();
