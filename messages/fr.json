@@ -901,7 +901,15 @@
       "send": "Envoyer le signalement",
       "thanks": "Merci, votre signalement a été envoyé.",
       "failed": "Signalement impossible pour le moment.",
-      "alreadySent": "Signalement envoyé. Merci."
+      "alreadySent": "Signalement envoyé. Merci.",
+      "chips": {
+        "scam": "Arnaque",
+        "wrong_info": "Infos fausses",
+        "sold": "Plus disponible",
+        "duplicate": "En double",
+        "inappropriate": "Inapproprié",
+        "other": "Autre"
+      }
     },
     "forRent": "À louer",
     "forSale": "À vendre",
@@ -3116,11 +3124,9 @@
     "dealSale": "Acheter",
     "dealRent": "Louer",
     "categoriesLabel": "Type de bien",
-    "categoriesAny": "Rien de coché : tous les types.",
     "governoratesLabel": "Où ?",
     "governoratesAdd": "Ajouter un gouvernorat",
     "governoratesAny": "Toute la Tunisie",
-    "removeGovernorate": "Retirer {name}",
     "budgetMaxSale": "Budget maximum (TND)",
     "budgetMaxRent": "Loyer maximum par mois (TND)",
     "budgetMin": "Minimum (facultatif)",
@@ -3191,7 +3197,21 @@
     "summaryNoteLine": "Autres souhaits : « {note} »",
     "summaryWords": "Les mots de votre recherche sont gardés dans « Autres souhaits » : les alertes ne les vérifient pas.",
     "summaryWordsDropped": "Les mots de votre recherche, « {words} », ne seront pas gardés.",
-    "summaryNote": "« Autres souhaits » vous sert de mémo : les alertes ne le vérifient pas."
+    "summaryNote": "« Autres souhaits » vous sert de mémo : les alertes ne le vérifient pas.",
+    "budgetOther": "Autre budget",
+    "surfaceChip": "{area} m²",
+    "surfaceOther": "Autre",
+    "roomsChip": "S+{count}",
+    "moveInOther": "Autre date",
+    "governoratesMax": "{max} au maximum : retirez-en un pour en choisir un autre.",
+    "notePhrasesLabel": "Suggestions",
+    "notePhrases": {
+      "seaView": "Vue mer",
+      "schools": "Proche des écoles",
+      "groundFloor": "Rez-de-chaussée",
+      "parking": "Avec parking",
+      "furnished": "Meublé"
+    }
   },
   "requestsApi": {
     "budgetRequired": "Indiquez un budget maximum.",
@@ -3910,7 +3930,15 @@
       "sentTitle": "Visite demandée",
       "confirmedTitle": "Visite confirmée",
       "sentBody": "Le vendeur vous répondra ici et par SMS.",
-      "follow": "Suivre dans Mes visites"
+      "follow": "Suivre dans Mes visites",
+      "slotsLabel": "Vos moments",
+      "defaultMessage": "Bonjour, votre annonce m'intéresse. Je souhaite la visiter.",
+      "phrasesLabel": "Ajouter une phrase",
+      "phrases": {
+        "quick": "Je suis disponible rapidement.",
+        "financing": "Financement prêt.",
+        "family": "Je viens avec ma famille."
+      }
     },
     "actions": {
       "pickSlot": "Moment retenu",
@@ -3926,7 +3954,25 @@
       "cancelled": "Visite annulée.",
       "cancelConfirm": "Annuler cette visite ?",
       "cancelSellerConfirm": "Annuler cette visite ? L'acheteur sera prévenu.",
-      "failed": "Action impossible. Réessayez."
+      "failed": "Action impossible. Réessayez.",
+      "defaultNote": "Merci, à bientôt pour la visite.",
+      "hourLabel": "Heure (facultatif)",
+      "hourChip": "{hour} h",
+      "hourPhrase": "Rendez-vous à {hour} h.",
+      "phrasesLabel": "Ajouter une phrase",
+      "phrases": {
+        "call": "Appelez-moi en arrivant.",
+        "entrance": "Je vous attends devant l'immeuble."
+      },
+      "declineTitle": "Pourquoi refuser ?",
+      "declineReasons": {
+        "slots": "Aucun de ces moments ne me convient.",
+        "unavailable": "Le bien n'est plus disponible."
+      },
+      "proposeLabel": "Proposer un autre moment (facultatif)",
+      "proposePhrase": "Je peux vous recevoir {day}, {part}.",
+      "declineSend": "Envoyer le refus",
+      "back": "Retour"
     },
     "card": {
       "asked": "Demandée le {date}",
@@ -3944,6 +3990,14 @@
       },
       "emptyReceived": "Aucune demande de visite sur vos annonces pour l'instant.",
       "emptySent": "Vous n'avez demandé aucune visite. Sur une annonce, « Demander une visite » propose vos moments au vendeur."
+    },
+    "chips": {
+      "today": "Aujourd'hui",
+      "tomorrow": "Demain",
+      "otherDate": "Autre date",
+      "morning": "Matin",
+      "afternoon": "Après-midi",
+      "evening": "Soir"
     }
   },
   "visitsApi": {

@@ -901,7 +901,15 @@
       "send": "ابعث التبليغ",
       "thanks": "يعيشك، التبليغ متاعك وصل.",
       "failed": "تعذّر التبليغ حاليًا.",
-      "alreadySent": "التبليغ وصل. يعيشك."
+      "alreadySent": "التبليغ وصل. يعيشك.",
+      "chips": {
+        "scam": "تحيّل",
+        "wrong_info": "معلومات غالطة",
+        "sold": "ما عادش متوفّر",
+        "duplicate": "مكرّر",
+        "inappropriate": "غير لائق",
+        "other": "سبب آخر"
+      }
     },
     "forRent": "للكراء",
     "forSale": "للبيع",
@@ -3116,11 +3124,9 @@
     "dealSale": "تشري",
     "dealRent": "تكري",
     "categoriesLabel": "نوع العقار",
-    "categoriesAny": "كان ما اخترت شي: كل الأنواع.",
     "governoratesLabel": "وين؟",
     "governoratesAdd": "زيد ولاية",
     "governoratesAny": "كل تونس",
-    "removeGovernorate": "نحّي {name}",
     "budgetMaxSale": "أقصى ميزانية (د.ت)",
     "budgetMaxRent": "أقصى كراء في الشهر (د.ت)",
     "budgetMin": "الأدنى (اختياري)",
@@ -3191,7 +3197,21 @@
     "summaryNoteLine": "حاجات أخرى تحبها: «{note}»",
     "summaryWords": "الكلمات اللي لوّجت بيها محفوظة في «حاجات أخرى تحبها»: التنبيهات ما تثبّتش فيها.",
     "summaryWordsDropped": "الكلمات اللي لوّجت بيها، «{words}»، موش باش تتحفظ.",
-    "summaryNote": "«حاجات أخرى تحبها» تفكرة ليك برك: التنبيهات ما تثبّتش فيها."
+    "summaryNote": "«حاجات أخرى تحبها» تفكرة ليك برك: التنبيهات ما تثبّتش فيها.",
+    "budgetOther": "ميزانية أخرى",
+    "surfaceChip": "{area} م²",
+    "surfaceOther": "آخر",
+    "roomsChip": "S+{count}",
+    "moveInOther": "تاريخ آخر",
+    "governoratesMax": "{max} ولايات على الأكثر: نحّي وحدة باش تختار أخرى.",
+    "notePhrasesLabel": "اقتراحات",
+    "notePhrases": {
+      "seaView": "تطلّ على البحر",
+      "schools": "قريبة للمدارس",
+      "groundFloor": "طابق أرضي",
+      "parking": "فيها باركينغ",
+      "furnished": "مفروشة"
+    }
   },
   "requestsApi": {
     "budgetRequired": "حطّ أقصى ميزانية.",
@@ -3910,7 +3930,15 @@
       "sentTitle": "طلبت زيارة",
       "confirmedTitle": "الزيارة مأكّدة",
       "sentBody": "البائع باش يجاوبك هنا وبـ SMS.",
-      "follow": "تابعها في زياراتي"
+      "follow": "تابعها في زياراتي",
+      "slotsLabel": "الأوقات متاعك",
+      "defaultMessage": "عسلامة، الإعلان متاعك يهمّني ونحب نجي نشوفو.",
+      "phrasesLabel": "زيد جملة",
+      "phrases": {
+        "quick": "نجّم نجي في أقرب وقت.",
+        "financing": "التمويل حاضر.",
+        "family": "نجي مع عايلتي."
+      }
     },
     "actions": {
       "pickSlot": "الوقت المختار",
@@ -3926,7 +3954,25 @@
       "cancelled": "الزيارة تلغات.",
       "cancelConfirm": "تلغي الزيارة هذي؟",
       "cancelSellerConfirm": "تلغي الزيارة هذي؟ الشاري باش يوصلو خبر.",
-      "failed": "ما نجمناش نعملوها. عاود جرّب."
+      "failed": "ما نجمناش نعملوها. عاود جرّب.",
+      "defaultNote": "يعيشك، نتلاقاو نهار الزيارة.",
+      "hourLabel": "الساعة (اختياري)",
+      "hourChip": "{hour}:00",
+      "hourPhrase": "الموعد على الساعة {hour}.",
+      "phrasesLabel": "زيد جملة",
+      "phrases": {
+        "call": "كلّمني كي توصل.",
+        "entrance": "نستنّاك قدّام العمارة."
+      },
+      "declineTitle": "علاش ترفض؟",
+      "declineReasons": {
+        "slots": "حتى وقت من هالأوقات ما يناسبني.",
+        "unavailable": "العقار ما عادش متوفّر."
+      },
+      "proposeLabel": "اقترح وقت آخر (اختياري)",
+      "proposePhrase": "نجّم نستقبلك نهار {day}، {part}.",
+      "declineSend": "ابعث الرفض",
+      "back": "رجوع"
     },
     "card": {
       "asked": "مطلوبة نهار {date}",
@@ -3944,6 +3990,14 @@
       },
       "emptyReceived": "حتى طلب زيارة على إعلاناتك للتوّا.",
       "emptySent": "ما طلبت حتى زيارة. في إعلان، « اطلب زيارة » يقترح أوقاتك على البائع."
+    },
+    "chips": {
+      "today": "اليوم",
+      "tomorrow": "غدوة",
+      "otherDate": "نهار آخر",
+      "morning": "الصباح",
+      "afternoon": "العشية",
+      "evening": "آخر النهار"
     }
   },
   "visitsApi": {
