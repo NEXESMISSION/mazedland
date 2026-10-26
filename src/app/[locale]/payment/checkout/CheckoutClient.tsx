@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatsAppHelp } from "@/components/ui/WhatsAppHelp";
 import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -576,6 +577,10 @@ export function CheckoutClient({
             {cancelling ? t("cancelling") : t("cancelPayment")}
           </button>
         )}
+        {/* A question about paying goes to a person (src/lib/contact.ts). */}
+        <div className="flex justify-center">
+          <WhatsAppHelp topic="payment" />
+        </div>
         </div>
         </div>
       </main>

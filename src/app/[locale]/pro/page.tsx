@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { WhatsAppHelp } from "@/components/ui/WhatsAppHelp";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { formatTND } from "@/lib/utils";
@@ -102,6 +103,9 @@ export default async function ProLandingPage() {
         <p className="mx-auto mt-5 flex max-w-2xl items-start justify-center gap-2 text-center text-[12px] leading-relaxed text-muted">
           <BadgeCheck className="mt-0.5 size-4 shrink-0" /> {t("verifiedNote")}
         </p>
+        <div className="mt-4 flex justify-center">
+          <WhatsAppHelp topic="pro" />
+        </div>
       </section>
     </main>
   );

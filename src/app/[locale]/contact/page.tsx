@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LegalPage } from "@/components/legal/LegalPage";
 import { Ltr } from "@/components/ui/Ltr";
-import { Mail, Phone, MapPin, Clock } from "lucide-react";
+import { Mail, Phone, MapPin, Clock, MessageCircle } from "lucide-react";
+import { CONTACT_WHATSAPP, whatsappHref } from "@/lib/contact";
 
 export async function generateMetadata({
   params,
@@ -35,6 +36,9 @@ export const dynamic = "force-static";
  * company's own (Google Workspace, given by the owner on 2026-10-21). It is
  * the default, so the page shows it without a dashboard setting; the env var
  * still overrides it.
+ *
+ * WhatsApp comes first (src/lib/contact.ts): it is where the team answers.
+ * Messages only — the row opens a chat, never a call.
  */
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || "contact@mazed.immo";
 const CONTACT_PHONE = process.env.NEXT_PUBLIC_CONTACT_PHONE?.trim();
@@ -49,13 +53,17 @@ const telHref = (v: string) => `tel:${v.replace(/[^\d+]/g, "")}`;
  */
 type Item = {
   Icon: typeof Mail;
-  labelKey: "email" | "phone" | "address" | "hours";
+  labelKey: "whatsapp" | "email" | "phone" | "address" | "hours";
+  /** A line under the value (« messages uniquement »). */
+  noteKey?: "whatsappNote";
+  external?: boolean;
   value?: string;
   valueKey?: "addressValue" | "hoursValue";
   href: string | null;
 };
 
 const ITEMS: Item[] = [
+  { Icon: MessageCircle, labelKey: "whatsapp", value: CONTACT_WHATSAPP, href: whatsappHref(), noteKey: "whatsappNote", external: true },
   ...(CONTACT_EMAIL
     ? [{ Icon: Mail, labelKey: "email", value: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` } satisfies Item]
     : []),
@@ -66,7 +74,7 @@ const ITEMS: Item[] = [
   { Icon: Clock, labelKey: "hours", valueKey: "hoursValue", href: null },
 ];
 
-const HAS_CHANNEL = Boolean(CONTACT_EMAIL || CONTACT_PHONE);
+const HAS_CHANNEL = Boolean(CONTACT_WHATSAPP || CONTACT_EMAIL || CONTACT_PHONE);
 
 export default async function ContactPage({
   params,
@@ -102,6 +110,7 @@ export default async function ContactPage({
                 <div className="mt-0.5 text-[14px] font-bold text-foreground">
                   {it.valueKey ? t(it.valueKey) : <Ltr>{it.value}</Ltr>}
                 </div>
+                {it.noteKey && <div className="text-[11.5px] text-muted">{t(it.noteKey)}</div>}
               </div>
             </>
           );
@@ -110,6 +119,7 @@ export default async function ContactPage({
               {it.href ? (
                 <a
                   href={it.href}
+                  {...(it.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   className="flex items-center gap-3 rounded-2xl bg-surface-2 p-3.5 ring-1 ring-border transition hover:ring-gold-soft/60"
                 >
                   {inner}

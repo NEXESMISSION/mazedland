@@ -1594,7 +1594,9 @@
     "address": "Adresse",
     "addressValue": "Sfax, Tunisie",
     "hours": "Horaires",
-    "hoursValue": "Lun – Ven, 9h – 17h"
+    "hoursValue": "Lun – Ven, 9h – 17h",
+    "whatsapp": "WhatsApp",
+    "whatsappNote": "Messages uniquement — pas d'appels"
   },
   "errors": {
     "boundary": {
@@ -3836,5 +3838,11 @@
     "negotiable": "négociable",
     "best": "Le meilleur sur cette ligne",
     "bestNote": "Le trophée marque le prix et le prix au m² les plus bas, la plus grande surface et le plus de pièces — quand au moins deux annonces les indiquent."
+  },
+  "whatsapp": {
+    "help": "Une question ? Écrivez-nous sur WhatsApp :",
+    "opening": "Bonjour Mazed Immo, ",
+    "openingPayment": "Bonjour Mazed Immo, j'ai une question sur un paiement : ",
+    "openingPro": "Bonjour Mazed Immo, j'ai une question sur Mazed Immo Pro : "
   }
 }
