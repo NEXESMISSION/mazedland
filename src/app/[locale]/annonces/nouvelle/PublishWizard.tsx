@@ -902,7 +902,7 @@ export function PublishWizard({
                   <span className="min-w-0 flex-1">
                     <span className="block text-[14px] font-extrabold text-foreground">{o.label}</span>
                     {o.hint && (
-                      <span dir="auto" className="mt-0.5 block truncate text-[11.5px] leading-snug text-muted">
+                      <span dir="auto" className="mt-0.5 line-clamp-2 block text-[11.5px] leading-snug text-muted">
                         {o.hint}
                       </span>
                     )}
