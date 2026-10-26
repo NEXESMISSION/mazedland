@@ -30,7 +30,7 @@ import {
   type Furnished,
 } from "@/lib/listings/deal";
 import type { ListingDraft } from "@/lib/ai/listing";
-import { priceInWords, suggestPriceFix, type PriceRef } from "@/lib/listings/priceCheck";
+import { estimateRange, priceInWords, suggestPriceFix, type PriceRef } from "@/lib/listings/priceCheck";
 
 /**
  * Publier une annonce — the sell-or-let flow.
@@ -545,13 +545,21 @@ export function PublishWizard({
   // annonces like it ask. « C'est bien ça » silences it for that figure.
   const [keptPrices, setKeptPrices] = useState<string[]>([]);
   const priceNumber = Number(price);
+  // What annonces like this one ask: in this governorate when there are
+  // enough of them, else across Tunisia.
+  const localRef = categoryId && governorate ? priceRefs[`${categoryId}:${deal}:${governorate}`] : undefined;
+  const nationalRef = categoryId ? priceRefs[`${categoryId}:${deal}`] : undefined;
+  const priceRef = (localRef?.median != null ? localRef : null) ?? nationalRef ?? null;
+  const areaNumber = Number(attrs.area_sqm) > 0 ? Number(attrs.area_sqm) : null;
+  const estimate = estimateRange(localRef?.perSqmLow ? localRef : nationalRef ?? null, areaNumber, rent);
+  const estimateIsLocal = !!(localRef?.perSqmLow && areaNumber);
   const priceWords = !onRequest && priceNumber > 0 ? priceInWords(priceNumber, locale) : null;
   const priceFix =
     !onRequest && priceNumber > 0 && !keptPrices.includes(price)
       ? suggestPriceFix({
           price: priceNumber,
           areaSqm: Number(attrs.area_sqm) > 0 ? Number(attrs.area_sqm) : null,
-          ref: categoryId ? priceRefs[`${categoryId}:${deal}`] ?? null : null,
+          ref: priceRef,
           kind: (category?.kind as CategoryKind | undefined) ?? null,
           dealType: deal,
         })
@@ -1309,6 +1317,16 @@ export function PublishWizard({
                         {rent ? t("tndPerMonth") : tc("tnd")}
                       </span>
                     </div>
+                    {estimate && !onRequest && (
+                      <p className="mt-1.5 text-[12px] leading-snug text-muted">
+                        {t(estimateIsLocal ? "estimateLocal" : "estimateNational", {
+                          low: `${formatTND(estimate.low, locale)}`,
+                          high: `${formatTND(estimate.high, locale)} ${rent ? t("tndPerMonth") : tc("tnd")}`,
+                          governorate: governorateLabel(governorate, locale),
+                          count: (estimateIsLocal ? localRef?.count : nationalRef?.count) ?? 0,
+                        })}
+                      </p>
+                    )}
                     {priceWords && (
                       <p className="mt-1.5 text-[12.5px] font-semibold text-muted" aria-live="polite">
                         = {priceWords}

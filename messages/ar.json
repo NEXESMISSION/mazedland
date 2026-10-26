@@ -1379,7 +1379,9 @@
     "correct": "صلّح الإعلان",
     "editWaitingTitle": "التصليح تسجّل",
     "editWaitingBody": "إعلانك مازال يستنّى المراجعة، بالتصليحات متاعك. نعلموك أوّل ما يتنشر.",
-    "tipPriceTypo": "صفر زايد في السوم؟ الإعلانات اللي كيفو عادةً قريب من {fix}."
+    "tipPriceTypo": "صفر زايد في السوم؟ الإعلانات اللي كيفو عادةً قريب من {fix}.",
+    "estimateLocal": "حسب {count, plural, zero {حتى إعلان} one {إعلان واحد} two {زوز إعلانات} few {# إعلانات} many {# إعلانًا} other {# إعلان}} كيفو في {governorate}: بين {low} و{high} للمساحة هذي.",
+    "estimateNational": "حسب {count, plural, zero {حتى إعلان} one {إعلان واحد} two {زوز إعلانات} few {# إعلانات} many {# إعلانًا} other {# إعلان}} كيفو في تونس: بين {low} و{high} للمساحة هذي."
   },
   "photoUploader": {
     "addPhotos": "زيد صورك",

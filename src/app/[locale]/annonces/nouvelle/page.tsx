@@ -26,7 +26,7 @@ import { asDealType } from "@/lib/listings/deal";
 import { aiAvailable } from "@/lib/ai/server";
 import { asPendingEdit, isEditable } from "@/lib/listings/edit";
 import { activePlan, can, membershipsOf, shopLiveCount } from "@/lib/pro/shops";
-import { median, type PriceRef } from "@/lib/listings/priceCheck";
+import { median, quartiles, type PriceRef } from "@/lib/listings/priceCheck";
 
 export const dynamic = "force-dynamic";
 
@@ -133,7 +133,7 @@ export default async function NewListingPage({
     // form compares a typed price with it to catch a zero too many or too few.
     admin
       .from("listings")
-      .select("category_id, deal_type, price, attributes")
+      .select("category_id, deal_type, governorate, price, attributes")
       .eq("status", "published")
       .eq("price_on_request", false)
       .limit(3000),
@@ -208,18 +208,25 @@ export default async function NewListingPage({
   const groups = parents.map((p) => ({ id: p.id, label: categoryLabel(p, locale) }));
 
   const byKey = new Map<string, { prices: number[]; perSqm: number[] }>();
-  for (const r of (pricedRes.data ?? []) as { category_id: string; deal_type: string | null; price: number | string | null; attributes: Record<string, unknown> | null }[]) {
+  // By type and offer, and by type, offer and governorate: the form uses the
+  // narrower one when it has enough annonces to say something.
+  for (const r of (pricedRes.data ?? []) as { category_id: string; deal_type: string | null; governorate: string | null; price: number | string | null; attributes: Record<string, unknown> | null }[]) {
     const p = Number(r.price);
     if (!(p > 0)) continue;
-    const key = `${r.category_id}:${asDealType(r.deal_type)}`;
-    const bucket = byKey.get(key) ?? { prices: [], perSqm: [] };
-    bucket.prices.push(p);
     const area = Number((r.attributes ?? {}).area_sqm);
-    if (area > 0) bucket.perSqm.push(p / area);
-    byKey.set(key, bucket);
+    const base = `${r.category_id}:${asDealType(r.deal_type)}`;
+    for (const key of [base, ...(r.governorate ? [`${base}:${r.governorate}`] : [])]) {
+      const bucket = byKey.get(key) ?? { prices: [], perSqm: [] };
+      bucket.prices.push(p);
+      if (area > 0) bucket.perSqm.push(p / area);
+      byKey.set(key, bucket);
+    }
   }
   const priceRefs: Record<string, PriceRef> = {};
-  for (const [key, b] of byKey) priceRefs[key] = { median: median(b.prices), perSqm: median(b.perSqm) };
+  for (const [key, b] of byKey) {
+    const q = quartiles(b.perSqm);
+    priceRefs[key] = { median: median(b.prices), perSqm: median(b.perSqm), perSqmLow: q?.low ?? null, perSqmHigh: q?.high ?? null, count: b.prices.length };
+  }
 
   // The shops this seller publishes for (0173): open ones, where their role
   // allows it, each with what its running plan still covers.

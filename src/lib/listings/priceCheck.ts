@@ -54,7 +54,36 @@ export type PriceRef = {
   median: number | null;
   /** Median price per m² of those that give a surface. */
   perSqm: number | null;
+  /** The middle half of the price per m² (25th–75th percentile), for an estimate. */
+  perSqmLow?: number | null;
+  perSqmHigh?: number | null;
+  /** How many annonces it rests on. */
+  count?: number;
 };
+
+/** The 25th and 75th percentiles, or null with fewer than three values. */
+export function quartiles(values: number[]): { low: number; high: number } | null {
+  const v = values.filter((x) => Number.isFinite(x) && x > 0).sort((a, b) => a - b);
+  if (v.length < 3) return null;
+  const at = (q: number) => {
+    const i = (v.length - 1) * q;
+    const lo = Math.floor(i);
+    return v[lo] + (v[Math.ceil(i)] - v[lo]) * (i - lo);
+  };
+  return { low: at(0.25), high: at(0.75) };
+}
+
+/**
+ * What annonces like this one ask, for the surface given: the middle half of
+ * their price per m² times it, rounded to the thousand (to the ten for a rent).
+ * Null without a surface or without three comparable annonces.
+ */
+export function estimateRange(ref: PriceRef | null, areaSqm: number | null, rent: boolean): { low: number; high: number } | null {
+  if (!ref?.perSqmLow || !ref.perSqmHigh || !areaSqm || areaSqm <= 0) return null;
+  const step = rent ? 10 : 1000;
+  const round = (n: number) => Math.max(step, Math.round(n / step) * step);
+  return { low: round(ref.perSqmLow * areaSqm), high: round(ref.perSqmHigh * areaSqm) };
+}
 
 /** The middle value, or null when there are fewer than three to go on. */
 export function median(values: number[]): number | null {

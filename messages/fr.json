@@ -1379,7 +1379,9 @@
     "correct": "Corriger l'annonce",
     "editWaitingTitle": "Correction enregistrée",
     "editWaitingBody": "Votre annonce attend encore la vérification, avec vos corrections. Vous serez prévenu dès qu'elle est en ligne.",
-    "tipPriceTypo": "Un zéro de trop dans le prix ? Les annonces semblables sont plutôt autour de {fix}."
+    "tipPriceTypo": "Un zéro de trop dans le prix ? Les annonces semblables sont plutôt autour de {fix}.",
+    "estimateLocal": "D'après {count, plural, one {# annonce semblable} other {# annonces semblables}} à {governorate} : entre {low} et {high} pour cette surface.",
+    "estimateNational": "D'après {count, plural, one {# annonce semblable} other {# annonces semblables}} en Tunisie : entre {low} et {high} pour cette surface."
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",

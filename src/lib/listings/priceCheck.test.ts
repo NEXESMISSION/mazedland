@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { median, priceInWords, suggestPriceFix } from "./priceCheck";
+import { estimateRange, median, priceInWords, quartiles, suggestPriceFix } from "./priceCheck";
 
 describe("priceInWords", () => {
   it("reads a price back the way it is said, in French", () => {
@@ -50,5 +50,20 @@ describe("suggestPriceFix", () => {
     expect(suggestPriceFix({ price: 26_000, areaSqm: 110, ref: null, kind: "residential", dealType: "sale" })).toBe(260_000);
     // Land without a surface: the whole price is in range, nothing to say.
     expect(suggestPriceFix({ price: 90_000, areaSqm: null, ref: null, kind: "land", dealType: "sale" })).toBeNull();
+  });
+});
+
+describe("the estimate", () => {
+  it("takes the middle half of what similar annonces ask per m²", () => {
+    expect(quartiles([1000, 2000, 3000, 4000, 5000])).toEqual({ low: 2000, high: 4000 });
+    expect(quartiles([1, 2])).toBeNull();
+  });
+
+  it("gives a range for the surface, rounded, only with a surface and enough annonces", () => {
+    const ref = { median: null, perSqm: 2000, perSqmLow: 1800, perSqmHigh: 2400, count: 6 };
+    expect(estimateRange(ref, 110, false)).toEqual({ low: 198_000, high: 264_000 });
+    expect(estimateRange({ ...ref, perSqmLow: 9.4, perSqmHigh: 12.6 }, 100, true)).toEqual({ low: 940, high: 1_260 });
+    expect(estimateRange(ref, null, false)).toBeNull();
+    expect(estimateRange({ median: 1, perSqm: 1 }, 110, false)).toBeNull();
   });
 });
