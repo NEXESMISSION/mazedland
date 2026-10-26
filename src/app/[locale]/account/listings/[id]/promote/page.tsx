@@ -11,6 +11,8 @@ import {
   type JobStatus, type RequestStatus, type SocialChannel, type SocialLanguage,
 } from "@/lib/social/channels";
 import { buildVariants, loadSocialListing, socialOrigin, socialSettings, tunisToday } from "@/lib/social/server";
+import { paymentsAreOpen } from "@/lib/payments/server";
+import { PaymentsClosedNotice } from "@/components/payments/PaymentsClosedNotice";
 import { PromoteForm } from "./PromoteForm";
 import { WithdrawButton } from "./WithdrawButton";
 
@@ -81,6 +83,10 @@ export default async function PromotePage({ params }: { params: Promise<{ id: st
   ]);
   const last = ((reqRows ?? []) as RequestRow[])[0] ?? null;
   const open = last && (OPEN_REQUEST_STATUSES as readonly string[]).includes(last.status) ? last : null;
+  // Free at launch. Once it has a price it is paid like the rest, and with no
+  // payee to pay the form is not offered — the API refuses too
+  // (`payments_closed`), so nobody fills it in to be told no at the end.
+  const closed = settings.priceTnd > 0 && !open && !(await paymentsAreOpen());
 
   let visits = 0;
   let contacts = 0;
@@ -199,6 +205,8 @@ export default async function PromotePage({ params }: { params: Promise<{ id: st
           <Info className="mt-0.5 size-4 shrink-0 text-muted" />
           <p>{t("disabled")}</p>
         </section>
+      ) : closed ? (
+        <PaymentsClosedNotice className="mt-6" title={t("closed.title")} body={t("closed.body")} contactLabel={t("closed.contact")} />
       ) : (
         <>
           {last?.status === "rejected" && (

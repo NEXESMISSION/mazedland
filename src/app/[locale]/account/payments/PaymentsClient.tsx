@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { useApiError } from "@/lib/useApiError";
+import { PaymentsClosedNotice } from "@/components/payments/PaymentsClosedNotice";
 import { formatDate, formatTND } from "@/lib/utils";
 import { governorateLabel } from "@/lib/tunisia";
 import {
@@ -102,12 +103,14 @@ function providerLabel(t: T, provider: string): string {
 }
 
 /** Where the primary action leads:
- *  - pending / pending_review → back into this payment's checkout
+ *  - pending / pending_review → back into this payment's checkout, while
+ *    payments are open (with no payee to pay, that checkout can only say
+ *    « indisponible », so there is no link to it)
  *  - failed (listing-bound)   → the seller's annonces, to re-submit it */
-function actionHref(p: PaymentVM): string | null {
+function actionHref(p: PaymentVM, paymentsOpen: boolean): string | null {
   if (isCancelled(p)) return null;
   if (p.status === "pending" || p.status === "pending_review") {
-    return `/payment/checkout?payment=${p.id}`;
+    return paymentsOpen ? `/payment/checkout?payment=${p.id}` : null;
   }
   if (p.status === "failed" && LISTING_KINDS.has(p.kind)) return "/account/listings";
   return null;
@@ -143,10 +146,13 @@ export function PaymentsClient({
   payments,
   summary,
   locale,
+  paymentsOpen,
 }: {
   payments: PaymentVM[];
   summary: PaymentsSummary;
   locale: string;
+  /** Whether a payee method is usable (src/lib/payments/server.ts). */
+  paymentsOpen: boolean;
 }) {
   const t = useTranslations("account.payments");
   const tc = useTranslations("common");
@@ -200,8 +206,21 @@ export function PaymentsClient({
     ] as { key: FilterKey; label: string }[]
   ).filter((tab) => tab.key === "all" || tab.key === filter || counts[tab.key] > 0);
 
+  // Said once, above everything, when something here is waiting to be paid
+  // and there is nowhere to pay it yet. The rows then offer no checkout link.
+  const waiting = payments.some((p) => p.status === "pending" || p.status === "pending_review");
+
   return (
     <div className="mt-6">
+      {!paymentsOpen && waiting && (
+        <PaymentsClosedNotice
+          className="mb-5"
+          title={t("closed.title")}
+          body={t("closed.body")}
+          contactLabel={t("closed.contact")}
+        />
+      )}
+
       {/* ── Summary — the three signals that matter, at a glance. ── */}
       <div className="grid grid-cols-3 gap-3">
         <StatCard
@@ -240,7 +259,7 @@ export function PaymentsClient({
           </div>
           <ul className="divide-y divide-amber-500/15">
             {todo.map((p) => {
-              const href = actionHref(p);
+              const href = actionHref(p, paymentsOpen);
               const inner = (
                 <div className="flex items-center gap-2.5 px-3.5 py-2.5 transition hover:bg-amber-500/10">
                   <Thumb url={p.coverUrl} className="size-9 rounded-lg" />
@@ -252,13 +271,17 @@ export function PaymentsClient({
                     </div>
                     <div className="truncate text-[11px] font-semibold text-amber-800">
                       {p.status === "pending"
-                        ? t("status.pending")
+                        ? paymentsOpen
+                          ? t("status.pending")
+                          : t("closed.row")
                         : p.adminNotes
                           ? t("rejectedWithReason", { reason: p.adminNotes })
                           : t("rejectedResubmit")}
                     </div>
                   </div>
-                  <ChevronRight className="size-4 shrink-0 text-amber-700 rtl:-scale-x-100" strokeWidth={2.4} />
+                  {href && (
+                    <ChevronRight className="size-4 shrink-0 text-amber-700 rtl:-scale-x-100" strokeWidth={2.4} />
+                  )}
                 </div>
               );
               return (
@@ -314,7 +337,7 @@ export function PaymentsClient({
         <ul className="mt-4 space-y-2.5 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
           {visible.map((p) => (
             <li key={p.id} id={`pay-${p.id}`}>
-              <PaymentRow p={p} locale={locale} onCancel={cancelPayment} />
+              <PaymentRow p={p} locale={locale} onCancel={cancelPayment} paymentsOpen={paymentsOpen} />
             </li>
           ))}
         </ul>
@@ -378,10 +401,12 @@ function PaymentRow({
   p,
   locale,
   onCancel,
+  paymentsOpen,
 }: {
   p: PaymentVM;
   locale: string;
   onCancel: (id: string) => Promise<boolean>;
+  paymentsOpen: boolean;
 }) {
   const t = useTranslations("account.payments");
   const tc = useTranslations("common");
@@ -400,9 +425,12 @@ function PaymentRow({
   // Cancel is only offered before a receipt is uploaded. (The API enforces the
   // same rule.)
   const canCancel = p.status === "pending";
-  const aHref = actionHref(p);
+  const aHref = actionHref(p, paymentsOpen);
+  // A receipt to upload, and nowhere to pay yet: said on the row, where the
+  // button would be. (One already sent just waits; its chip says so.)
+  const closedHere = !paymentsOpen && p.status === "pending";
   const entityHref = p.listingId ? (`/annonces/${p.listingId}` as `/annonces/${string}`) : null;
-  const showFooter = (canResume && aHref) || canCancel || p.receiptUrl || entityHref || p.invoice;
+  const showFooter = (canResume && aHref) || closedHere || canCancel || p.receiptUrl || entityHref || p.invoice;
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl bg-surface ring-1 ring-border">
@@ -462,6 +490,12 @@ function PaymentRow({
               {actionLabel(t, p)}
               <ArrowRight className="size-3 rtl:-scale-x-100" strokeWidth={2.5} />
             </Link>
+          )}
+          {closedHere && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800">
+              <Clock className="size-3" strokeWidth={2.5} />
+              {t("closed.row")}
+            </span>
           )}
 
           {/* Cancel — only for pending (not-yet-paid) rows. Two-tap confirm. */}

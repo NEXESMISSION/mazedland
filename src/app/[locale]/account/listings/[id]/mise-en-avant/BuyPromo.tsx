@@ -29,6 +29,9 @@ export function BuyPromo({ listingId, product, label }: { listingId: string; pro
           const j = await res.json().catch(() => ({}));
           if (!res.ok || !j.paymentId) {
             toast(apiError(j, t("failed")), res.status === 409 ? "warning" : "error");
+            // Payments closed since this page was opened: re-read it, so the
+            // notice replaces the buttons.
+            if (j.error === "payments_closed") router.refresh();
             return;
           }
           router.push(`/payment/checkout?payment=${j.paymentId}` as never);

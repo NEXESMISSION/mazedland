@@ -7,6 +7,8 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatDate, formatTND } from "@/lib/utils";
 import { activePromo, canBuy, placementOf, type PromoColumn } from "@/lib/promo";
 import { getSettings } from "@/lib/settings/server";
+import { paymentsAreOpen } from "@/lib/payments/server";
+import { PaymentsClosedNotice } from "@/components/payments/PaymentsClosedNotice";
 import { ArrowLeft, Home as HomeIcon, LayoutPanelTop, Search, Sparkles } from "lucide-react";
 import { BuyPromo } from "./BuyPromo";
 
@@ -44,7 +46,7 @@ export default async function BoostPage({ params }: { params: Promise<{ id: stri
     .maybeSingle();
   if (!l || l.seller_id !== user!.id || l.status !== "published") redirect(`/${locale}/account/listings`);
 
-  const [{ data: products }, { data: waiting }] = await Promise.all([
+  const [{ data: products }, { data: waiting }, open] = await Promise.all([
     admin.from("products").select("id, slug, name_fr, name_ar, description, description_ar, price, duration_days").eq("kind", "promo").eq("is_active", true).order("sort_order"),
     admin
       .from("payments")
@@ -54,6 +56,9 @@ export default async function BoostPage({ params }: { params: Promise<{ id: stri
       .in("status", ["pending", "pending_review"])
       .contains("metadata", { listing_id: id })
       .limit(5),
+    // With no payee to pay, « Choisir » created a payment and the checkout
+    // then said « indisponible ». The page says it here, before anything.
+    paymentsAreOpen(),
   ]);
   const running = activePromo(l);
   const photo = ((l.photos ?? []) as { storage_path: string; sort_order: number }[]).slice().sort((a, b) => a.sort_order - b.sort_order)[0];
@@ -80,6 +85,15 @@ export default async function BoostPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
       <p className="mt-3 text-[13px] leading-relaxed text-muted">{t("subtitle")}</p>
+
+      {!open && (
+        <PaymentsClosedNotice
+          className="mt-4"
+          title={t("closed.title")}
+          body={t("closed.body")}
+          contactLabel={t("closed.contact")}
+        />
+      )}
 
       {running && (
         <p className="mt-4 flex items-start gap-2 rounded-2xl px-4 py-3 text-[12.5px] leading-relaxed mazed-tone-ok">
@@ -114,7 +128,12 @@ export default async function BoostPage({ params }: { params: Promise<{ id: stri
                 </p>
               </div>
               <div className="mt-3">
-                {pending ? (
+                {!open ? (
+                  // The price stays on show; only the way to pay waits.
+                  <p className="text-[12px] font-semibold text-muted">
+                    {t(pending?.status === "pending_review" ? "receiptSent" : "closed.row")}
+                  </p>
+                ) : pending ? (
                   <Link href={`/payment/checkout?payment=${pending.id}` as never} className="tap-target inline-flex h-10 items-center rounded-xl border border-border px-4 text-[13px] font-bold text-foreground hover:bg-surface-2">
                     {t(pending.status === "pending_review" ? "receiptSent" : "continuePayment")}
                   </Link>

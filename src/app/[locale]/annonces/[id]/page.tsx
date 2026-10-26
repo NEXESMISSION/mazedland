@@ -14,6 +14,7 @@ import { routing } from "@/i18n/routing";
 import { Ltr } from "@/components/ui/Ltr";
 import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
 import { ContactReveal } from "./ContactReveal";
+import { StickyContact } from "./StickyContact";
 import { ReportListing } from "./ReportListing";
 import { VisitRequest } from "./VisitRequest";
 import { CompareToggle } from "@/components/compare/CompareToggle";
@@ -90,6 +91,9 @@ const SELECT = `
 `;
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
+
+/** The phone column's seller card, which StickyContact steps away from. */
+const CONTACT_CARD_ID = "annonce-contact";
 
 // How a non-public status reads in the seller's own preview banner:
 // `listing.previewStatus.<status>` in messages/.
@@ -623,7 +627,7 @@ export default async function AnnoncePage({
             {/* On a phone the price and the seller sit here, in reading order.
                 On a desktop they are in the rail instead. */}
             <div className="mt-3 lg:hidden">{priceBlock}</div>
-            <div className="mt-5 lg:hidden">{ownerCard ?? sellerCard}</div>
+            <div id={CONTACT_CARD_ID} className="mt-5 lg:hidden">{ownerCard ?? sellerCard}</div>
 
             {specs.length > 0 && (
               <section className="mt-6">
@@ -695,6 +699,21 @@ export default async function AnnoncePage({
         dealType={asDealType(l.deal_type)}
         locale={locale}
       />
+
+      {/* On a phone the seller card sits under the photo, the title and the
+          price — below the first screen. This keeps the number one tap away.
+          Only where there is a number to give, and never to its own seller. */}
+      {!isOwner && !isPreview && l.show_phone && (
+        <StickyContact
+          listingId={l.id}
+          watchId={CONTACT_CARD_ID}
+          price={
+            l.price_on_request || l.price == null
+              ? t("priceOnRequest")
+              : `${formatTND(Number(l.price), locale)} ${rent ? t("tndPerMonth") : tRoot("common.tnd")}`
+          }
+        />
+      )}
     </main>
   );
 }

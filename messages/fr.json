@@ -34,7 +34,7 @@
       "browse": "Explorer",
       "sell": "Vendre",
       "watchlist": "Favoris",
-      "activity": "Activité",
+      "activity": "Favoris",
       "account": "Compte"
     },
     "pageTitles": {
@@ -278,7 +278,13 @@
       "receipt": "Reçu",
       "viewListing": "Voir l'annonce",
       "invoice": "Facture",
-      "invoiceReceipt": "Reçu"
+      "invoiceReceipt": "Reçu",
+      "closed": {
+        "title": "Paiement momentanément indisponible",
+        "body": "Nos coordonnées de paiement sont en cours de mise à jour. Ne faites pas de virement pour l'instant : vous pourrez payer et téléverser votre reçu dès qu'elles seront en ligne. Vos paiements en attente restent enregistrés.",
+        "row": "Paiement indisponible pour le moment",
+        "contact": "Nous contacter"
+      }
     },
     "favorites": {
       "title": "Mes favoris",
@@ -561,7 +567,8 @@
       "live": "En direct",
       "forSale": "À vendre",
       "price": "Prix",
-      "view": "Voir"
+      "view": "Voir",
+      "forRent": "À louer"
     },
     "countdown": {
       "ended": "ended",
@@ -864,7 +871,8 @@
       "networkError": "Erreur réseau.",
       "disclaimer": "Mazed Immo met en relation, sans intervenir dans la vente. Visitez le bien et vérifiez le titre de propriété avant tout versement.",
       "hidden": "Ce vendeur ne partage pas son numéro. Enregistrez l'annonce pour la retrouver.",
-      "reveal": "Afficher le numéro"
+      "reveal": "Afficher le numéro",
+      "call": "Appeler"
     },
     "related": {
       "eyebrow": "Ça pourrait vous intéresser",
@@ -997,7 +1005,8 @@
     "unknown_action": "Action inconnue. Rechargez la page.",
     "too_large": "Fichier trop volumineux.",
     "empty_body": "Fichier vide.",
-    "feature_off": "Cette fonctionnalité est désactivée pour le moment."
+    "feature_off": "Cette fonctionnalité est désactivée pour le moment.",
+    "payments_closed": "Paiement momentanément indisponible : nos coordonnées de paiement sont en cours de mise à jour. Réessayez plus tard."
   },
   "notifications": {
     "listing_expiring": {
@@ -3290,7 +3299,12 @@
     "withdrawn": "C'est noté : l'annonce est retirée des réseaux.",
     "notOnline": "L'annonce doit être en ligne pour être promue. Revenez ici une fois qu'elle est publiée.",
     "disabled": "La promotion sur les réseaux est momentanément fermée.",
-    "lastRejected": "Votre dernière demande n'a pas été retenue."
+    "lastRejected": "Votre dernière demande n'a pas été retenue.",
+    "closed": {
+      "title": "Paiement momentanément indisponible",
+      "body": "La promotion sur les réseaux est payante, et nos coordonnées de paiement sont en cours de mise à jour. Vous pourrez la demander dès qu'elles seront en ligne.",
+      "contact": "Nous contacter"
+    }
   },
   "socialApi": {
     "disabled": "La promotion sur les réseaux est momentanément fermée.",
@@ -3657,7 +3671,13 @@
       "clientUpdated": "Mis à jour le {date}",
       "noDemandes": "Aucune demande ouverte près de la boutique ou à laquelle ses annonces répondent, pour l'instant.",
       "demandesHint": "Ce que cherchent les acheteurs et locataires qui ont demandé des alertes. Vous ne voyez ni leur nom ni leur numéro : proposez une annonce, Mazed Immo la leur transmet. ✓ = elle remplit toutes leurs conditions.",
-      "alreadyOffered": "Déjà proposé : {titles}"
+      "alreadyOffered": "Déjà proposé : {titles}",
+      "closed": {
+        "title": "Paiement momentanément indisponible",
+        "body": "Vous pourrez choisir ou renouveler un abonnement dès que nos coordonnées de paiement seront en ligne. Votre boutique et vos annonces restent en ligne.",
+        "row": "Paiement bientôt disponible",
+        "contact": "Nous contacter"
+      }
     },
     "clients": {
       "open": "En cours",
@@ -3948,7 +3968,13 @@
     "receiptSent": "Reçu envoyé — en vérification",
     "oneAtATime": "Une mise en avant à la fois : celle en cours doit se terminer d'abord.",
     "how": "Paiement par D17 ou virement, comme les autres paiements Mazed Immo. La mise en avant démarre dès que le reçu est validé ; prolongée, elle repart de sa date de fin.",
-    "failed": "Impossible pour le moment. Réessayez."
+    "failed": "Impossible pour le moment. Réessayez.",
+    "closed": {
+      "title": "Paiement momentanément indisponible",
+      "body": "Les mises en avant pourront être réglées dès que nos coordonnées de paiement seront en ligne. En attendant, votre annonce reste en ligne comme avant.",
+      "row": "Paiement bientôt disponible",
+      "contact": "Nous contacter"
+    }
   },
   "promoApi": {
     "product": "Mise en avant inconnue.",

@@ -25,6 +25,9 @@ function useCall() {
       const j = (await res.json().catch(() => ({}))) as Record<string, unknown>;
       if (!res.ok) {
         toast(apiError(j, t("actionFailed")), "error");
+        // Payments closed since the page was opened: re-read it, so the plan
+        // cards show the notice instead of their buttons.
+        if (j.error === "payments_closed") router.refresh();
         return null;
       }
       if (success) toast(success, "success");

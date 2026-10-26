@@ -39,12 +39,19 @@ export function FavoriteButton({
   loggedIn,
   size = "md",
   className,
+  onSavedChange,
 }: {
   listingId: string;
   initialSaved: boolean;
   loggedIn: boolean;
   size?: "sm" | "md";
   className?: string;
+  /**
+   * Told each time the heart changes: at once on the tap, and again with the
+   * old value when the write fails and the tap is rolled back. The favourites
+   * page drops a card on `false` and puts it back on `true`.
+   */
+  onSavedChange?: (saved: boolean) => void;
 }) {
   const t = useTranslations("ui.favorite");
   const router = useRouter();
@@ -67,6 +74,7 @@ export function FavoriteButton({
   const setSaved = (v: boolean) => {
     setOverride(v);
     setWatchlistLocal(listingId, v);
+    onSavedChange?.(v);
   };
 
   async function toggle(e: React.MouseEvent) {
