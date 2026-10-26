@@ -3865,7 +3865,15 @@
       "sentTitle": "Visite demandée",
       "confirmedTitle": "Visite confirmée",
       "sentBody": "Le vendeur vous répondra ici et par SMS.",
-      "follow": "Suivre dans Mes visites"
+      "follow": "Suivre dans Mes visites",
+      "slotsLabel": "Vos moments",
+      "defaultMessage": "Bonjour, votre annonce m'intéresse. Je souhaite la visiter.",
+      "phrasesLabel": "Ajouter une phrase",
+      "phrases": {
+        "quick": "Je suis disponible rapidement.",
+        "financing": "Financement prêt.",
+        "family": "Je viens avec ma famille."
+      }
     },
     "actions": {
       "pickSlot": "Moment retenu",
@@ -3881,7 +3889,25 @@
       "cancelled": "Visite annulée.",
       "cancelConfirm": "Annuler cette visite ?",
       "cancelSellerConfirm": "Annuler cette visite ? L'acheteur sera prévenu.",
-      "failed": "Action impossible. Réessayez."
+      "failed": "Action impossible. Réessayez.",
+      "defaultNote": "Merci, à bientôt pour la visite.",
+      "hourLabel": "Heure (facultatif)",
+      "hourChip": "{hour} h",
+      "hourPhrase": "Rendez-vous à {hour} h.",
+      "phrasesLabel": "Ajouter une phrase",
+      "phrases": {
+        "call": "Appelez-moi en arrivant.",
+        "entrance": "Je vous attends devant l'immeuble."
+      },
+      "declineTitle": "Pourquoi refuser ?",
+      "declineReasons": {
+        "slots": "Aucun de ces moments ne me convient.",
+        "unavailable": "Le bien n'est plus disponible."
+      },
+      "proposeLabel": "Proposer un autre moment (facultatif)",
+      "proposePhrase": "Je peux vous recevoir {day}, {part}.",
+      "declineSend": "Envoyer le refus",
+      "back": "Retour"
     },
     "card": {
       "asked": "Demandée le {date}",
@@ -3899,6 +3925,14 @@
       },
       "emptyReceived": "Aucune demande de visite sur vos annonces pour l'instant.",
       "emptySent": "Vous n'avez demandé aucune visite. Sur une annonce, « Demander une visite » propose vos moments au vendeur."
+    },
+    "chips": {
+      "today": "Aujourd'hui",
+      "tomorrow": "Demain",
+      "otherDate": "Autre date",
+      "morning": "Matin",
+      "afternoon": "Après-midi",
+      "evening": "Soir"
     }
   },
   "visitsApi": {

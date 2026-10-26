@@ -3865,7 +3865,15 @@
       "sentTitle": "طلبت زيارة",
       "confirmedTitle": "الزيارة مأكّدة",
       "sentBody": "البائع باش يجاوبك هنا وبـ SMS.",
-      "follow": "تابعها في زياراتي"
+      "follow": "تابعها في زياراتي",
+      "slotsLabel": "الأوقات متاعك",
+      "defaultMessage": "عسلامة، الإعلان متاعك يهمّني ونحب نجي نشوفو.",
+      "phrasesLabel": "زيد جملة",
+      "phrases": {
+        "quick": "نجّم نجي في أقرب وقت.",
+        "financing": "التمويل حاضر.",
+        "family": "نجي مع عايلتي."
+      }
     },
     "actions": {
       "pickSlot": "الوقت المختار",
@@ -3881,7 +3889,25 @@
       "cancelled": "الزيارة تلغات.",
       "cancelConfirm": "تلغي الزيارة هذي؟",
       "cancelSellerConfirm": "تلغي الزيارة هذي؟ الشاري باش يوصلو خبر.",
-      "failed": "ما نجمناش نعملوها. عاود جرّب."
+      "failed": "ما نجمناش نعملوها. عاود جرّب.",
+      "defaultNote": "يعيشك، نتلاقاو نهار الزيارة.",
+      "hourLabel": "الساعة (اختياري)",
+      "hourChip": "{hour}:00",
+      "hourPhrase": "الموعد على الساعة {hour}.",
+      "phrasesLabel": "زيد جملة",
+      "phrases": {
+        "call": "كلّمني كي توصل.",
+        "entrance": "نستنّاك قدّام العمارة."
+      },
+      "declineTitle": "علاش ترفض؟",
+      "declineReasons": {
+        "slots": "حتى وقت من هالأوقات ما يناسبني.",
+        "unavailable": "العقار ما عادش متوفّر."
+      },
+      "proposeLabel": "اقترح وقت آخر (اختياري)",
+      "proposePhrase": "نجّم نستقبلك نهار {day}، {part}.",
+      "declineSend": "ابعث الرفض",
+      "back": "رجوع"
     },
     "card": {
       "asked": "مطلوبة نهار {date}",
@@ -3899,6 +3925,14 @@
       },
       "emptyReceived": "حتى طلب زيارة على إعلاناتك للتوّا.",
       "emptySent": "ما طلبت حتى زيارة. في إعلان، « اطلب زيارة » يقترح أوقاتك على البائع."
+    },
+    "chips": {
+      "today": "اليوم",
+      "tomorrow": "غدوة",
+      "otherDate": "نهار آخر",
+      "morning": "الصباح",
+      "afternoon": "العشية",
+      "evening": "آخر النهار"
     }
   },
   "visitsApi": {
