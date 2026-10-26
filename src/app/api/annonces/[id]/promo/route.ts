@@ -7,6 +7,7 @@ import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { formatDate } from "@/lib/utils";
 import { canBuy, placementOf } from "@/lib/promo";
+import { featureOff } from "@/lib/settings/gate";
 
 /**
  * POST /api/annonces/:id/promo  { product: "promo-accueil" | "promo-top-recherche" | "promo-banniere" }
@@ -18,6 +19,8 @@ import { canBuy, placementOf } from "@/lib/promo";
  * time; the same one again extends it.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const off = await featureOff("feature_promos");
+  if (off) return off;
   if (!isSameOrigin(req)) return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();

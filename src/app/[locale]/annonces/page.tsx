@@ -16,6 +16,7 @@ import { redirect } from "next/navigation";
 import { understand, understoodSomething } from "@/lib/search/understand";
 import { isMostlyArabic } from "@/lib/search/script";
 import { Sparkles } from "lucide-react";
+import { getSettings } from "@/lib/settings/server";
 
 export const dynamic = "force-dynamic";
 
@@ -62,9 +63,6 @@ function dealOf(v: string | undefined): "sale" | "rent" | null {
 
 /** The deal tabs, in order; the text is `catalogue.deal.<key>`. */
 const DEALS = ["all", "sale", "rent"] as const;
-
-/** Annonces per page — four rows of the desktop grid. */
-const PAGE_SIZE = 24;
 
 /** "Surface" sorts in JS (the area lives in jsonb), over at most this many. */
 const SURFACE_SORT_WINDOW = 500;
@@ -165,13 +163,17 @@ export default async function AnnoncesPage({
   const locale = await getLocale();
   const t = await getTranslations("catalogue");
   const admin = getServiceSupabase();
+  const settings = await getSettings();
+  // Annonces per page (/admin/settings → Publication).
+  const pageSize = settings.catalogue_page_size;
 
   // The catalogue's own search box (via=search) typed in Arabic on the French
   // site: the same search, in Arabic. The /ar page sets the language cookie.
+  // With the switch off, it stays on the French site.
   if (sp.via === "search") {
     const next = new URLSearchParams();
     for (const [k, v] of Object.entries(sp)) if (v != null && k !== "via" && k !== "page") next.set(k, v);
-    if (locale === "fr" && isMostlyArabic(sp.q)) redirect(`/ar/annonces?${next.toString()}`);
+    if (locale === "fr" && settings.feature_arabic_redirect && isMostlyArabic(sp.q)) redirect(`/ar/annonces?${next.toString()}`);
     redirect(`/${locale}/annonces?${next.toString()}`);
   }
 
@@ -179,8 +181,9 @@ export default async function AnnoncesPage({
   // 1200 dt » becomes the filters below — once, through a redirect, so every
   // control on the page shows what was understood and can be changed. What
   // was not understood stays the keyword; ?nl=0 searches the words as typed,
-  // and `nlq` (the original words) marks a search already read.
-  if (sp.q?.trim() && sp.nl !== "0" && !sp.nlq) {
+  // and `nlq` (the original words) marks a search already read. Switched off,
+  // every search is the plain keyword search.
+  if (settings.feature_natural_search && sp.q?.trim() && sp.nl !== "0" && !sp.nlq) {
     const u = understand(sp.q);
     if (understoodSomething(u)) {
       const next = new URLSearchParams();
@@ -302,22 +305,22 @@ export default async function AnnoncesPage({
       .slice()
       .sort((a, b) => (surfaceOf(b.attributes) ?? 0) - (surfaceOf(a.attributes) ?? 0));
     total = count ?? all.length;
-    page = Math.min(page, Math.max(1, Math.ceil(all.length / PAGE_SIZE)));
-    rows = all.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    page = Math.min(page, Math.max(1, Math.ceil(all.length / pageSize)));
+    rows = all.slice((page - 1) * pageSize, page * pageSize);
   } else {
-    const from = (page - 1) * PAGE_SIZE;
-    let res = await q.range(from, from + PAGE_SIZE - 1);
+    const from = (page - 1) * pageSize;
+    let res = await q.range(from, from + pageSize - 1);
     // A page past the end — a stale bookmark, an indexed link, or annonces that
     // have expired since — makes PostgREST refuse the range. `count` then came
     // back null, so the page printed "0 bien" with no pager to escape with.
     if (res.error && page > 1) {
       page = 1;
-      res = await q.range(0, PAGE_SIZE - 1);
+      res = await q.range(0, pageSize - 1);
     }
     rows = (res.data ?? []) as unknown as Row[];
     total = res.count ?? rows.length;
   }
-  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const lastPage = Math.max(1, Math.ceil(total / pageSize));
 
   const { data: govRows } = await admin
     .from("listings")
@@ -716,7 +719,7 @@ export default async function AnnoncesPage({
         </form>
       </details>
 
-      {sp.nlq && (
+      {settings.feature_natural_search && sp.nlq && (
         <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] text-foreground ring-1 ring-gold-soft">
           <Sparkles className="size-3.5 shrink-0 text-gold" />
           <span>{t("understood", { query: sp.nlq })}</span>
@@ -846,18 +849,20 @@ export default async function AnnoncesPage({
 
       {/* Nothing here, or nothing right: keep the search as a demande and be
           told when it is answered (0168). Same filters, nothing to retype. */}
-      <section className="mt-8 flex flex-col items-start gap-3 rounded-2xl border border-gold-soft bg-gold-faint p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[14px] font-extrabold text-foreground">{t("requestCtaTitle")}</p>
-          <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{t("requestCtaBody")}</p>
-        </div>
-        <Link
-          href={qs({ sort: undefined, q: undefined }).replace("/annonces", "/demandes/nouvelle") as never}
-          className="mazed-btn-luxe tap-target inline-flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-[13px]"
-        >
-          <BellRing className="size-4" /> {t("requestCta")}
-        </Link>
-      </section>
+      {settings.feature_requests && (
+        <section className="mt-8 flex flex-col items-start gap-3 rounded-2xl border border-gold-soft bg-gold-faint p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[14px] font-extrabold text-foreground">{t("requestCtaTitle")}</p>
+            <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{t("requestCtaBody")}</p>
+          </div>
+          <Link
+            href={qs({ sort: undefined, q: undefined }).replace("/annonces", "/demandes/nouvelle") as never}
+            className="mazed-btn-luxe tap-target inline-flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-[13px]"
+          >
+            <BellRing className="size-4" /> {t("requestCta")}
+          </Link>
+        </section>
+      )}
 
       {lastPage > 1 && (
         <nav className="mt-8 flex items-center justify-center gap-2" aria-label={t("pagination")}>

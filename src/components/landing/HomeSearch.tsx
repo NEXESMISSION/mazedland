@@ -9,6 +9,7 @@ import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 import { Search, MapPin } from "lucide-react";
 import { SelectMenu, type SelectOption } from "@/components/ui/SelectMenu";
 import { TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
+import { useSetting } from "@/components/settings/SettingsProvider";
 
 // Canonical 24-wilaya list (previously a truncated 16 here).
 const GOVERNORATES = TUNISIAN_GOVERNORATES;
@@ -43,6 +44,7 @@ export function HomeSearch({
   const router = useRouter();
   const t = useTranslations();
   const locale = useLocale();
+  const arabicRedirect = useSetting("feature_arabic_redirect");
   const [q, setQ] = useState("");
   const [gov, setGov] = useState("");
   const [type, setType] = useState("");
@@ -70,8 +72,9 @@ export function HomeSearch({
     // never reads it, so choosing « Villa » searched everything.
     if (type && TYPE_TO_CATEGORY[type]) params.set("cat", TYPE_TO_CATEGORY[type]);
     const qs = params.toString();
-    // Typed in Arabic on the French site: answered in Arabic, and remembered.
-    if (locale === "fr" && isMostlyArabic(cleanQ)) {
+    // Typed in Arabic on the French site: answered in Arabic, and remembered —
+    // unless an admin switched that off.
+    if (arabicRedirect && locale === "fr" && isMostlyArabic(cleanQ)) {
       fetch("/api/account/language", {
         method: "POST",
         headers: { "content-type": "application/json" },

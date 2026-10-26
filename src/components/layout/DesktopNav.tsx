@@ -10,6 +10,7 @@ import { AccountMenu } from "./AccountMenu";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { normalizeSearchQuery } from "@/lib/search";
 import { isMostlyArabic } from "@/lib/search/script";
+import { useSetting } from "@/components/settings/SettingsProvider";
 import { Search, Plus } from "lucide-react";
 
 // Lazy-loaded — see TopBar for rationale (heavy icon set + realtime socket +
@@ -75,6 +76,7 @@ export function DesktopNav() {
   const pathname = usePathname();
   const router = useRouter();
   const locale = useLocale();
+  const arabicRedirect = useSetting("feature_arabic_redirect");
   const [q, setQ] = useState("");
 
   // Show what the results are filtered by. Read from the URL after mount
@@ -101,8 +103,9 @@ export function DesktopNav() {
     if (clean) params.set("q", clean);
     else params.delete("q");
     const qs = params.toString();
-    // Typed in Arabic on the French site: answered in Arabic, and remembered.
-    if (locale === "fr" && isMostlyArabic(clean)) {
+    // Typed in Arabic on the French site: answered in Arabic, and remembered —
+    // unless an admin switched that off.
+    if (arabicRedirect && locale === "fr" && isMostlyArabic(clean)) {
       fetch("/api/account/language", {
         method: "POST",
         headers: { "content-type": "application/json" },

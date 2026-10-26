@@ -5,6 +5,8 @@ import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { proGate } from "@/lib/pro/api";
 import { parseShopInput, slugify } from "@/lib/pro/shops";
+import { featureOff } from "@/lib/settings/gate";
+import { getSettings } from "@/lib/settings/server";
 
 /**
  * POST /api/pro/shops — open a shop (0173). One shop per owner. It waits for
@@ -12,12 +14,15 @@ import { parseShopInput, slugify } from "@/lib/pro/shops";
  * it up meanwhile.
  */
 export async function POST(req: NextRequest) {
+  const off = await featureOff("feature_pro_signup");
+  if (off) return off;
   const gate = await proGate(req);
   if (gate instanceof NextResponse) return gate;
   const { user, admin } = gate;
   const t = await apiTranslator(req, "proApi");
 
-  const { data: over } = await admin.rpc("check_rate_limit", { p_key: `shop-create:${user.id}`, p_max: 5, p_window_secs: 3600 });
+  const { limit_shop_create_per_hour: perHour } = await getSettings();
+  const { data: over } = await admin.rpc("check_rate_limit", { p_key: `shop-create:${user.id}`, p_max: perHour, p_window_secs: 3600 });
   if (over === true) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
   const { data: owned } = await admin.from("shops").select("id").eq("owner_id", user.id).limit(1);

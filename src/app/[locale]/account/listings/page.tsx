@@ -14,7 +14,7 @@ import {
   ArrowRight, AlertTriangle, Inbox, Megaphone, Sparkles,
 } from "lucide-react";
 import { RenewButton } from "./RenewButton";
-import { moderationSettings } from "@/lib/moderation/server";
+import { getSettings } from "@/lib/settings/server";
 import { ListingStatusActions } from "./ListingStatusActions";
 import { PaySubmitButton } from "@/components/payments/PaySubmitButton";
 
@@ -138,9 +138,10 @@ export default async function MyListingsPage({
     return n + Math.max(0, (c.quota_total as number) - (c.quota_used as number));
   }, 0);
 
+  const settings = await getSettings();
   // Free places (0165): annonces live or waiting count against the limit. The
   // renew and submit routes decide for real; this is what the page shows.
-  const freeLimit = admin ? (await moderationSettings(admin)).freeLimit : 2;
+  const freeLimit = settings.free_listing_limit;
   const liveCount = (listRes.data ?? []).filter((l) =>
     ["pending_review", "published"].includes(l.status as string),
   ).length;
@@ -301,8 +302,9 @@ export default async function MyListingsPage({
           {t("view")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
         </Link>
         {/* Edit what is online (0172), or what is still waiting for an admin —
-            a zero too many is often noticed right after sending. */}
-        {isEditable(l) && (
+            a zero too many is often noticed right after sending. Not while
+            editing is switched off in the console. */}
+        {settings.feature_listing_edit && isEditable(l) && (
           <Link
             href={`/annonces/nouvelle?edit=${l.id}` as never}
             className={
@@ -327,8 +329,9 @@ export default async function MyListingsPage({
             <Megaphone className="size-3.5" /> {t("promote")}
           </Link>
         )}
-        {/* Paid placements: home page, top of search, the home banner (0156). */}
-        {l.status === "published" && (
+        {/* Paid placements: home page, top of search, the home banner (0156),
+            while the console sells them. */}
+        {settings.feature_promos && l.status === "published" && (
           <Link
             href={`/account/listings/${l.id}/mise-en-avant` as never}
             className={
