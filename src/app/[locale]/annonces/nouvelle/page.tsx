@@ -19,6 +19,7 @@ import { liveListingCount } from "@/lib/moderation/server";
 import { getSettings } from "@/lib/settings/server";
 import { asDealType, isDealType } from "@/lib/listings/deal";
 import { draftNeedsChoice } from "@/lib/listings/wizard";
+import { isoDayIn } from "@/lib/listings/choices";
 import { aiAvailable } from "@/lib/ai/server";
 import { asPendingEdit, isEditable } from "@/lib/listings/edit";
 import { activePlan, can, membershipsOf, shopLiveCount } from "@/lib/pro/shops";
@@ -279,6 +280,9 @@ export default async function NewListingPage({
       shops={shops}
       initialShopId={initialShopId}
       priceRefs={priceRefs}
+      // Read here, in Tunis: the form's « Tout de suite » and « Neuf » then
+      // mean the same day on the server's render and the phone's.
+      today={isoDayIn(new Date(), "Africa/Tunis")}
       locale={locale}
     />
   );
