@@ -899,7 +899,15 @@
       "send": "Envoyer le signalement",
       "thanks": "Merci, votre signalement a été envoyé.",
       "failed": "Signalement impossible pour le moment.",
-      "alreadySent": "Signalement envoyé. Merci."
+      "alreadySent": "Signalement envoyé. Merci.",
+      "chips": {
+        "scam": "Arnaque",
+        "wrong_info": "Infos fausses",
+        "sold": "Plus disponible",
+        "duplicate": "En double",
+        "inappropriate": "Inapproprié",
+        "other": "Autre"
+      }
     },
     "forRent": "À louer",
     "forSale": "À vendre",
