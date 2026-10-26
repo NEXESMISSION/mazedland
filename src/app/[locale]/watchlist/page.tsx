@@ -1,9 +1,9 @@
 import { redirect } from "@/i18n/navigation";
 
 /**
- * Legacy /watchlist — folded into the unified "Mes activités" hub. Kept as
- * a redirect so old notification links, bookmarks, and the back-button
- * history don't 404. Favoris is a tab there.
+ * Legacy /watchlist — folded into /account/activity, which is « Mes favoris »
+ * and nothing else now (the « Favoris » tab). Kept as a redirect so old
+ * notification links, bookmarks, and the back-button history don't 404.
  */
 export default async function WatchlistRedirect({
   params,
