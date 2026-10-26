@@ -813,7 +813,10 @@
     "searchAsTyped": "لوّج على النص كيف ما هو",
     "promoted": "مبرّز",
     "rangeInverted": "الحدّ الأقصى لازم يكون أكبر من الحدّ الأدنى ولا يساويه.",
-    "budgetToFix": "لازم تتصلّح"
+    "budgetToFix": "لازم تتصلّح",
+    "filtersToggle": "الفلاتر",
+    "filtersNone": "النوع، البلاصة، الميزانية، الترتيب…",
+    "filtersBudgetToFix": "الميزانية لازم تتصلّح"
   },
   "listing": {
     "metaNotFound": "الإعلان غير موجود — Mazed Immo",

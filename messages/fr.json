@@ -813,7 +813,10 @@
     "searchAsTyped": "Chercher le texte tel quel",
     "promoted": "Mise en avant",
     "rangeInverted": "Le maximum doit être supérieur ou égal au minimum.",
-    "budgetToFix": "À corriger"
+    "budgetToFix": "À corriger",
+    "filtersToggle": "Filtrer",
+    "filtersNone": "Type, lieu, budget, tri…",
+    "filtersBudgetToFix": "Budget à corriger"
   },
   "listing": {
     "metaNotFound": "Annonce introuvable — Mazed Immo",
