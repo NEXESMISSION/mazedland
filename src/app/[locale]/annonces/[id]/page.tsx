@@ -10,7 +10,7 @@ import { cn, formatDate, formatNumber, formatTND } from "@/lib/utils";
 import { asDealType, firstMonthCost } from "@/lib/listings/deal";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
-import { delegationLabel } from "@/lib/delegations";
+import { canonicalDelegation, shownDelegation } from "@/lib/delegations";
 import { routing } from "@/i18n/routing";
 import { Ltr } from "@/components/ui/Ltr";
 import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
@@ -603,8 +603,9 @@ export default async function AnnoncePage({
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-muted">
               <span className="inline-flex items-center gap-1">
                 <MapPin className="size-3.5" /> {governorateLabel(l.governorate, locale)}
-                {l.delegation ? ` · ${delegationLabel(l.delegation, locale)}` : ""}
-                {l.address ? ` · ${l.address}` : ""}
+                {shownDelegation(l.governorate, l.delegation, locale) ? ` · ${shownDelegation(l.governorate, l.delegation, locale)}` : ""}
+                {/* An old free-text délégation off the list reads as the quartier it was. */}
+                {(l.address ?? (l.delegation && !canonicalDelegation(l.governorate, l.delegation) ? l.delegation : null)) ? ` · ${l.address ?? l.delegation}` : ""}
               </span>
               {l.published_at && (
                 <span className="inline-flex items-center gap-1">

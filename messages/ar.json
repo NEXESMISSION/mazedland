@@ -663,7 +663,9 @@
     "governorate": "الولاية",
     "allWilayas": "كل الولايات",
     "type": "النوع",
-    "allTypes": "كل الأنواع"
+    "allTypes": "كل الأنواع",
+    "allDelegations": "المعتمديات الكل",
+    "delegation": "المعتمدية"
   },
   "notificationsUi": {
     "title": "الإشعارات",

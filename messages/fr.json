@@ -663,7 +663,9 @@
     "governorate": "Gouvernorat",
     "allWilayas": "Tous les gouvernorats",
     "type": "Type",
-    "allTypes": "Tous les types"
+    "allTypes": "Tous les types",
+    "allDelegations": "Toutes les délégations",
+    "delegation": "Délégation"
   },
   "notificationsUi": {
     "title": "Notifications",

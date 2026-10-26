@@ -11,7 +11,7 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatNumber, formatTND } from "@/lib/utils";
 import { isRtl } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
-import { delegationLabel } from "@/lib/delegations";
+import { shownDelegation } from "@/lib/delegations";
 import type { HomeListingRow } from "@/lib/home/feed";
 import { catalogueHrefForType } from "@/lib/catalog/browse";
 import { asDealType } from "@/lib/listings/deal";
@@ -194,7 +194,7 @@ export async function HomeDesktop({
         id: l.id,
         imageUrl: propertyPhotoUrl(photo.storage_path),
         href: `/annonces/${l.id}`,
-        governorate: l.delegation?.trim() ? delegationLabel(l.delegation, locale) : governorateLabel(l.governorate, locale),
+        governorate: shownDelegation(l.governorate, l.delegation, locale) ?? governorateLabel(l.governorate, locale),
         title: l.title,
         priceLabel:
           l.price_on_request || l.price == null

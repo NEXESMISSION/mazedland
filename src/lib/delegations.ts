@@ -186,3 +186,14 @@ export function delegationLabel(name: string | null | undefined, locale: string)
 export function governorateOfDelegation(name: string | null | undefined): TunisianGovernorate | null {
   return name ? (BY_KEY.get(placeKey(name))?.gov ?? null) : null;
 }
+
+/**
+ * The délégation to show beside a place: a listed one of that governorate,
+ * in the reader's language — or null. A name off the list is an old
+ * free-text entry (« sfax », « alain »): shown beside the governorate it
+ * only repeated it, or said a neighbourhood the quartier now carries.
+ */
+export function shownDelegation(gov: string | null | undefined, del: string | null | undefined, locale: string): string | null {
+  const listed = canonicalDelegation(gov, del);
+  return listed ? delegationLabel(listed, locale) : null;
+}

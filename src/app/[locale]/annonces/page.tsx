@@ -9,7 +9,7 @@ import { searchTokens } from "@/lib/search";
 import { PRICE_BUCKETS, RENT_BUCKETS, TYPE_TO_CATEGORY, findCategory } from "@/lib/catalog/browse";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
-import { canonicalDelegation, delegationLabel } from "@/lib/delegations";
+import { canonicalDelegation, delegationLabel, shownDelegation } from "@/lib/delegations";
 import { BellRing, ChevronDown, ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { FURNISHED, isoDay, type Furnished } from "@/lib/listings/deal";
 import { CompareToggle } from "@/components/compare/CompareToggle";
@@ -940,7 +940,7 @@ export default async function AnnoncesPage({
                         </span>
                       )}
                       <span className="inline-flex items-center gap-1">
-                        <MapPin className="size-3" /> {r.delegation ? `${delegationLabel(r.delegation, locale)}, ` : ""}{governorateLabel(r.governorate, locale)}
+                        <MapPin className="size-3" /> {shownDelegation(r.governorate, r.delegation, locale) ? `${shownDelegation(r.governorate, r.delegation, locale)}, ` : ""}{governorateLabel(r.governorate, locale)}
                       </span>
                     </div>
                     {/* Kept in by the « libre avant » filter because the owner gave

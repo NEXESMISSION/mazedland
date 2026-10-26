@@ -10,7 +10,7 @@ import { CompareToggle } from "@/components/compare/CompareToggle";
 import { Ltr } from "@/components/ui/Ltr";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
-import { delegationLabel } from "@/lib/delegations";
+import { shownDelegation } from "@/lib/delegations";
 import { asDealType } from "@/lib/listings/deal";
 
 /**
@@ -91,7 +91,7 @@ export async function AnnonceCard({
   const attrs = (listing.attributes ?? {}) as Record<string, unknown>;
   const area = Number(attrs.area_sqm);
   const rooms = Number(attrs.rooms);
-  const where = listing.delegation?.trim() ? delegationLabel(listing.delegation, locale) : governorateLabel(listing.governorate, locale);
+  const where = shownDelegation(listing.governorate, listing.delegation, locale) ?? governorateLabel(listing.governorate, locale);
   const rent = asDealType(listing.deal_type) === "rent";
   const promoted = Boolean(listing.promo_home_featured || listing.promo_banner || listing.promo_top_listed);
   const reserved = listing.availability === "reserved";

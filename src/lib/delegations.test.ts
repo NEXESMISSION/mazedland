@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { TUNISIAN_GOVERNORATES } from "./tunisia";
-import { DELEGATIONS, canonicalDelegation, delegationLabel, delegationsOf, governorateOfDelegation, placeKey } from "./delegations";
+import { DELEGATIONS, canonicalDelegation, delegationLabel, delegationsOf, governorateOfDelegation, placeKey, shownDelegation } from "./delegations";
 
 describe("the délégations", () => {
   it("are the 264 of the 24 governorates", () => {
@@ -51,5 +51,11 @@ describe("the délégations", () => {
     expect(governorateOfDelegation("Hammamet")).toBe("Nabeul");
     expect(governorateOfDelegation("djerba midoun")).toBe("Médenine");
     expect(governorateOfDelegation("Ennasr")).toBe(null);
+  });
+  it("shows only a listed délégation beside a place", () => {
+    expect(shownDelegation("Sfax", "sakiet ezzit", "ar")).toBe("ساقية الزيت");
+    expect(shownDelegation("Sfax", "sfax", "fr")).toBeNull();
+    expect(shownDelegation("Sfax", "alain", "fr")).toBeNull();
+    expect(shownDelegation("Tunis", "Sakiet Ezzit", "fr")).toBeNull();
   });
 });

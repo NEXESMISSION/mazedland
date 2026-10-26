@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { normalizeSearchQuery } from "@/lib/search";
 import { isMostlyArabic } from "@/lib/search/script";
 import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
+import { delegationLabel, delegationsOf } from "@/lib/delegations";
 import { Search, MapPin } from "lucide-react";
 import { SelectMenu, type SelectOption } from "@/components/ui/SelectMenu";
 import { TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
@@ -47,12 +48,24 @@ export function HomeSearch({
   const arabicRedirect = useSetting("feature_arabic_redirect");
   const [q, setQ] = useState("");
   const [gov, setGov] = useState("");
+  const [del, setDel] = useState("");
   const [type, setType] = useState("");
+  // A délégation belongs to one governorate: changing it starts over.
+  const pickGov = (g: string) => {
+    setGov(g);
+    setDel("");
+  };
 
   const govOptions: SelectOption[] = [
     { value: "", label: t("search.allWilayas") },
     // The value stays the stored French name; only the label is translated.
     ...GOVERNORATES.map((g) => ({ value: g, label: governorateLabel(g, locale) })),
+  ];
+  const delOptions: SelectOption[] = [
+    { value: "", label: t("search.allDelegations") },
+    ...delegationsOf(gov)
+      .map((d) => ({ value: d, label: delegationLabel(d, locale) }))
+      .sort((a, b) => a.label.localeCompare(b.label, locale)),
   ];
   const typeOptions: SelectOption[] = [
     { value: "", label: t("search.allTypes") },
@@ -67,6 +80,7 @@ export function HomeSearch({
     const cleanQ = normalizeSearchQuery(q);
     if (cleanQ) params.set("q", cleanQ);
     if (gov) params.set("gov", gov);
+    if (gov && del) params.set("del", del);
     // The catalogue filters by CATEGORY. This used to send `types=` — the
     // auction-era explore page's parameter — through a redirect to a page that
     // never reads it, so choosing « Villa » searched everything.
@@ -115,7 +129,7 @@ export function HomeSearch({
         <div className="my-1.5 w-px shrink-0 bg-border" />
         <SelectMenu
           value={gov}
-          onChange={setGov}
+          onChange={pickGov}
           options={govOptions}
           ariaLabel={t("search.governorate")}
           icon={<MapPin className="size-4 shrink-0 text-gold" strokeWidth={2} aria-hidden />}
@@ -188,13 +202,25 @@ export function HomeSearch({
           <div className="min-w-0 flex-[1_1_10rem]">
             <SelectMenu
               value={gov}
-              onChange={setGov}
+              onChange={pickGov}
               options={govOptions}
               ariaLabel={t("search.governorate")}
               icon={<MapPin className="size-3.5 shrink-0 text-gold" strokeWidth={2} aria-hidden />}
               triggerClassName="tap-target flex w-full items-center gap-2 rounded-full bg-surface-2 px-3 py-2.5 text-[12px] font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40"
             />
           </div>
+          {gov && (
+            <div className="min-w-0 basis-full">
+              <SelectMenu
+                value={del}
+                onChange={setDel}
+                options={delOptions}
+                ariaLabel={t("search.delegation")}
+                icon={<MapPin className="size-3.5 shrink-0 text-muted" strokeWidth={2} aria-hidden />}
+                triggerClassName="tap-target flex w-full items-center gap-2 rounded-full bg-surface-2 px-3 py-2.5 text-[12px] font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40"
+              />
+            </div>
+          )}
           <div className="min-w-0 flex-[1_1_10rem]">
             <SelectMenu
               value={type}
