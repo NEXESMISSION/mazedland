@@ -1113,15 +1113,15 @@
     },
     "listing_edit_applied": {
       "title": "Modification publiée",
-      "body": "Vos modifications de « {title} » sont en ligne."
+      "body": "« {title} » est de nouveau en ligne, avec vos modifications."
     },
     "listing_edit_rejected": {
       "title": "Modification refusée",
-      "body": "Les modifications de « {title} » n'ont pas été publiées. Motif : {reason}"
+      "body": "Les modifications de « {title} » n'ont pas été publiées. Motif : {reason}. L'annonce reste telle qu'elle était avant."
     },
     "admin_listing_edit_pending": {
       "title": "Modification à vérifier",
-      "body": "« {title} » — le vendeur a modifié son annonce en ligne."
+      "body": "« {title} » — le vendeur a modifié son annonce : elle est hors ligne jusqu'à votre validation."
     },
     "shop_approved": {
       "title": "Boutique ouverte",
@@ -1349,19 +1349,19 @@
     "aiQuestions": "Pour compléter l'annonce, dites-nous aussi :",
     "aiPrivacy": "Votre numéro et vos e-mails ne sont jamais envoyés. Rien n'est publié sans que vous l'ayez vérifié.",
     "editTitle": "Modifier mon annonce",
-    "editSubtitle": "Corrigez ce qui doit l'être. L'annonce reste en ligne pendant ce temps.",
-    "editBanner": "Vous modifiez une annonce en ligne. Rien ne change tant que vous n'avez pas enregistré.",
-    "editPendingBanner": "Votre dernière modification attend une vérification : vous la voyez telle que vous l'avez envoyée.",
+    "editSubtitle": "Corrigez ce qui doit l'être. Une fois enregistrée, la modification passe par notre équipe : l'annonce quitte le site jusqu'à sa validation.",
+    "editBanner": "Vous modifiez une annonce en ligne. Rien ne change tant que vous n'avez pas enregistré ; ensuite, elle est hors ligne jusqu'à ce que notre équipe valide la modification.",
+    "editPendingBanner": "Votre dernière modification attend une vérification : vous la voyez telle que vous l'avez envoyée. L'annonce est hors ligne en attendant.",
     "editWaitingSubtitle": "Corrigez ce qui doit l'être avant sa mise en ligne.",
     "editWaitingBanner": "Votre annonce attend encore la vérification. Vos corrections la remplacent dès que vous enregistrez.",
     "editWaitingNote": "Corriger une annonce en vérification est gratuit. Si elle passe maintenant les contrôles, elle est en ligne tout de suite ; sinon elle reste dans la file, avec vos corrections.",
     "saveChanges": "Enregistrer les modifications",
-    "editFreeNote": "Modifier une annonce est gratuit et ne change pas sa date de fin. Si une modification doit être vérifiée, l'annonce reste en ligne telle quelle en attendant.",
+    "editFreeNote": "Modifier une annonce est gratuit et ne change pas sa date de fin. Chaque modification est vérifiée par notre équipe : l'annonce est retirée du site en attendant, et revient en ligne dès qu'elle est validée — généralement en moins de 24 h.",
     "editFailed": "Impossible d'enregistrer les modifications pour le moment.",
     "editAppliedTitle": "Modifications en ligne",
     "editAppliedBody": "Votre annonce affiche déjà la nouvelle version.",
     "editPendingTitle": "Modifications envoyées",
-    "editPendingBody": "Notre équipe vérifie ces modifications. Votre annonce reste en ligne telle qu'elle était, et vous êtes prévenu dès qu'elles sont publiées.",
+    "editPendingBody": "Notre équipe vérifie ces modifications. En attendant, votre annonce n'apparaît plus sur le site ; vous êtes prévenu dès qu'elle revient en ligne.",
     "publishFor": "Publier pour",
     "publishForMe": "Moi-même",
     "publishForMeHint": "Annonce de particulier",
@@ -2695,7 +2695,7 @@
       "editApproved": "Modification publiée.",
       "editRejected": "Modification refusée.",
       "rejectEditTitle": "Refuser cette modification ?",
-      "rejectEditBody": "L'annonce reste en ligne telle qu'elle était. Le vendeur reçoit le motif."
+      "rejectEditBody": "L'annonce revient en ligne telle qu'elle était avant la modification. Le vendeur reçoit le motif."
     },
     "forRent": "À louer",
     "perMonth": "{amount} / mois",
@@ -2705,7 +2705,7 @@
       "sale": "Vente",
       "rent": "Location"
     },
-    "editWaiting": "Modification à vérifier · {why}",
+    "editWaiting": "Modification à vérifier (hors ligne) · {why}",
     "editFields": {
       "title": "Titre",
       "description": "Description",
@@ -2727,7 +2727,8 @@
       "contact_whatsapp": "WhatsApp",
       "category_id": "Catégorie",
       "show_phone": "Numéro affiché"
-    }
+    },
+    "editWaitingPlain": "Modification à vérifier (hors ligne)"
   },
   "adminSellers": {
     "title": "Vendeurs",
@@ -2935,7 +2936,8 @@
       "skipServerError": "erreur serveur",
       "skipAlreadyArchived": "déjà archivée",
       "skipNotPublished": "pas en ligne",
-      "skipNotFound": "introuvable"
+      "skipNotFound": "introuvable",
+      "skipEditWaiting": "modification à valider depuis sa fiche"
     },
     "listing": {
       "notAwaitingPayment": "Cette annonce est « {status} ».",

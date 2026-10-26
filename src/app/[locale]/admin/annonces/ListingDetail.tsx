@@ -364,7 +364,7 @@ export function ListingDetail({
             </AdminButton>
           </>
         )}
-        {l.status === "pending_review" && (
+        {l.status === "pending_review" && !l.pendingEdit && (
           <>
             <AdminButton
               variant="primary"

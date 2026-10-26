@@ -6,7 +6,7 @@ import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { publishListing } from "@/lib/listings/publish";
 import { asDealType, closedStatus } from "@/lib/listings/deal";
-import { applyEdit, asPendingEdit } from "@/lib/listings/edit";
+import { applyEdit, asPendingEdit, dropEdit } from "@/lib/listings/edit";
 
 /**
  * Everything an admin can do to one annonce.
@@ -69,7 +69,7 @@ export async function POST(
     days?: unknown;
     fields?: unknown;
   };
-  const action = typeof body.action === "string" ? body.action : "";
+  let action = typeof body.action === "string" ? body.action : "";
   // The `detail` sentences below are shown to the moderator as-is, in the
   // language of the page that asked. Notification texts are not (yet).
   const t = await apiTranslator(req, "adminApi.listing");
@@ -82,6 +82,13 @@ export async function POST(
     .eq("id", id)
     .maybeSingle();
   if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
+
+  // Held offline for a seller's edit (0176): publishing or refusing it is
+  // about the edit. A plain approve would put the old version online and
+  // leave the edit hanging; a plain refusal would bury an approved annonce.
+  if ((action === "approve" || action === "reject") && listing.status === "pending_review" && asPendingEdit(listing.pending_edit)) {
+    action = `${action}_edit`;
+  }
 
   // ── Settle the publication fee ────────────────────────────────────────────
   // Two ways a fee stops being owed:
@@ -353,49 +360,53 @@ export async function POST(
     return NextResponse.json({ ok: true });
   }
 
-  // ── A seller's edit of a live annonce, held by the rules (0172) ───────────
-  // Approve writes exactly what the seller sent; refuse discards it with a
-  // reason the seller reads. Either way the annonce stayed online meanwhile.
+  // ── A seller's edit of a live annonce (0172, 0176) ────────────────────────
+  // Approve writes exactly what the seller sent and puts the annonce back
+  // online; refuse discards it with a reason the seller reads, and the
+  // approved version goes back online as it was.
   if (action === "approve_edit" || action === "reject_edit") {
     const edit = asPendingEdit(listing.pending_edit);
     if (!edit) return NextResponse.json({ error: "no_pending_edit", detail: t("noPendingEdit") }, { status: 409 });
 
     if (action === "approve_edit") {
-      if (listing.status !== "published") {
+      if (listing.status !== "published" && listing.status !== "pending_review") {
         return NextResponse.json({ error: "not_published", detail: t("editNotLive") }, { status: 409 });
       }
-      const out = await applyEdit(admin, id, edit);
+      const out = await applyEdit(admin, id, edit, user.id);
       if (!out.ok) return fail("listing_edit_failed", 500, out.error);
-      await admin
-        .rpc("enqueue_notification", {
-          p_user_id: listing.seller_id,
-          p_kind: "listing_edit_applied",
-          p_title: "Modification publiée",
-          p_body: `Vos modifications de « ${listing.title} » sont en ligne.`,
-          p_link: `/annonces/${id}`,
-          p_payload: { vars: { title: listing.title } },
-        })
-        .then(() => {}, () => {});
-      logAction(req, user, "admin.listing.approve_edit", { id });
-      return NextResponse.json({ ok: true });
+      // Republished after expiring meanwhile: that path already told the seller.
+      if (!out.republished) {
+        await admin
+          .rpc("enqueue_notification", {
+            p_user_id: listing.seller_id,
+            p_kind: "listing_edit_applied",
+            p_title: "Modification publiée",
+            p_body: `« ${listing.title} » est de nouveau en ligne, avec vos modifications.`,
+            p_link: `/annonces/${id}`,
+            p_payload: { vars: { title: listing.title } },
+          })
+          .then(() => {}, () => {});
+      }
+      logAction(req, user, "admin.listing.approve_edit", { id, republished: out.republished });
+      return NextResponse.json({ ok: true, status: "published" });
     }
 
     const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
     if (!reason) return NextResponse.json({ error: "reason_required", detail: t("reasonRequired") }, { status: 400 });
-    const { error } = await admin.from("listings").update({ pending_edit: null, pending_edit_at: null }).eq("id", id);
-    if (error) return fail("listing_edit_failed", 500, error);
+    const dropped = await dropEdit(admin, id);
+    if (!dropped.ok) return fail("listing_edit_failed", 500, dropped.error);
     await admin
       .rpc("enqueue_notification", {
         p_user_id: listing.seller_id,
         p_kind: "listing_edit_rejected",
         p_title: "Modification refusée",
-        p_body: `Les modifications de « ${listing.title} » n'ont pas été publiées. Motif : ${reason}`,
+        p_body: `Les modifications de « ${listing.title} » n'ont pas été publiées. Motif : ${reason}. L'annonce reste telle qu'elle était avant.`,
         p_link: "/account/listings",
         p_payload: { vars: { title: listing.title, reason } },
       })
       .then(() => {}, () => {});
-    logAction(req, user, "admin.listing.reject_edit", { id });
-    return NextResponse.json({ ok: true });
+    logAction(req, user, "admin.listing.reject_edit", { id, status: dropped.status });
+    return NextResponse.json({ ok: true, status: dropped.status });
   }
 
   // ── Delete ────────────────────────────────────────────────────────────────

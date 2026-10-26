@@ -238,7 +238,8 @@ export function PublishWizard({
     /** Free places still open after this one (a free publication only). */
     freeLeft?: number;
     /** "published" when the rules let it straight online; else "pending_review".
-     *  An edit: "applied" (online now) or "pending" (an admin looks first). */
+     *  An edit: "pending" — offline until an admin approves it (0176); "applied"
+     *  came from servers before that. */
     status: string;
     id: string;
   }>(null);
@@ -881,7 +882,7 @@ export function PublishWizard({
               <Pencil className="size-4" /> {t("correct")}
             </button>
           )}
-          {(done.status === "published" || done.status === "applied" || done.status === "pending") && (
+          {(done.status === "published" || done.status === "applied") && (
             <button
               onClick={() => router.push(`/annonces/${done.id}` as never)}
               className="mazed-btn-luxe tap-target inline-flex px-6 py-3 text-[13.5px]"

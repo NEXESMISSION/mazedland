@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
   const { data: rows, error: readErr } = await admin
     .from("listings")
-    .select("id, title, status, contact_phone, expires_at, fee_payment_id, seller_id")
+    .select("id, title, status, contact_phone, expires_at, fee_payment_id, seller_id, pending_edit_at")
     .in("id", ids);
   if (readErr) return fail("listings_read_failed", 500, readErr);
 
@@ -93,6 +93,12 @@ export async function POST(req: NextRequest) {
       }
       if (!r.contact_phone) {
         skipped.push({ id: r.id, title: r.title, why: t("skipNoPhone") });
+        continue;
+      }
+      // Held for a seller's edit (0176): approving here would put the old
+      // version online. The edit is read and decided on from its own sheet.
+      if (r.pending_edit_at) {
+        skipped.push({ id: r.id, title: r.title, why: t("skipEditWaiting") });
         continue;
       }
       const expires = new Date(now.getTime() + fallbackDays * 86_400_000);
