@@ -24,6 +24,7 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { compressImage } from "@/lib/imageCompress";
 import type { ProviderInstructions } from "@/lib/payments";
+import { clipboardText } from "@/lib/payments/clipboard";
 import type { PaymentProvider } from "@/lib/payments/types";
 
 interface Props {
@@ -95,6 +96,10 @@ export function CheckoutClient({
   const MAX_RECEIPTS = 3;
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // Sent from this page, then « Envoyer un autre reçu »: the payment now
+  // waits for review, as if the page had opened on it.
+  const [sentHere, setSentHere] = useState(false);
+  const underReview = receiptUnderReview || sentHere;
   const [cancelling, setCancelling] = useState(false);
   const [cancelled, setCancelled] = useState(false);
 
@@ -170,13 +175,20 @@ export function CheckoutClient({
       }
       accepted.push(f);
     }
-    if (accepted.length > 0) setFiles((prev) => [...prev, ...accepted]);
     // Reset so the same file can be re-picked after a removal.
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (accepted.length === 0) return;
+    // Choosing the receipt sends it: one tap, not a choice and then a button.
+    // Several can be chosen at once in the picker; a wrong one is replaced
+    // from the « sent » screen, or after a refusal. The button below stays
+    // for a send that failed.
+    const next = [...files, ...accepted];
+    setFiles(next);
+    void submit(next);
   }
 
-  async function submit() {
-    if (files.length === 0 || submitting) return;
+  async function submit(list: File[] = files) {
+    if (list.length === 0 || submitting) return;
     setSubmitting(true);
     // Track every object we put in the bucket this attempt so we can clean them
     // ALL up if a later upload or the attach call fails (no orphans).
@@ -191,8 +203,8 @@ export function CheckoutClient({
       }
       const safePid = paymentId.replace(/[^a-z0-9-]/gi, "");
 
-      for (let i = 0; i < files.length; i++) {
-        const original = files[i];
+      for (let i = 0; i < list.length; i++) {
+        const original = list[i];
         // Compress image receipts before upload (review-only → document-tier
         // WebP, ~250-500 KB, text stays crisp). compressImage also converts
         // HEIC→webp even when the picker reports an empty mime; PDFs pass
@@ -237,6 +249,7 @@ export function CheckoutClient({
         return;
       }
       setSubmitted(true);
+      setSentHere(true);
     } catch {
       toast(t("networkError"), "error");
       setSubmitting(false);
@@ -347,6 +360,19 @@ export function CheckoutClient({
                   {t("viewListing")}
                 </a>
               )}
+              {/* The receipt went the moment it was chosen: a wrong one is
+                  replaced here, while it waits for review. */}
+              <button
+                type="button"
+                onClick={() => {
+                  setFiles([]);
+                  setSubmitting(false);
+                  setSubmitted(false);
+                }}
+                className="tap-target mx-auto text-[12px] font-semibold text-[var(--foreground-muted)] underline underline-offset-2 hover:text-foreground"
+              >
+                {t("sendAnother")}
+              </button>
             </div>
           </div>
         </main>
@@ -406,7 +432,7 @@ export function CheckoutClient({
             payment in `pending_review` means the opposite: the receipt arrived
             and is waiting for an admin. A refused one is `failed`, and never
             lands here. */}
-        {receiptUnderReview && (
+        {underReview && (
           <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] text-amber-900">
             <AlertCircle className="mt-0.5 size-4 shrink-0" />
             <span>{t("receiptUnderReview")}</span>
@@ -480,9 +506,10 @@ export function CheckoutClient({
                   {field.copyable && (
                     <button
                       type="button"
-                      onClick={() => copyValue(field.label, field.value)}
+                      // In the shape the bank or D17 app takes: « 15.00 », not « 15.00 TND ».
+                      onClick={() => copyValue(field.label, clipboardText(field.value))}
                       className={cn(
-                        "shrink-0 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition",
+                        "shrink-0 inline-flex min-h-10 items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] font-bold transition",
                         copiedField === field.label
                           ? "bg-[var(--gold)] text-white"
                           : "bg-[var(--surface-2)] text-foreground hover:bg-[var(--gold-faint)] hover:text-[var(--gold)]",
@@ -516,7 +543,8 @@ export function CheckoutClient({
               <button
                 type="button"
                 onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
-                className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:border-red-300 hover:text-red-600"
+                disabled={submitting}
+                className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:border-red-300 hover:text-red-600 disabled:opacity-50"
                 aria-label={t("removeFile", { name: f.name })}
               >
                 <X className="size-4" strokeWidth={2} />
@@ -524,7 +552,12 @@ export function CheckoutClient({
             </div>
           ))}
           {files.length < MAX_RECEIPTS && (
-            <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-[var(--gold-soft)] bg-[var(--gold-faint)]/30 p-7 text-center transition hover:border-[var(--gold)] hover:bg-[var(--gold-faint)]/60">
+            <label
+              className={cn(
+                "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-[var(--gold-soft)] bg-[var(--gold-faint)]/30 p-7 text-center transition hover:border-[var(--gold)] hover:bg-[var(--gold-faint)]/60",
+                submitting && "pointer-events-none opacity-60",
+              )}
+            >
               <Upload className="size-7 text-[var(--gold)]" strokeWidth={1.8} />
               <span className="text-[14px] font-bold text-foreground">
                 {files.length === 0 ? t("chooseFile") : t("addAnother")}
@@ -544,30 +577,34 @@ export function CheckoutClient({
           )}
         </div>
 
-        {/* ── Big submit ── */}
-        <button
-          type="button"
-          onClick={submit}
-          disabled={files.length === 0 || submitting}
-          className={cn(
-            "inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold transition-all",
-            files.length === 0 || submitting
-              ? "cursor-not-allowed bg-[var(--surface-2)] text-[var(--foreground-muted)]"
-              : "bg-[var(--gold)] text-white shadow-[var(--shadow-gold)] hover:bg-[var(--gold-bright)]",
-          )}
-        >
-          {submitting ? (
-            <><Loader2 className="size-5 animate-spin" /> {t("sending")}</>
-          ) : (
-            <><Upload className="size-5" strokeWidth={2.5} /> {t("send", { count: files.length })}</>
-          )}
-        </button>
+        {/* ── Big submit: the sending in progress, and the retry when it failed.
+            With nothing chosen yet there is nothing for it to do — choosing
+            the receipt sends it. ── */}
+        {files.length > 0 && (
+          <button
+            type="button"
+            onClick={() => void submit()}
+            disabled={submitting}
+            className={cn(
+              "inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold transition-all",
+              submitting
+                ? "cursor-not-allowed bg-[var(--surface-2)] text-[var(--foreground-muted)]"
+                : "bg-[var(--gold)] text-white shadow-[var(--shadow-gold)] hover:bg-[var(--gold-bright)]",
+            )}
+          >
+            {submitting ? (
+              <><Loader2 className="size-5 animate-spin" /> {t("sending")}</>
+            ) : (
+              <><Upload className="size-5" strokeWidth={2.5} /> {t("send", { count: files.length })}</>
+            )}
+          </button>
+        )}
         <p className="text-center text-[11px] text-[var(--foreground-muted)]">
           {files.length > 0 ? t("hintReady") : t("hintEmpty")}
         </p>
 
         {/* Cancel — small, out of the way */}
-        {!receiptUnderReview && (
+        {!underReview && (
           <button
             type="button"
             onClick={cancelPayment}

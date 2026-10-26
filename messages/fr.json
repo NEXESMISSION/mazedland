@@ -436,13 +436,13 @@
     "stepUpload": "Téléversez le reçu du virement",
     "fileSize": "{size} Ko",
     "removeFile": "Retirer {name}",
-    "chooseFile": "Choisir une photo ou un PDF",
+    "chooseFile": "Choisir la photo ou le PDF du reçu",
     "addAnother": "Ajouter une autre image",
     "uploadHint": "JPG · PNG · HEIC · PDF · max {maxMb} Mo · jusqu'à {max} images ({used}/{max})",
     "sending": "Envoi…",
     "send": "{count, plural, one {Envoyer le reçu} other {Envoyer les # reçus}}",
     "hintReady": "Validation sous 24 h — vous serez notifié(e).",
-    "hintEmpty": "Téléversez d'abord le reçu pour activer le bouton.",
+    "hintEmpty": "Le reçu part dès que vous l'avez choisi. Validation sous 24 h.",
     "cancelling": "Annulation…",
     "cancelPayment": "Annuler ce paiement",
     "instructions": {
@@ -460,7 +460,8 @@
       "bank": "Banque",
       "amount": "Montant",
       "amountValue": "{amount} TND"
-    }
+    },
+    "sendAnother": "Pas le bon fichier ? Envoyer un autre reçu"
   },
   "accountApi": {
     "renew": {
@@ -3280,7 +3281,8 @@
     "privacyReports": "Un signalement ne dit pas au vendeur qui l'a fait.",
     "privacyPolicy": "Politique de confidentialité",
     "deleteTitle": "Supprimer mon compte",
-    "deleteBody": "Vos annonces sont retirées du site et votre compte est fermé. C'est définitif."
+    "deleteBody": "Vos annonces sont retirées du site et votre compte est fermé. C'est définitif.",
+    "governorateFromListing": "{governorate}, comme votre dernière annonce"
   },
   "aiApi": {
     "tooShort": "Écrivez une phrase un peu plus longue.",
@@ -3292,7 +3294,7 @@
     "back": "Mes annonces",
     "title": "Promouvoir mon annonce",
     "whereTitle": "Où la publier ?",
-    "whereHint": "Choisissez un ou plusieurs réseaux. Rien n'est coché pour vous.",
+    "whereHint": "Tous les réseaux possibles sont cochés. Décochez ceux que vous ne voulez pas.",
     "channels": {
       "facebook_page": {
         "name": "Page Facebook Mazed Immo",
@@ -3326,7 +3328,6 @@
     "price": "{amount} DT",
     "consent": "J'accepte que Mazed Immo publie cette annonce — photos, prix, type de bien et localisation, jamais mon numéro — sur les réseaux choisis. Je peux la retirer à tout moment depuis cette page.",
     "reviewNote": "Notre équipe relit chaque publication avant sa mise en ligne.",
-    "confirm": "Confirmer la promotion",
     "sent": "Demande envoyée. Nous vous prévenons dès que c'est en ligne.",
     "sentScheduled": "C'est validé : la publication part dans quelques minutes.",
     "failed": "Impossible d'envoyer la demande pour le moment.",
@@ -3381,7 +3382,8 @@
       "title": "Paiement momentanément indisponible",
       "body": "La promotion sur les réseaux est payante, et nos coordonnées de paiement sont en cours de mise à jour. Vous pourrez la demander dès qu'elles seront en ligne.",
       "contact": "Nous contacter"
-    }
+    },
+    "acceptAndSend": "J'accepte et j'envoie"
   },
   "socialApi": {
     "disabled": "La promotion sur les réseaux est momentanément fermée.",
@@ -3669,7 +3671,29 @@
       "slugHint": "Lettres minuscules, chiffres et tirets. Changer l'adresse casse les liens déjà partagés.",
       "legalHint": "La raison sociale et le matricule ne sont pas publiés : ils servent à vérifier la boutique.",
       "submitCreate": "Envoyer ma boutique",
-      "submitSave": "Enregistrer"
+      "submitSave": "Enregistrer",
+      "useMyName": "Mon nom : {name}",
+      "slugLine": "Adresse de la page : <url></url>",
+      "slugLater": "modifiable ensuite",
+      "slugEdit": "Modifier",
+      "slugFromName": "D'après le nom :",
+      "delegation": "Délégation",
+      "delegationPlaceholder": "Choisir la délégation",
+      "cityOther": "Autre (à écrire)",
+      "cityOtherPlaceholder": "Ville ou quartier",
+      "presentationWrite": "Écrire la présentation pour moi",
+      "presentationReplace": "Remplacer votre présentation par un texte écrit pour vous ?",
+      "presentationNeedsName": "Écrivez d'abord le nom de la boutique.",
+      "presentationEdit": "Un premier jet : modifiez-le à votre façon.",
+      "more": "Plus d'informations",
+      "moreHint": "Site web, horaires, raison sociale — facultatif",
+      "hoursPresets": {
+        "weekdays": "Lun–Ven, 9h–17h",
+        "sixDays": "Lun–Sam, 9h–18h",
+        "everyDay": "7j/7, 9h–19h",
+        "appointment": "Sur rendez-vous"
+      },
+      "legalSameName": "Même nom que la boutique"
     },
     "dashboard": {
       "unavailable": "Service momentanément indisponible.",
@@ -3789,14 +3813,31 @@
         "visit": "Visite",
         "manual": "Ajouté",
         "suggestion": "Demande"
-      }
+      },
+      "quickLabel": "Ajouter à la note",
+      "quick": {
+        "called": "Rappelé",
+        "visit_planned": "Visite prévue",
+        "offer_made": "Offre faite",
+        "not_interested": "Pas intéressé"
+      },
+      "when": {
+        "tomorrow": "Demain",
+        "in3": "Dans 3 jours",
+        "nextWeek": "Dans une semaine"
+      },
+      "otherDay": "Un autre jour"
     },
     "demandes": {
-      "choose": "Annonce à proposer",
+      "choose": "Vos annonces pour cette demande",
       "offer": "Proposer",
       "sent": "Annonce proposée. La personne est prévenue.",
       "failed": "Proposition impossible. Réessayez.",
-      "noneToOffer": "Aucune annonce en ligne de la boutique pour cette offre."
+      "noneToOffer": "Aucune annonce en ligne de la boutique pour cette offre.",
+      "fullMatch": "Remplit toutes ses conditions · {score} %",
+      "partialMatch": "Correspond à {score} %",
+      "showAll": "{count, plural, one {Voir l'autre annonce} other {Voir les # autres annonces}}",
+      "noneLeft": "Vous avez déjà proposé {max} annonces pour cette demande : c'est le maximum."
     }
   },
   "proApi": {

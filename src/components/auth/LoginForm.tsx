@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { stripLocalePrefix } from "@/i18n/routing";
 import { PhoneInput } from "./PhoneInput";
+import { forgetPhone, rememberPhone } from "./rememberedPhone";
 import { normalizeE164, validatePhone } from "@/lib/tunisia";
 
 /**
@@ -56,6 +57,9 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // « Mot de passe oublié ? » and « Créer un compte » open with this number.
+  useEffect(() => rememberPhone(dialCode, phoneNumber), [dialCode, phoneNumber]);
+
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -100,6 +104,7 @@ export function LoginForm() {
         setError(t("auth.errors.serverUnreachableCheck"));
         return;
       }
+      forgetPhone();
       window.location.assign(destination);
     });
   }

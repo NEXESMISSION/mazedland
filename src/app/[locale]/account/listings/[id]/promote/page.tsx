@@ -51,10 +51,11 @@ const TONE: Record<string, string> = {
 };
 
 /**
- * Promouvoir mon annonce (cahier « Mazed Social Publisher » §3): the seller
- * chooses where — nothing is ticked for them — sees the posts as they will
- * read, sees the price, and agrees in so many words before anything is sent
- * for review. Once asked, the same page shows where it stands, the links to
+ * Promouvoir mon annonce (cahier « Mazed Social Publisher » §3): the form
+ * opens ready — every channel the annonce can go on, in the page's language —
+ * and the seller unticks what they do not want, sees the posts as they will
+ * read, sees the price, and agrees in so many words, with the one tap that
+ * sends it for review. Once asked, the same page shows where it stands, the links to
  * the posts, the visits they brought, and the way to take it all back.
  */
 export default async function PromotePage({ params }: { params: Promise<{ id: string }> }) {

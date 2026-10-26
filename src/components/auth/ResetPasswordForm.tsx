@@ -134,6 +134,7 @@ export function ResetPasswordForm() {
           type="password"
           required
           minLength={8}
+          autoComplete="new-password"
           autoFocus
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -146,6 +147,7 @@ export function ResetPasswordForm() {
           type="password"
           required
           minLength={8}
+          autoComplete="new-password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           className="mt-1.5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-2.5 text-sm text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"

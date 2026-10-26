@@ -11,12 +11,12 @@ import { ShopForm } from "@/components/pro/ShopForm";
 import { AddMember, ChoosePlan, RemoveMember, SendDocument } from "./ProActions";
 import { ProClients, type ClientRow } from "./ProClients";
 import { SuggestListing } from "./SuggestListing";
-import { rankForRequest } from "@/lib/pro/suggest";
+import { MAX_SUGGESTIONS_PER_REQUEST, rankForRequest } from "@/lib/pro/suggest";
 import { toMatchable } from "@/lib/requests/server";
 import { categoryLabel } from "@/lib/i18n";
 import { VisitCard } from "@/components/visits/VisitCard";
 import { loadVisits } from "@/lib/visits-server";
-import type { LeadStage } from "@/lib/visits";
+import { tunisDay, type LeadStage } from "@/lib/visits";
 import { getSettings } from "@/lib/settings/server";
 import { paymentsAreOpen } from "@/lib/payments/server";
 import { PaymentsClosedNotice } from "@/components/payments/PaymentsClosedNotice";
@@ -339,7 +339,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
           const done = offered.get(r.id) ?? [];
           const options = ranked
             .filter((x) => !done.includes(x.listing.id))
-            .map((x) => ({ id: x.listing.id, label: `${x.match.ok ? "✓ " : ""}${x.listing.title} · ${x.match.score} %` }));
+            .map((x) => ({ id: x.listing.id, title: x.listing.title, score: x.match.score, ok: x.match.ok }));
           return (
             <article key={r.id} className={`rounded-2xl bg-surface p-4 ring-1 ${full ? "ring-gold-soft" : "ring-border"}`}>
               <div className="flex flex-wrap items-start justify-between gap-2">
@@ -355,7 +355,11 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
                   {t("alreadyOffered", { titles: done.map((id) => listings.find((l) => l.id === id)?.title ?? "").filter(Boolean).join(", ") })}
                 </p>
               )}
-              {approved && <div className="mt-3"><SuggestListing shopId={shopId} requestId={r.id} options={options} /></div>}
+              {approved && (
+                <div className="mt-3">
+                  <SuggestListing shopId={shopId} requestId={r.id} options={options} left={MAX_SUGGESTIONS_PER_REQUEST - done.length} />
+                </div>
+              )}
             </article>
           );
         })}
@@ -385,7 +389,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
       listing: Array.isArray(r.listing) ? r.listing[0] ?? null : r.listing,
       updated_label: t("clientUpdated", { date: formatDate(r.updated_at, locale, "dayMonth") }),
     }));
-    return <ProClients shopId={shopId} clients={clients} listings={(own ?? []) as { id: string; title: string }[]} />;
+    return <ProClients shopId={shopId} clients={clients} listings={(own ?? []) as { id: string; title: string }[]} today={tunisDay()} />;
   }
 
   async function TeamTab({ shopId, role: actor }: { shopId: string; role: ShopRole }) {

@@ -8,8 +8,23 @@ import { useApiError } from "@/lib/useApiError";
 import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 import { Loader2 } from "lucide-react";
 
-/** Name and governorate — what a new annonce is pre-filled with. */
-export function ProfileForm({ initialName, initialGovernorate }: { initialName: string; initialGovernorate: string }) {
+/**
+ * Name and governorate — what a new annonce is pre-filled with. With no
+ * governorate set, the one of the person's latest annonce is offered as a
+ * chip: one tap instead of a list of 24. There is no délégation here (the
+ * profile has no such column), and the phone is the account itself, changed
+ * nowhere from this form.
+ */
+export function ProfileForm({
+  initialName,
+  initialGovernorate,
+  suggestedGovernorate,
+}: {
+  initialName: string;
+  initialGovernorate: string;
+  /** Where the person's latest annonce is, when the profile says nowhere. */
+  suggestedGovernorate?: string | null;
+}) {
   const t = useTranslations("accountSettings");
   const locale = useLocale();
   const router = useRouter();
@@ -19,6 +34,8 @@ export function ProfileForm({ initialName, initialGovernorate }: { initialName: 
   const [gov, setGov] = useState(initialGovernorate);
   const [busy, setBusy] = useState(false);
   const dirty = name.trim() !== initialName.trim() || gov !== initialGovernorate;
+  const suggestion =
+    suggestedGovernorate && (TUNISIAN_GOVERNORATES as readonly string[]).includes(suggestedGovernorate) ? suggestedGovernorate : null;
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -60,15 +77,26 @@ export function ProfileForm({ initialName, initialGovernorate }: { initialName: 
           className={field}
         />
       </label>
-      <label className={label}>
-        {t("governorateLabel")}
-        <select value={gov} onChange={(e) => setGov(e.target.value)} className={`${field} appearance-none`}>
-          <option value="">{t("governorateNone")}</option>
-          {TUNISIAN_GOVERNORATES.map((g) => (
-            <option key={g} value={g}>{governorateLabel(g, locale)}</option>
-          ))}
-        </select>
-      </label>
+      <div>
+        <label className={label}>
+          {t("governorateLabel")}
+          <select value={gov} onChange={(e) => setGov(e.target.value)} autoComplete="address-level1" className={`${field} appearance-none`}>
+            <option value="">{t("governorateNone")}</option>
+            {TUNISIAN_GOVERNORATES.map((g) => (
+              <option key={g} value={g}>{governorateLabel(g, locale)}</option>
+            ))}
+          </select>
+        </label>
+        {!gov && suggestion && (
+          <button
+            type="button"
+            onClick={() => setGov(suggestion)}
+            className="tap-target mt-2 rounded-full bg-surface px-4 py-2 text-[13px] font-bold text-muted ring-1 ring-border transition hover:text-foreground"
+          >
+            {t("governorateFromListing", { governorate: governorateLabel(suggestion, locale) })}
+          </button>
+        )}
+      </div>
       <p className="text-[11.5px] text-muted sm:col-span-2">{t("profileHint")}</p>
       <div className="sm:col-span-2">
         <button

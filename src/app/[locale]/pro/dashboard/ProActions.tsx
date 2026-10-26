@@ -7,10 +7,18 @@ import { useToast } from "@/components/ui/Toast";
 import { useApiError } from "@/lib/useApiError";
 import { FileUp, Loader2, Trash2, UserPlus } from "lucide-react";
 import type { ShopRole } from "@/lib/pro/shops";
+import { cn } from "@/lib/utils";
+
+const chip = (on: boolean) =>
+  cn(
+    "tap-target rounded-full px-4 py-2 text-[13px] font-bold transition",
+    on ? "bg-[var(--gold)] text-white" : "bg-surface text-muted ring-1 ring-border hover:text-foreground",
+  );
 
 /**
  * The Pro dashboard's buttons (0173): add or remove a member, choose a plan,
- * send a document. Each calls its /api/pro route and re-reads the page.
+ * send a document. Each calls its /api/pro route and re-reads the page. A
+ * member's role and a document's kind are chips: a tap, not a list to open.
  */
 function useCall() {
   const router = useRouter();
@@ -58,28 +66,31 @@ export function AddMember({ shopId, actor }: { shopId: string; actor: ShopRole }
         if (await call(`/api/pro/shops/${shopId}/members`, { method: "POST", body: JSON.stringify({ phone, role }) }, t("memberAdded"))) setPhone("");
       }}
     >
-      <label className="min-w-0 flex-1">
+      <label className="min-w-0 flex-1 basis-56">
         <span className="mb-1 block text-[12px] font-bold text-foreground">{t("memberPhone")}</span>
+        {/* Someone else's number: the browser must not fill in one's own. */}
         <input
+          type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder="+216 …"
           dir="ltr"
           inputMode="tel"
+          autoComplete="off"
           className="h-10 w-full rounded-xl border border-border bg-surface px-3 text-[13.5px] focus:border-gold focus:outline-none"
           required
         />
       </label>
-      <select
-        value={role}
-        onChange={(e) => setRole(e.target.value as ShopRole)}
-        className="h-10 rounded-xl border border-border bg-surface px-2 text-[13px]"
-        aria-label={t("memberRole")}
-      >
-        {roles.map((r) => (
-          <option key={r} value={r}>{tRoles(r)}</option>
-        ))}
-      </select>
+      {/* An admin adds agents only: no choice to show. */}
+      {roles.length > 1 && (
+        <div role="radiogroup" aria-label={t("memberRole")} className="flex flex-wrap gap-2">
+          {roles.map((r) => (
+            <button key={r} type="button" role="radio" aria-checked={role === r} onClick={() => setRole(r)} className={chip(role === r)}>
+              {tRoles(r)}
+            </button>
+          ))}
+        </div>
+      )}
       <button type="submit" disabled={busy} className="mazed-btn-luxe tap-target inline-flex h-10 items-center gap-1.5 px-4 text-[13px] disabled:opacity-60">
         {busy ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />} {t("addMember")}
       </button>
@@ -164,12 +175,14 @@ export function SendDocument({ shopId }: { shopId: string }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <select value={kind} onChange={(e) => setKind(e.target.value as (typeof KINDS)[number])} className="h-10 rounded-xl border border-border bg-surface px-2 text-[13px]" aria-label={t("documentKind")}>
+    <div className="space-y-3">
+      <div role="radiogroup" aria-label={t("documentKind")} className="flex flex-wrap gap-2">
         {KINDS.map((k) => (
-          <option key={k} value={k}>{tDocs(k)}</option>
+          <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)} className={chip(kind === k)}>
+            {tDocs(k)}
+          </button>
         ))}
-      </select>
+      </div>
       <label className={`mazed-btn-luxe tap-target inline-flex h-10 cursor-pointer items-center gap-1.5 px-4 text-[13px] ${busy || sending ? "pointer-events-none opacity-60" : ""}`}>
         {sending ? <Loader2 className="size-4 animate-spin" /> : <FileUp className="size-4" />} {t("sendDocument")}
         <input

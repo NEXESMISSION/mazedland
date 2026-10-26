@@ -32,6 +32,11 @@ export default async function AccountSettingsPage() {
     .select("full_name, phone, governorate, sms_notifications_enabled")
     .eq("id", user!.id)
     .maybeSingle();
+  // No governorate on the profile: the one of the latest annonce is offered
+  // in one tap — most people sell where they live.
+  const { data: latest } = profile?.governorate
+    ? { data: null }
+    : await db.from("listings").select("governorate").eq("seller_id", user!.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
 
   // What the site shows of a person and what it never does — true today, not
   // promises: each line is a behaviour the code already has.
@@ -59,6 +64,7 @@ export default async function AccountSettingsPage() {
           <ProfileForm
             initialName={(profile?.full_name as string | null) ?? ""}
             initialGovernorate={(profile?.governorate as string | null) ?? ""}
+            suggestedGovernorate={(latest?.governorate as string | null | undefined) ?? null}
           />
         </div>
       </section>
