@@ -5,7 +5,6 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
-import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct } from "@/lib/products";
 import { liveListingCount, moderationSettings, publishOrQueue } from "@/lib/moderation/server";
 
 /**
@@ -15,13 +14,11 @@ import { liveListingCount, moderationSettings, publishOrQueue } from "@/lib/mode
  * that bargain: nothing is lost, and the annonce comes back.
  *
  * Same order as /submit, deliberately: free while the seller is within their
- * free places (0165), then a pack credit, then a payment. A renewal that is
- * settled goes through the same moderation decision as a new annonce — a
- * trusted seller's clean annonce is back online at once, anything else waits
- * for an admin.
- *
- * Priced by the `renewal` product when one is active, falling back to the
- * ordinary publication fee for that category — a renewal is a publication.
+ * free places (0165), then a pack credit, and past that it is refused with
+ * `free_limit_reached` — there is no fee per annonce any more, more annonces
+ * is what Mazed Immo Pro is for. A renewal that is settled goes through the
+ * same moderation decision as a new annonce — a trusted seller's clean annonce
+ * is back online at once, anything else waits for an admin.
  */
 export async function POST(
   req: NextRequest,
@@ -70,22 +67,24 @@ export async function POST(
   const counted = { renewed_count: (listing.renewed_count as number) + 1 };
 
   /** Settled: let the rules decide whether it goes straight back online. */
-  const settle = async (paidWith: string, remaining?: number) => {
+  const settle = async (paidWith: string, more: { remaining?: number; freeLeft?: number } = {}) => {
     const outcome = await publishOrQueue(admin, id, settings, counted);
     if (outcome.status === "error") return fail("listing_renew_failed", 500, outcome.error);
-    logAction(req, user, `listing.renew.${paidWith}`, { id, remaining, status: outcome.status });
+    logAction(req, user, `listing.renew.${paidWith}`, { id, ...more, status: outcome.status });
     return NextResponse.json({
       status: outcome.status,
       paidWith,
-      remaining,
+      ...more,
+      freeLimit: settings.freeLimit,
       ...(outcome.status === "published" ? { expires_at: outcome.expiresAt.toISOString() } : {}),
     });
   };
 
   // ── Within the free places ────────────────────────────────────────────────
   // The listing itself is expired, so it is not among the live ones counted.
-  if ((await liveListingCount(admin, user.id, id)) < settings.freeLimit) {
-    return settle("free_quota");
+  const live = await liveListingCount(admin, user.id, id);
+  if (live < settings.freeLimit) {
+    return settle("free_quota", { freeLeft: settings.freeLimit - live - 1 });
   }
 
   // ── A credit, if they hold one ────────────────────────────────────────────
@@ -95,86 +94,18 @@ export async function POST(
     p_actor: user.id,
   });
   if (credited?.ok === true) {
-    return settle("credit", credited.remaining as number);
+    return settle("credit", { remaining: credited.remaining as number });
   }
 
-  // ── Otherwise it is paid for ──────────────────────────────────────────────
-  const { data: prodRows } = await admin
-    .from("products")
-    .select(PRODUCT_SELECT)
-    .eq("is_active", true);
-  const products = (prodRows ?? []).map((r) => toProduct(r as Parameters<typeof toProduct>[0]));
-
-  const { data: cat } = await admin
-    .from("categories")
-    .select("parent_id")
-    .eq("id", listing.category_id as string)
-    .maybeSingle();
-  const categoryFee = resolveListingFee(
-    products,
-    listing.category_id as string,
-    (cat?.parent_id as string | null) ?? null,
+  // ── The free places are full ──────────────────────────────────────────────
+  const t = await apiTranslator(req, "publishApi");
+  logAction(req, user, "listing.renew.free_limit", { id, live, limit: settings.freeLimit });
+  return NextResponse.json(
+    {
+      error: "free_limit_reached",
+      freeLimit: settings.freeLimit,
+      detail: t("freeLimitReached", { limit: settings.freeLimit }),
+    },
+    { status: 402 },
   );
-
-  // A dedicated renewal price if the admin set one; otherwise the ordinary
-  // publication fee for this category, because that is what a renewal is.
-  // Exception first: a category that publishes for free renews for free.
-  // Charging 15 TND to keep a free annonce alive would be a trap.
-  const renewal = isFree(categoryFee)
-    ? categoryFee
-    : products.find((p) => p.kind === "renewal") ?? categoryFee;
-  if (!renewal) return fail("no_price_configured", 503);
-
-  if (renewal.price <= 0) return settle("free");
-
-  const { data: existing } = await admin
-    .from("payments")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("kind", "listing_fee")
-    .in("status", ["pending", "pending_review"])
-    .contains("metadata", { listing_id: id })
-    .limit(1);
-
-  let paymentId = existing?.[0]?.id as string | undefined;
-  if (!paymentId) {
-    const { data: created, error } = await admin
-      .from("payments")
-      .insert({
-        user_id: user.id,
-        kind: "listing_fee",
-        provider: "bank_transfer",
-        amount: renewal.price,
-        status: "pending",
-        metadata: {
-          listing_id: id,
-          product_id: renewal.id,
-          product_slug: renewal.slug,
-          duration_days: renewal.durationDays,
-          renewal: true,
-          initiated_at: new Date().toISOString(),
-        },
-      })
-      .select("id")
-      .single();
-    if (error || !created) return fail("payment_create_failed", 500, error);
-    paymentId = created.id as string;
-  }
-
-  await admin
-    .from("listings")
-    .update({
-      status: "pending_payment",
-      fee_payment_id: paymentId,
-      ...counted,
-    })
-    .eq("id", id);
-
-  logAction(req, user, "listing.renew.payment", { id, paymentId, amount: renewal.price });
-  return NextResponse.json({
-    status: "pending_payment",
-    paidWith: "payment",
-    paymentId,
-    amount: renewal.price,
-  });
 }

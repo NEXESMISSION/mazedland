@@ -16,8 +16,6 @@ import { RenewButton } from "./RenewButton";
 import { moderationSettings } from "@/lib/moderation/server";
 import { ListingStatusActions } from "./ListingStatusActions";
 import { PaySubmitButton } from "@/components/payments/PaySubmitButton";
-import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct, type Product } from "@/lib/products";
-import { formatTND as fmt } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -90,7 +88,7 @@ export default async function MyListingsPage({
   const admin = getServiceSupabase();
   const db = admin ?? supabase;
 
-  const [listRes, creditRes, prodRes, catRes, payRes] = await Promise.all([
+  const [listRes, creditRes, payRes] = await Promise.all([
     db
       .from("listings")
       .select(
@@ -106,8 +104,6 @@ export default async function MyListingsPage({
       .select("quota_total, quota_used, expires_at, status")
       .eq("seller_id", user.id)
       .eq("status", "active"),
-    db.from("products").select(PRODUCT_SELECT).eq("is_active", true),
-    db.from("categories").select("id, parent_id"),
     // The open fee payment per listing, so "À payer" can be paid from this
     // page instead of only from the notification that announced it.
     //
@@ -122,17 +118,6 @@ export default async function MyListingsPage({
       .eq("kind", "listing_fee")
       .in("status", ["pending", "pending_review"]),
   ]);
-
-  const products: Product[] = (prodRes.data ?? []).map((r) =>
-    toProduct(r as Parameters<typeof toProduct>[0]),
-  );
-  const renewalProduct = products.find((p) => p.kind === "renewal") ?? null;
-
-  // Category → parent, so a price set on a parent (« Terrains », say) resolves
-  // for its children the same way the API does it.
-  const parentOf = new Map(
-    (catRes.data ?? []).map((c) => [c.id as string, (c.parent_id as string | null) ?? null]),
-  );
 
   // Split by status: a receipt already with an admin is not a fee still to
   // pay, and both used to show « À payer » with a « Payer » button next to
@@ -179,16 +164,6 @@ export default async function MyListingsPage({
     active.statuses === null
       ? all
       : all.filter((r) => (active.statuses as readonly string[]).includes(r.status));
-
-  // What renewing costs. Mirrors the renew route exactly, including its
-  // exception: a category that publishes for free renews for free, so a part
-  // is never quoted 15 TND.
-  const renewLabel = (l: Row): string | null => {
-    const categoryFee = resolveListingFee(products, l.category_id, parentOf.get(l.category_id) ?? null);
-    const p = isFree(categoryFee) ? categoryFee : renewalProduct ?? categoryFee;
-    if (!p) return null;
-    return p.price <= 0 ? t("free") : t("price", { amount: fmt(p.price, locale) });
-  };
 
   const priceOf = (l: Row) =>
     l.price_on_request || l.price == null
@@ -308,7 +283,6 @@ export default async function MyListingsPage({
           listingId={l.id}
           free={freePlacesLeft > 0}
           usesCredit={creditsLeft > 0}
-          feeLabel={renewLabel(l)}
         />
       );
     }

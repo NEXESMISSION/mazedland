@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useApiError } from "@/lib/useApiError";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUploader";
 import { ListingImage } from "@/components/media/ListingImage";
 import { Ltr } from "@/components/ui/Ltr";
+import { Modal } from "@/components/ui/Modal";
 import { formatTND, formatDate, cn } from "@/lib/utils";
 import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 import {
@@ -156,7 +157,6 @@ export function PublishWizard({
   categories,
   groups,
   attributesByCategory,
-  feeByCategory,
   creditsLeft,
   freePlacesLeft,
   freeLimit,
@@ -175,9 +175,9 @@ export function PublishWizard({
   categories: WizardCategory[];
   groups: { id: string; label: string }[];
   attributesByCategory: Record<string, AttributeDef[]>;
-  feeByCategory: Record<string, number | null>;
   creditsLeft: number;
-  /** Free places left (0165): while > 0 the publication costs nothing. */
+  /** Free places left (0165): while > 0 the publication costs nothing, and at
+   *  0 it needs a shop's plan — there is no fee per annonce any more. */
   freePlacesLeft: number;
   freeLimit: number;
   defaultContactName: string;
@@ -220,9 +220,13 @@ export function PublishWizard({
     const wanted = d?.shop_id ?? initialShopId ?? "";
     return shops.some((s) => s.id === wanted) ? wanted : "";
   });
+  /** The submit route said the free places are full: the annonce stays a draft. */
+  const [limitHit, setLimitHit] = useState(false);
   const [done, setDone] = useState<null | {
     paidWith: string;
     remaining?: number;
+    /** Free places still open after this one (a free publication only). */
+    freeLeft?: number;
     /** "published" when the rules let it straight online; else "pending_review".
      *  An edit: "applied" (online now) or "pending" (an admin looks first). */
     status: string;
@@ -306,15 +310,16 @@ export function PublishWizard({
   });
 
   const category = categories.find((c) => c.id === categoryId) ?? null;
-  const fee = categoryId ? feeByCategory[categoryId] ?? null : null;
-  // Same order as the submit route: a free place first, then a pack credit,
-  // then the category's fee.
-  // A shop's plan comes before all of it, while it has room.
+  // Same order as the submit route: a shop's plan while it has room, then a
+  // free place, then a pack credit. Past that the free places are full, and
+  // the way on is Mazed Immo Pro — there is no fee per annonce any more.
   const shop = shops.find((s) => s.id === shopId) ?? null;
   const viaPlan = !!shop && (shop.planLeft ?? 0) > 0;
   const freeQuota = !viaPlan && freePlacesLeft > 0;
   const usingCredit = !viaPlan && !freeQuota && creditsLeft > 0;
-  const free = !viaPlan && !freeQuota && !usingCredit && fee != null && fee <= 0;
+  const limitReached = !editing && !viaPlan && !freeQuota && !usingCredit;
+  // Said up front only when no shop of theirs could take it either.
+  const showLimitBanner = limitReached && !shops.some((s) => (s.planLeft ?? 0) > 0);
 
   // Only what this deal asks: a tenant is not asked about the titre foncier.
   const defs = useMemo<AttributeDef[]>(
@@ -745,18 +750,25 @@ export function PublishWizard({
 
       const res = await fetch(`/api/annonces/${id}/submit`, { method: "POST" });
       const j = (await res.json().catch(() => ({}))) as {
-        status?: string; paidWith?: string; remaining?: number;
-        paymentId?: string; error?: string; detail?: string;
+        status?: string; paidWith?: string; remaining?: number; freeLeft?: number;
+        error?: string; detail?: string;
       };
+      if (j.error === "free_limit_reached") {
+        // Saved as a draft above; the popup says what to do with it.
+        setLimitHit(true);
+        return;
+      }
       if (!res.ok) {
         toast(apiError(j, t("submitFailed")), "error");
         return;
       }
-      if (j.status === "pending_payment" && j.paymentId) {
-        router.push(`/payment/checkout?payment=${j.paymentId}` as never);
-        return;
-      }
-      setDone({ paidWith: j.paidWith ?? "free", remaining: j.remaining, status: j.status ?? "pending_review", id });
+      setDone({
+        paidWith: j.paidWith ?? "free_quota",
+        remaining: j.remaining,
+        freeLeft: j.freeLeft,
+        status: j.status ?? "pending_review",
+        id,
+      });
     } finally {
       setBusy(false);
     }
@@ -789,12 +801,31 @@ export function PublishWizard({
           {done.paidWith === "credit" && typeof done.remaining === "number" && (
             <> {t("doneCreditsLeft", { count: done.remaining })}</>
           )}
-          {done.paidWith === "free" && <> {t("doneFree")}</>}
-          {done.paidWith === "free_quota" && <> {t("doneFreeQuota")}</>}
           {done.paidWith === "subscription" && typeof done.remaining === "number" && (
             <> {t("doneSubscription", { count: done.remaining })}</>
           )}
         </p>
+        {/* The free places, counted: how many are left, and what comes after. */}
+        {done.paidWith === "free_quota" && (
+          <div className="mt-4 rounded-2xl bg-surface-2 p-4 text-start ring-1 ring-border">
+            <p className="inline-flex items-center gap-1.5 text-[13px] font-extrabold text-[var(--tone-ok)]">
+              <Gift className="size-4" /> {t("doneFreeQuota")}
+            </p>
+            {typeof done.freeLeft === "number" && (
+              <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+                {t("doneFreeLeft", { left: done.freeLeft, limit: freeLimit })}
+                {done.freeLeft === 0 && (
+                  <>
+                    {" "}
+                    <Link href={"/pro" as never} className="font-bold text-gold underline-offset-2 hover:underline">
+                      {t("seePro")}
+                    </Link>
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+        )}
         <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5">
           {(done.status === "published" || done.status === "applied" || done.status === "pending") && (
             <button
@@ -916,13 +947,9 @@ export function PublishWizard({
     ? t("planHint", { name: shop!.name })
     : freeQuota
     ? t("freeQuotaHint")
-    : free
-      ? t("freeInCategory")
-      : usingCredit
-        ? t("useOneCredit", { count: creditsLeft })
-        : fee != null
-          ? t("feeAfterReviewPlain", { amount: `${formatTND(fee, locale)} ${tc("tnd")}` })
-          : t("feeShownAfterCategory");
+    : usingCredit
+      ? t("useOneCredit", { count: creditsLeft })
+      : t("limitHint");
 
   return (
     <main className="mx-auto max-w-[var(--max-w-wide)] px-4 pb-44 pt-4 lg:px-6 lg:pb-12 lg:pt-8">
@@ -948,6 +975,23 @@ export function PublishWizard({
           <div className="mt-4 rounded-2xl border border-gold-soft bg-gold-faint px-4 py-3 text-[12.5px] leading-relaxed text-foreground">
             <p className="font-semibold">{t("editBanner")}</p>
             {editPending && <p className="mt-0.5 text-muted">{t("editPendingBanner")}</p>}
+          </div>
+        )}
+
+        {/* The free places are full: said before the seller fills four steps,
+            not after. The form still saves a draft for when a place frees up. */}
+        {showLimitBanner && (
+          <div className="mazed-tone-warn mt-4 rounded-2xl px-4 py-3 text-[12.5px] leading-relaxed">
+            <p className="font-extrabold">{t("limitTitle", { limit: freeLimit })}</p>
+            <p className="mt-0.5">{t("limitBannerBody")}</p>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+              <Link href={"/pro" as never} className="inline-flex items-center gap-1.5 font-bold underline-offset-2 hover:underline">
+                <Store className="size-3.5" /> {t("seePro")}
+              </Link>
+              <Link href={"/account/listings" as never} className="font-bold underline-offset-2 hover:underline">
+                {t("seeMyListings")}
+              </Link>
+            </div>
           </div>
         )}
 
@@ -1157,17 +1201,17 @@ export function PublishWizard({
                   </div>
 
                   {/* What publishing costs, said once — free for most sellers. */}
-                  {category && (freeQuota || fee != null) && (
+                  {category && !editing && (freeQuota || limitReached) && (
                     <p
                       className={cn(
                         "mt-2.5 inline-flex items-center gap-1.5 text-[12.5px] font-bold",
-                        freeQuota || free ? "text-[var(--tone-ok)]" : "text-muted",
+                        freeQuota ? "text-[var(--tone-ok)]" : "text-muted",
                       )}
                     >
-                      {freeQuota || free ? (
-                        <><Gift className="size-3.5" /> {freeQuota ? t("freeQuotaHint") : t("freeInCategory")}</>
+                      {freeQuota ? (
+                        <><Gift className="size-3.5" /> {t("freeQuotaHint")}</>
                       ) : (
-                        <span>{t("feeLinePlain", { amount: `${formatTND(fee ?? 0, locale)} ${tc("tnd")}` })}</span>
+                        <span>{t("limitHint")}</span>
                       )}
                     </p>
                   )}
@@ -1585,19 +1629,17 @@ export function PublishWizard({
                   <div className="rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-[13px] text-muted">
-                        {viaPlan ? t("feeShopPlan") : usingCredit ? t("feeFromPlan") : free || freeQuota ? t("feePublication") : t("feeLabel")}
+                        {viaPlan ? t("feeShopPlan") : usingCredit ? t("feeFromPlan") : t("feePublication")}
                       </span>
                       <span className="mazed-tabular text-[18px] font-extrabold text-foreground">
                         {viaPlan ? (
                           t("included")
-                        ) : freeQuota || free ? (
+                        ) : freeQuota ? (
                           t("free")
                         ) : usingCredit ? (
                           <Ltr>1 / {creditsLeft}</Ltr>
-                        ) : fee == null ? (
-                          "—"
                         ) : (
-                          `${formatTND(fee, locale)} ${tc("tnd")}`
+                          t("limitValue")
                         )}
                       </span>
                     </div>
@@ -1608,10 +1650,16 @@ export function PublishWizard({
                         ? t("freeQuotaExplain", { left: freePlacesLeft, limit: freeLimit })
                         : usingCredit
                           ? t("creditExplain")
-                          : free
-                            ? t("freeExplain")
-                            : t("paidExplain")}
+                          : t("limitExplain", { limit: freeLimit })}
                     </p>
+                    {limitReached && (
+                      <Link
+                        href={"/pro" as never}
+                        className="mt-2 inline-flex items-center gap-1.5 text-[12.5px] font-bold text-gold underline-offset-2 hover:underline"
+                      >
+                        <Store className="size-3.5" /> {t("seePro")}
+                      </Link>
+                    )}
                   </div>
                   </>
                   )}
@@ -1667,6 +1715,30 @@ export function PublishWizard({
         </div>
         {step === 3 && <p className="mt-2 text-center text-[11px] text-muted">{feeHint}</p>}
       </div>
+
+      {/* The submit route refused: the free places are full. The annonce is
+          kept as a draft; the way on is a Pro plan or a place freed up. */}
+      <Modal
+        open={limitHit}
+        onClose={() => setLimitHit(false)}
+        title={t("limitTitle", { limit: freeLimit })}
+        description={t("limitModalBody", { limit: freeLimit })}
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Link
+            href={"/account/listings" as never}
+            className="tap-target inline-flex items-center justify-center rounded-full border border-border px-5 py-2.5 text-[13px] font-bold text-foreground"
+          >
+            {t("seeMyListings")}
+          </Link>
+          <Link
+            href={"/pro" as never}
+            className="mazed-btn-luxe tap-target inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-[13px]"
+          >
+            <Store className="size-4" /> {t("seePro")}
+          </Link>
+        </div>
+      </Modal>
     </main>
   );
 }

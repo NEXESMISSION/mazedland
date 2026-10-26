@@ -10,22 +10,22 @@ import { RotateCw, Loader2 } from "lucide-react";
 /**
  * Renew an expired annonce.
  *
- * The button says which way it will be paid before it is pressed — free while
- * the seller has a free place left, else a credit from their forfait, else the
- * fee — because "Renouveler" that silently spends one of five prepaid
- * publications is the kind of surprise that turns into a support message.
+ * The button says which way it will be covered before it is pressed — free
+ * while the seller has a free place left, else a credit from their forfait —
+ * because "Renouveler" that silently spends one of five prepaid publications is
+ * the kind of surprise that turns into a support message. With neither, it
+ * says the free places are full: there is no fee per annonce any more, and the
+ * route answers with what to do instead (Mazed Immo Pro, or free a place).
  */
 export function RenewButton({
   listingId,
   free = false,
   usesCredit,
-  feeLabel,
 }: {
   listingId: string;
   /** A free place is available (0165): the renewal costs nothing. */
   free?: boolean;
   usesCredit: boolean;
-  feeLabel: string | null;
 }) {
   const t = useTranslations("account.renew");
   const router = useRouter();
@@ -43,19 +43,18 @@ export function RenewButton({
         toast(apiError(j, t("failed")), "error");
         return;
       }
-      if (j.status === "pending_payment" && j.paymentId) {
-        router.push(`/payment/checkout?payment=${j.paymentId}` as never);
-        return;
-      }
       // `remaining` only exists when a forfait credit paid for it. Printing it
       // unconditionally announced « undefined publication(s) restante(s) » on
       // every free or paid renewal.
-      toast(
+      const said =
         j.status === "published"
           ? t("donePublished")
           : typeof j.remaining === "number"
             ? t("doneWithCredits", { remaining: j.remaining })
-            : t("done"),
+            : t("done");
+      // A free place paid for it: say how many are left.
+      toast(
+        typeof j.freeLeft === "number" ? `${said} ${t("freeLeft", { left: j.freeLeft })}` : said,
         "success",
       );
       router.refresh();
@@ -76,7 +75,7 @@ export function RenewButton({
       {busy ? <Loader2 className="size-3.5 animate-spin" /> : <RotateCw className="size-3.5" />}
       {t("button")}
       <span className="font-semibold opacity-80">
-        · {free ? t("free") : usesCredit ? t("viaCredit") : feeLabel ?? t("paid")}
+        · {free ? t("free") : usesCredit ? t("viaCredit") : t("full")}
       </span>
     </button>
   );
