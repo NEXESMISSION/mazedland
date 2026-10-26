@@ -1485,7 +1485,17 @@
     "contactFromProfile": "D'après votre profil",
     "contactNoName": "Aucun nom affiché",
     "contactEdit": "Modifier le nom et le téléphone",
-    "titleUseSuggested": "Reprendre le titre proposé : {title}"
+    "titleUseSuggested": "Reprendre le titre proposé : {title}",
+    "titleNoun": {
+      "appartements": "Appartement",
+      "villas": "Villa",
+      "maisons": "Maison",
+      "terrain": "Terrain",
+      "fermes": "Ferme",
+      "locaux-commerciaux": "Local commercial",
+      "bureaux": "Bureau",
+      "depots": "Dépôt"
+    }
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",

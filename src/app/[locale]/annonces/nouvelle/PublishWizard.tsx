@@ -605,13 +605,18 @@ export function PublishWizard({
    */
   const suggestedTitle = useMemo(() => {
     if (!category) return "";
-    const area = attrs.area_sqm?.trim();
+    // « Appartement S+2 · 120 m² · La Marsa »: the type in the singular, the
+    // rooms the way Tunisians say them for a home, the surface grouped.
+    const area = Number(attrs.area_sqm) > 0 ? formatNumber(Number(attrs.area_sqm), locale) : null;
+    const noun = t.has(`titleNoun.${category.slug}`) ? t(`titleNoun.${category.slug}` as "titleNoun.appartements") : category.label;
+    const rooms = category.kind === "residential" && Number(attrs.rooms) > 0 ? `S+${Number(attrs.rooms)}` : null;
+    const kind = [noun, rooms].filter(Boolean).join(" ");
     const where = delegation ? delegationLabel(delegation, locale) : governorateLabel(governorate, locale);
-    const what = rent ? t("titleForRent", { category: category.label }) : category.label;
+    const what = rent ? t("titleForRent", { category: kind }) : kind;
     return [what, area ? t("suggestedArea", { area }) : null, where]
       .filter(Boolean)
       .join(" · ");
-  }, [category, attrs.area_sqm, delegation, governorate, locale, t, rent]);
+  }, [category, attrs.area_sqm, attrs.rooms, delegation, governorate, locale, t, rent]);
 
   const title = titleTouched ? typedTitle : suggestedTitle;
   const setTitle = (v: string) => { setTitleTouched(true); setTypedTitle(v); };

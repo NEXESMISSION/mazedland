@@ -1485,7 +1485,17 @@
     "contactFromProfile": "من حسابك",
     "contactNoName": "بلا اسم ظاهر",
     "contactEdit": "بدّل الاسم والتليفون",
-    "titleUseSuggested": "رجّع العنوان المقترح: {title}"
+    "titleUseSuggested": "رجّع العنوان المقترح: {title}",
+    "titleNoun": {
+      "appartements": "شقة",
+      "villas": "فيلا",
+      "maisons": "دار",
+      "terrain": "أرض",
+      "fermes": "ضيعة",
+      "locaux-commerciaux": "محل تجاري",
+      "bureaux": "مكتب",
+      "depots": "مخزن"
+    }
   },
   "photoUploader": {
     "addPhotos": "زيد صورك",
