@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { NavIcon } from "./kit/LinkPending";
 import { InstallAppButton } from "./InstallAppButton";
+import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 
 /**
  * Console navigation.
@@ -155,6 +156,7 @@ export function AdminRail({ counts }: { counts: AdminCounts }) {
       <NavList counts={counts} />
       <footer className="border-t border-border py-2">
         <InstallAppButton />
+        <LocaleSwitcher variant="row" />
         <ExitLink />
       </footer>
     </aside>
@@ -196,6 +198,7 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
         <BrandMark />
         <div className="flex items-center gap-1">
           <InstallAppButton variant="icon" />
+          <LocaleSwitcher className="h-8 min-w-8 border-transparent" />
           <button
             type="button"
             onClick={() => setOpen(true)}
@@ -229,6 +232,7 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
             </header>
             <NavList counts={counts} onNavigate={() => setOpen(false)} />
             <footer className="border-t border-border py-2">
+              <LocaleSwitcher variant="row" />
               <ExitLink onNavigate={() => setOpen(false)} />
             </footer>
           </div>
