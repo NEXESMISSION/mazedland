@@ -401,8 +401,12 @@ export default async function AnnoncesPage({
           className="pointer-events-none absolute start-4 top-1/2 size-4 -translate-y-1/2 text-muted"
           strokeWidth={2}
         />
-        {/* 16px text: iOS zooms the whole page into any smaller input on focus. */}
+        {/* 16px text: iOS zooms the whole page into any smaller input on focus.
+            Keyed on `q`: clearing the search, a link or the back button is a
+            client navigation, and an uncontrolled input that has been typed
+            in would otherwise keep the old words. */}
         <input
+          key={sp.q ?? ""}
           type="search"
           name="q"
           defaultValue={sp.q ?? ""}
