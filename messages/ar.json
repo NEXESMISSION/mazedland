@@ -3592,7 +3592,29 @@
       "slugHint": "حروف لاتينية صغيرة، أرقام وخطوط. تبديل الرابط يكسّر الروابط اللي تبارتاجات.",
       "legalHint": "الاسم الاجتماعي والمعرّف ما يتنشروش: يستعملوهم باش نثبتو في البوتيك.",
       "submitCreate": "نبعث البوتيك",
-      "submitSave": "سجّل"
+      "submitSave": "سجّل",
+      "useMyName": "اسمي: {name}",
+      "slugLine": "رابط الصفحة: <url></url>",
+      "slugLater": "تنجم تبدّلو من بعد",
+      "slugEdit": "بدّل",
+      "slugFromName": "من الاسم:",
+      "delegation": "المعتمدية",
+      "delegationPlaceholder": "اختار المعتمدية",
+      "cityOther": "أخرى (اكتبها)",
+      "cityOtherPlaceholder": "المدينة ولا الحي",
+      "presentationWrite": "اكتبلي التقديم",
+      "presentationReplace": "نبدّلو التقديم متاعك بنص مكتوب ليك؟",
+      "presentationNeedsName": "اكتب اسم البوتيك الأوّل.",
+      "presentationEdit": "هذا نص أوّل: بدّل فيه كيما تحب.",
+      "more": "معلومات أخرى",
+      "moreHint": "السيت، أوقات العمل، الاسم الاجتماعي — اختياري",
+      "hoursPresets": {
+        "weekdays": "من الإثنين للجمعة، 9h–17h",
+        "sixDays": "من الإثنين للسبت، 9h–18h",
+        "everyDay": "كل يوم، 9h–19h",
+        "appointment": "بموعد"
+      },
+      "legalSameName": "نفس اسم البوتيك"
     },
     "dashboard": {
       "unavailable": "الخدمة مش متوفّرة توّا.",

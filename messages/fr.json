@@ -3592,7 +3592,29 @@
       "slugHint": "Lettres minuscules, chiffres et tirets. Changer l'adresse casse les liens déjà partagés.",
       "legalHint": "La raison sociale et le matricule ne sont pas publiés : ils servent à vérifier la boutique.",
       "submitCreate": "Envoyer ma boutique",
-      "submitSave": "Enregistrer"
+      "submitSave": "Enregistrer",
+      "useMyName": "Mon nom : {name}",
+      "slugLine": "Adresse de la page : <url></url>",
+      "slugLater": "modifiable ensuite",
+      "slugEdit": "Modifier",
+      "slugFromName": "D'après le nom :",
+      "delegation": "Délégation",
+      "delegationPlaceholder": "Choisir la délégation",
+      "cityOther": "Autre (à écrire)",
+      "cityOtherPlaceholder": "Ville ou quartier",
+      "presentationWrite": "Écrire la présentation pour moi",
+      "presentationReplace": "Remplacer votre présentation par un texte écrit pour vous ?",
+      "presentationNeedsName": "Écrivez d'abord le nom de la boutique.",
+      "presentationEdit": "Un premier jet : modifiez-le à votre façon.",
+      "more": "Plus d'informations",
+      "moreHint": "Site web, horaires, raison sociale — facultatif",
+      "hoursPresets": {
+        "weekdays": "Lun–Ven, 9h–17h",
+        "sixDays": "Lun–Sam, 9h–18h",
+        "everyDay": "7j/7, 9h–19h",
+        "appointment": "Sur rendez-vous"
+      },
+      "legalSameName": "Même nom que la boutique"
     },
     "dashboard": {
       "unavailable": "Service momentanément indisponible.",
