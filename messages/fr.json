@@ -858,7 +858,8 @@
       "networkError": "Erreur réseau.",
       "disclaimer": "Mazed Immo met en relation, sans intervenir dans la vente. Visitez le bien et vérifiez le titre de propriété avant tout versement.",
       "hidden": "Ce vendeur ne partage pas son numéro. Enregistrez l'annonce pour la retrouver.",
-      "reveal": "Afficher le numéro"
+      "reveal": "Afficher le numéro",
+      "call": "Appeler"
     },
     "related": {
       "eyebrow": "Ça pourrait vous intéresser",
