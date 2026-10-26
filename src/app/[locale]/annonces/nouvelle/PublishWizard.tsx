@@ -166,6 +166,7 @@ export function PublishWizard({
   defaultGovernorate,
   initialDraft,
   initialDeal = "sale",
+  askResume = false,
   aiAvailable = false,
   mode = "create",
   editPending = false,
@@ -191,6 +192,9 @@ export function PublishWizard({
   initialDraft: InitialDraft | null;
   /** ?deal=rent — the home page's « J'ai un bien à louer » lands here. */
   initialDeal?: DealType;
+  /** `initialDraft` is the newest draft and not the deal in the URL: ask
+   *  whether to resume it or start that deal (src/lib/listings/wizard.ts). */
+  askResume?: boolean;
   /** The listing assistant can be offered (key set, switched on, budget left). */
   aiAvailable?: boolean;
   /**
@@ -309,6 +313,9 @@ export function PublishWizard({
   const [contactPhone, setContactPhone] = useState(d?.contact_phone ?? defaultContactPhone);
   const [attested, setAttested] = useState(false);
   const [resumed, setResumed] = useState(Boolean(d));
+  // A draft of the other deal waits: nothing of the form shows until the
+  // seller says whether they meant it.
+  const [choosing, setChoosing] = useState(askResume && Boolean(d) && !editing);
   // A resumed draft opens where it was left: the first step still missing
   // something, or the summary.
   const [step, setStep] = useState<Step>(() => {
@@ -627,6 +634,14 @@ export function PublishWizard({
    */
   function startOver() {
     setResumed(false);
+    setChoosing(false);
+    // Back to the first step: a fresh form left on the old draft's photos
+    // step reads as if the photos had been lost.
+    setStep(0);
+    setFlagged([]);
+    // The old draft's "nothing to write yet" no longer holds: the first
+    // answer of the new annonce saves it.
+    firstRun.current = false;
     setListingId(null);
     setCategoryId(null);
     setPhotos([]);
@@ -822,6 +837,72 @@ export function PublishWizard({
     } finally {
       setBusy(false);
     }
+  }
+
+  // ─── A draft of the other deal ────────────────────────────────────────────
+  // Came to let with a sale draft waiting (or the reverse): which one did they
+  // mean? Either answer is one tap, and starting the other kind leaves the
+  // draft in « Mes annonces » — nothing is deleted from here.
+  if (choosing && d) {
+    const draftDeal = asDealType(d.deal_type);
+    const draftName =
+      d.title && d.title !== "Brouillon"
+        ? d.title
+        : categories.find((c) => c.id === d.category_id)?.label ?? null;
+    const options = [
+      {
+        key: "resume",
+        deal: draftDeal,
+        label: t(`draftChoice.resume.${draftDeal}`),
+        hint: [draftName, d.updated_at ? t("draftChoice.savedOn", { date: formatDate(d.updated_at, locale, "short") }) : null]
+          .filter(Boolean)
+          .join(" · "),
+        onClick: () => setChoosing(false),
+      },
+      {
+        key: "new",
+        deal: initialDeal,
+        label: t(`draftChoice.startNew.${initialDeal}`),
+        hint: t("draftChoice.keepsDraft"),
+        onClick: startOver,
+      },
+    ];
+    return (
+      <main className="mx-auto max-w-md px-4 pb-16 pt-6 sm:pt-12">
+        <h1 className="text-[24px] font-extrabold tracking-tight">{t("title")}</h1>
+        <section
+          aria-labelledby="draft-choice-title"
+          className="mt-5 rounded-2xl border border-gold-soft bg-gold-faint p-4 sm:p-5"
+        >
+          <SectionHead id="draft-choice-title" icon={ClipboardList} title={t(`draftChoice.title.${draftDeal}`)} />
+          <p className="mt-1 text-[13px] leading-relaxed text-muted">{t(`draftChoice.body.${draftDeal}`)}</p>
+          <div className="mt-4 grid gap-2">
+            {options.map((o) => {
+              const Icon = o.deal === "rent" ? KeyRound : Tag;
+              return (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={o.onClick}
+                  className="tap-target flex w-full items-center gap-3 rounded-xl bg-surface px-3.5 py-3 text-start ring-1 ring-border transition hover:ring-gold"
+                >
+                  <Icon className="size-5 shrink-0 text-gold" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[14px] font-extrabold text-foreground">{o.label}</span>
+                    {o.hint && (
+                      <span dir="auto" className="mt-0.5 block truncate text-[11.5px] leading-snug text-muted">
+                        {o.hint}
+                      </span>
+                    )}
+                  </span>
+                  <ArrowRight className="size-4 shrink-0 text-muted rtl:-scale-x-100" />
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      </main>
+    );
   }
 
   // ─── Done ─────────────────────────────────────────────────────────────────
@@ -1994,13 +2075,15 @@ function SummaryBlock({
 }
 
 function SectionHead({
-  icon: Icon, title,
+  icon: Icon, title, id,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
+  /** For a field or group that this heading names (aria-labelledby). */
+  id?: string;
 }) {
   return (
-    <h2 className="flex items-center gap-2.5 text-[17px] font-extrabold tracking-tight">
+    <h2 id={id} className="flex items-center gap-2.5 text-[17px] font-extrabold tracking-tight">
       <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold-soft">
         <Icon className="size-4" />
       </span>

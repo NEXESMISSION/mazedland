@@ -1383,7 +1383,27 @@
     "editWaitingBody": "Votre annonce attend encore la vérification, avec vos corrections. Vous serez prévenu dès qu'elle est en ligne.",
     "tipPriceTypo": "Un zéro de trop dans le prix ? Les annonces semblables sont plutôt autour de {fix}.",
     "estimateLocal": "D'après {count, plural, one {# annonce semblable} other {# annonces semblables}} à {governorate} : entre {low} et {high} pour cette surface.",
-    "estimateNational": "D'après {count, plural, one {# annonce semblable} other {# annonces semblables}} en Tunisie : entre {low} et {high} pour cette surface."
+    "estimateNational": "D'après {count, plural, one {# annonce semblable} other {# annonces semblables}} en Tunisie : entre {low} et {high} pour cette surface.",
+    "draftChoice": {
+      "title": {
+        "sale": "Vous avez un brouillon de vente",
+        "rent": "Vous avez un brouillon de location"
+      },
+      "body": {
+        "sale": "Votre dernier brouillon est une annonce de vente. Que voulez-vous faire ?",
+        "rent": "Votre dernier brouillon est une annonce de location. Que voulez-vous faire ?"
+      },
+      "resume": {
+        "sale": "Reprendre le brouillon de vente",
+        "rent": "Reprendre le brouillon de location"
+      },
+      "startNew": {
+        "sale": "Commencer une annonce de vente",
+        "rent": "Commencer une annonce de location"
+      },
+      "savedOn": "Enregistré le {date}",
+      "keepsDraft": "Le brouillon reste dans « Mes annonces »."
+    }
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",
