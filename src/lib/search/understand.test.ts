@@ -22,8 +22,25 @@ describe("understand — French", () => {
     expect(u).toMatchObject({ cat: "terrain", gov: "Sfax", surface: 500, min: 100_000, max: 200_000 });
   });
 
-  it("keeps a district as a keyword and finds its governorate", () => {
-    expect(understand("appartement la marsa vue mer")).toEqual({ cat: "appartements", gov: "Tunis", rest: "la marsa vue mer" });
+  it("reads a délégation, and finds its governorate", () => {
+    expect(understand("appartement la marsa vue mer")).toEqual({ cat: "appartements", gov: "Tunis", del: "La Marsa", rest: "vue mer" });
+    expect(understand("شقة في المرسى")).toMatchObject({ cat: "appartements", gov: "Tunis", del: "La Marsa" });
+    expect(understand("villa hammamet nabeul")).toMatchObject({ cat: "villas", gov: "Nabeul", del: "Hammamet" });
+    expect(understand("local msaken")).toMatchObject({ gov: "Sousse", del: "M'saken" });
+    expect(understand("terrain sfax ville")).toMatchObject({ gov: "Sfax", del: "Sfax Ville" });
+  });
+
+  it("keeps a district that is not a délégation as a keyword", () => {
+    expect(understand("appartement ennasr")).toEqual({ cat: "appartements", gov: "Ariana", rest: "ennasr" });
+  });
+
+  it("reads a governorate named like one of its délégations as the governorate", () => {
+    expect(understand("villa nabeul")).toEqual({ cat: "villas", gov: "Nabeul", rest: "" });
+    expect(understand("ezzouhour kasserine")).toMatchObject({ gov: "Kasserine", del: "Ezzouhour" });
+  });
+
+  it("does not take a common word for a place", () => {
+    expect(understand("شقة في المدينة")).not.toHaveProperty("del");
   });
 
   it("does not read « non meublé » as furnished", () => {
