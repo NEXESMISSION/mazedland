@@ -10,7 +10,7 @@
 --     'payment_accepted', p_title:'...', p_body:'...', p_link:'/...', p_payload:{} })
 -- to forge a notification into ANY user's feed — and by choosing an EMAILABLE
 -- kind (kyc_verified/payment_accepted/auction_won/...), make the notify-email
--- cron send the forged title/body FROM the real Batta.tn domain (branded
+-- cron send the forged title/body FROM the real Mazed Immo domain (branded
 -- phishing + unbounded spam).
 --
 -- Every legitimate caller of the 6-arg form is server-side: the

@@ -1,6 +1,7 @@
 import { redirect, Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { getLocale } from "next-intl/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { getLocale, getTranslations } from "next-intl/server";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { Wallet } from "lucide-react";
 import { FocusRowHighlight } from "@/components/ui/FocusRowHighlight";
@@ -46,6 +47,7 @@ export default async function MyPaymentsPage({
 }) {
   const { locale } = await params;
   const dateLocale = await getLocale();
+  const t = await getTranslations("account.payments");
   const supabase = await getServerSupabase();
 
   const {
@@ -67,19 +69,19 @@ export default async function MyPaymentsPage({
   if (payments.length === 0) {
     return (
       <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-16 lg:max-w-[var(--max-w-content)]">
-        <span className="mazed-eyebrow">Historique</span>
-        <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">Mes paiements</h1>
+        <span className="mazed-eyebrow">{t("eyebrow")}</span>
+        <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">{t("title")}</h1>
         <p className="mt-1.5 text-[12px] text-muted">
-          Vos frais de publication et leur statut.
+          {t("emptySubtitle")}
         </p>
         <div className="mazed-frame-gold relative mt-6 px-6 py-10 text-center">
           <Wallet className="mx-auto size-8 text-gold" strokeWidth={2} />
-          <p className="mt-3 text-[13px] text-muted">Aucun paiement pour le moment.</p>
+          <p className="mt-3 text-[13px] text-muted">{t("empty")}</p>
           <Link
             href="/annonces"
             className="mazed-btn-luxe tap-target mt-5 inline-flex px-5 py-2.5 text-[12.5px]"
           >
-            Parcourir les annonces
+            {t("browse")}
           </Link>
         </div>
       </div>
@@ -138,6 +140,17 @@ export default async function MyPaymentsPage({
       }),
   );
 
+  // ── Their invoice or receipt (0175), issued when each was captured. ──
+  const docs = new Map<string, { id: string; type: "invoice" | "receipt" }>();
+  const service = getServiceSupabase();
+  const captured = payments.filter((p) => p.status === "captured").map((p) => p.id);
+  if (service && captured.length) {
+    const { data: inv } = await service.from("invoices").select("id, payment_id, doc_type").in("payment_id", captured);
+    for (const d of (inv ?? []) as { id: string; payment_id: string; doc_type: "invoice" | "receipt" }[]) {
+      docs.set(d.payment_id, { id: d.id, type: d.doc_type });
+    }
+  }
+
   // ── Build view-models + summary. ──
   const vms: PaymentVM[] = payments.map((p) => {
     const listingId = p.metadata?.listing_id ?? null;
@@ -151,6 +164,7 @@ export default async function MyPaymentsPage({
       createdAt: p.created_at,
       adminNotes: p.admin_notes ?? null,
       receiptUrl: signed.get(p.id) ?? null,
+      invoice: docs.get(p.id) ?? null,
       listingId,
       title: entity?.title ?? null,
       governorate: entity?.governorate ?? null,
@@ -178,10 +192,10 @@ export default async function MyPaymentsPage({
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 pb-16 lg:max-w-[var(--max-w-content)]">
       <FocusRowHighlight idPrefix="pay-" />
-      <span className="mazed-eyebrow">Historique</span>
-      <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">Mes paiements</h1>
+      <span className="mazed-eyebrow">{t("eyebrow")}</span>
+      <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">{t("title")}</h1>
       <p className="mt-1.5 text-[12px] text-muted">
-        Frais de publication, options et leur statut.
+        {t("subtitle")}
       </p>
 
       <PaymentsClient payments={vms} summary={summary} locale={dateLocale} />

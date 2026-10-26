@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { ChevronDown, Check } from "lucide-react";
-import { DIAL_CODES } from "@/lib/tunisia";
+import { DIAL_CODES, dialCodeLabel } from "@/lib/tunisia";
 
 /**
  * Single-field phone input: dial-code chip + number input share one
@@ -37,6 +38,8 @@ export function PhoneInput({
   placeholder?: string;
   ariaLabel?: string;
 }) {
+  const t = useTranslations("auth.phoneInput");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -100,10 +103,10 @@ export function PhoneInput({
     }
   }
 
-  const selectedCountry =
-    DIAL_CODES.find((c) => c.code === dialCode)?.label
-      .replace(`${dialCode} `, "")
-      .trim() ?? "";
+  const selectedEntry = DIAL_CODES.find((c) => c.code === dialCode);
+  const selectedCountry = selectedEntry
+    ? dialCodeLabel(selectedEntry, locale).replace(`${dialCode} `, "").trim()
+    : "";
 
   return (
     <div ref={rootRef} className="relative mt-1.5">
@@ -118,10 +121,10 @@ export function PhoneInput({
           aria-expanded={open}
           aria-controls={open ? listboxId : undefined}
           aria-activedescendant={open ? optionId(activeIdx) : undefined}
-          aria-label={`Indicatif pays — actuellement ${selectedCountry || dialCode}`}
+          aria-label={t("dialCodeLabel", { country: selectedCountry || dialCode })}
           className="flex shrink-0 items-center gap-1 border-e border-mazed-gold/15 px-3 py-2.5 text-sm font-bold text-mazed-cream transition hover:bg-black/15 focus:outline-none"
         >
-          <span className="mazed-tabular">{dialCode}</span>
+          <span className="mazed-tabular" dir="ltr">{dialCode}</span>
           <ChevronDown
             className={`size-3.5 opacity-70 transition-transform ${
               open ? "rotate-180" : ""
@@ -129,18 +132,22 @@ export function PhoneInput({
             strokeWidth={2.4}
           />
         </button>
+        {/* Digits read left to right in both languages. Under RTL the field
+            sits after the chip, so `rtl:text-end` (the right edge of this
+            ltr box) keeps the number next to its dial code. */}
         <input
           type="tel"
+          dir="ltr"
           inputMode="numeric"
           autoComplete="tel-national"
           value={number}
           required={required}
           placeholder={placeholder}
-          aria-label={ariaLabel ?? "Numéro de téléphone"}
+          aria-label={ariaLabel ?? t("numberLabel")}
           onChange={(e) =>
             onNumberChange(e.target.value.replace(/\D/g, ""))
           }
-          className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-mazed-cream placeholder:text-mazed-muted focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-mazed-cream placeholder:text-mazed-muted focus:outline-none rtl:text-end"
         />
       </div>
 
@@ -151,13 +158,13 @@ export function PhoneInput({
         <ul
           role="listbox"
           id={listboxId}
-          aria-label="Liste des indicatifs"
+          aria-label={t("listLabel")}
           className="absolute z-30 mt-1.5 max-h-72 w-full overflow-y-auto rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 py-1 shadow-2xl shadow-black/40"
         >
           {DIAL_CODES.map((c, i) => {
             const active = c.code === dialCode;
             const isActive = i === activeIdx;
-            const country = c.label.replace(`${c.code} `, "").trim();
+            const country = dialCodeLabel(c, locale).replace(`${c.code} `, "").trim();
             return (
               <li key={c.code}>
                 <button
@@ -179,7 +186,7 @@ export function PhoneInput({
                   }`}
                 >
                   <span className="flex items-baseline gap-2">
-                    <span className="mazed-tabular font-bold">{c.code}</span>
+                    <span className="mazed-tabular font-bold" dir="ltr">{c.code}</span>
                     <span
                       className={`text-[11.5px] ${
                         active ? "text-mazed-gold/80" : "text-mazed-muted"

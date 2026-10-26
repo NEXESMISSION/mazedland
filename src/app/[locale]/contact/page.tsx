@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LegalPage } from "@/components/legal/LegalPage";
-import { Mail, Phone, MapPin, Clock } from "lucide-react";
+import { Ltr } from "@/components/ui/Ltr";
+import { Mail, Phone, MapPin, Clock, MessageCircle } from "lucide-react";
+import { CONTACT_WHATSAPP, whatsappHref } from "@/lib/contact";
 
-export const metadata: Metadata = {
-  title: "Contact — Mazed Immo",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "contact" });
+  return { title: t("metaTitle") };
+}
 
 // Pure static content — prerender at build and serve from the edge CDN.
 export const dynamic = "force-static";
@@ -12,7 +21,7 @@ export const dynamic = "force-static";
 /**
  * Both reachable channels are env-driven and DISAPPEAR when unset.
  *
- * The e-mail used to be a literal, contact@batta.tn, on a domain the business
+ * The e-mail used to be a literal on the pre-rebrand domain, which the business
  * owned; the rebrand has no domain behind it yet, and an address that bounces
  * is worse than no address. The phone was a literal too — "+216 70 000 000",
  * which is not a number anyone answers. It sat on the page as the ONLY
@@ -22,38 +31,69 @@ export const dynamic = "force-static";
  * Set NEXT_PUBLIC_CONTACT_EMAIL / NEXT_PUBLIC_CONTACT_PHONE and the rows come
  * back. Until one of them is set the page says so, which is honest and is also
  * hard to miss.
+ *
+ * The e-mail now has a real mailbox behind it: contact@mazed.immo, the
+ * company's own (Google Workspace, given by the owner on 2026-10-21). It is
+ * the default, so the page shows it without a dashboard setting; the env var
+ * still overrides it.
+ *
+ * WhatsApp comes first (src/lib/contact.ts): it is where the team answers.
+ * Messages only — the row opens a chat, never a call.
  */
-const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim();
+const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || "contact@mazed.immo";
 const CONTACT_PHONE = process.env.NEXT_PUBLIC_CONTACT_PHONE?.trim();
 
 /** tel: wants digits and a leading +, not the spaces that make it readable. */
 const telHref = (v: string) => `tel:${v.replace(/[^\d+]/g, "")}`;
 
-const ITEMS = [
+/**
+ * Labels are message keys under `contact`, translated at render. A row's
+ * value is either the env-provided literal (`value`, shown as-is and kept
+ * left-to-right) or a message key (`valueKey`).
+ */
+type Item = {
+  Icon: typeof Mail;
+  labelKey: "whatsapp" | "email" | "phone" | "address" | "hours";
+  /** A line under the value (« messages uniquement »). */
+  noteKey?: "whatsappNote";
+  external?: boolean;
+  value?: string;
+  valueKey?: "addressValue" | "hoursValue";
+  href: string | null;
+};
+
+const ITEMS: Item[] = [
+  { Icon: MessageCircle, labelKey: "whatsapp", value: CONTACT_WHATSAPP, href: whatsappHref(), noteKey: "whatsappNote", external: true },
   ...(CONTACT_EMAIL
-    ? [{ Icon: Mail, label: "E-mail", value: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` }]
+    ? [{ Icon: Mail, labelKey: "email", value: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` } satisfies Item]
     : []),
   ...(CONTACT_PHONE
-    ? [{ Icon: Phone, label: "Téléphone", value: CONTACT_PHONE, href: telHref(CONTACT_PHONE) }]
+    ? [{ Icon: Phone, labelKey: "phone", value: CONTACT_PHONE, href: telHref(CONTACT_PHONE) } satisfies Item]
     : []),
-  { Icon: MapPin, label: "Adresse", value: "Sfax, Tunisie", href: null },
-  { Icon: Clock, label: "Horaires", value: "Lun – Ven, 9h – 17h", href: null },
+  { Icon: MapPin, labelKey: "address", valueKey: "addressValue", href: null },
+  { Icon: Clock, labelKey: "hours", valueKey: "hoursValue", href: null },
 ];
 
-const HAS_CHANNEL = Boolean(CONTACT_EMAIL || CONTACT_PHONE);
+const HAS_CHANNEL = Boolean(CONTACT_WHATSAPP || CONTACT_EMAIL || CONTACT_PHONE);
 
-export default function ContactPage() {
+export default async function ContactPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  // Static rendering with next-intl: the page must set the locale itself
+  // (Next can render it apart from the layout) before any translation call.
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations("contact");
   return (
-    <LegalPage eyebrow="Aide" title="Contactez-nous">
+    <LegalPage eyebrow={t("eyebrow")} title={t("title")}>
       <p className="text-[13.5px] leading-relaxed text-foreground/80">
-        Une question sur une annonce, un paiement ou votre compte ? Notre équipe
-        est là pour vous aider.
+        {t("intro")}
       </p>
       {!HAS_CHANNEL && (
         <p className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[12.5px] leading-relaxed text-muted ring-1 ring-border">
-          Nos coordonnées téléphonique et e-mail sont en cours de publication.
-          En attendant, chaque décision sur vos annonces et vos paiements vous
-          est notifiée dans l&apos;application et par SMS.
+          {t("pending")}
         </p>
       )}
       <ul className="mt-5 space-y-2.5">
@@ -64,18 +104,22 @@ export default function ContactPage() {
                 <it.Icon className="size-4.5" strokeWidth={2} />
               </span>
               <div className="min-w-0">
-                <div className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted">
-                  {it.label}
+                <div className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted rtl:tracking-normal">
+                  {t(it.labelKey)}
                 </div>
-                <div className="mt-0.5 text-[14px] font-bold text-foreground">{it.value}</div>
+                <div className="mt-0.5 text-[14px] font-bold text-foreground">
+                  {it.valueKey ? t(it.valueKey) : <Ltr>{it.value}</Ltr>}
+                </div>
+                {it.noteKey && <div className="text-[11.5px] text-muted">{t(it.noteKey)}</div>}
               </div>
             </>
           );
           return (
-            <li key={it.label}>
+            <li key={it.labelKey}>
               {it.href ? (
                 <a
                   href={it.href}
+                  {...(it.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   className="flex items-center gap-3 rounded-2xl bg-surface-2 p-3.5 ring-1 ring-border transition hover:ring-gold-soft/60"
                 >
                   {inner}

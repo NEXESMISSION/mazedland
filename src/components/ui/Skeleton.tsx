@@ -9,6 +9,7 @@
  * shimmer; mobile keeps the detailed skeletons.
  */
 import { DesktopLoadingSpinner } from "./DesktopLoadingSpinner";
+import { LoadingText } from "./LoadingText";
 
 export function SkeletonBar({
   className = "",
@@ -304,7 +305,7 @@ export function ListRowsSkeleton({
         ))}
       </section>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingText />
     </div>
   );
 }
@@ -416,7 +417,7 @@ export function AdminTableSkeleton({
         ))}
       </div>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingText />
     </div>
   );
 }
@@ -521,7 +522,7 @@ export function KycStepSkeleton({
         </>
       )}
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingText />
     </div>
   );
 }
@@ -570,7 +571,7 @@ export function FormPageSkeleton({
         <div className="mazed-skeleton-luxe h-11 w-32 rounded-2xl" />
       </div>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingText />
     </div>
   );
 }
@@ -639,7 +640,7 @@ export function HeroWithGridSkeleton({
         </div>
       </section>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingText />
     </div>
   );
 }
@@ -676,7 +677,7 @@ export function CenteredStatusSkeleton() {
         <div className="mazed-skeleton h-11 w-full rounded-2xl" />
       </div>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingText />
     </div>
   );
 }
@@ -735,7 +736,7 @@ export function BidPageSkeleton() {
         </section>
       </div>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingText />
     </div>
   );
 }
@@ -798,7 +799,7 @@ export function PaymentCheckoutSkeleton() {
         </div>
       </section>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingText />
     </div>
   );
 }
@@ -860,7 +861,7 @@ export function AccountSkeleton() {
         </div>
       </div>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingText />
     </div>
   );
 }

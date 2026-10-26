@@ -5,7 +5,8 @@
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
 import { redirect } from "next/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { categoryLabel } from "@/lib/i18n";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import {
@@ -20,6 +21,12 @@ import {
   toProduct,
   type Product,
 } from "@/lib/products";
+import { liveListingCount, moderationSettings } from "@/lib/moderation/server";
+import { asDealType } from "@/lib/listings/deal";
+import { aiAvailable } from "@/lib/ai/server";
+import { asPendingEdit, isEditable } from "@/lib/listings/edit";
+import { activePlan, can, membershipsOf, shopLiveCount } from "@/lib/pro/shops";
+import { median, quartiles, type PriceRef } from "@/lib/listings/priceCheck";
 
 export const dynamic = "force-dynamic";
 
@@ -48,36 +55,47 @@ export const dynamic = "force-dynamic";
 export default async function NewListingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ draft?: string | string[] }>;
+  searchParams: Promise<{ draft?: string | string[]; deal?: string | string[]; edit?: string | string[]; shop?: string | string[] }>;
 }) {
   const sp = await searchParams;
   const wantedDraft = Array.isArray(sp.draft) ? sp.draft[0] : sp.draft;
+  // « Modifier » on an annonce that is online (0172): the same form, in edit mode.
+  const wantedEdit = Array.isArray(sp.edit) ? sp.edit[0] : sp.edit;
+  // « J'ai un bien à louer » on the home page sends ?deal=rent (0166).
+  const initialDeal = asDealType(Array.isArray(sp.deal) ? sp.deal[0] : sp.deal);
+  // « Publier pour la boutique » in the Espace Pro sends ?shop=<id> (0173).
+  const initialShopId = (Array.isArray(sp.shop) ? sp.shop[0] : sp.shop) ?? null;
   const locale = await getLocale();
+  const t = await getTranslations("publish");
+  const tRoot = await getTranslations();
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/annonces/nouvelle`)}`);
+    const back = wantedEdit
+      ? `/${locale}/annonces/nouvelle?edit=${encodeURIComponent(wantedEdit)}`
+      : `/${locale}/annonces/nouvelle${initialDeal === "rent" ? "?deal=rent" : ""}`;
+    redirect(`/${locale}/login?next=${encodeURIComponent(back)}`);
   }
 
   const admin = getServiceSupabase();
   if (!admin) {
     return (
       <main className="mx-auto max-w-md px-4 py-16 text-center">
-        <p className="text-[13px] text-muted">Service indisponible.</p>
+        <p className="text-[13px] text-muted">{t("serviceUnavailable")}</p>
       </main>
     );
   }
 
-  const [catRes, attrRes, prodRes, creditRes, profRes, draftRes] = await Promise.all([
+  const [catRes, attrRes, prodRes, creditRes, profRes, draftRes, pricedRes] = await Promise.all([
     admin
       .from("categories")
-      .select("id, parent_id, slug, label_fr, kind, sort_order")
+      .select("id, parent_id, slug, label_fr, label_ar, kind, sort_order")
       .eq("is_active", true)
       .order("sort_order"),
     admin
       .from("category_attributes")
-      .select("id, category_id, field_key, label, data_type, options, unit, required, sort_order")
+      .select("id, category_id, field_key, label, data_type, options, unit, required, sort_order, deal_types")
       .order("sort_order"),
     admin.from("products").select(PRODUCT_SELECT).eq("is_active", true),
     admin
@@ -99,19 +117,31 @@ export default async function NewListingPage({
         .select(
           `id, category_id, title, description, price, price_on_request, negotiable,
            governorate, delegation, attributes, contact_name, contact_phone, updated_at,
+           deal_type, deposit_amount, charges_amount, furnished, available_from, min_lease_months,
+           pending_edit, shop_id, status, review_flags,
            photos:listing_photos (storage_path, sort_order)`,
         )
         .eq("seller_id", user!.id);
+      // Online, or still waiting for an admin (a typo is noticed right after sending).
+      if (wantedEdit) return q.eq("id", wantedEdit).in("status", ["published", "pending_review"]).maybeSingle();
       return wantedDraft
         ? // Only the seller's own annonce, and only one still editable here.
           q.eq("id", wantedDraft).in("status", ["draft", "rejected", "pending_payment"]).maybeSingle()
         : q.eq("status", "draft").order("updated_at", { ascending: false }).limit(1).maybeSingle();
     })(),
+    // What annonces like this one ask (online, same category and offer): the
+    // form compares a typed price with it to catch a zero too many or too few.
+    admin
+      .from("listings")
+      .select("category_id, deal_type, governorate, price, attributes")
+      .eq("status", "published")
+      .eq("price_on_request", false)
+      .limit(3000),
   ]);
 
   type CatRow = {
     id: string; parent_id: string | null; slug: string;
-    label_fr: string; kind: string; sort_order: number;
+    label_fr: string; label_ar: string | null; kind: string; sort_order: number;
   };
   const catRows = (catRes.data ?? []) as CatRow[];
   const parents = catRows.filter((c) => c.parent_id == null);
@@ -123,23 +153,28 @@ export default async function NewListingPage({
       return {
         id: c.id,
         slug: c.slug,
-        label: c.label_fr,
+        label: categoryLabel(c, locale),
         groupId: parent?.id ?? "other",
-        groupLabel: parent?.label_fr ?? "Autres",
+        groupLabel: parent ? categoryLabel(parent, locale) : t("otherGroup"),
+        kind: c.kind,
       };
     });
 
   // Keyed by category so the wizard can swap the questions the instant the
   // seller changes their mind, with no second round trip.
+  // Labels are stored in French, as admins type them in /admin/catalogue. The
+  // ones the site knows are translated here; one an admin adds later shows as
+  // typed until it gets a key under `attributes`.
   const attributesByCategory: Record<string, AttributeDef[]> = {};
   for (const a of (attrRes.data ?? []) as (AttributeDef & { category_id: string })[]) {
     (attributesByCategory[a.category_id] ??= []).push({
       field_key: a.field_key,
-      label: a.label,
+      label: tRoot.has(`attributes.${a.field_key}`) ? tRoot(`attributes.${a.field_key}`) : a.label,
       data_type: a.data_type,
       options: a.options,
-      unit: a.unit,
+      unit: a.unit === "m²" ? tRoot("common.sqm") : a.unit,
       required: a.required,
+      deal_types: a.deal_types ?? null,
     });
   }
 
@@ -163,19 +198,91 @@ export default async function NewListingPage({
     return n + Math.max(0, (c.quota_total as number) - (c.quota_used as number));
   }, 0);
 
-  const groups = parents.map((p) => ({ id: p.id, label: p.label_fr }));
+  // Free places (0165): an individual publishes for free while they have fewer
+  // than the limit live. The submit route decides for real; this is so the
+  // form says "Gratuit" instead of showing a fee nobody will be asked for.
+  const settings = await moderationSettings(admin);
+  const live = await liveListingCount(admin, user!.id, "00000000-0000-0000-0000-000000000000");
+  const freePlacesLeft = Math.max(0, settings.freeLimit - live);
+
+  const groups = parents.map((p) => ({ id: p.id, label: categoryLabel(p, locale) }));
+
+  const byKey = new Map<string, { prices: number[]; perSqm: number[] }>();
+  // By type and offer, and by type, offer and governorate: the form uses the
+  // narrower one when it has enough annonces to say something.
+  for (const r of (pricedRes.data ?? []) as { category_id: string; deal_type: string | null; governorate: string | null; price: number | string | null; attributes: Record<string, unknown> | null }[]) {
+    const p = Number(r.price);
+    if (!(p > 0)) continue;
+    const area = Number((r.attributes ?? {}).area_sqm);
+    const base = `${r.category_id}:${asDealType(r.deal_type)}`;
+    for (const key of [base, ...(r.governorate ? [`${base}:${r.governorate}`] : [])]) {
+      const bucket = byKey.get(key) ?? { prices: [], perSqm: [] };
+      bucket.prices.push(p);
+      if (area > 0) bucket.perSqm.push(p / area);
+      byKey.set(key, bucket);
+    }
+  }
+  const priceRefs: Record<string, PriceRef> = {};
+  for (const [key, b] of byKey) {
+    const q = quartiles(b.perSqm);
+    priceRefs[key] = { median: median(b.prices), perSqm: median(b.perSqm), perSqmLow: q?.low ?? null, perSqmHigh: q?.high ?? null, count: b.prices.length };
+  }
+
+  // The shops this seller publishes for (0173): open ones, where their role
+  // allows it, each with what its running plan still covers.
+  const shops = wantedEdit
+    ? []
+    : await Promise.all(
+        (await membershipsOf(admin, user!.id))
+          .filter((m) => m.shop.status === "approved" && can(m.role, "publish"))
+          .map(async ({ shop }) => {
+            const plan = await activePlan(admin, shop.id);
+            const used = plan ? await shopLiveCount(admin, shop.id) : 0;
+            return { id: shop.id, name: shop.name, planLeft: plan ? Math.max(0, plan.quota - used) : null };
+          }),
+      );
+
+  // Editing: an annonce that is not online or waiting (or not theirs), or one
+  // held after reports, has no edit form — back to their annonces. An edit
+  // already waiting for an admin opens as the seller left it, not as the live
+  // version, so they can correct it.
+  const row = draftRes.data as
+    | (InitialDraft & { pending_edit?: unknown; status: string; review_flags: string[] | null })
+    | null;
+  if (wantedEdit && (!row || !isEditable(row))) redirect(`/${locale}/account/listings`);
+  const pending = wantedEdit ? asPendingEdit(row?.pending_edit) : null;
+  const initialDraft: InitialDraft | null = row
+    ? {
+        ...row,
+        ...(pending ? (pending.fields as Partial<InitialDraft>) : {}),
+        photos: pending?.photos ?? row.photos,
+      }
+    : null;
 
   return (
     <PublishWizard
+      // « Corriger » on the done screen comes back here with ?edit=: a new
+      // form, not the done screen kept by a component that stayed mounted.
+      key={wantedEdit ? `edit:${wantedEdit}` : `create:${wantedDraft ?? ""}`}
       categories={categories}
       groups={groups}
       attributesByCategory={attributesByCategory}
       feeByCategory={feeByCategory}
       creditsLeft={creditsLeft}
+      freePlacesLeft={freePlacesLeft}
+      freeLimit={settings.freeLimit}
       defaultContactName={(profRes.data?.full_name as string | null) ?? ""}
       defaultContactPhone={(profRes.data?.phone as string | null) ?? ""}
       defaultGovernorate={(profRes.data?.governorate as string | null) ?? ""}
-      initialDraft={(draftRes.data as unknown as InitialDraft | null) ?? null}
+      initialDraft={initialDraft}
+      initialDeal={initialDeal}
+      aiAvailable={wantedEdit ? false : await aiAvailable(admin)}
+      mode={wantedEdit ? "edit" : "create"}
+      editPending={Boolean(pending)}
+      editWaiting={Boolean(wantedEdit) && row?.status === "pending_review"}
+      shops={shops}
+      initialShopId={initialShopId}
+      priceRefs={priceRefs}
       locale={locale}
     />
   );

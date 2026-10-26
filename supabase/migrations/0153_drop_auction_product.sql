@@ -47,9 +47,9 @@ declare j text;
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
     foreach j in array array[
-      'tick_auctions', 'process_bid_events', 'batta-ending-soon',
-      'batta-final-payment-due', 'process_final_payment_defaults',
-      'batta-expire-promos'
+      'tick_auctions', 'process_bid_events', 'mazed-ending-soon',
+      'mazed-final-payment-due', 'process_final_payment_defaults',
+      'mazed-expire-promos'
     ] loop
       perform cron.unschedule(j) where exists (select 1 from cron.job where jobname = j);
     end loop;

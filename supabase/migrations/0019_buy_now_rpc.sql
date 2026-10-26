@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — atomic auction close on buy-now / direct-sale purchase.
+-- Mazed Immo — atomic auction close on buy-now / direct-sale purchase.
 --
 -- When the buyer's payment captures (kind = 'buy_now' or 'final_payment'
 -- with buy-now flag), we need to:

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
@@ -18,6 +19,7 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
  */
 export function ResetPasswordForm() {
   const router = useRouter();
+  const t = useTranslations("auth");
   const [ready, setReady] = useState<"loading" | "ok" | "invalid">("loading");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -48,12 +50,12 @@ export function ResetPasswordForm() {
         setReady("ok");
       }
     });
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       if (!resolved) setReady("invalid");
     }, 1500);
 
     return () => {
-      clearTimeout(t);
+      clearTimeout(timer);
       sub.subscription.unsubscribe();
     };
   }, []);
@@ -62,11 +64,11 @@ export function ResetPasswordForm() {
     e.preventDefault();
     setError(null);
     if (password.length < 8) {
-      setError("Le mot de passe doit comporter au moins 8 caractères.");
+      setError(t("errors.passwordTooShort"));
       return;
     }
     if (password !== confirm) {
-      setError("Les deux mots de passe ne correspondent pas.");
+      setError(t("errors.passwordMismatch"));
       return;
     }
     startTransition(async () => {
@@ -86,7 +88,7 @@ export function ResetPasswordForm() {
   if (ready === "loading") {
     return (
       <div className="text-center text-[12.5px] text-muted">
-        Vérification du lien…
+        {t("reset.checkingLink")}
       </div>
     );
   }
@@ -94,14 +96,16 @@ export function ResetPasswordForm() {
   if (ready === "invalid") {
     return (
       <div className="mazed-tone-bad rounded-lg px-3 py-3 text-center text-xs">
-        Lien invalide ou expiré.{" "}
         {/* i18n Link, not a bare href: `/fr/forgot-password` hardcoded the
             locale, so an Arabic visitor whose reset link had expired was sent
             to the French page. */}
-        <Link href="/forgot-password" className="font-bold underline">
-          Demander un nouveau lien
-        </Link>
-        .
+        {t.rich("reset.invalidLink", {
+          link: (chunks) => (
+            <Link href="/forgot-password" className="font-bold underline">
+              {chunks}
+            </Link>
+          ),
+        })}
       </div>
     );
   }
@@ -113,10 +117,10 @@ export function ResetPasswordForm() {
           <CheckCircle2 className="size-5" strokeWidth={1.75} />
         </span>
         <h2 className="mazed-serif text-[16px] font-semibold text-mazed-cream">
-          Mot de passe mis à jour
+          {t("newPassword.updated")}
         </h2>
         <p className="mt-2 text-[12.5px] text-mazed-cream/75">
-          Redirection vers la page de connexion…
+          {t("newPassword.redirecting")}
         </p>
       </div>
     );
@@ -125,7 +129,7 @@ export function ResetPasswordForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <label className="block">
-        <span className="mazed-eyebrow text-[10px]">Nouveau mot de passe (min 8)</span>
+        <span className="mazed-eyebrow text-[10px]">{t("fields.newPasswordMin")}</span>
         <input
           type="password"
           required
@@ -137,7 +141,7 @@ export function ResetPasswordForm() {
         />
       </label>
       <label className="block">
-        <span className="mazed-eyebrow text-[10px]">Confirmer</span>
+        <span className="mazed-eyebrow text-[10px]">{t("fields.confirm")}</span>
         <input
           type="password"
           required
@@ -155,7 +159,7 @@ export function ResetPasswordForm() {
         disabled={isPending}
         className="mazed-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
-        {isPending ? "Mise à jour…" : "Mettre à jour le mot de passe"}
+        {isPending ? t("newPassword.updating") : t("newPassword.update")}
       </button>
     </form>
   );

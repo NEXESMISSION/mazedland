@@ -3,7 +3,8 @@ import { randomInt } from "crypto";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { clientIp } from "@/lib/clientIp";
-import { sendSms, isSmsConfigured } from "@/lib/winsms";
+import { sendSms, isSmsConfigured, needsUnicode } from "@/lib/winsms";
+import { apiTranslator } from "@/lib/i18n/server";
 import { PHONE_PROOF_COOKIE, hashCode } from "@/lib/otp";
 import { log } from "@/lib/log";
 
@@ -109,8 +110,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "store_failed" }, { status: 500 });
   }
 
-  const message = `Votre code de vérification Mazed Immo est : ${code}. Valable 10 minutes.`;
-  const sent = await sendSms({ to: phone, sms: message });
+  // In the language of the page that asked for it (signup / forgot-password).
+  const t = await apiTranslator(req, "sms");
+  const message = t("otp", { code });
+  const sent = await sendSms({ to: phone, sms: message, unicode: needsUnicode(message) });
   if (!sent.ok) {
     return NextResponse.json({ error: "send_failed" }, { status: 502 });
   }

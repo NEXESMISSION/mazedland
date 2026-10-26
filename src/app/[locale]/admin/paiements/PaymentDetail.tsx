@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ReceiptPreview } from "@/components/admin/ReceiptPreview";
 import { AdminButton } from "@/components/admin/AdminButton";
 import {
-  StatusPill, Confirm, useAdminAction, paymentKindLabel, EYEBROW,
+  StatusPill, Confirm, useAdminAction, EYEBROW,
 } from "@/components/admin/kit";
-import { formatTND } from "@/lib/utils";
+import { Ltr } from "@/components/ui/Ltr";
+import { formatDate, formatTND } from "@/lib/utils";
 import { Check, X, ChevronLeft, ExternalLink, FileWarning } from "lucide-react";
 
 /**
@@ -38,21 +40,11 @@ export type PaymentDetailData = {
   receipts: { url: string; path: string }[];
 };
 
-const dt = (iso: string | null) =>
-  iso
-    ? new Date(iso).toLocaleString("fr-FR", {
-        day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-      })
-    : "—";
+/** Providers with a label in messages: adminPayments.providers.<provider>. */
+const PROVIDER_KEYS = new Set(["bank_transfer", "d17", "manual", "konnect", "paymee", "flouci"]);
 
-const PROVIDER_LABEL: Record<string, string> = {
-  bank_transfer: "Virement bancaire",
-  d17: "D17",
-  manual: "Espèces / manuel",
-  konnect: "Konnect",
-  paymee: "Paymee",
-  flouci: "Flouci",
-};
+/** Payment kinds with a label in messages: adminPayments.kinds.<kind>. */
+const KIND_KEYS = new Set(["listing_fee", "listing_pack", "subscription", "promo", "badge", "renewal"]);
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -70,11 +62,18 @@ export function PaymentDetail({
   payment: PaymentDetailData;
   backHref: string;
 }) {
+  const t = useTranslations("adminPayments");
+  const locale = useLocale();
   const { run, pending } = useAdminAction();
   const [confirm, setConfirm] = useState<null | "accept" | "reject">(null);
   const p = payment;
 
   const open = p.status === "pending" || p.status === "pending_review";
+
+  const money = t("amount", { amount: formatTND(p.amount, locale) });
+  const kindLabel = KIND_KEYS.has(p.kind) ? t(`kinds.${p.kind}`) : p.kind;
+  const providerLabel = PROVIDER_KEYS.has(p.provider) ? t(`providers.${p.provider}`) : p.provider;
+  const dt = (iso: string | null) => (iso ? formatDate(iso, locale, "dateTime") : "—");
 
   const act = (body: Record<string, unknown>, success: string) =>
     run({ url: `/api/admin/paiements/${p.id}`, method: "POST", body, success });
@@ -86,18 +85,18 @@ export function PaymentDetail({
           href={backHref as "/admin/paiements"}
           className="mb-2 inline-flex items-center gap-1 text-[12px] font-medium text-subtle transition hover:text-foreground lg:hidden"
         >
-          <ChevronLeft className="size-3.5" strokeWidth={2.4} />
-          File
+          <ChevronLeft className="size-3.5 rtl:-scale-x-100" strokeWidth={2.4} />
+          {t("detail.back")}
         </Link>
         <div className="flex items-baseline gap-3">
           <h1 className="mazed-tabular text-[19px] font-semibold tracking-tight text-foreground">
-            {formatTND(p.amount, "fr")} TND
+            {money}
           </h1>
           <StatusPill status={p.status} />
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-subtle">
-          <span>{paymentKindLabel(p.kind)}</span>
-          <span>{PROVIDER_LABEL[p.provider] ?? p.provider}</span>
+          <span>{kindLabel}</span>
+          <span>{providerLabel}</span>
           <span>{p.sellerName}</span>
         </div>
       </header>
@@ -110,7 +109,11 @@ export function PaymentDetail({
                 key={r.path}
                 url={r.url}
                 path={r.path}
-                label={p.receipts.length > 1 ? `Reçu ${i + 1}` : "Reçu"}
+                label={
+                  p.receipts.length > 1
+                    ? t("detail.receiptN", { n: i + 1 })
+                    : t("detail.receipt")
+                }
                 triggerClassName="relative block max-h-[420px] w-full overflow-hidden border border-border bg-surface-2 hover:border-[var(--gold-soft)]"
                 imgClassName="max-h-[420px] w-full object-contain"
               />
@@ -119,43 +122,47 @@ export function PaymentDetail({
         ) : (
           <div className="flex items-center gap-2 border border-dashed border-border px-4 py-5 text-[12.5px] text-[var(--tone-warn)]">
             <FileWarning className="size-4 shrink-0" strokeWidth={2.2} />
-            Aucun reçu n'a été envoyé pour ce paiement.
+            {t("detail.noReceipt")}
           </div>
         )}
 
         {p.adminNotes && (
           <p className="mt-4 border-s-2 border-[var(--tone-bad)] ps-3 text-[12.5px] text-[var(--tone-bad)]">
-            <span className="font-semibold">Motif du refus :</span> {p.adminNotes}
+            <span className="font-semibold">{t("detail.rejectionReason")}</span> {p.adminNotes}
           </p>
         )}
 
         <section className="mt-6 border-t border-border pt-4">
-          <h2 className={EYEBROW}>Le paiement</h2>
+          <h2 className={EYEBROW}>{t("detail.paymentSection")}</h2>
           <dl className="mt-2">
-            <Row label="Montant">
-              <span className="mazed-tabular">{formatTND(p.amount, "fr")} TND</span>
+            <Row label={t("detail.amountLabel")}>
+              <span className="mazed-tabular">{money}</span>
             </Row>
-            <Row label="Pour">{p.productName ?? paymentKindLabel(p.kind)}</Row>
-            <Row label="Méthode">{PROVIDER_LABEL[p.provider] ?? p.provider}</Row>
-            <Row label="Initié le">{dt(p.createdAt)}</Row>
-            <Row label="Reçu envoyé le">{dt(p.uploadedAt)}</Row>
-            {p.reviewedAt && <Row label="Traité le">{dt(p.reviewedAt)}</Row>}
+            <Row label={t("detail.for")}>{p.productName ?? kindLabel}</Row>
+            <Row label={t("detail.method")}>{providerLabel}</Row>
+            <Row label={t("detail.initiatedAt")}>{dt(p.createdAt)}</Row>
+            <Row label={t("detail.receiptSentAt")}>{dt(p.uploadedAt)}</Row>
+            {p.reviewedAt && <Row label={t("detail.processedAt")}>{dt(p.reviewedAt)}</Row>}
           </dl>
         </section>
 
         <section className="mt-5 border-t border-border pt-4">
-          <h2 className={EYEBROW}>Vendeur</h2>
+          <h2 className={EYEBROW}>{t("detail.sellerSection")}</h2>
           <dl className="mt-2">
-            <Row label="Nom">{p.sellerName}</Row>
-            {p.sellerPhone && <Row label="Téléphone">{p.sellerPhone}</Row>}
+            <Row label={t("detail.name")}>{p.sellerName}</Row>
+            {p.sellerPhone && (
+              <Row label={t("detail.phone")}>
+                <Ltr>{p.sellerPhone}</Ltr>
+              </Row>
+            )}
           </dl>
         </section>
 
         {p.listing && (
           <section className="mt-5 border-t border-border pt-4">
-            <h2 className={EYEBROW}>Annonce concernée</h2>
+            <h2 className={EYEBROW}>{t("detail.listingSection")}</h2>
             <dl className="mt-2">
-              <Row label="Titre">
+              <Row label={t("detail.listingTitle")}>
                 <Link
                   href={`/admin/annonces?status=all&a=${p.listing.id}` as "/admin/annonces"}
                   className="inline-flex items-center gap-1.5 font-medium text-[var(--gold)] hover:underline"
@@ -163,15 +170,12 @@ export function PaymentDetail({
                   {p.listing.title} <ExternalLink className="size-3" strokeWidth={2.2} />
                 </Link>
               </Row>
-              <Row label="Statut">
+              <Row label={t("detail.listingStatus")}>
                 <StatusPill status={p.listing.status} />
               </Row>
             </dl>
             {open && (
-              <p className="mt-2 text-[11.5px] text-subtle">
-                Valider ce reçu fait passer l'annonce en vérification — elle n'est pas publiée
-                automatiquement.
-              </p>
+              <p className="mt-2 text-[11.5px] text-subtle">{t("detail.acceptNote")}</p>
             )}
           </section>
         )}
@@ -186,53 +190,51 @@ export function PaymentDetail({
               icon={<Check className="size-3.5" strokeWidth={2.8} />}
               onClick={() => setConfirm("accept")}
             >
-              Valider le reçu
+              {t("detail.accept")}
             </AdminButton>
             <AdminButton
               variant="danger"
               icon={<X className="size-3.5" strokeWidth={2.6} />}
               onClick={() => setConfirm("reject")}
             >
-              Refuser
+              {t("detail.reject")}
             </AdminButton>
           </>
         ) : (
-          <span className="text-[12px] text-subtle">
-            Déjà traité — plus rien à décider ici.
-          </span>
+          <span className="text-[12px] text-subtle">{t("detail.alreadyProcessed")}</span>
         )}
       </footer>
 
       <Confirm
         open={confirm === "accept"}
-        title={`Valider ${formatTND(p.amount, "fr")} TND ?`}
+        title={t("detail.confirmAcceptTitle", { amount: money })}
         body={
           p.listing
-            ? "Le paiement est encaissé et l'annonce part en vérification."
-            : "Le paiement est encaissé et ce que le vendeur a acheté lui est accordé."
+            ? t("detail.confirmAcceptBodyListing")
+            : t("detail.confirmAcceptBody")
         }
-        confirmLabel="Valider"
+        confirmLabel={t("detail.confirmAcceptLabel")}
         variant="primary"
         pending={pending}
         onCancel={() => setConfirm(null)}
         onConfirm={async () => {
-          if (await act({ action: "accept" }, "Reçu validé.")) setConfirm(null);
+          if (await act({ action: "accept" }, t("detail.accepted"))) setConfirm(null);
         }}
       />
       <Confirm
         open={confirm === "reject"}
-        title="Refuser ce reçu ?"
-        body="Le vendeur reçoit le motif et peut en envoyer un autre."
-        confirmLabel="Refuser"
+        title={t("detail.confirmRejectTitle")}
+        body={t("detail.confirmRejectBody")}
+        confirmLabel={t("detail.confirmRejectLabel")}
         pending={pending}
         reason={{
-          label: "Motif (envoyé au vendeur)",
-          placeholder: "Montant différent, reçu illisible, virement introuvable…",
+          label: t("detail.reasonLabel"),
+          placeholder: t("detail.reasonPlaceholder"),
           required: true,
         }}
         onCancel={() => setConfirm(null)}
         onConfirm={async (reason) => {
-          if (await act({ action: "reject", reason }, "Reçu refusé.")) setConfirm(null);
+          if (await act({ action: "reject", reason }, t("detail.rejected"))) setConfirm(null);
         }}
       />
     </div>

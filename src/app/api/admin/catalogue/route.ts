@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslator, requestLocale } from "@/lib/i18n/server";
 
 /**
  * Categories and their attributes — the shape of an annonce.
@@ -18,7 +19,7 @@ import { fail } from "@/lib/http/errors";
  * catalogue and had **no admin screen at all**, so the seller wizard for the
  * new product could only be changed by a developer.
  *
- *   POST { action: "category.save", id?, parent_id?, label_fr, kind, sort_order, is_active }
+ *   POST { action: "category.save", id?, parent_id?, label_fr, label_ar?, kind, sort_order, is_active }
  *   POST { action: "category.toggle", id, is_active }
  *   POST { action: "attribute.save", id?, category_id, field_key, label, data_type,
  *          options?, unit?, required, filterable, sort_order }
@@ -63,12 +64,14 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const action = typeof body.action === "string" ? body.action : "";
+  // `detail` sentences are read by the admin, in the console's language.
+  const t = await apiTranslator(req, "adminCatalogue.api");
 
   // ── Categories ────────────────────────────────────────────────────────────
   if (action === "category.save") {
     const label = text(body.label_fr, 80);
     if (!label) {
-      return NextResponse.json({ error: "invalid", detail: "Le nom est obligatoire." }, { status: 400 });
+      return NextResponse.json({ error: "invalid", detail: t("nameRequired") }, { status: 400 });
     }
     const kind = typeof body.kind === "string" && CATEGORY_KINDS.has(body.kind) ? body.kind : "residential";
     const id = text(body.id, 40);
@@ -97,7 +100,7 @@ export async function POST(req: NextRequest) {
     if (error) {
       if (error.code === "23505") {
         return NextResponse.json(
-          { error: "conflict", detail: "Une catégorie porte déjà ce nom." },
+          { error: "conflict", detail: t("categoryExists") },
           { status: 409 },
         );
       }
@@ -124,7 +127,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             error: "in_use",
-            detail: `${count} annonce(s) publiée(s) sont dans cette catégorie. Déplacez-les d'abord.`,
+            detail: t("categoryInUse", { count: count ?? 0 }),
           },
           { status: 409 },
         );
@@ -144,7 +147,7 @@ export async function POST(req: NextRequest) {
     const label = text(body.label, 80);
     if (!categoryId || !label) {
       return NextResponse.json(
-        { error: "invalid", detail: "Catégorie et libellé sont obligatoires." },
+        { error: "invalid", detail: t("categoryAndLabelRequired") },
         { status: 400 },
       );
     }
@@ -168,7 +171,7 @@ export async function POST(req: NextRequest) {
         .slice(0, 60);
       if (options.length === 0) {
         return NextResponse.json(
-          { error: "invalid", detail: "Une liste doit avoir au moins une option." },
+          { error: "invalid", detail: t("optionRequired") },
           { status: 400 },
         );
       }
@@ -198,7 +201,7 @@ export async function POST(req: NextRequest) {
 
     const fieldKey = text(body.field_key, 40) ? slugKey(text(body.field_key, 40)!) : slugKey(label);
     if (!fieldKey) {
-      return NextResponse.json({ error: "invalid", detail: "Clé invalide." }, { status: 400 });
+      return NextResponse.json({ error: "invalid", detail: t("invalidKey") }, { status: 400 });
     }
 
     const { data, error } = await admin
@@ -209,7 +212,7 @@ export async function POST(req: NextRequest) {
     if (error) {
       if (error.code === "23505") {
         return NextResponse.json(
-          { error: "conflict", detail: "Cette caractéristique existe déjà dans la catégorie." },
+          { error: "conflict", detail: t("attributeExists") },
           { status: 409 },
         );
       }
@@ -240,10 +243,17 @@ export async function POST(req: NextRequest) {
       .not(`attributes->>${attr.field_key}`, "is", null);
 
     if ((count ?? 0) > 0) {
+      // The stored label is French; the Arabic console names the attributes
+      // the site already has Arabic for.
+      let label: string = attr.label;
+      if (requestLocale(req) === "ar") {
+        const tAttr = await apiTranslator(req, "attributes");
+        if (tAttr.has(attr.field_key)) label = tAttr(attr.field_key);
+      }
       return NextResponse.json(
         {
           error: "in_use",
-          detail: `${count} annonce(s) utilisent « ${attr.label} ». Retirez-la du formulaire plutôt que de la supprimer.`,
+          detail: t("attributeInUse", { count: count ?? 0, label }),
         },
         { status: 409 },
       );

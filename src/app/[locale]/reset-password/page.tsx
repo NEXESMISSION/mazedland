@@ -15,9 +15,15 @@ import { AuthHeroPanel } from "@/components/auth/AuthHeroPanel";
  *
  * No "back to login" footer — the form's success state redirects to /login.
  */
-export const metadata: Metadata = {
-  title: "Nouveau mot de passe — Mazed Immo",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "auth.reset" });
+  return { title: t("metaTitle") };
+}
 
 export default async function ResetPasswordPage() {
   const t = await getTranslations();
@@ -44,10 +50,10 @@ export default async function ResetPasswordPage() {
               isRTL ? "font-arabic" : ""
             }`}
           >
-            <span className="gradient-gold-text">Nouveau mot de passe</span>
+            <span className="gradient-gold-text">{t("auth.reset.title")}</span>
           </h1>
           <p className="mt-2 text-[12.5px] text-muted">
-            Choisissez un nouveau mot de passe pour votre compte.
+            {t("auth.reset.intro")}
           </p>
         </div>
 
@@ -65,7 +71,7 @@ export default async function ResetPasswordPage() {
         <div className="relative w-full max-w-sm">
           <div
             aria-hidden
-            className="mazed-gradient-blob mazed-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
+            className="mazed-gradient-blob mazed-gradient-blob-lg absolute -start-1/3 -top-1/4 -z-10 opacity-20"
           />
           {Card}
         </div>

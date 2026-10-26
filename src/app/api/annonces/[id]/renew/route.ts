@@ -4,18 +4,21 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslator } from "@/lib/i18n/server";
 import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct } from "@/lib/products";
+import { liveListingCount, moderationSettings, publishOrQueue } from "@/lib/moderation/server";
 
 /**
  * POST /api/annonces/[id]/renew — put an expired annonce back online.
  *
  * Expiry is what keeps the catalog honest (D2), so renewal is the other half of
- * that bargain: nothing is lost, the seller just pays again — or spends a pack
- * credit — and the listing goes back through the queue.
+ * that bargain: nothing is lost, and the annonce comes back.
  *
- * It follows the same order as /submit, deliberately: credit first, payment
- * otherwise, and NEVER straight to published. A renewed listing is re-checked,
- * because the reason it is worth paying for is that someone looks at it.
+ * Same order as /submit, deliberately: free while the seller is within their
+ * free places (0165), then a pack credit, then a payment. A renewal that is
+ * settled goes through the same moderation decision as a new annonce — a
+ * trusted seller's clean annonce is back online at once, anything else waits
+ * for an admin.
  *
  * Priced by the `renewal` product when one is active, falling back to the
  * ordinary publication fee for that category — a renewal is a publication.
@@ -48,20 +51,41 @@ export async function POST(
 
   // Only something that has actually come down can be renewed. A live listing
   // renewing itself would be paying twice for one publication.
-  if (!["expired", "archived", "sold"].includes(listing.status as string)) {
+  if (!["expired", "archived", "sold", "rented"].includes(listing.status as string)) {
+    const t = await apiTranslator(req, "accountApi.renew");
     return NextResponse.json(
-      {
-        error: "not_renewable",
-        detail: "Cette annonce est encore en ligne ou en cours de traitement.",
-      },
+      { error: "not_renewable", detail: t("notRenewable") },
       { status: 409 },
     );
   }
   if (!listing.contact_phone) {
+    const t = await apiTranslator(req, "accountApi.renew");
     return NextResponse.json(
-      { error: "contact_required", detail: "Ajoutez un numéro joignable avant de renouveler." },
+      { error: "contact_required", detail: t("contactRequired") },
       { status: 400 },
     );
+  }
+
+  const settings = await moderationSettings(admin);
+  const counted = { renewed_count: (listing.renewed_count as number) + 1 };
+
+  /** Settled: let the rules decide whether it goes straight back online. */
+  const settle = async (paidWith: string, remaining?: number) => {
+    const outcome = await publishOrQueue(admin, id, settings, counted);
+    if (outcome.status === "error") return fail("listing_renew_failed", 500, outcome.error);
+    logAction(req, user, `listing.renew.${paidWith}`, { id, remaining, status: outcome.status });
+    return NextResponse.json({
+      status: outcome.status,
+      paidWith,
+      remaining,
+      ...(outcome.status === "published" ? { expires_at: outcome.expiresAt.toISOString() } : {}),
+    });
+  };
+
+  // ── Within the free places ────────────────────────────────────────────────
+  // The listing itself is expired, so it is not among the live ones counted.
+  if ((await liveListingCount(admin, user.id, id)) < settings.freeLimit) {
+    return settle("free_quota");
   }
 
   // ── A credit, if they hold one ────────────────────────────────────────────
@@ -70,23 +94,8 @@ export async function POST(
     p_listing: id,
     p_actor: user.id,
   });
-
   if (credited?.ok === true) {
-    await admin
-      .from("listings")
-      .update({
-        status: "pending_review",
-        rejection_reason: null,
-        renewed_count: (listing.renewed_count as number) + 1,
-      })
-      .eq("id", id);
-
-    logAction(req, user, "listing.renew.credit", { id, remaining: credited.remaining });
-    return NextResponse.json({
-      status: "pending_review",
-      paidWith: "credit",
-      remaining: credited.remaining,
-    });
+    return settle("credit", credited.remaining as number);
   }
 
   // ── Otherwise it is paid for ──────────────────────────────────────────────
@@ -116,20 +125,7 @@ export async function POST(
     : products.find((p) => p.kind === "renewal") ?? categoryFee;
   if (!renewal) return fail("no_price_configured", 503);
 
-  if (renewal.price <= 0) {
-    const { error } = await admin
-      .from("listings")
-      .update({
-        status: "pending_review",
-        rejection_reason: null,
-        renewed_count: (listing.renewed_count as number) + 1,
-      })
-      .eq("id", id);
-    if (error) return fail("listing_renew_failed", 500, error);
-
-    logAction(req, user, "listing.renew.free", { id, productSlug: renewal.slug });
-    return NextResponse.json({ status: "pending_review", paidWith: "free" });
-  }
+  if (renewal.price <= 0) return settle("free");
 
   const { data: existing } = await admin
     .from("payments")
@@ -170,7 +166,7 @@ export async function POST(
     .update({
       status: "pending_payment",
       fee_payment_id: paymentId,
-      renewed_count: (listing.renewed_count as number) + 1,
+      ...counted,
     })
     .eq("id", id);
 

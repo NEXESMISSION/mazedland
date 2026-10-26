@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import { redirect } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getAdminSession } from "@/lib/admin/session";
+import { asAppLocale } from "@/lib/i18n";
 import { AdminRail, AdminMobileBar, type AdminCounts } from "@/components/admin/AdminShell";
 
 // Admin is auth-gated and per-request — never static. Forcing dynamic here
@@ -8,6 +10,13 @@ import { AdminRail, AdminMobileBar, type AdminCounts } from "@/components/admin/
 // which would run this layout's Supabase calls at build and fail when no
 // Supabase env is present, e.g. CI without secrets).
 export const dynamic = "force-dynamic";
+
+// Installed from here (« Installer l'app » in the rail), the console is its
+// own app: it opens on /admin, under its own name, beside the public one.
+export const metadata: Metadata = {
+  manifest: "/admin.webmanifest",
+  appleWebApp: { capable: true, title: "Mazed Admin", statusBarStyle: "default" },
+};
 
 /** The kinds `/admin/paiements` can actually settle — the classifieds line. */
 const CONSOLE_PAYMENT_KINDS = [
@@ -55,18 +64,27 @@ export default async function AdminLayout({
     head("payments")
       ?.in("kind", CONSOLE_PAYMENT_KINDS)
       .eq("status", "pending_review") ?? Promise.resolve({ count: 0 }),
+    // Social Publisher (0170): asks to review, and posts waiting for a person.
+    head("social_publication_requests")?.eq("status", "pending_approval") ?? Promise.resolve({ count: 0 }),
+    head("social_publication_jobs")?.in("status", ["manual_action_required", "failed"]) ?? Promise.resolve({ count: 0 }),
+    // Mazed Immo Pro (0173): shops asking to open.
+    head("shops")?.eq("status", "pending") ?? Promise.resolve({ count: 0 }),
   ]);
 
-  const { locale } = await params;
+  // Narrowed to "fr" | "ar" rather than cast to "fr", so the redirect's type
+  // says what it does: an Arabic visitor bounced to login stays on /ar.
+  const locale = asAppLocale((await params).locale);
   const { user, isAdmin } = await getAdminSession();
 
-  if (!user) redirect({ href: "/login", locale: locale as "fr" });
-  if (!isAdmin) redirect({ href: "/", locale: locale as "fr" });
+  if (!user) redirect({ href: "/login", locale });
+  if (!isAdmin) redirect({ href: "/", locale });
 
-  const [annonces, paiements] = await countsPromise;
+  const [annonces, paiements, socialAsks, socialTasks, shopAsks] = await countsPromise;
   const counts: AdminCounts = {
     annonces: annonces.count ?? 0,
     paiements: paiements.count ?? 0,
+    social: (socialAsks.count ?? 0) + (socialTasks.count ?? 0),
+    boutiques: shopAsks.count ?? 0,
   };
 
   return (

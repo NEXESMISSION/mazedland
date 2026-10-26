@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { log } from "@/lib/log";
+import { apiTranslator } from "@/lib/i18n/server";
 
 /**
  * Signed upload URLs for annonce photos.
@@ -71,8 +72,9 @@ export async function POST(req: NextRequest) {
     p_window_secs: 3600,
   });
   if (over === true) {
+    const t = await apiTranslator(req, "publishApi");
     return NextResponse.json(
-      { error: "rate_limited", detail: "Trop d'envois de photos. Réessayez dans une heure." },
+      { error: "rate_limited", detail: t("photoRateLimited") },
       { status: 429 },
     );
   }

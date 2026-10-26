@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { normalizeSearchQuery } from "@/lib/search";
-import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
+import { isMostlyArabic } from "@/lib/search/script";
+import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 import { Search, MapPin } from "lucide-react";
 import { SelectMenu, type SelectOption } from "@/components/ui/SelectMenu";
 import { TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
@@ -41,13 +42,15 @@ export function HomeSearch({
   void _isRTL;
   const router = useRouter();
   const t = useTranslations();
+  const locale = useLocale();
   const [q, setQ] = useState("");
   const [gov, setGov] = useState("");
   const [type, setType] = useState("");
 
   const govOptions: SelectOption[] = [
     { value: "", label: t("search.allWilayas") },
-    ...GOVERNORATES.map((g) => ({ value: g, label: g })),
+    // The value stays the stored French name; only the label is translated.
+    ...GOVERNORATES.map((g) => ({ value: g, label: governorateLabel(g, locale) })),
   ];
   const typeOptions: SelectOption[] = [
     { value: "", label: t("search.allTypes") },
@@ -67,6 +70,17 @@ export function HomeSearch({
     // never reads it, so choosing « Villa » searched everything.
     if (type && TYPE_TO_CATEGORY[type]) params.set("cat", TYPE_TO_CATEGORY[type]);
     const qs = params.toString();
+    // Typed in Arabic on the French site: answered in Arabic, and remembered.
+    if (locale === "fr" && isMostlyArabic(cleanQ)) {
+      fetch("/api/account/language", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ language: "ar" }),
+        keepalive: true,
+      }).catch(() => {});
+      router.push((qs ? `/annonces?${qs}` : "/annonces") as `/annonces`, { locale: "ar" });
+      return;
+    }
     router.push((qs ? `/annonces?${qs}` : "/annonces") as `/annonces`);
   }
 

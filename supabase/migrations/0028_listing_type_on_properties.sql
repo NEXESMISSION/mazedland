@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Seller picks "offre directe" or "enchère" on the sell form.
+-- Mazed Immo — Seller picks "offre directe" or "enchère" on the sell form.
 --
 -- Before this migration, `listing_type` lived only on auctions and the
 -- sell form never exposed it — sellers always ended up scheduling an
@@ -192,7 +192,7 @@ begin
     v_pay.user_id,
     'listing_published',
     'Annonce publiée',
-    'Votre paiement a été validé. Votre annonce est désormais visible sur Batta.tn.',
+    'Votre paiement a été validé. Votre annonce est désormais visible sur Mazed Immo.',
     '/sell'
   );
 end;

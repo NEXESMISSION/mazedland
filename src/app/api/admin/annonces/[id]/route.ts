@@ -3,6 +3,10 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslator } from "@/lib/i18n/server";
+import { publishListing } from "@/lib/listings/publish";
+import { asDealType, closedStatus } from "@/lib/listings/deal";
+import { applyEdit, asPendingEdit } from "@/lib/listings/edit";
 
 /**
  * Everything an admin can do to one annonce.
@@ -39,31 +43,6 @@ import { fail } from "@/lib/http/errors";
 
 const DEFAULT_DURATION_DAYS = 30;
 
-type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
-
-/** How long a publication lasts: what its payment bought, else the active
- *  `listing_single` product, else 30 days. Never a constant in a caller. */
-async function publicationDays(admin: Admin, feePaymentId: string | null): Promise<number> {
-  if (feePaymentId) {
-    const { data: pay } = await admin
-      .from("payments")
-      .select("metadata")
-      .eq("id", feePaymentId)
-      .maybeSingle();
-    const d = Number((pay?.metadata as { duration_days?: unknown } | null)?.duration_days);
-    if (Number.isFinite(d) && d > 0) return d;
-  }
-  const { data: prod } = await admin
-    .from("products")
-    .select("duration_days")
-    .eq("kind", "listing_single")
-    .eq("is_active", true)
-    .limit(1)
-    .maybeSingle();
-  const d = Number(prod?.duration_days);
-  return Number.isFinite(d) && d > 0 ? d : DEFAULT_DURATION_DAYS;
-}
-
 /** Clamp a caller-supplied day count. Unbounded input here would let a typo
  *  put an annonce online until 2124. */
 function days(raw: unknown, fallback: number): number {
@@ -91,11 +70,14 @@ export async function POST(
     fields?: unknown;
   };
   const action = typeof body.action === "string" ? body.action : "";
+  // The `detail` sentences below are shown to the moderator as-is, in the
+  // language of the page that asked. Notification texts are not (yet).
+  const t = await apiTranslator(req, "adminApi.listing");
 
   const { data: listing } = await admin
     .from("listings")
     .select(
-      "id, seller_id, title, status, seller_credit_id, fee_payment_id, contact_phone, expires_at",
+      "id, seller_id, title, status, seller_credit_id, fee_payment_id, contact_phone, expires_at, deal_type, pending_edit",
     )
     .eq("id", id)
     .maybeSingle();
@@ -117,7 +99,7 @@ export async function POST(
   if (action === "mark_paid" || action === "waive_fee") {
     if (listing.status !== "pending_payment" && listing.status !== "pending_review") {
       return NextResponse.json(
-        { error: "not_awaiting_payment", detail: `Cette annonce est « ${listing.status} ».` },
+        { error: "not_awaiting_payment", detail: t("notAwaitingPayment", { status: listing.status }) },
         { status: 409 },
       );
     }
@@ -125,7 +107,7 @@ export async function POST(
     if (action === "mark_paid") {
       if (!listing.fee_payment_id) {
         return NextResponse.json(
-          { error: "no_payment", detail: "Aucun paiement n'est rattaché à cette annonce." },
+          { error: "no_payment", detail: t("noPayment") },
           { status: 400 },
         );
       }
@@ -158,6 +140,7 @@ export async function POST(
         p_title: "Paiement enregistré",
         p_body: `« ${listing.title} » passe en vérification.`,
         p_link: "/account/listings",
+        p_payload: { vars: { title: listing.title, variant: "recorded" } },
       })
       .then(() => {}, () => {});
 
@@ -173,45 +156,33 @@ export async function POST(
   if (action === "approve" || action === "republish") {
     if (!listing.contact_phone) {
       return NextResponse.json(
-        { error: "contact_required", detail: "Cette annonce n'a pas de numéro : elle ne peut pas être publiée." },
+        { error: "contact_required", detail: t("noPhone") },
         { status: 400 },
       );
     }
     if (action === "republish" && listing.status === "published") {
       return NextResponse.json(
-        { error: "already_published", detail: "Cette annonce est déjà en ligne." },
+        { error: "already_published", detail: t("alreadyPublished") },
         { status: 409 },
       );
     }
 
-    const d = await publicationDays(admin, listing.fee_payment_id);
-    const now = new Date();
-    const expires = new Date(now.getTime() + d * 86_400_000);
+    // The same path the automatic publication takes (src/lib/listings/publish.ts):
+    // dates, review state cleared, pending reports resolved, seller notified.
+    const published = await publishListing(
+      admin,
+      {
+        id,
+        seller_id: listing.seller_id as string,
+        title: listing.title as string,
+        fee_payment_id: (listing.fee_payment_id as string | null) ?? null,
+      },
+      { reviewerId: user.id },
+    );
+    if (!published.ok) return fail("listing_publish_failed", 500, published.error);
+    const expires = published.expiresAt;
 
-    const { error } = await admin
-      .from("listings")
-      .update({
-        status: "published",
-        published_at: now.toISOString(),
-        expires_at: expires.toISOString(),
-        reviewed_by: user.id,
-        reviewed_at: now.toISOString(),
-        rejection_reason: null,
-      })
-      .eq("id", id);
-    if (error) return fail("listing_publish_failed", 500, error);
-
-    await admin
-      .rpc("enqueue_notification", {
-        p_user_id: listing.seller_id,
-        p_kind: "listing_published",
-        p_title: "Votre annonce est en ligne",
-        p_body: `« ${listing.title} » est visible jusqu'au ${expires.toLocaleDateString("fr-FR")}.`,
-        p_link: `/annonces/${id}`,
-      })
-      .then(() => {}, () => {});
-
-    logAction(req, user, `admin.listing.${action}`, { id, days: d });
+    logAction(req, user, `admin.listing.${action}`, { id, expires_at: expires.toISOString() });
     return NextResponse.json({ ok: true, status: "published", expires_at: expires.toISOString() });
   }
 
@@ -220,7 +191,7 @@ export async function POST(
     const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
     if (!reason) {
       return NextResponse.json(
-        { error: "reason_required", detail: "Dites au vendeur ce qui ne va pas — sinon il renverra la même annonce." },
+        { error: "reason_required", detail: t("reasonRequired") },
         { status: 400 },
       );
     }
@@ -239,8 +210,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: "credits_not_supported",
-          detail:
-            "Cette annonce a été payée avec un forfait, et le remboursement de forfait n'existe pas encore ici. Traitez-la à la main.",
+          detail: t("creditsNotSupported"),
         },
         { status: 409 },
       );
@@ -267,6 +237,7 @@ export async function POST(
           `« ${listing.title} » n'a pas été publiée. Motif : ${reason}` +
           (creditReturned ? " Votre publication vous a été rendue." : ""),
         p_link: "/account/listings",
+        p_payload: { vars: { title: listing.title, reason } },
       })
       .then(() => {}, () => {});
 
@@ -293,7 +264,7 @@ export async function POST(
   if (action === "extend") {
     if (listing.status !== "published") {
       return NextResponse.json(
-        { error: "not_published", detail: "Seule une annonce en ligne peut être prolongée." },
+        { error: "not_published", detail: t("notPublished") },
         { status: 409 },
       );
     }
@@ -317,22 +288,24 @@ export async function POST(
   if (action === "mark_sold") {
     if (listing.status !== "published" && listing.status !== "expired") {
       return NextResponse.json(
-        { error: "not_sellable", detail: `Une annonce « ${listing.status} » ne peut pas être marquée vendue.` },
+        { error: "not_sellable", detail: t("notSellable", { status: listing.status }) },
         { status: 409 },
       );
     }
+    // A rental closes as let, not sold — the outcome counted for each deal.
+    const closed = closedStatus(asDealType(listing.deal_type));
     const { error } = await admin
       .from("listings")
       .update({
-        status: "sold",
+        status: closed,
         reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", id);
     if (error) return fail("listing_sold_failed", 500, error);
 
-    logAction(req, user, "admin.listing.mark_sold", { id });
-    return NextResponse.json({ ok: true, status: "sold" });
+    logAction(req, user, "admin.listing.mark_sold", { id, status: closed });
+    return NextResponse.json({ ok: true, status: closed });
   }
 
   // ── Edit ──────────────────────────────────────────────────────────────────
@@ -368,7 +341,7 @@ export async function POST(
       !patch.contact_phone
     ) {
       return NextResponse.json(
-        { error: "contact_required", detail: "Une annonce en ligne doit garder un numéro." },
+        { error: "contact_required", detail: t("phoneRequiredLive") },
         { status: 400 },
       );
     }
@@ -377,6 +350,51 @@ export async function POST(
     if (error) return fail("listing_edit_failed", 500, error);
 
     logAction(req, user, "admin.listing.edit", { id, fields: Object.keys(patch) });
+    return NextResponse.json({ ok: true });
+  }
+
+  // ── A seller's edit of a live annonce, held by the rules (0172) ───────────
+  // Approve writes exactly what the seller sent; refuse discards it with a
+  // reason the seller reads. Either way the annonce stayed online meanwhile.
+  if (action === "approve_edit" || action === "reject_edit") {
+    const edit = asPendingEdit(listing.pending_edit);
+    if (!edit) return NextResponse.json({ error: "no_pending_edit", detail: t("noPendingEdit") }, { status: 409 });
+
+    if (action === "approve_edit") {
+      if (listing.status !== "published") {
+        return NextResponse.json({ error: "not_published", detail: t("editNotLive") }, { status: 409 });
+      }
+      const out = await applyEdit(admin, id, edit);
+      if (!out.ok) return fail("listing_edit_failed", 500, out.error);
+      await admin
+        .rpc("enqueue_notification", {
+          p_user_id: listing.seller_id,
+          p_kind: "listing_edit_applied",
+          p_title: "Modification publiée",
+          p_body: `Vos modifications de « ${listing.title} » sont en ligne.`,
+          p_link: `/annonces/${id}`,
+          p_payload: { vars: { title: listing.title } },
+        })
+        .then(() => {}, () => {});
+      logAction(req, user, "admin.listing.approve_edit", { id });
+      return NextResponse.json({ ok: true });
+    }
+
+    const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
+    if (!reason) return NextResponse.json({ error: "reason_required", detail: t("reasonRequired") }, { status: 400 });
+    const { error } = await admin.from("listings").update({ pending_edit: null, pending_edit_at: null }).eq("id", id);
+    if (error) return fail("listing_edit_failed", 500, error);
+    await admin
+      .rpc("enqueue_notification", {
+        p_user_id: listing.seller_id,
+        p_kind: "listing_edit_rejected",
+        p_title: "Modification refusée",
+        p_body: `Les modifications de « ${listing.title} » n'ont pas été publiées. Motif : ${reason}`,
+        p_link: "/account/listings",
+        p_payload: { vars: { title: listing.title, reason } },
+      })
+      .then(() => {}, () => {});
+    logAction(req, user, "admin.listing.reject_edit", { id });
     return NextResponse.json({ ok: true });
   }
 
@@ -391,7 +409,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: "published_not_deletable",
-          detail: "Archivez d'abord : supprimer une annonce en ligne casse les liens partagés.",
+          detail: t("publishedNotDeletable"),
         },
         { status: 409 },
       );
@@ -406,7 +424,7 @@ export async function POST(
         return NextResponse.json(
           {
             error: "paid_not_deletable",
-            detail: "Cette annonce a été payée. Archivez-la — la trace du paiement doit rester.",
+            detail: t("paidNotDeletable"),
           },
           { status: 409 },
         );

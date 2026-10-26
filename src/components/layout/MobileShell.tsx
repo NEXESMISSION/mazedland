@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { ChevronLeft } from "lucide-react";
 import { TopBar } from "./TopBar";
@@ -42,6 +43,7 @@ function isFlowRoute(pathname: string): boolean {
 }
 
 export function MobileShell({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("nav");
   const pathname = usePathname();
   const flow = isFlowRoute(pathname);
 
@@ -62,8 +64,8 @@ export function MobileShell({ children }: { children: React.ReactNode }) {
             href="/"
             className="tap-target fixed start-3 top-3 z-50 inline-flex h-10 items-center gap-1.5 rounded-full border border-border bg-surface/90 px-3.5 text-[12.5px] font-bold text-foreground shadow-sm backdrop-blur transition hover:border-gold-soft"
           >
-            <ChevronLeft className="size-4" strokeWidth={2.4} />
-            Accueil
+            <ChevronLeft className="size-4 rtl:-scale-x-100" strokeWidth={2.4} />
+            {t("home")}
           </Link>
         )}
         <main id="main-content" tabIndex={-1} className="min-h-screen">{children}</main>

@@ -1,8 +1,10 @@
 import { defineRouting } from "next-intl/routing";
 
 export const routing = defineRouting({
-  // French only. ar/en were dropped — Tunisian francophone market.
-  locales: ["fr"] as const,
+  // French is the default; Arabic (Tunisian) is served at /ar, right-to-left.
+  // A visitor with no locale cookie whose browser prefers Arabic is sent to /ar
+  // from "/"; the language switcher sets the cookie either way.
+  locales: ["fr", "ar"] as const,
   defaultLocale: "fr",
   localePrefix: "always",
   localeCookie: {

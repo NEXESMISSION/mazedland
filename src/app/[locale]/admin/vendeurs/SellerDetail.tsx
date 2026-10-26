@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { AdminButton } from "@/components/admin/AdminButton";
 import {
   StatusPill, Confirm, SelectField, NumberField, TextareaField,
   FieldGrid, useAdminAction, EYEBROW,
 } from "@/components/admin/kit";
+import { Ltr } from "@/components/ui/Ltr";
+import { formatDate } from "@/lib/utils";
+import { governorateLabel } from "@/lib/tunisia";
 import {
   BadgeCheck, ShieldOff, Ticket, ChevronLeft, ExternalLink, Ban, RotateCcw,
 } from "lucide-react";
@@ -33,11 +37,11 @@ export type SellerDetailData = {
   credits: { remaining: number; total: number; expiresAt: string | null };
   badge: { expiresAt: string | null } | null;
   payments: { captured: number; amount: number };
+  /** `label` is already in the page's language (productName). */
   packs: { id: string; label: string; quota: number | null }[];
 };
 
-const dt = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+const dt = (iso: string | null, locale: string) => (iso ? formatDate(iso, locale, "medium") : "—");
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -56,6 +60,10 @@ export function SellerDetail({
   backHref: string;
 }) {
   const { run, pending } = useAdminAction();
+  const t = useTranslations("adminSellers.detail");
+  const tAdmin = useTranslations("admin");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const [confirm, setConfirm] = useState<null | "ban" | "revoke">(null);
   const [panel, setPanel] = useState<null | "credits" | "badge">(null);
 
@@ -78,84 +86,97 @@ export function SellerDetail({
           href={backHref as "/admin/vendeurs"}
           className="mb-2 inline-flex items-center gap-1 text-[12px] font-medium text-subtle transition hover:text-foreground lg:hidden"
         >
-          <ChevronLeft className="size-3.5" strokeWidth={2.4} />
-          Vendeurs
+          <ChevronLeft className="size-3.5 rtl:-scale-x-100" strokeWidth={2.4} />
+          {t("back")}
         </Link>
         <div className="flex items-baseline gap-3">
           <h1 className="truncate text-[16px] font-semibold tracking-tight text-foreground">
             {s.name}
           </h1>
-          {s.bannedAt && <StatusPill tone="bad">Suspendu</StatusPill>}
+          {s.bannedAt && <StatusPill tone="bad">{t("banned")}</StatusPill>}
           {badgeLive && (
             <span className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[var(--gold)]">
-              <BadgeCheck className="size-3.5" strokeWidth={2.4} /> Vérifié
+              <BadgeCheck className="size-3.5" strokeWidth={2.4} /> {t("verified")}
             </span>
           )}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-subtle">
           <StatusPill status={s.role} />
-          {s.phone && <span>{s.phone}</span>}
-          {s.governorate && <span>{s.governorate}</span>}
-          <span>inscrit le {dt(s.createdAt)}</span>
+          {s.phone && (
+            <span>
+              <Ltr>{s.phone}</Ltr>
+            </span>
+          )}
+          {s.governorate && <span>{governorateLabel(s.governorate, locale)}</span>}
+          <span>{t("registeredOn", { date: dt(s.createdAt, locale) })}</span>
         </div>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
         {s.bannedAt && (
           <p className="border-s-2 border-[var(--tone-bad)] ps-3 text-[12.5px] text-[var(--tone-bad)]">
-            <span className="font-semibold">Suspendu le {dt(s.bannedAt)} :</span>{" "}
-            {s.bannedReason ?? "sans motif enregistré"}
+            <span className="font-semibold">{t("bannedOn", { date: dt(s.bannedAt, locale) })}</span>{" "}
+            {s.bannedReason ?? t("noReason")}
           </p>
         )}
 
         <section className="mt-2 border-t border-border pt-4">
-          <h2 className={EYEBROW}>Activité</h2>
+          <h2 className={EYEBROW}>{t("activity")}</h2>
           <dl className="mt-2">
-            <Row label="Annonces">
+            <Row label={t("listings")}>
               <Link
                 href={`/admin/annonces?status=all&q=${encodeURIComponent(s.phone ?? "")}` as "/admin/annonces"}
                 className="inline-flex items-center gap-1.5 font-medium text-[var(--gold)] hover:underline"
               >
-                {s.listings.published} en ligne · {s.listings.total} au total
+                {t("listingsValue", { published: s.listings.published, total: s.listings.total })}
                 <ExternalLink className="size-3" strokeWidth={2.2} />
               </Link>
             </Row>
-            <Row label="Paiements">
-              {s.payments.captured} validé{s.payments.captured === 1 ? "" : "s"} ·{" "}
-              <span className="mazed-tabular">{s.payments.amount.toFixed(2)} TND</span>
+            <Row label={t("payments")}>
+              {t("paymentsValue", { count: s.payments.captured })} ·{" "}
+              <span className="mazed-tabular">
+                {s.payments.amount.toFixed(2)} {tCommon("tnd")}
+              </span>
             </Row>
-            <Row label="Publications restantes">
+            <Row label={t("remaining")}>
               {s.credits.total > 0 ? (
                 <>
                   <span className="mazed-tabular">
-                    {s.credits.remaining} / {s.credits.total}
+                    <Ltr>
+                      {s.credits.remaining} / {s.credits.total}
+                    </Ltr>
                   </span>
                   {s.credits.expiresAt && (
-                    <span className="text-subtle"> · expire le {dt(s.credits.expiresAt)}</span>
+                    <span className="text-subtle">
+                      {" · "}
+                      {t("expiresOn", { date: dt(s.credits.expiresAt, locale) })}
+                    </span>
                   )}
                 </>
               ) : (
-                <span className="text-subtle">aucun forfait</span>
+                <span className="text-subtle">{t("noPack")}</span>
               )}
             </Row>
-            <Row label="Badge vérifié">
-              {badgeLive ? `actif jusqu'au ${dt(s.badge!.expiresAt)}` : "aucun"}
+            <Row label={t("badge")}>
+              {badgeLive
+                ? t("badgeActiveUntil", { date: dt(s.badge!.expiresAt, locale) })
+                : t("none")}
             </Row>
           </dl>
         </section>
 
         <section className="mt-5 border-t border-border pt-4">
-          <h2 className={EYEBROW}>Rôle</h2>
+          <h2 className={EYEBROW}>{t("role")}</h2>
           <div className="mt-3 flex items-end gap-2">
             <div className="w-56">
               <SelectField
-                label="Type de compte"
+                label={t("accountType")}
                 value={role}
                 onChange={setRole}
                 options={[
-                  { value: "individual", label: "Particulier" },
-                  { value: "agency", label: "Agence" },
-                  { value: "admin", label: "Admin" },
+                  { value: "individual", label: tAdmin("status.individual") },
+                  { value: "agency", label: tAdmin("status.agency") },
+                  { value: "admin", label: tAdmin("status.admin") },
                 ]}
               />
             </div>
@@ -163,75 +184,72 @@ export function SellerDetail({
               size="md"
               pending={pending}
               disabled={role === s.role}
-              disabledReason="Le rôle n'a pas changé."
-              onClick={() => act({ action: "set_role", role }, "Rôle modifié.")}
+              disabledReason={t("roleUnchanged")}
+              onClick={() => act({ action: "set_role", role }, t("roleChanged"))}
             >
-              Appliquer
+              {t("apply")}
             </AdminButton>
           </div>
         </section>
 
         {panel === "credits" && (
           <section className="mt-5 border-s-2 border-[var(--gold)] ps-4">
-            <h2 className={`${EYEBROW} text-[var(--gold)]`}>Créditer un forfait</h2>
-            <p className="mt-1.5 text-[11.5px] text-subtle">
-              Pour un vendeur qui a payé en espèces, ou une agence que l'on offre. Le geste est
-              enregistré à votre nom.
-            </p>
+            <h2 className={`${EYEBROW} text-[var(--gold)]`}>{t("grantCreditsTitle")}</h2>
+            <p className="mt-1.5 text-[11.5px] text-subtle">{t("grantCreditsBody")}</p>
             <div className="mt-3 space-y-3.5">
               <SelectField
-                label="Forfait"
+                label={t("pack")}
                 value={packId}
                 onChange={setPackId}
                 options={
                   s.packs.length > 0
                     ? s.packs.map((p) => ({
                         value: p.id,
-                        label: `${p.label}${p.quota ? ` · ${p.quota} annonces` : ""}`,
+                        label: p.quota ? t("packWithQuota", { label: p.label, quota: p.quota }) : p.label,
                       }))
-                    : [{ value: "", label: "Aucun pack configuré" }]
+                    : [{ value: "", label: t("noPacks") }]
                 }
                 hint={
                   s.packs.length === 0
-                    ? "Créez d'abord un pack dans Offres & prix."
+                    ? t("noPacksHint")
                     : undefined
                 }
               />
               <FieldGrid>
                 <NumberField
-                  label="Publications"
+                  label={t("publications")}
                   value={quota}
                   onChange={setQuota}
                   min={1}
-                  hint="Vide = ce que le forfait accorde."
+                  hint={t("publicationsHint")}
                 />
                 <NumberField
-                  label="Validité"
+                  label={t("validity")}
                   value={months}
                   onChange={setMonths}
                   min={1}
-                  suffix="mois"
+                  suffix={t("months")}
                 />
               </FieldGrid>
-              <TextareaField label="Note interne" value={note} onChange={setNote} rows={2} />
+              <TextareaField label={t("internalNote")} value={note} onChange={setNote} rows={2} />
               <div className="flex justify-end gap-2">
                 <AdminButton variant="quiet" onClick={() => setPanel(null)}>
-                  Annuler
+                  {t("cancel")}
                 </AdminButton>
                 <AdminButton
                   variant="primary"
                   pending={pending}
                   disabled={!packId}
-                  disabledReason="Choisissez un forfait."
+                  disabledReason={t("choosePack")}
                   onClick={async () => {
                     const ok = await act(
                       { action: "grant_credits", product_id: packId, quota, months, note },
-                      "Forfait crédité.",
+                      t("credited"),
                     );
                     if (ok) setPanel(null);
                   }}
                 >
-                  Créditer
+                  {t("credit")}
                 </AdminButton>
               </div>
             </div>
@@ -240,33 +258,31 @@ export function SellerDetail({
 
         {panel === "badge" && (
           <section className="mt-5 border-s-2 border-[var(--gold)] ps-4">
-            <h2 className={`${EYEBROW} text-[var(--gold)]`}>Accorder le badge vérifié</h2>
-            <p className="mt-1.5 text-[11.5px] text-subtle">
-              Accordé à la main, après vérification. Révocable à tout moment.
-            </p>
+            <h2 className={`${EYEBROW} text-[var(--gold)]`}>{t("grantBadgeTitle")}</h2>
+            <p className="mt-1.5 text-[11.5px] text-subtle">{t("grantBadgeBody")}</p>
             <div className="mt-3 space-y-3.5">
               <NumberField
-                label="Validité"
+                label={t("validity")}
                 value={months}
                 onChange={setMonths}
                 min={1}
-                suffix="mois"
-                hint="12 mois par défaut."
+                suffix={t("months")}
+                hint={t("validityHint")}
               />
-              <TextareaField label="Note interne" value={note} onChange={setNote} rows={2} />
+              <TextareaField label={t("internalNote")} value={note} onChange={setNote} rows={2} />
               <div className="flex justify-end gap-2">
                 <AdminButton variant="quiet" onClick={() => setPanel(null)}>
-                  Annuler
+                  {t("cancel")}
                 </AdminButton>
                 <AdminButton
                   variant="primary"
                   pending={pending}
                   onClick={async () => {
-                    const ok = await act({ action: "grant_badge", months, note }, "Badge accordé.");
+                    const ok = await act({ action: "grant_badge", months, note }, t("badgeGranted"));
                     if (ok) setPanel(null);
                   }}
                 >
-                  Accorder
+                  {t("grant")}
                 </AdminButton>
               </div>
             </div>
@@ -279,7 +295,7 @@ export function SellerDetail({
           icon={<Ticket className="size-3.5" strokeWidth={2.4} />}
           onClick={() => setPanel(panel === "credits" ? null : "credits")}
         >
-          Créditer
+          {t("credit")}
         </AdminButton>
         {badgeLive ? (
           <AdminButton
@@ -287,14 +303,14 @@ export function SellerDetail({
             icon={<ShieldOff className="size-3.5" strokeWidth={2.4} />}
             onClick={() => setConfirm("revoke")}
           >
-            Retirer le badge
+            {t("revokeBadge")}
           </AdminButton>
         ) : (
           <AdminButton
             icon={<BadgeCheck className="size-3.5" strokeWidth={2.4} />}
             onClick={() => setPanel(panel === "badge" ? null : "badge")}
           >
-            Accorder le badge
+            {t("grantBadge")}
           </AdminButton>
         )}
 
@@ -304,9 +320,9 @@ export function SellerDetail({
             className="ms-auto"
             pending={pending}
             icon={<RotateCcw className="size-3.5" strokeWidth={2.4} />}
-            onClick={() => act({ action: "unban" }, "Compte réactivé.")}
+            onClick={() => act({ action: "unban" }, t("reactivated"))}
           >
-            Réactiver
+            {t("reactivate")}
           </AdminButton>
         ) : (
           <AdminButton
@@ -315,33 +331,33 @@ export function SellerDetail({
             icon={<Ban className="size-3.5" strokeWidth={2.4} />}
             onClick={() => setConfirm("ban")}
           >
-            Suspendre
+            {t("suspend")}
           </AdminButton>
         )}
       </footer>
 
       <Confirm
         open={confirm === "ban"}
-        title="Suspendre ce compte ?"
-        body="Le vendeur ne pourra plus publier. Ses annonces en ligne restent visibles jusqu'à ce que vous les archiviez."
-        confirmLabel="Suspendre"
+        title={t("banTitle")}
+        body={t("banBody")}
+        confirmLabel={t("suspend")}
         pending={pending}
-        reason={{ label: "Motif (interne)", placeholder: "Annonces frauduleuses, impayés…", required: true }}
+        reason={{ label: t("reasonInternal"), placeholder: t("banPlaceholder"), required: true }}
         onCancel={() => setConfirm(null)}
         onConfirm={async (reason) => {
-          if (await act({ action: "ban", reason }, "Compte suspendu.")) setConfirm(null);
+          if (await act({ action: "ban", reason }, t("suspended"))) setConfirm(null);
         }}
       />
       <Confirm
         open={confirm === "revoke"}
-        title="Retirer le badge vérifié ?"
-        body="Il disparaît immédiatement de toutes ses annonces."
-        confirmLabel="Retirer"
+        title={t("revokeTitle")}
+        body={t("revokeBody")}
+        confirmLabel={t("revokeConfirm")}
         pending={pending}
-        reason={{ label: "Motif (interne)", placeholder: "Vérification caduque, plainte…", required: true }}
+        reason={{ label: t("reasonInternal"), placeholder: t("revokePlaceholder"), required: true }}
         onCancel={() => setConfirm(null)}
         onConfirm={async (reason) => {
-          if (await act({ action: "revoke_badge", reason }, "Badge retiré.")) setConfirm(null);
+          if (await act({ action: "revoke_badge", reason }, t("badgeRevoked"))) setConfirm(null);
         }}
       />
     </div>

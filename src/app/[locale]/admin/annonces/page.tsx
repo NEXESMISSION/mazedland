@@ -4,6 +4,8 @@
  * This module is an async Server Component — it runs once, per request, on the
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
+import { requireAdmin } from "@/lib/admin/session";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPager } from "@/components/admin/AdminPager";
@@ -11,8 +13,12 @@ import { adminBtn } from "@/components/admin/AdminButton";
 import { FullBleed, Toolbar, EmptyState, QueueKeys, type Tab } from "@/components/admin/kit";
 import { QueueList, type QueueRow } from "./QueueList";
 import { ListingDetail, type PanelListing } from "./ListingDetail";
-import { formatTND } from "@/lib/utils";
+import { formatDate, formatTND } from "@/lib/utils";
+import { asDealType, firstMonthCost } from "@/lib/listings/deal";
+import { categoryLabel } from "@/lib/i18n";
+import { governorateLabel } from "@/lib/tunisia";
 import { Inbox, Plus } from "lucide-react";
+import { asPendingEdit, changedKeys } from "@/lib/listings/edit";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -35,21 +41,14 @@ export const revalidate = 0;
 const PAGE_SIZE = 25;
 const EXPIRING_DAYS = 7;
 
+/** Each tab's label is `adminListings.tabs.<key>`. */
 type TabKey =
-  | "pending_review" | "pending_payment" | "published"
+  | "pending_review" | "edits" | "pending_payment" | "published"
   | "expiring" | "expired" | "rejected" | "all";
 
-const TAB_LABEL: Record<TabKey, string> = {
-  pending_review: "À valider",
-  pending_payment: "Paiement attendu",
-  published: "En ligne",
-  expiring: "Expirent bientôt",
-  expired: "Expirées",
-  rejected: "Refusées",
-  all: "Toutes",
-};
+/** `edits`: published annonces whose seller's edit waits for an admin (0172). */
 const TAB_ORDER: TabKey[] = [
-  "pending_review", "pending_payment", "published", "expiring", "expired", "rejected", "all",
+  "pending_review", "edits", "pending_payment", "published", "expiring", "expired", "rejected", "all",
 ];
 
 /**
@@ -77,6 +76,8 @@ function tabFilters(tab: TabKey): Filter[] {
         { op: "gte", col: "expires_at", val: now.toISOString() },
         { op: "lte", col: "expires_at", val: soon.toISOString() },
       ];
+    case "edits":
+      return [{ op: "notNull", col: "pending_edit_at" }];
     case "all":
       return [];
     default:
@@ -85,23 +86,32 @@ function tabFilters(tab: TabKey): Filter[] {
 }
 
 const LIST_SELECT = `
-  id, title, price, negotiable, price_on_request, governorate, status,
-  created_at, published_at, expires_at,   seller_credit_id, fee_payment_id, fee_waived_by, contact_phone,
+  id, title, price, negotiable, price_on_request, governorate, status, review_flags,
+  deal_type, created_at, published_at, expires_at, pending_edit_at, pending_edit, seller_credit_id, fee_payment_id, fee_waived_by, contact_phone,
   seller:profiles!listings_seller_id_fkey (full_name, phone),
-  category:categories (label_fr),
+  category:categories (label_fr, label_ar),
   photos:listing_photos (storage_path, sort_order, is_cover)
 `;
 
 export default async function AdminAnnoncesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string; deal?: string }>;
 }) {
+  await requireAdmin();
   const sp = await searchParams;
+  // Sale, rent or both (0166): the same queue, narrowed to one deal.
+  const deal = sp.deal === "sale" || sp.deal === "rent" ? sp.deal : null;
   const admin = getServiceSupabase();
+  // One binding per line, not a destructured Promise.all: scripts/i18n-check
+  // only sees `const t = await getTranslations(…)`.
+  const locale = await getLocale();
+  const t = await getTranslations("adminListings");
+  const tAdmin = await getTranslations("admin");
+  const tRoot = await getTranslations();
 
   if (!admin) {
-    return <p className="text-[13px] text-muted">Service non configuré.</p>;
+    return <p className="text-[13px] text-muted">{tAdmin("serviceNotConfigured")}</p>;
   }
 
   const tab: TabKey = TAB_ORDER.includes(sp.status as TabKey)
@@ -141,13 +151,15 @@ export default async function AdminAnnoncesPage({
    * that it stops being seven.
    */
   const countsQuery = () => {
-    let query = admin.from("listings").select("status, expires_at");
+    let query = admin.from("listings").select("status, expires_at, pending_edit_at");
+    if (deal) query = query.eq("deal_type", deal);
     if (q) query = query.or(OR);
     return query;
   };
 
   const listQuery = () => {
     let query = admin.from("listings").select(LIST_SELECT, { count: "exact" });
+    if (deal) query = query.eq("deal_type", deal);
     for (const f of tabFilters(tab)) {
       if (f.op === "eq") query = query.eq(f.col, f.val);
       else if (f.op === "gte") query = query.gte(f.col, f.val);
@@ -165,32 +177,35 @@ export default async function AdminAnnoncesPage({
   const now = Date.now();
   const soonMs = now + EXPIRING_DAYS * 86_400_000;
   const tally: Record<TabKey, number> = {
-    pending_review: 0, pending_payment: 0, published: 0,
+    pending_review: 0, edits: 0, pending_payment: 0, published: 0,
     expiring: 0, expired: 0, rejected: 0, all: 0,
   };
-  for (const row of (countsRes.data ?? []) as { status: string; expires_at: string | null }[]) {
+  for (const row of (countsRes.data ?? []) as { status: string; expires_at: string | null; pending_edit_at: string | null }[]) {
     tally.all += 1;
+    if (row.pending_edit_at) tally.edits += 1;
     if (row.status in tally) tally[row.status as TabKey] += 1;
     if (row.status === "published" && row.expires_at) {
-      const t = new Date(row.expires_at).getTime();
-      if (t >= now && t <= soonMs) tally.expiring += 1;
+      const at = new Date(row.expires_at).getTime();
+      if (at >= now && at <= soonMs) tally.expiring += 1;
     }
   }
 
-  const tabs: Tab[] = TAB_ORDER.map((t) => ({
-    value: t,
-    label: TAB_LABEL[t],
-    count: tally[t],
+  const tabs: Tab[] = TAB_ORDER.map((key) => ({
+    value: key,
+    label: t(`tabs.${key}`),
+    count: tally[key],
   }));
 
   type ListRow = {
     id: string; reference: string | null; title: string; price: number | null; negotiable: boolean;
     price_on_request: boolean; governorate: string; status: string;
+    review_flags: string[] | null; deal_type: string | null;
     created_at: string; published_at: string | null; expires_at: string | null;
+    pending_edit_at: string | null; pending_edit: unknown;
     seller_credit_id: string | null; fee_payment_id: string | null;
     fee_waived_by: string | null; contact_phone: string | null;
     seller: { full_name: string | null; phone: string | null } | null;
-    category: { label_fr: string } | null;
+    category: { label_fr: string; label_ar: string | null } | null;
     photos: { storage_path: string; sort_order: number; is_cover: boolean }[] | null;
   };
 
@@ -198,42 +213,71 @@ export default async function AdminAnnoncesPage({
   const total = listRes.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const queueRows: QueueRow[] = rows.map((r) => ({
-    id: r.id,
-    title: r.title,
-    meta: `${r.seller?.full_name ?? "Sans nom"} · ${r.category?.label_fr ?? "—"} · ${r.governorate}`,
-    // Also as separate fields: at full width the queue lays these out as
-    // columns instead of one stretched line (see QueueList).
-    seller: r.seller?.full_name ?? "Sans nom",
-    category: r.category?.label_fr ?? "—",
-    gov: r.governorate,
-    value: r.price_on_request
-      ? "Sur demande"
-      : r.price != null
-        ? `${formatTND(r.price, "fr")} TND`
-        : "—",
-    hint: ageLabel(r.status === "published" ? r.expires_at : r.created_at, r.status),
-    status: r.status,
-    // Flag what needs a human before it can move: an annonce with no phone can
-    // never be published, and one waiting on money is waiting on us to look.
-    flag:
-      r.status === "pending_review" && !r.contact_phone
-        ? "bad"
-        : r.status === "pending_payment"
-          ? "warn"
-          : undefined,
-  }));
+  const queueRows: QueueRow[] = rows.map((r) => {
+    const seller = r.seller?.full_name ?? tAdmin("noName");
+    const rent = asDealType(r.deal_type) === "rent";
+    // A rental says so next to its category: the queue mixes both deals.
+    const category = [categoryLabel(r.category, locale) || "—", rent ? t("forRent") : null]
+      .filter(Boolean)
+      .join(" · ");
+    const gov = governorateLabel(r.governorate, locale);
+    return {
+      id: r.id,
+      title: r.title,
+      meta: `${seller} · ${category} · ${gov}`,
+      // Also as separate fields: at full width the queue lays these out as
+      // columns instead of one stretched line (see QueueList).
+      seller,
+      category,
+      gov,
+      value: r.price_on_request
+        ? t("priceOnRequest")
+        : r.price != null
+          ? rent
+            ? t("perMonth", { amount: `${formatTND(r.price, locale)} ${tRoot("common.tnd")}` })
+            : `${formatTND(r.price, locale)} ${tRoot("common.tnd")}`
+          : "—",
+      // Waiting for review: say why (0165) — the admin reads the reason, not the
+      // whole annonce. Otherwise, how old it is.
+      hint:
+        r.pending_edit_at
+          ? t("editWaiting", { why: (asPendingEdit(r.pending_edit)?.flags ?? []).map((f) => flagLabel(tRoot, f)).join(" · ") || "—" })
+          : r.status === "pending_review" && (r.review_flags?.length ?? 0) > 0
+          ? (r.review_flags ?? []).map((f) => flagLabel(tRoot, f)).join(" · ")
+          : ageLabel(r.status === "published" ? r.expires_at : r.created_at, r.status, t),
+      status: r.status,
+      // Flag what needs a human before it can move: an annonce with no phone can
+      // never be published, one reported by visitors may be a scam, and one
+      // waiting on money is waiting on us to look.
+      flag:
+        r.status === "pending_review" && (!r.contact_phone || r.review_flags?.includes("reported"))
+          ? "bad"
+          : r.status === "pending_payment"
+            ? "warn"
+            : undefined,
+    };
+  });
 
   // The open annonce. Fetched only when asked for — the list query has no
   // business carrying every attribute of every row.
   const openId = sp.a ?? null;
-  const detail = openId ? await loadPanel(admin, openId) : null;
+  const detail = openId ? await loadPanel(admin, openId, locale, tRoot) : null;
 
   // Current filters, as a prefix a row can append its own id to.
   const base = new URLSearchParams();
   if (sp.status) base.set("status", sp.status);
   if (sp.q) base.set("q", sp.q);
+  if (deal) base.set("deal", deal);
   if (sp.page) base.set("page", sp.page);
+
+  /** The deal switch keeps the tab and the search, and starts at page 1. */
+  const dealHref = (k: "all" | "sale" | "rent") => {
+    const p = new URLSearchParams();
+    if (sp.status) p.set("status", sp.status);
+    if (sp.q) p.set("q", sp.q);
+    if (k !== "all") p.set("deal", k);
+    return `/admin/annonces${p.toString() ? `?${p.toString()}` : ""}`;
+  };
   const hrefBase = `/admin/annonces?${base.toString()}${base.toString() ? "&" : ""}`;
   const listHref = `/admin/annonces${base.toString() ? `?${base.toString()}` : ""}`;
 
@@ -242,21 +286,39 @@ export default async function AdminAnnoncesPage({
       {/* One header line: what this is, what is filtered, what you can add. */}
       <header className="flex h-12 shrink-0 items-center gap-4 border-b border-border px-4">
         <h1 className="shrink-0 text-[13px] font-semibold tracking-tight text-foreground">
-          Annonces
+          {t("title")}
         </h1>
         <Toolbar
           tabs={tabs}
           defaultTab="pending_review"
-          searchPlaceholder="Référence MZ-00042, titre, téléphone…"
+          searchPlaceholder={t("searchPlaceholder")}
           resetParams={["page", "a"]}
         />
+        <nav aria-label={t("dealAria")} className="hidden shrink-0 items-center gap-0.5 rounded-lg bg-surface-2 p-0.5 md:flex">
+          {(["all", "sale", "rent"] as const).map((k) => {
+            const on = (deal ?? "all") === k;
+            return (
+              <Link
+                key={k}
+                href={dealHref(k) as never}
+                aria-current={on ? "page" : undefined}
+                className={
+                  "rounded-md px-2.5 py-1 text-[11.5px] font-semibold transition " +
+                  (on ? "bg-surface text-foreground shadow-sm" : "text-muted hover:text-foreground")
+                }
+              >
+                {t(`deal.${k}`)}
+              </Link>
+            );
+          })}
+        </nav>
         {/* The admin-side creation form never came across from Auto, so this
             pointed at a 404. It opens the seller wizard instead — the same
             form, which is what an admin taking an annonce over the phone
             needs. */}
         <Link href="/annonces/nouvelle" className={`${adminBtn("primary", "sm")} shrink-0`}>
           <Plus className="size-3.5" strokeWidth={2.8} />
-          <span className="hidden sm:inline">Créer</span>
+          <span className="hidden sm:inline">{t("create")}</span>
         </Link>
       </header>
 
@@ -282,12 +344,10 @@ export default async function AdminAnnoncesPage({
               <EmptyState
                 Icon={Inbox}
                 tone={q ? "filtered" : "idle"}
-                title={q ? "Aucune annonce ne correspond" : `Rien dans « ${TAB_LABEL[tab]} »`}
-                hint={
-                  q
-                    ? "Essayez un autre terme, ou changez d'onglet."
-                    : "Rien n'attend de décision dans cette file."
+                title={
+                  q ? t("emptyFilteredTitle") : tAdmin("emptyTab", { tab: t(`tabs.${tab}`) })
                 }
+                hint={q ? t("emptyFilteredHint") : t("emptyIdleHint")}
               />
             </div>
           ) : (
@@ -315,20 +375,34 @@ export default async function AdminAnnoncesPage({
   );
 }
 
-/** "il y a 3 j" for what is waiting, "expire dans 5 j" for what is live. */
-function ageLabel(iso: string | null, status: string): string {
+/** "il y a 3 j" for what is waiting, "dans 5 j" for what is live — worded
+ *  by `adminListings.age.*`. */
+function ageLabel(
+  iso: string | null,
+  status: string,
+  t: (key: string, values?: { days: number }) => string,
+): string {
   if (!iso) return "—";
   const diff = new Date(iso).getTime() - Date.now();
   const days = Math.round(Math.abs(diff) / 86_400_000);
   if (status === "published") {
-    if (diff < 0) return "expirée";
-    return days === 0 ? "aujourd'hui" : `dans ${days} j`;
+    if (diff < 0) return t("age.expired");
+    return days === 0 ? t("age.today") : t("age.inDays", { days });
   }
-  if (days === 0) return "aujourd'hui";
-  return `il y a ${days} j`;
+  if (days === 0) return t("age.today");
+  return t("age.daysAgo", { days });
 }
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
+
+/** The root translator — `await getTranslations()`. */
+type RootT = { (key: string, values?: Record<string, string | number>): string; has(key: string): boolean };
+
+/** A review flag (0165) in words, or the raw code if it has none yet. */
+function flagLabel(tRoot: RootT, flag: string): string {
+  const key = `moderation.flags.${flag}`;
+  return tRoot.has(key) ? tRoot(key) : flag;
+}
 
 /**
  * Everything the drawer shows, for one annonce.
@@ -336,19 +410,57 @@ type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
  * The attribute labels are resolved here against `category_attributes` rather
  * than shipped as raw jsonb keys: a moderator reading `boite: auto` has to
  * translate it in their head, and `attributes` holds field keys, not labels.
+ * A field with an `attributes.<field_key>` message reads in the page's
+ * language; any other keeps the label stored on the category.
  */
-async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null> {
+/** What a rental adds (0166), in words, for the moderator's panel. */
+function rentFactsOf(
+  r: {
+    deal_type: string | null; price: number | null; price_on_request: boolean;
+    deposit_amount: number | null; charges_amount: number | null; furnished: string | null;
+    available_from: string | null; min_lease_months: number | null;
+  },
+  locale: string,
+  tRoot: RootT,
+): { label: string; value: string }[] {
+  if (asDealType(r.deal_type) !== "rent") return [];
+  const money = (n: number) => `${formatTND(n, locale)} ${tRoot("common.tnd")}`;
+  const moveIn = firstMonthCost({
+    price: r.price == null ? null : Number(r.price),
+    priceOnRequest: r.price_on_request,
+    deposit: r.deposit_amount == null ? null : Number(r.deposit_amount),
+    charges: r.charges_amount == null ? null : Number(r.charges_amount),
+  });
+  const out: { label: string; value: string }[] = [];
+  if (r.deposit_amount != null) out.push({ label: tRoot("listing.rent.deposit"), value: money(Number(r.deposit_amount)) });
+  if (r.charges_amount != null) out.push({ label: tRoot("listing.rent.charges"), value: money(Number(r.charges_amount)) });
+  if (moveIn != null) out.push({ label: tRoot("listing.rent.moveIn"), value: money(moveIn) });
+  if (r.furnished) out.push({ label: tRoot("listing.rent.furnished"), value: tRoot(`listing.rent.furnishedValue.${r.furnished}`) });
+  if (r.available_from) out.push({ label: tRoot("listing.rent.availableFrom"), value: formatDate(r.available_from, locale, "medium") });
+  if (r.min_lease_months != null) {
+    out.push({ label: tRoot("listing.rent.minLease"), value: tRoot("listing.rent.months", { count: Number(r.min_lease_months) }) });
+  }
+  return out;
+}
+
+async function loadPanel(
+  admin: Admin,
+  id: string,
+  locale: string,
+  tRoot: RootT,
+): Promise<PanelListing | null> {
   const { data } = await admin
     .from("listings")
     .select(
       `id, title, description, price, negotiable, price_on_request,
-       governorate, delegation, status, rejection_reason, category_id,
+       governorate, delegation, status, rejection_reason, category_id, review_flags,
        contact_name, contact_phone, show_phone, attributes,
+       deal_type, deposit_amount, charges_amount, furnished, available_from, min_lease_months,
        created_at, published_at, expires_at,        view_count, contact_reveal_count, renewed_count,
        seller_attestation_version, seller_attestation_at,
-       seller_credit_id, fee_payment_id, fee_waived_by,
+       seller_credit_id, fee_payment_id, fee_waived_by, pending_edit,
        seller:profiles!listings_seller_id_fkey (full_name, phone),
-       category:categories (label_fr, kind),
+       category:categories (label_fr, label_ar, kind),
        photos:listing_photos (storage_path, sort_order, is_cover)`,
     )
     .eq("id", id)
@@ -360,18 +472,22 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
     negotiable: boolean; price_on_request: boolean;
     governorate: string; delegation: string | null; status: string;
     rejection_reason: string | null; category_id: string;
+    review_flags: string[] | null;
     contact_name: string | null; contact_phone: string | null; show_phone: boolean;
     attributes: Record<string, unknown>;
+    deal_type: string | null; deposit_amount: number | null; charges_amount: number | null;
+    furnished: string | null; available_from: string | null; min_lease_months: number | null;
     created_at: string; published_at: string | null; expires_at: string | null;
     view_count: number; contact_reveal_count: number; renewed_count: number;
     seller_attestation_version: string | null; seller_attestation_at: string | null;
     seller_credit_id: string | null; fee_payment_id: string | null; fee_waived_by: string | null;
+    pending_edit: unknown;
     seller: { full_name: string | null; phone: string | null } | null;
-    category: { label_fr: string; kind: string } | null;
+    category: { label_fr: string; label_ar: string | null; kind: string } | null;
     photos: { storage_path: string; sort_order: number; is_cover: boolean }[] | null;
   };
 
-  const [attrRes, payRes] = await Promise.all([
+  const [attrRes, payRes, reportRes] = await Promise.all([
     admin
       .from("category_attributes")
       .select("field_key, label, unit, options, sort_order")
@@ -384,6 +500,14 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
           .eq("id", r.fee_payment_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+    // Reports nobody has dealt with yet (0165), newest first.
+    admin
+      .from("listing_reports")
+      .select("reason, note, created_at")
+      .eq("listing_id", r.id)
+      .is("resolved_at", null)
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
   type Attr = {
@@ -398,8 +522,16 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
       // Options carry their own display label; a select stored as `auto`
       // should read "Automatique", not "auto".
       const opt = d.options?.find((o) => o.value === String(raw));
-      const value = opt?.label ?? (typeof raw === "boolean" ? (raw ? "Oui" : "Non") : String(raw));
-      return { label: d.label, value: d.unit ? `${value} ${d.unit}` : value };
+      const value =
+        opt?.label ??
+        (typeof raw === "boolean"
+          ? raw
+            ? tRoot("adminListings.yes")
+            : tRoot("adminListings.no")
+          : String(raw));
+      const labelKey = `attributes.${d.field_key}`;
+      const label = tRoot.has(labelKey) ? tRoot(labelKey) : d.label;
+      return { label, value: d.unit ? `${value} ${d.unit}` : value };
     })
     .filter((a): a is { label: string; value: string } => a !== null);
 
@@ -430,14 +562,31 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
     delegation: r.delegation,
     status: r.status,
     rejectionReason: r.rejection_reason,
-    categoryLabel: r.category?.label_fr ?? "—",
+    reviewFlags: (r.review_flags ?? []).map((f) => flagLabel(tRoot, f)),
+    reports: ((reportRes.data ?? []) as { reason: string; note: string | null; created_at: string }[]).map(
+      (rep) => ({
+        reason: tRoot.has(`moderation.reasons.${rep.reason}`)
+          ? tRoot(`moderation.reasons.${rep.reason}`)
+          : rep.reason,
+        note: rep.note,
+        createdAt: rep.created_at,
+      }),
+    ),
+    categoryLabel: [
+      categoryLabel(r.category, locale) || "—",
+      asDealType(r.deal_type) === "rent" ? tRoot("adminListings.forRent") : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
     categoryKind: r.category?.kind ?? "vehicle",
-    sellerName: r.seller?.full_name ?? "Sans nom",
+    dealType: asDealType(r.deal_type),
+    sellerName: r.seller?.full_name ?? tRoot("admin.noName"),
     sellerPhone: r.seller?.phone ?? null,
     contactName: r.contact_name,
     contactPhone: r.contact_phone,
     showPhone: r.show_phone,
-    attributes,
+    // A rental's own facts read first, before the category's questions.
+    attributes: [...rentFactsOf(r, locale, tRoot), ...attributes],
     photos,
     createdAt: r.created_at,
     publishedAt: r.published_at,
@@ -457,5 +606,50 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
         }
       : null,
     paidWith,
+    pendingEdit: pendingEditView(r as unknown as Record<string, unknown>, r.pending_edit, photos.map((p) => p.path), locale, tRoot),
+  };
+}
+
+/**
+ * A seller's edit waiting for an admin (0172), as « before → after » lines in
+ * words, for the fields it changes. Attributes are listed by key: a changed
+ * surface or room count reads plainly enough.
+ */
+function pendingEditView(
+  current: Record<string, unknown>,
+  raw: unknown,
+  currentPhotos: string[],
+  locale: string,
+  tRoot: RootT,
+): PanelListing["pendingEdit"] {
+  const edit = asPendingEdit(raw);
+  if (!edit) return null;
+  const show = (k: string, v: unknown): string => {
+    if (v === null || v === undefined || v === "") return "—";
+    if ((k === "price" || k === "deposit_amount" || k === "charges_amount") && Number.isFinite(Number(v))) {
+      return `${formatTND(Number(v), locale)} ${tRoot("common.tnd")}`;
+    }
+    if (typeof v === "boolean") return tRoot(v ? "adminListings.yes" : "adminListings.no");
+    if (k === "governorate") return governorateLabel(String(v), locale);
+    if (k === "deal_type") return tRoot(v === "rent" ? "adminListings.deal.rent" : "adminListings.deal.sale");
+    if (typeof v === "object") {
+      return Object.entries(v as Record<string, unknown>)
+        .map(([a, b]) => `${a}: ${String(b)}`)
+        .join(" · ");
+    }
+    return String(v);
+  };
+  const keys = changedKeys(current, edit, currentPhotos);
+  return {
+    flags: edit.flags.map((f) => flagLabel(tRoot, f)),
+    submittedAt: edit.submittedAt,
+    changes: keys
+      .filter((k) => k !== "photos")
+      .map((k) => ({
+        label: tRoot.has(`adminListings.editFields.${k}`) ? tRoot(`adminListings.editFields.${k}`) : k,
+        before: show(k, current[k]),
+        after: show(k, edit.fields[k]),
+      })),
+    photos: keys.includes("photos") ? (edit.photos ?? []).map((p) => p.storage_path) : null,
   };
 }

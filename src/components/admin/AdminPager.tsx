@@ -1,7 +1,9 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Ltr } from "@/components/ui/Ltr";
 
 /**
  * Link-style pager for the server-rendered admin queues. Preserves all
@@ -11,6 +13,7 @@ export function AdminPager({ page, totalPages }: { page: number; totalPages: num
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
+  const t = useTranslations("admin.pager");
   if (totalPages <= 1) return null;
 
   const go = (p: number) => {
@@ -27,10 +30,11 @@ export function AdminPager({ page, totalPages }: { page: number; totalPages: num
         disabled={page <= 1}
         className="inline-flex h-9 items-center gap-1 rounded-lg border border-border bg-surface px-3 text-[12.5px] font-semibold text-foreground disabled:opacity-40 enabled:hover:border-gold-soft/60"
       >
-        <ChevronLeft className="size-4" /> Précédent
+        <ChevronLeft className="size-4 rtl:-scale-x-100" /> {t("previous")}
       </button>
       <span className="mazed-tabular text-[12.5px] font-semibold text-muted">
-        Page {page} / {totalPages}
+        {/* "3 / 12" stays in that order on an Arabic page. */}
+        {t.rich("page", { page, total: totalPages, n: (chunks) => <Ltr>{chunks}</Ltr> })}
       </span>
       <button
         type="button"
@@ -38,7 +42,7 @@ export function AdminPager({ page, totalPages }: { page: number; totalPages: num
         disabled={page >= totalPages}
         className="inline-flex h-9 items-center gap-1 rounded-lg border border-border bg-surface px-3 text-[12.5px] font-semibold text-foreground disabled:opacity-40 enabled:hover:border-gold-soft/60"
       >
-        Suivant <ChevronRight className="size-4" />
+        {t("next")} <ChevronRight className="size-4 rtl:-scale-x-100" />
       </button>
     </div>
   );

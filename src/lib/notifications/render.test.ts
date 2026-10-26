@@ -1,0 +1,106 @@
+import { describe, it, expect } from "vitest";
+import { createTranslator } from "next-intl";
+import fr from "../../../messages/fr.json";
+import ar from "../../../messages/ar.json";
+import { renderNotification } from "./render";
+
+const tr = (locale: "fr" | "ar") =>
+  createTranslator({ locale, messages: locale === "fr" ? fr : ar, namespace: "notifications" });
+
+const expiring = {
+  kind: "listing_expiring",
+  title: "Votre annonce expire bientôt",
+  body: "stored body",
+  payload: { vars: { title: "Villa · Sidi Mansour", expires_at: "2026-10-09T22:30:00+00:00" } },
+};
+
+describe("renderNotification", () => {
+  it("renders the French template, dated in Tunisian time", () => {
+    // 22:30 UTC on the 9th is 23:30 in Tunis — still the 9th, not the 10th.
+    expect(renderNotification(expiring, tr("fr"), "fr")).toEqual({
+      title: "Votre annonce expire bientôt",
+      body: "« Villa · Sidi Mansour » reste en ligne jusqu'au 09/10. Vous pourrez la renouveler dès ce jour-là.",
+    });
+  });
+
+  it("renders the same row in Arabic for an Arabic reader", () => {
+    const out = renderNotification(expiring, tr("ar"), "ar");
+    expect(out.title).toBe("إعلانك قريب يوفى");
+    expect(out.body).toContain("« Villa · Sidi Mansour »");
+    expect(out.body).toContain("09");
+  });
+
+  it("formats amounts and names the payment kind", () => {
+    const n = {
+      kind: "admin_receipt_pending",
+      title: "x",
+      body: "x",
+      payload: { vars: { amount: 15, paymentKind: "listing_fee" } },
+    };
+    expect(renderNotification(n, tr("fr"), "fr").body).toBe("Un reçu de frais d'annonce (15 TND) attend votre validation.");
+    expect(renderNotification(n, tr("ar"), "ar").body).toBe("وصل معلوم نشر إعلان (15 د.ت) في انتظار المصادقة.");
+  });
+
+  it("uses real plurals", () => {
+    const n = (count: number) => ({ kind: "credits_expired", title: "x", body: "x", payload: { vars: { count } } });
+    expect(renderNotification(n(1), tr("fr"), "fr").body).toBe("Votre publication restante a expiré.");
+    expect(renderNotification(n(3), tr("fr"), "fr").body).toBe("Vos 3 publications restantes ont expiré.");
+    expect(renderNotification(n(3), tr("ar"), "ar").body).toBe("انتهت صلاحية 3 عمليات نشر متبقية.");
+    expect(renderNotification(n(2), tr("ar"), "ar").body).toBe("انتهت صلاحية عمليتي النشر المتبقيتين.");
+  });
+
+  it("picks the variant's wording", () => {
+    const n = {
+      kind: "listing_payment_received",
+      title: "x",
+      body: "x",
+      payload: { vars: { title: "Terrain", variant: "captured" } },
+    };
+    expect(renderNotification(n, tr("fr"), "fr").title).toBe("Paiement validé");
+  });
+
+  it("renders the kinds the API routes produce", () => {
+    const credit = {
+      kind: "listing_submitted",
+      title: "x",
+      body: "x",
+      payload: { vars: { title: "Villa", variant: "credit", remaining: 4 } },
+    };
+    expect(renderNotification(credit, tr("fr"), "fr").body).toBe(
+      "« Villa » est en cours de vérification. Il vous reste 4 publications.",
+    );
+    expect(renderNotification(credit, tr("ar"), "ar").body).toBe("« Villa » قيد المراجعة. بقاتلك 4 عمليات نشر.");
+
+    const published = {
+      kind: "listing_published",
+      title: "x",
+      body: "x",
+      payload: { vars: { title: "Villa", expires_at: "2026-11-05T09:00:00.000Z" } },
+    };
+    expect(renderNotification(published, tr("fr"), "fr").body).toBe("« Villa » est visible jusqu'au 05/11/2026.");
+
+    const badge = { kind: "badge_granted", title: "x", body: "x", payload: { vars: {} } };
+    expect(renderNotification(badge, tr("ar"), "ar").title).toBe("شارة البائع الموثّق");
+
+    const pack = { kind: "pack_purchased", title: "x", body: "x", payload: { vars: { quota: 1 } } };
+    expect(renderNotification(pack, tr("fr"), "fr").body).toBe("1 publication ajoutée à votre compte.");
+  });
+
+  it("keeps the stored text for old rows and kinds without a template", () => {
+    const old = { kind: "listing_expired", title: "Annonce expirée", body: "« A » n'est plus visible.", payload: {} };
+    expect(renderNotification(old, tr("ar"), "ar")).toEqual({ title: old.title, body: old.body });
+    const broadcast = { kind: "announcement", title: "Maintenance ce soir", body: "…", payload: { vars: { x: 1 } } };
+    expect(renderNotification(broadcast, tr("ar"), "ar")).toEqual({ title: broadcast.title, body: broadcast.body });
+  });
+
+  it("says a visit's day and half-day in the reader's words (0174)", () => {
+    const n = {
+      kind: "visit_confirmed",
+      title: "x",
+      body: "x",
+      payload: { vars: { title: "S+2 La Marsa", visit_day: "2026-10-28", visit_part: "morning", note: "", variant: "plain" } },
+    };
+    expect(renderNotification(n, tr("fr"), "fr").body).toBe("Votre visite de « S+2 La Marsa » est confirmée : mercredi 28 octobre · le matin.");
+    expect(renderNotification(n, tr("ar"), "ar").body).toContain("الصباح");
+  });
+});

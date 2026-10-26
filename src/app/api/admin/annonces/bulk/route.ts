@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslator } from "@/lib/i18n/server";
 
 /**
  * The same moderation actions, applied to a selection.
@@ -42,6 +43,9 @@ export async function POST(req: NextRequest) {
     days?: unknown;
   };
   const action = typeof body.action === "string" ? body.action : "";
+  // `detail` and each skipped row's `why` are shown to the moderator as-is,
+  // in the language of the page that asked.
+  const t = await apiTranslator(req, "adminApi.bulk");
   const ids = Array.isArray(body.ids)
     ? body.ids.filter((v): v is string => typeof v === "string").slice(0, MAX)
     : [];
@@ -51,7 +55,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: "unsupported_bulk_action",
-        detail: "Le refus et la suppression se font une annonce à la fois.",
+        detail: t("unsupported"),
       },
       { status: 400 },
     );
@@ -84,11 +88,11 @@ export async function POST(req: NextRequest) {
     const now = new Date();
     for (const r of found) {
       if (r.status !== "pending_review") {
-        skipped.push({ id: r.id, title: r.title, why: `statut « ${r.status} »` });
+        skipped.push({ id: r.id, title: r.title, why: t("skipStatus", { status: r.status }) });
         continue;
       }
       if (!r.contact_phone) {
-        skipped.push({ id: r.id, title: r.title, why: "aucun numéro" });
+        skipped.push({ id: r.id, title: r.title, why: t("skipNoPhone") });
         continue;
       }
       const expires = new Date(now.getTime() + fallbackDays * 86_400_000);
@@ -101,12 +105,20 @@ export async function POST(req: NextRequest) {
           reviewed_by: user.id,
           reviewed_at: now.toISOString(),
           rejection_reason: null,
+          review_flags: [],
         })
         .eq("id", r.id);
       if (error) {
-        skipped.push({ id: r.id, title: r.title, why: "erreur serveur" });
+        skipped.push({ id: r.id, title: r.title, why: t("skipServerError") });
         continue;
       }
+      // Reports that were waiting on it have been dealt with (as in publishListing).
+      await admin
+        .from("listing_reports")
+        .update({ resolved_at: now.toISOString() })
+        .eq("listing_id", r.id)
+        .is("resolved_at", null)
+        .then(() => {}, () => {});
       ok.push(r.id);
       await admin
         .rpc("enqueue_notification", {
@@ -115,6 +127,7 @@ export async function POST(req: NextRequest) {
           p_title: "Votre annonce est en ligne",
           p_body: `« ${r.title} » est visible jusqu'au ${expires.toLocaleDateString("fr-FR")}.`,
           p_link: `/annonces/${r.id}`,
+          p_payload: { vars: { title: r.title, expires_at: expires.toISOString() } },
         })
         .then(() => {}, () => {});
     }
@@ -123,7 +136,9 @@ export async function POST(req: NextRequest) {
   if (action === "archive") {
     const movable = found.filter((r) => r.status !== "archived");
     for (const r of found) {
-      if (r.status === "archived") skipped.push({ id: r.id, title: r.title, why: "déjà archivée" });
+      if (r.status === "archived") {
+        skipped.push({ id: r.id, title: r.title, why: t("skipAlreadyArchived") });
+      }
     }
     if (movable.length > 0) {
       const { error } = await admin
@@ -144,7 +159,7 @@ export async function POST(req: NextRequest) {
     const d = Number.isFinite(n) ? Math.min(365, Math.max(1, Math.round(n))) : DEFAULT_EXTEND_DAYS;
     for (const r of found) {
       if (r.status !== "published") {
-        skipped.push({ id: r.id, title: r.title, why: "pas en ligne" });
+        skipped.push({ id: r.id, title: r.title, why: t("skipNotPublished") });
         continue;
       }
       // Extend from the later of now and the current expiry, so a batch never
@@ -154,7 +169,7 @@ export async function POST(req: NextRequest) {
         .from("listings")
         .update({ expires_at: new Date(from + d * 86_400_000).toISOString() })
         .eq("id", r.id);
-      if (error) skipped.push({ id: r.id, title: r.title, why: "erreur serveur" });
+      if (error) skipped.push({ id: r.id, title: r.title, why: t("skipServerError") });
       else ok.push(r.id);
     }
   }
@@ -162,7 +177,7 @@ export async function POST(req: NextRequest) {
   // Ids that matched nothing — a stale selection after someone else moved them.
   for (const id of ids) {
     if (!found.some((r) => r.id === id)) {
-      skipped.push({ id, title: "—", why: "introuvable" });
+      skipped.push({ id, title: "—", why: t("skipNotFound") });
     }
   }
 

@@ -45,6 +45,20 @@ export const NOTIFICATION_KINDS = [
   "admin_listing_pending", "admin_inspector_pending", "admin_final_payment_overdue",
   // Broadcasts
   "announcement", "promo", "maintenance", "system_alert",
+  // Demandes (0168): an annonce answered a buyer's or a tenant's demande
+  "request_match",
+  // Social Publisher (0170): the seller's promotion, and the admins' queue
+  "social_published", "social_rejected", "admin_social_pending", "admin_social_attention",
+  // Editing a published annonce (0172): the seller hears the verdict, admins the queue
+  "listing_edit_applied", "listing_edit_rejected", "admin_listing_edit_pending",
+  // Mazed Immo Pro (0173): the shop hears the verdict and who joined it, admins the queue
+  "shop_approved", "shop_rejected", "shop_member_added", "admin_shop_pending",
+  // Visits (0174): the seller hears the request and a cancellation, the buyer the answer
+  "visit_requested", "visit_confirmed", "visit_declined", "visit_cancelled",
+  // A shop answers a demande (P3); the person stays anonymous to the shop
+  "request_suggestion",
+  // A paid placement ended (0156): written by expire_listing_promotions()
+  "promo_expired",
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
@@ -71,6 +85,13 @@ type FallbackRoute =
   | "/admin/payouts"
   | "/admin/kyc-queue"
   | "/admin/inspectors"
+  | "/account/requests"
+  | "/account/listings"
+  | "/admin/social"
+  | "/admin/annonces"
+  | "/pro/dashboard"
+  | "/admin/boutiques"
+  | "/account/visites"
   | null;
 
 /**
@@ -151,6 +172,26 @@ const KIND_FALLBACK: Record<NotificationKind, FallbackRoute> = {
   promo: null,
   maintenance: null,
   system_alert: null,
+  // The link is the annonce; without one, the person's demandes.
+  request_match: "/account/requests",
+  // The link is the annonce's promotion page; without one, the seller's annonces.
+  social_published: "/account/listings",
+  social_rejected: "/account/listings",
+  admin_social_pending: "/admin/social",
+  admin_social_attention: "/admin/social",
+  listing_edit_applied: "/account/listings",
+  listing_edit_rejected: "/account/listings",
+  admin_listing_edit_pending: "/admin/annonces",
+  shop_approved: "/pro/dashboard",
+  shop_rejected: "/pro/dashboard",
+  shop_member_added: "/pro/dashboard",
+  admin_shop_pending: "/admin/boutiques",
+  visit_requested: "/account/visites",
+  visit_confirmed: "/account/visites",
+  visit_declined: "/account/visites",
+  visit_cancelled: "/account/visites",
+  request_suggestion: "/account/requests",
+  promo_expired: "/account/listings",
 };
 
 /** Last non-empty path segment, ignoring query/hash. */
@@ -229,6 +270,14 @@ const FALLBACK_SUPPORTS_FOCUS: Record<NotificationKind, boolean> = {
   admin_payout_pending: false, admin_listing_pending: false,
   admin_inspector_pending: false, admin_final_payment_overdue: false,
   announcement: false, promo: false, maintenance: false, system_alert: false,
+  request_match: false,
+  social_published: false, social_rejected: false,
+  admin_social_pending: false, admin_social_attention: false,
+  listing_edit_applied: false, listing_edit_rejected: false, admin_listing_edit_pending: false,
+  shop_approved: false, shop_rejected: false, shop_member_added: false, admin_shop_pending: false,
+  visit_requested: false, visit_confirmed: false, visit_declined: false, visit_cancelled: false,
+  request_suggestion: false,
+  promo_expired: false,
 };
 
 /** Pull a string `focus` id out of the notification payload, if present.

@@ -1,4 +1,5 @@
 import { ShieldCheck, Eye, Zap, Star } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { BELOW_LG, EMPTY_GIF } from "@/components/ui/HiddenAt";
 
 /**
@@ -11,12 +12,13 @@ import { BELOW_LG, EMPTY_GIF } from "@/components/ui/HiddenAt";
  * the first <source> hands narrow screens an empty GIF (see HiddenAt).
  */
 const FEATURES = [
-  { Icon: ShieldCheck, title: "100% sécurisé",    sub: "Transactions vérifiées" },
-  { Icon: Eye,         title: "Transparence totale", sub: "Informations vérifiées" },
-  { Icon: Zap,         title: "Simple et rapide",  sub: "Publiez une annonce en quelques minutes" },
-];
+  { Icon: ShieldCheck, key: "secure" },
+  { Icon: Eye,         key: "transparency" },
+  { Icon: Zap,         key: "simple" },
+] as const;
 
 export function AuthHeroPanel() {
+  const t = useTranslations("auth.hero");
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#1a1206]">
       <picture>
@@ -38,30 +40,32 @@ export function AuthHeroPanel() {
         {/* Top — one brand pill */}
         <span className="inline-flex w-fit items-center gap-2.5 rounded-full bg-white/10 px-4 py-2 text-[12.5px] font-bold text-white ring-1 ring-white/20 backdrop-blur">
           <ShieldCheck className="size-4 shrink-0" strokeWidth={2} />
-          Les petites annonces immobilières en Tunisie
+          {t("badge")}
         </span>
 
         {/* Bottom — headline + trust points + social proof */}
         <div>
           <h2 className="max-w-md text-balance text-[32px] font-extrabold leading-[1.12] tracking-tight text-white">
-            Achetez et vendez en toute confiance.
+            {t("title")}
           </h2>
 
           <div className="mt-7 space-y-4">
             {FEATURES.map((f) => (
-              <div key={f.title} className="flex items-center gap-3.5 text-white">
+              <div key={f.key} className="flex items-center gap-3.5 text-white">
                 <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/12 ring-1 ring-white/20">
                   <f.Icon className="size-5" strokeWidth={2} />
                 </span>
                 <div>
-                  <div className="text-[14px] font-bold leading-tight">{f.title}</div>
-                  <div className="text-[12px] text-white/65">{f.sub}</div>
+                  <div className="text-[14px] font-bold leading-tight">{t(`${f.key}Title`)}</div>
+                  <div className="text-[12px] text-white/65">{t(`${f.key}Sub`)}</div>
                 </div>
               </div>
             ))}
           </div>
 
           <div className="mt-8 flex items-center gap-3">
+            {/* Tailwind 4's space-x is margin-inline-start/end, so the overlap
+                already mirrors under RTL. */}
             <div className="flex -space-x-2.5">
               {["#dfae55", "#cc902e", "#a86f22", "#e8d5a3"].map((c, i) => (
                 <span
@@ -73,14 +77,14 @@ export function AuthHeroPanel() {
               ))}
             </div>
             <div className="leading-tight text-white">
-              <div className="text-[12.5px] font-extrabold">Plus de 12 000 utilisateurs</div>
+              <div className="text-[12.5px] font-extrabold">{t("users")}</div>
               <div className="mt-0.5 flex items-center gap-1.5">
                 <span className="flex gap-0.5">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star key={i} className="size-3 fill-amber-400 text-amber-400" strokeWidth={0} />
                   ))}
                 </span>
-                <span className="text-[11px] text-white/60">nous font confiance</span>
+                <span className="text-[11px] text-white/60">{t("trust")}</span>
               </div>
             </div>
           </div>

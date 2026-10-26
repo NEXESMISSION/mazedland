@@ -11,9 +11,15 @@ import { Link } from "@/i18n/navigation";
  *   - Desktop (lg+): a split screen — a property-photo hero with floating
  *     trust cards on the left, the sign-in card on the right.
  */
-export const metadata: Metadata = {
-  title: "Connexion — Mazed Immo",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "auth.login" });
+  return { title: t("metaTitle") };
+}
 
 export default async function LoginPage({
   searchParams,
@@ -35,7 +41,7 @@ export default async function LoginPage({
         <div className="relative w-full max-w-sm">
           <div
             aria-hidden
-            className="mazed-gradient-blob mazed-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
+            className="mazed-gradient-blob mazed-gradient-blob-lg absolute -start-1/3 -top-1/4 -z-10 opacity-20"
           />
 
           <div className="relative overflow-hidden rounded-3xl bg-surface ring-1 ring-border shadow-[var(--shadow-md)]">
@@ -70,14 +76,14 @@ export default async function LoginPage({
                   href="/forgot-password"
                   className="font-semibold text-muted transition hover:text-gold-bright"
                 >
-                  Mot de passe oublié ?
+                  {t("auth.login.forgotPassword")}
                 </Link>
               </p>
             </div>
 
             <div className="border-t border-border bg-surface-2 px-7 py-4 text-center sm:px-8">
               <p className="text-[12.5px] text-muted">
-                Pas encore de compte ?{" "}
+                {t("auth.login.noAccount")}{" "}
                 <Link
                   href={{ pathname: "/signup", query: next ? { next } : {} }}
                   className="font-bold text-foreground transition hover:text-gold-bright"
@@ -117,7 +123,9 @@ export default async function LoginPage({
                   isRTL ? "font-arabic" : ""
                 }`}
               >
-                Bienvenue sur <span className="gradient-gold-text">{t("brand.name")}</span>
+                {t.rich("auth.login.welcome", {
+                  brand: (chunks) => <span className="gradient-gold-text">{chunks}</span>,
+                })}
               </h1>
             </div>
 
@@ -129,12 +137,12 @@ export default async function LoginPage({
                 href="/forgot-password"
                 className="font-semibold text-muted transition hover:text-gold-bright"
               >
-                Mot de passe oublié ?
+                {t("auth.login.forgotPassword")}
               </Link>
             </p>
 
             <p className="mt-6 text-center text-[13px] text-muted">
-              Pas encore de compte ?{" "}
+              {t("auth.login.noAccount")}{" "}
               <Link
                 href={{ pathname: "/signup", query: next ? { next } : {} }}
                 className="font-bold text-foreground transition hover:text-gold-bright"

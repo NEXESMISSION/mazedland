@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — LAUNCH BLOCKER FIX: lock down payment capture.
+-- Mazed Immo — LAUNCH BLOCKER FIX: lock down payment capture.
 --
 -- THE HOLE (pre-existing since 0001):
 --   policy payments_self_insert allowed:

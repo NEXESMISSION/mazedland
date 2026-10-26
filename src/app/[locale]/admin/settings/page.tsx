@@ -1,7 +1,10 @@
+import { requireAdmin } from "@/lib/admin/session";
+import { getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { Link } from "@/i18n/navigation";
 import { usablePayeeMethods } from "@/lib/payments";
 import { SettingsForm, type SettingsValues } from "./SettingsForm";
+import { ModerationSettingsForm } from "./ModerationSettingsForm";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 
@@ -19,9 +22,22 @@ export const revalidate = 0;
  * `lib/products.ts`. An admin changing a fee here saw « Réglages enregistrés »
  * and nothing on the site moved — the worst kind of setting there is.
  */
-const KEYS = ["payee_name", "payee_bank", "payee_rib", "payee_iban", "payee_d17"] as const;
+const KEYS = [
+  "payee_name",
+  "payee_bank",
+  "payee_rib",
+  "payee_iban",
+  "payee_d17",
+  "company_name",
+  "company_tax_id",
+  "company_address",
+  "invoice_vat_rate",
+  "free_listing_limit",
+  "moderation_banned_words",
+] as const;
 
 export default async function AdminSettingsPage() {
+  await requireAdmin();
   const supabase = await getServerSupabase();
   const { data } = await supabase
     .from("app_settings")
@@ -37,6 +53,11 @@ export default async function AdminSettingsPage() {
     payee_rib: strFrom(map.get("payee_rib")),
     payee_iban: strFrom(map.get("payee_iban")),
     payee_d17: strFrom(map.get("payee_d17")),
+    company_name: strFrom(map.get("company_name")),
+    company_tax_id: strFrom(map.get("company_tax_id")),
+    company_address: strFrom(map.get("company_address")),
+    // Stored as a number once set; an empty field means no VAT line.
+    invoice_vat_rate: map.get("invoice_vat_rate") == null || map.get("invoice_vat_rate") === "" ? "" : String(map.get("invoice_vat_rate")),
   };
 
   const usable = usablePayeeMethods({
@@ -47,33 +68,48 @@ export default async function AdminSettingsPage() {
     d17: initial.payee_d17,
   });
 
+  const t = await getTranslations("adminSettings");
+
   return (
     <div>
       <SiteTabs />
       <AdminPageHeader
-        eyebrow="Paiement"
-        title="Réglages"
-        description="Les coordonnées vers lesquelles les vendeurs règlent leurs frais de publication, par virement ou D17."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
 
       {!usable.bank_transfer && !usable.d17 && (
         <div className="mt-5 rounded-2xl bg-amber-500/10 p-4 text-[13px] leading-relaxed text-amber-900 ring-1 ring-amber-500/30">
-          <strong>Aucun moyen de paiement valide.</strong> La page de paiement est bloquée tant que
-          ces champs sont vides ou contiennent les valeurs d&apos;exemple : un vendeur ne doit jamais
-          virer de l&apos;argent vers un compte fictif.
+          {t.rich("noPayeeMethod", { strong: (chunks) => <strong>{chunks}</strong> })}
         </div>
       )}
 
       <p className="mt-4 text-[12.5px] text-muted">
-        Les prix des annonces et des options se règlent dans{" "}
-        <Link href="/admin/offres" className="font-bold text-foreground underline underline-offset-2">
-          Offres
-        </Link>
-        .
+        {t.rich("pricesLink", {
+          link: (chunks) => (
+            <Link href="/admin/offres" className="font-bold text-foreground underline underline-offset-2">
+              {chunks}
+            </Link>
+          ),
+        })}
       </p>
 
       <div className="mt-5">
         <SettingsForm initial={initial} />
+      </div>
+
+      <div className="mt-6">
+        <ModerationSettingsForm
+          initial={{
+            freeLimit: Number.isInteger(Number(map.get("free_listing_limit")))
+              ? Number(map.get("free_listing_limit"))
+              : 2,
+            bannedWords: Array.isArray(map.get("moderation_banned_words"))
+              ? (map.get("moderation_banned_words") as unknown[]).filter((w): w is string => typeof w === "string")
+              : [],
+          }}
+        />
       </div>
     </div>
   );

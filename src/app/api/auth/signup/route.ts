@@ -6,6 +6,7 @@ import { assertSupabaseRef } from "@/lib/supabase/guard";
 import { clientIp } from "@/lib/clientIp";
 import { isSmsConfigured } from "@/lib/winsms";
 import { PHONE_PROOF_COOKIE, verifyPhoneProof } from "@/lib/otp";
+import { requestLocale } from "@/lib/i18n/server";
 
 /**
  * Phone-only signup — fully server-side.
@@ -136,6 +137,9 @@ export async function POST(req: NextRequest) {
       full_name: fullName || null,
       phone,
       governorate: governorate || null,
+      // The signup page's language: the profile trigger stores it, and the SMS
+      // and e-mail drains use it for this person's notifications (0164).
+      language: requestLocale(req),
     },
   });
   if (createErr) {

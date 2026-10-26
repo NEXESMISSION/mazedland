@@ -1,8 +1,9 @@
 import { Link } from "@/i18n/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { XCircle, ArrowLeft, LifeBuoy } from "lucide-react";
 import { formatTND } from "@/lib/utils";
+import { Ltr } from "@/components/ui/Ltr";
 import { safeInternalPath } from "@/lib/safePath";
 
 export const dynamic = "force-dynamic";
@@ -13,15 +14,10 @@ export const dynamic = "force-dynamic";
  * banque a refusé la transaction » and « la passerelle a refusé » described a
  * failure mode that cannot occur — and sent a seller to argue with their bank
  * about a receipt we simply could not read.
+ *
+ * The sentences are `payment.failed.reasons.<reason>`.
  */
-const FAIL_REASONS: Record<string, string> = {
-  rejected: "Le reçu n'a pas pu être validé. Vérifiez le montant et la référence, puis renvoyez-le.",
-  unreadable: "Le reçu était illisible. Renvoyez une photo nette du justificatif.",
-  wrong_amount: "Le montant reçu ne correspond pas aux frais de publication.",
-  expired: "Le délai de paiement a expiré.",
-  cancelled: "Vous avez annulé le paiement.",
-  unknown: "Le paiement n'a pas abouti. Notre équipe peut vous dire pourquoi.",
-};
+const FAIL_REASONS = new Set(["rejected", "unreadable", "wrong_amount", "expired", "cancelled", "unknown"]);
 
 /**
  * Post-payment failure page. Shows the reason (if the provider passed
@@ -35,6 +31,7 @@ export default async function PaymentFailed({
 }) {
   const { id, reason, return: returnUrl } = await searchParams;
   const locale = await getLocale();
+  const t = await getTranslations("payment.failed");
   // Same fix as /payment/success: `//evil.example` passes a bare
   // `startsWith("/")` and is a different origin.
   const safeReturn = safeInternalPath(returnUrl, "/account/payments");
@@ -59,7 +56,7 @@ export default async function PaymentFailed({
     }
   }
 
-  const reasonText = (reason && FAIL_REASONS[reason]) ?? FAIL_REASONS.unknown;
+  const reasonText = t(`reasons.${reason && FAIL_REASONS.has(reason) ? reason : "unknown"}`);
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">
@@ -69,10 +66,10 @@ export default async function PaymentFailed({
         </div>
 
         <div className="mt-5 text-[10px] uppercase tracking-[0.18em] font-extrabold text-[var(--danger)]">
-          Paiement refusé
+          {t("eyebrow")}
         </div>
         <h1 className="mt-1 text-2xl font-extrabold tracking-tight">
-          La transaction n&apos;a pas abouti
+          {t("title")}
         </h1>
         <p className="mt-2 text-sm text-[var(--foreground-muted)] leading-relaxed">
           {reasonText}
@@ -82,23 +79,24 @@ export default async function PaymentFailed({
           <dl className="mt-6 space-y-2 rounded-[var(--radius)] bg-[var(--surface-2)] p-4 text-start">
             <div className="flex items-center justify-between text-[12px]">
               <dt className="text-[10px] uppercase tracking-[0.14em] font-bold text-[var(--foreground-muted)]">
-                Montant tenté
+                {t("attemptedAmount")}
               </dt>
               <dd className="mazed-tabular font-bold text-foreground">
-                {formatTND(Number(payment.amount), locale)} TND
+                {t("amount", { amount: formatTND(Number(payment.amount), locale) })}
               </dd>
             </div>
             <div className="flex items-center justify-between text-[12px]">
               <dt className="text-[10px] uppercase tracking-[0.14em] font-bold text-[var(--foreground-muted)]">
-                Référence
+                {t("reference")}
               </dt>
               <dd className="font-mono text-[11px] text-foreground">
-                {payment.id.slice(0, 8)}…{payment.id.slice(-4)}
+                <Ltr>
+                  {payment.id.slice(0, 8)}…{payment.id.slice(-4)}
+                </Ltr>
               </dd>
             </div>
             <p className="pt-2 text-[10px] text-[var(--foreground-subtle)] leading-relaxed">
-              Aucun débit n&apos;a été effectué sur votre compte. Vous pouvez
-              réessayer immédiatement.
+              {t("noDebit")}
             </p>
           </dl>
         )}
@@ -108,15 +106,15 @@ export default async function PaymentFailed({
             href={safeReturn as `/${string}`}
             className="mazed-btn-luxe w-full h-12 text-[14px]"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Réessayer
+            <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" />
+            {t("retry")}
           </Link>
           <Link
             href="/contact"
             className="inline-flex items-center justify-center gap-2 w-full h-12 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] text-foreground font-semibold text-[13px] hover:border-[var(--gold-soft)] transition-colors"
           >
             <LifeBuoy className="h-4 w-4" />
-            Contacter le support
+            {t("support")}
           </Link>
         </div>
       </div>

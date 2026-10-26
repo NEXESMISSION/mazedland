@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — Two new gentle reminder pipelines:
+-- Mazed Immo — Two new gentle reminder pipelines:
 --   1. kyc_pending_reminder — a user submitted KYC but the admin hasn't
 --      decided after 24h. Reassures them their request is still in queue
 --      and nudges admins indirectly (the user opens a support ticket
@@ -124,7 +124,7 @@ begin
       'Programmez votre enchère',
       coalesce('« ' || v_p.title || ' »', 'Votre annonce') ||
         ' est validée mais pas encore mise en ligne. ' ||
-        'Programmez la date de l''enchère pour qu''elle apparaisse sur Batta.',
+        'Programmez la date de l''enchère pour qu''elle apparaisse sur Mazed Immo.',
       '/sell/' || v_p.id::text || '/schedule'
     );
     update public.properties

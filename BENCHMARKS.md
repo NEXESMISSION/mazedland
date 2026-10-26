@@ -1,8 +1,8 @@
-# Batta.tn — Benchmark Suite (acceptance criteria)
+# Mazed Immo — Benchmark Suite (acceptance criteria)
 
 The bar this app must clear before every release / before scaling. Each item has
 an **ID**, a **measurable pass criterion**, and **how to verify**. These are
-specific to Batta.tn (Tunisian real-estate auction marketplace: English/Dutch/
+specific to Mazed Immo (Tunisian real-estate auction marketplace: English/Dutch/
 sealed auctions, the sixth-offer rule, manual-receipt payments, KYC, deposits,
 seller payouts, French UI, Supabase RLS + realtime + pg_cron).
 

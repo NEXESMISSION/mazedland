@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { canBuy, placementOf, promoEnd } from "@/lib/promo";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslator } from "@/lib/i18n/server";
+import { nextPeriodStart } from "@/lib/pro/shops";
 
 /**
  * Receipt review — the v3 money queue.
@@ -64,9 +67,12 @@ export async function POST(
     .maybeSingle();
   if (!pay) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
+  // `detail` is shown to the operator verbatim, in the page's language.
+  const t = await apiTranslator(req, "adminPayments.api");
+
   if (pay.status !== "pending" && pay.status !== "pending_review") {
     return NextResponse.json(
-      { error: "conflict", detail: `Ce paiement est déjà « ${pay.status} ».` },
+      { error: "conflict", detail: t("alreadyResolved", { status: String(pay.status) }) },
       { status: 409 },
     );
   }
@@ -74,7 +80,7 @@ export async function POST(
     return NextResponse.json(
       {
         error: "wrong_kind",
-        detail: `« ${pay.kind} » appartient au produit enchères, qui n'existe plus.`,
+        detail: t("wrongKind", { kind: String(pay.kind) }),
       },
       { status: 400 },
     );
@@ -96,7 +102,7 @@ export async function POST(
       .in("status", ["pending", "pending_review"]);
     if (error) return fail("capture_failed", 500, error);
 
-    const meta = (pay.metadata ?? {}) as { product_id?: string };
+    const meta = (pay.metadata ?? {}) as { product_id?: string; shop_id?: string; listing_id?: string; product_slug?: string };
     let granted: string | null = null;
 
     // A pack is only worth money if the credits actually appear. Nothing in
@@ -131,6 +137,36 @@ export async function POST(
       }
     }
 
+    // A plan (0173): one period of the plan for the shop, starting today or
+    // when the period still running ends. The payment id is unique on the
+    // period, so the same receipt never grants twice.
+    if (pay.kind === "subscription" && meta.product_id && meta.shop_id) {
+      const { data: product } = await admin
+        .from("products")
+        .select("listing_quota, duration_days, name_fr")
+        .eq("id", meta.product_id)
+        .maybeSingle();
+      const quota = Number(product?.listing_quota);
+      const days = Number(product?.duration_days);
+      if (!(Number.isFinite(quota) && quota > 0)) return fail("subscription_product_invalid", 500);
+      const starts = await nextPeriodStart(admin, meta.shop_id);
+      const ends = new Date(starts.getTime() + (Number.isFinite(days) && days > 0 ? days : 30) * 86_400_000);
+      const { error: subErr } = await admin.from("shop_subscriptions").upsert(
+        {
+          shop_id: meta.shop_id,
+          product_id: meta.product_id,
+          payment_id: pay.id,
+          listing_quota: quota,
+          starts_at: starts.toISOString(),
+          ends_at: ends.toISOString(),
+          granted_by: user.id,
+        },
+        { onConflict: "payment_id", ignoreDuplicates: true },
+      );
+      if (subErr) return fail("subscription_grant_failed", 500, subErr);
+      granted = `${product?.name_fr ?? "Pro"} jusqu'au ${ends.toISOString().slice(0, 10)}`;
+    }
+
     if (pay.kind === "badge" && meta.product_id) {
       const { data: product } = await admin
         .from("products")
@@ -154,6 +190,62 @@ export async function POST(
       granted = "badge vérifié";
     }
 
+    // A placement (0156): on the annonce from now — or from where the same one
+    // ends — for the product's days. Bought, so not « manual ».
+    let promo: { title: string; until: Date } | null = null;
+    if (pay.kind === "promo" && meta.listing_id) {
+      const column = placementOf(meta.product_slug);
+      const { data: product } = await admin
+        .from("products")
+        .select("slug, duration_days")
+        .eq("id", meta.product_id ?? "")
+        .maybeSingle();
+      const placement = column ?? placementOf(product?.slug as string | undefined);
+      const { data: l } = await admin
+        .from("listings")
+        .select("title, promo_home_featured, promo_top_listed, promo_banner, promo_expires_at")
+        .eq("id", meta.listing_id)
+        .maybeSingle();
+      if (!placement || !l) return fail("promo_grant_failed", 500);
+      const days = Number(product?.duration_days) > 0 ? Number(product?.duration_days) : 30;
+      // A different placement still running (bought by another route, or granted
+      // by an admin) gives way to the paid one.
+      const until = canBuy(l, placement) ? promoEnd(l, placement, days) : new Date(Date.now() + days * 86_400_000);
+      const { error: promoErr } = await admin
+        .from("listings")
+        .update({
+          promo_home_featured: placement === "promo_home_featured",
+          promo_top_listed: placement === "promo_top_listed",
+          promo_banner: placement === "promo_banner",
+          promo_expires_at: until.toISOString(),
+          promo_manual: false,
+        })
+        .eq("id", meta.listing_id);
+      if (promoErr) return fail("promo_grant_failed", 500, promoErr);
+      promo = { title: l.title as string, until };
+      granted = `${placement} jusqu'au ${until.toISOString().slice(0, 10)}`;
+    }
+
+    // The payer hears it — the fee of an annonce already does, through its own
+    // trigger (_listing_fee_captured); every other receipt did not, so a Pro
+    // plan or a badge started in silence.
+    if (pay.kind !== "listing_fee") {
+      await admin
+        .rpc("enqueue_notification", {
+          p_user_id: pay.user_id,
+          p_kind: "payment_accepted",
+          p_title: promo ? "Mise en avant active" : "Paiement validé",
+          p_body: promo
+            ? `La mise en avant de « ${promo.title} » est active jusqu'au ${promo.until.toISOString().slice(0, 10)}.`
+            : `Votre paiement de ${pay.amount} TND est validé.`,
+          p_link: promo && meta.listing_id ? `/annonces/${meta.listing_id}` : meta.shop_id ? "/pro/dashboard" : "/account/payments",
+          p_payload: promo
+            ? { vars: { variant: "promo", title: promo.title, expires_at: promo.until.toISOString() }, focus: pay.id }
+            : { vars: { variant: "plain", amount: Number(pay.amount), paymentKind: pay.kind }, focus: pay.id },
+        })
+        .then(() => {}, () => {});
+    }
+
     logAction(req, user, "admin.payment.accept", { id, kind: pay.kind, granted });
     return NextResponse.json({ ok: true, status: "captured", granted });
   }
@@ -165,7 +257,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: "reason_required",
-          detail: "Dites au vendeur ce qui ne va pas — il doit pouvoir renvoyer un reçu valable.",
+          detail: t("reasonRequired"),
         },
         { status: 400 },
       );
@@ -199,6 +291,7 @@ export async function POST(
           p_title: "Reçu refusé",
           p_body: `Motif : ${reason}. Vous pouvez en envoyer un nouveau.`,
           p_link: "/account/payments",
+          p_payload: { vars: { reason } },
         })
         .then(() => {}, () => {});
     }

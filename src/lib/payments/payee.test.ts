@@ -25,8 +25,8 @@ describe("usablePayeeMethods", () => {
     expect(usablePayeeMethods({ ...real, rib: "", iban: "" })).toEqual({ bank_transfer: false, d17: true });
   });
 
-  it("refuses everything without a payee name, or under the old brand", () => {
+  it("refuses everything without a payee name", () => {
+    expect(usablePayeeMethods({ ...real, name: "" })).toEqual({ bank_transfer: false, d17: false });
     expect(usablePayeeMethods({ ...real, name: " " })).toEqual({ bank_transfer: false, d17: false });
-    expect(usablePayeeMethods({ ...real, name: "Batta Tunisia SARL" })).toEqual({ bank_transfer: false, d17: false });
   });
 });

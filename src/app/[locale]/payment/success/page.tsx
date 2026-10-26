@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { formatTND } from "@/lib/utils";
+import { formatDate, formatTND } from "@/lib/utils";
 import { CheckCircle2, ArrowRight, Loader2, XCircle } from "lucide-react";
 import { PaySubmitButton } from "@/components/payments/PaySubmitButton";
+import { Ltr } from "@/components/ui/Ltr";
 import { SuccessAutoRedirect } from "./SuccessAutoRedirect";
 import { safeInternalPath } from "@/lib/safePath";
 
@@ -14,29 +15,11 @@ export const dynamic = "force-dynamic";
 // map used to hold — caution, achat finalisé, paiement final, inspection —
 // described the auction product, and none of the five kinds below was in it:
 // every real payment fell through to the generic "Paiement reçu".
-const KIND_LABEL: Record<string, string> = {
-  listing_fee: "Frais de publication réglés",
-  renewal: "Renouvellement réglé",
-  promo: "Mise en avant réglée",
-  listing_pack: "Pack d'annonces réglé",
-  badge: "Badge vendeur réglé",
-};
+// Their words: `payment.success.kind.*` (headline) and `kindBody.*`.
+const KINDS = new Set(["listing_fee", "renewal", "promo", "listing_pack", "badge"]);
 
-const KIND_SUBLABEL: Record<string, string> = {
-  listing_fee: "Votre annonce est publiée dès que notre équipe l'a vérifiée.",
-  renewal: "Votre annonce reste en ligne pour une nouvelle période.",
-  promo: "La mise en avant s'active dès la validation du paiement.",
-  listing_pack: "Vos crédits d'annonce sont disponibles dans votre compte.",
-  badge: "Le badge apparaît sur vos annonces après vérification.",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  pending: "Reçu à téléverser",
-  pending_review: "Reçu en vérification",
-  captured: "Confirmé",
-  failed: "Refusé",
-  refunded: "Remboursé",
-};
+/** Statuses with a label under `payment.success.status`. */
+const STATUSES = new Set(["pending", "pending_review", "captured", "failed", "refunded"]);
 
 /** Where each kind of payment leaves the payer once it is confirmed. */
 function destinationFor(kind: string): string {
@@ -68,6 +51,7 @@ export default async function PaymentSuccess({
   const id = Array.isArray(rawParams.id) ? rawParams.id[0] : rawParams.id;
   const returnUrl = Array.isArray(rawParams.return) ? rawParams.return[0] : rawParams.return;
   const locale = await getLocale();
+  const t = await getTranslations("payment.success");
   // `startsWith("/")` alone let `?return=//evil.example` through — a
   // protocol-relative URL, auto-followed by SuccessAutoRedirect below.
   const safeReturn = safeInternalPath(returnUrl, "/account/payments");
@@ -77,9 +61,10 @@ export default async function PaymentSuccess({
   if (!id) {
     return (
       <SuccessShell
-        title="Paiement reçu"
-        body="Nous avons enregistré votre paiement. Vous serez notifié dès que tout est confirmé."
+        title={t("receivedTitle")}
+        body={t("receivedBody")}
         returnUrl={safeReturn}
+        back={t("back")}
       />
     );
   }
@@ -103,18 +88,23 @@ export default async function PaymentSuccess({
   if (!payment) {
     return (
       <SuccessShell
-        title="Reçu introuvable"
-        body="Nous n'avons pas trouvé ce paiement. Si la somme a été débitée, contactez le support avec le numéro de référence ci-dessus."
+        title={t("notFoundTitle")}
+        body={t("notFoundBody")}
         returnUrl={safeReturn}
-        id={id}
+        back={t("back")}
+        refLine={t.rich("refLine", { id, ref: (chunks) => <Ltr>{chunks}</Ltr> })}
       />
     );
   }
 
-  const kindLabel = KIND_LABEL[payment.kind as string] ?? "Paiement reçu";
-  const subLabel =
-    KIND_SUBLABEL[payment.kind as string] ??
-    "Nous avons enregistré votre paiement.";
+  const kind = payment.kind as string;
+  const kindLabel = KINDS.has(kind) ? t(`kind.${kind}`) : t("receivedTitle");
+  const subLabel = KINDS.has(kind) ? t(`kindBody.${kind}`) : t("defaultBody");
+  const status = payment.status as string;
+  // Every payment is in dinars; say so in the reader's language.
+  const tc = await getTranslations("common");
+  const currency =
+    payment.currency === "TND" || !payment.currency ? tc("tnd") : (payment.currency as string);
   const isCaptured = payment.status === "captured";
   // A refused receipt (or a cancelled payment) used to land here and read
   // « Frais de publication réglés » under a spinner that never stopped.
@@ -155,44 +145,39 @@ export default async function PaymentSuccess({
         </div>
 
         <div className="mt-5 text-[10px] uppercase tracking-[0.18em] font-extrabold text-[var(--gold)]">
-          {isCaptured ? "Paiement confirmé" : isFailed ? "Reçu refusé" : "En attente de confirmation"}
+          {isCaptured ? t("eyebrowConfirmed") : isFailed ? t("eyebrowRejected") : t("eyebrowWaiting")}
         </div>
         <h1 className="mt-1 text-2xl font-extrabold tracking-tight">
           {kindLabel}
         </h1>
         <p className="mt-2 text-sm text-[var(--foreground-muted)] leading-relaxed">
-          {isFailed
-            ? "Votre reçu n'a pas été validé. Rien n'a été encaissé — vous pouvez relancer le paiement et envoyer un nouveau justificatif."
-            : subLabel}
+          {isFailed ? t("failedBody") : subLabel}
         </p>
 
         {isFailed && listingId && (
           <div className="mt-5">
-            <PaySubmitButton listingId={listingId} block label="Payer à nouveau" />
+            <PaySubmitButton listingId={listingId} block label={t("payAgain")} />
           </div>
         )}
 
         {/* TX details */}
         <dl className="mt-6 space-y-2 rounded-[var(--radius)] bg-[var(--surface-2)] p-4 text-start">
-          <Row label="Montant">
+          <Row label={t("amount")}>
             <span className="mazed-tabular font-bold gradient-gold-text">
-              {formatTND(Number(payment.amount), locale)} {payment.currency}
+              {formatTND(Number(payment.amount), locale)} {currency}
             </span>
           </Row>
-          <Row label="Référence">
-            <span className="font-mono text-[11px] text-foreground">
+          <Row label={t("reference")}>
+            <Ltr className="font-mono text-[11px] text-foreground">
               {payment.id.slice(0, 8)}…{payment.id.slice(-4)}
-            </span>
+            </Ltr>
           </Row>
-          <Row label="Date">
+          <Row label={t("date")}>
             <span className="font-mono text-[11px] text-foreground">
-              {new Date(payment.created_at).toLocaleString("fr-FR", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })}
+              {formatDate(payment.created_at, locale, "dateTime")}
             </span>
           </Row>
-          <Row label="Statut">
+          <Row label={t("statusLabel")}>
             {/* Light-theme tones. `text-emerald-300` / `text-amber-300` were
                 chosen for a dark page and sat at ~1.6:1 on this one. */}
             <span
@@ -200,7 +185,7 @@ export default async function PaymentSuccess({
                 isCaptured ? "mazed-tone-ok" : "mazed-tone-warn"
               }`}
             >
-              {STATUS_LABEL[payment.status as string] ?? payment.status}
+              {STATUSES.has(status) ? t(`status.${status}`) : status}
             </span>
           </Row>
         </dl>
@@ -210,7 +195,7 @@ export default async function PaymentSuccess({
           <>
             <p className="mt-5 text-[11px] text-[var(--foreground-subtle)] inline-flex items-center justify-center gap-1.5">
               <Loader2 className="h-3 w-3 animate-spin" />
-              Redirection automatique…
+              {t("redirecting")}
             </p>
             {/* The primary button, not a gold gradient with black ink: with
                 the ink palette `--gold` is #27272a, so that was black text on
@@ -219,8 +204,8 @@ export default async function PaymentSuccess({
               href={dest}
               className="mazed-btn-luxe mt-3 w-full h-12 text-[14px]"
             >
-              Continuer
-              <ArrowRight className="h-4 w-4" />
+              {t("continue")}
+              <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />
             </Link>
           </>
         ) : (
@@ -228,7 +213,7 @@ export default async function PaymentSuccess({
             href={dest}
             className="mt-5 inline-flex items-center justify-center gap-2 w-full h-12 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] text-foreground font-semibold text-[14px] hover:border-[var(--gold-soft)] transition-colors"
           >
-            Retour
+            {t("back")}
           </Link>
         )}
       </div>
@@ -240,12 +225,15 @@ function SuccessShell({
   title,
   body,
   returnUrl,
-  id,
+  back,
+  refLine,
 }: {
   title: string;
   body: string;
   returnUrl: string;
-  id?: string;
+  back: string;
+  /** « Réf · <id> », when there is a payment id to quote to support. */
+  refLine?: React.ReactNode;
 }) {
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-var(--desktop-nav-h))] w-full max-w-md flex-col items-center justify-center px-4 py-10">
@@ -255,16 +243,16 @@ function SuccessShell({
         </div>
         <h1 className="mt-4 text-xl font-extrabold">{title}</h1>
         <p className="mt-2 text-sm text-[var(--foreground-muted)]">{body}</p>
-        {id && (
+        {refLine && (
           <p className="mt-3 font-mono text-[10px] text-[var(--foreground-subtle)]">
-            Réf · {id}
+            {refLine}
           </p>
         )}
         <Link
           href={returnUrl as `/${string}`}
           className="mt-5 inline-flex items-center justify-center gap-2 w-full h-11 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] text-foreground font-semibold text-[13px] hover:border-[var(--gold-soft)] transition-colors"
         >
-          Retour
+          {back}
         </Link>
       </div>
     </div>

@@ -2,7 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useToast } from "@/components/ui/Toast";
+import { useApiError } from "@/lib/useApiError";
+import { formatDate } from "@/lib/utils";
+import { governorateLabel } from "@/lib/tunisia";
 import {
   Loader2, Star, ArrowUpToLine, Megaphone, ImageOff, Check, X,
 } from "lucide-react";
@@ -24,6 +28,9 @@ export type HomeRow = {
 const DAYS = [7, 30, 90, 0];
 
 export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
+  const t = useTranslations("adminHome");
+  const locale = useLocale();
+  const apiError = useApiError();
   const router = useRouter();
   const { toast } = useToast();
   const [busy, setBusy] = useState<string | null>(null);
@@ -55,10 +62,10 @@ export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast(j.error ?? "Échec.", "error");
+        toast(apiError(j, t("failed")), "error");
         return;
       }
-      toast(cur.home || cur.top || cur.banner ? "Mise en vedette appliquée." : "Retirée de la vedette.", "success");
+      toast(cur.home || cur.top || cur.banner ? t("featureApplied") : t("featureRemoved"), "success");
       setOpen(null);
       start(() => router.refresh());
     } finally {
@@ -84,25 +91,27 @@ export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[14px] font-bold text-foreground">{r.title}</div>
-                <div className="mt-0.5 text-[11px] text-muted">{r.governorate}</div>
+                <div className="mt-0.5 text-[11px] text-muted">{governorateLabel(r.governorate, locale)}</div>
                 {/* Current placement chips */}
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   {r.featured ? (
                     <>
-                      {r.home && <Chip icon={<Star className="size-2.5" />} label="Accueil" />}
-                      {r.top && <Chip icon={<ArrowUpToLine className="size-2.5" />} label="Top" />}
-                      {r.banner && <Chip icon={<Megaphone className="size-2.5" />} label="Bannière" />}
+                      {r.home && <Chip icon={<Star className="size-2.5" />} label={t("placements.home")} />}
+                      {r.top && <Chip icon={<ArrowUpToLine className="size-2.5" />} label={t("placements.top")} />}
+                      {r.banner && <Chip icon={<Megaphone className="size-2.5" />} label={t("placements.banner")} />}
                       <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.12em] ${r.manual ? "bg-sky-50 text-sky-700" : "mazed-tone-ok"}`}>
-                        {r.manual ? "Manuel" : "Payé"}
+                        {r.manual ? t("manual") : t("paid")}
                       </span>
                       {r.expiresAt && (
                         <span className="text-[10px] text-muted">
-                          exp. {new Date(r.expiresAt).toLocaleDateString("fr-FR")}
+                          {t("expires", { date: formatDate(r.expiresAt, locale, "short") })}
                         </span>
                       )}
                     </>
                   ) : (
-                    <span className="text-[11px] text-muted">Non mise en avant{r.expired ? " (expirée)" : ""}</span>
+                    <span className="text-[11px] text-muted">
+                      {r.expired ? t("notFeaturedExpired") : t("notFeatured")}
+                    </span>
                   )}
                 </div>
               </div>
@@ -114,7 +123,7 @@ export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
                     onClick={() => apply(r.id, { home: false, top: false, banner: false })}
                     className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-[var(--danger)] hover:bg-[var(--accent-faint)] disabled:opacity-50"
                   >
-                    <X className="size-3.5" /> Retirer
+                    <X className="size-3.5" /> {t("remove")}
                   </button>
                 )}
                 <button
@@ -122,7 +131,7 @@ export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
                   onClick={() => setOpen(isOpen ? null : r.id)}
                   className="inline-flex items-center gap-1 rounded-lg bg-mazed-gold/12 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-mazed-gold-bright ring-1 ring-mazed-gold/30 hover:bg-mazed-gold/20"
                 >
-                  {r.featured ? "Modifier" : "Mettre en vedette"}
+                  {r.featured ? t("edit") : t("feature")}
                 </button>
               </div>
             </div>
@@ -130,12 +139,12 @@ export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
             {isOpen && (
               <div className="border-t border-border bg-surface-2/40 p-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Toggle on={e.home} label="Accueil" icon={<Star className="size-3" />} onClick={() => set(r.id, { home: !e.home })} />
-                  <Toggle on={e.top} label="Top recherche" icon={<ArrowUpToLine className="size-3" />} onClick={() => set(r.id, { top: !e.top })} />
-                  <Toggle on={e.banner} label="Bannière" icon={<Megaphone className="size-3" />} onClick={() => set(r.id, { banner: !e.banner })} />
+                  <Toggle on={e.home} label={t("placements.home")} icon={<Star className="size-3" />} onClick={() => set(r.id, { home: !e.home })} />
+                  <Toggle on={e.top} label={t("placements.topSearch")} icon={<ArrowUpToLine className="size-3" />} onClick={() => set(r.id, { top: !e.top })} />
+                  <Toggle on={e.banner} label={t("placements.banner")} icon={<Megaphone className="size-3" />} onClick={() => set(r.id, { banner: !e.banner })} />
                 </div>
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] font-semibold text-muted">Durée :</span>
+                  <span className="text-[11px] font-semibold text-muted">{t("duration")}</span>
                   {DAYS.map((d) => (
                     <button
                       key={d}
@@ -146,7 +155,7 @@ export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
                         (e.days === d ? "bg-gold text-white" : "bg-surface text-foreground ring-1 ring-border hover:ring-gold-soft")
                       }
                     >
-                      {d === 0 ? "Sans expiration" : `${d} j`}
+                      {d === 0 ? t("noExpiry") : t("days", { days: d })}
                     </button>
                   ))}
                   <button
@@ -156,7 +165,7 @@ export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
                     className="mazed-btn-luxe tap-target ms-auto inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] disabled:opacity-50"
                   >
                     {busy === r.id ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" strokeWidth={2.5} />}
-                    Appliquer
+                    {t("apply")}
                   </button>
                 </div>
               </div>
@@ -166,7 +175,7 @@ export function HomeControlClient({ rows }: { rows: HomeRow[] }) {
       })}
       {rows.length === 0 && (
         <li className="rounded-2xl border border-dashed border-border px-4 py-8 text-center text-[12px] text-muted">
-          Aucune annonce publiée pour le moment.
+          {t("empty")}
         </li>
       )}
     </ul>

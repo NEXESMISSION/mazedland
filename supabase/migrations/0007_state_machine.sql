@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — auction state machine + payment side effects
+-- Mazed Immo — auction state machine + payment side effects
 --
 -- Closes audit items:
 --   H2  No automated transitions: scheduled→live, live→ended_*,

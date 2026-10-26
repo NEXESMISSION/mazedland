@@ -4,6 +4,8 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslator } from "@/lib/i18n/server";
+import { asDealType, closedStatus } from "@/lib/listings/deal";
 
 /**
  * POST /api/annonces/[id]/status - what a seller can do to their own annonce
@@ -14,9 +16,15 @@ import { fail } from "@/lib/http/errors";
  * and kept answering calls about something that no longer exists. Both make
  * the catalogue less true, which is the one thing it has to be.
  *
- *   { action: "mark_sold" }   published | expired  -> sold
+ *   { action: "mark_sold" }   published | expired  -> sold (rented, for a rental)
  *   { action: "withdraw" }    published            -> archived
- *   { action: "relist" }      sold | archived      -> published
+ *   { action: "relist" }      sold | rented | archived -> published
+ *   { action: "reserve" }     published, available -> availability reserved
+ *   { action: "unreserve" }   published, reserved  -> availability available
+ *
+ * « Réservé » keeps the annonce in the catalogue with a badge: a flat promised
+ * to someone who has not signed yet is still worth a call from the next
+ * person, and taking it down would lose them if the first one walks away.
  *
  * `relist` is what makes the first two safe to offer. Coming down leaves
  * `expires_at` alone, so the days already paid for keep running: putting the
@@ -27,19 +35,18 @@ import { fail } from "@/lib/http/errors";
  * the window has run out, /renew takes over and it is paid for again.
  */
 
-type Action = "mark_sold" | "withdraw" | "relist";
+type Action = "mark_sold" | "withdraw" | "relist" | "reserve" | "unreserve";
 
 const ALLOWED: Record<Action, string[]> = {
   mark_sold: ["published", "expired"],
   withdraw: ["published"],
-  relist: ["sold", "archived"],
+  relist: ["sold", "rented", "archived"],
+  reserve: ["published"],
+  unreserve: ["published"],
 };
 
-const REFUSAL: Record<Action, string> = {
-  mark_sold: "Seule une annonce en ligne peut être marquée vendue.",
-  withdraw: "Cette annonce n'est pas en ligne.",
-  relist: "Cette annonce est déjà en ligne ou en cours de traitement.",
-};
+// Why each action is refused from the wrong status: the sentence is
+// `accountApi.status.refusal.<action>`, in the seller's language.
 
 export async function POST(
   req: NextRequest,
@@ -65,7 +72,7 @@ export async function POST(
 
   const { data: listing } = await admin
     .from("listings")
-    .select("id, seller_id, status, expires_at, contact_phone")
+    .select("id, seller_id, status, expires_at, contact_phone, deal_type, availability")
     .eq("id", id)
     .maybeSingle();
   if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
@@ -75,8 +82,9 @@ export async function POST(
 
   const status = listing.status as string;
   if (!ALLOWED[action].includes(status)) {
+    const t = await apiTranslator(req, "accountApi.status");
     return NextResponse.json(
-      { error: "wrong_status", detail: REFUSAL[action] },
+      { error: "wrong_status", detail: t(`refusal.${action}`) },
       { status: 409 },
     );
   }
@@ -85,17 +93,16 @@ export async function POST(
   if (action === "relist") {
     const until = listing.expires_at ? new Date(listing.expires_at as string).getTime() : 0;
     if (!until || until <= Date.now()) {
+      const t = await apiTranslator(req, "accountApi.status");
       return NextResponse.json(
-        {
-          error: "window_closed",
-          detail: "Votre période de publication est terminée — renouvelez l'annonce.",
-        },
+        { error: "window_closed", detail: t("windowClosed") },
         { status: 409 },
       );
     }
     if (!listing.contact_phone) {
+      const t = await apiTranslator(req, "accountApi.status");
       return NextResponse.json(
-        { error: "contact_required", detail: "Ajoutez un numéro joignable avant de republier." },
+        { error: "contact_required", detail: t("contactRequired") },
         { status: 400 },
       );
     }
@@ -104,7 +111,7 @@ export async function POST(
     // the catalogue instead of jumping to the top of the newest rail.
     const { error } = await admin
       .from("listings")
-      .update({ status: "published", rejection_reason: null })
+      .update({ status: "published", rejection_reason: null, availability: "available" })
       .eq("id", id);
     if (error) return fail("listing_relist_failed", 500, error);
 
@@ -112,7 +119,15 @@ export async function POST(
     return NextResponse.json({ ok: true, status: "published", expires_at: listing.expires_at });
   }
 
-  const next = action === "mark_sold" ? "sold" : "archived";
+  if (action === "reserve" || action === "unreserve") {
+    const availability = action === "reserve" ? "reserved" : "available";
+    const { error } = await admin.from("listings").update({ availability }).eq("id", id);
+    if (error) return fail("listing_status_failed", 500, error);
+    logAction(req, user, `listing.${action}`, { id });
+    return NextResponse.json({ ok: true, status, availability, expires_at: listing.expires_at });
+  }
+
+  const next = action === "mark_sold" ? closedStatus(asDealType(listing.deal_type)) : "archived";
   const { error } = await admin
     .from("listings")
     .update({ status: next })

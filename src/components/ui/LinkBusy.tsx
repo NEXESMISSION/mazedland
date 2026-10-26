@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 /**
  * "This is the one you tapped."
@@ -34,7 +35,7 @@ const GIVE_UP_MS = 8000;
 
 export function LinkBusy({
   variant = "overlay",
-  label = "Chargement",
+  label: labelProp,
 }: {
   /**
    * "overlay" dims the whole card and floats a ring on it — for image cards,
@@ -42,8 +43,11 @@ export function LinkBusy({
    * "inline" is a ring that sits in the flow — for text links and list rows.
    */
   variant?: "overlay" | "inline";
+  /** Screen-reader text; "Chargement" in the page's language by default. */
   label?: string;
 }) {
+  const t = useTranslations("ui");
+  const label = labelProp ?? t("loading");
   const [busy, setBusy] = useState(false);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const pathname = usePathname();

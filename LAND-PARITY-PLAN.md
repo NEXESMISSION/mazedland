@@ -15,7 +15,7 @@ live auction.
 
 ## 1. Where the two actually stand
 
-Measured 2026-09-07 against both live Supabase projects (Land: `batta`,
+Measured 2026-09-07 against both live Supabase projects (Land: `sajxoovrsoacfnytiijv`,
 eu-west-1 · Auto: `jxwsbmniubiuujeblwbt`). Separate projects — nothing here
 touches Auto.
 

@@ -13,9 +13,15 @@ import { Link } from "@/i18n/navigation";
  *     whole auth quartet is visually coherent (previously this collapsed to a
  *     lonely 384px card on a vast empty desktop field).
  */
-export const metadata: Metadata = {
-  title: "Mot de passe oublié — Mazed Immo",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "auth.forgot" });
+  return { title: t("metaTitle") };
+}
 
 export default async function ForgotPasswordPage() {
   const t = await getTranslations();
@@ -42,10 +48,10 @@ export default async function ForgotPasswordPage() {
               isRTL ? "font-arabic" : ""
             }`}
           >
-            <span className="gradient-gold-text">Mot de passe oublié</span>
+            <span className="gradient-gold-text">{t("auth.forgot.title")}</span>
           </h1>
           <p className="mt-2 text-[12.5px] text-muted">
-            Entrez votre numéro — nous vous enverrons un code SMS pour réinitialiser votre mot de passe.
+            {t("auth.forgot.intro")}
           </p>
         </div>
 
@@ -56,12 +62,12 @@ export default async function ForgotPasswordPage() {
 
       <div className="border-t border-border bg-surface-2 px-7 py-4 text-center sm:px-8">
         <p className="text-[12.5px] text-muted">
-          Vous vous en souvenez ?{" "}
+          {t("auth.forgot.remember")}{" "}
           <Link
             href="/login"
             className="font-bold text-foreground transition hover:text-gold-bright"
           >
-            Se connecter
+            {t("auth.forgot.signIn")}
           </Link>
         </p>
       </div>
@@ -75,7 +81,7 @@ export default async function ForgotPasswordPage() {
         <div className="relative w-full max-w-sm">
           <div
             aria-hidden
-            className="mazed-gradient-blob mazed-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
+            className="mazed-gradient-blob mazed-gradient-blob-lg absolute -start-1/3 -top-1/4 -z-10 opacity-20"
           />
           {Card}
         </div>

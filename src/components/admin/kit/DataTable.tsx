@@ -28,6 +28,7 @@ export type Column = {
   label: React.ReactNode;
   /** Grid track. Defaults to `minmax(0,1fr)`; use `120px` for fixed columns. */
   width?: string;
+  /** "right" means the trailing edge — the left one on an Arabic page. */
   align?: "left" | "right";
   /** Hide this column below a breakpoint — the phone gets the essentials. */
   hideBelow?: "sm" | "md" | "lg";
@@ -78,7 +79,7 @@ export function DataTable({
           <div
             key={c.key}
             role="columnheader"
-            className={`truncate ${c.align === "right" ? "text-right" : ""} ${
+            className={`truncate ${c.align === "right" ? "text-end" : ""} ${
               c.hideBelow ? HIDE[c.hideBelow] : ""
             }`}
           >
@@ -97,7 +98,7 @@ export function DataTable({
                   key={c.key}
                   role="cell"
                   className={`min-w-0 self-center text-[13px] text-foreground ${
-                    c.align === "right" ? "text-right" : ""
+                    c.align === "right" ? "text-end" : ""
                   } ${c.hideBelow ? HIDE[c.hideBelow] : ""}`}
                 >
                   {row.cells[c.key] ?? <span className="text-subtle">—</span>}

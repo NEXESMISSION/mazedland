@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { paymentInstructions, fetchPayeeDetails, usablePayeeMethods } from "@/lib/payments";
@@ -87,10 +87,12 @@ export default async function CheckoutEntry({
   // Only offer a method whose details are real — see usablePayeeMethods. With
   // none, refuse to take payment rather than print a fake account.
   const usable = usablePayeeMethods(payee);
+  const tInstructions = await getTranslations("checkout.instructions");
   const instructions = paymentInstructions({
     paymentId: pay.id as string,
     amountTND: Number(pay.amount),
     payee,
+    t: (key, values) => tInstructions(key, values),
   }).filter((m) => usable[m.value as "bank_transfer" | "d17"]);
   if (instructions.length === 0) return <PaymentUnavailable />;
 
@@ -152,24 +154,24 @@ async function fetchListingSummary(listingId: string | undefined) {
  * Shown instead of transfer instructions when no payment method has real
  * details. Refusing is the point: see `usablePayeeMethods`.
  */
-function PaymentUnavailable() {
+async function PaymentUnavailable() {
+  const t = await getTranslations("checkout.unavailable");
   return (
     <div className="mx-auto flex min-h-[60dvh] w-full max-w-md flex-col items-center justify-center px-4 py-10 text-center">
       <div className="w-full rounded-2xl border border-border bg-surface p-7">
-        <h1 className="text-xl font-extrabold tracking-tight">Paiement momentanément indisponible</h1>
+        <h1 className="text-xl font-extrabold tracking-tight">{t("title")}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          Nos coordonnées de paiement sont en cours de mise à jour. Votre annonce est enregistrée :
-          revenez un peu plus tard, ou contactez-nous pour finaliser la publication.
+          {t("body")}
         </p>
         <div className="mt-6 space-y-2">
           <Link href="/account/listings" className="mazed-btn-luxe h-12 w-full text-[14px]">
-            Mes annonces
+            {t("myListings")}
           </Link>
           <Link
             href="/contact"
             className="inline-flex h-11 w-full items-center justify-center rounded-[var(--radius)] border border-border bg-surface-2 text-[13px] font-semibold text-foreground"
           >
-            Contacter le support
+            {t("support")}
           </Link>
         </div>
       </div>

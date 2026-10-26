@@ -4,6 +4,9 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslator } from "@/lib/i18n/server";
+import { listingFields, listingPhotos, num, text, type ListingBody } from "@/lib/listings/input";
+import { can, roleIn } from "@/lib/pro/shops";
 
 /**
  * POST /api/annonces — create or update the seller's draft listing.
@@ -25,48 +28,6 @@ import { fail } from "@/lib/http/errors";
  *   • the attestation timestamp — server clock, on the version string only
  */
 
-type Body = {
-  id?: unknown;
-  category_id?: unknown;
-  title?: unknown;
-  description?: unknown;
-  price?: unknown;
-  negotiable?: unknown;
-  price_on_request?: unknown;
-  governorate?: unknown;
-  delegation?: unknown;
-  address?: unknown;
-  attributes?: unknown;
-  contact_name?: unknown;
-  contact_phone?: unknown;
-  contact_whatsapp?: unknown;
-  show_phone?: unknown;
-  attestation_version?: unknown;
-  photos?: unknown;    // [{ storage_path, sort_order }]
-};
-
-const MAX_PHOTOS = 12;
-
-function text(v: unknown, max: number): string | null {
-  if (typeof v !== "string") return null;
-  const s = v.trim();
-  return s ? s.slice(0, max) : null;
-}
-
-function num(v: unknown): number | null {
-  const n = Number(v);
-  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
-}
-
-/** Tunisian mobile/landline, loosely: +216 XX XXX XXX or 8 local digits. */
-function phone(v: unknown): string | null {
-  const raw = text(v, 24);
-  if (!raw) return null;
-  const digits = raw.replace(/[^\d+]/g, "");
-  if (digits.replace(/\D/g, "").length < 8) return null;
-  return digits.slice(0, 20);
-}
-
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
@@ -79,7 +40,7 @@ export async function POST(req: NextRequest) {
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
-  const body = (await req.json().catch(() => ({}))) as Body;
+  const body = (await req.json().catch(() => ({}))) as ListingBody;
 
   const categoryId = text(body.category_id, 40);
   const title = text(body.title, 140);
@@ -87,8 +48,9 @@ export async function POST(req: NextRequest) {
 
   const id = text(body.id, 40);
   if (!id && (!categoryId || !title || !governorate)) {
+    const t = await apiTranslator(req, "publishApi");
     return NextResponse.json(
-      { error: "incomplete", detail: "Catégorie, titre et gouvernorat sont requis." },
+      { error: "incomplete", detail: t("incomplete") },
       { status: 400 },
     );
   }
@@ -105,8 +67,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "bad_category" }, { status: 400 });
     }
     if (cat.parent_id == null) {
+      const t = await apiTranslator(req, "publishApi");
       return NextResponse.json(
-        { error: "category_not_leaf", detail: "Choisissez une sous-catégorie." },
+        { error: "category_not_leaf", detail: t("categoryNotLeaf") },
         { status: 400 },
       );
     }
@@ -115,34 +78,27 @@ export async function POST(req: NextRequest) {
   const priceOnRequest = body.price_on_request === true;
   const price = num(body.price);
   if (!priceOnRequest && price == null && !id) {
+    const t = await apiTranslator(req, "publishApi");
     return NextResponse.json(
-      { error: "price_required", detail: "Indiquez un prix, ou cochez « prix sur demande »." },
+      { error: "price_required", detail: t("priceRequired") },
       { status: 400 },
     );
   }
 
-  const fields: Record<string, unknown> = {};
-  if (categoryId) fields.category_id = categoryId;
-  if (title) fields.title = title;
-  if ("description" in body) fields.description = text(body.description, 4000);
-  if ("price" in body || "price_on_request" in body) {
-    fields.price = priceOnRequest ? null : price;
-    fields.price_on_request = priceOnRequest;
-  }
-  if ("negotiable" in body) fields.negotiable = body.negotiable === true;
-  if (governorate) fields.governorate = governorate;
-  if ("delegation" in body) fields.delegation = text(body.delegation, 60);
-  if ("address" in body) fields.address = text(body.address, 200);
-  if ("attributes" in body && body.attributes && typeof body.attributes === "object") {
-    fields.attributes = body.attributes;
-  }
-  if ("contact_name" in body) fields.contact_name = text(body.contact_name, 80);
-  if ("contact_phone" in body) fields.contact_phone = phone(body.contact_phone);
-  if ("contact_whatsapp" in body) fields.contact_whatsapp = phone(body.contact_whatsapp);
-  if ("show_phone" in body) fields.show_phone = body.show_phone !== false;
-  if ("attestation_version" in body) {
-    // Version only — the trigger stamps the moment with the server clock.
-    fields.seller_attestation_version = text(body.attestation_version, 20);
+  const fields = listingFields(body);
+
+  // Published for a shop (0173): only one the seller may publish for.
+  if ("shop_id" in body) {
+    const shopId = text((body as Record<string, unknown>).shop_id, 40);
+    if (shopId) {
+      const [role, { data: shop }] = await Promise.all([
+        roleIn(admin, shopId, user.id),
+        admin.from("shops").select("status").eq("id", shopId).maybeSingle(),
+      ]);
+      // A shop that is not open has no page to show the annonce on.
+      if (!can(role, "publish") || shop?.status !== "approved") return NextResponse.json({ error: "not_owner" }, { status: 403 });
+    }
+    fields.shop_id = shopId;
   }
 
   let listingId = id;
@@ -156,13 +112,14 @@ export async function POST(req: NextRequest) {
     if (!owned || owned.seller_id !== user.id) {
       return NextResponse.json({ error: "not_owner" }, { status: 403 });
     }
-    // A live listing is edited through its own flow, not by re-running the
-    // wizard: silently rewriting a published annonce would skip moderation.
-    // On a property site that is the difference between a price correction and
+    // A live listing is edited through its own flow (POST /api/annonces/:id/edit,
+    // 0172), checked by the moderation rules before it replaces what is online:
+    // on a property site that is the difference between a price correction and
     // a bait-and-switch.
     if (!["draft", "rejected", "pending_payment"].includes(owned.status as string)) {
+      const t = await apiTranslator(req, "publishApi");
       return NextResponse.json(
-        { error: "not_editable", detail: "Cette annonce est déjà en cours de traitement." },
+        { error: "not_editable", detail: t("notEditable") },
         { status: 409 },
       );
     }
@@ -182,21 +139,13 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Photos: the wizard uploads to storage first, then sends the paths ─────
-  if (Array.isArray(body.photos)) {
-    const rows = body.photos
-      .slice(0, MAX_PHOTOS)
-      .map((p, i) => {
-        const o = (p ?? {}) as Record<string, unknown>;
-        const path = text(o.storage_path, 300);
-        return path ? { listing_id: listingId, storage_path: path, sort_order: i } : null;
-      })
-      .filter(Boolean) as { listing_id: string; storage_path: string; sort_order: number }[];
-
+  const photos = listingPhotos(body);
+  if (photos) {
     // Replace wholesale: the client sends the gallery as it should end up, so
     // reordering and removal need no separate endpoints.
     await admin.from("listing_photos").delete().eq("listing_id", listingId);
-    if (rows.length > 0) {
-      const { error } = await admin.from("listing_photos").insert(rows);
+    if (photos.length > 0) {
+      const { error } = await admin.from("listing_photos").insert(photos.map((p) => ({ ...p, listing_id: listingId })));
       if (error) return fail("photos_save_failed", 500, error);
     }
   }

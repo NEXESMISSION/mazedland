@@ -14,7 +14,8 @@ import { fail } from "@/lib/http/errors";
  * policies double-check the same condition (defense in depth).
  */
 
-const ROLES = ["individual", "agency", "bank", "bailiff", "inspector", "admin"] as const;
+// The auction roles (bank, bailiff, inspector) are retired (0171).
+const ROLES = ["individual", "agency", "admin"] as const;
 type Role = typeof ROLES[number];
 
 const VARIANTS = ["banner", "modal", "sheet"] as const;

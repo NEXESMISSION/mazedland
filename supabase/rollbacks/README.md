@@ -1,0 +1,26 @@
+# Rollbacks
+
+One script per migration applied since the cahier global V1 audit
+(2026-10-24), to undo it on the live database. Run with the same tool as the
+migrations, after a backup:
+
+```bash
+node scripts/backup-db.mjs
+```
+
+| Migration | Rollback | What is lost |
+|---|---|---|
+| 0175 invoices | `0175_invoices.down.sql` | every issued invoice and the numbering (reissue by hand) |
+| 0174 visits and leads | `0174_visits_and_leads.down.sql` | every visit request and every shop client |
+| 0173 pro shops | `0173_pro_shops.down.sql` | shops, teams, subscription periods (annonces stay, unlinked) |
+| 0172 pending edit | `0172_listing_pending_edit.down.sql` | edits waiting for an admin (the annonces are untouched) |
+| 0171 retire legacy roles | `0171_retire_legacy_roles.down.sql` | nothing: the six seed accounts get their old roles back |
+| 0170 social publisher | `0170_social_publisher.down.sql` | every promotion request, post id and link, group, sealed token, tracking event |
+| 0169 ai calls | `0169_ai_calls.down.sql` | the AI cost log |
+| 0168 demandes | `0168_property_requests.down.sql` | every demande and match |
+
+0163–0167 (Arabic notifications, free listings and auto-moderation, sale and
+rent, the publish guard) were applied before this folder existed. Their
+rollback is not scripted: 0166 added the enum value `rented`, which Postgres
+cannot remove without rebuilding the type, and its rent columns hold sellers'
+data. Undoing them means restoring a backup.

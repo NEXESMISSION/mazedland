@@ -6,6 +6,11 @@ import { ArrowUpRight, MapPin, Ruler, BedDouble } from "lucide-react";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
+import { CompareToggle } from "@/components/compare/CompareToggle";
+import { Ltr } from "@/components/ui/Ltr";
+import { categoryLabel } from "@/lib/i18n";
+import { governorateLabel } from "@/lib/tunisia";
+import { asDealType } from "@/lib/listings/deal";
 
 /**
  * One annonce, as a card.
@@ -46,8 +51,19 @@ export type AnnonceCardRow = {
   delegation: string | null;
   reference: string | null;
   attributes: Record<string, unknown> | null;
-  category: { label_fr: string } | { label_fr: string }[] | null;
+  /** `label_ar` is shown on Arabic pages when the caller's select includes it. */
+  category:
+    | { label_fr: string; label_ar?: string | null }
+    | { label_fr: string; label_ar?: string | null }[]
+    | null;
   photos: { storage_path: string; sort_order: number }[] | null;
+  /** 0166. Absent on a select that predates it: read as a sale. */
+  deal_type?: string | null;
+  availability?: string | null;
+  /** Paid placements (0156), when the caller's select includes them. */
+  promo_home_featured?: boolean | null;
+  promo_banner?: boolean | null;
+  promo_top_listed?: boolean | null;
 };
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
@@ -74,7 +90,10 @@ export async function AnnonceCard({
   const attrs = (listing.attributes ?? {}) as Record<string, unknown>;
   const area = Number(attrs.area_sqm);
   const rooms = Number(attrs.rooms);
-  const where = listing.delegation?.trim() || listing.governorate;
+  const where = listing.delegation?.trim() || governorateLabel(listing.governorate, locale);
+  const rent = asDealType(listing.deal_type) === "rent";
+  const promoted = Boolean(listing.promo_home_featured || listing.promo_banner || listing.promo_top_listed);
+  const reserved = listing.availability === "reserved";
 
   return (
     <div className="block">
@@ -119,24 +138,45 @@ export async function AnnonceCard({
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/45 to-transparent" />
 
           {/* Top-leading — the category. Same pill the auction type used. */}
-          {category && (
-            <div className="absolute top-2.5 start-2.5">
-              <span className="mazed-gold-fill inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
-                {category.label_fr}
-              </span>
+          {/* With a rental's « À louer » beside it: the first thing a buyer
+              and a tenant need to tell apart on a mixed rail. */}
+          {(category || rent || reserved || promoted) && (
+            <div className="absolute top-2.5 start-2.5 end-2.5 flex flex-wrap gap-1">
+              {/* A paid placement says it is one. */}
+              {promoted && (
+                <span className="inline-flex h-7 items-center rounded-full bg-white/90 px-2.5 text-[10px] font-extrabold uppercase tracking-wider text-foreground backdrop-blur-sm">
+                  {t("listing.promoted")}
+                </span>
+              )}
+              {category && (
+                <span className="mazed-gold-fill inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
+                  {categoryLabel(category, locale)}
+                </span>
+              )}
+              {rent && (
+                <span className="inline-flex h-7 items-center rounded-full bg-black/60 px-2.5 text-[10px] font-extrabold uppercase tracking-wider text-white backdrop-blur-sm">
+                  {t("listing.forRent")}
+                </span>
+              )}
+              {reserved && (
+                <span className="inline-flex h-7 items-center rounded-full bg-amber-500/90 px-2.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                  {t("listing.reserved")}
+                </span>
+              )}
             </div>
           )}
 
           {/* Bottom-leading — favourite. z-20 keeps it ABOVE the stretched
               card link (z-10) so its button still receives clicks. */}
-          <div className="absolute bottom-2.5 start-2.5 z-20">
+          <div className="absolute bottom-2.5 start-2.5 z-20 flex items-center gap-1.5">
             <FavoriteButton listingId={listing.id} initialSaved={saved} loggedIn={loggedIn} />
+            <CompareToggle listingId={listing.id} />
           </div>
 
           {/* Bottom-trailing — polished-brass arrow chip, rotates on hover. */}
           <div className="absolute bottom-2.5 end-2.5">
-            <span className="mazed-gold-fill gold-rim inline-flex h-9 w-9 items-center justify-center rounded-full transition-transform group-hover:scale-110 group-hover:rotate-45">
-              <ArrowUpRight className="size-4" strokeWidth={2.5} />
+            <span className="mazed-gold-fill gold-rim inline-flex h-9 w-9 items-center justify-center rounded-full transition-transform group-hover:scale-110 group-hover:rotate-45 rtl:group-hover:-rotate-45">
+              <ArrowUpRight className="size-4 rtl:-scale-x-100" strokeWidth={2.5} />
             </span>
           </div>
         </div>
@@ -156,9 +196,9 @@ export async function AnnonceCard({
               {listing.title}
             </h3>
             {listing.reference && (
-              <span className="mazed-tabular mt-0.5 shrink-0 font-mono text-[9px] font-bold tracking-[0.05em] text-subtle">
+              <Ltr className="mazed-tabular mt-0.5 shrink-0 font-mono text-[9px] font-bold tracking-[0.05em] text-subtle">
                 {listing.reference}
-              </span>
+              </Ltr>
             )}
           </div>
 
@@ -166,7 +206,7 @@ export async function AnnonceCard({
               reordered into "TND 261.000" inside an RTL container. */}
           <div className="flex items-center justify-between gap-2">
             {listing.price_on_request || listing.price == null ? (
-              <span className="text-[13px] font-bold text-muted">Prix sur demande</span>
+              <span className="text-[13px] font-bold text-muted">{t("listing.priceOnRequest")}</span>
             ) : (
               <span
                 dir="ltr"
@@ -174,13 +214,13 @@ export async function AnnonceCard({
               >
                 {formatTND(Number(listing.price), locale)}
                 <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
-                  {t("common.tnd")}
+                  {rent ? t("listing.tndPerMonth") : t("common.tnd")}
                 </span>
               </span>
             )}
             {listing.negotiable && !listing.price_on_request && (
               <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-                négociable
+                {t("listing.negotiable")}
               </span>
             )}
           </div>
@@ -194,13 +234,15 @@ export async function AnnonceCard({
             {Number.isFinite(area) && area > 0 && (
               <span className="mazed-tabular inline-flex shrink-0 items-center gap-1">
                 <Ruler className="size-3" strokeWidth={2} />
-                {formatNumber(area)} m²
+                {t("listing.areaValue", { area: formatNumber(area, locale) })}
               </span>
             )}
             {Number.isFinite(rooms) && rooms > 0 && (
               <span className="mazed-tabular inline-flex shrink-0 items-center gap-1">
                 <BedDouble className="size-3" strokeWidth={2} />
-                S+{rooms}
+                {/* Tunisian shorthand, written in Latin in both languages.
+                    Isolated so RTL does not turn "S+3" into "3+S". */}
+                <Ltr>S+{rooms}</Ltr>
               </span>
             )}
           </div>

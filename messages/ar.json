@@ -1,0 +1,3946 @@
+{
+  "brand": {
+    "name": "Mazed Immo",
+    "titleSuffix": "إعلانات العقارات في تونس",
+    "tagline": "إعلانات عقارية — أراضي، منازل ومحلات في كامل تونس",
+    "slogan": "السوم مكتوب، والبائع على الخط."
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "properties": "العقارات",
+    "auctions": "الإعلانات",
+    "inspectors": "شبكة الخبراء",
+    "howItWorks": "كيفاش تخدم",
+    "forBanks": "البنوك والوكالات",
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "myAccount": "حسابي",
+    "logout": "خروج",
+    "browse": "تصفّح",
+    "watchlist": "المفضّلة",
+    "account": "الحساب",
+    "myListings": "إعلاناتي",
+    "myFavorites": "المفضّلة",
+    "myPayments": "مدفوعاتي",
+    "sellProperty": "بيع عقار",
+    "adminConsole": "لوحة الإدارة",
+    "signOut": "تسجيل الخروج"
+  },
+  "shell": {
+    "back": "رجوع",
+    "skipToContent": "انتقل إلى المحتوى",
+    "tabs": {
+      "home": "الرئيسية",
+      "browse": "تصفّح",
+      "sell": "بيع",
+      "watchlist": "المفضّلة",
+      "activity": "النشاط",
+      "account": "الحساب"
+    },
+    "pageTitles": {
+      "annonces": "إعلان",
+      "annoncesNew": "نشر إعلان",
+      "properties": "العقارات",
+      "auctions": "الإعلانات",
+      "inspectors": "الخبراء",
+      "watchlist": "المفضّلة",
+      "account": "حسابي",
+      "login": "تسجيل الدخول",
+      "signup": "إنشاء حساب",
+      "kyc": "التحقق من الهوية",
+      "partners": "البنوك والوكالات",
+      "sell": "لوحة البائع",
+      "admin": "لوحة الإدارة",
+      "payment": "الدفع"
+    },
+    "mainNav": "التنقل الرئيسي",
+    "offline": "غير متصل — إعادة الاتصال تلقائيًا…",
+    "reconnected": "رجع الاتصال"
+  },
+  "accountPage": {
+    "guestTitle": "مرحبا بيك في Mazed Immo",
+    "guestBody": "سجّل دخولك باش تكمّل.",
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "browseWithoutAccount": "تصفّح بلا حساب",
+    "mySpace": "فضائي",
+    "adminBadge": "مشرف",
+    "notifications": "الإشعارات",
+    "signOut": "خروج",
+    "deleteAccount": "احذف حسابي",
+    "actions": {
+      "listingsTitle": "إعلاناتي",
+      "listingsBody": "المسودات والإعلانات المنشورة والمنتهية الصلاحية.",
+      "publishTitle": "حطّ إعلانك",
+      "publishBody": "أرض، منزل، شقة أو محل تجاري.",
+      "favoritesTitle": "المفضّلة",
+      "favoritesBody": "الإعلانات التي حفظتها.",
+      "paymentsTitle": "مدفوعاتي",
+      "paymentsBody": "معاليم النشر والخيارات ووصولات الدفع.",
+      "adminTitle": "لوحة الإدارة",
+      "adminBody": "الإعلانات والمدفوعات والبائعون.",
+      "requestsTitle": "طلباتي",
+      "requestsBody": "شنوّة نلوّج عليه، بالتنبيهات",
+      "settingsTitle": "الإعدادات",
+      "settingsBody": "الملف، الإشعارات، الخصوصية",
+      "proTitle": "فضاء برو",
+      "proBody": "البوتيك متاعك، الفريق والاشتراك.",
+      "proOpenTitle": "حلّ بوتيك",
+      "proOpenBody": "وكالة ولا باعث: صفحتك وإعلاناتك في مزاد إيمو.",
+      "visitsTitle": "زياراتي",
+      "visitsBody": "الزيارات اللي طلبتهم واللي وصلوك، والأجوبة متاعهم."
+    }
+  },
+  "account": {
+    "untitledDraft": "مسودة بلا عنوان",
+    "listings": {
+      "title": "إعلاناتي",
+      "subtitleEmpty": "مازلت ما نشرت حتى إعلان.",
+      "subtitleCount": "{count, plural, zero {ما عندك حتى إعلان.} one {إعلان واحد · تصرّف فيه من هنا.} two {إعلانين · تصرّف فيهم من هنا.} few {# إعلانات · تصرّف فيهم من هنا.} many {# إعلانًا · تصرّف فيهم من هنا.} other {# إعلان · تصرّف فيهم من هنا.}}",
+      "creditsLeft": "{count, plural, zero {ما بقى حتى إعلان في الباقة} one {إعلان واحد متبقٍّ} two {إعلانان متبقّيان} few {# إعلانات متبقّية} many {# إعلانًا متبقّيًا} other {# إعلان متبقٍّ}}",
+      "publish": "انشر",
+      "tabs": {
+        "all": "الكل",
+        "online": "منشورة",
+        "inProgress": "قيد المعالجة",
+        "toFix": "للتصحيح",
+        "ended": "منتهية"
+      },
+      "status": {
+        "draft": "مسودة",
+        "pending_payment": "في انتظار الدفع",
+        "pending_review": "قيد المراجعة",
+        "published": "منشور",
+        "rejected": "للتصحيح",
+        "expired": "منتهي الصلاحية",
+        "sold": "مُباع",
+        "archived": "مسحوب",
+        "reserved": "محجوز",
+        "rented": "مُؤجَّر"
+      },
+      "statusHint": {
+        "draft": "لم يُرسل بعد.",
+        "pending_payment": "ادفع معلوم النشر لبدء المراجعة.",
+        "pending_review": "فريقنا يراجعه — في أقل من 24 ساعة.",
+        "expired": "جدّده لإعادة نشره."
+      },
+      "receiptInReview": "الوصل قيد المراجعة",
+      "receiptInReviewHint": "نحن بصدد مراجعة وصلك — في أقل من 24 ساعة.",
+      "price": "{amount} د.ت",
+      "priceOnRequest": "عند الطلب",
+      "free": "مجاني",
+      "expiresToday": "ينتهي اليوم",
+      "daysLeft": "{days, plural, zero {ينتهي اليوم} one {يبقى منشورًا يومًا واحدًا} two {يبقى منشورًا يومين} few {يبقى منشورًا # أيام} many {يبقى منشورًا # يومًا} other {يبقى منشورًا # يوم}}",
+      "renewableOn": "· قابل للتجديد يوم {date}",
+      "columns": {
+        "listing": "الإعلان",
+        "status": "الحالة",
+        "price": "السعر",
+        "published": "تاريخ النشر",
+        "expires": "ينتهي في",
+        "action": "إجراء"
+      },
+      "today": "اليوم",
+      "inDays": "{days, plural, zero {اليوم} one {بعد يوم} two {بعد يومين} few {بعد # أيام} many {بعد # يومًا} other {بعد # يوم}}",
+      "viewReceipt": "شوف الوصل",
+      "pay": "خلّص",
+      "resume": "كمّل",
+      "fix": "صلّح",
+      "view": "شوف",
+      "emptyTitle": "ما فماش إعلانات توّا",
+      "emptyBody": "حطّ أول إعلان ليك — شقة، أرض ولا محل.",
+      "publishListing": "حطّ إعلانك",
+      "emptyTabTitle": "ما فما شي في « {tab} »",
+      "emptyTabBody": "بقية إعلاناتك في الخانات الأخرى.",
+      "seeAll": "شوف الإعلانات الكل",
+      "freePlaces": "{used}/{limit} إعلانات مجانية مستعملة",
+      "pricePerMonth": "{amount} د.ت في الشهر",
+      "promote": "روّج",
+      "edit": "بدّل",
+      "editPending": "تبديل في الانتظار",
+      "boost": "برّز الإعلان"
+    },
+    "listingActions": {
+      "mark_sold": {
+        "label": "تباع",
+        "title": "العقار هذا تباع؟",
+        "body": "سيُسحب الإعلان من الموقع وينتقل إلى « منتهية ». ما دامت الأيام المدفوعة سارية، يمكنك إعادة نشره مجانًا.",
+        "confirm": "إيه، تباع",
+        "done": "تسجّل الإعلان كمُباع. مبروك!"
+      },
+      "withdraw": {
+        "label": "نحّي",
+        "title": "تنحّي الإعلان هذا؟",
+        "body": "يختفي الإعلان من الموقع فورًا. تبقى أيام النشر سارية: يمكنك إعادة نشره مجانًا إلى غاية انتهائها.",
+        "confirm": "نحّيه من الموقع",
+        "done": "تنحّى الإعلان من الموقع."
+      },
+      "relist": {
+        "label": "رجّعه للموقع",
+        "title": "ترجّعه للموقع؟",
+        "body": "يرجع الإعلان إلى الموقع فورًا، دون مراجعة جديدة ودون أي معلوم — فهي أيام نشرك الحالي.",
+        "confirm": "رجّعه للموقع",
+        "done": "الإعلان رجع منشور."
+      },
+      "failed": "تعذّر تنفيذ الإجراء حاليًا.",
+      "networkError": "خطأ في الشبكة — تحقّق من اتصالك.",
+      "cancel": "إلغاء",
+      "mark_rented": {
+        "label": "تكرى",
+        "title": "العقار هذا تكرى؟",
+        "body": "سيُسحب الإعلان من الموقع وينتقل إلى « منتهية ». ما دامت الأيام المدفوعة سارية، يمكنك إعادة نشره مجانًا.",
+        "confirm": "إيه، تكرى",
+        "done": "تسجّل الإعلان كمُؤجَّر. مبروك!"
+      },
+      "reserve": {
+        "label": "محجوز",
+        "title": "تعلّمو محجوز؟",
+        "body": "الإعلان يبقى في الموقع وعليه «محجوز»: فما شكون التزم أما مازال ما صحّحش. كان ما تمّش، نحّي العلامة بنقرة.",
+        "confirm": "علّمو محجوز",
+        "done": "الإعلان تعلّم محجوز."
+      },
+      "unreserve": {
+        "label": "موش محجوز",
+        "title": "تنحّي علامة «محجوز»؟",
+        "body": "الإعلان يرجع متاح لكل الزوّار.",
+        "confirm": "نحّي العلامة",
+        "done": "الإعلان رجع متاح."
+      }
+    },
+    "renew": {
+      "failed": "تعذّر التجديد.",
+      "doneWithCredits": "أُعيد الإعلان إلى المراجعة. {remaining, plural, zero {لم يبقَ أي إعلان في باقتك} one {بقي إعلان واحد في باقتك} two {بقي إعلانان في باقتك} few {بقيت # إعلانات في باقتك} many {بقي # إعلانًا في باقتك} other {بقي # إعلان في باقتك}}.",
+      "done": "أُعيد الإعلان إلى المراجعة — في أقل من 24 ساعة.",
+      "networkError": "خطأ في الشبكة.",
+      "button": "جدّد",
+      "viaCredit": "إعلان واحد من الباقة",
+      "paid": "بمقابل",
+      "free": "بلاش",
+      "donePublished": "إعلانك رجع منشور."
+    },
+    "payments": {
+      "eyebrow": "السجل",
+      "title": "مدفوعاتي",
+      "emptySubtitle": "معاليم النشر الخاصة بك وحالتها.",
+      "subtitle": "معاليم النشر والخيارات وحالتها.",
+      "empty": "ما فماش مدفوعات توّا.",
+      "browse": "تصفّح الإعلانات",
+      "kind": {
+        "listing_fee": "معلوم النشر",
+        "renewal": "التجديد",
+        "promo": "الإبراز",
+        "listing_pack": "باقة إعلانات",
+        "badge": "شارة البائع"
+      },
+      "status": {
+        "pending": "في انتظار الوصل",
+        "pending_review": "الوصل قيد المراجعة",
+        "captured": "مدفوع",
+        "refunded": "مُسترجع",
+        "failed": "مرفوض",
+        "cancelled": "ملغى"
+      },
+      "provider": {
+        "bank_transfer": "تحويل بنكي",
+        "manual": "سجّلته الإدارة"
+      },
+      "action": {
+        "upload": "ارفع الوصل",
+        "review": "شوف / صلّح الوصل",
+        "resubmit": "ابعثه من جديد"
+      },
+      "cancelFailed": "تعذّر الإلغاء.",
+      "cancelDone": "تمّ إلغاء الدفع.",
+      "toHandle": "للمعالجة",
+      "tabs": {
+        "all": "الكل",
+        "action": "للمعالجة",
+        "paid": "مدفوعة",
+        "refunded": "مُسترجعة"
+      },
+      "spentTotal": "مجموع المدفوع",
+      "inReview": "قيد المراجعة",
+      "amount": "{amount} د.ت",
+      "rejectedWithReason": "مرفوض: {reason}",
+      "rejectedResubmit": "مرفوض — أعد إرساله",
+      "emptyFilter": "ما فماش مدفوعات في الخانة هذي.",
+      "rejectionReason": "سبب الرفض: {reason}",
+      "confirm": "أكّد",
+      "no": "لا",
+      "cancel": "إلغاء",
+      "receipt": "الوصل",
+      "viewListing": "شوف الإعلان",
+      "invoice": "فاتورة",
+      "invoiceReceipt": "وصل"
+    },
+    "favorites": {
+      "title": "المفضّلة",
+      "subtitleEmpty": "مازلت ما سجّلت حتى إعلان.",
+      "subtitleCount": "{count, plural, zero {ما فماش إعلانات مسجّلة.} one {إعلان واحد مسجّل.} two {إعلانان مسجّلان.} few {# إعلانات مسجّلة.} many {# إعلانًا مسجّلًا.} other {# إعلان مسجّل.}}",
+      "emptyBody": "اضغط على القلب في أي إعلان باش تلقاه هنا.",
+      "browse": "تصفّح الإعلانات",
+      "priceOnRequest": "السعر عند الطلب",
+      "onRequest": "عند الطلب",
+      "price": "{amount} د.ت",
+      "unavailable": "لم يعد متاحًا",
+      "pricePerMonth": "{amount} د.ت في الشهر"
+    },
+    "deleteAccount": {
+      "blockers": {
+        "active_listings": "أحد إعلاناتك قيد المراجعة. انتظر القرار قبل حذف حسابك.",
+        "pending_payments": "عملية دفع قيد المراجعة. انتظر المصادقة عليها قبل حذف حسابك."
+      },
+      "impossible": "تعذّر الحذف حاليًا.",
+      "blockerUnknown": "لا تزال هناك عملية جارية.",
+      "failed": "فشل الحذف. حاول لاحقًا.",
+      "deleted": "تمّ حذف حسابك.",
+      "networkError": "فشل الحذف. تحقّق من اتصالك.",
+      "confirmTitle": "حذف حسابك نهائيًا؟",
+      "confirmBody": "هذا الإجراء لا رجعة فيه. ستُمحى بياناتك الشخصية ووثائق هويتك. اكتب <strong>{word}</strong> للتأكيد.",
+      "confirmWord": "حذف",
+      "cancel": "إلغاء",
+      "deleting": "جاري الحذف…",
+      "delete": "احذف"
+    },
+    "sms": {
+      "enabled": "تمّ تفعيل رسائل SMS المهمّة.",
+      "disabled": "تمّ إيقاف رسائل SMS المهمّة.",
+      "failed": "فشل التحديث. حاول من جديد.",
+      "title": "رسائل SMS للتنبيهات المهمّة",
+      "body": "رسالة SMS عند نشر إعلانك أو رفضه، وعند اقتراب تاريخ سحبه، ومع كل قرار يخصّ الدفع. تبقى التفاصيل في التطبيق وعبر البريد الإلكتروني.",
+      "ariaLabel": "تفعيل رسائل SMS للتنبيهات المهمّة"
+    }
+  },
+  "payment": {
+    "payButton": {
+      "pay": "خلّص",
+      "failed": "تعذّر الدفع حاليًا.",
+      "sent": "أُرسل الإعلان إلى المراجعة.",
+      "networkError": "خطأ في الشبكة."
+    },
+    "success": {
+      "kind": {
+        "listing_fee": "تمّ دفع معلوم النشر",
+        "renewal": "تمّ دفع التجديد",
+        "promo": "تمّ دفع الإبراز",
+        "listing_pack": "تمّ دفع باقة الإعلانات",
+        "badge": "تمّ دفع شارة البائع"
+      },
+      "kindBody": {
+        "listing_fee": "يُنشر إعلانك بمجرّد أن يراجعه فريقنا.",
+        "renewal": "يبقى إعلانك منشورًا لفترة جديدة.",
+        "promo": "يتفعّل الإبراز بمجرّد المصادقة على الدفع.",
+        "listing_pack": "رصيد إعلاناتك متاح في حسابك.",
+        "badge": "تظهر الشارة على إعلاناتك بعد التحقّق."
+      },
+      "status": {
+        "pending": "في انتظار الوصل",
+        "pending_review": "الوصل قيد المراجعة",
+        "captured": "مؤكَّد",
+        "failed": "مرفوض",
+        "refunded": "مُسترجع"
+      },
+      "receivedTitle": "تمّ استلام الدفع",
+      "receivedBody": "سجّلنا عملية الدفع. سيصلك إشعار بمجرّد تأكيد كل شيء.",
+      "notFoundTitle": "الوصل غير موجود",
+      "notFoundBody": "لم نجد عملية الدفع هذه. إذا تمّ خصم المبلغ، اتصل بالدعم مع رقم المرجع المذكور.",
+      "defaultBody": "سجّلنا عملية الدفع.",
+      "eyebrowConfirmed": "تمّ تأكيد الدفع",
+      "eyebrowRejected": "تمّ رفض الوصل",
+      "eyebrowWaiting": "في انتظار التأكيد",
+      "failedBody": "لم تتمّ المصادقة على وصلك. لم يُقبض أي مبلغ — يمكنك إعادة الدفع وإرسال وصل جديد.",
+      "payAgain": "خلّص من جديد",
+      "amount": "المبلغ",
+      "reference": "المرجع",
+      "date": "التاريخ",
+      "statusLabel": "الحالة",
+      "redirecting": "جاري إعادة التوجيه تلقائيًا…",
+      "continue": "كمّل",
+      "back": "رجوع",
+      "refLine": "المرجع · <ref>{id}</ref>"
+    },
+    "failed": {
+      "reasons": {
+        "rejected": "تعذّرت المصادقة على الوصل. تحقّق من المبلغ والمرجع، ثمّ أعد إرساله.",
+        "unreadable": "الوصل غير مقروء. أعد إرسال صورة واضحة له.",
+        "wrong_amount": "المبلغ المستلم لا يتطابق مع معلوم النشر.",
+        "expired": "انتهت مهلة الدفع.",
+        "cancelled": "لقد ألغيت عملية الدفع.",
+        "unknown": "لم تكتمل عملية الدفع. يمكن لفريقنا أن يوضّح لك السبب."
+      },
+      "eyebrow": "تمّ رفض الدفع",
+      "title": "العملية ما تمّتش",
+      "attemptedAmount": "مبلغ المحاولة",
+      "reference": "المرجع",
+      "amount": "{amount} د.ت",
+      "noDebit": "لم يُخصم أي مبلغ من حسابك. يمكنك إعادة المحاولة فورًا.",
+      "retry": "عاود",
+      "support": "اتصل بالدعم"
+    }
+  },
+  "checkout": {
+    "unavailable": {
+      "title": "الدفع غير متاح مؤقتًا",
+      "body": "بيانات الدفع لدينا بصدد التحيين. إعلانك محفوظ: عُد بعد قليل، أو اتصل بنا لإتمام النشر.",
+      "myListings": "إعلاناتي",
+      "support": "اتصل بالدعم"
+    },
+    "feeLabel": "معلوم الإعلان",
+    "feeBody": "معلوم نشر إعلانك. يدخل الإعلان مرحلة المراجعة بمجرّد المصادقة على الوصل.",
+    "cancelConfirm": "إلغاء عملية الدفع هذه؟ يمكنك بدء عملية جديدة في أي وقت.",
+    "cancelFailed": "تعذّر الإلغاء.",
+    "cancelNetworkError": "خطأ في الشبكة أثناء الإلغاء.",
+    "copyFailed": "تعذّر النسخ.",
+    "maxImages": "{max, plural, zero {لا يمكن إضافة صور.} one {صورة واحدة كحدّ أقصى.} two {صورتان كحدّ أقصى.} few {# صور كحدّ أقصى.} many {# صورة كحدّ أقصى.} other {# صورة كحدّ أقصى.}}",
+    "maxImagesExtra": "{max, plural, zero {لا يمكن إضافة صور} one {صورة واحدة كحدّ أقصى} two {صورتان كحدّ أقصى} few {# صور كحدّ أقصى} many {# صورة كحدّ أقصى} other {# صورة كحدّ أقصى}} — تمّ تجاهل الملفات الزائدة.",
+    "badFormat": "{name}: صيغة غير مقبولة (JPG، PNG، WebP، HEIC، PDF).",
+    "tooLarge": "{name}: حجم الملف كبير جدًا (الحدّ الأقصى {maxMb} ميغابايت).",
+    "sessionExpired": "انتهت الجلسة — سجّل دخولك من جديد.",
+    "uploadFailed": "فشل رفع الوصل. حاول من جديد.",
+    "submitFailed": "فشل الإرسال.",
+    "networkError": "خطأ في الشبكة. تحقّق من اتصالك وحاول من جديد.",
+    "cancelledTitle": "تمّ إلغاء الدفع",
+    "cancelledBody": "لم يُقتطع أي مبلغ. يمكنك إعادة الدفع في أي وقت من صفحة الإعلان.",
+    "viewListing": "شوف الإعلان",
+    "home": "الرئيسية",
+    "sentTitle": "تمّ إرسال الوصل",
+    "sentBody": "تمّ استلام وصل بمبلغ <b>{amount} د.ت</b>.",
+    "sentBodyFor": "تمّ استلام وصل بمبلغ <b>{amount} د.ت</b> لإعلان <b>{title}</b>.",
+    "sentSteps": {
+      "review": "يراجع فريقنا وصلك (في أقل من 24 ساعة).",
+      "notify": "يصلك إشعار: تمّت المصادقة أو مطلوب تصحيح.",
+      "publish": "يدخل إعلانك مرحلة المراجعة، ثمّ يُنشر."
+    },
+    "myListings": "إعلاناتي",
+    "editListing": "→ بدّل الإعلان",
+    "receiptUnderReview": "الوصل قيد المراجعة — في أقل من 24 ساعة. سيصلك إشعار بمجرّد المصادقة عليه. لا ترسل وصلًا آخر إلا إذا كان فيه خطأ.",
+    "stepMethod": "اختر طريقة الدفع",
+    "providerBank": "تحويل بنكي (RIB)",
+    "providerD17": "D17 بالهاتف",
+    "stepPay": "ادفع باستعمال هذه البيانات",
+    "copied": "تمّ النسخ",
+    "copy": "انسخ",
+    "stepUpload": "ارفع وصل التحويل",
+    "fileSize": "{size} ك.ب",
+    "removeFile": "إزالة {name}",
+    "chooseFile": "اختار صورة ولا PDF",
+    "addAnother": "زيد صورة أخرى",
+    "uploadHint": "JPG · PNG · HEIC · PDF · الحدّ الأقصى {maxMb} ميغابايت · حتى {max, plural, zero {0 صور} one {صورة واحدة} two {صورتين} few {# صور} many {# صورة} other {# صورة}} ({used}/{max})",
+    "sending": "جاري الإرسال…",
+    "send": "{count, plural, zero {ابعث الوصل} one {ابعث الوصل} two {ابعث الوصلين} few {ابعث الـ# وصولات} many {ابعث الـ# وصلًا} other {ابعث الـ# وصل}}",
+    "hintReady": "المصادقة في أقل من 24 ساعة — سيصلك إشعار.",
+    "hintEmpty": "ارفع الوصل أولًا لتفعيل الزر.",
+    "cancelling": "جاري الإلغاء…",
+    "cancelPayment": "إلغاء عملية الدفع هذه",
+    "instructions": {
+      "bankLabel": "تحويل بنكي (RIB)",
+      "bankShortLabel": "تحويل بنكي",
+      "bankDescription": "قم بتحويل من تطبيقك البنكي أو من الفرع إلى الحساب المبيّن أدناه، ثمّ عُد إلى هنا لرفع الوصل.",
+      "bankNextStep": "ارفع صورة واضحة لأمر التحويل (وصل، لقطة شاشة من الخدمة البنكية الإلكترونية، أو إشعار من الفرع).",
+      "bankReference": "المرجع (يُكتب في خانة سبب التحويل)",
+      "d17Label": "D17 · البريد التونسي",
+      "d17Description": "أرسل المبلغ من تطبيق D17 إلى رقم Mazed Immo، ثمّ ارفع التأكيد الذي وصلك عبر SMS أو في التطبيق.",
+      "d17NextStep": "ارفع لقطة شاشة لتأكيد D17 (المرجع والمبلغ واضحان).",
+      "d17Number": "رقم D17 الخاص بـ Mazed Immo",
+      "d17Reference": "المرجع (عنوان التحويل)",
+      "beneficiary": "المستفيد",
+      "bank": "البنك",
+      "amount": "المبلغ",
+      "amountValue": "{amount} د.ت"
+    }
+  },
+  "accountApi": {
+    "renew": {
+      "notRenewable": "هذا الإعلان لا يزال منشورًا أو قيد المعالجة.",
+      "contactRequired": "أضف رقم هاتف يمكن الاتصال به قبل التجديد."
+    },
+    "status": {
+      "refusal": {
+        "mark_sold": "لا يمكن تسجيل إعلان كمُباع إلا إذا كان منشورًا.",
+        "withdraw": "هذا الإعلان غير منشور.",
+        "relist": "هذا الإعلان منشور بالفعل أو قيد المعالجة."
+      },
+      "windowClosed": "انتهت فترة نشر إعلانك — جدّد الإعلان.",
+      "contactRequired": "أضف رقم هاتف يمكن الاتصال به قبل إعادة النشر."
+    }
+  },
+  "paymentApi": {
+    "cancel": {
+      "underReview": "الوصل قيد المراجعة بالفعل. اتصل بالإدارة للإلغاء.",
+      "notCancellable": "لم يعد بالإمكان إلغاء هذا الدفع.",
+      "changed": "تغيّرت حالة الدفع في الأثناء."
+    }
+  },
+  "landing": {
+    "heroBadge": "الانطلاق في ماي 2026",
+    "heroTitle": "بيع واشري العقار بكل شفافية",
+    "heroSubtitle": "العقار بسوم واضح، في كامل تونس.",
+    "heroCta": "سجّل في قائمة الانتظار",
+    "heroSecondary": "اكتشف كيفاش تخدم",
+    "trustBar": "بنوك وعدول منفذون ووكالات معتمدة",
+    "valuesTitle": "ثلاث قيم ما فيهمش نقاش",
+    "values": {
+      "transparencyTitle": "الشفافية",
+      "transparencyBody": "كل شيء واضح ومراقب.",
+      "speedTitle": "السرعة",
+      "speedBody": "يتباع في 14 يوم، موش في 6 شهور.",
+      "trustTitle": "الثقة",
+      "trustBody": "خبراء معتمدون، تحقّق صارم من الهوية وضمانات قانونية."
+    },
+    "howItWorksTitle": "كيفاش تخدم؟",
+    "steps": {
+      "s1Title": "1. حطّ عقارك",
+      "s1Body": "الوثائق والصور تتراقب في 48 ساعة.",
+      "s2Title": "2. اختار نوع المزاد",
+      "s2Body": "إنجليزي، مختوم ولا هولندي.",
+      "s3Title": "3. مزايدون موثّقون",
+      "s3Body": "موثّقون، مع ضمان بـ10%.",
+      "s4Title": "4. بيع قانوني",
+      "s4Body": "عدل إشهاد معتمد وترسيم عقاري."
+    },
+    "auctionTypesTitle": "ثلاث أنواع مزادات لكل عقار",
+    "auctionTypes": {
+      "englishTitle": "مزاد إنجليزي",
+      "englishBody": "السوم يطلع، بكل وضوح.",
+      "sealedTitle": "مزاد مختوم",
+      "sealedBody": "عروض سرّية. اللي يعطي أكثر يربح.",
+      "dutchTitle": "مزاد هولندي",
+      "dutchBody": "السوم ينزل حتى لين واحد يشري."
+    },
+    "inspectorTitle": "شبكة خبراء في كل ولاية",
+    "inspectorBody": "خبير يراقب كل عقار قبل المزاد.",
+    "inspectorCta": "انضمّ كخبير معتمد",
+    "audienceTitle": "Mazed Immo لشكون؟",
+    "audience": {
+      "buyersTitle": "للشارين",
+      "buyersBody": "عقارات تحت سوم السوق، من التليفون متاعك.",
+      "sellersTitle": "للخواص اللي يبيعو",
+      "sellersBody": "بيع أسرع. عمولة 3%.",
+      "banksTitle": "للبنوك والمؤسسات",
+      "banksBody": "صفّي أصولك بسوم أعلى بـ10 حتى 20%.",
+      "diasporaTitle": "للتوانسة بالخارج",
+      "diasporaBody": "استثمر في تونس عن بعد."
+    },
+    "ctaTitle": "كون من الأوائل",
+    "ctaBody": "0% عمولة على أول معاملة.",
+    "emailPlaceholder": "بريدك الإلكتروني",
+    "phonePlaceholder": "الهاتف (اختياري)",
+    "joinWaitlist": "نسجّل",
+    "footerLegal": "© 2026 Mazed Immo. جميع الحقوق محفوظة.",
+    "footerLinks": {
+      "terms": "شروط الاستعمال",
+      "privacy": "سياسة الخصوصية",
+      "contact": "اتصل بنا"
+    },
+    "carousel": {
+      "prev": "السابق",
+      "next": "التالي"
+    },
+    "heroBanner": {
+      "roleDescription": "عرض شرائح",
+      "label": "إعلانات في الواجهة",
+      "slideOf": "الإعلان {index} من {total}",
+      "view": "شوف",
+      "online": "متاح",
+      "brandEyebrow": "Mazed Immo · تونس",
+      "brandCount": "{count, plural, zero {<n>#</n><l>إعلان</l>} one {<n>#</n><l>إعلان</l>} two {<n>#</n><l>إعلانات</l>} few {<n>#</n><l>إعلانات</l>} many {<n>#</n><l>إعلانًا</l>} other {<n>#</n><l>إعلان</l>}}",
+      "brandHeadline": "العقار <gold>التونسي</gold>",
+      "explore": "تصفّح"
+    },
+    "showcase": {
+      "prev": "العقار السابق",
+      "next": "العقار التالي",
+      "slideOf": "العقار {index} من {total}",
+      "live": "مباشر",
+      "forSale": "للبيع",
+      "price": "السعر",
+      "view": "شوف"
+    },
+    "countdown": {
+      "ended": "انتهى",
+      "days": "{d}ي {h}س",
+      "hours": "{h}س {m}د",
+      "minutes": "{m}د {s}ث"
+    }
+  },
+  "home": {
+    "trendingEyebrow": "في الواجهة",
+    "trendingTitle": "العقارات اللي عليها الطلب",
+    "nouveautesEyebrow": "جديد",
+    "nouveautesTitle": "تنشرو توّا",
+    "endingSoonEyebrow": "فرصة",
+    "moreToExplore": "اكتشف أكثر",
+    "browseByType": "تصفّح حسب النوع",
+    "browseByPrice": "تصفّح حسب السوم",
+    "recentlyHammered": "تباعو مؤخرا",
+    "realPrices": "أسوام حقيقية",
+    "seeAll": "شوف الكل",
+    "heroLive": "متاح",
+    "heroBidCta": "شوف الإعلان",
+    "heroBrowseCta": "تصفّح الإعلانات",
+    "heroBrandTitle": "اشري، بيع وكري عقارك في تونس",
+    "heroBrandEyebrow": "{count, plural, zero {ما فماش إعلانات منشورة توّا} one {إعلان واحد منشور} two {إعلانين منشورين} few {# إعلانات منشورة} many {# إعلانًا منشورًا} other {# إعلان منشور}}",
+    "soldChip": "تباع",
+    "howItWorksEyebrow": "الخطوات",
+    "howItWorksTitle": "كيفاش تخدم",
+    "step1Eyebrow": "تصفّح",
+    "step1Title": "تصفّح الإعلانات",
+    "step1Body": "فلتر حسب المدينة والنوع والسوم، ورتّب حسب المساحة.",
+    "step2Eyebrow": "اتصل",
+    "step2Title": "كلّم البائع",
+    "step2Body": "الرقم يظهر بنقرة وحدة. بلا وسيط.",
+    "step3Eyebrow": "انشر",
+    "step3Title": "بيع عقارك",
+    "step3Body": "صورك، سومك. يتنشر بعد المراقبة.",
+    "trustEyebrow": "علاش Mazed Immo",
+    "trustTitle": "منصّة معمولة باش تحميك",
+    "trustEscrowTitle": "إعلانات مراقبة",
+    "trustEscrowBody": "كل إعلان يتراقب قبل ما يتنشر.",
+    "trustKycTitle": "رقمك محمي",
+    "trustKycBody": "عمرو ما يتنشر. يظهر كان كي يطلبوه.",
+    "trustInspectionTitle": "بائعون موثّقون",
+    "trustInspectionBody": "الشارة تميّز البائعين اللي راقبهم فريقنا.",
+    "trustLegalTitle": "بلا عمولة",
+    "trustLegalBody": "تخلّص النشر، موش نسبة من البيعة.",
+    "bestValueEyebrow": "أحسن قيمة",
+    "bestValueTitle": "فرص باهية",
+    "browseCatalogue": "تصفّح الإعلانات",
+    "priceOnRequest": "السعر عند الطلب",
+    "slideEyebrowArea": "{place} · {area} م²",
+    "priceBuckets": {
+      "under100k": "أقل من 100 ألف",
+      "from100kTo500k": "100 – 500 ألف",
+      "from500kTo1m": "500 ألف – 1 مليون",
+      "over1m": "أكثر من مليون دينار"
+    },
+    "liveBadge": "{count, plural, zero {· # إعلان بسوم واضح} one {· إعلان واحد بسوم واضح} two {· إعلانين بسوم واضح} few {· # إعلانات بسوم واضح} many {· # إعلانًا بسوم واضح} other {· # إعلان بسوم واضح}}",
+    "statLive": "{count, plural, zero {إعلان منشور} one {إعلان منشور} two {إعلانات منشورة} few {إعلانات منشورة} many {إعلانًا منشورًا} other {إعلان منشور}}",
+    "statLiveSub": "بسعر معلن",
+    "statNewThisWeek": "جديدة هذا الأسبوع",
+    "statNewThisWeekSub": "منشورة حديثًا",
+    "verifiedTitle": "إعلانات مراقبة",
+    "verifiedSub": "تتمّ مراقبتها قبل النشر",
+    "statGovernorates": "{count, plural, zero {<n>#</n><l>ولاية</l>} one {<n>#</n><l>ولاية</l>} two {<n>#</n><l>ولايات</l>} few {<n>#</n><l>ولايات</l>} many {<n>#</n><l>ولاية</l>} other {<n>#</n><l>ولاية</l>}}",
+    "statGovernoratesNational": "تغطية وطنية",
+    "statGovernoratesPartial": "من أصل 24 ولاية",
+    "sellProperty": "بيع عقارك",
+    "sellShort": "بيع",
+    "noFeeSub": "تخلّص على النشر",
+    "protectedNumberTitle": "رقم محمي",
+    "protectedNumberSub": "يظهر عند الطلب",
+    "browseEyebrow": "تصفّح",
+    "browseTitle": "لقى عقارك",
+    "intentTitle": "شنوّة تحب تعمل؟",
+    "intentSell": "نحب نبيع",
+    "intentSellHint": "حطّ عقارك للبيع",
+    "intentBuy": "نحب نشري",
+    "intentBuyHint": "العقارات للبيع",
+    "intentRent": "نحب نكري",
+    "intentRentHint": "تكري ولا تلوّج",
+    "intentRentQuestion": "عندك عقار تحب تكريه، ولا تلوّج على كراء؟",
+    "intentRentOwner": "عندي عقار نكريه",
+    "intentRentOwnerHint": "انشر إعلان كراء",
+    "intentRentSeeker": "نلوّج على كراء",
+    "intentRentSeekerHint": "شوف العقارات للكراء"
+  },
+  "search": {
+    "placeholder": "لوّج على عقار…",
+    "submit": "لوّج",
+    "governorate": "الولاية",
+    "allWilayas": "كل الولايات",
+    "type": "النوع",
+    "allTypes": "كل الأنواع"
+  },
+  "notificationsUi": {
+    "title": "الإشعارات",
+    "unreadAria": "{count, plural, zero {لا توجد إشعارات غير مقروءة} one {إشعار واحد غير مقروء} two {إشعاران غير مقروءين} few {# إشعارات غير مقروءة} many {# إشعارًا غير مقروء} other {# إشعار غير مقروء}}",
+    "deleteAll": "احذف الكل",
+    "close": "إغلاق",
+    "filterAll": "الكل",
+    "filterUnread": "غير مقروءة",
+    "confirmDeleteAll": "تحذف الكل؟",
+    "cancel": "إلغاء",
+    "confirm": "أكّد",
+    "emptyTitle": "ما فماش إشعارات",
+    "emptyBody": "كل شيء هادي. شوف آخر الإعلانات.",
+    "emptyCta": "تصفّح الإعلانات",
+    "noUnreadTitle": "ما فماش إشعارات جديدة",
+    "noUnreadBody": "ما فاتك شيء.",
+    "showMore": "شوف أكثر",
+    "urgent": "عاجل",
+    "deleteOne": "احذف الإشعار",
+    "deleteRefused": "رفض الخادم عملية الحذف.",
+    "deleteFailed": "تعذّر الحذف. تحقّق من الاتصال.",
+    "deletedCount": "{count, plural, zero {لم يتم حذف أي إشعار.} one {تم حذف إشعار واحد.} two {تم حذف إشعارين.} few {تم حذف # إشعارات.} many {تم حذف # إشعارًا.} other {تم حذف # إشعار.}}"
+  },
+  "ui": {
+    "loading": "جاري التحميل",
+    "searching": "جاري البحث…",
+    "close": "إغلاق",
+    "lightbox": {
+      "label": "صورة بملء الشاشة",
+      "zoomOut": "تصغير",
+      "zoomIn": "تكبير",
+      "reset": "إعادة الضبط",
+      "hint": "العجلة أو الضغط بإصبعين للتكبير · اسحب للتحريك"
+    },
+    "favorite": {
+      "add": "زيد للمفضّلة",
+      "remove": "نحّي من المفضّلة",
+      "sessionExpired": "انتهت صلاحية الجلسة. سجّل الدخول من جديد لحفظ المفضّلة.",
+      "saveFailed": "تعذّر حفظ هذا الإعلان في المفضّلة. حاول من جديد.",
+      "offline": "لا يوجد اتصال. حاول من جديد."
+    }
+  },
+  "popupsUi": {
+    "close": "إغلاق"
+  },
+  "gallery": {
+    "prev": "الصورة السابقة",
+    "next": "الصورة التالية",
+    "goToPhoto": "روح للصورة {n}"
+  },
+  "property": {
+    "type": "النوع",
+    "area": "المساحة",
+    "rooms": "الغرف",
+    "bathrooms": "الحمّامات",
+    "floor": "الطابق",
+    "yearBuilt": "سنة البناء",
+    "location": "الموقع",
+    "documents": "الوثائق القانونية",
+    "inspectionReport": "تقرير الخبرة",
+    "requestInspection": "اطلب خبرة",
+    "virtualTour": "جولة افتراضية",
+    "types": {
+      "apartment": "شقة",
+      "house": "منزل",
+      "villa": "فيلا",
+      "land": "أرض",
+      "commercial": "محل تجاري",
+      "office": "مكتب",
+      "warehouse": "مستودع",
+      "farm": "مزرعة"
+    }
+  },
+  "catalogue": {
+    "metaTitleDefault": "إعلانات عقارية",
+    "metaTitleIn": "{what} في {governorate} — Mazed Immo",
+    "metaTitleTunisia": "{what} في تونس — Mazed Immo",
+    "unavailable": "الخدمة غير متاحة حاليًا.",
+    "heading": "عقارات بسعر محدّد — إعلانات عقارية",
+    "searchPlaceholder": "لوّج على عقار ولا بلاصة…",
+    "searchLabel": "البحث في الإعلانات",
+    "allCategories": "الكل",
+    "allTunisia": "كامل تونس",
+    "sort": {
+      "recent": "الأحدث",
+      "cheap": "الأرخص أولًا",
+      "dear": "الأغلى أولًا",
+      "big": "المساحة"
+    },
+    "budget": "الميزانية",
+    "allPrices": "كل الأسعار",
+    "priceBetween": "{min} – {max} د.ت",
+    "priceFrom": "ابتداءً من {min} د.ت",
+    "priceUpTo": "حتى {max} د.ت",
+    "priceBuckets": {
+      "under-100k": "أقل من 100 ألف د.ت",
+      "100k-500k": "100 – 500 ألف د.ت",
+      "500k-1m": "500 ألف – 1 مليون د.ت",
+      "1m-plus": "1 مليون د.ت وأكثر"
+    },
+    "minLabel": "الحدّ الأدنى (د.ت)",
+    "maxLabel": "الحدّ الأقصى (د.ت)",
+    "maxPlaceholder": "بلا حدّ",
+    "apply": "طبّق",
+    "resultCount": "{count, plural, zero {لا توجد عقارات} one {عقار واحد} two {عقاران} few {# عقارات} many {# عقارًا} other {# عقار}}",
+    "clearSearch": "امسح البحث «{query}»",
+    "queryChip": "«{query}»",
+    "emptyTitle": "ما لقينا حتى عقار يناسب بحثك.",
+    "emptyBody": "وسّع البحث، الميزانية ولا الولاية.",
+    "clearFilters": "نحّي الفلاتر",
+    "priceOnRequest": "السعر عند الطلب",
+    "priceAmount": "{amount} د.ت",
+    "negotiable": "قابل للتفاوض",
+    "specArea": "{area} م²",
+    "specRooms": "{count, plural, zero {# غرف} one {غرفة واحدة} two {غرفتان} few {# غرف} many {# غرفة} other {# غرفة}}",
+    "specBathrooms": "{count, plural, zero {# حمّامات} one {حمّام واحد} two {حمّامان} few {# حمّامات} many {# حمّامًا} other {# حمّام}}",
+    "pagination": "التنقّل بين الصفحات",
+    "previous": "السابق",
+    "next": "التالي",
+    "forRent": "للكراء",
+    "reserved": "محجوز",
+    "rentAmount": "{amount} د.ت في الشهر",
+    "metaTitleSale": "عقارات للبيع",
+    "metaTitleRent": "عقارات للكراء",
+    "dealAria": "للبيع ولا للكراء",
+    "deal": {
+      "all": "الكل",
+      "sale": "للبيع",
+      "rent": "للكراء"
+    },
+    "budgetRent": "الكراء في الشهر",
+    "rentBuckets": {
+      "under-500": "أقل من 500 د.ت",
+      "500-1000": "500 – 1000 د.ت",
+      "1000-2000": "1000 – 2000 د.ت",
+      "2000-plus": "2000 د.ت وأكثر"
+    },
+    "moreFilters": "فلاتر أخرى",
+    "moreNone": "المساحة، الغرف…",
+    "surfaceMin": "أقل مساحة (م²)",
+    "roomsMin": "الغرف",
+    "roomsAtLeast": "S+{count} ولا أكثر",
+    "anyValue": "ما يهمّش",
+    "furnishedLabel": "الفرش",
+    "furnished": {
+      "furnished": "مفروش",
+      "semi": "نص مفروش",
+      "unfurnished": "فارغ"
+    },
+    "availBy": "فارغ قبل نهار",
+    "surfaceChip": "{area} م² ولا أكثر",
+    "roomsChip": "S+{count} ولا أكثر",
+    "availChip": "فارغ قبل {date}",
+    "clearMore": "نحّي الفلاتر هذي",
+    "availUnconfirmed": "تاريخ التوفّر موش مذكور",
+    "requestCtaTitle": "ما لقيتش اللي تحب؟",
+    "requestCtaBody": "سجّل طلب بالشروط هذي، ونعلموك أوّل ما يتنشر عقار يناسبك.",
+    "requestCta": "سجّل طلبي",
+    "understood": "فهمنا البحث: « {query} » — الفلاتر اللوطة تعمّرت.",
+    "searchAsTyped": "لوّج على النص كيف ما هو",
+    "promoted": "مبرّز"
+  },
+  "listing": {
+    "metaNotFound": "الإعلان غير موجود — Mazed Immo",
+    "metaDescriptionFallback": "{title} في {governorate}.",
+    "priceOnRequest": "السعر عند الطلب",
+    "priceAmount": "{amount} د.ت",
+    "priceNegotiable": "السعر قابل للتفاوض",
+    "negotiable": "قابل للتفاوض",
+    "areaValue": "{area} م²",
+    "previewStatus": {
+      "draft": "مسودة",
+      "pending_payment": "في انتظار الدفع",
+      "pending_review": "قيد المراجعة",
+      "rejected": "بحاجة إلى تعديل",
+      "expired": "منتهي الصلاحية",
+      "sold": "مُباع",
+      "archived": "مسحوب من النشر",
+      "rented": "مُؤجَّر"
+    },
+    "previewTitle": "معاينة خاصة — {status}",
+    "previewBody": "هذا الإعلان غير ظاهر للعموم.",
+    "previewBodyRejected": "هذا الإعلان غير ظاهر للعموم. السبب: {reason}",
+    "manageListings": "إدارة إعلاناتي ←",
+    "seller": "البائع",
+    "privateSeller": "بائع خاص",
+    "verifiedSeller": "بائع موثّق",
+    "safetyNote": "تنشر Mazed Immo الإعلانات وتراقبها، لكنها لا تتدخّل في المعاملة: يتمّ الدفع والإمضاء مباشرة بينك وبين البائع. زُر العقار، واطلب سند الملكية، واستعن بعدل إشهاد قبل دفع أيّ مبلغ.",
+    "categoryFallback": "إعلان",
+    "publishedOn": "نُشر في {date}",
+    "referenceTitle": "مرجع الإعلان",
+    "specsTitle": "المواصفات",
+    "descriptionTitle": "الوصف",
+    "backToCatalogue": "→ كل الإعلانات",
+    "yes": "نعم",
+    "contact": {
+      "unavailable": "الرقم غير متاح.",
+      "networkError": "خطأ في الاتصال بالشبكة.",
+      "disclaimer": "تربط Mazed Immo بين البائع والشاري دون التدخّل في البيع. زُر العقار وتحقّق من سند الملكية قبل دفع أيّ مبلغ.",
+      "hidden": "البائع هذا ما يشاركش رقمو. زيد الإعلان للمفضّلة باش تلقاه بعد.",
+      "reveal": "شوف الرقم"
+    },
+    "related": {
+      "eyebrow": "يمكن يعجبك",
+      "title": "إعلانات مشابهة",
+      "seeAll": "شوف الكل",
+      "verified": "موثّق",
+      "onRequest": "عند الطلب"
+    },
+    "report": {
+      "open": "بلّغ على الإعلان",
+      "title": "التبليغ على الإعلان",
+      "description": "قلّنا شنوّة المشكل. فريقنا يراجع كل تبليغ.",
+      "reasonLegend": "سبب التبليغ",
+      "reasons": {
+        "scam": "تحيّل ولا طلب فلوس مشبوه",
+        "wrong_info": "معلومات غالطة (السعر، الصور، المساحة)",
+        "sold": "العقار تباع ولا تكرى",
+        "duplicate": "إعلان مكرّر",
+        "inappropriate": "محتوى غير لائق",
+        "other": "سبب آخر"
+      },
+      "noteLabel": "زيد وضّح (اختياري)",
+      "notePlaceholder": "شنوّة لاحظت…",
+      "send": "ابعث التبليغ",
+      "thanks": "يعيشك، التبليغ متاعك وصل.",
+      "failed": "تعذّر التبليغ حاليًا.",
+      "alreadySent": "التبليغ وصل. يعيشك."
+    },
+    "forRent": "للكراء",
+    "forSale": "للبيع",
+    "reserved": "محجوز",
+    "tndPerMonth": "د.ت / شهر",
+    "rentAmount": "{amount} د.ت في الشهر",
+    "rent": {
+      "deposit": "الضمان",
+      "charges": "المصاريف",
+      "perMonth": "{amount} في الشهر",
+      "noCharges": "ما فماش",
+      "moveIn": "عند الدخول (الكراء والضمان والمصاريف)",
+      "furnished": "الفرش",
+      "furnishedValue": {
+        "furnished": "مفروش",
+        "semi": "نص مفروش",
+        "unfurnished": "فارغ"
+      },
+      "availableFrom": "فارغ من نهار",
+      "minLease": "أقل مدّة",
+      "months": "{count, plural, zero {# شهر} one {شهر واحد} two {شهرين} few {# شهور} many {# شهر} other {# شهر}}"
+    },
+    "shopLabel": "البوتيك",
+    "verifiedShop": "بوتيك موثّقة",
+    "seeShop": "شوف البوتيك والإعلانات متاعها",
+    "yourListing": "إعلانك",
+    "yourListingHint": "غلطة في السوم، المساحة ولا التصاور؟ صلّحها: التصليح البسيط يتنشر طول.",
+    "editYourListing": "بدّل الإعلان",
+    "yourListings": "إعلاناتي",
+    "promoted": "مبرّز"
+  },
+  "listingApi": {
+    "tooManyReveals": "اطّلعت على عدد كبير من الأرقام من هذا الجهاز. أعد المحاولة لاحقًا.",
+    "phoneHidden": "هذا البائع لا يشارك رقمه.",
+    "reportReasonRequired": "اختار سبب التبليغ.",
+    "tooManyReports": "تبليغات كثيرة. حاول لاحقًا.",
+    "reportOwnListing": "ما تنجمش تبلّغ على إعلانك."
+  },
+  "common": {
+    "submit": "ابعث",
+    "cancel": "إلغاء",
+    "loading": "جاري التحميل…",
+    "save": "سجّل",
+    "delete": "احذف",
+    "edit": "بدّل",
+    "back": "رجوع",
+    "next": "التالي",
+    "search": "لوّج",
+    "filter": "فلتر",
+    "all": "الكل",
+    "tnd": "د.ت",
+    "perMonth": "/الشهر",
+    "soon": "قريبا",
+    "sqm": "م²"
+  },
+  "localeSwitcher": {
+    "switchTo": "التبديل إلى الفرنسية — Français"
+  },
+  "phone": {
+    "errors": {
+      "empty": "اكتب رقم هاتفك.",
+      "tunisianLength": "الرقم التونسي يتكوّن من 8 أرقام — كتبت {count}.",
+      "tooShort": "الرقم قصير جدًا — يلزم 6 أرقام على الأقل بعد رمز الدولة {dialCode}.",
+      "tooLong": "الرقم طويل جدًا — 15 رقمًا كحدّ أقصى بعد رمز الدولة."
+    }
+  },
+  "attributes": {
+    "area_sqm": "المساحة",
+    "rooms": "الغرف",
+    "bathrooms": "الحمّامات",
+    "floor": "الطابق",
+    "year_built": "سنة البناء",
+    "buildable": "صالحة للبناء",
+    "titled": "رسم عقاري",
+    "serviced": "مربوطة بالشبكات",
+    "air_conditioning": "مكيّف",
+    "heating": "تدفئة مركزية",
+    "elevator": "مصعد",
+    "parking": "مأوى سيارة",
+    "garden": "جنينة",
+    "pool": "مسبح"
+  },
+  "apiErrors": {
+    "auth": "انتهت صلاحية الجلسة. سجّل دخولك من جديد للمواصلة.",
+    "rate_limited": "محاولات كثيرة. أعد المحاولة بعد بضع دقائق.",
+    "cross_origin_blocked": "تم رفض الطلب. أعد تحميل الصفحة وحاول من جديد.",
+    "server_misconfigured": "الخدمة غير متاحة مؤقتًا. حاول لاحقًا.",
+    "not_configured": "الخدمة غير متاحة مؤقتًا. حاول لاحقًا.",
+    "bad_request": "بيانات غير مكتملة. راجع الاستمارة.",
+    "not_owner": "هذا الإعلان ليس إعلانك.",
+    "listing_not_found": "الإعلان غير موجود.",
+    "listing_update_failed": "تعذّر الحفظ. راجع الحقول وحاول من جديد.",
+    "listing_submit_failed": "تعذّر الإرسال حاليًا. حاول من جديد.",
+    "not_submittable": "تم إرسال هذا الإعلان من قبل.",
+    "contact_required": "أضف رقم هاتف يمكن الاتصال به.",
+    "payment_create_failed": "تعذّر إنشاء عملية الدفع. حاول من جديد.",
+    "payment_already_resolved": "تمت معالجة هذا الدفع من قبل.",
+    "payment_not_found": "عملية الدفع غير موجودة.",
+    "receipt_required": "أرفق وصل التحويل.",
+    "signed_url_failed": "تعذّر رفع الصور. حاول من جديد.",
+    "listing_status_failed": "تعذّر تغيير الحالة. حاول من جديد.",
+    "listing_relist_failed": "تعذّر إعادة النشر. حاول من جديد.",
+    "unknown_action": "إجراء غير معروف. أعد تحميل الصفحة.",
+    "too_large": "الملف كبير جدًا.",
+    "empty_body": "الملف فارغ."
+  },
+  "notifications": {
+    "listing_expiring": {
+      "title": "إعلانك قريب يوفى",
+      "body": "« {title} » يبقى منشور حتى {date}. تنجم تجدّدو بداية من هاك النهار."
+    },
+    "listing_expired": {
+      "title": "انتهت مدة إعلانك",
+      "body": "« {title} » ما عادش ظاهر. جدّدو باش يرجع منشور."
+    },
+    "listing_payment_received": {
+      "captured": {
+        "title": "تم تأكيد الدفع",
+        "body": "« {title} » تعدّى للمراجعة. باش نعلموك كي يتنشر."
+      },
+      "recorded": {
+        "title": "تم تسجيل الدفع",
+        "body": "« {title} » تعدّى للمراجعة."
+      }
+    },
+    "listing_payment_rejected": {
+      "title": "تم رفض الوصل",
+      "body": "السبب: {reason}. يمكنك رفع وصل جديد."
+    },
+    "payment_receipt_received": {
+      "title": "وصلنا الوصل متاعك",
+      "body": "وصلنا وصلك بمبلغ {amount} د.ت. فريقنا باش يراجعو في ظرف 24 إلى 48 ساعة."
+    },
+    "admin_receipt_pending": {
+      "title": "وصل جديد للمراجعة",
+      "body": "وصل {what} ({amount} د.ت) في انتظار المصادقة."
+    },
+    "promo_expired": {
+      "title": "انتهى الإبراز",
+      "body": "انتهى إبراز « {title} ». إعلانك يبقى منشور."
+    },
+    "credits_expired": {
+      "title": "انتهت صلاحية الباقة",
+      "body": "{count, plural, zero {انتهت صلاحية باقتك.} one {انتهت صلاحية عملية النشر المتبقية.} two {انتهت صلاحية عمليتي النشر المتبقيتين.} few {انتهت صلاحية # عمليات نشر متبقية.} many {انتهت صلاحية # عملية نشر متبقية.} other {انتهت صلاحية # عملية نشر متبقية.}}"
+    },
+    "badge_expiring": {
+      "title": "الشارة متاعك قريب توفى",
+      "body": "شارة «بائع موثّق» تنتهي يوم {date}. جدّدها باش تحافظ عليها."
+    },
+    "paymentKinds": {
+      "listing_fee": "معلوم نشر إعلان",
+      "listing_pack": "باقة",
+      "badge": "شارة البائع",
+      "promo": "إبراز",
+      "renewal": "تجديد",
+      "subscription": "اشتراك",
+      "other": "دفع"
+    },
+    "listing_submitted": {
+      "paid": {
+        "title": "إعلانك تبعث للمراجعة",
+        "body": "« {title} » قيد المراجعة. معلوم النشر خالص من قبل."
+      },
+      "credit": {
+        "title": "إعلانك تبعث للمراجعة",
+        "body": "« {title} » قيد المراجعة. {remaining, plural, zero {ما بقاتلكش حتى عملية نشر.} one {بقاتلك عملية نشر وحدة.} two {بقاتلك عمليتين نشر.} few {بقاتلك # عمليات نشر.} many {بقاتلك # عملية نشر.} other {بقاتلك # عملية نشر.}}"
+      },
+      "free": {
+        "title": "إعلانك تبعث للمراجعة",
+        "body": "« {title} » قيد المراجعة. النشر مجاني في هذه الفئة."
+      },
+      "freeQuota": {
+        "title": "إعلانك تبعث للمراجعة",
+        "body": "« {title} » قيد المراجعة. النشر متاعك بلاش."
+      },
+      "subscription": {
+        "title": "إعلانك تبعث للمراجعة",
+        "body": "« {title} » قيد المراجعة. يتحسب في اشتراك البوتيك متاعك."
+      }
+    },
+    "listing_published": {
+      "title": "إعلانك منشور توّا",
+      "body": "« {title} » ظاهر للناس حتى {fullDate}."
+    },
+    "listing_rejected": {
+      "title": "إعلانك يحتاج تصحيح",
+      "body": "« {title} » ما تنشرش. السبب: {reason}"
+    },
+    "payment_rejected": {
+      "title": "تم رفض الوصل",
+      "body": "السبب: {reason}. تنجم تبعث وصل جديد."
+    },
+    "pack_purchased": {
+      "title": "تمت إضافة الباقة",
+      "body": "{quota, plural, zero {ما تزادت حتى عملية نشر لحسابك.} one {تزادت عملية نشر وحدة لحسابك.} two {تزادو عمليتين نشر لحسابك.} few {تزادو # عمليات نشر لحسابك.} many {تزادت # عملية نشر لحسابك.} other {تزادت # عملية نشر لحسابك.}}"
+    },
+    "badge_granted": {
+      "title": "شارة البائع الموثّق",
+      "body": "الشارة متاعك مفعّلة. تظهر على كل إعلاناتك."
+    },
+    "admin_sms_deadletter": {
+      "title": "رسائل SMS لم تصل",
+      "body": "فشل إرسال {count} رسالة SMS مهمة (نشر / دفع) بعد {attempts} محاولات ولن تُعاد المحاولة. تثبّت من الرصيد ومن مزوّد WinSMS."
+    },
+    "admin_email_deadletter": {
+      "title": "رسائل بريد لم تصل",
+      "body": "فشل إرسال {count} رسالة بريد إلكتروني مهمة (نشر / دفع) بعد {attempts} محاولات ولن تُعاد المحاولة. تثبّت من مزوّد البريد واتصل بالمستعملين المعنيين."
+    },
+    "admin_listing_reported": {
+      "title": "إعلان تنحّى بعد تبليغات",
+      "body": "« {title} » بلّغ عليه {count} أشخاص وما عادش ظاهر. راجعو."
+    },
+    "request_match": {
+      "title": "فما عقار يناسب طلبك",
+      "body": "«{title}» تنشر توّا ويناسب طلبك."
+    },
+    "social_published": {
+      "title": "إعلانك على الشبكات",
+      "body": "تنشر على الشبكات متاع Mazed Immo. الروابط في صفحة الترويج."
+    },
+    "social_rejected": {
+      "title": "الترويج ما تقبلش",
+      "body": "ترويج «{title}» ما تقبلش: {reason}"
+    },
+    "admin_social_pending": {
+      "title": "ترويج للمراجعة",
+      "body": "«{title}» — للنشر على الشبكات."
+    },
+    "admin_social_attention": {
+      "title": "منشور لازم يتعاود",
+      "body": "{title}"
+    },
+    "listing_edit_applied": {
+      "title": "التبديل تنشر",
+      "body": "تبديلات «{title}» منشورة توّا."
+    },
+    "listing_edit_rejected": {
+      "title": "التبديل ترفض",
+      "body": "تبديلات «{title}» ما تنشرتش. السبب: {reason}"
+    },
+    "admin_listing_edit_pending": {
+      "title": "تبديل للمراجعة",
+      "body": "«{title}» — البائع بدّل إعلانو المنشور."
+    },
+    "shop_approved": {
+      "title": "البوتيك تحلّت",
+      "body": "« {name} » تحلّت في مزاد إيمو. تنجم تنشر للبوتيك توّا."
+    },
+    "shop_rejected": {
+      "rejected": {
+        "title": "البوتيك ما تقبلتش",
+        "body": "« {name} » ما تقبلتش. السبب: {reason}"
+      },
+      "suspended": {
+        "title": "البوتيك توقفت",
+        "body": "« {name} » موقوفة. السبب: {reason}"
+      }
+    },
+    "shop_member_added": {
+      "title": "تزدت لبوتيك",
+      "body": "تزدت لـ « {name} ». تلقاها في فضاء برو متاعك."
+    },
+    "admin_shop_pending": {
+      "title": "بوتيك للمراجعة",
+      "body": "« {name} » تطلب باش تحلّ البوتيك متاعها."
+    },
+    "visitParts": {
+      "morning": "الصباح",
+      "afternoon": "العشية",
+      "evening": "آخر النهار"
+    },
+    "visit_requested": {
+      "title": "طلب زيارة",
+      "body": "{name} يحب يزور « {title} ». جاوب من زياراتي."
+    },
+    "visit_confirmed": {
+      "plain": {
+        "title": "الزيارة مأكّدة",
+        "body": "زيارتك لـ « {title} » مأكّدة: {when}."
+      },
+      "with_note": {
+        "title": "الزيارة مأكّدة",
+        "body": "زيارتك لـ « {title} » مأكّدة: {when}. البائع: {note}"
+      }
+    },
+    "visit_declined": {
+      "plain": {
+        "title": "الزيارة ما تقبلتش",
+        "body": "زيارة « {title} » ما باش تصير."
+      },
+      "with_note": {
+        "title": "الزيارة ما تقبلتش",
+        "body": "زيارة « {title} » ما باش تصير. البائع: {note}"
+      }
+    },
+    "visit_cancelled": {
+      "title": "الزيارة تلغات",
+      "body": "{name} ألغى زيارتو لـ « {title} »."
+    },
+    "request_suggestion": {
+      "title": "وكالة تقترحلك عقار",
+      "body": "{shop} تشوف إلّي « {title} » يناسب طلبك."
+    },
+    "payment_accepted": {
+      "plain": {
+        "title": "الخلاص تقبل",
+        "body": "خلاصك متاع {amount} على {what} تقبل."
+      },
+      "promo": {
+        "title": "التبريز خدّام",
+        "body": "تبريز « {title} » خدّام حتى {fullDate}."
+      }
+    }
+  },
+  "publish": {
+    "serviceUnavailable": "الخدمة غير متاحة حاليًا.",
+    "otherGroup": "أخرى",
+    "title": "حطّ إعلانك",
+    "subtitle": "شويّة معلومات، صور ورقم تليفونك — وهذا كل شيء.",
+    "saving": "جاري الحفظ…",
+    "draftSaved": "تم حفظ المسودة",
+    "resumed": "رجّعنالك المسودة اللي بديتها.",
+    "resumedOn": "رجّعنالك المسودة اللي سجّلتها نهار {date}.",
+    "startOver": "ابدا من الصفر",
+    "categoryTitle": "شنوّة تحب تبيع؟",
+    "categoryHint": "يحدّد اختيارك المعلومات التي سنطلبها منك.",
+    "creditsInPlan": "{count, plural, zero {لا توجد إعلانات في باقتك} one {إعلان واحد في باقتك} two {إعلانان في باقتك} few {# إعلانات في باقتك} many {# إعلانًا في باقتك} other {# إعلان في باقتك}}",
+    "groupAria": "مجموعة العقار",
+    "categoryAria": "الصنف",
+    "freeInCategory": "النشر مجاني في هذا الصنف.",
+    "photosTitle": "صورك",
+    "photosHint": "الصور هي التي تجعل الشاري يفتح إعلانك. أظهر الواجهة وقاعة الجلوس والغرف والمطبخ والإطلالة — والمثال الهندسي أو الرسم العقاري إن كان متوفّرًا لديك.",
+    "detailsTitle": "العقار",
+    "detailsHint": "تُستعمل هذه المعلومات في فلاتر البحث — وبها يصل إليك الشارون.",
+    "detailsPickCategory": "اختر أولًا نوع العقار في الأعلى.",
+    "detailsNone": "لا توجد خصائص مطلوبة لهذا الصنف. صِف العقار في خانة الوصف أسفله.",
+    "yes": "نعم",
+    "no": "لا",
+    "priceTitle": "العنوان والسعر",
+    "priceHint": "نقترح العنوان حسب ما أدخلته — يمكنك تعديله كما تريد.",
+    "titleLabel": "عنوان الإعلان",
+    "titlePlaceholder": "شقة S+2 · 120 م² · المرسى",
+    "suggestedArea": "{area} م²",
+    "priceLabel": "السعر",
+    "negotiable": "قابل للتفاوض",
+    "onRequest": "السعر عند الطلب",
+    "descriptionLabel": "الوصف",
+    "descriptionPlaceholder": "الموقع، الاتجاه، الحالة، المصاريف، الأشغال اللازمة، الوثائق المتوفّرة. كن صريحًا: هذا ما يجنّبك الزيارات بلا فائدة.",
+    "contactTitle": "الاتصال والنشر",
+    "contactHint": "يتّصل بك الشارون مباشرة على هذا الرقم. لا يظهر أبدًا في الصفحة: يُعرض فقط لمن يطلبه.",
+    "contactNameLabel": "الاسم الظاهر",
+    "contactNamePlaceholder": "كريم ب.",
+    "phoneLabel": "الهاتف",
+    "governorate": "الولاية",
+    "delegationLabel": "المعتمدية / الحي",
+    "delegationPlaceholder": "المرسى",
+    "preview": "معاينة",
+    "noPhoto": "ما فماش صورة",
+    "priceOnRequestShort": "عند الطلب",
+    "attestation": "أصرّح على شرفي بأنّ جميع المعلومات والصور والوثائق المقدَّمة صحيحة وكاملة وتخصّ هذا العقار فعلًا. وأصرّح بأنّني مالكه أو مفوَّض لبيعه أو لكرائه. وأتحمّل وحدي المسؤولية عن كلّ معلومة خاطئة أو غير دقيقة أو مضلِّلة. وفي حال التصريح الكاذب، يحقّ لمنصّة Mazed Immo رفض الإعلان أو سحبه والاحتفاظ بالمعاليم التي تمّ دفعها.",
+    "feeFromPlan": "النشر من باقتك",
+    "feePublication": "النشر",
+    "feeLabel": "معلوم النشر",
+    "free": "مجاني",
+    "creditExplain": "بدون دفع: يُخصم إعلان واحد من باقتك.",
+    "freeExplain": "مجاني في هذا الصنف: يمرّ إعلانك مباشرة إلى المراجعة.",
+    "paidExplain": "سيتم توجيهك إلى صفحة الدفع. يمرّ الإعلان إلى المراجعة فور استلام وصل الدفع.",
+    "beforePublish": "قبل النشر",
+    "allReady": "كل شيء واجد.",
+    "itemsToComplete": "{count, plural, zero {لا شيء ناقص} one {عنصر واحد ناقص} two {عنصران ناقصان} few {# عناصر ناقصة} many {# عنصرًا ناقصًا} other {# عنصر ناقص}}",
+    "oneMoment": "لحظة…",
+    "sendingPhotos": "جاري رفع الصور…",
+    "publishCta": "انشر إعلاني",
+    "useOneCredit": "{count, plural, zero {باقتك فارغة.} one {يستعمل الإعلان الوحيد في باقتك.} two {يستعمل إعلانًا من الإعلانين في باقتك.} few {يستعمل إعلانًا من # إعلانات في باقتك.} many {يستعمل إعلانًا من # إعلانًا في باقتك.} other {يستعمل إعلانًا من # إعلان في باقتك.}}",
+    "feeShownAfterCategory": "يظهر معلوم النشر بمجرّد اختيار الصنف.",
+    "missingCategory": "اختر نوع العقار.",
+    "missingPhotosUploading": "{count, plural, zero {لا توجد صور قيد الرفع.} one {صورة واحدة ما زالت قيد الرفع…} two {صورتان ما زالتا قيد الرفع…} few {# صور ما زالت قيد الرفع…} many {# صورة ما زالت قيد الرفع…} other {# صورة ما زالت قيد الرفع…}}",
+    "missingPhoto": "أضف صورة واحدة على الأقل.",
+    "missingAttribute": "أدخل {label}.",
+    "missingTitle": "اكتب عنوانًا لإعلانك.",
+    "missingPrice": "أدخل السعر، أو اختر «السعر عند الطلب».",
+    "missingPhone": "يجب إدخال رقم هاتف يمكن الاتصال به.",
+    "missingAttestation": "يجب الموافقة على التصريح على الشرف قبل النشر.",
+    "missingCount": "{count, plural, zero {ما ناقص حتى شيء.} one {قبل ما تنشر، ناقصة حاجة وحدة.} two {قبل ما تنشر، ناقصين زوز حاجات.} few {قبل ما تنشر، ناقصين # حاجات.} many {قبل ما تنشر، ناقصين # حاجة.} other {قبل ما تنشر، ناقصين # حاجة.}}",
+    "saveFailed": "تعذّر الحفظ.",
+    "submitFailed": "تعذّر الإرسال.",
+    "doneTitle": "إعلانك وصلنا",
+    "doneBody": "فريقنا يراجعو قبل النشر — عادةً في أقل من 24 ساعة. نعلموك أول ما يتنشر.",
+    "doneCreditsLeft": "{count, plural, zero {ما بقالك حتى إعلان في الباقة.} one {بقالك إعلان واحد في الباقة.} two {بقالك زوز إعلانات في الباقة.} few {بقالك # إعلانات في الباقة.} many {بقالك # إعلانًا في الباقة.} other {بقالك # إعلان في الباقة.}}",
+    "doneFree": "النشر في هذا الصنف كان مجانيًا.",
+    "seeMyListings": "شوف إعلاناتي",
+    "donePublishedTitle": "إعلانك منشور توّا",
+    "donePublishedBody": "الشارين ينجمو يشوفوه من توّا.",
+    "doneFreeQuota": "النشر متاعك بلاش.",
+    "seeListing": "شوف إعلاني",
+    "freeQuotaExplain": "{left, plural, zero {ما بقاتلكش حتى إعلان مجاني} one {بقالك إعلان مجاني واحد} two {بقالك زوز إعلانات مجانية} few {بقالك # إعلانات مجانية} many {بقالك # إعلانًا مجانيًا} other {بقالك # إعلان مجاني}} من أصل {limit} منشورين في نفس الوقت.",
+    "freeQuotaHint": "النشر بلاش.",
+    "steps": {
+      "where": "شنوّة ووين",
+      "photos": "الصور",
+      "details": "السعر والتفاصيل",
+      "review": "الملخّص"
+    },
+    "stepsAria": "خطوات النشر",
+    "stepOf": "الخطوة {current} من {total}",
+    "next": "كمّل",
+    "back": "رجوع",
+    "stepMissing": "{count, plural, zero {ما ناقص شي في هذه الخطوة.} one {ناقصة معلومة وحدة في هذه الخطوة.} two {ناقصين زوز معلومات في هذه الخطوة.} few {ناقصين # معلومات في هذه الخطوة.} many {ناقصين # معلومة في هذه الخطوة.} other {ناقصين # معلومة في هذه الخطوة.}}",
+    "locationTitle": "وين العقار؟",
+    "feeLinePlain": "معلوم النشر: {amount}",
+    "feeAfterReviewPlain": "{amount} — تُدفع بعد المراجعة.",
+    "reviewTitle": "راجع إعلانك قبل ما تنشرو",
+    "reviewHint": "هكّا باش يشوفو الشارين. بدّل اللي تحب قبل ما تنشر.",
+    "edit": "بدّل",
+    "noDescription": "ما فماش وصف للتوّا.",
+    "tipsTitle": "باش يتنشر إعلانك أسرع",
+    "tipPhotos": "زيد على الأقل {min} صور: أقل من هكّا، الإعلان يتراقب يدويًا.",
+    "tipPhotosOk": "{count, plural, zero {ما فماش صور} one {صورة وحدة} two {زوز صور} few {# صور} many {# صورة} other {# صورة}} — باهي.",
+    "tipContact": "نحّي الرقم ولا الإيميل ولا الرابط من العنوان والوصف: الشارين يكلموك بزرّ «شوف الرقم».",
+    "tipContactOk": "ما فماش معلومات اتصال في النص: رقمك يبقى محمي.",
+    "tipPrice": "السعر يبان غريب على هذه المساحة. ثبّت في الأصفار.",
+    "tipPriceOk": "السعر معقول بالنسبة للمساحة.",
+    "tipDescription": "زيد كم سطر في الوصف: الحالة، الحومة، المزايا.",
+    "tipDescriptionOk": "الوصف مكتوب.",
+    "fix": "صلّح",
+    "dealTitle": "شنوّة تحب تعمل؟",
+    "dealSaleCta": "نبيع",
+    "dealSaleHint": "سعر بيع، يتخلّص مرّة وحدة",
+    "dealRentCta": "نكري",
+    "dealRentHint": "كراء، كل شهر",
+    "dealSale": "للبيع",
+    "dealRent": "للكراء",
+    "categoryTitleRent": "شنوّة تحب تكري؟",
+    "titleForRent": "{category} للكراء",
+    "rentTitle": "العنوان والكراء",
+    "rentHint": "نقترح العنوان حسب ما أدخلته. الكراء هو المبلغ في الشهر؛ والباقي عمّر اللي تعرفو.",
+    "rentLabel": "الكراء في الشهر",
+    "tndPerMonth": "د.ت / شهر",
+    "depositLabel": "الضمان (الكوسيون)",
+    "chargesLabel": "المصاريف في الشهر",
+    "furnishedLabel": "الفرش",
+    "furnished": {
+      "furnished": "مفروش",
+      "semi": "نص مفروش",
+      "unfurnished": "فارغ"
+    },
+    "availableFromLabel": "فارغ من نهار",
+    "minLeaseLabel": "أقل مدّة",
+    "monthsUnit": "شهر",
+    "rentFieldsHint": "الضمان والمصاريف والتاريخ يظهرو في الإعلان. وكي يكون الضمان والمصاريف مكتوبين، نوريو زادة قدّاش يكلّف الدخول.",
+    "perMonth": "{amount} في الشهر",
+    "rentDepositShort": "ضمان {amount}",
+    "rentChargesShort": "مصاريف {amount} في الشهر",
+    "rentNoCharges": "بلا مصاريف",
+    "availableFromShort": "فارغ من {date}",
+    "minLeaseShort": "{count, plural, zero {بلا أقل مدّة} one {شهر على الأقل} two {شهرين على الأقل} few {# شهور على الأقل} many {# شهر على الأقل} other {# شهر على الأقل}}",
+    "moveInCost": "عند الدخول: {amount} (الكراء والضمان والمصاريف)",
+    "missingRent": "أدخل مبلغ الكراء في الشهر، أو اختر «السعر عند الطلب».",
+    "tipPriceRent": "الكراء يبان غريب على هذه المساحة. ثبّت إلّي هو المبلغ في الشهر.",
+    "aiTitle": "احكيلنا على عقارك في جملة",
+    "aiHint": "اكتب كيف تحكي: «عندي دار في صفاقس، طريق قرمدة، 180 متر، نحب نبيعها بـ350 مليون». نعمّرو الخطوات، وانت تثبّت.",
+    "aiPlaceholder": "مثلًا: شقة S+2 في سوسة، 110 متر، طابق ثاني، للكراء بـ1200 د.ت في الشهر، مفروشة.",
+    "aiCta": "عمّرلي الإعلان",
+    "aiWorking": "نقراو…",
+    "aiDone": "عمّرنا اللي فهمناه. ثبّت كل خطوة قبل ما تنشر.",
+    "aiFailed": "ما نجّمناش نقراو الجملة توّا. عمّر الإعلان عادي.",
+    "aiTooShort": "اكتب جملة أطول شويّة.",
+    "aiQuestions": "باش يكمل الإعلان، قلّنا زادة:",
+    "aiPrivacy": "رقمك والإيميل ما يتبعثو لحتى حد. وما يتنشر شي قبل ما تثبّتو انت.",
+    "editTitle": "بدّل إعلاني",
+    "editSubtitle": "صلّح اللي يلزم. الإعلان يقعد منشور في الأثناء.",
+    "editBanner": "راك تبدّل في إعلان منشور. حتى شي ما يتبدّل قبل ما تسجّل.",
+    "editPendingBanner": "التبديل الأخير متاعك يستنّى المراجعة: تشوفو كيف ما بعثتو.",
+    "editWaitingSubtitle": "صلّح اللي يلزم قبل ما يتنشر.",
+    "editWaitingBanner": "إعلانك مازال يستنّى المراجعة. التصليحات متاعك تعوّضو أوّل ما تسجّل.",
+    "editWaitingNote": "تصليح إعلان في المراجعة بلاش. كان توّا يعدّي المراقبة، يتنشر طول؛ وإلا يقعد يستنّى، بالتصليحات متاعك.",
+    "saveChanges": "سجّل التبديلات",
+    "editFreeNote": "تبديل الإعلان بلاش وما يبدّلش تاريخ نهايتو. كان التبديل لازمو مراجعة، الإعلان يقعد منشور كيما هو في الأثناء.",
+    "editFailed": "ما نجّمناش نسجّلو التبديلات توّا.",
+    "editAppliedTitle": "التبديلات منشورة",
+    "editAppliedBody": "إعلانك يورّي النسخة الجديدة توّا.",
+    "editPendingTitle": "التبديلات تبعثت",
+    "editPendingBody": "الفريق متاعنا يراجع التبديلات. إعلانك يقعد منشور كيما كان، ونعلموك كي تتنشر.",
+    "publishFor": "انشر لـ",
+    "publishForMe": "أنا",
+    "publishForMeHint": "إعلان خاص",
+    "publishForNoPlan": "بلا اشتراك: قواعد الخواص متاعك",
+    "publishForPlanLeft": "{count, plural, zero {الاشتراك كامل} one {بقالك إعلان واحد في الاشتراك} two {بقالك زوز إعلانات في الاشتراك} few {بقالك # إعلانات في الاشتراك} many {بقالك # إعلانًا في الاشتراك} other {بقالك # إعلان في الاشتراك}}",
+    "feeShopPlan": "اشتراك البوتيك",
+    "included": "داخل",
+    "shopPlanExplain": "منشور لـ « {name} »، يتحسب في الاشتراك متاعها. {count, plural, zero {ما بقى حتى إعلان.} one {بقى إعلان واحد.} two {بقاو زوز إعلانات.} few {بقاو # إعلانات.} many {بقى # إعلانًا.} other {بقى # إعلان.}}",
+    "planHint": "داخل في اشتراك « {name} ».",
+    "doneSubscription": "{count, plural, zero {اشتراك البوتيك توّا كامل.} one {بقى إعلان واحد في اشتراك البوتيك.} two {بقاو زوز إعلانات في اشتراك البوتيك.} few {بقاو # إعلانات في اشتراك البوتيك.} many {بقى # إعلانًا في اشتراك البوتيك.} other {بقى # إعلان في اشتراك البوتيك.}}",
+    "perMonthWords": "في الشهر",
+    "priceFixTitle": "صفر زايد، ولا ناقص؟",
+    "priceFixBody": "كتبت {typed}. الإعلانات اللي كيفو عادةً قريب من {fix}.",
+    "priceFixApply": "صلّح: {fix}",
+    "priceFixKeep": "لا، هكا صحيح",
+    "correct": "صلّح الإعلان",
+    "editWaitingTitle": "التصليح تسجّل",
+    "editWaitingBody": "إعلانك مازال يستنّى المراجعة، بالتصليحات متاعك. نعلموك أوّل ما يتنشر.",
+    "tipPriceTypo": "صفر زايد في السوم؟ الإعلانات اللي كيفو عادةً قريب من {fix}.",
+    "estimateLocal": "حسب {count, plural, zero {حتى إعلان} one {إعلان واحد} two {زوز إعلانات} few {# إعلانات} many {# إعلانًا} other {# إعلان}} كيفو في {governorate}: بين {low} و{high} للمساحة هذي.",
+    "estimateNational": "حسب {count, plural, zero {حتى إعلان} one {إعلان واحد} two {زوز إعلانات} few {# إعلانات} many {# إعلانًا} other {# إعلان}} كيفو في تونس: بين {low} و{high} للمساحة هذي."
+  },
+  "photoUploader": {
+    "addPhotos": "زيد صورك",
+    "addMorePhotos": "زيد صور أخرى",
+    "limitRoom": "حتى {max, plural, zero {# صورة} one {صورة واحدة} two {صورتين} few {# صور} many {# صورة} other {# صورة}} · {room, plural, zero {لم يبقَ مكان} one {بقيت صورة واحدة} two {بقيت صورتان} few {بقيت # صور} many {بقيت # صورة} other {بقيت # صورة}}",
+    "limitReached": "تم بلوغ الحدّ الأقصى: {max, plural, zero {# صورة} one {صورة واحدة} two {صورتان} few {# صور} many {# صورة} other {# صورة}}",
+    "maxPhotos": "الحدّ الأقصى {max, plural, zero {# صورة} one {صورة واحدة} two {صورتان} few {# صور} many {# صورة} other {# صورة}}.",
+    "filesIgnored": "{count, plural, zero {لم يتم تجاهل أي ملف.} one {تم تجاهل ملف واحد: أرسل صورًا (JPEG، PNG، HEIC، WebP).} two {تم تجاهل ملفّين: أرسل صورًا (JPEG، PNG، HEIC، WebP).} few {تم تجاهل # ملفات: أرسل صورًا (JPEG، PNG، HEIC، WebP).} many {تم تجاهل # ملفًا: أرسل صورًا (JPEG، PNG، HEIC، WebP).} other {تم تجاهل # ملف: أرسل صورًا (JPEG، PNG، HEIC، WebP).}}",
+    "tooBig": "الملف «{name}» يتجاوز {mb} ميغابايت.",
+    "serverRefused": "رفض الخادم رفع الصورة.",
+    "unexpectedResponse": "ردّ غير متوقّع من الخادم.",
+    "putRefused": "تم رفض الرفع ({status}).",
+    "tooSlow": "الاتصال بطيء جدًا.",
+    "sendFailed": "فشل الرفع.",
+    "sendingCount": "{count, plural, zero {لا توجد صور قيد الرفع.} one {جاري رفع صورة واحدة… لا تغادر هذه الصفحة.} two {جاري رفع صورتين… لا تغادر هذه الصفحة.} few {جاري رفع # صور… لا تغادر هذه الصفحة.} many {جاري رفع # صورة… لا تغادر هذه الصفحة.} other {جاري رفع # صورة… لا تغادر هذه الصفحة.}}",
+    "failedCount": "{count, plural, zero {تم رفع كل الصور.} one {تعذّر رفع صورة واحدة. أعد المحاولة أسفله.} two {تعذّر رفع صورتين. أعد المحاولة أسفله.} few {تعذّر رفع # صور. أعد المحاولة أسفله.} many {تعذّر رفع # صورة. أعد المحاولة أسفله.} other {تعذّر رفع # صورة. أعد المحاولة أسفله.}}",
+    "sentCount": "{count, plural, zero {لم يتم رفع أي صورة.} one {تم رفع صورة واحدة · هي صورة الغلاف لإعلانك.} two {تم رفع صورتين · الأولى هي صورة الغلاف لإعلانك.} few {تم رفع # صور · الأولى هي صورة الغلاف لإعلانك.} many {تم رفع # صورة · الأولى هي صورة الغلاف لإعلانك.} other {تم رفع # صورة · الأولى هي صورة الغلاف لإعلانك.}}",
+    "reorderHint": "الصورة الأولى هي صورة الغلاف. استعمل الأسهم لتغيير الترتيب، أو النجمة لاختيار صورة الغلاف مباشرة.",
+    "cover": "الغلاف",
+    "moveBefore": "تقديم الصورة",
+    "makeCover": "اجعلها صورة الغلاف",
+    "deletePhoto": "احذف الصورة",
+    "moveAfter": "تأخير الصورة",
+    "retry": "عاود",
+    "remove": "نحّي",
+    "preparing": "تحضير",
+    "sending": "رفع",
+    "cancelUpload": "إلغاء رفع هذه الصورة"
+  },
+  "publishApi": {
+    "incomplete": "الصنف والعنوان والولاية مطلوبة.",
+    "categoryNotLeaf": "اختر صنفًا فرعيًا.",
+    "priceRequired": "أدخل السعر، أو اختر «السعر عند الطلب».",
+    "notEditable": "هذا الإعلان قيد المعالجة حاليًا.",
+    "photoRateLimited": "عدد كبير جدًا من عمليات رفع الصور. أعد المحاولة بعد ساعة.",
+    "notSubmittable": "حالة هذا الإعلان حاليًا: «{status}».",
+    "statuses": {
+      "pending_review": "قيد المراجعة",
+      "published": "منشور",
+      "expired": "منتهي الصلاحية",
+      "archived": "مؤرشف",
+      "sold": "مُباع",
+      "rented": "مُؤجَّر"
+    },
+    "contactRequired": "أضف رقم هاتف يمكن الاتصال به.",
+    "attestationRequired": "يجب الموافقة على التصريح على الشرف.",
+    "photoRequired": "أضف صورة واحدة على الأقل.",
+    "editOnlyLive": "كان الإعلان المنشور ولا اللي في المراجعة يتبدّل هنا.",
+    "editHeldReported": "الإعلان هذا بلّغ عليه زوّار: فريقنا يراجعو كيما هو قبل أي تبديل."
+  },
+  "auth": {
+    "hero": {
+      "badge": "الإعلانات العقارية في تونس",
+      "title": "اشري وبيع بكل ثقة.",
+      "secureTitle": "آمن 100%",
+      "secureSub": "معاملات موثّقة",
+      "transparencyTitle": "شفافية كاملة",
+      "transparencySub": "معلومات متحقَّق منها",
+      "simpleTitle": "ساهل وسريع",
+      "simpleSub": "حطّ إعلانك في دقايق",
+      "users": "أكثر من 12.000 مستخدم",
+      "trust": "يثقو فينا"
+    },
+    "phoneInput": {
+      "dialCodeLabel": "رمز الدولة — حاليًا {country}",
+      "numberLabel": "رقم الهاتف",
+      "listLabel": "قائمة رموز الدول"
+    },
+    "fields": {
+      "phone": "رقم الهاتف",
+      "password": "كلمة السر",
+      "passwordMin": "كلمة السر (8 أحرف على الأقل)",
+      "newPasswordMin": "كلمة السر الجديدة (8 أحرف على الأقل)",
+      "confirm": "تأكيد كلمة السر",
+      "fullName": "الاسم الكامل",
+      "governorate": "الولاية",
+      "governoratePlaceholder": "اختر ولايتك…"
+    },
+    "errors": {
+      "invalidNumber": "رقم غير صالح.",
+      "invalidPhone": "رقم الهاتف غير صالح.",
+      "tooManyAttemptsMinutes": "محاولات كثيرة. أعد المحاولة بعد بضع دقائق.",
+      "tooManyAttempts": "محاولات كثيرة. أعد المحاولة بعد قليل.",
+      "invalidCredentials": "بيانات الدخول غير صحيحة. تحقّق من الرقم وكلمة السر.",
+      "serverUnreachableCheck": "تعذّر الاتصال بالخادم. تحقّق من اتصالك بالإنترنت وحاول من جديد.",
+      "serverUnreachable": "تعذّر الاتصال بالخادم. حاول من جديد.",
+      "smsSendFailed": "تعذّر إرسال رمز التحقق عبر SMS. حاول من جديد بعد قليل.",
+      "weakPassword": "كلمة السر قصيرة جدًا (8 أحرف على الأقل).",
+      "passwordTooShort": "يجب أن تتكوّن كلمة السر من 8 أحرف على الأقل.",
+      "passwordMismatch": "كلمتا السر غير متطابقتين.",
+      "networkError": "خطأ في الشبكة. حاول من جديد."
+    },
+    "login": {
+      "metaTitle": "تسجيل الدخول — Mazed Immo",
+      "welcome": "مرحبا بيك في <brand>Mazed Immo</brand>",
+      "submitting": "جاري تسجيل الدخول…",
+      "forgotPassword": "نسيت كلمة السر؟",
+      "noAccount": "ما عندكش حساب؟"
+    },
+    "signup": {
+      "metaTitle": "إنشاء حساب — Mazed Immo",
+      "alreadyMember": "عندك حساب؟",
+      "phoneTaken": "هذا الرقم مرتبط بحساب موجود. سجّل دخولك.",
+      "phoneNotVerified": "يجب التحقق من الرقم. حاول من جديد.",
+      "createFailed": "تعذّر إنشاء الحساب. حاول من جديد.",
+      "governorateRequired": "اختر ولايتك للمواصلة.",
+      "acceptRequired": "يرجى الموافقة على شروط الاستعمال وسياسة الخصوصية.",
+      "accept": "<accept>أوافق على</accept> <terms>شروط الاستعمال</terms> <accept>و</accept><privacy>سياسة الخصوصية</privacy>.",
+      "acceptFirst": "وافق على شروط الاستعمال",
+      "submitting": "جاري إنشاء الحساب…",
+      "proNote": "وكالة عقارية أو مهني؟ أنشئ حسابك هنا — <badge>شارة البائع الموثّق</badge> يمنحها فريقنا."
+    },
+    "otp": {
+      "title": "أكّد رقم هاتفك",
+      "sentTo": "أدخل الرمز المكوّن من 6 أرقام المُرسَل عبر SMS إلى <b>{phone}</b>.",
+      "codeLabel": "رمز التحقق المكوّن من 6 أرقام",
+      "enterCode": "أدخل الرمز المكوّن من 6 أرقام.",
+      "verifying": "جاري التحقق…",
+      "verifyAndCreate": "تأكيد وإنشاء الحساب",
+      "verify": "أكّد الرمز",
+      "resend": "عاود ابعث الرمز",
+      "resendIn": "عاود ابعث الرمز (بعد {seconds, plural, zero {# ثانية} one {ثانية} two {ثانيتين} few {# ثواني} many {# ثانية} other {# ثانية}})",
+      "editInfo": "بدّل معلوماتي",
+      "changeNumber": "بدّل الرقم",
+      "wrongCode": "الرمز غير صحيح.",
+      "expired": "انتهت صلاحية الرمز. اطلب رمزًا جديدًا.",
+      "noCode": "لا يوجد رمز صالح حاليًا. اطلب رمزًا جديدًا.",
+      "tooManyAttempts": "محاولات كثيرة. اطلب رمزًا جديدًا.",
+      "failed": "فشل التحقق.",
+      "resendFailed": "تعذّرت إعادة الإرسال. حاول من جديد."
+    },
+    "newPassword": {
+      "updating": "جاري التحديث…",
+      "update": "بدّل كلمة السر",
+      "updated": "تم تحديث كلمة السر",
+      "redirecting": "جاري التحويل إلى صفحة تسجيل الدخول…"
+    },
+    "forgot": {
+      "metaTitle": "نسيت كلمة السر — Mazed Immo",
+      "title": "نسيت كلمة السر",
+      "intro": "أدخل رقمك — سنرسل إليك رمزًا عبر SMS لإعادة تعيين كلمة السر.",
+      "remember": "تفكّرتها؟",
+      "signIn": "تسجيل الدخول",
+      "smsUnavailable": "إعادة تعيين كلمة السر عبر SMS غير متاحة حاليًا. اتصل بالدعم.",
+      "sending": "جاري الإرسال…",
+      "sendCode": "ابعث الرمز بالـSMS",
+      "noAccount": "لا يوجد حساب مرتبط بهذا الرقم.",
+      "verificationExpired": "انتهت صلاحية التحقق. أعد العملية من البداية.",
+      "resetFailed": "تعذّرت إعادة تعيين كلمة السر. حاول من جديد."
+    },
+    "reset": {
+      "metaTitle": "كلمة سر جديدة — Mazed Immo",
+      "title": "كلمة سر جديدة",
+      "intro": "اختر كلمة سر جديدة لحسابك.",
+      "checkingLink": "جاري التحقق من الرابط…",
+      "invalidLink": "الرابط غير صالح أو منتهي الصلاحية. <link>اطلب رابطًا جديدًا</link>."
+    }
+  },
+  "legal": {
+    "home": "الرئيسية",
+    "eyebrow": "قانوني",
+    "lastUpdated": "آخر تحديث: {date}",
+    "terms": {
+      "metaTitle": "شروط الاستعمال — Mazed Immo",
+      "title": "شروط الاستعمال",
+      "sections": {
+        "purpose": {
+          "title": "1. الموضوع",
+          "body": "تنظّم هذه الشروط العامة استعمال Mazed Immo، وهي منصة للإعلانات العقارية المبوّبة في تونس: أراضٍ ومنازل وشقق وفيلات ومكاتب ومحلات. بإنشائك حسابًا، فإنك توافق على هذه الشروط كاملةً."
+        },
+        "account": {
+          "title": "2. الحساب",
+          "body": "يجب عليك تقديم معلومات صحيحة عند التسجيل، ولا سيما رقم هاتف يكون تحت تصرّفك. وأنت مسؤول عن سرّية بيانات الدخول الخاصة بك وعن كل نشاط يتم من حسابك."
+        },
+        "listings": {
+          "title": "3. الإعلانات",
+          "body": "يضمن البائع أنه مخوَّل لعرض العقار وأن المعلومات والسعر والصور المنشورة صحيحة. يراجع فريقنا كل إعلان قبل نشره. ويجوز لـ Mazed Immo رفض أي إعلان مضلِّل أو مخالف للقانون أو لهذه الشروط، أو تعليقه أو سحبه."
+        },
+        "fees": {
+          "title": "4. المعاليم",
+          "body": "تُعرض معاليم النشر وخيارات الإبراز قبل أي دفع، بالدينار التونسي (د.ت). يتم الدفع عن طريق تحويل بنكي أو D17، مقابل إثبات دفع يتحقق منه فريقنا. ولا تُستردّ المعاليم المدفوعة إذا سُحب إعلان بسبب عدم احترام هذه الشروط."
+        },
+        "matching": {
+          "title": "5. الربط بين الأطراف",
+          "body": "تربط Mazed Immo بين البائعين والشارين ولا تتدخّل في المعاملة: يتم التفاوض ودفع الثمن والإمضاء مباشرة بين الطرفين. ويُمنح رقم البائع عند الطلب. قبل أي دفع، عاين العقار، واطلب سند الملكية، واستعن بعدل إشهاد."
+        },
+        "liability": {
+          "title": "6. المسؤولية",
+          "body": "يتحمّل الطرفان المسؤولية عن الوضعية القانونية للعقار، وعن صحة المعلومات التي يقدّمها البائع، وعن حسن سير البيع. ولا يمكن تحميل Mazed Immo مسؤولية أي نزاع بينهما."
+        },
+        "suspension": {
+          "title": "7. التعليق والإنهاء",
+          "body": "يجوز لنا تعليق أي حساب أو غلقه في حالة الاحتيال أو التعسّف أو مخالفة هذه الشروط. ويمكنك حذف حسابك في أي وقت من صفحة «حسابي»."
+        },
+        "changes": {
+          "title": "8. التعديلات",
+          "body": "قد تتغيّر هذه الشروط. والنسخة السارية هي المنشورة في هذه الصفحة."
+        }
+      }
+    },
+    "privacy": {
+      "metaTitle": "سياسة الخصوصية — Mazed Immo",
+      "title": "سياسة الخصوصية",
+      "sections": {
+        "collected": {
+          "title": "1. البيانات التي نجمعها",
+          "body": "نجمع المعلومات التي تقدّمها — الاسم ورقم الهاتف والولاية ومحتوى إعلاناتك وصورها وإثباتات الدفع — إضافة إلى بيانات الاستعمال اللازمة لتشغيل الخدمة وتأمينها."
+        },
+        "use": {
+          "title": "2. الاستعمال",
+          "body": "تُستعمل بياناتك لإنشاء حسابك وتأمينه، ومراجعة إعلاناتك ونشرها، ومعالجة مدفوعاتك، وإرسال الإشعارات المتعلقة بنشاطك."
+        },
+        "phone": {
+          "title": "3. رقم هاتفك",
+          "body": "لا يُعرض الرقم المرتبط بإعلان في الصفحة أبدًا. ولا يُمنح إلا للشخص الذي يطلبه، ويُسجَّل كل طلب ويخضع لحدّ أقصى لمنع الجمع الآلي."
+        },
+        "sharing": {
+          "title": "4. المشاركة",
+          "body": "لا نبيع بياناتك. ويمكن مشاركتها مع مزوّدي خدمات لا غنى عنهم (الاستضافة وإرسال الرسائل القصيرة والبريد الإلكتروني) ومع السلطات عندما يقتضي القانون ذلك."
+        },
+        "retention": {
+          "title": "5. الحفظ والأمان",
+          "body": "تُحفظ إثباتات الدفع في فضاء خاص لا يطّلع عليه إلا فريقنا للتحقق منها. ونطبّق تدابير تقنية وتنظيمية لحماية بياناتك، ولا نحتفظ بها إلا للمدة اللازمة."
+        },
+        "rights": {
+          "title": "6. حقوقك",
+          "body": "يمكنك طلب الاطلاع على بياناتك أو تصحيحها أو حذفها، أو حذف حسابك من صفحة «حسابي». ولأي سؤال، راسلنا عبر صفحة «اتصل بنا»."
+        },
+        "cookies": {
+          "title": "7. ملفات تعريف الارتباط (الكوكيز)",
+          "body": "نستعمل ملفات تعريف ارتباط ضرورية لتشغيل الموقع (الجلسة والتفضيلات)، وقياسًا مجهول الهوية لعدد الزوار."
+        }
+      }
+    }
+  },
+  "contact": {
+    "metaTitle": "اتصل بنا — Mazed Immo",
+    "eyebrow": "مساعدة",
+    "title": "تواصل معانا",
+    "intro": "عندك سؤال على إعلان، على خلاص ولا على حسابك؟ فريقنا موجود باش يعاونك.",
+    "pending": "رقم الهاتف والبريد الإلكتروني الخاصّان بنا قيد النشر. وفي الأثناء، يصلك إشعار بكل قرار يخصّ إعلاناتك ومدفوعاتك داخل التطبيق وعبر SMS.",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "address": "العنوان",
+    "addressValue": "صفاقس، تونس",
+    "hours": "أوقات العمل",
+    "hoursValue": "من الإثنين إلى الجمعة، من 9:00 إلى 17:00",
+    "whatsapp": "واتساب",
+    "whatsappNote": "مساجات برك — ما فماش مكالمات"
+  },
+  "errors": {
+    "boundary": {
+      "networkTitle": "انقطع الاتصال",
+      "title": "صار مشكل",
+      "networkBody": "يبدو أن جهازك غير متصل بالإنترنت. سيُعاد تحميل الصفحة تلقائيًا فور عودة الاتصال.",
+      "body": "قطع خطأ غير متوقّع عرض الصفحة. يمكنك إعادة المحاولة؛ وإذا استمرّت المشكلة، أبلغ الفريق بها.",
+      "ref": "المرجع · {digest}",
+      "retrying": "جاري إعادة الاتصال…",
+      "retry": "عاود جرّب",
+      "home": "الرئيسية"
+    },
+    "notFound": {
+      "title": "الصفحة هذي ما لقيناهاش",
+      "body": "الرابط اللي تبعتو غير موجود ولا تبدّل.",
+      "home": "ارجع للرئيسية"
+    }
+  },
+  "adminPayments": {
+    "serviceUnavailable": "الخدمة غير مهيّأة.",
+    "title": "المدفوعات",
+    "tabs": {
+      "pending": "قيد المراجعة",
+      "captured": "مقبولة",
+      "failed": "مرفوضة",
+      "all": "الكل"
+    },
+    "searchPlaceholder": "المرجع، السبب…",
+    "thisMonth": "هذا الشهر",
+    "total": "المجموع",
+    "amount": "{amount} د.ت",
+    "emptyFiltered": "لا توجد عملية دفع مطابقة",
+    "emptyTab": "لا شيء في «{tab}»",
+    "emptyFilteredHint": "جرّب كلمة أخرى أو بدّل التبويب.",
+    "emptyHint": "لا يوجد وصل في انتظار قرار.",
+    "noName": "بدون اسم",
+    "noReceiptTag": "بدون وصل",
+    "pickOne": "اختر عملية دفع من القائمة.",
+    "keysHint": "j / k للتنقّل، Enter للفتح.",
+    "kinds": {
+      "listing_fee": "نشر الإعلان",
+      "listing_pack": "باقة إعلانات",
+      "subscription": "اشتراك",
+      "promo": "إبراز",
+      "badge": "شارة بائع موثّق",
+      "renewal": "تجديد"
+    },
+    "providers": {
+      "bank_transfer": "تحويل بنكي",
+      "d17": "D17",
+      "manual": "نقدًا / يدوي",
+      "konnect": "Konnect",
+      "paymee": "Paymee",
+      "flouci": "Flouci"
+    },
+    "detail": {
+      "back": "القائمة",
+      "receipt": "وصل الدفع",
+      "receiptN": "وصل الدفع {n}",
+      "noReceipt": "لم يُرسَل أي وصل لهذا الدفع.",
+      "rejectionReason": "سبب الرفض:",
+      "paymentSection": "الدفع",
+      "amountLabel": "المبلغ",
+      "for": "مقابل",
+      "method": "طريقة الدفع",
+      "initiatedAt": "تاريخ الإنشاء",
+      "receiptSentAt": "تاريخ إرسال الوصل",
+      "processedAt": "تاريخ المعالجة",
+      "sellerSection": "البائع",
+      "name": "الاسم",
+      "phone": "رقم الهاتف",
+      "listingSection": "الإعلان المعني",
+      "listingTitle": "العنوان",
+      "listingStatus": "الحالة",
+      "acceptNote": "قبول هذا الوصل يحوّل الإعلان إلى المراجعة — لا يُنشر تلقائيًا.",
+      "accept": "قبول الوصل",
+      "reject": "رفض",
+      "alreadyProcessed": "تمت المعالجة — لا يوجد قرار لاتخاذه هنا.",
+      "confirmAcceptTitle": "قبول {amount}؟",
+      "confirmAcceptBodyListing": "يُسجَّل الدفع ويمرّ الإعلان إلى المراجعة.",
+      "confirmAcceptBody": "يُسجَّل الدفع ويُمنح البائع ما اشتراه.",
+      "confirmAcceptLabel": "قبول",
+      "accepted": "تم قبول الوصل.",
+      "confirmRejectTitle": "رفض هذا الوصل؟",
+      "confirmRejectBody": "يتلقّى البائع السبب ويمكنه إرسال وصل آخر.",
+      "confirmRejectLabel": "رفض",
+      "reasonLabel": "السبب (يُرسَل إلى البائع)",
+      "reasonPlaceholder": "مبلغ مختلف، وصل غير مقروء، تحويل غير موجود…",
+      "rejected": "تم رفض الوصل."
+    },
+    "api": {
+      "alreadyResolved": "تمت معالجة هذا الدفع من قبل (الحالة: «{status}»).",
+      "wrongKind": "«{kind}» يخصّ منتج المزادات، الذي لم يعد موجودًا.",
+      "reasonRequired": "اشرح للبائع ما المشكل — يجب أن يتمكّن من إرسال وصل صالح."
+    }
+  },
+  "adminActivity": {
+    "eyebrow": "النظام · المراقبة",
+    "title": "سجلّ النشاط",
+    "description": "من يزور المنصّة، وأي صفحات، وما الإجراءات المنجزة.",
+    "kpiViews": "مشاهدات الصفحات · 24 ساعة",
+    "kpiActions": "الإجراءات · 24 ساعة",
+    "kpiTotal": "مجموع الأحداث",
+    "types": {
+      "all": "الكل",
+      "page_view": "الصفحات المزارة",
+      "action": "الإجراءات",
+      "error": "الأخطاء"
+    },
+    "searchPlaceholder": "البريد الإلكتروني، الصفحة أو الإجراء…",
+    "empty": "لا يوجد نشاط مسجّل.",
+    "columns": {
+      "when": "التوقيت",
+      "user": "المستخدم",
+      "event": "الحدث",
+      "page": "الصفحة / التفاصيل",
+      "ip": "IP",
+      "device": "الجهاز"
+    },
+    "anonymous": "مجهول",
+    "pageView": "مشاهدة صفحة",
+    "actionFallback": "إجراء",
+    "browserFallback": "متصفّح",
+    "actions": {
+      "paymentCaptured": "تم قبول الدفع",
+      "paymentFailed": "تم رفض الدفع",
+      "paymentManual": "تم تسجيل دفع يدوي",
+      "kycVerified": "تم قبول KYC",
+      "kycRejected": "تم رفض KYC",
+      "propertyReady": "تم قبول الإعلان",
+      "propertyRejected": "تم رفض الإعلان",
+      "propertyPendingReview": "أُعيد الإعلان إلى قائمة المراجعة",
+      "payoutRequest": "تم طلب سحب",
+      "payoutProcessing": "سحب قيد المعالجة",
+      "payoutPaid": "تم دفع السحب",
+      "payoutRejected": "تم رفض السحب",
+      "depositPrepare": "تم تجهيز الضمانات",
+      "depositRefund": "تم استرجاع الضمان",
+      "depositForfeit": "تمت مصادرة الضمان",
+      "inspectorApproved": "تم قبول الخبير",
+      "notificationBroadcast": "تم إرسال إشعار جماعي",
+      "notificationDelete": "تم حذف إشعار",
+      "notificationBulkDelete": "تم حذف إشعارات",
+      "settingsUpdate": "تم تعديل الإعدادات",
+      "homeFeature": "إبراز (الصفحة الرئيسية)",
+      "characteristicsUpdate": "تم تعديل الخصائص",
+      "legalDocsUpdate": "تم تعديل الوثائق القانونية",
+      "popupCreate": "تم إنشاء نافذة منبثقة",
+      "popupUpdate": "تم تعديل نافذة منبثقة",
+      "popupDelete": "تم حذف نافذة منبثقة",
+      "logout": "خروج"
+    }
+  },
+  "adminNotifications": {
+    "eyebrow": "أدوات الإدارة",
+    "title": "الإشعارات",
+    "description": "اكتب رسالة ظرفية أو راجع القائمة الكاملة للإشعارات المرسلة.",
+    "tabs": {
+      "compose": "كتابة",
+      "queue": "القائمة"
+    },
+    "compose": {
+      "type": "النوع",
+      "recipients": "المستلمون",
+      "audience": {
+        "all": "الجميع",
+        "role": "حسب الدور",
+        "users": "مستخدمون محدّدون"
+      },
+      "userIdsPlaceholder": "معرّف المستخدم، واحد في كل سطر (أو مفصولة بفواصل)",
+      "preview": "معاينة",
+      "sendTest": "أرسل اختبارًا لي",
+      "sending": "جارٍ الإرسال...",
+      "broadcast": "أرسل للجميع",
+      "missingRequired": "حقول مطلوبة ناقصة",
+      "testSent": "تم إرسال الاختبار.",
+      "broadcastSent": "تم إرسال الإشعار.",
+      "recipientCount": "{count, plural, zero {لا يوجد أي مستلم} one {مستلم واحد} two {مستلمان} few {# مستلمين} many {# مستلمًا} other {# مستلم}}",
+      "error": "خطأ: {error}",
+      "yes": "نعم",
+      "payload": "البيانات المرفقة",
+      "previewTitle": "عنوان الإشعار"
+    },
+    "kinds": {
+      "announcement": {
+        "label": "إعلان عام",
+        "description": "ميزة جديدة، تغيير في السياسة، تواصل حول المنتج.",
+        "fields": {
+          "title": {
+            "label": "العنوان",
+            "placeholder": "ميزة جديدة متاحة"
+          },
+          "body": {
+            "label": "الرسالة",
+            "placeholder": "اكتب نص الإعلان."
+          },
+          "link": {
+            "label": "الرابط (اختياري)",
+            "placeholder": "/properties"
+          },
+          "cta_label": {
+            "label": "نص الزر",
+            "placeholder": "اعرف أكثر",
+            "helper": "نص زر الإجراء المعروض مع الرابط."
+          }
+        }
+      },
+      "maintenance": {
+        "label": "صيانة",
+        "description": "توقّف مبرمج، فترة صيانة.",
+        "fields": {
+          "title": {
+            "label": "العنوان",
+            "placeholder": "صيانة مبرمجة"
+          },
+          "body": {
+            "label": "الرسالة",
+            "placeholder": "تفاصيل الصيانة."
+          },
+          "scheduled_at": {
+            "label": "البداية المتوقّعة",
+            "helper": "بالتوقيت المحلي (تونس)."
+          },
+          "duration_min": {
+            "label": "المدة (بالدقائق)",
+            "placeholder": "60"
+          },
+          "affected": {
+            "label": "الخدمات المعنية",
+            "placeholder": "النشر، المدفوعات"
+          }
+        }
+      },
+      "promo": {
+        "label": "عرض / أخبار",
+        "description": "عرض محدود، حدث، إبراز إعلان.",
+        "fields": {
+          "title": {
+            "label": "العنوان",
+            "placeholder": "النشر مجاني نهاية هذا الأسبوع"
+          },
+          "body": {
+            "label": "الرسالة",
+            "placeholder": "تفاصيل العرض."
+          },
+          "link": {
+            "label": "الرابط",
+            "placeholder": "/annonces"
+          },
+          "cta_label": {
+            "label": "نص الزر",
+            "placeholder": "شوف العرض"
+          },
+          "expires_at": {
+            "label": "ينتهي في",
+            "helper": "لا يبقى العرض صالحًا بعد هذا التاريخ."
+          },
+          "promo_code": {
+            "label": "رمز الترويج",
+            "placeholder": "MAZED2026"
+          }
+        }
+      },
+      "system_alert": {
+        "label": "تنبيه النظام",
+        "description": "عطل، مشكل معروف، تعليمات لإجراء عاجل.",
+        "fields": {
+          "title": {
+            "label": "العنوان",
+            "placeholder": "تم رصد مشكل في الدفع"
+          },
+          "body": {
+            "label": "الرسالة",
+            "placeholder": "تفاصيل المشكل والحل."
+          },
+          "severity": {
+            "label": "درجة الخطورة",
+            "options": {
+              "info": "معلومة",
+              "warning": "تحذير",
+              "error": "حرج"
+            }
+          },
+          "action_required": {
+            "label": "إجراء مطلوب من المستخدم"
+          }
+        }
+      }
+    },
+    "queue": {
+      "loadFailed": "فشل التحميل",
+      "deleteFailed": "فشل الحذف",
+      "deleted": "{count, plural, zero {لم يُحذف أي إشعار.} one {تم حذف إشعار واحد.} two {تم حذف إشعارين.} few {تم حذف # إشعارات.} many {تم حذف # إشعارًا.} other {تم حذف # إشعار.}}",
+      "last24h": "24 ساعة",
+      "last7d": "7 أيام",
+      "unread": "غير مقروءة",
+      "searchPlaceholder": "البحث في العنوان…",
+      "reset": "إعادة الضبط",
+      "refresh": "تحديث",
+      "selectAll": "تحديد الكل",
+      "deselectAll": "إلغاء تحديد الكل",
+      "selectedCount": "{count, plural, zero {لا يوجد إشعار محدّد} one {إشعار واحد محدّد} two {إشعاران محدّدان} few {# إشعارات محدّدة} many {# إشعارًا محدّدًا} other {# إشعار محدّد}}",
+      "results": "{count, plural, zero {لا توجد نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجةً} other {# نتيجة}}",
+      "resultsFiltered": "{count, plural, zero {لا توجد نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجةً} other {# نتيجة}} (بعد التصفية)",
+      "deleteSelection": "احذف المحدّد",
+      "deleteFiltered": "احذف الكل (بعد التصفية)",
+      "confirmDeleteSelection": "{count, plural, zero {حذف الإشعارات المحدّدة؟} one {حذف الإشعار المحدّد؟} two {حذف الإشعارين المحدّدين؟} few {حذف # إشعارات محدّدة؟} many {حذف # إشعارًا محدّدًا؟} other {حذف # إشعار محدّد؟}}",
+      "confirmDeleteFiltered": "حذف كل الإشعارات المطابقة للتصفية ({count, plural, zero {لا يوجد أي سطر} one {سطر واحد} two {سطران} few {# أسطر} many {# سطرًا} other {# سطر}})؟",
+      "empty": "لا توجد إشعارات مطابقة للتصفية.",
+      "pagination": "الصفحة {page} / {pages} · المجموع {total}",
+      "cancel": "إلغاء",
+      "confirm": "تأكيد",
+      "unknownUser": "مستخدم · {id}",
+      "unknownAdmin": "مشرف · {id}",
+      "select": "تحديد",
+      "deselect": "إلغاء التحديد",
+      "readAgo": "مقروء · {ago}",
+      "unreadOne": "غير مقروء",
+      "filterByBroadcast": "تصفية حسب هذا الإرسال الجماعي",
+      "broadcastTag": "إرسال جماعي · {id}",
+      "filterByRecipient": "تصفية حسب المستلم",
+      "by": "من طرف",
+      "delete": "احذف"
+    }
+  },
+  "adminPopups": {
+    "eyebrow": "البثّ",
+    "title": "النوافذ المنبثقة",
+    "description": "لافتات ونوافذ حوارية وألواح سفلية تظهر على الموقع. كل نافذة تستهدف جمهورًا وصفحات وفترة زمنية.",
+    "newPopup": "نافذة منبثقة جديدة",
+    "editTitle": "تعديل النافذة المنبثقة",
+    "newSubtitle": "حدّد ما سيراه المستخدمون، ولمن، وفي أي صفحات، ومتى.",
+    "slugLine": "المعرّف (Slug): <mono>{slug}</mono>",
+    "stats": {
+      "live": "منشورة",
+      "scheduled": "مبرمجة",
+      "draft": "مسودّات"
+    },
+    "blocking": "حاجبة",
+    "modes": {
+      "rule": "قاعدة دائمة",
+      "broadcast": "بثّ"
+    },
+    "ctr": "نسبة النقر {value}",
+    "status": {
+      "draft": "مسودة",
+      "live": "منشورة",
+      "paused": "موقوفة مؤقتًا",
+      "archived": "مؤرشفة"
+    },
+    "variants": {
+      "banner": "لافتة",
+      "modal": "نافذة حوارية",
+      "sheet": "لوح سفلي"
+    },
+    "emptyTitle": "لا توجد نوافذ منبثقة.",
+    "emptyBody": "أنشئ أول لافتة أو نافذة حوارية أو لوح سفلي للترحيب بالمستخدمين أو تنبيههم أو توجيههم.",
+    "form": {
+      "unknownError": "خطأ غير معروف",
+      "updated": "تم تحديث النافذة المنبثقة",
+      "created": "تم إنشاء النافذة المنبثقة",
+      "confirmDelete": "حذف «{slug}» نهائيًا؟",
+      "deleteFailed": "فشل الحذف",
+      "deleted": "تم حذف النافذة المنبثقة",
+      "preview": "معاينة",
+      "delete": "احذف",
+      "saving": "جارٍ الحفظ…",
+      "save": "سجّل",
+      "untitled": "بدون عنوان",
+      "close": "إغلاق",
+      "sections": {
+        "identification": {
+          "title": "التعريف",
+          "subtitle": "معرّف قصير (حروف وأرقام وشرطات) — يُستعمل في السجلات وفي localStorage للزوار المجهولين."
+        },
+        "content": {
+          "title": "المحتوى",
+          "subtitle": "العنوان + النص + صورة اختيارية. الفرنسية مطلوبة؛ العربية والإنجليزية اختياريتان."
+        },
+        "ctas": {
+          "title": "أزرار الإجراء",
+          "subtitle": "الزر الرئيسي ضروري لتكون النافذة قابلة للتفاعل؛ الزر الثانوي اختياري."
+        },
+        "audience": {
+          "title": "الجمهور",
+          "subtitle": "لمن هذه النافذة؟"
+        },
+        "targeting": {
+          "title": "الاستهداف",
+          "subtitle": "الصفحات التي تظهر فيها النافذة، ولغتها، ونوع الجهاز."
+        },
+        "schedule": {
+          "title": "فترة البثّ",
+          "subtitle": "تاريخا البداية والنهاية (UTC)."
+        },
+        "frequency": {
+          "title": "التكرار والسلوك",
+          "subtitle": "كم مرة يرى المستخدم النافذة من جديد؟"
+        }
+      },
+      "fields": {
+        "slug": "المعرّف (Slug)",
+        "slugPlaceholder": "مثال: welcome-2026 أو kyc-nudge",
+        "status": "الحالة",
+        "mode": "النمط",
+        "modeHint": "بثّ = فترة زمنية. قاعدة = شرط دائم.",
+        "variant": "الشكل",
+        "variantHint": "النسخة الأولى تعرض النافذة الحوارية فقط؛ اللافتة واللوح السفلي في المرحلة الثانية.",
+        "priority": "الأولوية",
+        "priorityHint": "عند تطابق عدة نوافذ، تظهر صاحبة الأولوية الأعلى.",
+        "title": "العنوان",
+        "body": "النص",
+        "imageUrl": "رابط الصورة",
+        "imageUrlHint": "اختياري. يظهر أعلى النافذة.",
+        "icon": "الأيقونة (Lucide)",
+        "iconHint": "مثال: Sparkles، ShieldCheck — فارغ = بدون أيقونة.",
+        "ctaPrimaryLabel": "نص الزر الرئيسي (fr)",
+        "ctaPrimaryHref": "رابط الزر الرئيسي",
+        "ctaSecondaryLabel": "نص الزر الثانوي (fr) — اختياري",
+        "ctaSecondaryHref": "رابط الزر الثانوي — اختياري",
+        "scope": "النطاق",
+        "roles": "الأدوار (اختياري)",
+        "rolesHint": "حصر العرض في أدوار معيّنة. فارغ = كل الأدوار.",
+        "pages": "الصفحات",
+        "pagesHint": "نمط (glob) في كل سطر أو مفصولة بفواصل. فارغ = كل الصفحات. مثال: \"/, /auctions/*\". البادئة \"!\" للاستثناء: \"!/admin/*\".",
+        "locales": "اللغات",
+        "devices": "الأجهزة",
+        "startsAt": "تبدأ في",
+        "endsAt": "تنتهي في",
+        "frequency": "التكرار",
+        "frequencyN": "N (أيام)",
+        "dismissible": "يمكن للمستخدم إغلاقها",
+        "forceAction": "حجب الصفحة حتى يتّخذ المستخدم إجراءً (مثال: قبول الشروط)",
+        "localisedPlaceholder": "النص ({lang})…"
+      },
+      "options": {
+        "mode": {
+          "broadcast": "بثّ (مرة واحدة)",
+          "rule": "قاعدة دائمة"
+        },
+        "variant": {
+          "modal": "نافذة حوارية",
+          "banner": "لافتة (قريبًا)",
+          "sheet": "لوح سفلي (قريبًا)"
+        },
+        "scope": {
+          "all": "الجميع",
+          "anon": "الزوار غير المسجّلين",
+          "logged_in": "المستخدمون المسجّلون"
+        },
+        "devices": {
+          "both": "الهاتف + الحاسوب",
+          "mobile": "الهاتف فقط",
+          "desktop": "الحاسوب فقط"
+        },
+        "frequency": {
+          "once_per_user": "مرة واحدة لكل مستخدم",
+          "once_per_session": "مرة واحدة في كل جلسة",
+          "every_visit": "في كل زيارة",
+          "every_n_days": "كل N أيام"
+        }
+      },
+      "roles": {
+        "individual": "الخواص",
+        "agency": "الوكالات العقارية",
+        "admin": "المشرفون"
+      },
+      "errors": {
+        "slug_invalid": "المعرّف غير صالح (حروف وأرقام وشرطات).",
+        "title_required": "العنوان بالفرنسية مطلوب.",
+        "body_invalid": "النص غير صالح.",
+        "mode_invalid": "نمط غير معروف.",
+        "variant_invalid": "شكل غير معروف.",
+        "audience_invalid": "جمهور غير صالح.",
+        "forbidden": "تم رفض الوصول.",
+        "auth": "يرجى تسجيل الدخول من جديد."
+      }
+    }
+  },
+  "adminCatalogue": {
+    "notConfigured": "الخدمة غير مهيّأة.",
+    "title": "الكتالوج",
+    "summary": "{categories, plural, zero {لا فئات} one {فئة واحدة} two {فئتان} few {# فئات} many {# فئة} other {# فئة}} · {attributes, plural, zero {لا خصائص} one {خاصية واحدة} two {خاصيتان} few {# خصائص} many {# خاصية} other {# خاصية}}",
+    "emptyCategories": "لا توجد فئات",
+    "rowAttributes": "{attributes, plural, zero {لا خصائص} one {خاصية واحدة} two {خاصيتان} few {# خصائص} many {# خاصية} other {# خاصية}}",
+    "rowAttributesListings": "{attributes, plural, zero {لا خصائص} one {خاصية واحدة} two {خاصيتان} few {# خصائص} many {# خاصية} other {# خاصية}} · {listings, plural, zero {لا إعلانات} one {إعلان واحد} two {إعلانان} few {# إعلانات} many {# إعلانًا} other {# إعلان}}",
+    "noArabicName": "بدون اسم عربي",
+    "editNames": "إعادة تسمية «{name}»",
+    "pickCategory": "اختر فئة من القائمة.",
+    "pickCategoryHint": "ما تحدّده هنا هو ما يملؤه البائع، وما يستعمله الشاري للتصفية.",
+    "headingNote": "القسم يجمع عدّة فئات، ولا يحمل خصائص ولا إعلانات. اختر فئة تحته لتحديد استمارتها.",
+    "types": {
+      "text": "نص",
+      "number": "رقم",
+      "boolean": "نعم / لا",
+      "select": "قائمة اختيارات"
+    },
+    "addAttribute": "خاصية",
+    "emptyAttributes": "لا توجد خصائص. إعلان هذه الفئة لن يحتوي إلا على العنوان والسعر والوصف والصور.",
+    "requiredTag": "إلزامية",
+    "filterTag": "فلتر",
+    "optionsCount": "{count, plural, zero {لا خيارات} one {خيار واحد} two {خياران} few {# خيارات} many {# خيارًا} other {# خيار}}",
+    "usedBy": "{count, plural, zero {لا إعلانات} one {إعلان واحد} two {إعلانان} few {# إعلانات} many {# إعلانًا} other {# إعلان}}",
+    "names": {
+      "rename": "إعادة التسمية",
+      "title": "أسماء الفئة",
+      "labelFr": "الاسم (بالفرنسية)",
+      "labelAr": "الاسم (بالعربية)",
+      "labelArHint": "يظهر في النسخة العربية من الموقع. إذا بقي فارغًا يظهر الاسم الفرنسي.",
+      "saved": "تم حفظ الأسماء.",
+      "nameRequired": "أدخل اسمًا."
+    },
+    "form": {
+      "added": "تمت إضافة الخاصية.",
+      "saved": "تم حفظ الخاصية.",
+      "deleted": "تم حذف الخاصية.",
+      "newTitle": "خاصية جديدة",
+      "close": "إغلاق",
+      "label": "التسمية",
+      "labelPlaceholder": "المساحة، عدد الغرف، الطابق…",
+      "type": "النوع",
+      "typeLocked": "لا يمكن تغيير النوع: بعض الإعلانات تحمل قيمًا له.",
+      "unit": "الوحدة",
+      "unitPlaceholder": "m², km, L…",
+      "unitHint": "تظهر بعد القيمة. اختيارية.",
+      "order": "الترتيب",
+      "orderHint": "الأصغر أولًا.",
+      "options": "الخيارات",
+      "optionPlaceholder": "أوتوماتيكي",
+      "removeOption": "إزالة الخيار",
+      "addOption": "إضافة خيار",
+      "required": "إلزامية",
+      "requiredHint": "لا يمكن للبائع النشر بدونها.",
+      "filterable": "قابلة للتصفية",
+      "filterableHint": "تصبح فلترًا في الكتالوج.",
+      "labelMissing": "أدخل تسمية.",
+      "add": "إضافة",
+      "save": "سجّل",
+      "cancel": "إلغاء",
+      "delete": "احذف",
+      "confirmDeleteTitle": "حذف هذه الخاصية؟",
+      "confirmDeleteBody": "يُرفض الحذف إذا كانت إعلانات تستعملها: ستصبح قيمها غير مقروءة."
+    },
+    "api": {
+      "nameRequired": "الاسم إلزامي.",
+      "categoryExists": "توجد فئة تحمل هذا الاسم.",
+      "categoryInUse": "{count, plural, one {يوجد إعلان منشور واحد في هذه الفئة. انقله أولًا.} two {يوجد إعلانان منشوران في هذه الفئة. انقلهما أولًا.} few {توجد # إعلانات منشورة في هذه الفئة. انقلها أولًا.} many {يوجد # إعلانًا منشورًا في هذه الفئة. انقلها أولًا.} other {يوجد # إعلان منشور في هذه الفئة. انقلها أولًا.}}",
+      "categoryAndLabelRequired": "الفئة والتسمية إلزاميتان.",
+      "optionRequired": "يجب أن تحتوي القائمة على خيار واحد على الأقل.",
+      "invalidKey": "مفتاح غير صالح.",
+      "attributeExists": "هذه الخاصية موجودة في الفئة.",
+      "attributeInUse": "{count, plural, one {إعلان واحد يستعمل} two {إعلانان يستعملان} few {# إعلانات تستعمل} many {# إعلانًا يستعمل} other {# إعلان يستعمل}} «{label}». أزِلها من الاستمارة بدل حذفها."
+    }
+  },
+  "adminOffers": {
+    "notConfigured": "الخدمة غير مهيّأة.",
+    "title": "العروض والأسعار",
+    "summary": "{active, plural, zero {لا عروض للبيع} one {عرض واحد للبيع} two {عرضان للبيع} few {# عروض للبيع} many {# عرضًا للبيع} other {# عرض للبيع}} · من أصل {total}",
+    "newOffer": "عرض جديد",
+    "emptyTitle": "لا توجد عروض",
+    "emptyHint": "أنشئ ما يمكن للبائع شراؤه: نشر إعلان، باقة، إبراز، الشارة.",
+    "misconfigured": "{count, plural, one {عرض واحد معروض للبيع} two {عرضان معروضان للبيع} few {# عروض معروضة للبيع} many {# عرضًا معروضًا للبيع} other {# عرض معروض للبيع}} بدون سعر مضبوط — لا يمكن للبائع الدفع.",
+    "allCategoriesShort": "كل الفئات",
+    "listingQuota": "{count, plural, zero {لا إعلانات} one {إعلان واحد} two {إعلانان} few {# إعلانات} many {# إعلانًا} other {# إعلان}}",
+    "durationDays": "{count, plural, zero {0 يوم} one {يوم واحد} two {يومان} few {# أيام} many {# يومًا} other {# يوم}}",
+    "noPrice": "بدون سعر",
+    "free": "مجاني",
+    "pickOffer": "اختر عرضًا من القائمة، أو أنشئ عرضًا جديدًا.",
+    "pickOfferHint": "كل ما يمكن للبائع شراؤه موجود هنا — وليس في الكود أبدًا.",
+    "kinds": {
+      "listing_single": "إعلان بالوحدة",
+      "listing_pack": "باقة إعلانات",
+      "subscription": "اشتراك",
+      "promo": "إبراز",
+      "badge_verified": "شارة البائع الموثّق",
+      "renewal": "تجديد"
+    },
+    "kindHints": {
+      "listing_single": "نشر إعلان واحد. يمكن أن يختلف السعر حسب الفئة.",
+      "listing_pack": "عدد من عمليات النشر المدفوعة مسبقًا، يستعملها البائع متى شاء.",
+      "subscription": "عمليات نشر خلال مدة محددة، للمهنيين.",
+      "promo": "الصفحة الرئيسية، أعلى نتائج البحث، اللافتة.",
+      "badge_verified": "تُباع للبائع، وتُمنح يدويًا بعد التحقق.",
+      "renewal": "يعيد نشر إعلان منتهي الصلاحية."
+    },
+    "editor": {
+      "created": "تم إنشاء العرض.",
+      "saved": "تم حفظ العرض.",
+      "back": "العروض",
+      "newTitle": "عرض جديد",
+      "type": "النوع",
+      "typeLocked": "لا يتغيّر النوع بعد الإنشاء — توجد مدفوعات مرتبطة به.",
+      "name": "الاسم المعروض (بالفرنسية)",
+      "namePlaceholder": "Annonce standard, Pack 5 annonces…",
+      "nameAr": "الاسم المعروض (بالعربية)",
+      "nameArPlaceholder": "إعلان عادي، باقة 5 إعلانات…",
+      "nameArHint": "يظهر في النسخة العربية من الموقع. إذا بقي فارغًا يظهر الاسم الفرنسي.",
+      "description": "الوصف (بالفرنسية)",
+      "descriptionHint": "يراه البائع في صفحة الأسعار.",
+      "descriptionAr": "الوصف (بالعربية)",
+      "descriptionArHint": "إذا بقي فارغًا يظهر الوصف الفرنسي.",
+      "price": "السعر",
+      "priceHint": "0 = مجاني. فارغ = غير مضبوط، ولا يمكن بيع أي شيء.",
+      "sortOrder": "ترتيب العرض",
+      "sortOrderHint": "الأصغر أولًا.",
+      "category": "الفئة",
+      "allCategories": "كل الفئات",
+      "categoryHint": "سعر الفئة يتقدّم على السعر العام. إعلان بالوحدة واحد فقط يكون نشطًا في كل فئة.",
+      "quota": "عمليات النشر الممنوحة",
+      "quotaSuffix": "إعلانات",
+      "quotaHint": "ما يمكن للبائع نشره بهذه الباقة.",
+      "badgeValidity": "مدة صلاحية الشارة",
+      "publicationDuration": "مدة النشر",
+      "daysSuffix": "يوم",
+      "badgeValidityHint": "قابلة للتجديد، ويمكن سحبها في أي وقت.",
+      "publicationDurationHint": "المدة التي يبقى فيها الإعلان منشورًا. فارغ = 30 يومًا.",
+      "availability": "التوفّر",
+      "onSale": "معروض للبيع",
+      "onSaleHint": "عند تعطيله، يختفي العرض من صفحة الأسعار لكنه يبقى مرتبطًا بالمدفوعات السابقة.",
+      "onSaleNoPrice": "معروض للبيع بدون سعر مضبوط: لن يتمكّن البائع من الدفع.",
+      "nameMissing": "أدخل اسمًا للعرض.",
+      "create": "إنشاء",
+      "save": "سجّل",
+      "withdraw": "سحب من البيع",
+      "confirmWithdrawTitle": "سحب هذا العرض من البيع؟",
+      "confirmWithdrawBody": "يختفي من صفحة الأسعار. لا يُحذف أبدًا: توجد مدفوعات وباقات مَبيعة مرتبطة به.",
+      "confirmWithdraw": "سحب",
+      "withdrawn": "تم سحب العرض من البيع."
+    },
+    "api": {
+      "quotaRequired": "يجب أن تمنح الباقة عملية نشر واحدة على الأقل.",
+      "durationRequired": "يجب أن تكون للشارة مدة صلاحية.",
+      "slugTaken": "يوجد منتج يحمل هذا الاسم.",
+      "invalidProduct": "تحقّق من التناسق: الباقة تحتاج إلى حصة، والشارة إلى مدة، ولا يمكن أن يكون أكثر من إعلان بالوحدة واحد نشطًا في كل فئة."
+    }
+  },
+  "adminLegalDocs": {
+    "eyebrow": "الوثائق القانونية",
+    "title": "الوثائق حسب نوع العقار",
+    "description": "حدّد قائمة الوثائق التي يجب على كل بائع رفعها حسب نوع العقار. الوثائق المعلّمة <b>إلزامية</b> تمنع إرسال الاستمارة ما لم تُقدَّم.",
+    "types": {
+      "apartment": "شقة",
+      "house": "منزل",
+      "villa": "فيلا",
+      "land": "أرض",
+      "commercial": "محل تجاري",
+      "office": "مكتب",
+      "warehouse": "مستودع",
+      "farm": "مزرعة"
+    },
+    "lineTitleRequired": "السطر {line}: العنوان إلزامي.",
+    "duplicate": "عنوان مكرّر: «{label}».",
+    "saveFailed": "تعذّر الحفظ.",
+    "savedType": "تم حفظ قائمة {type}.",
+    "unsaved": "غير محفوظ",
+    "empty": "لا توجد وثائق — لن يُطلب من البائع رفع أي شيء.",
+    "configured": "{count, plural, zero {لا وثائق.} one {وثيقة واحدة.} two {وثيقتان.} few {# وثائق.} many {# وثيقة.} other {# وثيقة.}}",
+    "add": "إضافة",
+    "emptyHint": "انقر على <b>إضافة</b> لإنشاء وثيقة مطلوبة.",
+    "moveUp": "تحريك إلى الأعلى",
+    "moveDown": "تحريك إلى الأسفل",
+    "labelPlaceholder": "عنوان الوثيقة (مثلًا: رسم عقاري)",
+    "descriptionPlaceholder": "مساعدة تظهر للبائع (اختياري)",
+    "required": "إلزامية",
+    "requiredHint": "تمنع الإرسال",
+    "delete": "احذف",
+    "saving": "جاري الحفظ…",
+    "saved": "تم الحفظ",
+    "saveType": "سجّل ({type})",
+    "api": {
+      "invalidLabel": "السطر {line}: العنوان إلزامي ولا يتجاوز {max} حرفًا.",
+      "duplicateLabel": "عنوان مكرّر: «{label}».",
+      "tooManyItems": "{max} وثيقة كحدّ أقصى لكل نوع عقار."
+    }
+  },
+  "adminSite": {
+    "eyebrow": "لوحة الإدارة",
+    "title": "الموقع",
+    "description": "محتوى الموقع العمومي وإعداداته: ما يُضبط مرة واحدة، ثم نادرًا.",
+    "cards": {
+      "home": {
+        "label": "الصفحة الرئيسية",
+        "description": "اختيار ما يُبرَز في الصفحة الرئيسية."
+      },
+      "popups": {
+        "label": "النوافذ المنبثقة",
+        "description": "رسائل تظهر للزوار، مع الاستهداف والجدولة.",
+        "count": "{count, plural, zero {لا نوافذ} one {نافذة واحدة} two {نافذتان} few {{formatted} نوافذ} many {{formatted} نافذة} other {{formatted} نافذة}}"
+      },
+      "legalDocs": {
+        "label": "الوثائق القانونية",
+        "description": "شروط الاستعمال، الخصوصية، البيانات القانونية — النص المنشور على الموقع.",
+        "count": "{count, plural, zero {لا وثائق} one {وثيقة واحدة} two {وثيقتان} few {{formatted} وثائق} many {{formatted} وثيقة} other {{formatted} وثيقة}}"
+      },
+      "notifications": {
+        "label": "الإشعارات الجماعية",
+        "description": "إشعارات تُرسل إلى البائعين والشارين.",
+        "count": "{count, plural, zero {لا إشعارات مُرسلة} one {إشعار واحد مُرسل} two {إشعاران مُرسلان} few {{formatted} إشعارات مُرسلة} many {{formatted} إشعارًا مُرسلًا} other {{formatted} إشعار مُرسل}}"
+      },
+      "settings": {
+        "label": "الإعدادات",
+        "description": "البيانات البنكية، الضمانات، الآجال."
+      },
+      "activity": {
+        "label": "سجلّ النشاط",
+        "description": "من فعل ماذا، ومتى. سجلّ التدقيق الخاص بلوحة الإدارة."
+      }
+    }
+  },
+  "adminHome": {
+    "eyebrow": "واجهة الصفحة الرئيسية",
+    "title": "الصفحة الرئيسية",
+    "description": "تحكّم في الإعلانات المُبرزة (الصفحة الرئيسية، أعلى البحث، اللافتة). «مدفوع» = عبر خيار تم شراؤه، «يدوي» = أُضيف من هنا. يمكنك إبراز أي إعلان منشور.",
+    "featuredCount": "{count, plural, zero {لا إعلانات مُبرزة} one {إعلان مُبرز واحد} two {إعلانان مُبرزان} few {# إعلانات مُبرزة} many {# إعلانًا مُبرزًا} other {# إعلان مُبرز}}",
+    "searchPlaceholder": "ابحث عن إعلان (العنوان أو المدينة)…",
+    "results": "{count, plural, zero {لا نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجة} other {# نتيجة}}",
+    "failed": "تعذّر تنفيذ العملية.",
+    "featureApplied": "تم تطبيق الإبراز.",
+    "featureRemoved": "تمت إزالة الإبراز.",
+    "placements": {
+      "home": "الرئيسية",
+      "top": "الصدارة",
+      "topSearch": "أعلى البحث",
+      "banner": "اللافتة"
+    },
+    "manual": "يدوي",
+    "paid": "مدفوع",
+    "expires": "ينتهي في {date}",
+    "notFeatured": "غير مُبرز",
+    "notFeaturedExpired": "غير مُبرز (انتهت المدة)",
+    "remove": "إزالة",
+    "edit": "بدّل",
+    "feature": "إبراز",
+    "duration": "المدة:",
+    "noExpiry": "بدون انتهاء",
+    "days": "{days, plural, zero {0 يوم} one {يوم واحد} two {يومان} few {# أيام} many {# يومًا} other {# يوم}}",
+    "apply": "تطبيق",
+    "empty": "لا توجد إعلانات منشورة حاليًا."
+  },
+  "adminSettings": {
+    "eyebrow": "الدفع",
+    "title": "الإعدادات",
+    "description": "البيانات التي يدفع إليها البائعون معلوم النشر، عبر تحويل بنكي أو D17.",
+    "noPayeeMethod": "<strong>لا توجد وسيلة دفع صالحة.</strong> صفحة الدفع مقفلة ما دامت هذه الحقول فارغة أو تحتوي على القيم التجريبية: لا يجب أبدًا أن يحوّل البائع أموالًا إلى حساب وهمي.",
+    "pricesLink": "أسعار الإعلانات والخيارات تُضبط في <link>العروض</link>.",
+    "saveFailed": "تعذّر الحفظ.",
+    "saved": "تم حفظ الإعدادات.",
+    "payeeTitle": "بيانات المستفيد",
+    "payeeHint": "تظهر للبائع في صفحة الدفع. لا تُقترح وسيلة دفع إلا إذا كانت بياناتها مُعبّأة.",
+    "fields": {
+      "name": "المستفيد",
+      "bank": "البنك",
+      "rib": "RIB",
+      "iban": "IBAN",
+      "d17": "رقم D17",
+      "companyName": "الاسم الاجتماعي",
+      "companyTaxId": "المعرّف الجبائي",
+      "companyAddress": "العنوان",
+      "vatRate": "الأداء على القيمة المضافة بالمية (فارغ: بلا سطر أداء)"
+    },
+    "saving": "جاري الحفظ…",
+    "savedButton": "تم الحفظ",
+    "save": "سجّل",
+    "moderation": {
+      "title": "المجانية والمراقبة",
+      "hint": "هذا اللي يحدّد قدّاش من خدمة يعملها الموقع وحدو. يتطبّق من أول إعلان جاي.",
+      "freeLimitLabel": "عدد الإعلانات المجانية المنشورة في نفس الوقت لكل بائع",
+      "freeLimitHint": "أكثر من هكّا، البائع يخلّص النشر ولا يستعمل باقة. 0 = الكل بالفلوس.",
+      "bannedWordsLabel": "كلمات تبعث الإعلان للمراجعة اليدوية",
+      "bannedWordsHint": "كلمة في كل سطر. الإعلان ما يترفضش: أدمين يقراه قبل النشر.",
+      "limitInvalid": "اكتب عددًا صحيحًا بين 0 و 50.",
+      "save": "سجّل",
+      "saving": "جاري التسجيل…",
+      "saved": "تم تسجيل إعدادات المراقبة.",
+      "savedButton": "تسجّل",
+      "saveFailed": "تعذّر التسجيل."
+    },
+    "companyTitle": "الشركة (الفواتير)",
+    "companyHint": "يتنسخو في كل فاتورة وقت ما تصدر. ما دام الاسم الاجتماعي والمعرّف الجبائي فارغين، مزاد إيمو يصدر وصولات خلاص، موش فواتير."
+  },
+  "admin": {
+    "console": "الإدارة",
+    "nav": {
+      "dashboard": "لوحة القيادة",
+      "dashboardHint": "ما ينتظر قرارًا",
+      "listings": "الإعلانات",
+      "listingsHint": "المراجعة والإنشاء والإبراز",
+      "payments": "المدفوعات",
+      "paymentsHint": "وصولات الدفع قيد المراجعة",
+      "offers": "العروض والأسعار",
+      "offersHint": "الإعلانات والباقات والإبراز والشارة",
+      "sellers": "البائعون",
+      "sellersHint": "الحسابات والأدوار والشارات",
+      "catalogue": "الكتالوج",
+      "catalogueHint": "الأصناف والخصائص",
+      "site": "الموقع",
+      "siteHint": "الرئيسية، النوافذ المنبثقة، الوثائق، البثّ، الإعدادات، السجل",
+      "exit": "الخروج من الإدارة",
+      "openMenu": "فتح القائمة",
+      "closeMenu": "إغلاق القائمة",
+      "label": "تنقّل الإدارة",
+      "results": "النتائج",
+      "resultsHint": "الإعلانات والزوّار والاتصالات والمداخيل كل شهر",
+      "demandes": "الطلبات",
+      "demandesHint": "شنوّة يلوّجو عليه الشارين والكرّاية",
+      "social": "الشبكات",
+      "socialHint": "ترويج فيسبوك، إنستغرام، الغروبات",
+      "shops": "البوتيكات",
+      "shopsHint": "وكالات وباعثين: حلّ، وثّق، وقّف"
+    },
+    "siteTabs": {
+      "label": "أقسام الموقع",
+      "site": "الموقع",
+      "home": "الرئيسية",
+      "popups": "النوافذ المنبثقة",
+      "documents": "الوثائق",
+      "broadcasts": "البثّ",
+      "settings": "الإعدادات",
+      "journal": "السجل"
+    },
+    "pager": {
+      "previous": "السابق",
+      "next": "التالي",
+      "page": "الصفحة <n>{page} / {total}</n>"
+    },
+    "queryBar": {
+      "all": "الكل",
+      "today": "اليوم",
+      "last7": "7 أيام",
+      "last30": "30 يومًا",
+      "results": "{count, plural, zero {لا نتائج} one {نتيجة واحدة} two {نتيجتان} few {{n} نتائج} many {{n} نتيجة} other {{n} نتيجة}}"
+    },
+    "searchPlaceholder": "بحث…",
+    "clearSearch": "مسح البحث",
+    "close": "إغلاق",
+    "detail": "التفاصيل",
+    "loading": "جاري التحميل",
+    "confirm": "تأكيد",
+    "cancel": "إلغاء",
+    "reasonRequired": "اكتب السبب.",
+    "noName": "بدون اسم",
+    "serviceNotConfigured": "الخدمة غير مهيّأة.",
+    "emptyTab": "لا شيء في « {tab} »",
+    "receipt": {
+      "label": "وصل الدفع",
+      "open": "فتح {label} ({what})",
+      "unviewable": "لا يمكن عرضه",
+      "file": "ملف"
+    },
+    "status": {
+      "draft": "مسودة",
+      "pending_payment": "في انتظار الدفع",
+      "pending_review": "قيد المراجعة",
+      "published": "منشور",
+      "rejected": "مرفوض",
+      "expired": "منتهي الصلاحية",
+      "archived": "مؤرشف",
+      "sold": "مُباع",
+      "pending": "قيد الانتظار",
+      "authorized": "مُصرّح به",
+      "captured": "مقبول",
+      "refunded": "مُسترجَع",
+      "failed": "مرفوض",
+      "individual": "خاص",
+      "agency": "وكالة عقارية",
+      "admin": "مشرف",
+      "rented": "مُؤجَّر"
+    },
+    "paymentKind": {
+      "listing_fee": "نشر الإعلان",
+      "listing_pack": "باقة إعلانات",
+      "subscription": "اشتراك",
+      "promo": "إبراز",
+      "badge": "شارة البائع الموثّق",
+      "renewal": "تجديد"
+    },
+    "actionErrors": {
+      "auth": "انتهت صلاحية الجلسة. سجّل دخولك من جديد.",
+      "forbidden": "ليست لديك صلاحية لهذا الإجراء.",
+      "cross_origin_blocked": "تم حظر الطلب. أعد تحميل الصفحة وحاول من جديد.",
+      "already_claimed": "مشرف آخر يعالج هذا السطر حاليًا.",
+      "not_found": "هذا السطر لم يعد موجودًا — ربما تم حذفه.",
+      "conflict": "تغيّرت الحالة منذ التحميل. أعد تحميل الصفحة.",
+      "invalid": "بيانات غير صالحة.",
+      "rate_limited": "طلبات كثيرة. انتظر قليلًا."
+    },
+    "actionFailed": "فشل الإجراء.",
+    "actionDone": "تمّ.",
+    "connectionLost": "انقطع الاتصال. تحقّق من الشبكة وأعد التحميل.",
+    "install": {
+      "label": "ثبّت التطبيق",
+      "installed": "التطبيق تثبّت",
+      "iosHint": "في الآيفون ولا الآيباد: اضغط «مشاركة»، ومن بعد «على الشاشة الرئيسية»."
+    }
+  },
+  "adminDashboard": {
+    "eyebrow": "الإدارة",
+    "title": "لوحة القيادة",
+    "noPayeeTitle": "لا يمكن لأي بائع أن يدفع",
+    "noPayeeBody": "حساب المستفيد ما زال حساب بيانات الاختبار، لذلك يُرفض الدفع بدل أن يُطلب من البائع تحويل المال إلى IBAN غير موجود. أدخل الاسم وRIB وIBAN ورقم D17 في الإعدادات — يعود النشر المدفوع فور الحفظ.",
+    "pending": "قيد الانتظار",
+    "overdue": "متأخرة أكثر من 48 ساعة",
+    "publishedToday": "نُشرت اليوم",
+    "queuesTitle": "قوائم الانتظار",
+    "queues": {
+      "listings": "إعلانات قيد المراجعة",
+      "listingsSub": "أرسلها بائع",
+      "receipts": "وصولات دفع قيد المراجعة",
+      "receiptsSub": "النشر والباقات والإبراز",
+      "expiring": "تنتهي خلال 7 أيام",
+      "expiringSub": "للتذكير بالتجديد",
+      "expired": "منتهية الصلاحية",
+      "expiredSub": "غير منشورة، قابلة للتجديد"
+    },
+    "overdueCount": "{count, plural, zero {لا تأخير} one {واحد متأخر} two {اثنان متأخران} few {# متأخرة} many {# متأخرة} other {# متأخرة}}",
+    "recentTitle": "آخر الإجراءات",
+    "fullJournal": "السجل كاملًا ←",
+    "noActivity": "لا توجد إجراءات مسجّلة حتى الآن."
+  },
+  "adminListings": {
+    "title": "الإعلانات",
+    "tabs": {
+      "pending_review": "قيد المراجعة",
+      "pending_payment": "في انتظار الدفع",
+      "published": "منشورة",
+      "expiring": "تنتهي قريبًا",
+      "expired": "منتهية الصلاحية",
+      "rejected": "مرفوضة",
+      "all": "الكل",
+      "edits": "التبديلات"
+    },
+    "searchPlaceholder": "المرجع MZ-00042، العنوان، الهاتف…",
+    "create": "إنشاء",
+    "emptyFilteredTitle": "لا يوجد إعلان مطابق",
+    "emptyFilteredHint": "جرّب كلمة أخرى، أو غيّر التبويب.",
+    "emptyIdleHint": "لا شيء ينتظر قرارًا في هذه القائمة.",
+    "priceOnRequest": "عند الطلب",
+    "yes": "نعم",
+    "no": "لا",
+    "age": {
+      "today": "اليوم",
+      "expired": "منتهي",
+      "inDays": "{days, plural, zero {اليوم} one {بعد يوم} two {بعد يومين} few {بعد # أيام} many {بعد # يومًا} other {بعد # يوم}}",
+      "daysAgo": "{days, plural, zero {اليوم} one {منذ يوم} two {منذ يومين} few {منذ # أيام} many {منذ # يومًا} other {منذ # يوم}}"
+    },
+    "queue": {
+      "bulkFailed": "فشل الإجراء الجماعي.",
+      "bulkApproved": "{count, plural, zero {لم يُنشر أي إعلان.} one {تم نشر إعلان واحد.} two {تم نشر إعلانين.} few {تم نشر # إعلانات.} many {تم نشر # إعلانًا.} other {تم نشر # إعلان.}}",
+      "bulkArchived": "{count, plural, zero {لم تتم أرشفة أي إعلان.} one {تمت أرشفة إعلان واحد.} two {تمت أرشفة إعلانين.} few {تمت أرشفة # إعلانات.} many {تمت أرشفة # إعلانًا.} other {تمت أرشفة # إعلان.}}",
+      "bulkExtended": "{count, plural, zero {لم يتم تمديد أي إعلان.} one {تم تمديد إعلان واحد.} two {تم تمديد إعلانين.} few {تم تمديد # إعلانات.} many {تم تمديد # إعلانًا.} other {تم تمديد # إعلان.}}",
+      "bulkSkipped": "{count, plural, zero {لم يتم تجاهل أي إعلان} one {تم تجاهل إعلان واحد} two {تم تجاهل إعلانين} few {تم تجاهل # إعلانات} many {تم تجاهل # إعلانًا} other {تم تجاهل # إعلان}} ({reasons}).",
+      "reasonSeparator": "، ",
+      "connectionLost": "انقطع الاتصال. أعد التحميل لترى ما تم تطبيقه.",
+      "selection": "تحديد",
+      "selectAll": "تحديد الكل",
+      "deselectAll": "إلغاء تحديد الكل",
+      "rows": "{count, plural, zero {لا أسطر} one {سطر واحد} two {سطران} few {# أسطر} many {# سطرًا} other {# سطر}}",
+      "colListing": "الإعلان",
+      "colReference": "المرجع",
+      "colSeller": "البائع",
+      "colCategory": "الصنف",
+      "colPrice": "السعر",
+      "colDeadline": "الأجل",
+      "select": "تحديد",
+      "deselect": "إلغاء التحديد",
+      "selected": "{count, plural, zero {لا شيء محدد} one {إعلان واحد محدد} two {إعلانان محددان} few {# إعلانات محددة} many {# إعلانًا محددًا} other {# إعلان محدد}}",
+      "publish": "نشر",
+      "extend30": "+30 يومًا",
+      "archive": "أرشفة",
+      "cancelSelection": "إلغاء التحديد"
+    },
+    "detail": {
+      "back": "القائمة",
+      "cover": "الغلاف",
+      "photoAlt": "الصورة {n}",
+      "noPhotos": "لا توجد صور — يجب التحقق قبل النشر.",
+      "rejectionReason": "سبب الرفض:",
+      "groupListing": "الإعلان",
+      "groupAttributes": "الخصائص",
+      "groupSeller": "البائع والاتصال",
+      "groupPublication": "النشر",
+      "price": "السعر",
+      "negotiable": "قابل للتفاوض",
+      "description": "الوصف",
+      "account": "الحساب",
+      "accountPhone": "هاتف الحساب",
+      "onListing": "على الإعلان",
+      "phoneHidden": "(مخفي)",
+      "noPhone": "لا يوجد رقم — النشر غير ممكن",
+      "attestation": "الإقرار",
+      "attestationAdmin": "أدخله مشرف (v1-admin)",
+      "attestationSeller": "وقّعه البائع (v1)",
+      "paidBy": "طريقة الدفع",
+      "payment": "الدفع",
+      "createdAt": "تاريخ الإنشاء",
+      "publishedAt": "تاريخ النشر",
+      "expiresAt": "تاريخ الانتهاء",
+      "renewals": "التجديدات",
+      "audience": "الجمهور",
+      "audienceValue": "{views, plural, zero {لا مشاهدات} one {مشاهدة واحدة} two {مشاهدتان} few {# مشاهدات} many {# مشاهدة} other {# مشاهدة}} · {reveals, plural, zero {لم يُعرض الرقم} one {عُرض الرقم مرة واحدة} two {عُرض الرقم مرتين} few {عُرض الرقم # مرات} many {عُرض الرقم # مرة} other {عُرض الرقم # مرة}}",
+      "publicPage": "الصفحة العامة",
+      "open": "فتح",
+      "paidWith": {
+        "credit": "باقة البائع",
+        "payment": "دفع لإعلان واحد",
+        "waived": "مجانية بقرار مشرف",
+        "none": "لا شيء مرتبط"
+      },
+      "publish": "نشر",
+      "reject": "رفض",
+      "markPaid": "تسجيل الدفع",
+      "waive": "إعفاء من المعلوم",
+      "extend30": "+30 يومًا",
+      "sold": "تمّ البيع",
+      "republish": "إعادة النشر",
+      "edit": "تعديل",
+      "close": "إغلاق",
+      "archive": "أرشفة",
+      "delete": "حذف",
+      "approved": "تم نشر الإعلان.",
+      "paymentRecorded": "تم تسجيل الدفع.",
+      "feeWaived": "تم الإعفاء من معلوم النشر.",
+      "extended": "تم التمديد بـ30 يومًا.",
+      "republished": "تمت إعادة النشر.",
+      "rejected": "تم رفض الإعلان.",
+      "archived": "تمت أرشفة الإعلان.",
+      "markedSold": "تم تسجيله كمُباع.",
+      "deleted": "تم حذف الإعلان.",
+      "edited": "تم تعديل الإعلان.",
+      "rejectTitle": "رفض هذا الإعلان؟",
+      "rejectBody": "يتلقّى البائع السبب ويمكنه تصحيح إعلانه.",
+      "rejectReasonLabel": "السبب (يُرسل إلى البائع)",
+      "rejectReasonPlaceholder": "صور غير واضحة، سعر غير منطقي، إعلان مكرّر…",
+      "archiveTitle": "أرشفة هذا الإعلان؟",
+      "archiveBody": "يختفي من الموقع. لا يُسترجع أي مبلغ، ويمكنك إعادة نشره لاحقًا.",
+      "soldTitle": "تسجيله كمُباع؟",
+      "soldBody": "يخرج الإعلان من الكتالوج لكنه يبقى في سجل البائع.",
+      "soldConfirm": "تسجيل كمُباع",
+      "deleteTitle": "حذف نهائي؟",
+      "deleteBody": "لا يمكن التراجع. الإعلان المنشور أو المدفوع لا يمكن حذفه — قم بأرشفته.",
+      "editTitle": "تعديل",
+      "fieldTitle": "العنوان",
+      "fieldPrice": "السعر",
+      "priceDisabled": "معطّل: السعر عند الطلب",
+      "fieldNegotiable": "قابل للتفاوض",
+      "fieldPriceOnRequest": "السعر عند الطلب",
+      "fieldPhone": "الهاتف المعروض",
+      "fieldName": "الاسم المعروض",
+      "fieldDescription": "الوصف",
+      "cancel": "إلغاء",
+      "save": "حفظ",
+      "reviewWhy": "علاش يستنّى في المراجعة",
+      "reportsTitle": "{count, plural, zero {ما فماش تبليغات} one {تبليغ واحد} two {تبليغين} few {# تبليغات} many {# تبليغًا} other {# تبليغ}}",
+      "rented": "تمّ الكراء",
+      "pendingEditTitle": "تبديل بعثو البائع نهار {date}",
+      "pendingEditWhy": "للمراجعة:",
+      "pendingEditPhotos": "{count, plural, one {تصاور جديدة: تصويرة وحدة} other {تصاور جديدة: #}}",
+      "approveEdit": "انشر التبديل",
+      "rejectEdit": "ارفض التبديل",
+      "editApproved": "التبديل تنشر.",
+      "editRejected": "التبديل ترفض.",
+      "rejectEditTitle": "ترفض التبديل هذا؟",
+      "rejectEditBody": "الإعلان يقعد منشور كيما كان، والبائع يوصلو السبب."
+    },
+    "forRent": "للكراء",
+    "perMonth": "{amount} في الشهر",
+    "dealAria": "بيع ولا كراء",
+    "deal": {
+      "all": "الكل",
+      "sale": "بيع",
+      "rent": "كراء"
+    },
+    "editWaiting": "تبديل للمراجعة · {why}",
+    "editFields": {
+      "title": "العنوان",
+      "description": "الوصف",
+      "price": "السعر",
+      "price_on_request": "السعر عند الطلب",
+      "negotiable": "قابل للتفاوض",
+      "governorate": "الولاية",
+      "delegation": "المعتمدية",
+      "address": "العنوان التقريبي",
+      "attributes": "الخصائص",
+      "deal_type": "نوع العملية",
+      "deposit_amount": "الضمان",
+      "charges_amount": "المصاريف",
+      "furnished": "مفروش",
+      "available_from": "متوفّر من",
+      "min_lease_months": "أقل مدّة",
+      "contact_name": "اسم المتّصل",
+      "contact_phone": "الهاتف",
+      "contact_whatsapp": "واتساب",
+      "category_id": "الصنف",
+      "show_phone": "الرقم ظاهر"
+    }
+  },
+  "adminSellers": {
+    "title": "البائعون",
+    "tabs": {
+      "all": "الكل",
+      "agency": "الوكالات",
+      "verified": "الموثّقون",
+      "banned": "المعلّقون"
+    },
+    "searchPlaceholder": "الاسم أو الهاتف…",
+    "emptyFilteredTitle": "لا يوجد حساب مطابق",
+    "emptyFilteredHint": "جرّب اسمًا أو رقمًا آخر.",
+    "bannedShort": "معلّق",
+    "roleShort": {
+      "agency": "وكالة",
+      "admin": "مشرف",
+      "individual": "خاص"
+    },
+    "pickAccount": "اختر حسابًا من القائمة.",
+    "detail": {
+      "back": "البائعون",
+      "banned": "معلّق",
+      "verified": "موثّق",
+      "registeredOn": "سُجّل في {date}",
+      "bannedOn": "عُلّق في {date}:",
+      "noReason": "بدون سبب مسجّل",
+      "activity": "النشاط",
+      "listings": "الإعلانات",
+      "listingsValue": "منشورة: {published} · المجموع: {total}",
+      "payments": "المدفوعات",
+      "paymentsValue": "{count, plural, zero {لا دفعات مقبولة} one {دفعة مقبولة واحدة} two {دفعتان مقبولتان} few {# دفعات مقبولة} many {# دفعة مقبولة} other {# دفعة مقبولة}}",
+      "remaining": "المنشورات المتبقية",
+      "expiresOn": "تنتهي في {date}",
+      "noPack": "لا توجد باقة",
+      "badge": "شارة البائع الموثّق",
+      "badgeActiveUntil": "سارية حتى {date}",
+      "none": "لا يوجد",
+      "role": "الدور",
+      "accountType": "نوع الحساب",
+      "roleUnchanged": "لم يتغيّر الدور.",
+      "roleChanged": "تم تعديل الدور.",
+      "apply": "تطبيق",
+      "grantCreditsTitle": "منح باقة",
+      "grantCreditsBody": "لبائع دفع نقدًا، أو لوكالة نمنحها باقة مجانًا. يُسجَّل الإجراء باسمك.",
+      "pack": "الباقة",
+      "packWithQuota": "{label} · {quota, plural, zero {بدون إعلانات} one {إعلان واحد} two {إعلانان} few {# إعلانات} many {# إعلانًا} other {# إعلان}}",
+      "noPacks": "لا توجد باقة مهيّأة",
+      "noPacksHint": "أنشئ باقة أولًا في العروض والأسعار.",
+      "publications": "المنشورات",
+      "publicationsHint": "فارغ = ما تمنحه الباقة.",
+      "validity": "مدة الصلاحية",
+      "months": "شهر",
+      "internalNote": "ملاحظة داخلية",
+      "cancel": "إلغاء",
+      "choosePack": "اختر باقة.",
+      "credited": "تم منح الباقة.",
+      "credit": "منح باقة",
+      "grantBadgeTitle": "منح شارة البائع الموثّق",
+      "grantBadgeBody": "تُمنح يدويًا بعد التحقق، ويمكن سحبها في أي وقت.",
+      "validityHint": "12 شهرًا افتراضيًا.",
+      "badgeGranted": "تم منح الشارة.",
+      "grant": "منح",
+      "revokeBadge": "سحب الشارة",
+      "grantBadge": "منح الشارة",
+      "reactivate": "إعادة التفعيل",
+      "reactivated": "تمت إعادة تفعيل الحساب.",
+      "suspend": "تعليق",
+      "banTitle": "تعليق هذا الحساب؟",
+      "banBody": "لن يتمكّن البائع من النشر. تبقى إعلاناته المنشورة ظاهرة إلى أن تقوم بأرشفتها.",
+      "reasonInternal": "السبب (داخلي)",
+      "banPlaceholder": "إعلانات احتيالية، مبالغ غير مدفوعة…",
+      "suspended": "تم تعليق الحساب.",
+      "revokeTitle": "سحب شارة البائع الموثّق؟",
+      "revokeBody": "تختفي فورًا من كل إعلاناته.",
+      "revokeConfirm": "سحب",
+      "revokePlaceholder": "تحقق منتهي الصلاحية، شكوى…",
+      "badgeRevoked": "تم سحب الشارة."
+    }
+  },
+  "adminActions": {
+    "listing_create": "تم إنشاء إعلان",
+    "listing_submit_free": "تم إرسال إعلان (مجاني)",
+    "listing_submit_payment": "تم إرسال إعلان (مدفوع)",
+    "listing_renew": "تم تجديد إعلان",
+    "logout": "خروج",
+    "admin_listing_approve": "تم نشر إعلان",
+    "admin_listing_republish": "تمت إعادة نشر إعلان",
+    "admin_listing_reject": "تم رفض إعلان",
+    "admin_listing_archive": "تمت أرشفة إعلان",
+    "admin_listing_extend": "تم تمديد النشر",
+    "admin_listing_feature": "إبراز في الصفحة الرئيسية",
+    "admin_listing_unfeature": "سُحب من الصفحة الرئيسية",
+    "admin_listing_mark_sold": "تم تسجيل إعلان كمُباع",
+    "admin_listing_mark_paid": "تم تسجيل الدفع",
+    "admin_listing_waive_fee": "إعفاء من معلوم النشر",
+    "admin_listing_edit": "تم تعديل إعلان",
+    "admin_listing_delete": "تم حذف إعلان",
+    "admin_listing_create": "إعلان أنشأه مشرف",
+    "admin_listing_bulk_approve": "نشر جماعي",
+    "admin_listing_bulk_archive": "أرشفة جماعية",
+    "admin_listing_bulk_extend": "تمديد جماعي",
+    "admin_payment_accept": "تم قبول وصل الدفع",
+    "admin_payment_reject": "تم رفض وصل الدفع",
+    "payment_captured": "تم قبول الدفع",
+    "payment_failed": "تم رفض الدفع",
+    "payment_manual": "تم تسجيل دفع يدوي",
+    "admin_product_create": "تم إنشاء عرض",
+    "admin_product_update": "تم تعديل عرض",
+    "admin_product_deactivate": "تم سحب عرض من البيع",
+    "admin_user_set_role": "تم تعديل الدور",
+    "admin_user_ban": "تم تعليق حساب",
+    "admin_user_unban": "تمت إعادة تفعيل حساب",
+    "admin_seller_grant_credits": "تم منح باقة",
+    "admin_seller_grant_badge": "تم منح الشارة",
+    "admin_seller_revoke_badge": "تم سحب الشارة",
+    "user_admin_update": "تم تعديل حساب",
+    "admin_category_create": "تم إنشاء صنف",
+    "admin_category_update": "تم تعديل صنف",
+    "admin_category_toggle": "تم تفعيل / تعطيل صنف",
+    "admin_attribute_create": "تمت إضافة خاصية",
+    "admin_attribute_update": "تم تعديل خاصية",
+    "admin_attribute_delete": "تم حذف خاصية",
+    "admin_settings_update": "تم تعديل الإعدادات",
+    "home_feature": "إبراز في الصفحة الرئيسية",
+    "listing_submit_free_quota": "إعلان تبعث (مكان مجاني)",
+    "listing_submit_already_paid": "إعلان تبعث (مخلوص من قبل)",
+    "listing_submit_credit": "إعلان تبعث (باقة)",
+    "listing_submit_auto_published": "إعلان تنشر أوتوماتيكيًا",
+    "listing_renew_free_quota": "إعلان تجدّد (مكان مجاني)",
+    "listing_renew_free": "إعلان تجدّد (مجاني)",
+    "listing_renew_credit": "إعلان تجدّد (باقة)",
+    "listing_renew_payment": "إعلان تجدّد (بالفلوس)",
+    "listing_report": "إعلان بُلّغ عليه",
+    "admin_listing_approve_edit": "تبديل تنشر",
+    "admin_listing_reject_edit": "تبديل ترفض",
+    "admin_shop_approve": "بوتيك تحلّت",
+    "admin_shop_reject": "بوتيك ترفضت",
+    "admin_shop_suspend": "بوتيك توقفت",
+    "admin_shop_reinstate": "بوتيك تحلّت من جديد",
+    "admin_shop_verify": "بوتيك توثّقت",
+    "admin_shop_unverify": "التوثيق تنحّى",
+    "legal_docs_update": "الوثائق القانونية تبدّلت",
+    "settings_update": "الإعدادات تبدّلت",
+    "listing_edit": "إعلان تبدّل",
+    "listing_edit_withdrawn": "التبديل تسحب",
+    "listing_relist": "إعلان رجع منشور",
+    "listing_mark_sold": "إعلان تعلّم مبيوع / مكري",
+    "listing_withdraw": "إعلان توقف",
+    "listing_reserve": "عقار تعلّم محجوز",
+    "listing_unreserve": "الحجز تنحّى",
+    "listing_submit_subscription": "إعلان تبعث (اشتراك البوتيك)",
+    "notification_broadcast": "إشعار تبعث للكل",
+    "notification_delete": "إشعار تفسخ",
+    "notification_bulk_delete": "إشعارات تفسخت",
+    "popup_create": "بوب أب تعمل",
+    "popup_update": "بوب أب تبدّل",
+    "popup_delete": "بوب أب تفسخ",
+    "request_create": "طلب تعمل",
+    "request_update": "طلب تبدّل",
+    "request_delete": "طلب تفسخ",
+    "request_pause": "طلب توقف",
+    "request_resume": "طلب رجع يخدم",
+    "request_renew": "طلب تجدّد",
+    "shop_create": "طلب بوتيك",
+    "shop_update": "بوتيك تبدّلت",
+    "shop_document": "وثيقة بوتيك تبعثت",
+    "shop_member_add": "عضو تزاد لبوتيك",
+    "shop_member_role": "دور عضو تبدّل",
+    "shop_member_remove": "عضو تنحّى من بوتيك",
+    "shop_subscribe": "اشتراك برو تختار",
+    "social_request": "طلب ترويج في الشبكات",
+    "social_withdraw": "ترويج تسحب",
+    "social_approve": "ترويج تقبل",
+    "social_reject": "ترويج ترفض",
+    "social_variant_edit": "نص المنشور تبدّل",
+    "social_job_run": "النشر بدا",
+    "social_job_done": "النشر تعمل",
+    "social_job_retry": "النشر تعاود",
+    "social_job_cancel": "النشر تلغى",
+    "social_account_connect": "حساب شبكة تربط",
+    "social_account_disconnect": "حساب شبكة تفصل",
+    "social_account_test": "حساب شبكة تجرّب",
+    "social_group_create": "غروب تزاد",
+    "social_group_update": "غروب تبدّل",
+    "social_group_delete": "غروب تفسخ",
+    "visit_request": "زيارة مطلوبة",
+    "visit_confirm": "زيارة مأكّدة",
+    "visit_decline": "زيارة مرفوضة",
+    "visit_done": "زيارة تعملت",
+    "visit_cancel": "زيارة ملغاة",
+    "lead_create": "حريف تزاد (بوتيك)",
+    "lead_update": "حريف تبدّل (بوتيك)",
+    "lead_delete": "حريف تفسخ (بوتيك)",
+    "shop_suggest": "إعلان تقترح لطلب (بوتيك)",
+    "listing_edit_waiting": "إعلان تصلّح قبل المراجعة",
+    "listing_promo": "تبريز مطلوب"
+  },
+  "adminApi": {
+    "bulk": {
+      "unsupported": "الرفض والحذف يتمّان إعلانًا بإعلان.",
+      "skipStatus": "الحالة « {status} »",
+      "skipNoPhone": "لا يوجد رقم",
+      "skipServerError": "خطأ في الخادم",
+      "skipAlreadyArchived": "مؤرشف مسبقًا",
+      "skipNotPublished": "غير منشور",
+      "skipNotFound": "غير موجود"
+    },
+    "listing": {
+      "notAwaitingPayment": "حالة هذا الإعلان « {status} ».",
+      "noPayment": "لا توجد عملية دفع مرتبطة بهذا الإعلان.",
+      "noPhone": "هذا الإعلان بدون رقم هاتف: لا يمكن نشره.",
+      "alreadyPublished": "هذا الإعلان منشور من قبل.",
+      "reasonRequired": "اذكر للبائع ما المشكلة — وإلا سيعيد إرسال الإعلان نفسه.",
+      "creditsNotSupported": "تم دفع هذا الإعلان بباقة، واسترجاع الباقة غير متوفّر هنا بعد. عالجه يدويًا.",
+      "notPublished": "لا يمكن تمديد إلا إعلان منشور.",
+      "notSellable": "لا يمكن تسجيل إعلان بحالة « {status} » كمُباع.",
+      "phoneRequiredLive": "يجب أن يحتفظ الإعلان المنشور برقم هاتف.",
+      "publishedNotDeletable": "قم بالأرشفة أولًا: حذف إعلان منشور يعطّل الروابط المشاركة.",
+      "paidNotDeletable": "تم دفع هذا الإعلان. قم بأرشفته — يجب أن يبقى أثر الدفع.",
+      "noPendingEdit": "ما فما حتى تبديل يستنّى على الإعلان هذا.",
+      "editNotLive": "الإعلان ما عادش منشور: التبديل ما ينجمش يتنشر."
+    },
+    "sellers": {
+      "unknownRole": "دور غير معروف.",
+      "selfDemote": "لا يمكنك سحب صلاحية الإدارة من حسابك.",
+      "banReasonRequired": "اذكر سبب تعليق هذا الحساب.",
+      "selfBan": "لا يمكنك تعليق حسابك.",
+      "choosePack": "اختر باقة.",
+      "packNoQuota": "هذه الباقة لا تمنح أي منشور.",
+      "revokeReasonRequired": "اذكر سبب سحب الشارة."
+    }
+  },
+  "notificationMail": {
+    "cta": "شوف على Mazed Immo",
+    "footer": "وصلك هذا البريد لأن عندك حساب على Mazed Immo.",
+    "fallbackSubject": "إشعار من Mazed Immo"
+  },
+  "sms": {
+    "otp": "رمز التحقق متاعك في Mazed Immo: {code}. صالح لمدة 10 دقائق."
+  },
+  "moderation": {
+    "flags": {
+      "first_listing": "أول إعلان للبائع",
+      "too_few_photos": "أقل من 3 صور",
+      "contact_in_text": "معلومات اتصال في النص",
+      "banned_words": "كلمة ممنوعة",
+      "price_implausible": "سعر غير معقول",
+      "duplicate": "إعلان مكرّر",
+      "reported": "بلّغ عليه زوّار"
+    },
+    "reasons": {
+      "scam": "تحيّل",
+      "wrong_info": "معلومات غالطة",
+      "sold": "تباع ولا تكرى",
+      "duplicate": "مكرّر",
+      "inappropriate": "محتوى غير لائق",
+      "other": "سبب آخر"
+    }
+  },
+  "adminResults": {
+    "eyebrow": "المتابعة",
+    "title": "النتائج",
+    "description": "شنوّة تنتج المنصّة، شهر بشهر: الإعلانات، الزوّار، الاتصالات، الطلبات والمداخيل — البيع والكراء كل واحد وحدو.",
+    "unavailable": "الخدمة غير متاحة مؤقتًا.",
+    "tnd": "د.ت",
+    "liveNow": "إعلانات منشورة",
+    "waitingNow": "في انتظار المراجعة",
+    "accountsTotal": "الحسابات",
+    "revenueThisMonth": "مداخيل هذا الشهر",
+    "cols": {
+      "month": "الشهر",
+      "published": "إعلانات منشورة",
+      "accounts": "حسابات جديدة",
+      "views": "مشاهدات الإعلانات",
+      "reveals": "أرقام تطلّبت",
+      "revenue": "المداخيل",
+      "demandes": "الطلبات",
+      "matches": "المطابقات"
+    },
+    "byKindTitle": "المداخيل حسب النوع، على 6 أشهر",
+    "noRevenue": "ما فماش دفعات مأكّدة في هذه الفترة.",
+    "note": "الأرقام اللي تطلّبت هي النتيجة اللي يستنّاها البائع: شاري يكلّمو.",
+    "kinds": {
+      "listing_fee": "النشر",
+      "listing_pack": "باقات الإعلانات",
+      "promo": "الإبراز",
+      "badge": "شارة التوثيق",
+      "renewal": "التجديد",
+      "subscription": "الاشتراكات"
+    },
+    "liveSale": "منشورة · بيع",
+    "liveRent": "منشورة · كراء",
+    "demandesActive": "طلبات نشطة",
+    "pairLegend": "بيع · كراء",
+    "pairLegendDemandes": "شراء · كراء"
+  },
+  "requests": {
+    "unavailable": "الخدمة موش متاحة توّا.",
+    "newTitle": "سجّل طلبك",
+    "editTitle": "بدّل طلبك",
+    "newIntro": "قول شنوّة تلوّج عليه، ونعلموك أوّل ما يتنشر عقار يناسبك.",
+    "dealLabel": "تحب…",
+    "dealSale": "تشري",
+    "dealRent": "تكري",
+    "categoriesLabel": "نوع العقار",
+    "categoriesAny": "كان ما اخترت شي: كل الأنواع.",
+    "governoratesLabel": "وين؟",
+    "governoratesAdd": "زيد ولاية",
+    "governoratesAny": "كل تونس",
+    "removeGovernorate": "نحّي {name}",
+    "budgetMaxSale": "أقصى ميزانية (د.ت)",
+    "budgetMaxRent": "أقصى كراء في الشهر (د.ت)",
+    "budgetMin": "الأدنى (اختياري)",
+    "budgetHint": "الأقصى شرط: ما نبعثولكش حتى عقار فوقو.",
+    "surfaceMin": "أقل مساحة (م²)",
+    "roomsMin": "الغرف",
+    "roomsAny": "ما يهمّش",
+    "roomsAtLeast": "S+{count} ولا أكثر",
+    "furnishedLabel": "الفرش",
+    "furnished": {
+      "furnished": "مفروش",
+      "semi": "نص مفروش",
+      "unfurnished": "فارغ"
+    },
+    "moveInBy": "تدخل قبل نهار",
+    "noteLabel": "حاجات أخرى تحبها",
+    "notePlaceholder": "قريبة للمدينة، طابق أرضي، حومة هادية…",
+    "alertsLabel": "علّمني كي يتنشر عقار يناسب طلبي",
+    "submitNew": "سجّل الطلب",
+    "submitEdit": "سجّل التبديلات",
+    "saved": "تسجّل طلبك. نعلموك كي يجي عقار يناسبك.",
+    "saveFailed": "ما نجّمناش نسجّلو الطلب.",
+    "budgetMissing": "حطّ أقصى ميزانية.",
+    "listTitle": "طلباتي",
+    "listSubtitle": "{count, plural, zero {ما فماش طلبات} one {طلب واحد} two {زوز طلبات} few {# طلبات} many {# طلب} other {# طلب}}",
+    "newRequest": "طلب جديد",
+    "emptyTitle": "ما عندك حتى طلب للتوّا.",
+    "emptyBody": "الطلب هو بحث نحفظوهولك: أوّل ما يجي عقار يناسبك، نعلموك.",
+    "newBuy": "نلوّج نشري",
+    "newRent": "نلوّج نكري",
+    "kindBuy": "شراء",
+    "kindRent": "كراء",
+    "anyCategory": "كل الأنواع",
+    "anywhere": "كل تونس",
+    "upTo": "حتى {amount}",
+    "upToPerMonth": "حتى {amount} في الشهر",
+    "fromAmount": "ابتداءً من {amount}",
+    "surfaceAtLeast": "{area} م² ولا أكثر",
+    "moveInShort": "دخول قبل {date}",
+    "statusActive": "نشط",
+    "statusPaused": "موقوف",
+    "statusExpired": "انتهى",
+    "expiresOn": "حتى {date}",
+    "matchesCount": "{count, plural, zero {ما جاش حتى عقار يناسب للتوّا} one {عقار واحد يناسب} two {زوز عقارات تناسب} few {# عقارات تناسب} many {# عقار يناسب} other {# عقار يناسب}}",
+    "alertsOff": "التنبيهات مسكّرة",
+    "seeListings": "شوف الإعلانات",
+    "edit": "بدّل",
+    "pause": "وقّف",
+    "resume": "رجّعو",
+    "renew": "زيد 60 يوم",
+    "delete": "فسخ",
+    "deleteConfirm": "تفسخ الطلب هذا؟",
+    "deleted": "الطلب تفسخ.",
+    "paused": "التنبيهات وقفت.",
+    "resumed": "التنبيهات رجعت.",
+    "renewed": "الطلب تزاد 60 يوم.",
+    "actionFailed": "ما نجّمناش توّا، عاود بعد شويّة.",
+    "alertsShops": "وكالات برو تنجم زادة تشوف شنوّة تلوّج — عمرها ما تشوف اسمك ولا نومروك — وتقترحلك عقار."
+  },
+  "requestsApi": {
+    "budgetRequired": "حطّ أقصى ميزانية.",
+    "budgetOrder": "الأدنى أكبر من الأقصى.",
+    "tooMany": "عندك ديجا {max} طلبات نشطة. وقّف ولا افسخ واحد."
+  },
+  "adminDemandes": {
+    "eyebrow": "الطلب",
+    "title": "الطلبات",
+    "description": "شنوّة يلوّجو عليه الشارين والكرّاية وما لقاوهش — وقدّاش من إعلان ناسبهم.",
+    "unavailable": "الخدمة موش متاحة توّا.",
+    "tabs": {
+      "all": "الكل",
+      "sale": "شراء",
+      "rent": "كراء"
+    },
+    "empty": "ما فماش طلبات للتوّا.",
+    "cols": {
+      "date": "التاريخ",
+      "person": "الشخص",
+      "search": "البحث",
+      "budget": "أقصى ميزانية",
+      "status": "الحالة",
+      "matches": "المطابقات"
+    },
+    "noName": "بلا اسم",
+    "kindBuy": "شراء",
+    "kindRent": "كراء",
+    "anyCategory": "كل الأنواع",
+    "anywhere": "كل تونس",
+    "surfaceAtLeast": "{area} م² ولا أكثر",
+    "furnished": {
+      "furnished": "مفروش",
+      "semi": "نص مفروش",
+      "unfurnished": "فارغ"
+    },
+    "moveIn": "دخول قبل {date}",
+    "perMonth": "في الشهر",
+    "from": "ابتداءً من {amount}",
+    "status": {
+      "active": "نشط",
+      "paused": "موقوف",
+      "expired": "انتهى"
+    },
+    "alertsOff": "التنبيهات مسكّرة",
+    "note": "آخر {max} طلب. الطلب ملك صاحبو: الصفحة هذي ما تبدّلوش."
+  },
+  "accountSettings": {
+    "title": "الإعدادات",
+    "subtitle": "ملفّك، الإشعارات، وشنوّة يورّي الموقع منك.",
+    "profileTitle": "الملف الشخصي",
+    "phoneLine": "رقم الحساب:",
+    "nameLabel": "الاسم اللي يظهر",
+    "governorateLabel": "الولاية",
+    "governorateNone": "موش محدّدة",
+    "profileHint": "يتعمّرو وحدهم في كل إعلان جديد، وتنجّم ديما تبدّلهم في الإعلان.",
+    "save": "سجّل",
+    "saved": "الملف تسجّل.",
+    "saveFailed": "ما نجّمناش نسجّلو الملف.",
+    "nameInvalid": "الاسم لازم يكون بين 2 و80 حرف.",
+    "notificationsTitle": "الإشعارات",
+    "requestAlerts": "تنبيهات طلباتي",
+    "privacyTitle": "شنوّة يورّي الموقع منك",
+    "privacyPhone": "رقمك ما يظهرش في الصفحة: الشاري يشوفو كان كي ينزل «شوف الرقم»، وكل مرّة تتحسب.",
+    "privacyRequests": "طلباتك تبقى خاصة: حتى بايع ما يشوفها. احنا نعلموك انت كي يجي عقار يناسبك.",
+    "privacyReports": "التبليغ ما يقولش للبايع شكون عملو.",
+    "privacyPolicy": "سياسة الخصوصية",
+    "deleteTitle": "فسخ الحساب",
+    "deleteBody": "إعلاناتك تتنحّى من الموقع وحسابك يتسكّر. ما فماش رجوع."
+  },
+  "aiApi": {
+    "tooShort": "اكتب جملة أطول شويّة.",
+    "rateLimited": "برشا طلبات في وقت قصير. عاود بعد ساعة، ولا عمّر الإعلان عادي.",
+    "unavailable": "المساعد موش متاح توّا. عمّر الإعلان عادي.",
+    "failed": "ما نجّمناش نقراو الجملة توّا. عمّر الإعلان عادي."
+  },
+  "promote": {
+    "back": "إعلاناتي",
+    "title": "روّج عقارك",
+    "whereTitle": "وين تحب تنشروه؟",
+    "whereHint": "اختار شبكة ولا أكثر. ما اخترنالك حتى شي.",
+    "channels": {
+      "facebook_page": {
+        "name": "صفحة Mazed Immo على فيسبوك",
+        "hint": "ننشروها احنا على صفحتنا، بتصاورك."
+      },
+      "instagram": {
+        "name": "Mazed Immo على إنستغرام",
+        "hint": "منشور بتصاورك على الحساب متاعنا."
+      },
+      "facebook_groups": {
+        "name": "غروبات فيسبوك",
+        "hint": "الفريق متاعنا يشاركها بيدو في غروبات العقارات متاع جهتك."
+      },
+      "tiktok": {
+        "name": "تيك توك",
+        "hint": "قريب."
+      }
+    },
+    "instagramNeedsPhoto": "إنستغرام يحتاج على الأقل تصويرة. زيد تصويرة للإعلان.",
+    "languageTitle": "لغة المنشورات",
+    "languages": {
+      "both": "عربي وفرنسي",
+      "ar": "عربي",
+      "fr": "فرنسي"
+    },
+    "previewTitle": "كيفاش باش يبان",
+    "previewEmpty": "اختار على الأقل شبكة باش تشوف المنشور.",
+    "previewNote": "المرجع (MZ-…) يتعطى كي تبعث الطلب. رقمك ما يبانش أبدًا: اللي يحب يتصل بيك من الإعلان.",
+    "priceTitle": "السوم",
+    "freeLaunch": "بلاش في فترة الإطلاق",
+    "price": "{amount} د.ت",
+    "consent": "نوافق اللي Mazed Immo تنشر الإعلان هذا — التصاور، السوم، نوع العقار والبلاصة، وأبدًا رقمي — على الشبكات اللي اخترتهم. نجم ننحّيه وقت ما نحب من الصفحة هذي.",
+    "reviewNote": "الفريق متاعنا يقرا كل منشور قبل ما يتنشر.",
+    "confirm": "أكّد الترويج",
+    "sent": "الطلب تبعث. نعلموك كي يتنشر.",
+    "sentScheduled": "تثبّت: المنشور يخرج بعد دقايق.",
+    "failed": "ما نجّمناش نبعثو الطلب توّا.",
+    "askedOn": "طلب نهار {date}",
+    "status": {
+      "draft": "مسودة",
+      "pending_approval": "في انتظار المراجعة",
+      "scheduled": "مبرمج",
+      "published": "منشور",
+      "failed": "فشل",
+      "rejected": "مرفوض",
+      "cancelled": "ملغى",
+      "withdrawn": "منحّى"
+    },
+    "statusHint": {
+      "draft": "الطلب مازال ما تبعثش.",
+      "pending_approval": "الفريق متاعنا يراجع المنشور. نعلموك كي يتنشر.",
+      "scheduled": "تثبّت. يخرج في الوقت المبرمج، والغروبات يشاركهم الفريق متاعنا بيدو.",
+      "published": "إعلانك على الشبكات متاعنا. الزيارات اللي جابها محسوبة لوطة.",
+      "failed": "المنشور ما خرجش. الفريق متاعنا يتلهّى بيه.",
+      "rejected": "الفريق متاعنا ما قبلش الترويج هذا.",
+      "cancelled": "انت ألغيت الطلب هذا.",
+      "withdrawn": "الإعلان تنحّى من الشبكات."
+    },
+    "job": {
+      "scheduled": "مبرمج",
+      "running": "جاري",
+      "published": "منشور",
+      "done": "تعمل",
+      "failed": "الفريق متاعنا باش يعاودو",
+      "manual_action_required": "يحضّرو الفريق متاعنا",
+      "cancelled": "ملغى",
+      "groups": "يحضّرو الفريق متاعنا"
+    },
+    "groupsShared": "{count, plural, one {تشارك في غروب واحد} other {تشارك في # غروبات}}",
+    "seePost": "شوف المنشور",
+    "visits": "زيارات من الشبكات",
+    "contacts": "أرقام تشافت",
+    "ref": "المرجع",
+    "free": "بلاش",
+    "paid": "{amount} د.ت",
+    "cancel": "ألغِ الطلب",
+    "withdraw": "نحّيه من الشبكات",
+    "cancelConfirm": "تحب تلغي طلب الترويج هذا؟",
+    "withdrawConfirm": "تحب تنحّي الإعلان من الشبكات؟ منشور فيسبوك يتفسخ، والباقي ينحّيه الفريق متاعنا.",
+    "cancelled": "الطلب تلغى.",
+    "withdrawn": "تسجّل: الإعلان باش يتنحّى من الشبكات.",
+    "notOnline": "الإعلان لازم يكون منشور باش تروّجو. ارجع لهنا كي يتنشر.",
+    "disabled": "الترويج على الشبكات مسكّر توّا.",
+    "lastRejected": "الطلب الأخير متاعك ما تقبلش."
+  },
+  "socialApi": {
+    "disabled": "الترويج على الشبكات مسكّر توّا.",
+    "notFound": "الإعلان ما لقيناهش.",
+    "notOnline": "الإعلان لازم يكون منشور باش تروّجو.",
+    "noChannel": "اختار على الأقل شبكة.",
+    "consent": "علّم على خانة الموافقة باش تبعث الطلب.",
+    "alreadyOpen": "الإعلان هذا عندو ترويج جاري.",
+    "noPhoto": "إنستغرام يحتاج على الأقل تصويرة.",
+    "failed": "ما نجّمناش نبعثو الطلب توّا.",
+    "closed": "الطلب هذا تسكّر."
+  },
+  "adminSocial": {
+    "unavailable": "قاعدة البيانات غير متاحة.",
+    "eyebrow": "الشبكات",
+    "title": "Social Publisher",
+    "description": "الإعلانات اللي البائعين يحبوها على صفحة فيسبوك، إنستغرام والغروبات. {price} · {mode}.",
+    "priceFree": "مجاني",
+    "pricePaid": "{amount} د.ت للترويج",
+    "modeReview": "كل طلب يثبّتو أدمين",
+    "modeAuto": "تثبيت أوتوماتيكي",
+    "tabs": {
+      "valider": "للمراجعة",
+      "file": "الطابور",
+      "publies": "المنشورة",
+      "comptes": "الحسابات",
+      "groupes": "الغروبات"
+    },
+    "channels": {
+      "facebook_page": "صفحة فيسبوك",
+      "instagram": "إنستغرام",
+      "facebook_groups": "غروب فيسبوك",
+      "tiktok": "تيك توك"
+    },
+    "languages": {
+      "both": "عربي + فرنسي",
+      "ar": "عربي",
+      "fr": "فرنسي"
+    },
+    "noName": "بلا اسم",
+    "consentOn": "موافقة بتاريخ {date}",
+    "scheduleAt": "برمج",
+    "approve": "ثبّت وانشر",
+    "approveLater": "ثبّت للتاريخ هذا",
+    "approved": "تثبّت: المنشور خارج توّا.",
+    "approvedLater": "تثبّت: يخرج في الوقت المختار.",
+    "reject": "ارفض",
+    "rejectTitle": "ترفض الترويج هذا؟",
+    "rejectBody": "البائع يوصلو السبب، وينجم يعاود يطلب.",
+    "rejectReason": "السبب",
+    "rejectPlaceholder": "مثلًا: التصاور مظلمة، السوم موش منطقي…",
+    "rejected": "الطلب ترفض.",
+    "edited": "تبدّل",
+    "save": "سجّل النص",
+    "saved": "النص تسجّل.",
+    "saveFailed": "ما نجّمناش نسجّلو.",
+    "emptyReview": "ما فما حتى طلب للمراجعة.",
+    "emptyQueue": "ما فما شي في الانتظار.",
+    "emptyPublished": "ما فما حتى إعلان منشور على الشبكات للتوّا.",
+    "emptyAccounts": "ما فما حتى حساب مربوط.",
+    "emptyGroups": "ما فما حتى غروب. زيد غروبات العقارات اللي الفريق يشارك فيهم الإعلانات.",
+    "actions": {
+      "publish": "نشر",
+      "mark_closed": "تعليم تباع / تكرى",
+      "remove": "تنحية"
+    },
+    "jobStatus": {
+      "scheduled": "مبرمج",
+      "running": "جاري",
+      "published": "منشور",
+      "done": "تعمل",
+      "failed": "فشل",
+      "manual_action_required": "يتعمل باليد",
+      "cancelled": "ملغى"
+    },
+    "manualReason": {
+      "no_account": "ما فما حتى حساب مربوط",
+      "account_expired": "الربط وفى — عاود اربط الحساب",
+      "groups_manual": "غروب: يتشارك باليد",
+      "not_supported": "الـ API ما يسمحش بيها",
+      "limit_reached": "وصلنا لحد المنشورات",
+      "media_rejected": "الشبكة رفضت التصويرة"
+    },
+    "runAfter": "ابتداءً من {date}",
+    "attempts": "محاولة {n}/{max}",
+    "runNow": "انشر توّا",
+    "ran": "بدا.",
+    "retry": "عاود",
+    "requeued": "رجع للطابور.",
+    "cancelJob": "ألغِ",
+    "cancelled": "تلغى.",
+    "copy": "انسخ النص",
+    "copied": "تنسخ",
+    "openGroup": "حلّ الغروب",
+    "postUrlPlaceholder": "رابط المنشور (اختياري)",
+    "markDone": "علّم كي تعمل",
+    "markedDone": "تسجّل كي تعمل.",
+    "noLinks": "الغروب هذا ما يقبلش الروابط: النص يتنسخ بلا رابط.",
+    "linksOk": "يقبل الروابط",
+    "cols": {
+      "listing": "الإعلان",
+      "posts": "المنشورات",
+      "visits": "الزيارات",
+      "contacts": "أرقام تشافت",
+      "status": "الحالة"
+    },
+    "requestStatus": {
+      "draft": "مسودة",
+      "pending_approval": "للمراجعة",
+      "scheduled": "مبرمج",
+      "published": "منشور",
+      "failed": "فشل",
+      "rejected": "مرفوض",
+      "cancelled": "ملغى",
+      "withdrawn": "منحّى"
+    },
+    "closedOn": "تتبّع بتاريخ {date}",
+    "connectTitle": "صفحة فيسبوك وإنستغرام",
+    "connectBody": "اربط صفحة Mazed Immo على فيسبوك؛ حساب إنستغرام المهني المربوط بيها يتربط معاها. المفتاح يتشفّر قبل ما يتسجّل.",
+    "connect": "اربط فيسبوك",
+    "reconnect": "عاود اربط",
+    "notConfigured": "مازال ما تضبطش",
+    "setupTitle": "باش تربط الصفحة:",
+    "setup1": "اعمل تطبيق Meta (developers.facebook.com) من نوع Business، مع Facebook Login.",
+    "setup2": "اربط حساب إنستغرام المهني بصفحة Mazed Immo على فيسبوك.",
+    "setup3": "في التطبيق، زيد عنوان الرجوع هذا:",
+    "setup4": "زيد في Vercel المتغيرات:",
+    "connectedOk": "{count, plural, one {الصفحة تربطت.} other {# صفحات تربطو.}}",
+    "connectError": {
+      "denied": "الربط ترفض على فيسبوك.",
+      "state": "الربط وفى وقتو. عاود من الأول.",
+      "not_configured": "تطبيق Meta مازال ما تضبطش.",
+      "no_page": "ما لقينا حتى صفحة فيسبوك على الحساب هذا.",
+      "failed": "الربط ما نجحش. عاود."
+    },
+    "accountStatus": {
+      "connected": "مربوط",
+      "expired": "منتهي",
+      "revoked": "ملغى",
+      "disconnected": "مفصول"
+    },
+    "connectedOn": "تربط بتاريخ {date}",
+    "expiresOn": "يوفى بتاريخ {date}",
+    "noExpiry": "ما يوفاش",
+    "disconnect": "افصل",
+    "disconnectTitle": "تفصل الحساب هذا؟",
+    "disconnectBody": "المفتاح يتفسخ. المنشورات المبرمجة تولّي تتعمل باليد حتى تعاود تربط.",
+    "disconnected": "الحساب تفصل.",
+    "addGroup": "زيد الغروب",
+    "groupName": "اسم الغروب",
+    "groupDeals": "الإعلانات المقبولة",
+    "groupKindsHint": "كان ما اخترت حتى نوع: العقارات الكل.",
+    "groupGovernorates": "الولايات",
+    "groupGovernoratesHint": "كان ما اخترت حتى ولاية: تونس الكل.",
+    "groupMembers": "الأعضاء",
+    "groupRules": "قوانين الغروب (اختياري)",
+    "groupAllowsLinks": "الغروب يقبل الروابط",
+    "groupAdded": "الغروب تزاد.",
+    "groupDeleted": "الغروب تفسخ.",
+    "deal": {
+      "sale": "بيع",
+      "rent": "كراء"
+    },
+    "kind": {
+      "residential": "سكني",
+      "land": "أراضي",
+      "commercial": "مهني"
+    },
+    "allTunisia": "تونس الكل",
+    "members": "{count} عضو",
+    "lastShared": "آخر مشاركة بتاريخ {date}",
+    "neverShared": "عمرو ما تشارك",
+    "pause": "وقّف",
+    "resume": "رجّعو",
+    "delete": "افسخ",
+    "deleteGroupTitle": "تفسخ الغروب هذا؟",
+    "deleteGroupBody": "المشاركات اللي تعملت تبقى في السجل.",
+    "errors": {
+      "length": "النص لازم يكون بين 10 و2200 حرف.",
+      "reference": "خلّي المرجع MZ-… في النص: هو اللي يمنع التكرار.",
+      "contact": "حتى رقم تليفون ولا إيميل في منشور.",
+      "url": "حط رابط المنشور (facebook.com، instagram.com…).",
+      "name": "عطي اسم للغروب.",
+      "deal_types": "اختار بيع، كراء ولا الزوز.",
+      "exists": "الغروب هذا موجود في القائمة.",
+      "testExpired": "Meta رفضت المفتاح: عاود اربط الصفحة.",
+      "testNoKey": "SOCIAL_TOKEN_KEY تبدّل ولا ناقص: عاود اربط الصفحة.",
+      "testFailed": "Meta ما جاوبتش كيما لازم. عاود بعد شويّة."
+    },
+    "test": "جرّب الربط",
+    "testOk": "الربط يخدم: {name}.",
+    "testOkQuota": "الربط يخدم: {name} — {used}/{total} منشور في 24 ساعة."
+  },
+  "pro": {
+    "kinds": {
+      "agency": "وكالة عقارية",
+      "promoter": "باعث عقاري",
+      "land_developer": "مقسّم أراضي",
+      "property_manager": "متصرّف في العقارات"
+    },
+    "roles": {
+      "owner": "صاحب الحساب",
+      "admin": "مسؤول",
+      "agent": "وكيل"
+    },
+    "status": {
+      "pending": "قيد المراجعة",
+      "approved": "مفتوحة",
+      "rejected": "مرفوضة",
+      "suspended": "موقوفة",
+      "hint": {
+        "pending": "فريق مزاد إيمو يراجع في بوتيكك. نعلموك أوّل ما تتحلّ.",
+        "rejected": "البوتيك ما تقبلتش. صلّح اللي مكتوب لوطة وابعثلنا.",
+        "suspended": "البوتيك موقوفة: الصفحة متاعها والإعلانات ما عادش يبانو."
+      }
+    },
+    "documents": {
+      "rne": "مضمون السجل الوطني للمؤسسات",
+      "patente": "الباتيندة",
+      "identity": "بطاقة تعريف المسيّر",
+      "other": "وثيقة أخرى"
+    },
+    "landing": {
+      "metaTitle": "مزاد إيمو برو — البوتيك العقارية متاعك",
+      "metaDescription": "وكالات، باعثين ومقسّمين: صفحة باسمك، إعلاناتك في كاتالوغ مزاد إيمو، وفريق ينشر معاك.",
+      "title": "وكالتك عندها فيترينتها على مزاد إيمو",
+      "subtitle": "صفحة باسمك، الإعلانات الكل في بلاصة وحدة، فريق ينشر معاك، واشتراك شهري بلا عمولة.",
+      "ctaCreate": "نحلّ البوتيك متاعي",
+      "ctaDashboard": "نمشي لفضاء برو",
+      "benefits": {
+        "shop": {
+          "title": "صفحتك",
+          "body": "لوغو، بانر، تقديم، أرقام وأوقات العمل: رابط باسمك تنجم تبارتاجيه."
+        },
+        "marketplace": {
+          "title": "الكاتالوغ الكل",
+          "body": "إعلاناتك يبانو زادة في البحث متاع مزاد إيمو، كيف الإعلانات الكل."
+        },
+        "team": {
+          "title": "فريقك",
+          "body": "زيد الوكلاء متاعك: كل واحد ينشر للبوتيك، وإنت تبقى متحكّم."
+        },
+        "matches": {
+          "title": "الطلبات",
+          "body": "اللي يلوّجو على اللي تعرض فيه يوصلهم خبر بإعلاناتك."
+        }
+      },
+      "plansTitle": "ثلاثة اشتراكات، بلا التزام",
+      "perMonth": "د.ت / الشهر",
+      "quota": "{count, plural, zero {بلا إعلانات} one {إعلان واحد منشور} two {زوز إعلانات منشورين} few {# إعلانات منشورة} many {# إعلانًا منشورًا} other {# إعلان منشور}}",
+      "included": {
+        "shopPage": "صفحة بوتيك عمومية",
+        "inCatalogue": "الإعلانات في الكاتالوغ",
+        "noCommission": "حتى عمولة على البيع"
+      },
+      "verifiedNote": "شارة « موثّقة » تبان كي فريقنا يراجع الوثائق متاعك (السجل الوطني، الباتيندة)."
+    },
+    "create": {
+      "title": "نحلّ البوتيك متاعي",
+      "subtitle": "شوية معلومات يكفيو. فريق مزاد إيمو يراجع كل بوتيك قبل ما يحلّها، عادة في ظرف 24 ساعة."
+    },
+    "form": {
+      "imageTooBig": "التصويرة ثقيلة برشا (10 ميغا على الأكثر).",
+      "uploadFailed": "التصويرة ما تبعثتش. عاود جرّب.",
+      "saveFailed": "ما نجمناش نسجّلو. عاود جرّب.",
+      "created": "البوتيك تبعثت للمراجعة.",
+      "saved": "البوتيك تسجّلت.",
+      "logo": "اللوغو",
+      "cover": "البانر",
+      "imagesHint": "لوغو مربّع وبانر عريض (3:1). JPG، PNG ولا WebP.",
+      "name": "اسم البوتيك",
+      "kind": "النشاط",
+      "governorate": "الولاية",
+      "city": "المدينة",
+      "description": "التقديم",
+      "descriptionPlaceholder": "وكالتك، المناطق اللي تخدم فيها، طريقة خدمتك…",
+      "phone": "التليفون",
+      "email": "الإيميل",
+      "website": "السيت",
+      "hours": "أوقات العمل",
+      "hoursPlaceholder": "من الإثنين للسبت، 9h–18h",
+      "legalName": "الاسم الاجتماعي",
+      "legalId": "المعرّف الجبائي / السجل الوطني",
+      "slug": "رابط الصفحة",
+      "slugHint": "حروف لاتينية صغيرة، أرقام وخطوط. تبديل الرابط يكسّر الروابط اللي تبارتاجات.",
+      "legalHint": "الاسم الاجتماعي والمعرّف ما يتنشروش: يستعملوهم باش نثبتو في البوتيك.",
+      "submitCreate": "نبعث البوتيك",
+      "submitSave": "سجّل"
+    },
+    "dashboard": {
+      "unavailable": "الخدمة مش متوفّرة توّا.",
+      "eyebrow": "فضاء برو",
+      "verified": "بوتيك موثّقة",
+      "yourRole": "إنت: {role}",
+      "publicPage": "شوف الصفحة",
+      "tabs": {
+        "apercu": "نظرة عامة",
+        "annonces": "الإعلانات",
+        "equipe": "الفريق",
+        "abonnement": "الاشتراك",
+        "boutique": "البوتيك",
+        "documents": "الوثائق",
+        "visites": "الزيارات",
+        "clients": "الحرفاء",
+        "demandes": "الطلبات"
+      },
+      "planLabel": "الاشتراك",
+      "noPlan": "حتى شي",
+      "until": "حتى {date}",
+      "quotaLabel": "إعلانات منشورة",
+      "quotaSub": "منشورة وقيد المراجعة",
+      "viewsLabel": "المشاهدات",
+      "revealsLabel": "الأرقام اللي تشافت",
+      "nextTitle": "وتوّا",
+      "publishForShop": "انشر للبوتيك",
+      "choosePlan": "اختار اشتراك",
+      "getVerified": "وثّق البوتيك",
+      "noListings": "حتى إعلان ما تنشر للبوتيك.",
+      "listingStatus": {
+        "draft": "مسودّة",
+        "pending_payment": "في انتظار الدفع",
+        "pending_review": "قيد المراجعة",
+        "published": "منشورة",
+        "rejected": "مرفوضة",
+        "expired": "منتهية الصلاحية",
+        "archived": "متوقفة",
+        "sold": "تباعت",
+        "rented": "تكرات"
+      },
+      "onRequest": "السوم عند الطلب",
+      "perMonth": "د.ت / الشهر",
+      "tnd": "د.ت",
+      "viewsShort": "{count, plural, zero {حتى مشاهدة} one {مشاهدة وحدة} two {زوز مشاهدات} few {# مشاهدات} many {# مشاهدة} other {# مشاهدة}}",
+      "edit": "بدّل",
+      "view": "شوف",
+      "noName": "بلا اسم",
+      "planRunning": "اشتراك {name} ماشي حتى {date}. خلاص جديد يمدّد من النهار هذاكا.",
+      "planNone": "حتى اشتراك ماشي: إعلاناتك تمشي بقواعد الخواص (إعلانات مجانية، من بعد معلوم على كل إعلان).",
+      "perMonthTnd": "د.ت / الشهر",
+      "planQuota": "{count, plural, zero {بلا إعلانات} one {إعلان واحد منشور} two {زوز إعلانات منشورين} few {# إعلانات منشورة} many {# إعلانًا منشورًا} other {# إعلان منشور}}",
+      "renewWith": "مدّد بهذا",
+      "choose": "اختار",
+      "planAfterApproval": "الاشتراكات يتحلّو أوّل ما البوتيك تتحلّ.",
+      "planHow": "الخلاص بـ D17 ولا بتحويل بنكي، كيف بقية الخلاصات في مزاد إيمو. الاشتراك يبدا أوّل ما الوصل يتقبل، لمدّة 30 يوم.",
+      "history": "التاريخ",
+      "verifiedYes": "البوتيك موثّقة: الشارة تبان في صفحتك وفي إعلاناتك.",
+      "verifiedHow": "ابعث مضمون السجل الوطني ولا الباتيندة: كي نراجعوهم، شارة « موثّقة » تبان في صفحتك.",
+      "documentsPrivate": "الوثائق متاعك تبقى خاصّة: كان فريق مزاد إيمو ينجم يحلّها.",
+      "actionFailed": "ما نجمناش نعملوها. عاود جرّب.",
+      "memberAdded": "العضو تزاد.",
+      "memberPhone": "نومرو الحساب في مزاد إيمو",
+      "memberRole": "الدور",
+      "addMember": "زيد",
+      "memberHint": "لازم الشخص يكون عندو حساب في مزاد إيمو بالنومرو هذا.",
+      "removeConfirm": "تنحّي العضو هذا من البوتيك؟",
+      "memberRemoved": "العضو تنحّى.",
+      "removeMember": "نحّي",
+      "fileTooBig": "الفيشي ثقيل برشا (10 ميغا على الأكثر).",
+      "documentSent": "الوثيقة تبعثت.",
+      "documentKind": "نوع الوثيقة",
+      "sendDocument": "ابعث وثيقة",
+      "noVisits": "حتى طلب زيارة على إعلانات البوتيك للتوّا.",
+      "visitsWaiting": "{count, plural, zero {حتى زيارة} one {زيارة وحدة للتأكيد} two {زوز زيارات للتأكيد} few {# زيارات للتأكيد} many {# زيارة للتأكيد} other {# زيارة للتأكيد}}",
+      "clientUpdated": "تبدّل نهار {date}",
+      "noDemandes": "حتى طلب مفتوح قريب للبوتيك ولا تجاوبو إعلاناتها، للتوّا.",
+      "demandesHint": "شنوّة يلوّجو الشارين والكرّاية اللي طلبو تنبيهات. ما تشوفش اسمهم ولا نومروهم: اقترح إعلان، ومزاد إيمو يوصّلهولهم. ✓ = يعمّر الشروط الكل متاعهم.",
+      "alreadyOffered": "اقترحت من قبل: {titles}"
+    },
+    "clients": {
+      "open": "ماشين",
+      "add": "زيد حريف",
+      "name": "الاسم",
+      "phone": "التليفون",
+      "listing": "الإعلان",
+      "noListing": "بلا إعلان محدّد",
+      "note": "ملاحظة",
+      "notePlaceholder": "شنوّة يلوّج، شنوّة تقال…",
+      "save": "سجّل",
+      "added": "الحريف تزاد.",
+      "saved": "تسجّل.",
+      "moved": "المرحلة تبدّلت.",
+      "stage": "المرحلة",
+      "callBack": "عاود اتصل نهار",
+      "delete": "افسخ",
+      "deleteConfirm": "تفسخ الحريف هذا؟",
+      "deleted": "الحريف تفسخ.",
+      "failed": "ما نجمناش نعملوها. عاود جرّب.",
+      "empty": "حتى حريف للتوّا. طلب زيارة على إعلان متاع البوتيك يزيد واحد؛ وتنجم زادة تزيد بيدك.",
+      "emptyFilter": "حتى حريف في المرحلة هذي.",
+      "stages": {
+        "new": "جديد",
+        "contacted": "تكلّمنا معاه",
+        "visit": "زيارة",
+        "negotiation": "تفاوض",
+        "won": "تمّت",
+        "lost": "ضاع"
+      },
+      "sources": {
+        "visit": "زيارة",
+        "manual": "مزيود بيدك",
+        "suggestion": "طلب"
+      }
+    },
+    "demandes": {
+      "choose": "الإعلان اللي باش تقترحو",
+      "offer": "اقترح",
+      "sent": "الإعلان تقترح. الشخص وصلو خبر.",
+      "failed": "ما نجمناش نقترحو. عاود جرّب.",
+      "noneToOffer": "حتى إعلان منشور للبوتيك في العرض هذا."
+    }
+  },
+  "proApi": {
+    "oneShop": "عندك بوتيك من قبل.",
+    "errors": {
+      "name": "الاسم لازم يكون فيه زوز حروف على الأقل.",
+      "kind": "اختار النشاط.",
+      "governorate": "اختار الولاية.",
+      "phone": "نومرو التليفون غالط.",
+      "email": "الإيميل غالط.",
+      "website": "رابط السيت غالط (https://…).",
+      "fileType": "الصيغ المقبولة: PDF، JPG، PNG ولا WebP.",
+      "document": "الوثيقة غالطة.",
+      "role": "ما تنجمش تعطي الدور هذا.",
+      "noAccount": "حتى حساب في مزاد إيمو بالنومرو هذا.",
+      "alreadyMember": "الشخص هذا موجود في البوتيك من قبل.",
+      "slug": "رابط غالط: من 3 لـ 60 حرف لاتيني صغير، أرقام ولا خطوط.",
+      "slugTaken": "الرابط هذا مستعمل.",
+      "notApproved": "البوتيك لازم تكون مفتوحة باش تشترك.",
+      "plan": "اشتراك موش معروف.",
+      "reason": "اكتب السبب."
+    },
+    "leadErrors": {
+      "name": "اكتب اسم (زوز حروف على الأقل).",
+      "phone": "نومرو التليفون غالط.",
+      "date": "تاريخ الاتصال غالط.",
+      "patch": "حتى شي باش يتسجّل."
+    },
+    "suggest": {
+      "shopClosed": "البوتيك لازم تكون مفتوحة باش تقترح إعلانات.",
+      "listing": "اختار إعلان منشور متاع البوتيك.",
+      "closed": "الطلب هذا ما عادش مفتوح.",
+      "deal": "الإعلان هذا موش لنفس العرض (بيع ولا كراء).",
+      "perRequest": "اقترحت {max} إعلانات للطلب هذا من قبل.",
+      "perDay": "وصلت لحدّ {max} اقتراحات في النهار. عاود غدوة.",
+      "already": "الإعلان هذا تقترح من قبل للطلب هذا."
+    }
+  },
+  "shops": {
+    "metaTitle": "وكالات وباعثين عقاريين في تونس",
+    "metaDescription": "البوتيكات في مزاد إيمو: وكالات، باعثين ومقسّمين، بإعلاناتهم للبيع وللكراء.",
+    "unavailable": "الخدمة مش متوفّرة توّا.",
+    "title": "البوتيكات",
+    "subtitle": "الوكالات، الباعثين والمقسّمين الموجودين في مزاد إيمو.",
+    "openYours": "حلّ البوتيك متاعك",
+    "empty": "حتى بوتيك للتوّا.",
+    "verified": "موثّقة",
+    "listingsCount": "{count, plural, zero {حتى إعلان} one {إعلان واحد} two {زوز إعلانات} few {# إعلانات} many {# إعلانًا} other {# إعلان}}",
+    "shopMetaDescription": "{name} في مزاد إيمو: إعلانات للبيع وللكراء، الأرقام وأوقات العمل.",
+    "deal": {
+      "all": "الكل",
+      "sale": "للبيع",
+      "rent": "للكراء"
+    },
+    "noListings": "حتى إعلان منشور للتوّا.",
+    "verifiedMeans": "« موثّقة »: فريق مزاد إيمو راجع وثائق الشركة (السجل الوطني ولا الباتيندة).",
+    "notVerifiedMeans": "وثائق البوتيك هذي مازالت ما تراجعتش من مزاد إيمو."
+  },
+  "adminShops": {
+    "unavailable": "الخدمة مش متوفّرة.",
+    "eyebrow": "مزاد إيمو برو",
+    "title": "البوتيكات",
+    "description": "فتح البوتيك يخلّي صفحتها عمومية؛ التوثيق يعني إنك قريت الوثائق متاعها.",
+    "tabs": {
+      "pending": "للمراجعة",
+      "approved": "مفتوحة",
+      "suspended": "موقوفة",
+      "rejected": "مرفوضة",
+      "all": "الكل"
+    },
+    "empty": "حتى شي هنا.",
+    "verifiedOn": "موثّقة نهار {date}",
+    "publicPage": "الصفحة العمومية",
+    "owner": "صاحب الحساب",
+    "kind": "النشاط",
+    "place": "البلاصة",
+    "contacts": "الأرقام",
+    "legal": "الهوية القانونية",
+    "plan": "الاشتراك",
+    "planValue": "{name} · {used} / {quota} إعلان · حتى {date}",
+    "noPlan": "حتى شي",
+    "members": "الأعضاء",
+    "documents": "الوثائق",
+    "noDocuments": "حتى وثيقة ما تبعثت.",
+    "approve": "حلّ",
+    "approved": "البوتيك تحلّت.",
+    "reject": "ارفض",
+    "rejected": "البوتيك ترفضت.",
+    "suspend": "وقّف",
+    "suspended": "البوتيك توقفت.",
+    "reinstate": "عاود حلّ",
+    "reinstated": "البوتيك تحلّت من جديد.",
+    "verify": "وثّق",
+    "verifiedDone": "البوتيك توثّقت.",
+    "unverify": "نحّي التوثيق",
+    "unverified": "التوثيق تنحّى.",
+    "rejectTitle": "ترفض البوتيك هذي؟",
+    "suspendTitle": "توقّف البوتيك هذي؟",
+    "reasonBody": "السبب يتبعث لصاحب البوتيك.",
+    "reason": "السبب"
+  },
+  "visits": {
+    "parts": {
+      "morning": "الصباح",
+      "afternoon": "العشية",
+      "evening": "آخر النهار"
+    },
+    "status": {
+      "requested": "في الانتظار",
+      "confirmed": "مأكّدة",
+      "declined": "ما تقبلتش",
+      "cancelled": "ملغاة",
+      "done": "تعملت"
+    },
+    "request": {
+      "cta": "اطلب زيارة",
+      "title": "اطلب زيارة",
+      "close": "سكّر",
+      "slotsHint": "اقترح حتى {max} أوقات: البائع يختار واحد.",
+      "day": "النهار",
+      "part": "الوقت",
+      "addSlot": "اقترح وقت آخر",
+      "removeSlot": "نحّي الوقت هذا",
+      "name": "اسمك",
+      "phone": "نومروك",
+      "message": "كلمة للبائع (اختياري)",
+      "shared": "البائع باش يوصلو اسمك ونومروك باش ينظّم الزيارة.",
+      "send": "ابعث الطلب",
+      "sentToast": "الطلب تبعث للبائع.",
+      "failed": "الطلب ما تبعثش. عاود جرّب.",
+      "sentTitle": "طلبت زيارة",
+      "confirmedTitle": "الزيارة مأكّدة",
+      "sentBody": "البائع باش يجاوبك هنا وبـ SMS.",
+      "follow": "تابعها في زياراتي"
+    },
+    "actions": {
+      "pickSlot": "الوقت المختار",
+      "note": "كلمة للشاري",
+      "notePlaceholder": "مثلاً: 10 الصباح، قدّام الإقامة (اختياري)",
+      "confirm": "أكّد",
+      "decline": "ارفض",
+      "done": "الزيارة تعملت",
+      "cancel": "ألغي",
+      "confirmed": "الزيارة تأكّدت، والشاري وصلو خبر.",
+      "declined": "الطلب ترفض، والشاري وصلو خبر.",
+      "doneToast": "الزيارة تعلّمت كي تعملت.",
+      "cancelled": "الزيارة تلغات.",
+      "cancelConfirm": "تلغي الزيارة هذي؟",
+      "cancelSellerConfirm": "تلغي الزيارة هذي؟ الشاري باش يوصلو خبر.",
+      "failed": "ما نجمناش نعملوها. عاود جرّب."
+    },
+    "card": {
+      "asked": "مطلوبة نهار {date}",
+      "listingGone": "إعلان تفسخ",
+      "yourNote": "كلمتك:",
+      "sellerNote": "البائع:"
+    },
+    "page": {
+      "title": "زياراتي",
+      "subtitle": "الزيارات المطلوبة على إعلاناتك، واللي طلبتهم إنت.",
+      "unavailable": "الخدمة مش متوفّرة توّا.",
+      "tabs": {
+        "received": "اللي وصلوني",
+        "sent": "اللي بعثتهم"
+      },
+      "emptyReceived": "حتى طلب زيارة على إعلاناتك للتوّا.",
+      "emptySent": "ما طلبت حتى زيارة. في إعلان، « اطلب زيارة » يقترح أوقاتك على البائع."
+    }
+  },
+  "visitsApi": {
+    "tooMany": "طلبات زيارة برشا اليوم. عاود غدوة.",
+    "slots": "اختار من 1 لـ 3 أوقات، من اليوم لـ 30 يوم.",
+    "phone": "نومرو التليفون غالط.",
+    "name": "اكتب اسمك.",
+    "notOnline": "الإعلان هذا ما عادش منشور.",
+    "own": "هذا إعلانك.",
+    "alreadyOpen": "عندك طلب ماشي على الإعلان هذا.",
+    "transition": "الزيارة هذي تبدّلت حالتها. عاود حلّ الصفحة.",
+    "slot": "اختار وقت من الأوقات المقترحة."
+  },
+  "compare": {
+    "title": "قارن بين الإعلانات",
+    "subtitle": "جنب بعضهم: السوم، المساحة، البلاصة، وكل التفاصيل اللي عمّروها البائعين.",
+    "needTwo": "اختار على الأقل زوز إعلانات بالزر « قارن » على التصويرة ولا في صفحة الإعلان.",
+    "browse": "شوف الإعلانات",
+    "add": "قارن",
+    "added": "في المقارنة",
+    "remove": "نحّي من المقارنة",
+    "removeShort": "نحّي",
+    "full": "إنت تقارن {max} إعلانات. نحّي واحد قبل.",
+    "picked": "{count, plural, zero {حتى إعلان} one {إعلان واحد} two {زوز إعلانات} few {# إعلانات} many {# إعلانًا} other {# إعلان}}",
+    "open": "قارن",
+    "clear": "فرّغ المقارنة",
+    "price": "السوم",
+    "perSqm": "سوم المتر المربع",
+    "area": "المساحة",
+    "rooms": "البيوت",
+    "place": "البلاصة",
+    "category": "نوع العقار",
+    "deal": "العرض",
+    "sale": "للبيع",
+    "rent": "للكراء",
+    "deposit": "الضمان",
+    "charges": "المصاريف",
+    "furnished": "مفروش",
+    "available": "متوفّر من",
+    "published": "منشور نهار",
+    "onRequest": "السوم عند الطلب",
+    "perMonth": "/ الشهر",
+    "negotiable": "قابل للنقاش",
+    "best": "الأحسن في السطر هذا",
+    "bestNote": "الكأس تعلّم أرخص سوم وأرخص سوم للمتر، أكبر مساحة وأكثر بيوت — كي يكونو على الأقل زوز إعلانات فيهم المعلومة."
+  },
+  "whatsapp": {
+    "help": "عندك سؤال؟ ابعثلنا على الواتساب:",
+    "opening": "عسلامة Mazed Immo، ",
+    "openingPayment": "عسلامة Mazed Immo، عندي سؤال على خلاص: ",
+    "openingPro": "عسلامة Mazed Immo، عندي سؤال على Mazed Immo Pro: "
+  },
+  "promo": {
+    "unavailable": "الخدمة مش متوفّرة توّا.",
+    "back": "إعلاناتي",
+    "title": "برّز إعلانك",
+    "subtitle": "إعلانك يبان قبل الآخرين، في المدّة اللي تختارها. يبقى منشور كيف قبل؛ التبريز يتزاد عليه ومكتوب عليه (« مبرّز »).",
+    "running": "ماشي توّا: {what}، حتى {date}.",
+    "where": {
+      "promo_home_featured": {
+        "name": "تبريز في الصفحة الرئيسية",
+        "body": "في أوّل « عقارات اللحظة » في الصفحة الرئيسية."
+      },
+      "promo_top_listed": {
+        "name": "أوّل البحث",
+        "body": "قبل الإعلانات الأخرى في الكاتالوغ، في الترتيب العادي."
+      },
+      "promo_banner": {
+        "name": "البانر متاع الصفحة الرئيسية",
+        "body": "في البانر الكبير اللي يحلّ الصفحة الرئيسية، بالتصويرة متاعك."
+      }
+    },
+    "days": "{count, plural, zero {بلا أيّام} one {نهار} two {يومين} few {# أيّام} many {# يوم} other {# يوم}}",
+    "choose": "اختار",
+    "extend": "مدّد",
+    "continuePayment": "كمّل الخلاص",
+    "receiptSent": "الوصل تبعث — في المراجعة",
+    "oneAtATime": "تبريز واحد في المرّة: اللي ماشي لازم يوفى قبل.",
+    "how": "الخلاص بـ D17 ولا بتحويل بنكي، كيف بقية الخلاصات في مزاد إيمو. التبريز يبدا أوّل ما الوصل يتقبل؛ وكي تمدّد، يبدا من نهار وفاتو.",
+    "failed": "ما نجمناش توّا. عاود جرّب."
+  },
+  "promoApi": {
+    "product": "تبريز موش معروف.",
+    "notOnline": "كان الإعلان المنشور ينجم يتبرّز.",
+    "oneAtATime": "فما تبريز آخر ماشي حتى {date}: واحد في المرّة."
+  },
+  "invoice": {
+    "metaTitle": "فاتورة — Mazed Immo",
+    "back": "مدفوعاتي",
+    "print": "اطبع / PDF",
+    "invoice": "فاتورة",
+    "receipt": "وصل خلاص",
+    "issuedOn": "صادرة نهار {date}",
+    "taxId": "المعرّف الجبائي",
+    "billedTo": "الحريف",
+    "item": "البيان",
+    "ht": "المبلغ دون أداء",
+    "vat": "الأداء على القيمة المضافة {rate} %",
+    "ttc": "المجموع بالأداء",
+    "total": "المجموع المدفوع",
+    "paidBy": "مدفوع بـ {method}",
+    "d17": "D17",
+    "transfer": "تحويل بنكي",
+    "paidOn": "تقبل نهار {date}",
+    "reference": "مرجع الخلاص",
+    "noVat": "المبلغ بكلّ الأداءات.",
+    "receiptNote": "الوصل هذا يثبت الخلاص. ما يقومش مقام فاتورة."
+  }
+}

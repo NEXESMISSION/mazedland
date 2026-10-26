@@ -2,11 +2,14 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { Optional } from "@/components/ui/Optional";
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { AccountMenu } from "./AccountMenu";
+import { LocaleSwitcher } from "./LocaleSwitcher";
 import { normalizeSearchQuery } from "@/lib/search";
+import { isMostlyArabic } from "@/lib/search/script";
 import { Search, Plus } from "lucide-react";
 
 // Lazy-loaded — see TopBar for rationale (heavy icon set + realtime socket +
@@ -68,8 +71,10 @@ function isActive(pathname: string, href: string): boolean {
 export function DesktopNav() {
   const t = useTranslations("shell.tabs");
   const ts = useTranslations("search");
+  const tShell = useTranslations("shell");
   const pathname = usePathname();
   const router = useRouter();
+  const locale = useLocale();
   const [q, setQ] = useState("");
 
   // Show what the results are filtered by. Read from the URL after mount
@@ -90,9 +95,23 @@ export function DesktopNav() {
       pathname === "/annonces" ? window.location.search : "",
     );
     params.delete("page");
+    // New words are read afresh (src/lib/search/understand.ts).
+    params.delete("nlq");
+    params.delete("nl");
     if (clean) params.set("q", clean);
     else params.delete("q");
     const qs = params.toString();
+    // Typed in Arabic on the French site: answered in Arabic, and remembered.
+    if (locale === "fr" && isMostlyArabic(clean)) {
+      fetch("/api/account/language", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ language: "ar" }),
+        keepalive: true,
+      }).catch(() => {});
+      router.push((qs ? `/annonces?${qs}` : "/annonces") as `/annonces`, { locale: "ar" });
+      return;
+    }
     router.push((qs ? `/annonces?${qs}` : "/annonces") as `/annonces`);
     return;
     // Straight to the catalogue. It reads `q` itself; going via /properties
@@ -125,7 +144,7 @@ export function DesktopNav() {
             </span>
           </Link>
 
-          <nav className="flex items-center gap-1" aria-label="Navigation principale">
+          <nav className="flex items-center gap-1" aria-label={tShell("mainNav")}>
             {LINKS.map((l) => {
               const active = isActive(pathname, l.href);
               return (
@@ -169,7 +188,10 @@ export function DesktopNav() {
 
         {/* ── Right zone: notifications, account, sell CTA ── */}
         <div className="flex shrink-0 items-center gap-2">
-          <NotificationBell />
+          <Optional name="bell" fallback={<span className="inline-block h-9 w-9" />}>
+            <NotificationBell />
+          </Optional>
+          <LocaleSwitcher />
           <AccountMenu />
           <Link
             href="/annonces/nouvelle"

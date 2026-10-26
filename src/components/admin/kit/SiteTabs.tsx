@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { NavIcon } from "./LinkPending";
 import {
@@ -19,37 +20,39 @@ import {
  * so a tab is a tab everywhere in the console.
  */
 
-type Tab = { label: string; href: string; Icon: LucideIcon };
+/** `key` names the label in `admin.siteTabs`. */
+type Tab = { key: string; href: string; Icon: LucideIcon };
 
 const TABS: Tab[] = [
-  { label: "Accueil", href: "/admin/home", Icon: LayoutTemplate },
-  { label: "Popups", href: "/admin/popups", Icon: MessageSquare },
-  { label: "Documents", href: "/admin/legal-docs", Icon: FileText },
-  { label: "Diffusions", href: "/admin/notifications", Icon: Bell },
-  { label: "Réglages", href: "/admin/settings", Icon: Settings2 },
-  { label: "Journal", href: "/admin/activity", Icon: Activity },
+  { key: "home", href: "/admin/home", Icon: LayoutTemplate },
+  { key: "popups", href: "/admin/popups", Icon: MessageSquare },
+  { key: "documents", href: "/admin/legal-docs", Icon: FileText },
+  { key: "broadcasts", href: "/admin/notifications", Icon: Bell },
+  { key: "settings", href: "/admin/settings", Icon: Settings2 },
+  { key: "journal", href: "/admin/activity", Icon: Activity },
 ];
 
 export function SiteTabs() {
   const pathname = usePathname();
+  const t = useTranslations("admin.siteTabs");
 
   return (
     <nav
-      aria-label="Sections du site"
+      aria-label={t("label")}
       className="-mx-5 mb-6 flex items-center gap-5 overflow-x-auto border-b border-border px-5 lg:-mx-8 lg:px-8"
     >
       <Link
         href="/admin/site"
         className="shrink-0 py-2.5 text-[11px] font-bold uppercase tracking-[0.15em] text-subtle transition hover:text-foreground"
       >
-        Site
+        {t("site")}
       </Link>
-      {TABS.map((t) => {
-        const active = pathname === t.href || pathname.startsWith(`${t.href}/`);
+      {TABS.map((tab) => {
+        const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
         return (
           <Link
-            key={t.href}
-            href={t.href as "/admin"}
+            key={tab.href}
+            href={tab.href as "/admin"}
             aria-current={active ? "page" : undefined}
             className={`relative flex shrink-0 items-center gap-1.5 py-2.5 text-[12.5px] transition ${
               active
@@ -57,8 +60,8 @@ export function SiteTabs() {
                 : "font-medium text-subtle hover:text-foreground"
             }`}
           >
-            <NavIcon Icon={t.Icon} active={active} tone="inherit" size="size-3.5" />
-            {t.label}
+            <NavIcon Icon={tab.Icon} active={active} tone="inherit" size="size-3.5" />
+            {t(tab.key)}
           </Link>
         );
       })}

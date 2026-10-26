@@ -12,4 +12,17 @@ describe("number formatting", () => {
     expect(formatTND(1234567)).not.toContain("\u202f");
     expect(formatNumber(1234567)).not.toContain("\u202f");
   });
+
+  it("groups Arabic amounts with a space, never the dot that means millimes", () => {
+    expect(formatTND(1200, "ar")).toBe("1\u00a0200");
+    expect(formatTND(350000, "ar")).toBe("350\u00a0000");
+    expect(formatTND(1234567, "ar")).toBe("1\u00a0234\u00a0567");
+    expect(formatTND(950, "ar")).toBe("950");
+  });
+
+  it("keeps the Arabic compact words", () => {
+    const out = formatTND(350000, "ar", { compact: true });
+    expect(out).not.toContain(".");
+    expect(out).toMatch(/^350\s\p{Script=Arabic}+$/u);
+  });
 });

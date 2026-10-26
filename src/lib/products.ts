@@ -19,24 +19,25 @@ export const PRODUCT_KINDS = [
 
 export type ProductKind = (typeof PRODUCT_KINDS)[number];
 
-/** What each kind is for, in the words the admin screen shows. */
-export const PRODUCT_KIND_LABEL: Record<ProductKind, string> = {
-  listing_single: "Annonce à l'unité",
-  listing_pack: "Pack d'annonces",
-  subscription: "Abonnement",
-  promo: "Mise en avant",
-  badge_verified: "Badge vérifié",
-  renewal: "Renouvellement",
-};
+// What each kind is called and what it is for, in the words the admin screen
+// shows, are messages in both languages: `adminOffers.kinds.<kind>` and
+// `adminOffers.kindHints.<kind>` in messages/fr.json and messages/ar.json.
 
-export const PRODUCT_KIND_HINT: Record<ProductKind, string> = {
-  listing_single: "Une publication. Le prix peut différer par catégorie.",
-  listing_pack: "N publications prépayées, à utiliser quand le vendeur veut.",
-  subscription: "Publications sur une période, pour les professionnels.",
-  promo: "Accueil, top de la recherche, bannière.",
-  badge_verified: "Vendu au vendeur, accordé à la main après vérification.",
-  renewal: "Remet une annonce expirée en ligne.",
-};
+/**
+ * A product's name in the reader's language: `name_ar` when an admin has set
+ * one, the French name otherwise.
+ */
+export function productName(p: { nameFr: string; nameAr: string | null }, locale: string): string {
+  return locale === "ar" && p.nameAr ? p.nameAr : p.nameFr;
+}
+
+/** Same for the description. */
+export function productDescription(
+  p: { description: string | null; descriptionAr: string | null },
+  locale: string,
+): string | null {
+  return locale === "ar" && p.descriptionAr ? p.descriptionAr : p.description;
+}
 
 export type Product = {
   id: string;
@@ -45,6 +46,8 @@ export type Product = {
   nameFr: string;
   nameAr: string | null;
   description: string | null;
+  /** Arabic description (0163); null until an admin or the seed writes one. */
+  descriptionAr: string | null;
   price: number;
   categoryId: string | null;
   listingQuota: number | null;
@@ -55,7 +58,7 @@ export type Product = {
 
 /** Columns every product read selects. */
 export const PRODUCT_SELECT =
-  "id, slug, kind, name_fr, name_ar, description, price, category_id, listing_quota, duration_days, is_active, sort_order";
+  "id, slug, kind, name_fr, name_ar, description, description_ar, price, category_id, listing_quota, duration_days, is_active, sort_order";
 
 type ProductRow = {
   id: string;
@@ -64,6 +67,7 @@ type ProductRow = {
   name_fr: string;
   name_ar: string | null;
   description: string | null;
+  description_ar: string | null;
   price: number | string;
   category_id: string | null;
   listing_quota: number | null;
@@ -82,6 +86,7 @@ export function toProduct(row: ProductRow): Product {
     nameFr: row.name_fr,
     nameAr: row.name_ar,
     description: row.description,
+    descriptionAr: row.description_ar,
     price: Number(row.price),
     categoryId: row.category_id,
     listingQuota: row.listing_quota,

@@ -5,10 +5,21 @@
 // columns on `notifications`; everything else is stored in
 // `notifications.payload` (jsonb) via the broadcast_notification RPC.
 //
-// To add a new kind: append an entry to KIND_CONFIG and the admin form +
-// payload builder pick it up — no other code changes needed. This lives in lib
-// (not inside the admin client component) so the same single source of truth
-// can back both the form and any server-side payload validation.
+// To add a new kind: append an entry to KIND_CONFIG, add its texts to
+// messages (see below), and the admin form + payload builder pick it up — no
+// other code changes needed. This lives in lib (not inside the admin client
+// component) so the same single source of truth can back both the form and any
+// server-side payload validation.
+//
+// The words the form shows live in messages/{fr,ar}.json, not here, so the
+// form reads in the admin's language:
+//   adminNotifications.kinds.<kind>.label | .description
+//   adminNotifications.kinds.<kind>.fields.<field>.label
+//   adminNotifications.kinds.<kind>.fields.<field>.placeholder   (when `placeholder`)
+//   adminNotifications.kinds.<kind>.fields.<field>.helper        (when `helper`)
+//   adminNotifications.kinds.<kind>.fields.<field>.options.<value>
+// Kind values, field keys and option values are identifiers stored in the
+// database and must not be translated.
 
 export type FieldType =
   | "text"
@@ -21,19 +32,19 @@ export type FieldType =
 
 export type FieldDef = {
   key: string;
-  label: string;
   type: FieldType;
   required?: boolean;
-  placeholder?: string;
+  /** The field has a placeholder in messages. */
+  placeholder?: boolean;
   maxLength?: number;
-  options?: { value: string; label: string }[];
-  helper?: string;
+  /** Option values; each has a label in messages. */
+  options?: string[];
+  /** The field has a helper line in messages. */
+  helper?: boolean;
 };
 
 export type KindDef = {
   value: string;
-  label: string;
-  description: string;
   fields: FieldDef[];
 };
 
@@ -44,59 +55,46 @@ export const CORE_FIELD_KEYS = new Set(["title", "body", "link"]);
 export const KIND_CONFIG: KindDef[] = [
   {
     value: "announcement",
-    label: "Annonce",
-    description: "Nouvelle fonctionnalité, changement de politique, communication produit.",
     fields: [
-      { key: "title", label: "Titre", type: "text", required: true, maxLength: 200, placeholder: "Nouvelle fonctionnalité disponible" },
-      { key: "body", label: "Message", type: "textarea", maxLength: 1000, placeholder: "Décrivez l'annonce." },
-      { key: "link", label: "Lien (optionnel)", type: "url", maxLength: 500, placeholder: "/properties" },
-      { key: "cta_label", label: "Libellé du bouton", type: "text", maxLength: 60, placeholder: "En savoir plus", helper: "Texte du bouton d'action affiché avec le lien." },
+      { key: "title", type: "text", required: true, maxLength: 200, placeholder: true },
+      { key: "body", type: "textarea", maxLength: 1000, placeholder: true },
+      { key: "link", type: "url", maxLength: 500, placeholder: true },
+      { key: "cta_label", type: "text", maxLength: 60, placeholder: true, helper: true },
     ],
   },
   {
     value: "maintenance",
-    label: "Maintenance",
-    description: "Indisponibilité planifiée, fenêtre de maintenance.",
     fields: [
-      { key: "title", label: "Titre", type: "text", required: true, maxLength: 200, placeholder: "Maintenance programmée" },
-      { key: "body", label: "Message", type: "textarea", maxLength: 1000, placeholder: "Détails de la maintenance." },
-      { key: "scheduled_at", label: "Début prévu", type: "datetime", required: true, helper: "Heure locale (Tunis)." },
-      { key: "duration_min", label: "Durée (minutes)", type: "number", placeholder: "60" },
-      { key: "affected", label: "Services impactés", type: "text", maxLength: 200, placeholder: "Publication, paiements" },
+      { key: "title", type: "text", required: true, maxLength: 200, placeholder: true },
+      { key: "body", type: "textarea", maxLength: 1000, placeholder: true },
+      { key: "scheduled_at", type: "datetime", required: true, helper: true },
+      { key: "duration_min", type: "number", placeholder: true },
+      { key: "affected", type: "text", maxLength: 200, placeholder: true },
     ],
   },
   {
     value: "promo",
-    label: "Promo / actualité",
-    description: "Offre limitée, événement, mise en avant d'une annonce.",
     fields: [
-      { key: "title", label: "Titre", type: "text", required: true, maxLength: 200, placeholder: "Publication offerte ce week-end" },
-      { key: "body", label: "Message", type: "textarea", maxLength: 1000, placeholder: "Détails de la promo." },
-      { key: "link", label: "Lien", type: "url", maxLength: 500, placeholder: "/annonces" },
-      { key: "cta_label", label: "Libellé du bouton", type: "text", maxLength: 60, placeholder: "Voir l'offre" },
-      { key: "expires_at", label: "Expire le", type: "datetime", helper: "L'offre n'est plus valable après cette date." },
-      { key: "promo_code", label: "Code promo", type: "text", maxLength: 40, placeholder: "MAZED2026" },
+      { key: "title", type: "text", required: true, maxLength: 200, placeholder: true },
+      { key: "body", type: "textarea", maxLength: 1000, placeholder: true },
+      { key: "link", type: "url", maxLength: 500, placeholder: true },
+      { key: "cta_label", type: "text", maxLength: 60, placeholder: true },
+      { key: "expires_at", type: "datetime", helper: true },
+      { key: "promo_code", type: "text", maxLength: 40, placeholder: true },
     ],
   },
   {
     value: "system_alert",
-    label: "Alerte système",
-    description: "Incident, problème connu, instruction d'action urgente.",
     fields: [
-      { key: "title", label: "Titre", type: "text", required: true, maxLength: 200, placeholder: "Problème de paiement détecté" },
-      { key: "body", label: "Message", type: "textarea", maxLength: 1000, placeholder: "Détails du problème et de la solution." },
+      { key: "title", type: "text", required: true, maxLength: 200, placeholder: true },
+      { key: "body", type: "textarea", maxLength: 1000, placeholder: true },
       {
         key: "severity",
-        label: "Sévérité",
         type: "select",
         required: true,
-        options: [
-          { value: "info", label: "Info" },
-          { value: "warning", label: "Avertissement" },
-          { value: "error", label: "Critique" },
-        ],
+        options: ["info", "warning", "error"],
       },
-      { key: "action_required", label: "Action requise de l'utilisateur", type: "checkbox" },
+      { key: "action_required", type: "checkbox" },
     ],
   },
 ];

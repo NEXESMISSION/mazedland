@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { Optional } from "@/components/ui/Optional";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, Link } from "@/i18n/navigation";
 import { BackButton } from "./BackButton";
@@ -112,7 +113,9 @@ export function TopBar() {
 
         {/* TRAILING — notifications bell + locale switcher */}
         <div className="flex items-center gap-1">
-          <NotificationBell />
+          <Optional name="bell" fallback={<span className="inline-block h-9 w-9" />}>
+            <NotificationBell />
+          </Optional>
           <LocaleSwitcher />
         </div>
       </div>

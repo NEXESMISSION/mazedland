@@ -13,6 +13,7 @@ next-env.d.ts
 # Local dev-only — Supabase CLI workspace + Claude Code preview launcher.
 supabase/.temp/
 .claude/launch.json
+dev.log
 
 # Cloudflare/wrangler experiment artifacts (never commit secrets/build output)
 .dev.vars
@@ -26,3 +27,6 @@ verify-*.log
 
 # KYC export (identity documents — never commit)
 kyc-export-*/
+
+# Local copies of the live data (scripts/backup-db.mjs) — personal data, never committed.
+/backups/

@@ -56,57 +56,59 @@ export const TONE_TEXT: Record<Tone, string> = {
  * deliberately absent: their tables hold zero rows, and a label here would be
  * an invitation to build another screen on top of them.
  */
-type Entry = { label: string; tone: Tone };
-
-const STATUS: Record<string, Entry> = {
+const STATUS_TONE: Record<string, Tone> = {
   // listing_status
-  draft: { label: "Brouillon", tone: "neutral" },
-  pending_payment: { label: "Paiement attendu", tone: "warn" },
-  pending_review: { label: "À valider", tone: "warn" },
-  published: { label: "Publiée", tone: "ok" },
-  rejected: { label: "Refusée", tone: "bad" },
-  expired: { label: "Expirée", tone: "neutral" },
-  archived: { label: "Archivée", tone: "neutral" },
-  sold: { label: "Vendue", tone: "info" },
+  draft: "neutral",
+  pending_payment: "warn",
+  pending_review: "warn",
+  published: "ok",
+  rejected: "bad",
+  expired: "neutral",
+  archived: "neutral",
+  sold: "info",
+  rented: "info",
 
   // payment_status — `pending_review` is shared with listings above and means
   // the same thing to an admin: a human has to look at it.
-  pending: { label: "En attente", tone: "warn" },
-  authorized: { label: "Autorisé", tone: "info" },
-  captured: { label: "Validé", tone: "ok" },
-  refunded: { label: "Remboursé", tone: "neutral" },
-  failed: { label: "Refusé", tone: "bad" },
+  pending: "warn",
+  authorized: "info",
+  captured: "ok",
+  refunded: "neutral",
+  failed: "bad",
 
   // user_role — bank / bailiff / inspector are dropped in v3 (PIVOT-PLAN D6).
-  individual: { label: "Particulier", tone: "neutral" },
-  agency: { label: "Agence", tone: "info" },
-  admin: { label: "Admin", tone: "info" },
+  individual: "neutral",
+  agency: "info",
+  admin: "info",
 };
+
+/** The `payment_kind` values the console names. The retired auction kinds are
+ *  omitted for the same reason as the auction statuses. */
+const PAYMENT_KINDS = new Set(["listing_fee", "listing_pack", "subscription", "promo", "badge", "renewal"]);
 
 export function statusTone(status: string | null | undefined): Tone {
-  return (status && STATUS[status]?.tone) || "neutral";
+  return (status && STATUS_TONE[status]) || "neutral";
 }
 
-/** Falls back to the raw value rather than to "—": an unlabelled status on
- *  screen is a bug report, and hiding it makes it unreportable. */
-export function statusLabel(status: string | null | undefined): string {
+// ─── Words, in the reader's language ────────────────────────────────────────
+//
+// Through the `admin` messages (`admin.status.*`, `admin.paymentKind.*`), so an
+// Arabic page gets Arabic. "—" for nothing; the raw value for something
+// unlabelled — an unlabelled status on screen is a bug report, and hiding it
+// makes it unreportable.
+
+/**
+ * A translator bound to the `admin` namespace — `useTranslations("admin")` in
+ * a component, `await getTranslations("admin")` in an async server component.
+ */
+export type AdminTranslator = { (key: string): string; has(key: string): boolean };
+
+export function statusText(t: AdminTranslator, status: string | null | undefined): string {
   if (!status) return "—";
-  return STATUS[status]?.label ?? status;
+  return Object.prototype.hasOwnProperty.call(STATUS_TONE, status) ? t(`status.${status}`) : status;
 }
 
-/** What each payment kind is, in the words the console shows. Mirrors the
- *  `payment_kind` enum; the retired auction kinds are omitted for the same
- *  reason as the auction statuses. */
-export const PAYMENT_KIND_LABEL: Record<string, string> = {
-  listing_fee: "Publication",
-  listing_pack: "Pack d'annonces",
-  subscription: "Abonnement",
-  promo: "Mise en avant",
-  badge: "Badge vérifié",
-  renewal: "Renouvellement",
-};
-
-export function paymentKindLabel(kind: string | null | undefined): string {
+export function paymentKindText(t: AdminTranslator, kind: string | null | undefined): string {
   if (!kind) return "—";
-  return PAYMENT_KIND_LABEL[kind] ?? kind;
+  return PAYMENT_KINDS.has(kind) ? t(`paymentKind.${kind}`) : kind;
 }

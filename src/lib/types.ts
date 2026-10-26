@@ -1,11 +1,9 @@
 export type Locale = "ar" | "fr" | "en";
 
+/** bank, bailiff and inspector were the auction roles; retired in 0171. */
 export type UserRole =
   | "individual"
   | "agency"
-  | "bank"
-  | "bailiff"
-  | "inspector"
   | "admin";
 
 export type KycStatus = "none" | "submitted" | "pending" | "verified" | "rejected";

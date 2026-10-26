@@ -226,14 +226,39 @@ body {
   overscroll-behavior-y: none;
 }
 
-html[dir="rtl"] body { font-family: var(--font-arabic); }
+/* Arabic pages: Cairo first for Arabic glyphs, Jakarta behind it for the Latin
+   text and digits Cairo's Arabic subset does not carry.
+
+   Set on the selectors themselves, not by redefining --font-sans: the tokens
+   are declared with `@theme inline`, so Tailwind inlines their values into the
+   .font-* utilities and drops any redefinition of them under a selector. */
+html[dir="rtl"],
+html[dir="rtl"] body,
+html[dir="rtl"] .font-sans,
+html[dir="rtl"] .font-display,
+html[dir="rtl"] .font-serif,
+html[dir="rtl"] .font-arabic {
+  font-family: var(--font-cairo), var(--font-jakarta), system-ui, sans-serif;
+}
 
 .mazed-serif {
   font-family: var(--font-sans);
   font-weight: 700;
   letter-spacing: -0.015em;
 }
-html[dir="rtl"] .mazed-serif { font-family: var(--font-arabic); }
+html[dir="rtl"] .mazed-serif { font-family: var(--font-cairo), var(--font-jakarta), system-ui, sans-serif; }
+
+/* Arabic is a joined script: letter-spacing pulls its letters apart, so the
+   eyebrow / pill / heading tracking and every tracking-* utility is reset on
+   RTL pages. (Latin words on those pages lose their tracking too — harmless.) */
+html[dir="rtl"] [class*="tracking-"],
+html[dir="rtl"] .mazed-serif,
+html[dir="rtl"] .mazed-gradient-gold-text,
+html[dir="rtl"] .mazed-eyebrow,
+html[dir="rtl"] .mazed-eyebrow-muted,
+html[dir="rtl"] .mazed-pill-gold {
+  letter-spacing: 0;
+}
 
 .tabular-nums,
 .mazed-tabular {
@@ -1183,4 +1208,14 @@ html[dir="rtl"] .mazed-marquee-reverse { animation-name: mazed-marquee; }
 
 @media (prefers-reduced-motion: reduce) {
   .skel { animation: none; background-image: none; }
+}
+
+/* Printing an invoice (0175): only the document, on white, without the site
+   around it. A page marks what it prints with data-print-area. */
+@media print {
+  body:has([data-print-area]) * { visibility: hidden; }
+  [data-print-area], [data-print-area] * { visibility: visible; }
+  [data-print-area] { position: absolute; inset: 0 auto auto 0; width: 100%; box-shadow: none !important; }
+  [data-print-hide] { display: none !important; }
+  body { background: #fff !important; }
 }

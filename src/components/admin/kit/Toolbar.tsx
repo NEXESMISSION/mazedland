@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { X, Loader2 } from "lucide-react";
 import { SearchIcon, SearchSweep, SearchStatus } from "@/components/ui/SearchBusy";
 
@@ -24,7 +25,7 @@ export function Toolbar({
   tabParam = "status",
   defaultTab,
   search = true,
-  searchPlaceholder = "Rechercher…",
+  searchPlaceholder: searchPlaceholderProp,
   /** Params to drop on any change — e.g. the open detail, which may not exist
    *  in the new result set. */
   resetParams = ["page"],
@@ -33,9 +34,12 @@ export function Toolbar({
   tabParam?: string;
   defaultTab?: string;
   search?: boolean;
+  /** Defaults to "Rechercher…" / "بحث…". */
   searchPlaceholder?: string;
   resetParams?: string[];
 }) {
+  const t = useTranslations("admin");
+  const searchPlaceholder = searchPlaceholderProp ?? t("searchPlaceholder");
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -72,13 +76,13 @@ export function Toolbar({
     <div className="flex min-w-0 flex-1 items-center gap-4">
       {tabs && tabs.length > 0 && (
         <div className="flex min-w-0 items-center gap-4 overflow-x-auto">
-          {tabs.map((t) => {
-            const active = t.value === activeTab;
+          {tabs.map((tab) => {
+            const active = tab.value === activeTab;
             return (
               <button
-                key={t.value}
+                key={tab.value}
                 type="button"
-                onClick={() => push({ [tabParam]: t.value })}
+                onClick={() => push({ [tabParam]: tab.value })}
                 aria-pressed={active}
                 className={`relative shrink-0 whitespace-nowrap py-1 text-[12.5px] transition ${
                   active
@@ -86,9 +90,9 @@ export function Toolbar({
                     : "font-medium text-subtle hover:text-foreground"
                 }`}
               >
-                {t.label}
-                {t.count != null && t.count > 0 && (
-                  <span className="mazed-tabular ms-1.5 text-[11px] opacity-70">{t.count}</span>
+                {tab.label}
+                {tab.count != null && tab.count > 0 && (
+                  <span className="mazed-tabular ms-1.5 text-[11px] opacity-70">{tab.count}</span>
                 )}
               </button>
             );
@@ -120,7 +124,7 @@ export function Toolbar({
               <button
                 type="button"
                 onClick={() => setQ("")}
-                aria-label="Effacer la recherche"
+                aria-label={t("clearSearch")}
                 className="absolute end-0 top-1/2 grid size-4 -translate-y-1/2 place-items-center text-subtle hover:text-foreground"
               >
                 <X className="size-3" strokeWidth={2.6} />

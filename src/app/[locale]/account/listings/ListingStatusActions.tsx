@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
-import { frenchApiError } from "@/lib/apiError";
-import { BadgeCheck, EyeOff, RotateCw, Loader2 } from "lucide-react";
+import { useApiError } from "@/lib/useApiError";
+import { BadgeCheck, EyeOff, RotateCw, Loader2, Bookmark, BookmarkX, KeyRound } from "lucide-react";
 
 /**
  * « C'est vendu » and « Retirer » - the two things a seller wants from a live
@@ -18,36 +19,27 @@ import { BadgeCheck, EyeOff, RotateCw, Loader2 } from "lucide-react";
  * sold property stays online taking calls.
  */
 
-type Act = "mark_sold" | "withdraw" | "relist";
-
-const COPY: Record<Act, { label: string; title: string; body: string; confirm: string; done: string }> = {
-  mark_sold: {
-    label: "C'est vendu",
-    title: "Ce bien est vendu ?",
-    body: "L'annonce quitte le catalogue et passe dans « Terminées ». Tant que les jours déjà payés courent, vous pouvez la remettre en ligne gratuitement.",
-    confirm: "Oui, c'est vendu",
-    done: "Annonce marquée vendue. Félicitations !",
-  },
-  withdraw: {
-    label: "Retirer",
-    title: "Retirer cette annonce ?",
-    body: "Elle disparaît du site immédiatement. Vos jours de publication continuent de courir : vous pourrez la remettre en ligne gratuitement jusqu'à leur terme.",
-    confirm: "Retirer du site",
-    done: "Annonce retirée du site.",
-  },
-  relist: {
-    label: "Remettre en ligne",
-    title: "Remettre en ligne ?",
-    body: "Elle repart dans le catalogue tout de suite, sans nouvelle vérification et sans frais — ce sont les jours de votre publication en cours.",
-    confirm: "Remettre en ligne",
-    done: "Annonce de nouveau en ligne.",
-  },
-};
+/** The copy for each act is `account.listingActions.<act>.{label,title,body,confirm,done}`. */
+type Act = "mark_sold" | "mark_rented" | "withdraw" | "relist" | "reserve" | "unreserve";
 
 const ICON: Record<Act, typeof BadgeCheck> = {
   mark_sold: BadgeCheck,
+  mark_rented: KeyRound,
   withdraw: EyeOff,
   relist: RotateCw,
+  reserve: Bookmark,
+  unreserve: BookmarkX,
+};
+
+/** « C'est loué » is the same request as « C'est vendu »: the route closes the
+ *  annonce as rented or sold from its own deal type. */
+const API_ACTION: Record<Act, string> = {
+  mark_sold: "mark_sold",
+  mark_rented: "mark_sold",
+  withdraw: "withdraw",
+  relist: "relist",
+  reserve: "reserve",
+  unreserve: "unreserve",
 };
 
 export function ListingStatusActions({
@@ -63,8 +55,10 @@ export function ListingStatusActions({
   /** Gold rather than quiet - for « Remettre en ligne », which is the point of the row. */
   primary?: boolean;
 }) {
+  const t = useTranslations("account.listingActions");
   const router = useRouter();
   const { toast } = useToast();
+  const apiError = useApiError();
   const [asking, setAsking] = useState<Act | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -74,18 +68,18 @@ export function ListingStatusActions({
       const res = await fetch(`/api/annonces/${listingId}/status`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: act }),
+        body: JSON.stringify({ action: API_ACTION[act] }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast(frenchApiError(j, "Action impossible pour le moment."), "error");
+        toast(apiError(j, t("failed")), "error");
         return;
       }
-      toast(COPY[act].done, "success");
+      toast(t(`${act}.done`), "success");
       setAsking(null);
       router.refresh();
     } catch {
-      toast("Erreur réseau — vérifiez votre connexion.", "error");
+      toast(t("networkError"), "error");
     } finally {
       setBusy(false);
     }
@@ -109,7 +103,7 @@ export function ListingStatusActions({
               className={primary ? gold : quiet}
             >
               <Icon className="size-3.5" />
-              {COPY[act].label}
+              {t(`${act}.label`)}
             </button>
           );
         })}
@@ -118,8 +112,8 @@ export function ListingStatusActions({
       <Modal
         open={asking !== null}
         onClose={() => !busy && setAsking(null)}
-        title={asking ? COPY[asking].title : ""}
-        description={asking ? COPY[asking].body : ""}
+        title={asking ? t(`${asking}.title`) : ""}
+        description={asking ? t(`${asking}.body`) : ""}
         size="sm"
       >
         <div className="mt-4 flex flex-col gap-2 sm:flex-row-reverse">
@@ -130,7 +124,7 @@ export function ListingStatusActions({
             className="mazed-btn-luxe tap-target flex flex-1 justify-center px-4 py-2.5 text-[13px] disabled:opacity-60"
           >
             {busy && <Loader2 className="size-4 animate-spin" />}
-            {asking ? COPY[asking].confirm : ""}
+            {asking ? t(`${asking}.confirm`) : ""}
           </button>
           <button
             type="button"
@@ -138,7 +132,7 @@ export function ListingStatusActions({
             onClick={() => setAsking(null)}
             className="tap-target flex flex-1 justify-center rounded-xl border border-border px-4 py-2.5 text-[13px] font-bold text-muted transition hover:text-foreground disabled:opacity-60"
           >
-            Annuler
+            {t("cancel")}
           </button>
         </div>
       </Modal>

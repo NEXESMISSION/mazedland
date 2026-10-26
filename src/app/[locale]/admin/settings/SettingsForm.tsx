@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useToast } from "@/components/ui/Toast";
+import { useApiError } from "@/lib/useApiError";
 import { Check, Loader2, Save } from "lucide-react";
 
 export type SettingsValues = {
@@ -11,9 +13,16 @@ export type SettingsValues = {
   payee_rib: string;
   payee_iban: string;
   payee_d17: string;
+  /** Invoices (0175): copied into each one when it is issued. */
+  company_name: string;
+  company_tax_id: string;
+  company_address: string;
+  invoice_vat_rate: string;
 };
 
 export function SettingsForm({ initial }: { initial: SettingsValues }) {
+  const t = useTranslations("adminSettings");
+  const apiError = useApiError();
   const router = useRouter();
   const { toast } = useToast();
   const [v, setV] = useState<SettingsValues>(initial);
@@ -35,26 +44,30 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        toast(j.error ?? "Échec de l'enregistrement.", "error");
+        toast(apiError(j, t("saveFailed")), "error");
         return;
       }
       setSaved(true);
-      toast("Réglages enregistrés.", "success");
+      toast(t("saved"), "success");
       router.refresh();
     });
   }
 
   return (
     <form onSubmit={onSave} className="space-y-6">
-      <Section
-        title="Coordonnées du bénéficiaire"
-        hint="Affichées au vendeur sur la page de paiement. Un moyen de paiement n'est proposé que si ses coordonnées sont renseignées."
-      >
-        <TextField label="Bénéficiaire" value={v.payee_name} onChange={(x) => patch("payee_name", x)} />
-        <TextField label="Banque" value={v.payee_bank} onChange={(x) => patch("payee_bank", x)} />
-        <TextField label="RIB" mono value={v.payee_rib} onChange={(x) => patch("payee_rib", x)} />
-        <TextField label="IBAN" mono value={v.payee_iban} onChange={(x) => patch("payee_iban", x)} />
-        <TextField label="Numéro D17" mono value={v.payee_d17} onChange={(x) => patch("payee_d17", x)} />
+      <Section title={t("payeeTitle")} hint={t("payeeHint")}>
+        <TextField label={t("fields.name")} value={v.payee_name} onChange={(x) => patch("payee_name", x)} />
+        <TextField label={t("fields.bank")} value={v.payee_bank} onChange={(x) => patch("payee_bank", x)} />
+        <TextField label={t("fields.rib")} mono value={v.payee_rib} onChange={(x) => patch("payee_rib", x)} />
+        <TextField label={t("fields.iban")} mono value={v.payee_iban} onChange={(x) => patch("payee_iban", x)} />
+        <TextField label={t("fields.d17")} mono value={v.payee_d17} onChange={(x) => patch("payee_d17", x)} />
+      </Section>
+
+      <Section title={t("companyTitle")} hint={t("companyHint")}>
+        <TextField label={t("fields.companyName")} value={v.company_name} onChange={(x) => patch("company_name", x)} />
+        <TextField label={t("fields.companyTaxId")} mono value={v.company_tax_id} onChange={(x) => patch("company_tax_id", x)} />
+        <TextField label={t("fields.companyAddress")} value={v.company_address} onChange={(x) => patch("company_address", x)} />
+        <TextField label={t("fields.vatRate")} mono value={v.invoice_vat_rate} onChange={(x) => patch("invoice_vat_rate", x)} />
       </Section>
 
       <div className="sticky bottom-3 z-10">
@@ -64,7 +77,7 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
           className="mazed-btn-luxe tap-target inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-[13.5px] disabled:opacity-50"
         >
           {isPending ? <Loader2 className="size-4 animate-spin" /> : saved ? <Check className="size-4" strokeWidth={2.5} /> : <Save className="size-4" strokeWidth={2.5} />}
-          {isPending ? "Enregistrement…" : saved ? "Enregistré" : "Enregistrer"}
+          {isPending ? t("saving") : saved ? t("savedButton") : t("save")}
         </button>
       </div>
     </form>
@@ -87,6 +100,10 @@ function Section({
   );
 }
 
+/**
+ * `mono` marks an account number (RIB, IBAN, D17): typed and read left to
+ * right even on the Arabic console, so its digit groups never reorder.
+ */
 function TextField({
   label, value, onChange, mono,
 }: {
@@ -101,6 +118,7 @@ function TextField({
       <input
         type="text"
         value={value}
+        dir={mono ? "ltr" : undefined}
         onChange={(e) => onChange(e.target.value)}
         className={(mono ? "font-mono " : "") + "mazed-input mt-1"}
       />

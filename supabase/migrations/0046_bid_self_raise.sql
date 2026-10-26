@@ -1,5 +1,5 @@
 -- ============================================================================
--- Batta.tn — allow the current top bidder to raise their own bid.
+-- Mazed Immo — allow the current top bidder to raise their own bid.
 --
 -- Previously place_bid enforced two rules together:
 --   1. Every new bid must be >= current_price + bid_increment.

@@ -46,6 +46,12 @@ export function phoneToWinSMS(phone: string): string {
 // send as unicode so the content survives. `\n` is GSM-7, so it's allowed.
 const HAS_NON_PLAIN = /[^A-Za-z0-9èéàù \n%@"'()_\-.\/:,;<=>?!&$]/;
 
+/** True when `text` has a character outside the plain set — send it with
+ *  `unicode: true` (any Arabic text, « », ç…). */
+export function needsUnicode(text: string): boolean {
+  return HAS_NON_PLAIN.test(text);
+}
+
 /**
  * Build a readable, 4-line SMS for a notification and report whether it must be
  * sent as UNICODE:

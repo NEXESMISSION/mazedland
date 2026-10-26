@@ -1,26 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
-import { PWARegister } from "@/components/layout/PWARegister";
-import { Suspense } from "react";
-import { ClientLogger } from "@/components/dev/ClientLogger";
-import { ClientErrorReporter } from "@/components/observability/ClientErrorReporter";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { siteUrl } from "@/lib/siteUrl";
 import "./globals.css";
 
-// Plus Jakarta Sans — SELF-HOSTED (next/font/local) instead of next/font/google.
-// Two wins: (1) the build no longer fetches the font from Google at build time,
-// which was the cause of intermittent `next build` failures on flaky networks;
-// (2) zero render-blocking round-trip to fonts.gstatic.com at runtime → faster
-// first paint. One latin-subset variable woff2 (~27 KB) covers weights 400–800
-// (the only range the UI uses); latin already covers all French accents.
-const jakarta = localFont({
-  src: "./fonts/PlusJakartaSans-latin.woff2",
-  variable: "--font-jakarta",
-  weight: "400 800",
-  display: "swap",
-});
+// A pass-through. <html> and <body> live in [locale]/layout.tsx, the first
+// layout that knows the locale — so `lang` and `dir` are right on the first
+// byte for /fr and /ar alike, without reading request headers here (which
+// would make every page dynamic). not-found.tsx and global-error.tsx, the two
+// pages outside [locale], render their own <html>.
+//
+// The metadata below is the fallback for those two pages; [locale]/layout.tsx
+// overrides the text per locale.
 
 // Null on a local build, which leaves metadataBase to Next's own default.
 const SITE_URL = siteUrl();
@@ -85,77 +74,6 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
-export default async function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
-  // Origin of the Supabase project so the browser can warm a TLS +
-  // HTTP/2 connection before we issue the first auth/db/storage call.
-  // Skipped when unset (dev with `.env.example` only).
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseOrigin = supabaseUrl
-    ? (() => { try { return new URL(supabaseUrl).origin; } catch { return null; } })()
-    : null;
-
-  return (
-    <html
-      lang="fr"
-      dir="ltr"
-      // Tells Next.js this `scroll-behavior: smooth` is intentional and
-      // shouldn't be disabled during route transitions.
-      data-scroll-behavior="smooth"
-      className={`${jakarta.variable} h-full antialiased`}
-      // Inline bg paints with the first HTML byte, before globals.css
-      // resolves — keeps the initial paint on-brand.
-      style={{ background: "#ffffff" }}
-    >
-      <head>
-        {/*
-          Warm TCP + TLS + HTTP/2 connections to origins we hit early
-          on every page so the first auth/db/storage call saves the
-          ~100–250 ms cold-handshake. preconnect is the strong form
-          (full handshake); dns-prefetch is the cheap fallback for
-          browsers that ignore preconnect (mostly older WebKit).
-        */}
-        {supabaseOrigin && (
-          <>
-            <link rel="preconnect" href={supabaseOrigin} crossOrigin="anonymous" />
-            <link rel="dns-prefetch" href={supabaseOrigin} />
-          </>
-        )}
-      </head>
-      <body
-        className="min-h-full bg-background text-foreground font-sans"
-        style={{ background: "#ffffff" }}
-      >
-        {/* Skip link — first focusable element; lets keyboard/screen-reader
-            users jump past the nav straight to the page content. */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:rounded-lg focus:bg-[var(--gold)] focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white focus:shadow-lg"
-        >
-          Aller au contenu
-        </a>
-        {children}
-        <PWARegister />
-        {/* Ships uncaught client errors + unhandled rejections to the server
-            log sink — pairs with instrumentation.ts (server errors) for a
-            single, unified observability stream. */}
-        <ClientErrorReporter />
-        {/* Vercel web analytics + Core Web Vitals (zero-config, no DSN).
-            Real-user performance + traffic without a third-party tag.
-            Only on Vercel: both load their script from /_vercel/*, which
-            exists nowhere else — under `next start` they 404 and log two
-            console errors on every page. */}
-        {process.env.VERCEL ? (
-          <>
-            <Analytics />
-            <SpeedInsights />
-          </>
-        ) : null}
-        <Suspense fallback={null}>
-          <ClientLogger />
-        </Suspense>
-      </body>
-    </html>
-  );
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return children;
 }
