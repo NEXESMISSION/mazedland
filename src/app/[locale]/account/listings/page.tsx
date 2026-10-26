@@ -5,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ListingImage } from "@/components/media/ListingImage";
-import { formatDate, formatTND } from "@/lib/utils";
+import { cn, formatDate, formatTND } from "@/lib/utils";
 import { asDealType } from "@/lib/listings/deal";
 import { isEditable } from "@/lib/listings/edit";
 import { categoryLabel } from "@/lib/i18n";
@@ -45,7 +45,7 @@ const STATUS: Record<string, { tone: string; hint?: true }> = {
   pending_payment: { tone: "mazed-tone-warn", hint: true },
   pending_review:  { tone: "mazed-tone-warn", hint: true },
   published:       { tone: "mazed-tone-ok" },
-  rejected:        { tone: "mazed-tone-bad" },
+  rejected:        { tone: "mazed-tone-bad", hint: true },
   expired:         { tone: "bg-surface-2 text-muted ring-1 ring-border", hint: true },
   sold:            { tone: "mazed-tone-ok" },
   rented:          { tone: "mazed-tone-ok" },
@@ -57,12 +57,18 @@ const STATUS: Record<string, { tone: string; hint?: true }> = {
  * seller who bookmarks "mes annonces à corriger" should not be looking at
  * `?statut=action_required`. It stays French on /ar too; `label` is the
  * message key under `account.listings.tabs`.
+ *
+ * Drafts and refused annonces are both "waiting on me", but not for the same
+ * reason: a draft was never sent, a refused one came back from our team with
+ * something to fix. One « À corriger » tab for both read as if every draft
+ * had been refused.
  */
 const TABS = [
   { key: "",             label: "all",        statuses: null,                                   tone: "text-foreground" },
   { key: "en-ligne",     label: "online",     statuses: ["published"],                          tone: "text-emerald-400" },
   { key: "verification", label: "inProgress", statuses: ["pending_payment", "pending_review"],  tone: "text-amber-400" },
-  { key: "a-corriger",   label: "toFix",      statuses: ["rejected", "draft"],                  tone: "text-[var(--danger)]" },
+  { key: "a-corriger",   label: "toFix",      statuses: ["rejected"],                           tone: "text-[var(--danger)]" },
+  { key: "brouillons",   label: "drafts",     statuses: ["draft"],                              tone: "text-muted" },
   { key: "terminees",    label: "ended",      statuses: ["expired", "archived", "sold", "rented"], tone: "text-muted" },
 ] as const;
 
@@ -168,12 +174,16 @@ export default async function MyListingsPage({
       ? all
       : all.filter((r) => (active.statuses as readonly string[]).includes(r.status));
 
+  // A draft saved before the price was typed stores 0: that is « non
+  // renseigné », not « 0 TND », and not « Sur demande » either.
   const priceOf = (l: Row) =>
-    l.price_on_request || l.price == null
+    l.price_on_request
       ? t("priceOnRequest")
-      : t(asDealType(l.deal_type) === "rent" ? "pricePerMonth" : "price", {
-          amount: formatTND(Number(l.price), locale),
-        });
+      : !(Number(l.price) > 0)
+        ? t("priceNotGiven")
+        : t(asDealType(l.deal_type) === "rent" ? "pricePerMonth" : "price", {
+            amount: formatTND(Number(l.price), locale),
+          });
 
   const date = (v: string | null) => (v ? formatDate(v, locale, "medium") : "—");
 
@@ -310,23 +320,29 @@ export default async function MyListingsPage({
             className={
               block
                 ? "mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2.5 text-[12.5px] font-bold text-foreground hover:border-gold-soft"
-                : "inline-flex items-center gap-1 text-[12.5px] font-bold text-foreground hover:underline"
+                : "ms-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-foreground hover:underline"
             }
           >
             <PencilLine className="size-3.5" /> {l.pending_edit_at ? t("editPending") : t("edit")}
           </Link>
         )}
+        {/* « Promouvoir » and « Mettre en avant » both sound like "more people
+            see it", so each says where, under its name — in the link itself,
+            so it reads the same on a phone, with no tooltip to hover. */}
         {/* On Mazed Immo's Facebook page, Instagram and the groups (0170). */}
         {settings.social_enabled && l.status === "published" && (
           <Link
             href={`/account/listings/${l.id}/promote` as never}
             className={
               block
-                ? "mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gold-soft bg-gold-faint px-3 py-2.5 text-[12.5px] font-bold text-gold"
-                : "inline-flex items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
+                ? "mt-2 flex w-full flex-col items-center rounded-xl border border-gold-soft bg-gold-faint px-3 py-2 text-center text-gold"
+                : "group mt-1.5 flex flex-col items-end text-end text-gold"
             }
           >
-            <Megaphone className="size-3.5" /> {t("promote")}
+            <span className={cn("inline-flex items-center gap-1.5 text-[12.5px] font-bold", !block && "group-hover:underline")}>
+              <Megaphone className="size-3.5" /> {t("promote")}
+            </span>
+            <span className="max-w-[32ch] text-[11px] leading-snug text-muted">{t("promoteHint")}</span>
           </Link>
         )}
         {/* Paid placements: home page, top of search, the home banner (0156),
@@ -336,11 +352,14 @@ export default async function MyListingsPage({
             href={`/account/listings/${l.id}/mise-en-avant` as never}
             className={
               block
-                ? "mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2.5 text-[12.5px] font-bold text-foreground hover:border-gold-soft"
-                : "inline-flex items-center gap-1 text-[12.5px] font-bold text-foreground hover:underline"
+                ? "mt-2 flex w-full flex-col items-center rounded-xl border border-border px-3 py-2 text-center text-foreground hover:border-gold-soft"
+                : "group mt-1.5 flex flex-col items-end text-end text-foreground"
             }
           >
-            <Sparkles className="size-3.5" /> {t("boost")}
+            <span className={cn("inline-flex items-center gap-1.5 text-[12.5px] font-bold", !block && "group-hover:underline")}>
+              <Sparkles className="size-3.5" /> {t("boost")}
+            </span>
+            <span className="max-w-[32ch] text-[11px] leading-snug text-muted">{t("boostHint")}</span>
           </Link>
         )}
         {/* Say it is sold or let, hold it for someone, or take it down. */}
@@ -460,7 +479,11 @@ export default async function MyListingsPage({
               {l.rejection_reason ? (
                 <p className="mt-2.5 flex items-start gap-1.5 rounded-lg bg-[var(--accent-faint)] px-2.5 py-1.5 text-[11.5px] leading-relaxed text-[var(--accent-deep)]">
                   <AlertTriangle className="mt-px size-3.5 shrink-0" />
-                  <span>{l.rejection_reason}</span>
+                  <span>
+                    {/* Why it is under « À corriger »: our team sent it back. */}
+                    {l.status === "rejected" && <span className="font-bold">{t("rejectedPrefix")} </span>}
+                    {l.rejection_reason}
+                  </span>
                 </p>
               ) : st.hint ? (
                 <p className="mt-2.5 text-[11.5px] text-muted">{st.hint}</p>
@@ -538,6 +561,7 @@ export default async function MyListingsPage({
                     </span>
                     {l.rejection_reason ? (
                       <div className="mt-1 max-w-[26ch] truncate text-[11px] text-[var(--accent-deep)]" title={l.rejection_reason}>
+                        {l.status === "rejected" && <span className="font-bold">{t("rejectedPrefix")} </span>}
                         {l.rejection_reason}
                       </div>
                     ) : st.hint ? (

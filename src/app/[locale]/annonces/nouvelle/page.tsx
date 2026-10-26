@@ -17,7 +17,8 @@ import {
 } from "./PublishWizard";
 import { liveListingCount } from "@/lib/moderation/server";
 import { getSettings } from "@/lib/settings/server";
-import { asDealType } from "@/lib/listings/deal";
+import { asDealType, isDealType } from "@/lib/listings/deal";
+import { draftNeedsChoice } from "@/lib/listings/wizard";
 import { aiAvailable } from "@/lib/ai/server";
 import { asPendingEdit, isEditable } from "@/lib/listings/edit";
 import { activePlan, can, membershipsOf, shopLiveCount } from "@/lib/pro/shops";
@@ -56,8 +57,12 @@ export default async function NewListingPage({
   const wantedDraft = Array.isArray(sp.draft) ? sp.draft[0] : sp.draft;
   // « Modifier » on an annonce that is online (0172): the same form, in edit mode.
   const wantedEdit = Array.isArray(sp.edit) ? sp.edit[0] : sp.edit;
-  // « J'ai un bien à louer » on the home page sends ?deal=rent (0166).
-  const initialDeal = asDealType(Array.isArray(sp.deal) ? sp.deal[0] : sp.deal);
+  // « J'ai un bien à louer » on the home page sends ?deal=rent (0166). Kept
+  // apart from the default: only a deal the seller asked for can disagree
+  // with the draft the form would otherwise reopen.
+  const rawDeal = Array.isArray(sp.deal) ? sp.deal[0] : sp.deal;
+  const askedDeal = isDealType(rawDeal) ? rawDeal : null;
+  const initialDeal = askedDeal ?? "sale";
   // « Publier pour la boutique » in the Espace Pro sends ?shop=<id> (0173).
   const initialShopId = (Array.isArray(sp.shop) ? sp.shop[0] : sp.shop) ?? null;
   const locale = await getLocale();
@@ -75,7 +80,7 @@ export default async function NewListingPage({
   if (!user) {
     const back = wantedEdit
       ? `/${locale}/annonces/nouvelle?edit=${encodeURIComponent(wantedEdit)}`
-      : `/${locale}/annonces/nouvelle${initialDeal === "rent" ? "?deal=rent" : ""}`;
+      : `/${locale}/annonces/nouvelle${askedDeal ? `?deal=${askedDeal}` : ""}`;
     redirect(`/${locale}/login?next=${encodeURIComponent(back)}`);
   }
 
@@ -239,6 +244,9 @@ export default async function NewListingPage({
     | null;
   if (wantedEdit && (!row || !isEditable(row))) redirect(`/${locale}/account/listings`);
   const pending = wantedEdit ? asPendingEdit(row?.pending_edit) : null;
+  // The newest draft is a sale and they came to let (or the reverse): the
+  // form asks which they meant instead of reopening it as if they had chosen.
+  const askResume = draftNeedsChoice({ opened: Boolean(wantedDraft || wantedEdit), askedDeal, draft: row });
   const initialDraft: InitialDraft | null = row
     ? {
         ...row,
@@ -263,6 +271,7 @@ export default async function NewListingPage({
       defaultGovernorate={(profRes.data?.governorate as string | null) ?? ""}
       initialDraft={initialDraft}
       initialDeal={initialDeal}
+      askResume={askResume}
       aiAvailable={wantedEdit ? false : await aiAvailable(admin)}
       mode={wantedEdit ? "edit" : "create"}
       editPending={Boolean(pending)}

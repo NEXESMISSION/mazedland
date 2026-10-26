@@ -104,7 +104,8 @@
         "online": "En ligne",
         "inProgress": "En cours",
         "toFix": "À corriger",
-        "ended": "Terminées"
+        "ended": "Terminées",
+        "drafts": "Brouillons"
       },
       "status": {
         "draft": "Brouillon",
@@ -119,10 +120,11 @@
         "rented": "Louée"
       },
       "statusHint": {
-        "draft": "Pas encore envoyée.",
+        "draft": "Jamais envoyée : reprenez-la pour la publier.",
         "pending_payment": "Réglez les frais pour lancer la vérification.",
         "pending_review": "Notre équipe la contrôle — moins de 24 h.",
-        "expired": "Renouvelez-la pour la remettre en ligne."
+        "expired": "Renouvelez-la pour la remettre en ligne.",
+        "rejected": "Refusée par notre équipe : corrigez-la, puis renvoyez-la."
       },
       "receiptInReview": "Reçu en vérification",
       "receiptInReviewHint": "Nous validons votre reçu — moins de 24 h.",
@@ -158,7 +160,11 @@
       "promote": "Promouvoir",
       "edit": "Modifier",
       "editPending": "Modification en attente",
-      "boost": "Mettre en avant"
+      "boost": "Mettre en avant",
+      "priceNotGiven": "Prix non renseigné",
+      "rejectedPrefix": "Refusée :",
+      "promoteHint": "Partagée sur nos réseaux : Facebook, Instagram",
+      "boostHint": "Placement payant sur le site : accueil, haut des résultats"
     },
     "listingActions": {
       "mark_sold": {
@@ -1289,7 +1295,7 @@
     "stepOf": "Étape {current} sur {total}",
     "next": "Continuer",
     "back": "Retour",
-    "stepMissing": "{count, plural, one {Il manque # information à cette étape.} other {Il manque # informations à cette étape.}}",
+    "stepMissing": "{count, plural, one {Il manque une information : {fields}.} other {Il manque # informations : {fields}.}}",
     "locationTitle": "Où se trouve le bien ?",
     "reviewTitle": "Vérifiez votre annonce",
     "reviewHint": "Voici ce que verront les acheteurs. Modifiez ce que vous voulez avant de publier.",
@@ -1383,7 +1389,38 @@
     "editWaitingBody": "Votre annonce attend encore la vérification, avec vos corrections. Vous serez prévenu dès qu'elle est en ligne.",
     "tipPriceTypo": "Un zéro de trop dans le prix ? Les annonces semblables sont plutôt autour de {fix}.",
     "estimateLocal": "D'après {count, plural, one {# annonce semblable} other {# annonces semblables}} à {governorate} : entre {low} et {high} pour cette surface.",
-    "estimateNational": "D'après {count, plural, one {# annonce semblable} other {# annonces semblables}} en Tunisie : entre {low} et {high} pour cette surface."
+    "estimateNational": "D'après {count, plural, one {# annonce semblable} other {# annonces semblables}} en Tunisie : entre {low} et {high} pour cette surface.",
+    "draftChoice": {
+      "title": {
+        "sale": "Vous avez un brouillon de vente",
+        "rent": "Vous avez un brouillon de location"
+      },
+      "body": {
+        "sale": "Votre dernier brouillon est une annonce de vente. Que voulez-vous faire ?",
+        "rent": "Votre dernier brouillon est une annonce de location. Que voulez-vous faire ?"
+      },
+      "resume": {
+        "sale": "Reprendre le brouillon de vente",
+        "rent": "Reprendre le brouillon de location"
+      },
+      "startNew": {
+        "sale": "Commencer une annonce de vente",
+        "rent": "Commencer une annonce de location"
+      },
+      "savedOn": "Enregistré le {date}",
+      "keepsDraft": "Le brouillon reste dans « Mes annonces »."
+    },
+    "priceNotGiven": "Prix non renseigné",
+    "rentNotGiven": "Loyer non renseigné",
+    "fieldName": {
+      "category": "le type de bien",
+      "photos": "une photo",
+      "title": "le titre",
+      "price": "le prix",
+      "rent": "le loyer",
+      "phone": "le téléphone",
+      "attestation": "l'attestation"
+    }
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",

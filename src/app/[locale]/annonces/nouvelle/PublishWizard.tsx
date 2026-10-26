@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useApiError } from "@/lib/useApiError";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -32,6 +32,13 @@ import {
 } from "@/lib/listings/deal";
 import type { ListingDraft } from "@/lib/ai/listing";
 import { estimateRange, priceInWords, suggestPriceFix, type PriceRef } from "@/lib/listings/priceCheck";
+import {
+  attributeFieldId,
+  listOfFields,
+  missingOnStep,
+  stepOfField,
+  type WizardStep,
+} from "@/lib/listings/wizard";
 
 /**
  * Publier une annonce — the sell-or-let flow.
@@ -93,20 +100,7 @@ export type WizardCategory = {
 };
 
 const STEPS = ["where", "photos", "details", "review"] as const;
-type Step = 0 | 1 | 2 | 3;
-
-/** Which step each field lives on, so "missing" and "Modifier" land there. */
-const STEP_OF: Record<string, Step> = {
-  "f-category": 0,
-  "f-photos": 1,
-  "f-price": 2,
-  "f-rent": 2,
-  "f-title": 2,
-  "f-details": 2,
-  "f-description": 2,
-  "f-phone": 3,
-  "f-contact": 3,
-};
+type Step = WizardStep;
 
 /** One question, as `/admin/catalogue` defines it. */
 export type AttributeDef = {
@@ -166,6 +160,7 @@ export function PublishWizard({
   defaultGovernorate,
   initialDraft,
   initialDeal = "sale",
+  askResume = false,
   aiAvailable = false,
   mode = "create",
   editPending = false,
@@ -191,6 +186,9 @@ export function PublishWizard({
   initialDraft: InitialDraft | null;
   /** ?deal=rent — the home page's « J'ai un bien à louer » lands here. */
   initialDeal?: DealType;
+  /** `initialDraft` is the newest draft and not the deal in the URL: ask
+   *  whether to resume it or start that deal (src/lib/listings/wizard.ts). */
+  askResume?: boolean;
   /** The listing assistant can be offered (key set, switched on, budget left). */
   aiAvailable?: boolean;
   /**
@@ -309,6 +307,9 @@ export function PublishWizard({
   const [contactPhone, setContactPhone] = useState(d?.contact_phone ?? defaultContactPhone);
   const [attested, setAttested] = useState(false);
   const [resumed, setResumed] = useState(Boolean(d));
+  // A draft of the other deal waits: nothing of the form shows until the
+  // seller says whether they meant it.
+  const [choosing, setChoosing] = useState(askResume && Boolean(d) && !editing);
   // A resumed draft opens where it was left: the first step still missing
   // something, or the summary.
   const [step, setStep] = useState<Step>(() => {
@@ -454,17 +455,22 @@ export function PublishWizard({
   const setTitle = (v: string) => { setTitleTouched(true); setTypedTitle(v); };
 
   // ─── What is still missing, and where ─────────────────────────────────────
-  // Each entry knows the section it belongs to, so a click takes the seller
-  // straight there instead of leaving them to scan the page for it.
-  const missing: { label: string; fieldId: string }[] = [];
-  if (!categoryId) missing.push({ label: t("missingCategory"), fieldId: "f-category" });
+  // Each entry knows the field it belongs to, so a click takes the seller
+  // straight there instead of leaving them to scan the page for it. `label`
+  // is the sentence said under the field and in the summary's list; `name`
+  // is the field alone, for « Il manque 2 informations : le prix et le titre ».
+  const missing: { label: string; fieldId: string; name: string }[] = [];
+  if (!categoryId) {
+    missing.push({ label: t("missingCategory"), fieldId: "f-category", name: t("fieldName.category") });
+  }
   if (photosUploading > 0) {
     missing.push({
       label: t("missingPhotosUploading", { count: photosUploading }),
       fieldId: "f-photos",
+      name: t("fieldName.photos"),
     });
   } else if (photos.length === 0) {
-    missing.push({ label: t("missingPhoto"), fieldId: "f-photos" });
+    missing.push({ label: t("missingPhoto"), fieldId: "f-photos", name: t("fieldName.photos") });
   }
   for (const def of defs) {
     if (!def.required) continue;
@@ -472,42 +478,56 @@ export function PublishWizard({
     if (v == null || String(v).trim() === "") {
       missing.push({
         label: t("missingAttribute", { label: def.label.toLowerCase() }),
-        fieldId: "f-details",
+        // The question itself, not the whole « Le bien » block.
+        fieldId: attributeFieldId(def.field_key),
+        name: def.label.toLowerCase(),
       });
     }
   }
   if (title.trim().length < 3) {
-    missing.push({ label: t("missingTitle"), fieldId: "f-title" });
+    missing.push({ label: t("missingTitle"), fieldId: "f-title", name: t("fieldName.title") });
   }
   if (!onRequest && !(Number(price) > 0)) {
-    missing.push({ label: t(rent ? "missingRent" : "missingPrice"), fieldId: "f-price" });
+    missing.push({
+      label: t(rent ? "missingRent" : "missingPrice"),
+      fieldId: "f-price",
+      name: t(rent ? "fieldName.rent" : "fieldName.price"),
+    });
   }
   if (contactPhone.replace(/\D/g, "").length < 8) {
-    missing.push({ label: t("missingPhone"), fieldId: "f-phone" });
+    missing.push({ label: t("missingPhone"), fieldId: "f-phone", name: t("fieldName.phone") });
   }
   // An edit does not re-sign: the attestation was given when it went online.
   if (!attested && !editing) {
-    missing.push({ label: t("missingAttestation"), fieldId: "f-contact" });
+    missing.push({ label: t("missingAttestation"), fieldId: "f-attestation", name: t("fieldName.attestation") });
   }
 
   // Red only survives while the field is still empty: fill it and the outline
   // goes on its own, without the seller having to dismiss anything.
   const missingIds = new Set(missing.map((m) => m.fieldId));
   const flaggedNow = new Set(flagged.filter((id) => missingIds.has(id)));
+  /** The sentence to say under a field the seller was sent to, while it is still missing. */
+  const errorFor = (id: string) =>
+    flaggedNow.has(id) ? missing.find((m) => m.fieldId === id)?.label ?? null : null;
 
   /** Scroll to whatever is missing and put the cursor in it. */
   function goToField(id: string) {
     // Mark it before scrolling: by the time the smooth scroll lands the field
     // is already outlined, so it is obvious which one was meant.
     setFlagged((f) => (f.includes(id) ? f : [...f, id]));
-    const target = STEP_OF[id];
+    const target = stepOfField(id);
     if (target !== undefined && target !== step) setStep(target);
     // After the step has rendered, if it had to change.
     setTimeout(() => {
       const el = document.getElementById(id);
       if (!el) return;
       el.scrollIntoView({ behavior: "smooth", block: "start" });
-      el.querySelector<HTMLElement>("input, select, textarea, button")?.focus({ preventScroll: true });
+      // A block whose first control is not the missing one (the category
+      // sits under the family switch) marks the one to land on.
+      (
+        el.querySelector<HTMLElement>("[data-focus-target]") ??
+        el.querySelector<HTMLElement>("input, select, textarea, button")
+      )?.focus({ preventScroll: true });
     }, 60);
   }
 
@@ -518,17 +538,16 @@ export function PublishWizard({
 
   /** On to the next step, unless this one still lacks something. */
   function next() {
-    const pending = missing.filter(
-      (m) =>
-        STEP_OF[m.fieldId] === step &&
-        // Photos still uploading finish in the background; only "none at all"
-        // holds the seller here.
-        !(m.fieldId === "f-photos" && photosUploading > 0),
-    );
+    const pending = missingOnStep(missing, step, { photosUploading: photosUploading > 0 });
     if (pending.length > 0) {
+      // Every one turns red with its sentence under it, the cursor goes to
+      // the first, and the toast names them all — not just how many.
       setFlagged((f) => Array.from(new Set([...f, ...pending.map((m) => m.fieldId)])));
       goToField(pending[0].fieldId);
-      toast(t("stepMissing", { count: pending.length }), "warning");
+      toast(
+        t("stepMissing", { count: pending.length, fields: listOfFields(pending.map((m) => m.name), locale) }),
+        "warning",
+      );
       return;
     }
     goToStep(Math.min(3, step + 1) as Step);
@@ -627,6 +646,14 @@ export function PublishWizard({
    */
   function startOver() {
     setResumed(false);
+    setChoosing(false);
+    // Back to the first step: a fresh form left on the old draft's photos
+    // step reads as if the photos had been lost.
+    setStep(0);
+    setFlagged([]);
+    // The old draft's "nothing to write yet" no longer holds: the first
+    // answer of the new annonce saves it.
+    firstRun.current = false;
     setListingId(null);
     setCategoryId(null);
     setPhotos([]);
@@ -824,6 +851,72 @@ export function PublishWizard({
     }
   }
 
+  // ─── A draft of the other deal ────────────────────────────────────────────
+  // Came to let with a sale draft waiting (or the reverse): which one did they
+  // mean? Either answer is one tap, and starting the other kind leaves the
+  // draft in « Mes annonces » — nothing is deleted from here.
+  if (choosing && d) {
+    const draftDeal = asDealType(d.deal_type);
+    const draftName =
+      d.title && d.title !== "Brouillon"
+        ? d.title
+        : categories.find((c) => c.id === d.category_id)?.label ?? null;
+    const options = [
+      {
+        key: "resume",
+        deal: draftDeal,
+        label: t(`draftChoice.resume.${draftDeal}`),
+        hint: [draftName, d.updated_at ? t("draftChoice.savedOn", { date: formatDate(d.updated_at, locale, "short") }) : null]
+          .filter(Boolean)
+          .join(" · "),
+        onClick: () => setChoosing(false),
+      },
+      {
+        key: "new",
+        deal: initialDeal,
+        label: t(`draftChoice.startNew.${initialDeal}`),
+        hint: t("draftChoice.keepsDraft"),
+        onClick: startOver,
+      },
+    ];
+    return (
+      <main className="mx-auto max-w-md px-4 pb-16 pt-6 sm:pt-12">
+        <h1 className="text-[24px] font-extrabold tracking-tight">{t("title")}</h1>
+        <section
+          aria-labelledby="draft-choice-title"
+          className="mt-5 rounded-2xl border border-gold-soft bg-gold-faint p-4 sm:p-5"
+        >
+          <SectionHead id="draft-choice-title" icon={ClipboardList} title={t(`draftChoice.title.${draftDeal}`)} />
+          <p className="mt-1 text-[13px] leading-relaxed text-muted">{t(`draftChoice.body.${draftDeal}`)}</p>
+          <div className="mt-4 grid gap-2">
+            {options.map((o) => {
+              const Icon = o.deal === "rent" ? KeyRound : Tag;
+              return (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={o.onClick}
+                  className="tap-target flex w-full items-center gap-3 rounded-xl bg-surface px-3.5 py-3 text-start ring-1 ring-border transition hover:ring-gold"
+                >
+                  <Icon className="size-5 shrink-0 text-gold" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[14px] font-extrabold text-foreground">{o.label}</span>
+                    {o.hint && (
+                      <span dir="auto" className="mt-0.5 line-clamp-2 block text-[11.5px] leading-snug text-muted">
+                        {o.hint}
+                      </span>
+                    )}
+                  </span>
+                  <ArrowRight className="size-4 shrink-0 text-muted rtl:-scale-x-100" />
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   // ─── Done ─────────────────────────────────────────────────────────────────
   if (done) {
     return (
@@ -918,9 +1011,12 @@ export function PublishWizard({
   // The price, said the way the card says it: number then currency, no LTR box
   // around the pair (an Arabic reader reads the number first).
   const money = (n: number) => `${formatTND(n, locale)} ${tc("tnd")}`;
-  const priceText =
-    onRequest || !(Number(price) > 0)
-      ? t("priceOnRequestShort")
+  // « Sur demande » only when the seller chose it. An empty price used to
+  // read as « Sur demande » here while the list below still asked for one.
+  const priceText = onRequest
+    ? t("priceOnRequestShort")
+    : !(Number(price) > 0)
+      ? t(rent ? "rentNotGiven" : "priceNotGiven")
       : rent
         ? t("perMonth", { amount: money(Number(price)) })
         : money(Number(price));
@@ -1122,9 +1218,11 @@ export function PublishWizard({
                   seller checks them. Only offered when it can answer. */}
               {aiAvailable && (
                 <section className="rounded-2xl border border-gold-soft bg-gold-faint p-4 sm:p-5">
-                  <SectionHead icon={Sparkles} title={t("aiTitle")} />
-                  <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{t("aiHint")}</p>
+                  <SectionHead id="f-ai-title" icon={Sparkles} title={t("aiTitle")} />
+                  <p id="f-ai-hint" className="mt-1 text-[12.5px] leading-relaxed text-muted">{t("aiHint")}</p>
                   <textarea
+                    aria-labelledby="f-ai-title"
+                    aria-describedby="f-ai-hint f-ai-privacy"
                     value={aiText}
                     onChange={(e) => setAiText(e.target.value)}
                     rows={3}
@@ -1152,7 +1250,7 @@ export function PublishWizard({
                       </ul>
                     </div>
                   )}
-                  <p className="mt-2 text-[11px] leading-snug text-muted">{t("aiPrivacy")}</p>
+                  <p id="f-ai-privacy" className="mt-2 text-[11px] leading-snug text-muted">{t("aiPrivacy")}</p>
                 </section>
               )}
 
@@ -1242,7 +1340,18 @@ export function PublishWizard({
                     })}
                   </div>
 
-                  <div role="radiogroup" aria-label={t("categoryAria")} className="mt-2.5 flex flex-wrap gap-1.5">
+                  <div
+                    role="radiogroup"
+                    aria-label={t("categoryAria")}
+                    aria-required="true"
+                    aria-invalid={errorFor("f-category") ? true : undefined}
+                    aria-describedby={errorFor("f-category") ? "f-category-error" : undefined}
+                    // Where « Continuer » lands when no type is chosen: the
+                    // group, which then reads as required and what is missing.
+                    data-focus-target
+                    tabIndex={-1}
+                    className="mt-2.5 flex flex-wrap gap-1.5 focus:outline-none"
+                  >
                     {categories
                       .filter((c) => c.groupId === groupId)
                       .map((c) => {
@@ -1267,6 +1376,7 @@ export function PublishWizard({
                         );
                       })}
                   </div>
+                  {errorFor("f-category") && <FieldError id="f-category-error">{errorFor("f-category")}</FieldError>}
 
                   {/* What publishing costs, said once — free for most sellers. */}
                   {category && !editing && (freeQuota || limitReached) && (
@@ -1290,10 +1400,12 @@ export function PublishWizard({
                 <SectionHead icon={MapPin} title={t("locationTitle")} />
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <div>
-                    <Label>{t("governorate")} <span className="text-gold">*</span></Label>
+                    <Label htmlFor="f-governorate">{t("governorate")} <Req /></Label>
                     <div className="relative mt-1">
                       <MapPin className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
                       <select
+                        id="f-governorate"
+                        aria-required="true"
                         value={governorate}
                         onChange={(e) => setGovernorate(e.target.value)}
                         className="w-full appearance-none rounded-xl border border-border bg-surface py-3 ps-9 pe-3 text-[14px] text-foreground focus:border-gold focus:outline-none"
@@ -1333,6 +1445,10 @@ export function PublishWizard({
                   onChange={setPhotos}
                   onPendingChange={setPhotosUploading}
                 />
+                {/* Not while photos are on their way: the uploader says so itself. */}
+                {photosUploading === 0 && errorFor("f-photos") && (
+                  <FieldError id="f-photos-error">{errorFor("f-photos")}</FieldError>
+                )}
               </div>
             </section>
           )}
@@ -1349,13 +1465,29 @@ export function PublishWizard({
 
                 <div className="mt-5 space-y-4">
                   <div>
-                    <Label>{t(rent ? "rentLabel" : "priceLabel")} {!onRequest && <span className="text-gold">*</span>}</Label>
+                    <Label htmlFor="f-price-input">{t(rent ? "rentLabel" : "priceLabel")} {!onRequest && <Req />}</Label>
                     {/* The box is left-to-right as a whole, not only the input:
                         with just the input flipped, its padding sat on the right
                         while the currency label followed the page to the left,
                         and on /ar the figure ran under « د.ت ». */}
                     <div dir="ltr" className="relative mt-1">
                       <input
+                        id="f-price-input"
+                        // The currency, and the estimate and the figure in words
+                        // while they show: read after the name, as a sighted
+                        // seller reads them around the box.
+                        aria-describedby={
+                          [
+                            "f-price-unit",
+                            errorFor("f-price") ? "f-price-error" : null,
+                            estimate && !onRequest ? "f-price-estimate" : null,
+                            priceWords ? "f-price-words" : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")
+                        }
+                        aria-required={!onRequest}
+                        aria-invalid={errorFor("f-price") ? true : undefined}
                         type="number"
                         inputMode="decimal"
                         dir="ltr"
@@ -1368,12 +1500,13 @@ export function PublishWizard({
                           rent ? "pe-28" : "pe-16",
                         )}
                       />
-                      <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[13px] font-bold text-muted">
+                      <span id="f-price-unit" className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[13px] font-bold text-muted">
                         {rent ? t("tndPerMonth") : tc("tnd")}
                       </span>
                     </div>
+                    {errorFor("f-price") && <FieldError id="f-price-error">{errorFor("f-price")}</FieldError>}
                     {estimate && !onRequest && (
-                      <p className="mt-1.5 text-[12px] leading-snug text-muted">
+                      <p id="f-price-estimate" className="mt-1.5 text-[12px] leading-snug text-muted">
                         {t(estimateIsLocal ? "estimateLocal" : "estimateNational", {
                           low: `${formatTND(estimate.low, locale)}`,
                           high: `${formatTND(estimate.high, locale)} ${rent ? t("tndPerMonth") : tc("tnd")}`,
@@ -1383,7 +1516,7 @@ export function PublishWizard({
                       </p>
                     )}
                     {priceWords && (
-                      <p className="mt-1.5 text-[12.5px] font-semibold text-muted" aria-live="polite">
+                      <p id="f-price-words" className="mt-1.5 text-[12.5px] font-semibold text-muted" aria-live="polite">
                         = {priceWords}
                         {rent ? ` ${t("perMonthWords")}` : ""}
                       </p>
@@ -1442,12 +1575,14 @@ export function PublishWizard({
                         suffix={tc("tnd")}
                       />
                       <div className="sm:col-span-2">
-                        <Label>{t("furnishedLabel")}</Label>
-                        <div className="mt-1.5 flex flex-wrap gap-2">
+                        <Label id="f-furnished-label">{t("furnishedLabel")}</Label>
+                        <div role="radiogroup" aria-labelledby="f-furnished-label" className="mt-1.5 flex flex-wrap gap-2">
                           {FURNISHED.map((f) => (
                             <button
                               key={f}
                               type="button"
+                              role="radio"
+                              aria-checked={furnished === f}
                               onClick={() => setFurnished(furnished === f ? "" : f)}
                               className={cn(
                                 "tap-target rounded-full px-4 py-2 text-[13px] font-bold transition",
@@ -1486,15 +1621,13 @@ export function PublishWizard({
                       value={title}
                       onChange={setTitle}
                       placeholder={t("titlePlaceholder")}
+                      error={errorFor("f-title")}
                     />
                   </div>
                 </div>
               </section>
 
-              <section
-                id="f-details"
-                className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-details")}`}
-              >
+              <section id="f-details" className="scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5">
                 <SectionHead icon={ClipboardList} title={t("detailsTitle")} />
                 <p className="mt-1 text-[13px] text-muted">
                   {categoryId ? t("detailsHint") : t("detailsPickCategory")}
@@ -1502,14 +1635,19 @@ export function PublishWizard({
 
                 {defs.length > 0 ? (
                   <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                    {defs.map((def) => (
-                      <AttributeField
-                        key={def.field_key}
-                        def={def}
-                        value={attrs[def.field_key] ?? ""}
-                        onChange={(v) => setAttrs((s) => ({ ...s, [def.field_key]: v }))}
-                      />
-                    ))}
+                    {defs.map((def) => {
+                      const fid = attributeFieldId(def.field_key);
+                      return (
+                        <div key={def.field_key} id={fid} className={`scroll-mt-24 rounded-xl${flagCls(fid)}`}>
+                          <AttributeField
+                            def={def}
+                            value={attrs[def.field_key] ?? ""}
+                            onChange={(v) => setAttrs((s) => ({ ...s, [def.field_key]: v }))}
+                            error={errorFor(fid)}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   categoryId && (
@@ -1520,8 +1658,10 @@ export function PublishWizard({
                 )}
 
                 <div id="f-description" className="mt-5 scroll-mt-24">
-                  <Label>{t("descriptionLabel")}</Label>
+                  <Label htmlFor="f-description-input">{t("descriptionLabel")}</Label>
                   <textarea
+                    id="f-description-input"
+                    aria-describedby="f-description-count"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={4}
@@ -1530,7 +1670,7 @@ export function PublishWizard({
                     placeholder={t("descriptionPlaceholder")}
                     className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13.5px] leading-relaxed text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
                   />
-                  <p className="mt-1 text-end text-[10.5px] text-muted">
+                  <p id="f-description-count" className="mt-1 text-end text-[10.5px] text-muted">
                     <Ltr>{description.length} / 4000</Ltr>
                   </p>
                 </div>
@@ -1572,7 +1712,14 @@ export function PublishWizard({
                         </span>
                       </span>
                       <h3 className="mt-0.5 line-clamp-2 text-[13.5px] font-bold leading-snug">{title || "—"}</h3>
-                      <p className="mazed-tabular mt-1 text-[15px] font-extrabold">{priceText}</p>
+                      <p
+                        className={cn(
+                          "mazed-tabular mt-1",
+                          priceKnown ? "text-[15px] font-extrabold" : "text-[13px] font-semibold italic text-muted",
+                        )}
+                      >
+                        {priceText}
+                      </p>
                       <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
                         <MapPin className="size-3" /> {delegation.trim() || governorateLabel(governorate, locale)}
                       </p>
@@ -1609,7 +1756,7 @@ export function PublishWizard({
                     </SummaryBlock>
 
                     <SummaryBlock title={t("steps.details")} editLabel={t("edit")} onEdit={() => goToStep(2)}>
-                      <span className="block font-bold text-foreground">
+                      <span className={cn("block", priceKnown ? "font-bold text-foreground" : "italic")}>
                         {priceText}
                         {negotiable && !onRequest && Number(price) > 0 && ` · ${t("negotiable")}`}
                       </span>
@@ -1657,10 +1804,7 @@ export function PublishWizard({
                 </ul>
               </section>
 
-              <section
-                id="f-contact"
-                className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-contact")}`}
-              >
+              <section id="f-contact" className="scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5">
                 <SectionHead icon={Phone} title={t("contactTitle")} />
                 <p className="mt-1 text-[13px] text-muted">{t("contactHint")}</p>
 
@@ -1671,6 +1815,7 @@ export function PublishWizard({
                       value={contactName}
                       onChange={setContactName}
                       placeholder={t("contactNamePlaceholder")}
+                      autoComplete="name"
                     />
                     <div id="f-phone" className={`scroll-mt-24 rounded-xl${flagCls("f-phone")}`}>
                       {/* dir="ltr": "+216 98 124 111" typed into a right-to-left
@@ -1678,10 +1823,13 @@ export function PublishWizard({
                       <Field
                         label={t("phoneLabel")}
                         required
+                        type="tel"
+                        autoComplete="tel"
                         value={contactPhone}
                         onChange={setContactPhone}
                         placeholder="+216 …"
                         dir="ltr"
+                        error={errorFor("f-phone")}
                       />
                     </div>
                   </div>
@@ -1729,15 +1877,26 @@ export function PublishWizard({
                     </div>
                   )}
 
-                  <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-surface-2/40 p-3.5">
-                    <input
-                      type="checkbox"
-                      checked={attested}
-                      onChange={(e) => setAttested(e.target.checked)}
-                      className="mt-0.5 size-5 shrink-0 accent-[var(--gold)]"
-                    />
-                    <span className="text-[12.5px] leading-relaxed text-foreground">{t("attestation")}</span>
-                  </label>
+                  <div>
+                    <label
+                      id="f-attestation"
+                      className={`flex scroll-mt-24 cursor-pointer items-start gap-3 rounded-2xl border border-border bg-surface-2/40 p-3.5${flagCls("f-attestation")}`}
+                    >
+                      <input
+                        type="checkbox"
+                        aria-required="true"
+                        aria-invalid={errorFor("f-attestation") ? true : undefined}
+                        aria-describedby={errorFor("f-attestation") ? "f-attestation-error" : undefined}
+                        checked={attested}
+                        onChange={(e) => setAttested(e.target.checked)}
+                        className="mt-0.5 size-5 shrink-0 accent-[var(--gold)]"
+                      />
+                      <span className="text-[12.5px] leading-relaxed text-foreground">{t("attestation")}</span>
+                    </label>
+                    {errorFor("f-attestation") && (
+                      <FieldError id="f-attestation-error">{errorFor("f-attestation")}</FieldError>
+                    )}
+                  </div>
 
                   <div className="rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
                     <div className="flex items-center justify-between gap-3">
@@ -1887,13 +2046,19 @@ function typedAttributes(
 
 /** One question, rendered as whatever its `data_type` says it is. */
 function AttributeField({
-  def, value, onChange,
+  def, value, onChange, error,
 }: {
   def: AttributeDef;
   value: string;
   onChange: (v: string) => void;
+  /** What is missing, once the seller was sent here. */
+  error?: string | null;
 }) {
   const t = useTranslations("publish");
+  // Ties the visible label to its control: an admin's question has no fixed id.
+  const id = useId();
+  const errorId = `${id}-error`;
+  const invalid = error ? { "aria-invalid": true, "aria-describedby": errorId } : {};
   if (def.data_type === "boolean") {
     // A yes/no is a switch, not a dropdown with two options in it. Clicking the
     // active side again clears the answer, because "not stated" is a real third
@@ -1901,8 +2066,14 @@ function AttributeField({
     // foncier is registered must not be forced to claim either.
     return (
       <div>
-        <Label>{def.label} {def.required && <span className="text-gold">*</span>}</Label>
-        <div className="mt-1.5 flex gap-2">
+        <Label id={`${id}-label`}>{def.label} {def.required && <Req />}</Label>
+        <div
+          role="radiogroup"
+          aria-labelledby={`${id}-label`}
+          aria-required={def.required || undefined}
+          {...invalid}
+          className="mt-1.5 flex gap-2"
+        >
           {[
             { v: "true", label: t("yes") },
             { v: "false", label: t("no") },
@@ -1910,6 +2081,8 @@ function AttributeField({
             <button
               key={o.v}
               type="button"
+              role="radio"
+              aria-checked={value === o.v}
               onClick={() => onChange(value === o.v ? "" : o.v)}
               className={cn(
                 "tap-target rounded-full px-4 py-2 text-[13px] font-bold transition",
@@ -1922,6 +2095,7 @@ function AttributeField({
             </button>
           ))}
         </div>
+        {error && <FieldError id={errorId}>{error}</FieldError>}
       </div>
     );
   }
@@ -1929,8 +2103,11 @@ function AttributeField({
   if (def.data_type === "select" && def.options?.length) {
     return (
       <div>
-        <Label>{def.label} {def.required && <span className="text-gold">*</span>}</Label>
+        <Label htmlFor={id}>{def.label} {def.required && <Req />}</Label>
         <select
+          id={id}
+          aria-required={def.required || undefined}
+          {...invalid}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="mt-1 w-full appearance-none rounded-xl border border-border bg-surface px-3 py-3 text-[14px] text-foreground focus:border-gold focus:outline-none"
@@ -1940,6 +2117,7 @@ function AttributeField({
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
+        {error && <FieldError id={errorId}>{error}</FieldError>}
       </div>
     );
   }
@@ -1952,7 +2130,21 @@ function AttributeField({
       value={value}
       onChange={onChange}
       suffix={def.unit ?? undefined}
+      error={error}
     />
+  );
+}
+
+/**
+ * What is missing, said under the field itself. The toast names it too, but
+ * it is gone in a few seconds; this stays until the field is filled.
+ */
+function FieldError({ id, children }: { id: string; children: React.ReactNode }) {
+  return (
+    <p id={id} className="mt-1.5 flex items-start gap-1.5 text-[12px] font-bold leading-snug text-danger">
+      <AlertTriangle aria-hidden="true" className="mt-px size-3.5 shrink-0" />
+      <span>{children}</span>
+    </p>
   );
 }
 
@@ -1994,13 +2186,15 @@ function SummaryBlock({
 }
 
 function SectionHead({
-  icon: Icon, title,
+  icon: Icon, title, id,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
+  /** For a field or group that this heading names (aria-labelledby). */
+  id?: string;
 }) {
   return (
-    <h2 className="flex items-center gap-2.5 text-[17px] font-extrabold tracking-tight">
+    <h2 id={id} className="flex items-center gap-2.5 text-[17px] font-extrabold tracking-tight">
       <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold-soft">
         <Icon className="size-4" />
       </span>
@@ -2009,16 +2203,31 @@ function SectionHead({
   );
 }
 
-function Label({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted">
-      {children}
-    </span>
+/**
+ * A field's visible name. With `htmlFor` it is that control's <label>; with
+ * only `id`, it names a group of buttons through aria-labelledby. A heading
+ * sitting next to a field is not its name to a screen reader — the price box
+ * read as a bare "numeric field" until it was tied to its label.
+ */
+function Label({ children, htmlFor, id }: { children: React.ReactNode; htmlFor?: string; id?: string }) {
+  const cls = "text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted";
+  return htmlFor ? (
+    <label htmlFor={htmlFor} id={id} className={cls}>{children}</label>
+  ) : (
+    <span id={id} className={cls}>{children}</span>
   );
 }
 
+/**
+ * The asterisk of a required field. Hidden from screen readers, which hear
+ * "required" from the control itself (aria-required) rather than "star".
+ */
+function Req() {
+  return <span aria-hidden="true" className="text-gold">*</span>;
+}
+
 function Field({
-  label, value, onChange, placeholder, type = "text", required, suffix, compact, dir,
+  label, value, onChange, placeholder, type = "text", required, suffix, compact, dir, autoComplete, error,
 }: {
   label?: string;
   value: string;
@@ -2029,12 +2238,25 @@ function Field({
   suffix?: string;
   compact?: boolean;
   dir?: "ltr" | "rtl";
+  autoComplete?: string;
+  /** What is missing, once the seller was sent here. */
+  error?: string | null;
 }) {
+  const id = useId();
+  // The unit is read as the field's description, not as part of its name:
+  // "Caution, TND" rather than a label that ends in "TND".
+  const unitId = suffix ? `${id}-unit` : undefined;
+  const errorId = error ? `${id}-error` : undefined;
   return (
-    <label className="block">
-      {label && <Label>{label} {required && <span className="text-gold">*</span>}</Label>}
+    <div>
+      {label && <Label htmlFor={id}>{label} {required && <Req />}</Label>}
       <div className="relative mt-1">
         <input
+          id={id}
+          aria-required={required || undefined}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={[unitId, errorId].filter(Boolean).join(" ") || undefined}
+          autoComplete={autoComplete}
           type={type}
           inputMode={type === "number" ? "numeric" : undefined}
           dir={dir}
@@ -2048,19 +2270,22 @@ function Field({
           )}
         />
         {suffix && (
-          <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[12.5px] font-bold text-muted">
+          <span id={unitId} className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[12.5px] font-bold text-muted">
             {suffix}
           </span>
         )}
       </div>
-    </label>
+      {error && errorId && <FieldError id={errorId}>{error}</FieldError>}
+    </div>
   );
 }
 
+/** An on/off chip (« Négociable », « Prix sur demande »): a toggle button, pressed or not. */
 function Toggle({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
+      aria-pressed={on}
       onClick={onClick}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition",
