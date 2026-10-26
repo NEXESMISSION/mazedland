@@ -983,7 +983,8 @@
     "listing_relist_failed": "Remise en ligne impossible. Réessayez.",
     "unknown_action": "Action inconnue. Rechargez la page.",
     "too_large": "Fichier trop volumineux.",
-    "empty_body": "Fichier vide."
+    "empty_body": "Fichier vide.",
+    "feature_off": "Cette fonctionnalité est désactivée pour le moment."
   },
   "notifications": {
     "listing_expiring": {
@@ -2373,45 +2374,11 @@
     "empty": "Aucune annonce publiée pour le moment."
   },
   "adminSettings": {
-    "eyebrow": "Paiement",
+    "eyebrow": "Console",
     "title": "Réglages",
-    "description": "Les coordonnées vers lesquelles les vendeurs règlent leurs frais de publication, par virement ou D17.",
+    "description": "Tout ce qui se change sans déploiement : les fonctionnalités, les règles, les limites, le contact et le paiement.",
     "noPayeeMethod": "<strong>Aucun moyen de paiement valide.</strong> La page de paiement est bloquée tant que ces champs sont vides ou contiennent les valeurs d'exemple : un vendeur ne doit jamais virer de l'argent vers un compte fictif.",
-    "pricesLink": "Les prix des annonces et des options se règlent dans <link>Offres</link>.",
-    "saveFailed": "Échec de l'enregistrement.",
-    "saved": "Réglages enregistrés.",
-    "payeeTitle": "Coordonnées du bénéficiaire",
-    "payeeHint": "Affichées au vendeur sur la page de paiement. Un moyen de paiement n'est proposé que si ses coordonnées sont renseignées.",
-    "fields": {
-      "name": "Bénéficiaire",
-      "bank": "Banque",
-      "rib": "RIB",
-      "iban": "IBAN",
-      "d17": "Numéro D17",
-      "companyName": "Raison sociale",
-      "companyTaxId": "Matricule fiscal",
-      "companyAddress": "Adresse",
-      "vatRate": "TVA en % (vide : pas de ligne TVA)"
-    },
-    "saving": "Enregistrement…",
-    "savedButton": "Enregistré",
-    "save": "Enregistrer",
-    "moderation": {
-      "title": "Gratuité et modération",
-      "hint": "Ce qui décide combien de travail le site fait seul. Pris en compte dès la prochaine annonce.",
-      "freeLimitLabel": "Annonces gratuites en ligne en même temps, par vendeur",
-      "freeLimitHint": "Au-delà, le vendeur paie la publication ou utilise un pack. 0 = tout est payant.",
-      "bannedWordsLabel": "Mots qui envoient une annonce en vérification manuelle",
-      "bannedWordsHint": "Un mot par ligne. L'annonce n'est pas refusée : un admin la lit avant publication.",
-      "limitInvalid": "Entrez un nombre entier entre 0 et 50.",
-      "save": "Enregistrer",
-      "saving": "Enregistrement…",
-      "saved": "Réglages de modération enregistrés.",
-      "savedButton": "Enregistré",
-      "saveFailed": "Enregistrement impossible."
-    },
-    "companyTitle": "Société (factures)",
-    "companyHint": "Copiés dans chaque facture au moment où elle est émise. Tant que le nom et le matricule fiscal sont vides, Mazed Immo émet des reçus de paiement, pas des factures."
+    "pricesLink": "Les prix des annonces et des options se règlent dans <link>Offres</link>."
   },
   "admin": {
     "console": "Console",
@@ -3948,5 +3915,281 @@
     "reference": "Référence du paiement",
     "noVat": "Montant toutes taxes comprises.",
     "receiptNote": "Ce reçu atteste le paiement. Il ne tient pas lieu de facture."
+  },
+  "settingsRegistry": {
+    "groups": {
+      "features": {
+        "title": "Fonctionnalités",
+        "hint": "Chaque partie du site, en marche ou à l'arrêt. Une fonctionnalité coupée disparaît du site et son API refuse ; ce qui existe déjà est gardé."
+      },
+      "moderation": {
+        "title": "Modération",
+        "hint": "Combien d'annonces sont gratuites, et ce qui fait passer une annonce par un admin avant sa publication."
+      },
+      "publication": {
+        "title": "Publication",
+        "hint": "Durée des annonces, photos et pages de recherche."
+      },
+      "buyers": {
+        "title": "Acheteurs",
+        "hint": "Visites, comparaison et demandes d'acheteurs."
+      },
+      "contact": {
+        "title": "Contact",
+        "hint": "Comment joindre Mazed Immo, tel qu'affiché sur le site."
+      },
+      "social": {
+        "title": "Réseaux et IA",
+        "hint": "Social Publisher et assistant d'annonce."
+      },
+      "payment": {
+        "title": "Paiement",
+        "hint": "Les coordonnées vers lesquelles les vendeurs paient, par virement ou D17. Laissez-les vides tant que vos démarches ne sont pas terminées : la page de paiement reste fermée."
+      },
+      "company": {
+        "title": "Société",
+        "hint": "Copié dans chaque facture au moment où elle est émise. Sans raison sociale ni matricule fiscal, les paiements reçoivent un reçu."
+      },
+      "limits": {
+        "title": "Limites",
+        "hint": "Combien de fois une même personne peut faire une chose : contre les abus et les robots."
+      }
+    },
+    "feature_visits": {
+      "label": "Demandes de visite",
+      "hint": "Le bouton « Demander une visite » sur les annonces. Coupé : plus de nouvelle demande ; celles en cours restent dans « Mes visites »."
+    },
+    "feature_compare": {
+      "label": "Comparer des annonces",
+      "hint": "La case « Comparer » sur les annonces, le bandeau et la page de comparaison."
+    },
+    "feature_requests": {
+      "label": "Demandes d'acheteurs",
+      "hint": "Un acheteur décrit ce qu'il cherche et il est prévenu des annonces qui y répondent. Coupé : plus de nouvelle demande ni d'alerte."
+    },
+    "feature_pro_signup": {
+      "label": "Ouverture de boutiques Pro",
+      "hint": "Les agences et promoteurs ouvrent une boutique depuis la page Pro. Coupé : plus de nouvelle boutique ; celles qui existent continuent."
+    },
+    "feature_promos": {
+      "label": "Mises en avant payantes",
+      "hint": "Un vendeur achète une place en page d'accueil, en tête de recherche ou en bannière. Coupé : plus d'achat ; les places en cours vont jusqu'au bout."
+    },
+    "social_enabled": {
+      "label": "Social Publisher",
+      "hint": "Un vendeur demande la publication de son annonce sur les pages Mazed Immo."
+    },
+    "ai_enabled": {
+      "label": "Assistant d'annonce (IA)",
+      "hint": "Rédige un brouillon d'annonce à partir de quelques mots. Ne marche qu'avec une clé API."
+    },
+    "feature_listing_edit": {
+      "label": "Modifier une annonce en ligne",
+      "hint": "Un vendeur corrige son annonce publiée ; elle passe hors ligne jusqu'à votre validation. Coupé : plus de modification."
+    },
+    "feature_reports": {
+      "label": "Signalements",
+      "hint": "Un visiteur signale une annonce douteuse ; au-delà du seuil, elle est retirée en attendant un admin."
+    },
+    "feature_price_help": {
+      "label": "Aide au prix",
+      "hint": "Dans le formulaire : le prix en toutes lettres, l'alerte « un zéro de trop » et l'estimation d'après les annonces semblables."
+    },
+    "feature_watermark": {
+      "label": "Logo sur les photos",
+      "hint": "Le logo Mazed Immo posé sur chaque nouvelle photo. Les photos déjà envoyées ne changent pas."
+    },
+    "feature_natural_search": {
+      "label": "Recherche en langage courant",
+      "hint": "« S+2 à La Marsa moins de 300 mille » est compris et devient des filtres."
+    },
+    "feature_arabic_redirect": {
+      "label": "Recherche en arabe → site en arabe",
+      "hint": "Une recherche tapée en arabe ouvre la version arabe du site."
+    },
+    "feature_whatsapp": {
+      "label": "Contact WhatsApp",
+      "hint": "Le lien WhatsApp de Mazed Immo sur la page contact, le paiement et la page Pro."
+    },
+    "free_listing_limit": {
+      "label": "Annonces gratuites en ligne en même temps",
+      "hint": "Par compte. Au-delà, il faut une boutique Pro. 0 : rien de gratuit."
+    },
+    "moderation_auto_publish": {
+      "label": "Publication automatique des vendeurs de confiance",
+      "hint": "Un vendeur déjà validé, sans signalement retenu, publie sans attendre si son annonce passe toutes les règles. Coupé : un admin lit chaque annonce."
+    },
+    "moderation_min_photos": {
+      "label": "Photos minimum pour la publication automatique",
+      "hint": "Avec moins, l'annonce passe par un admin."
+    },
+    "moderation_report_threshold": {
+      "label": "Signalements qui retirent une annonce",
+      "hint": "De personnes différentes. L'annonce est retirée jusqu'à ce qu'un admin la regarde."
+    },
+    "moderation_banned_words": {
+      "label": "Mots qui envoient en vérification",
+      "hint": "L'annonce n'est pas refusée : un admin la lit avant publication."
+    },
+    "listing_default_days": {
+      "label": "Durée d'une annonce",
+      "hint": "Quand l'offre ne fixe pas de durée. Une offre de la page Offres garde la sienne."
+    },
+    "listing_max_photos": {
+      "label": "Photos maximum par annonce",
+      "hint": "Le formulaire n'en accepte pas plus."
+    },
+    "catalogue_page_size": {
+      "label": "Annonces par page de recherche",
+      "hint": "Le catalogue en montre autant avant « page suivante »."
+    },
+    "visits_max_slots": {
+      "label": "Créneaux par demande de visite",
+      "hint": "L'acheteur en propose jusqu'à ce nombre ; le vendeur en choisit un."
+    },
+    "visits_horizon_days": {
+      "label": "Visites proposées jusqu'à",
+      "hint": "Combien de jours à l'avance un créneau peut être proposé."
+    },
+    "compare_max": {
+      "label": "Annonces comparées à la fois",
+      "hint": "Au-delà de 4, le tableau ne tient plus sur un téléphone."
+    },
+    "requests_max_active": {
+      "label": "Demandes actives par acheteur",
+      "hint": "Une demande expirée ou supprimée libère une place."
+    },
+    "requests_days": {
+      "label": "Durée d'une demande",
+      "hint": "Ensuite, l'acheteur n'est plus prévenu des nouvelles annonces."
+    },
+    "contact_whatsapp": {
+      "label": "Numéro WhatsApp",
+      "hint": "Messages seulement. Affiché sur la page contact, le paiement et la page Pro."
+    },
+    "contact_email": {
+      "label": "Adresse e-mail",
+      "hint": "Affichée sur la page contact."
+    },
+    "contact_phone": {
+      "label": "Téléphone",
+      "hint": "Affiché sur la page contact. Vide : pas de téléphone affiché."
+    },
+    "social_price_tnd": {
+      "label": "Prix d'une publication sur les réseaux",
+      "hint": "0 : gratuit."
+    },
+    "social_auto_approve": {
+      "label": "Accepter les demandes sans vérification",
+      "hint": "Coupé : un admin valide chaque demande avant publication."
+    },
+    "social_daily_limit": {
+      "label": "Publications sur les réseaux",
+      "hint": "Au-delà, les suivantes attendent le lendemain."
+    },
+    "ai_daily_budget_usd": {
+      "label": "Budget IA par jour (USD)",
+      "hint": "Une fois dépensé, l'assistant s'arrête jusqu'au lendemain."
+    },
+    "payee_name": {
+      "label": "Bénéficiaire",
+      "hint": "Le titulaire du compte, tel qu'il apparaît à la banque."
+    },
+    "payee_bank": {
+      "label": "Banque",
+      "hint": "Le nom de la banque."
+    },
+    "payee_rib": {
+      "label": "RIB",
+      "hint": "20 chiffres."
+    },
+    "payee_iban": {
+      "label": "IBAN",
+      "hint": "TN59 suivi du RIB."
+    },
+    "payee_d17": {
+      "label": "Numéro D17",
+      "hint": "Le numéro qui reçoit les paiements D17."
+    },
+    "company_name": {
+      "label": "Raison sociale",
+      "hint": "Tel qu'au registre du commerce."
+    },
+    "company_tax_id": {
+      "label": "Matricule fiscal",
+      "hint": "Avec la raison sociale, les paiements reçoivent une facture au lieu d'un reçu."
+    },
+    "company_address": {
+      "label": "Adresse",
+      "hint": "Imprimée sur chaque facture."
+    },
+    "invoice_vat_rate": {
+      "label": "TVA",
+      "hint": "Vide : pas de ligne TVA sur les factures."
+    },
+    "limit_visits_per_day": {
+      "label": "Demandes de visite par acheteur",
+      "hint": "Au-delà, il attend le lendemain."
+    },
+    "limit_reports_per_hour": {
+      "label": "Signalements par personne",
+      "hint": "Freine ceux qui signalent en masse."
+    },
+    "limit_edits_per_hour": {
+      "label": "Modifications d'annonce par vendeur",
+      "hint": "Chaque modification passe par un admin : ceci évite d'en être inondé."
+    },
+    "limit_phone_reveals_per_hour": {
+      "label": "Numéros affichés par connexion",
+      "hint": "Freine ceux qui aspirent les numéros des vendeurs."
+    },
+    "limit_suggestions_per_day": {
+      "label": "Propositions d'une boutique aux demandes",
+      "hint": "Par boutique."
+    },
+    "limit_shop_create_per_hour": {
+      "label": "Créations de boutique par personne",
+      "hint": "Contre les inscriptions en série."
+    },
+    "sms_daily_cap": {
+      "label": "SMS par personne",
+      "hint": "Au-delà, les avis suivants restent dans le site. 0 : aucun SMS."
+    },
+    "units": {
+      "days": "jours",
+      "tnd": "DT",
+      "percent": "%",
+      "photos": "photos",
+      "per_hour": "par heure",
+      "per_day": "par jour"
+    },
+    "ui": {
+      "tabsLabel": "Parties des réglages",
+      "manage": "Gérer",
+      "reset": "Rétablir la valeur par défaut",
+      "default": "Par défaut : {value}",
+      "defaultOn": "Par défaut : activé",
+      "defaultOff": "Par défaut : désactivé",
+      "defaultEmpty": "Par défaut : vide",
+      "range": "de {min} à {max}",
+      "listHint": "un par ligne",
+      "on": "Activé",
+      "off": "Désactivé",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saveCount": "{count, plural, one {Enregistrer # changement} other {Enregistrer # changements}}",
+      "saved": "Réglages enregistrés.",
+      "savedButton": "Enregistré",
+      "saveFailed": "Enregistrement impossible.",
+      "fixErrors": "Corrigez les champs en rouge."
+    },
+    "errors": {
+      "invalid_bool": "Choisissez oui ou non.",
+      "invalid_number": "Entrez un nombre.",
+      "out_of_range": "Entre {min} et {max}.",
+      "invalid_text": "Entrez un texte.",
+      "too_long": "{max} caractères au plus.",
+      "invalid_list": "Un élément par ligne."
+    }
   }
 }

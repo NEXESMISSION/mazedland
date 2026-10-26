@@ -2,29 +2,19 @@ import type { getServiceSupabase } from "@/lib/supabase/admin";
 import { publishListing } from "@/lib/listings/publish";
 import { asDealType } from "@/lib/listings/deal";
 import { checkListing, sameTitle, type CategoryKind, type ReviewFlag } from "./rules";
+import { loadSettings } from "@/lib/settings/server";
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
 
 /** Statuses that occupy one of a seller's free places. */
 const LIVE = ["pending_review", "published"] as const;
 
-const DEFAULT_FREE_LIMIT = 2;
-
 export type ModerationSettings = { freeLimit: number; bannedWords: string[] };
 
-/** The two settings an admin changes in /admin/settings (0165). */
+/** What an admin sets in /admin/settings → Modération (registry defaults otherwise). */
 export async function moderationSettings(admin: Admin): Promise<ModerationSettings> {
-  const { data } = await admin
-    .from("app_settings")
-    .select("key, value")
-    .in("key", ["free_listing_limit", "moderation_banned_words"]);
-  const byKey = new Map((data ?? []).map((r) => [r.key as string, r.value as unknown]));
-  const limit = Number(byKey.get("free_listing_limit"));
-  const words = byKey.get("moderation_banned_words");
-  return {
-    freeLimit: Number.isFinite(limit) && limit >= 0 ? Math.floor(limit) : DEFAULT_FREE_LIMIT,
-    bannedWords: Array.isArray(words) ? words.filter((w): w is string => typeof w === "string") : [],
-  };
+  const s = await loadSettings(admin);
+  return { freeLimit: s.free_listing_limit, bannedWords: s.moderation_banned_words };
 }
 
 /** Annonces the seller has live or waiting, not counting `excludeId`. */

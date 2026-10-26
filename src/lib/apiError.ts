@@ -34,6 +34,8 @@ export const API_ERROR_CODES = [
   "unknown_action",
   "too_large",
   "empty_body",
+  // A feature an admin switched off in /admin/settings (src/lib/settings/gate.ts).
+  "feature_off",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

@@ -7,6 +7,7 @@
  * checked who is asking.
  */
 import type { getServiceSupabase } from "@/lib/supabase/admin";
+import { loadSettings } from "@/lib/settings/server";
 import { PRODUCTION_ORIGIN, siteUrl } from "@/lib/siteUrl";
 import { coverPhoto } from "@/lib/listingCover";
 import { asDealType, type DealType } from "@/lib/listings/deal";
@@ -24,19 +25,8 @@ export const CONSENT_VERSION = "2026-10-social-v1";
 export type SocialSettings = { enabled: boolean; priceTnd: number; autoApprove: boolean; dailyLimit: number };
 
 export async function socialSettings(admin: Admin): Promise<SocialSettings> {
-  const { data } = await admin
-    .from("app_settings")
-    .select("key, value")
-    .in("key", ["social_enabled", "social_price_tnd", "social_auto_approve", "social_daily_limit"]);
-  const byKey = new Map((data ?? []).map((r) => [r.key as string, r.value as unknown]));
-  const price = Number(byKey.get("social_price_tnd"));
-  const limit = Number(byKey.get("social_daily_limit"));
-  return {
-    enabled: byKey.get("social_enabled") !== false,
-    priceTnd: Number.isFinite(price) && price >= 0 ? price : 0,
-    autoApprove: byKey.get("social_auto_approve") === true,
-    dailyLimit: Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 10,
-  };
+  const s = await loadSettings(admin);
+  return { enabled: s.social_enabled, priceTnd: s.social_price_tnd, autoApprove: s.social_auto_approve, dailyLimit: s.social_daily_limit };
 }
 
 /** The site's address for the links in a post; the request's own origin when it has none (local). */
