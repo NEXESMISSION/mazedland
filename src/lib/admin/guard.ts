@@ -2,10 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { User } from "@supabase/supabase-js";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { canOpen, scopesFromRow, type AdminScopes, type ConsoleSection } from "./sections";
 
 export type AdminContext = {
   user: User;
   supabase: Awaited<ReturnType<typeof getServerSupabase>>;
+  /** `null` = the whole console (src/lib/admin/sections.ts). */
+  scopes: AdminScopes;
 };
 
 /**
@@ -25,9 +28,14 @@ export type AdminContext = {
  *
  * The error shapes are kept byte-for-byte identical to the old inline block so
  * existing client error handling keeps working unchanged.
+ *
+ * `section` names the screen the route serves (src/lib/admin/sections.ts); a
+ * team member without it gets 403 `forbidden_section`. A route whose actions
+ * belong to different sections checks the rest itself with `canOpen`.
  */
 export async function requireAdmin(
   req: NextRequest,
+  section?: ConsoleSection,
 ): Promise<AdminContext | NextResponse> {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
@@ -40,12 +48,16 @@ export async function requireAdmin(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, admin_scopes")
     .eq("id", user.id)
     .single();
   if (profile?.role !== "admin") {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
+  const scopes = scopesFromRow(profile.admin_scopes);
+  if (!canOpen(scopes, section)) {
+    return NextResponse.json({ error: "forbidden_section", section }, { status: 403 });
+  }
 
-  return { user, supabase };
+  return { user, supabase, scopes };
 }

@@ -12,7 +12,7 @@ import { apiTranslator } from "@/lib/i18n/server";
  *   checked who they are, and paying never sets it.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "agences");
   if (gate instanceof NextResponse) return gate;
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);

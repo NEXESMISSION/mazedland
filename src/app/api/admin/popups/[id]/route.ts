@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { canOpen, scopesFromRow } from "@/lib/admin/sections";
 import { sanitizePopupBody } from "../route";
 
 /**
@@ -18,9 +19,12 @@ async function requireAdmin() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "auth", status: 401 as const, supabase: null };
   const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
+    .from("profiles").select("role, admin_scopes").eq("id", user.id).single();
   if (profile?.role !== "admin") {
     return { error: "forbidden", status: 403 as const, supabase: null };
+  }
+  if (!canOpen(scopesFromRow(profile.admin_scopes), "popups")) {
+    return { error: "forbidden_section", status: 403 as const, supabase: null };
   }
   return { error: null, status: 200 as const, supabase, user };
 }

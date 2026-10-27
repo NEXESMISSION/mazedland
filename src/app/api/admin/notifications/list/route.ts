@@ -23,7 +23,7 @@ import { fail } from "@/lib/http/errors";
  * RLS: relies on the `notifications_admin_read` policy in migration 0033.
  */
 export async function GET(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "notifications");
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
 

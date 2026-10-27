@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
  * /admin/popups/new — blank form. Auth is enforced by the admin layout.
  */
 export default async function NewPopupPage() {
-  await requireAdmin();
+  await requireAdmin("popups");
   const t = await getTranslations("adminPopups");
   return (
     <div>

@@ -15,7 +15,7 @@ import { runDueSocialJobs } from "@/lib/social/engine";
  * the next cron run; a scheduled one waits for its time.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "social");
   if (gate instanceof NextResponse) return gate;
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);

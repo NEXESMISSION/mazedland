@@ -15,7 +15,7 @@ import { fail } from "@/lib/http/errors";
  * placements are tagged promo_manual=true so the UI can show Manuel vs Payé.
  */
 export async function POST(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "home");
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
 

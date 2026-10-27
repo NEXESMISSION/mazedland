@@ -33,7 +33,7 @@ export default async function AdminHomePage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdmin("home");
   const { q: qParam } = await searchParams;
   const q = (qParam ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
   const supabase = await getServerSupabase();

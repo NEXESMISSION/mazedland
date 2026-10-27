@@ -13,6 +13,9 @@ import {
 import { NavIcon } from "./kit/LinkPending";
 import { InstallAppButton } from "./InstallAppButton";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
+import { useCanOpen } from "./AdminScopes";
+import type { ConsoleSection } from "@/lib/admin/sections";
+import { SITE_TABS } from "./kit/SiteTabs";
 
 /**
  * Console navigation.
@@ -36,6 +39,8 @@ type Item = {
   Icon: LucideIcon;
   /** Key into the `counts` map — a badge for work that is waiting. */
   countKey?: CountKey;
+  /** The team section it belongs to (src/lib/admin/sections.ts); none = every member. */
+  section?: ConsoleSection;
 };
 
 export type CountKey = "annonces" | "paiements" | "social" | "boutiques";
@@ -43,16 +48,16 @@ export type AdminCounts = Partial<Record<CountKey, number>>;
 
 const NAV: Item[] = [
   { key: "dashboard", href: "/admin", Icon: LayoutDashboard },
-  { key: "results", href: "/admin/resultats", Icon: BarChart3 },
-  { key: "listings", href: "/admin/annonces", Icon: Inbox, countKey: "annonces" },
-  { key: "demandes", href: "/admin/demandes", Icon: BellRing },
-  { key: "social", href: "/admin/social", Icon: Megaphone, countKey: "social" },
-  { key: "ads", href: "/admin/publicites", Icon: GalleryHorizontalEnd },
-  { key: "payments", href: "/admin/paiements", Icon: Receipt, countKey: "paiements" },
-  { key: "shops", href: "/admin/agences", Icon: Store, countKey: "boutiques" },
-  { key: "offers", href: "/admin/offres", Icon: Tag },
-  { key: "sellers", href: "/admin/vendeurs", Icon: Users },
-  { key: "catalogue", href: "/admin/catalogue", Icon: FolderTree },
+  { key: "results", href: "/admin/resultats", Icon: BarChart3, section: "resultats" },
+  { key: "listings", href: "/admin/annonces", Icon: Inbox, countKey: "annonces", section: "annonces" },
+  { key: "demandes", href: "/admin/demandes", Icon: BellRing, section: "demandes" },
+  { key: "social", href: "/admin/social", Icon: Megaphone, countKey: "social", section: "social" },
+  { key: "ads", href: "/admin/publicites", Icon: GalleryHorizontalEnd, section: "publicites" },
+  { key: "payments", href: "/admin/paiements", Icon: Receipt, countKey: "paiements", section: "paiements" },
+  { key: "shops", href: "/admin/agences", Icon: Store, countKey: "boutiques", section: "agences" },
+  { key: "offers", href: "/admin/offres", Icon: Tag, section: "offres" },
+  { key: "sellers", href: "/admin/vendeurs", Icon: Users, section: "vendeurs" },
+  { key: "catalogue", href: "/admin/catalogue", Icon: FolderTree, section: "catalogue" },
 ];
 
 
@@ -82,6 +87,9 @@ function NavList({
 }) {
   const pathname = usePathname();
   const t = useTranslations("admin.nav");
+  const canOpen = useCanOpen();
+  // Site is shown when at least one of its screens is this member's.
+  const siteOpen = SITE_TABS.some((tab) => canOpen(tab.section));
 
   // `/admin` must match exactly — every other route starts with it, so a
   // prefix test lights the dashboard up on every single screen.
@@ -124,11 +132,13 @@ function NavList({
 
   return (
     <nav className="min-h-0 flex-1 overflow-y-auto py-3">
-      <ul>{NAV.map(render)}</ul>
+      <ul>{NAV.filter((item) => canOpen(item.section)).map(render)}</ul>
 
-      <ul className="mt-4 border-t border-border pt-3">
-        {render(SITE)}
-      </ul>
+      {siteOpen && (
+        <ul className="mt-4 border-t border-border pt-3">
+          {render(SITE)}
+        </ul>
+      )}
     </nav>
   );
 }

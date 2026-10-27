@@ -60,7 +60,7 @@ export default async function AdminPaiementsPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdmin("paiements");
   const sp = await searchParams;
   const t = await getTranslations("adminPayments");
   const locale = await getLocale();

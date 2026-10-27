@@ -54,7 +54,7 @@ export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "annonces");
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
   const { id } = await ctx.params;

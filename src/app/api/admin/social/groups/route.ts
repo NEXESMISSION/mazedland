@@ -8,7 +8,7 @@ import { parseGroupInput } from "@/lib/social/groups";
 
 /** POST /api/admin/social/groups — add a Facebook group to the directory (0170). */
 export async function POST(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "social");
   if (gate instanceof NextResponse) return gate;
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);

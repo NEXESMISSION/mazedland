@@ -30,7 +30,7 @@ export const revalidate = 0;
  * Auth is enforced by the admin layout one level up (role=admin redirect).
  */
 export default async function AdminPopupsPage() {
-  await requireAdmin();
+  await requireAdmin("popups");
   const t = await getTranslations("adminPopups");
   const locale = await getLocale();
   const supabase = await getServerSupabase();

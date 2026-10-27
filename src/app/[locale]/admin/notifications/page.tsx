@@ -18,7 +18,7 @@ import { getTranslations } from "next-intl/server";
  * /api/admin/notifications/* routes block non-admin access.
  */
 export default async function AdminNotificationsPage() {
-  await requireAdmin();
+  await requireAdmin("notifications");
   const t = await getTranslations("adminNotifications");
   return (
     <div>

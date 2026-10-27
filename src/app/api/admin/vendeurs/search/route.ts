@@ -20,7 +20,7 @@ const LIMIT = 8;
 const MIN_CHARS = 2;
 
 export async function GET(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "vendeurs");
   if (gate instanceof NextResponse) return gate;
 
   const admin = getServiceSupabase();

@@ -4,8 +4,9 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { formatNumber } from "@/lib/utils";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
+import { canOpen, type ConsoleSection } from "@/lib/admin/sections";
 import {
-  LayoutTemplate, MessageSquare, FileText, Bell, Settings2, Activity,
+  LayoutTemplate, MessageSquare, FileText, Bell, Settings2, Activity, UsersRound,
   ArrowRight, type LucideIcon,
 } from "lucide-react";
 
@@ -22,15 +23,17 @@ export const revalidate = 0;
 
 /** Each card's words live under `adminSite.cards.<key>`. */
 type Card = {
-  key: "home" | "popups" | "legalDocs" | "notifications" | "settings" | "activity";
+  key: "home" | "popups" | "legalDocs" | "notifications" | "settings" | "activity" | "team";
   href: string;
   Icon: LucideIcon;
+  /** The team section it belongs to; a member sees only theirs. */
+  section: ConsoleSection;
   /** Shown as `cards.<key>.count`, which only the counted cards have. */
   count?: number;
 };
 
 export default async function AdminSiteHub() {
-  await requireAdmin();
+  const { scopes } = await requireAdmin();
   const t = await getTranslations("adminSite");
   const locale = await getLocale();
   const sb = await getServerSupabase();
@@ -44,14 +47,15 @@ export default async function AdminSiteHub() {
 
   const n = (r: { count: number | null }) => r.count ?? 0;
 
-  const cards: Card[] = [
-    { key: "home", href: "/admin/home", Icon: LayoutTemplate },
-    { key: "popups", href: "/admin/popups", Icon: MessageSquare, count: n(popups) },
-    { key: "legalDocs", href: "/admin/legal-docs", Icon: FileText, count: n(docs) },
-    { key: "notifications", href: "/admin/notifications", Icon: Bell, count: n(notifs) },
-    { key: "settings", href: "/admin/settings", Icon: Settings2 },
-    { key: "activity", href: "/admin/activity", Icon: Activity },
-  ];
+  const cards: Card[] = ([
+    { key: "home", href: "/admin/home", Icon: LayoutTemplate, section: "home" },
+    { key: "popups", href: "/admin/popups", Icon: MessageSquare, count: n(popups), section: "popups" },
+    { key: "legalDocs", href: "/admin/legal-docs", Icon: FileText, count: n(docs), section: "legal-docs" },
+    { key: "notifications", href: "/admin/notifications", Icon: Bell, count: n(notifs), section: "notifications" },
+    { key: "settings", href: "/admin/settings", Icon: Settings2, section: "settings" },
+    { key: "activity", href: "/admin/activity", Icon: Activity, section: "activity" },
+    { key: "team", href: "/admin/equipe", Icon: UsersRound, section: "equipe" },
+  ] satisfies Card[]).filter((c) => canOpen(scopes, c.section));
 
   return (
     <AdminPage>

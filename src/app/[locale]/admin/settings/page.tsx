@@ -26,7 +26,7 @@ type Group = (typeof SETTING_GROUPS)[number];
  * is read by the code (the registry is the list the code reads from).
  */
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ g?: string }> }) {
-  await requireAdmin();
+  await requireAdmin("settings");
   const sp = await searchParams;
   const group: Group = (SETTING_GROUPS as readonly string[]).includes(sp.g ?? "") ? (sp.g as Group) : "features";
   const t = await getTranslations("adminSettings");

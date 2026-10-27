@@ -3,6 +3,7 @@ import { canBuy, placementOf, promoEnd } from "@/lib/promo";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
+import { audit } from "@/lib/admin/audit";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { nextPeriodStart } from "@/lib/pro/shops";
@@ -46,7 +47,7 @@ export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "paiements");
   if (gate instanceof NextResponse) return gate;
   const { user, supabase } = gate;
   const { id } = await ctx.params;
@@ -247,6 +248,10 @@ export async function POST(
     }
 
     logAction(req, user, "admin.payment.accept", { id, kind: pay.kind, granted });
+    await audit(admin, user.id, {
+      action: "payment.accept", targetType: "payment", targetId: id,
+      before: { status: pay.status }, after: { status: "captured", kind: pay.kind, amount: pay.amount, granted },
+    });
     return NextResponse.json({ ok: true, status: "captured", granted });
   }
 
@@ -297,6 +302,10 @@ export async function POST(
     }
 
     logAction(req, user, "admin.payment.reject", { id, kind: pay.kind });
+    await audit(admin, user.id, {
+      action: "payment.reject", targetType: "payment", targetId: id,
+      before: { status: pay.status }, after: { status: "failed", kind: pay.kind, amount: pay.amount }, note: reason,
+    });
     return NextResponse.json({ ok: true, status: "failed" });
   }
 

@@ -65,7 +65,7 @@ export default async function AdminAdsPage({
 }: {
   searchParams: Promise<{ a?: string; v?: string; status?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdmin("publicites");
   const sp = await searchParams;
   const t = await getTranslations("adminAds");
   const locale = await getLocale();

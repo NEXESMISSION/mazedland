@@ -15,7 +15,7 @@ import { hasContactInText } from "@/lib/moderation/rules";
  * must stay: it is how the engine recognises the post after a timeout.
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "social");
   if (gate instanceof NextResponse) return gate;
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);

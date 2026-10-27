@@ -19,7 +19,7 @@ export default async function EditPopupPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
+  await requireAdmin("popups");
   const { id } = await params;
   const supabase = await getServerSupabase();
   const { data, error } = await supabase

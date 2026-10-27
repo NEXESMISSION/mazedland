@@ -12,6 +12,7 @@ import { formatNumber, formatRelativeTime } from "@/lib/utils";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { actionText } from "@/lib/admin/actions";
 import { fetchPayeeDetails, usablePayeeMethods } from "@/lib/payments";
+import { canOpen, type ConsoleSection } from "@/lib/admin/sections";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +46,9 @@ const CONSOLE_PAYMENT_KINDS = [
 ];
 
 export default async function AdminDashboard() {
-  await requireAdmin();
+  const { scopes } = await requireAdmin();
+  // A team member sees the queues, warnings and journal of their own sections.
+  const can = (section: ConsoleSection) => canOpen(scopes, section);
   const sb = await getServerSupabase();
   const locale = await getLocale();
   const t = await getTranslations("adminDashboard");
@@ -88,8 +91,9 @@ export default async function AdminDashboard() {
       .not("action", "like", "server.%")
       .order("created_at", { ascending: false })
       .limit(10),
-    // Read as the admin, who can select app_settings.
-    fetchPayeeDetails(sb),
+    // Read as the admin, who can select app_settings — a full admin only
+    // since 0178; the warning below is theirs.
+    can("settings") ? fetchPayeeDetails(sb) : null,
   ]);
 
   // Whether the site can take money at all.
@@ -102,6 +106,7 @@ export default async function AdminDashboard() {
   // impossible and the console said nothing. It says it here now, first thing,
   // on the page an operator opens every morning.
   const canTakeMoney = (() => {
+    if (!payee) return true;
     const u = usablePayeeMethods(payee);
     return u.bank_transfer || u.d17;
   })();
@@ -110,6 +115,7 @@ export default async function AdminDashboard() {
 
   const queues = [
     {
+      section: "annonces",
       label: t("queues.listings"),
       sub: t("queues.listingsSub"),
       href: "/admin/annonces?status=pending_review",
@@ -117,6 +123,7 @@ export default async function AdminDashboard() {
       overdue: n(listingsOverdue),
     },
     {
+      section: "paiements",
       label: t("queues.receipts"),
       sub: t("queues.receiptsSub"),
       href: "/admin/paiements",
@@ -124,6 +131,7 @@ export default async function AdminDashboard() {
       overdue: n(paymentsOverdue),
     },
     {
+      section: "annonces",
       label: t("queues.expiring"),
       sub: t("queues.expiringSub"),
       href: "/admin/annonces?status=expiring",
@@ -131,16 +139,17 @@ export default async function AdminDashboard() {
       overdue: 0,
     },
     {
+      section: "annonces",
       label: t("queues.expired"),
       sub: t("queues.expiredSub"),
       href: "/admin/annonces?status=expired",
       count: n(expired),
       overdue: 0,
     },
-  ];
+  ].filter((q) => can(q.section as ConsoleSection));
 
-  const totalPending = n(listingsPending) + n(paymentsPending);
-  const totalOverdue = n(listingsOverdue) + n(paymentsOverdue);
+  const totalPending = (can("annonces") ? n(listingsPending) : 0) + (can("paiements") ? n(paymentsPending) : 0);
+  const totalOverdue = (can("annonces") ? n(listingsOverdue) : 0) + (can("paiements") ? n(paymentsOverdue) : 0);
 
   return (
     <AdminPage>
@@ -233,6 +242,7 @@ export default async function AdminDashboard() {
         </ul>
       </section>
 
+      {can("activity") && (
       <section className="mt-9">
         <div className="flex items-baseline justify-between gap-4">
           <h2 className={EYEBROW}>{t("recentTitle")}</h2>
@@ -272,6 +282,7 @@ export default async function AdminDashboard() {
           </p>
         )}
       </section>
+      )}
 
       {/* A "Reliquat des enchères" strip stood here, counting cautions still
           owed back to bidders. `auction_deposits` was dropped in 0153, and a

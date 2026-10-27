@@ -18,7 +18,7 @@ import { parseAdInput } from "@/lib/ads/input";
  * Admin-only, through the service role: `ads` is closed to every client role.
  */
 export async function GET(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "publicites");
   if (gate instanceof NextResponse) return gate;
 
   const admin = getServiceSupabase();
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "publicites");
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
 

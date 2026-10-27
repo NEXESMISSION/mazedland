@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { getAdminSession } from "@/lib/admin/session";
+import { canOpen } from "@/lib/admin/sections";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { logAction } from "@/lib/activity";
 import { log } from "@/lib/log";
@@ -27,8 +28,8 @@ export async function GET(req: NextRequest) {
     return res;
   };
 
-  const { user, isAdmin } = await getAdminSession();
-  if (!user || !isAdmin) return NextResponse.redirect(new URL(`/${locale}/login`, req.nextUrl.origin));
+  const { user, isAdmin, scopes } = await getAdminSession();
+  if (!user || !isAdmin || !canOpen(scopes, "social")) return NextResponse.redirect(new URL(`/${locale}/login`, req.nextUrl.origin));
 
   const sp = req.nextUrl.searchParams;
   if (sp.get("error")) return back("error=denied");

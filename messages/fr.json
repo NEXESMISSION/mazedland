@@ -2498,6 +2498,10 @@
       "activity": {
         "label": "Journal d'activité",
         "description": "Qui a fait quoi, et quand. La trace d'audit de la console."
+      },
+      "team": {
+        "label": "Équipe",
+        "description": "Qui a accès à la console et à quelles sections ; le journal des changements sensibles."
       }
     }
   },
@@ -2578,7 +2582,8 @@
       "documents": "Documents",
       "broadcasts": "Diffusions",
       "settings": "Réglages",
-      "journal": "Journal"
+      "journal": "Journal",
+      "team": "Équipe"
     },
     "pager": {
       "previous": "Précédent",
@@ -2644,7 +2649,8 @@
       "not_found": "Cette ligne n'existe plus — elle a peut-être été supprimée.",
       "conflict": "L'état a changé depuis le chargement. Rechargez la page.",
       "invalid": "Données invalides.",
-      "rate_limited": "Trop de requêtes. Patientez un instant."
+      "rate_limited": "Trop de requêtes. Patientez un instant.",
+      "forbidden_section": "Cette section ne fait pas partie de votre accès."
     },
     "actionFailed": "L'action a échoué.",
     "actionDone": "C'est fait.",
@@ -3061,7 +3067,10 @@
     "admin_ad_delete": "Publicité supprimée",
     "admin_ad_upload": "Image de publicité envoyée",
     "listing_draft_delete": "Brouillon supprimé",
-    "listing_relist_free_limit": "Remise en ligne bloquée (places gratuites prises)"
+    "listing_relist_free_limit": "Remise en ligne bloquée (places gratuites prises)",
+    "admin_team_add": "Membre ajouté à l'équipe",
+    "admin_team_update": "Accès d'un membre modifié",
+    "admin_team_remove": "Membre retiré de l'équipe"
   },
   "adminApi": {
     "bulk": {
@@ -3096,7 +3105,8 @@
       "selfBan": "Vous ne pouvez pas suspendre votre propre compte.",
       "choosePack": "Choisissez un forfait.",
       "packNoQuota": "Ce forfait n'accorde aucune publication.",
-      "revokeReasonRequired": "Indiquez pourquoi le badge est retiré."
+      "revokeReasonRequired": "Indiquez pourquoi le badge est retiré.",
+      "lastFullAdmin": "C'est le dernier admin complet : nommez-en un autre d'abord."
     }
   },
   "notificationMail": {
@@ -4709,6 +4719,138 @@
       "dates": "Les dates ne vont pas : le dernier jour doit venir après le début.",
       "imageType": "JPG, PNG ou WebP seulement.",
       "imageSize": "Image trop lourde : {max} Mo au plus."
+    }
+  },
+  "adminTeam": {
+    "eyebrow": "Console",
+    "title": "Équipe",
+    "description": "Qui a accès à la console, et à quelles sections. Un modérateur ne voit pas les paiements, la finance ne voit pas la modération. Le journal garde chaque changement sensible, avant et après.",
+    "unavailable": "L'équipe est indisponible pour le moment.",
+    "noName": "Sans nom",
+    "access": "Accès",
+    "save": "Enregistrer",
+    "saved": "Accès enregistré.",
+    "tabs": {
+      "label": "Vues de l'équipe",
+      "members": "Membres ({count})",
+      "journal": "Journal des changements sensibles"
+    },
+    "presets": {
+      "full": {
+        "label": "Admin complet",
+        "hint": "Toute la console, y compris les réglages et l'équipe."
+      },
+      "moderation": {
+        "label": "Modération",
+        "hint": "Annonces, demandes, vendeurs, agences, réseaux."
+      },
+      "finance": {
+        "label": "Finance",
+        "hint": "Paiements, offres et prix, résultats."
+      },
+      "content": {
+        "label": "Contenu",
+        "hint": "Accueil, publicités, popups, diffusions, documents, catalogue, réseaux."
+      },
+      "custom": {
+        "label": "Sur mesure",
+        "hint": "Cochez les sections une par une."
+      }
+    },
+    "sections": {
+      "annonces": "Annonces",
+      "demandes": "Demandes",
+      "vendeurs": "Vendeurs",
+      "agences": "Agences",
+      "social": "Réseaux",
+      "paiements": "Paiements",
+      "offres": "Offres & prix",
+      "resultats": "Résultats",
+      "publicites": "Publicités",
+      "home": "Accueil",
+      "popups": "Popups",
+      "notifications": "Diffusions",
+      "legal-docs": "Documents légaux",
+      "catalogue": "Catalogue",
+      "activity": "Journal d'activité"
+    },
+    "members": {
+      "title": "Membres de la console",
+      "you": "Vous",
+      "banned": "Banni",
+      "selfHint": "votre propre accès se change par un autre admin complet.",
+      "remove": "Retirer de l'équipe",
+      "removeTitle": "Retirer {name} de l'équipe ?",
+      "removeBody": "Son compte redevient un compte ordinaire : ses annonces et son agence restent les siennes, la console lui est fermée.",
+      "removed": "Retiré de l'équipe."
+    },
+    "add": {
+      "title": "Ajouter un membre",
+      "hint": "Cherchez un compte existant par nom ou téléphone, puis choisissez son rôle. La personne doit d'abord avoir créé son compte sur le site.",
+      "search": "Nom ou téléphone…",
+      "change": "Changer",
+      "already": "Déjà dans l'équipe",
+      "submit": "Ajouter à l'équipe",
+      "done": "{name} a rejoint l'équipe."
+    },
+    "journal": {
+      "hint": "Chaque entrée est définitive : personne ne peut la modifier ni l'effacer. Les coordonnées bancaires n'y paraissent que masquées.",
+      "empty": "Aucun changement sensible enregistré pour l'instant.",
+      "someone": "Un membre",
+      "system": "Le système",
+      "actions": {
+        "team_add": "Membre ajouté",
+        "team_update": "Accès modifié",
+        "team_remove": "Membre retiré",
+        "user_set_role": "Rôle changé",
+        "user_ban": "Compte banni",
+        "user_unban": "Compte rétabli",
+        "credits_grant": "Crédits offerts",
+        "badge_grant": "Badge accordé",
+        "badge_revoke": "Badge retiré",
+        "payment_accept": "Paiement validé",
+        "payment_reject": "Paiement refusé",
+        "product_create": "Offre créée",
+        "product_update": "Offre modifiée",
+        "product_deactivate": "Offre désactivée",
+        "settings_update": "Réglages modifiés"
+      },
+      "fields": {
+        "role": "Rôle",
+        "admin_scopes": "Accès",
+        "banned": "Banni",
+        "banned_at": "Banni le",
+        "status": "Statut",
+        "amount": "Montant",
+        "kind": "Type",
+        "quota": "Publications",
+        "days": "Jours",
+        "price": "Prix",
+        "is_active": "Active",
+        "listing_quota": "Publications",
+        "duration_days": "Durée (jours)",
+        "name_fr": "Nom",
+        "name_ar": "Nom (arabe)",
+        "product_id": "Offre",
+        "granted": "Accordé",
+        "revoked": "Retiré",
+        "slug": "Identifiant"
+      },
+      "values": {
+        "pending_review": "En attente de vérification",
+        "pending": "En attente",
+        "failed": "Refusé",
+        "captured": "Validé",
+        "individual": "Particulier",
+        "agency": "Agence",
+        "admin": "Admin"
+      }
+    },
+    "api": {
+      "self": "Votre propre accès se change par un autre admin complet.",
+      "banned": "Ce compte est banni : rétablissez-le d'abord.",
+      "chooseSections": "Choisissez au moins une section.",
+      "lastFullAdmin": "C'est le dernier admin complet : nommez-en un autre d'abord."
     }
   }
 }

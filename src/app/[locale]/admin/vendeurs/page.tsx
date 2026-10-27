@@ -36,7 +36,7 @@ export default async function AdminVendeursPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdmin("vendeurs");
   const sp = await searchParams;
   const admin = getServiceSupabase();
   const locale = await getLocale();

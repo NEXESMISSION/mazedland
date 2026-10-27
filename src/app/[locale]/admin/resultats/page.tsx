@@ -51,7 +51,7 @@ type Month = {
 const dealOf = (v: unknown): Deal => (v === "rent" ? "rent" : "sale");
 
 export default async function AdminResults() {
-  await requireAdmin();
+  await requireAdmin("resultats");
   const t = await getTranslations("adminResults");
   const locale = await getLocale();
   const admin = getServiceSupabase();

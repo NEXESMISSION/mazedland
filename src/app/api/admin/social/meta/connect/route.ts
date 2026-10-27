@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
 import { getAdminSession } from "@/lib/admin/session";
+import { canOpen } from "@/lib/admin/sections";
 import { requestLocale } from "@/lib/i18n/server";
 import { callbackUrl, metaConfig, STATE_COOKIE } from "@/lib/social/connect";
 import { oauthDialogUrl } from "@/lib/social/meta";
@@ -14,8 +15,8 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: NextRequest) {
   const locale = requestLocale(req);
-  const { user, isAdmin } = await getAdminSession();
-  if (!user || !isAdmin) return NextResponse.redirect(new URL(`/${locale}/login`, req.nextUrl.origin));
+  const { user, isAdmin, scopes } = await getAdminSession();
+  if (!user || !isAdmin || !canOpen(scopes, "social")) return NextResponse.redirect(new URL(`/${locale}/login`, req.nextUrl.origin));
 
   const config = metaConfig();
   if (!config) {

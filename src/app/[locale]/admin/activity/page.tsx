@@ -125,7 +125,7 @@ export default async function AdminActivity({
 }: {
   searchParams: Promise<{ q?: string; type?: string; range?: string; page?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdmin("activity");
   const { q: qP, type: typeP, range: rangeP, page: pageP } = await searchParams;
   const t = await getTranslations("adminActivity");
   const locale = await getLocale();

@@ -33,7 +33,7 @@ export default async function AdminCataloguePage({
 }: {
   searchParams: Promise<{ a?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdmin("catalogue");
   const sp = await searchParams;
   const t = await getTranslations("adminCatalogue");
   const locale = await getLocale();
