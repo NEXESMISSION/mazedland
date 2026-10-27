@@ -135,7 +135,7 @@ const ATTRIBUTE_BOUNDS: Record<string, [min: number, max: number]> = {
   area_sqm: [1, 10_000_000],
   rooms: [0, 50],
   bathrooms: [0, 20],
-  floor: [-3, 100],
+  floor: [0, 100],
   year_built: [1850, new Date().getFullYear() + 3],
 };
 
