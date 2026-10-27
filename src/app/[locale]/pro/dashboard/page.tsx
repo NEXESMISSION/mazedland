@@ -436,7 +436,8 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
   async function PlanTab({ shopId, role: actor, approved, current: running }: { shopId: string; role: ShopRole; approved: boolean; current: Awaited<ReturnType<typeof activePlan>> }) {
     const [{ data: planRows }, { data: periods }, open] = await Promise.all([
       admin!.from("products").select("slug, name_fr, name_ar, price, listing_quota").eq("kind", "subscription").eq("is_active", true).order("price"),
-      admin!.from("shop_subscriptions").select("starts_at, ends_at, listing_quota, product:products (name_fr)").eq("shop_id", shopId).order("starts_at", { ascending: false }).limit(12),
+      // Cancelled periods were moved into an upgrade (carryOver): not history.
+      admin!.from("shop_subscriptions").select("starts_at, ends_at, listing_quota, product:products (name_fr)").eq("shop_id", shopId).eq("status", "active").order("starts_at", { ascending: false }).limit(12),
       paymentsAreOpen(),
     ]);
     const plans = (planRows ?? []) as { slug: string; name_fr: string; name_ar: string | null; price: number | string; listing_quota: number }[];
