@@ -7,6 +7,8 @@ import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { moderationSettings, publishOrQueue } from "@/lib/moderation/server";
 import { coverPlace } from "@/lib/places/server";
+import { attributeOutOfBounds } from "@/lib/listings/input";
+import { asDealType } from "@/lib/listings/deal";
 
 /**
  * POST /api/annonces/[id]/submit — send a draft listing for publication.
@@ -57,7 +59,7 @@ export async function POST(
 
   const { data: listing } = await admin
     .from("listings")
-    .select("id, seller_id, category_id, status, title, contact_phone, seller_attestation_version, fee_payment_id, shop_id")
+    .select("id, seller_id, category_id, status, title, contact_phone, seller_attestation_version, fee_payment_id, shop_id, attributes, deal_type")
     .eq("id", id)
     .maybeSingle();
   if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
@@ -105,6 +107,32 @@ export async function POST(
     const t = await apiTranslator(req, "publishApi");
     return NextResponse.json(
       { error: "photo_required", detail: t("photoRequired") },
+      { status: 400 },
+    );
+  }
+
+  // Every question the category requires for this deal, answered with a
+  // figure a property can have. The form says so field by field; the server
+  // holds the line for whatever reaches it another way (2026-10-27 audit: a
+  // surface of 0 or −10 m² got as far as the summary).
+  const { data: questions } = await admin
+    .from("category_attributes")
+    .select("field_key, deal_types")
+    .eq("category_id", listing.category_id)
+    .eq("required", true);
+  const deal = asDealType(listing.deal_type as string | null);
+  const attrs = (listing.attributes ?? {}) as Record<string, unknown>;
+  const unanswered = ((questions ?? []) as { field_key: string; deal_types: string[] | null }[])
+    .filter((q) => !q.deal_types || q.deal_types.length === 0 || q.deal_types.includes(deal))
+    .filter((q) => {
+      const v = attrs[q.field_key];
+      return v == null || String(v).trim() === "" || attributeOutOfBounds(q.field_key, v);
+    })
+    .map((q) => q.field_key);
+  if (unanswered.length > 0) {
+    const t = await apiTranslator(req, "publishApi");
+    return NextResponse.json(
+      { error: "attribute_required", fields: unanswered, detail: t("attributeRequired") },
       { status: 400 },
     );
   }

@@ -33,6 +33,7 @@ import {
 } from "@/lib/listings/deal";
 import type { ListingDraft } from "@/lib/ai/listing";
 import { estimateRange, priceInWords, suggestPriceFix, type PriceRef } from "@/lib/listings/priceCheck";
+import { attributeOutOfBounds } from "@/lib/listings/input";
 import {
   attributeFieldId,
   listOfFields,
@@ -202,6 +203,7 @@ export function PublishWizard({
   editWaiting = false,
   shops = [],
   ownPlan = null,
+  paymentsOpen = true,
   initialShopId = null,
   priceRefs = {},
   today,
@@ -215,6 +217,8 @@ export function PublishWizard({
    *  0 it needs a shop's plan — there is no fee per annonce any more. */
   freePlacesLeft: number;
   freeLimit: number;
+  /** Payments can be taken (the payee details are in): Pro can be bought. */
+  paymentsOpen?: boolean;
   /** Set when the seller owns an agence with a running plan: « Pour moi » counts in it. */
   ownPlan?: WizardOwnPlan | null;
   defaultContactName: string;
@@ -698,8 +702,19 @@ export function PublishWizard({
     missing.push({ label: t("missingPhoto"), fieldId: "f-photos", name: t("fieldName.photos") });
   }
   for (const def of defs) {
-    if (!def.required) continue;
     const v = attrs[def.field_key];
+    // A figure no property has — a surface of 0 or −10 m² — is not an answer:
+    // it is said under the field and in the summary, required or not, and the
+    // form does not go on with it (2026-10-27 audit).
+    if (attributeOutOfBounds(def.field_key, v)) {
+      missing.push({
+        label: t("invalidAttribute", { label: def.label.toLowerCase() }),
+        fieldId: attributeFieldId(def.field_key),
+        name: def.label.toLowerCase(),
+      });
+      continue;
+    }
+    if (!def.required) continue;
     if (v == null || String(v).trim() === "") {
       missing.push({
         label: t("missingAttribute", { label: def.label.toLowerCase() }),
@@ -872,6 +887,7 @@ export function PublishWizard({
    * has not lost the photos they already uploaded.
    */
   function startOver() {
+    setDraftInAddress(null);
     setResumed(false);
     // Back to the first step: a fresh form left on the old draft's photos
     // step reads as if the photos had been lost.
@@ -914,6 +930,14 @@ export function PublishWizard({
   }
 
   // ─── Persistence ──────────────────────────────────────────────────────────
+  /** ?draft= in the address bar, without a navigation. */
+  function setDraftInAddress(id: string | null) {
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set("draft", id);
+    else url.searchParams.delete("draft");
+    window.history.replaceState(window.history.state, "", url);
+  }
+
   async function saveDraft(extra: Record<string, unknown> = {}): Promise<string | null> {
     setSaved("saving");
     const res = await fetch("/api/annonces", {
@@ -953,6 +977,10 @@ export function PublishWizard({
       return null;
     }
     const j = (await res.json()) as { id: string };
+    // The address names the draft from its first save on: a refresh reopens
+    // it instead of an empty form (2026-10-27 audit). « Publier » from the
+    // menu is a new address, and still starts clean.
+    if (!listingId && !editing) setDraftInAddress(j.id);
     setListingId(j.id);
     setSaved("ok");
     return j.id;
@@ -1321,10 +1349,17 @@ export function PublishWizard({
           <div className="mazed-tone-warn mt-4 rounded-2xl px-4 py-3 text-[12.5px] leading-relaxed">
             <p className="font-extrabold">{t("limitTitle", { limit: freeLimit })}</p>
             <p className="mt-0.5">{t("limitBannerBody")}</p>
+            {!paymentsOpen && <p className="mt-1 font-semibold">{t("limitPaymentsClosed")}</p>}
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-              <Link href={"/pro" as never} className="inline-flex items-center gap-1.5 font-bold underline-offset-2 hover:underline">
-                <Store className="size-3.5" /> {t("seePro")}
-              </Link>
+              {paymentsOpen ? (
+                <Link href={"/pro" as never} className="inline-flex items-center gap-1.5 font-bold underline-offset-2 hover:underline">
+                  <Store className="size-3.5" /> {t("seePro")}
+                </Link>
+              ) : (
+                <Link href={"/contact" as never} className="inline-flex items-center gap-1.5 font-bold underline-offset-2 hover:underline">
+                  <Store className="size-3.5" /> {t("contactForPro")}
+                </Link>
+              )}
               <Link href={"/account/listings" as never} className="font-bold underline-offset-2 hover:underline">
                 {t("seeMyListings")}
               </Link>

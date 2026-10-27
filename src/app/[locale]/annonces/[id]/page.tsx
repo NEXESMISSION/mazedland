@@ -288,8 +288,12 @@ export default async function AnnoncePage({
       const raw = attrs[d.field_key];
       if (raw == null || raw === "" || raw === false) return null;
       const unit = d.unit === "m²" ? tRoot("common.sqm") : d.unit;
+      // Rooms are counted the Tunisian way everywhere — S+2 is two rooms besides
+      // the living room — and isolated so RTL does not turn « S+2 » into « 2+S ».
       const value =
-        raw === true
+        d.field_key === "rooms" && /^\d+$/.test(String(raw))
+          ? `\u2066S+${raw}\u2069`
+          : raw === true
           ? t("yes")
           : d.options?.find((o) => o.value === String(raw))?.label ??
             (unit

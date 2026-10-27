@@ -18,6 +18,11 @@ export const REVIEW_FLAGS = [
   "price_implausible",
   "duplicate",
   "reported",
+  // A description that says nothing (« test test test », « ممتاز »), and a
+  // surface no property of its kind has (a 33 m² farm) — the 2026-10-27 audit
+  // found both online.
+  "thin_text",
+  "area_implausible",
 ] as const;
 
 export type ReviewFlag = (typeof REVIEW_FLAGS)[number];
@@ -125,6 +130,36 @@ export function isPriceImplausible(input: {
   return perSqm < 100 || perSqm > 30_000;
 }
 
+/** Words that carry nothing on their own: a description made only of them is a placeholder. */
+const PLACEHOLDER = /^(?:tests?|essai|lorem|ipsum|asdf|azerty|qwerty|x+|a+|abc|bla(?:bla)*|ok|na|tbd)$/;
+
+/**
+ * A description written but empty of content: fewer than three different
+ * words once the placeholders are set aside. No description at all is not
+ * this — it is optional, and the page says nothing rather than nonsense.
+ */
+export function isThinText(description: string | null): boolean {
+  const words = normalizeText(description ?? "")
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean);
+  if (words.length === 0) return false;
+  return new Set(words.filter((w) => !PLACEHOLDER.test(w))).size < 3;
+}
+
+/**
+ * A surface no property of the kind has: a plot or a farm under 50 m², a
+ * home under 12 m² or over 20 000 m², premises under 5 m². Almost always a
+ * unit typed wrong (hectares as m²) or a placeholder.
+ */
+export function isAreaImplausible(input: { areaSqm: number | null; kind: CategoryKind | null }): boolean {
+  const a = Number(input.areaSqm);
+  if (!Number.isFinite(a) || a <= 0) return false;
+  if (input.kind === "land") return a < 50;
+  if (input.kind === "residential") return a < 12 || a > 20_000;
+  if (input.kind === "commercial") return a < 5;
+  return false;
+}
+
 export type ListingFacts = {
   title: string;
   description: string | null;
@@ -151,6 +186,8 @@ export function checkListing(facts: ListingFacts, rules: ListingRules): ReviewFl
   if (containsBannedWord(text, rules.bannedWords)) flags.push("banned_words");
   if (isPriceImplausible(facts)) flags.push("price_implausible");
   if (facts.duplicate) flags.push("duplicate");
+  if (isThinText(facts.description)) flags.push("thin_text");
+  if (isAreaImplausible(facts)) flags.push("area_implausible");
   return flags;
 }
 

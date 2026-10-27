@@ -3,7 +3,9 @@ import {
   checkListing,
   containsBannedWord,
   hasContactInText,
+  isAreaImplausible,
   isPriceImplausible,
+  isThinText,
   latinDigits,
   sameTitle,
   MIN_PHOTOS,
@@ -121,5 +123,39 @@ describe("helpers", () => {
   it("treats titles that differ only in case, accents or spacing as the same", () => {
     expect(sameTitle("Villa à Sfax — 4 pièces", "villa a sfax 4 pieces")).toBe(true);
     expect(sameTitle("Villa à Sfax", "Villa à Sousse")).toBe(false);
+  });
+});
+
+describe("isThinText", () => {
+  it("catches a description that says nothing (the audit's « test test test »)", () => {
+    expect(isThinText("test test test")).toBe(true);
+    expect(isThinText("ممتاز")).toBe(true);
+    expect(isThinText("terain agricol")).toBe(true);
+    expect(isThinText("Lorem ipsum")).toBe(true);
+  });
+
+  it("leaves a real description, and no description at all, alone", () => {
+    expect(isThinText("Villa de 4 pièces, jardin de 300 m², proche des écoles.")).toBe(false);
+    expect(isThinText("شقة مفروشة قريبة من البحر")).toBe(false);
+    expect(isThinText(null)).toBe(false);
+    expect(isThinText("   ")).toBe(false);
+  });
+
+  it("sends such an annonce to review, not away", () => {
+    expect(checkListing({ ...clean, description: "test test test" }, RULES)).toEqual(["thin_text"]);
+  });
+});
+
+describe("isAreaImplausible", () => {
+  it("catches a surface no property of the kind has (the audit's 33 m² farm)", () => {
+    expect(isAreaImplausible({ areaSqm: 33, kind: "land" })).toBe(true);
+    expect(isAreaImplausible({ areaSqm: 8, kind: "residential" })).toBe(true);
+    expect(isAreaImplausible({ areaSqm: 50_000, kind: "residential" })).toBe(true);
+  });
+
+  it("accepts ordinary surfaces and says nothing without one", () => {
+    expect(isAreaImplausible({ areaSqm: 300, kind: "land" })).toBe(false);
+    expect(isAreaImplausible({ areaSqm: 120, kind: "residential" })).toBe(false);
+    expect(isAreaImplausible({ areaSqm: null, kind: "land" })).toBe(false);
   });
 });

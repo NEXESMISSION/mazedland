@@ -139,6 +139,18 @@ const ATTRIBUTE_BOUNDS: Record<string, [min: number, max: number]> = {
   year_built: [1850, new Date().getFullYear() + 3],
 };
 
+/**
+ * A figure given but impossible for a property: not a number, or outside its
+ * bounds (a surface of 0 or −10 m², the year « 13 »). The form says so under
+ * the field and in its summary, where saneAttributes would only drop it.
+ */
+export function attributeOutOfBounds(key: string, value: unknown): boolean {
+  const bounds = ATTRIBUTE_BOUNDS[key];
+  if (!bounds || value === null || value === undefined || String(value).trim() === "") return false;
+  const n = Number(value);
+  return !Number.isFinite(n) || n < bounds[0] || n > bounds[1];
+}
+
 export function saneAttributes(attrs: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(attrs)) {

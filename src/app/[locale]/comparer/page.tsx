@@ -12,7 +12,7 @@ import { asDealType } from "@/lib/listings/deal";
 import { bestOf, comparable, parseCompareIds, pricePerSqm } from "@/lib/compare";
 import { getSettings } from "@/lib/settings/server";
 import { Ltr } from "@/components/ui/Ltr";
-import { Home, Scale, Trophy } from "lucide-react";
+import { Home, MoveHorizontal, Scale, Trophy } from "lucide-react";
 import { CompareSync, RemoveFromCompare } from "./CompareControls";
 
 export const dynamic = "force-dynamic";
@@ -166,15 +166,24 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
       <h1 className="text-[24px] font-extrabold tracking-tight">{t("title")}</h1>
       <p className="mt-1 text-[13px] text-muted">{t("subtitle")}</p>
 
-      <div className="-mx-4 mt-5 overflow-x-auto px-4 pb-2">
-        <table className="w-full min-w-[560px] table-fixed border-separate border-spacing-0 text-[13px]">
+      {/* On a narrow screen the third annonce starts off the edge: say that the
+          table scrolls, and fade its edge (2026-10-27 audit). The row labels
+          stay put while it does. */}
+      {rows.length > 2 && (
+        <p className="mt-4 flex items-center gap-1.5 text-[12px] font-semibold text-muted md:hidden">
+          <MoveHorizontal className="size-4 shrink-0" /> {t("scrollHint")}
+        </p>
+      )}
+      <div className="relative">
+      <div className="-mx-4 mt-3 overflow-x-auto overscroll-x-contain px-4 pb-2 md:mt-5">
+        <table className="w-full min-w-[520px] table-fixed border-separate border-spacing-0 text-[13px]">
           <thead>
             <tr>
-              <th className="sticky start-0 z-10 w-32 bg-background" />
+              <th className="sticky start-0 z-10 w-24 bg-background sm:w-32" />
               {rows.map((r) => {
                 const photo = (r.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0]?.storage_path;
                 return (
-                  <th key={r.id} className="min-w-[170px] p-2 text-start align-top font-normal">
+                  <th key={r.id} className="min-w-[150px] p-2 text-start align-top font-normal">
                     <Link href={`/annonces/${r.id}` as never} className="block overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-border">
                       <span className="block aspect-[4/3]">
                         {photo ? (
@@ -215,6 +224,13 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
             ))}
           </tbody>
         </table>
+      </div>
+      {rows.length > 2 && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 end-0 w-8 from-background to-transparent ltr:bg-gradient-to-l rtl:bg-gradient-to-r md:hidden"
+        />
+      )}
       </div>
       <p className="mt-3 text-[11.5px] text-muted">{t("bestNote")}</p>
     </main>

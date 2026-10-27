@@ -112,8 +112,11 @@ export function PhotoCarousel({
   return (
     <div>
       <div className="mazed-photo-overlay relative">
+        {/* 4:3 on a phone too, and never more than half the screen: a portrait
+            photo pushed the title, the place and the price below the fold
+            (2026-10-27 audit). */}
         <div
-          className="relative aspect-[4/5] overflow-hidden bg-surface-2 sm:aspect-[4/3]"
+          className="relative aspect-[4/3] max-h-[50svh] w-full overflow-hidden bg-surface-2"
           style={{ touchAction: "pan-y" }}
           onTouchStart={(e) => {
             touchX.current = e.touches[0].clientX;
