@@ -1,4 +1,5 @@
 import { getTranslations, getLocale } from "next-intl/server";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { Link } from "@/i18n/navigation";
 import { HeroShowcase, type ShowcaseSlide } from "@/components/landing/HeroShowcase";
 import { BELOW_LG } from "@/components/ui/HiddenAt";
@@ -344,9 +345,9 @@ export async function HomeDesktop({
         </div>
       </section>
 
-      {/* The hero is the intent and the search; an advertiser's banner will go
-          under it (src/components/ads), above the first rail. Nothing yet. */}
-      {/* AD_SLOT: home_top */}
+      {/* The hero is the intent and the search; an advertiser's banner
+          (/admin/publicites) under it, above the first rail. */}
+      <AdSlot placement="home_top" className="mt-10" sizes="(min-width: 1280px) 1200px, 100vw" />
 
       {/* THE RAILS — the phone page's list (`planHomeRails`), each one an
           auto-sliding carousel with arrows. */}
@@ -354,8 +355,8 @@ export async function HomeDesktop({
         <HomeRailSection key={rail.key} rail={rail} layout="desktop" savedIds={savedIds} loggedIn={loggedIn} />
       ))}
 
-      {/* A second banner, halfway down the rails. Nothing is rendered yet. */}
-      {/* AD_SLOT: home_middle */}
+      {/* A second banner, halfway down the rails. */}
+      <AdSlot placement="home_middle" className="mt-12" sizes="(min-width: 1280px) 1200px, 100vw" />
 
       {railsBelow.map((rail) => (
         <HomeRailSection key={rail.key} rail={rail} layout="desktop" savedIds={savedIds} loggedIn={loggedIn} />

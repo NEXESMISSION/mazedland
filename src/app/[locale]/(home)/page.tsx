@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { Link } from "@/i18n/navigation";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeDesktop } from "@/components/landing/HomeDesktop";
@@ -319,9 +320,9 @@ export default async function LandingPage({
         <HomeSearch isRTL={isRTL} />
       </div>
 
-      {/* An advertiser's banner will go here (src/components/ads): under the
-          search, above the first rail. Nothing is rendered yet. */}
-      {/* AD_SLOT: home_top */}
+      {/* An advertiser's banner (/admin/publicites): under the search, above
+          the first rail. Nothing when no campaign runs here. */}
+      <AdSlot placement="home_top" className="mt-5 px-4" sizes="100vw" />
 
       {/* ══════════════════════════════════════════════════════════════
           BROWSE — the page's center of gravity: the rails of annonces,
@@ -338,8 +339,8 @@ export default async function LandingPage({
         <HomeRailSection key={rail.key} rail={rail} layout="phone" savedIds={savedIds} loggedIn={loggedIn} />
       ))}
 
-      {/* A second banner, halfway down the rails. Nothing is rendered yet. */}
-      {/* AD_SLOT: home_middle */}
+      {/* A second banner, halfway down the rails. */}
+      <AdSlot placement="home_middle" className="mt-6 px-4" sizes="100vw" />
 
       {railsBelow.map((rail) => (
         <HomeRailSection key={rail.key} rail={rail} layout="phone" savedIds={savedIds} loggedIn={loggedIn} />

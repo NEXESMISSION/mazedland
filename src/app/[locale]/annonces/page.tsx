@@ -105,7 +105,8 @@ type Cat = {
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
 
 /** Sort keys; the chip text is `catalogue.sort.<key>`. */
-const SORTS = ["recent", "cheap", "dear", "big"] as const;
+// « popular »: the most seen first — where the home page's « Les plus vus » leads.
+const SORTS = ["recent", "popular", "cheap", "dear", "big"] as const;
 
 /** Surface is the one number every property is compared on. */
 function surfaceOf(a: Record<string, unknown> | null): number | null {
@@ -304,7 +305,8 @@ export default async function AnnoncesPage({
   // the card as not confirmed rather than silently dropped or silently passed.
   if (availBy) q = q.or(`available_from.is.null,available_from.lte.${availBy}`);
 
-  if (sort === "cheap") q = q.order("price", { ascending: true, nullsFirst: false });
+  if (sort === "popular") q = q.order("view_count", { ascending: false, nullsFirst: false });
+  else if (sort === "cheap") q = q.order("price", { ascending: true, nullsFirst: false });
   else if (sort === "dear") q = q.order("price", { ascending: false, nullsFirst: false });
   // The default order puts the paid « Top de la recherche » first (0156); the
   // expiry job clears the flag when the period ends.

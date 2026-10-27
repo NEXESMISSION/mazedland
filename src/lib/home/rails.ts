@@ -141,7 +141,7 @@ export function planHomeRails(
   );
   // The catalogue has no « most viewed » order to open, so these two link to
   // its default: the newest first.
-  add({ key: "mostViewed", rows: feed?.mostViewed ?? [], href: "/annonces" }, { dedupe: true });
+  add({ key: "mostViewed", rows: feed?.mostViewed ?? [], href: "/annonces?sort=popular" }, { dedupe: true });
   add({ key: "nouveautes", rows: feed?.nouveautes ?? [], href: "/annonces" }, { dedupe: true });
   add({ key: "rent", rows: feed?.rentals ?? [], href: catalogueHrefFor({ deal: "rent" }) }, { dedupe: false });
   // Sales only (a month's rent has no price per m²), cheapest first: the
