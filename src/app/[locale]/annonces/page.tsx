@@ -22,6 +22,7 @@ import { getSettings } from "@/lib/settings/server";
 import { usableRange } from "@/lib/range";
 import { BudgetFields } from "./BudgetFields";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { VoiceSearchButton } from "@/components/search/VoiceSearchButton";
 
 export const dynamic = "force-dynamic";
 
@@ -492,8 +493,10 @@ export default async function AnnoncesPage({
           placeholder={t("searchPlaceholder")}
           aria-label={t("searchLabel")}
           enterKeyHint="search"
-          className="h-11 w-full rounded-full border border-border bg-surface-2 pe-4 ps-11 text-[16px] text-foreground outline-none transition placeholder:text-muted focus:border-gold-soft focus:bg-surface"
+          className="h-11 w-full rounded-full border border-border bg-surface-2 pe-12 ps-11 text-[16px] text-foreground outline-none transition placeholder:text-muted focus:border-gold-soft focus:bg-surface"
         />
+        {/* Say it instead: the words fill the box and the form is sent. */}
+        <VoiceSearchButton className="absolute end-1 top-1/2 -translate-y-1/2" />
       </form>
 
       {/* Buy or rent first: the one question that changes every other filter

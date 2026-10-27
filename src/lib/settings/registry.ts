@@ -29,6 +29,8 @@ export const SETTINGS = {
   feature_price_help: { group: "features", type: "bool", default: true, client: true },
   feature_watermark: { group: "features", type: "bool", default: true, client: true },
   feature_natural_search: { group: "features", type: "bool", default: true },
+  // A microphone in the search boxes (P5): spoken words fill the box, then search.
+  feature_voice_search: { group: "features", type: "bool", default: true, client: true },
   feature_arabic_redirect: { group: "features", type: "bool", default: true, client: true },
   feature_whatsapp: { group: "features", type: "bool", default: true, client: true },
   // Advertising spaces sold to companies (0177), managed in /admin/publicites.

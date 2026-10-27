@@ -13,6 +13,7 @@ import { normalizeSearchQuery } from "@/lib/search";
 import { isMostlyArabic } from "@/lib/search/script";
 import { useSetting } from "@/components/settings/SettingsProvider";
 import { Search, Plus } from "lucide-react";
+import { VoiceSearchButton } from "@/components/search/VoiceSearchButton";
 
 // Lazy-loaded — see TopBar for rationale (heavy icon set + realtime socket +
 // mount fetch, none needed for first paint). Reserves the 36px slot.
@@ -204,8 +205,9 @@ export function DesktopNav() {
               onChange={(e) => setQ(e.target.value)}
               placeholder={ts("placeholder")}
               aria-label={ts("placeholder")}
-              className="h-11 w-full rounded-full border border-border bg-surface-2 text-[13px] text-foreground placeholder:text-muted transition-colors focus:border-gold-soft/70 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-gold-faint ltr:pl-11 ltr:pr-4 rtl:pl-4 rtl:pr-11"
+              className="h-11 w-full rounded-full border border-border bg-surface-2 text-[13px] text-foreground placeholder:text-muted transition-colors focus:border-gold-soft/70 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-gold-faint px-11"
             />
+            <VoiceSearchButton className="absolute end-1 top-1/2 -translate-y-1/2" />
           </div>
         </form>
 
