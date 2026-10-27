@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import { Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
@@ -20,6 +21,7 @@ import { Sparkles } from "lucide-react";
 import { getSettings } from "@/lib/settings/server";
 import { usableRange } from "@/lib/range";
 import { BudgetFields } from "./BudgetFields";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 export const dynamic = "force-dynamic";
 
@@ -877,80 +879,88 @@ export default async function AnnoncesPage({
             const cover = coverPhoto(r.photos);
             const specs = specLine(r, t, locale);
             return (
-              <li key={r.id} className="relative">
-                {/* Outside the card link: a button cannot sit inside an <a>. */}
-                <div className="absolute end-2 top-2 z-10">
-                  <CompareToggle listingId={r.id} />
-                </div>
-                <Link
-                  href={`/annonces/${r.id}` as never}
-                  className="group block overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-gold-soft hover:shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)]"
-                >
-                  <div className="relative aspect-[4/3] bg-surface-2">
-                    {cover ? (
-                      <ListingImage
-                        path={cover.storage_path}
-                        alt={r.title}
-                        sizes="(min-width:1024px) 260px, 45vw"
-                        priority={i < 4}
-                        className="transition duration-500 group-hover:scale-[1.02]"
-                      />
-                    ) : (
-                      <span className="grid size-full place-items-center text-muted">
-                        <ImageOff className="size-6" />
-                      </span>
-                    )}
+              <Fragment key={r.id}>
+                <li className="relative">
+                  {/* Outside the card link: a button cannot sit inside an <a>. */}
+                  <div className="absolute end-2 top-2 z-10">
+                    <CompareToggle listingId={r.id} />
                   </div>
-
-                  <div className="p-3">
-                    <span className="inline-flex flex-wrap items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-                      <Home className="size-3" /> {categoryLabel(cat, locale)}
-                      {r.deal_type === "rent" && (
-                        <span className="ms-1 rounded-full bg-gold-faint px-1.5 py-0.5 text-gold">{t("forRent")}</span>
-                      )}
-                      {r.promo_top_listed && (
-                        <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-foreground ring-1 ring-border">{t("promoted")}</span>
-                      )}
-                      {r.availability === "reserved" && (
-                        <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-amber-600">{t("reserved")}</span>
-                      )}
-                    </span>
-                    <h2 dir="auto" className="mt-0.5 line-clamp-2 break-words text-[13.5px] font-bold leading-snug text-foreground">
-                      {r.title}
-                    </h2>
-
-                    <p className="mazed-tabular mt-1.5 text-[15px] font-extrabold text-foreground">
-                      {r.price_on_request || r.price == null
-                        ? t("priceOnRequest")
-                        : t(r.deal_type === "rent" ? "rentAmount" : "priceAmount", {
-                            amount: formatTND(Number(r.price), locale),
-                          })}
-                      {r.negotiable && !r.price_on_request && (
-                        <span className="ms-1.5 text-[10.5px] font-bold text-muted">{t("negotiable")}</span>
-                      )}
-                    </p>
-
-                    {/* One wrapping row. These were two inline-flex paragraphs,
-                        which sit side by side with nothing between them when
-                        they fit: "200 m²◎ Sfax". */}
-                    <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-muted">
-                      {specs.length > 0 && (
-                        <span className="inline-flex items-center gap-1">
-                          <Ruler className="size-3" /> {specs.join(" · ")}
+                  <Link
+                    href={`/annonces/${r.id}` as never}
+                    className="group block overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-gold-soft hover:shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)]"
+                  >
+                    <div className="relative aspect-[4/3] bg-surface-2">
+                      {cover ? (
+                        <ListingImage
+                          path={cover.storage_path}
+                          alt={r.title}
+                          sizes="(min-width:1024px) 260px, 45vw"
+                          priority={i < 4}
+                          className="transition duration-500 group-hover:scale-[1.02]"
+                        />
+                      ) : (
+                        <span className="grid size-full place-items-center text-muted">
+                          <ImageOff className="size-6" />
                         </span>
                       )}
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="size-3" /> {shownDelegation(r.governorate, r.delegation, locale) ? `${shownDelegation(r.governorate, r.delegation, locale)}, ` : ""}{governorateLabel(r.governorate, locale)}
-                      </span>
                     </div>
-                    {/* Kept in by the « libre avant » filter because the owner gave
-                        no date: say so, rather than let it pass as a match. */}
-                    {availBy && r.deal_type === "rent" && !r.available_from && (
-                      <p className="mt-1 text-[10.5px] font-semibold text-amber-600">{t("availUnconfirmed")}</p>
-                    )}
-                  </div>
-                </Link>
-              </li>
+
+                    <div className="p-3">
+                      <span className="inline-flex flex-wrap items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
+                        <Home className="size-3" /> {categoryLabel(cat, locale)}
+                        {r.deal_type === "rent" && (
+                          <span className="ms-1 rounded-full bg-gold-faint px-1.5 py-0.5 text-gold">{t("forRent")}</span>
+                        )}
+                        {r.promo_top_listed && (
+                          <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-foreground ring-1 ring-border">{t("promoted")}</span>
+                        )}
+                        {r.availability === "reserved" && (
+                          <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-amber-600">{t("reserved")}</span>
+                        )}
+                      </span>
+                      <h2 dir="auto" className="mt-0.5 line-clamp-2 break-words text-[13.5px] font-bold leading-snug text-foreground">
+                        {r.title}
+                      </h2>
+
+                      <p className="mazed-tabular mt-1.5 text-[15px] font-extrabold text-foreground">
+                        {r.price_on_request || r.price == null
+                          ? t("priceOnRequest")
+                          : t(r.deal_type === "rent" ? "rentAmount" : "priceAmount", {
+                              amount: formatTND(Number(r.price), locale),
+                            })}
+                        {r.negotiable && !r.price_on_request && (
+                          <span className="ms-1.5 text-[10.5px] font-bold text-muted">{t("negotiable")}</span>
+                        )}
+                      </p>
+
+                      {/* One wrapping row. These were two inline-flex paragraphs,
+                          which sit side by side with nothing between them when
+                          they fit: "200 m²◎ Sfax". */}
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-muted">
+                        {specs.length > 0 && (
+                          <span className="inline-flex items-center gap-1">
+                            <Ruler className="size-3" /> {specs.join(" · ")}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="size-3" /> {shownDelegation(r.governorate, r.delegation, locale) ? `${shownDelegation(r.governorate, r.delegation, locale)}, ` : ""}{governorateLabel(r.governorate, locale)}
+                        </span>
+                      </div>
+                      {/* Kept in by the « libre avant » filter because the owner gave
+                          no date: say so, rather than let it pass as a match. */}
+                      {availBy && r.deal_type === "rent" && !r.available_from && (
+                        <p className="mt-1 text-[10.5px] font-semibold text-amber-600">{t("availUnconfirmed")}</p>
+                      )}
+                    </div>
+                  </Link>
+                </li>
+                {/* An advertising space across the grid, after the first four
+                    cards — two rows on a phone, one on a desktop — or after the
+                    last when there are fewer. Nothing when no campaign runs. */}
+                {i === Math.min(3, rows.length - 1) && (
+                  <AdSlot placement="catalogue" as="li" className="col-span-full" />
+                )}
+              </Fragment>
             );
           })}
         </ul>
