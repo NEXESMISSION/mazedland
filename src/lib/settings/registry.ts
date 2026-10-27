@@ -31,6 +31,13 @@ export const SETTINGS = {
   feature_natural_search: { group: "features", type: "bool", default: true },
   feature_arabic_redirect: { group: "features", type: "bool", default: true, client: true },
   feature_whatsapp: { group: "features", type: "bool", default: true, client: true },
+  // Advertising spaces sold to companies (0177), managed in /admin/publicites.
+  feature_ads: { group: "features", type: "bool", default: true, href: "/admin/publicites" },
+
+  // ── Home page: the rails of annonces and the ads move by themselves.
+  home_rail_autoplay: { group: "home", type: "bool", default: true, client: true },
+  home_rail_seconds: { group: "home", type: "int", default: 5, min: 3, max: 15, unit: "seconds", client: true },
+  ads_rotate_seconds: { group: "home", type: "int", default: 6, min: 3, max: 30, unit: "seconds", client: true },
 
   // ── Moderation: how much of the site runs by itself.
   free_listing_limit: { group: "moderation", type: "int", default: 2, min: 0, max: 50 },
@@ -95,7 +102,7 @@ export type ClientSettings = Pick<Settings, ClientSettingKey>;
 
 /** The console's tabs, in order. */
 export const SETTING_GROUPS = [
-  "features", "moderation", "publication", "buyers", "contact", "social", "payment", "company", "limits",
+  "features", "home", "moderation", "publication", "buyers", "contact", "social", "payment", "company", "limits",
 ] as const;
 
 export function isSettingKey(k: string): k is SettingKey {

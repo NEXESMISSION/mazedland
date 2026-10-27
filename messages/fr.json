@@ -4192,6 +4192,10 @@
       "limits": {
         "title": "Limites",
         "hint": "Combien de fois une même personne peut faire une chose : contre les abus et les robots."
+      },
+      "home": {
+        "title": "Accueil",
+        "hint": "Ce qui bouge sur la page d'accueil : les rubriques d'annonces et les bannières."
       }
     },
     "feature_visits": {
@@ -4400,7 +4404,8 @@
       "percent": "%",
       "photos": "photos",
       "per_hour": "par heure",
-      "per_day": "par jour"
+      "per_day": "par jour",
+      "seconds": "secondes"
     },
     "ui": {
       "tabsLabel": "Parties des réglages",
@@ -4429,6 +4434,22 @@
       "invalid_text": "Entrez un texte.",
       "too_long": "{max} caractères au plus.",
       "invalid_list": "Un élément par ligne."
+    },
+    "feature_ads": {
+      "label": "Espaces publicitaires",
+      "hint": "Les bannières des annonceurs (banques, notaires, promoteurs…) sur l'accueil, la recherche et les annonces. Coupé : plus aucune bannière ; les campagnes restent dans la console."
+    },
+    "home_rail_autoplay": {
+      "label": "Défilement automatique des rubriques",
+      "hint": "Les rubriques d'annonces de l'accueil avancent seules ; elles s'arrêtent dès qu'on les touche."
+    },
+    "home_rail_seconds": {
+      "label": "Vitesse des rubriques",
+      "hint": "Le temps avant de passer à l'annonce suivante."
+    },
+    "ads_rotate_seconds": {
+      "label": "Rotation des bannières",
+      "hint": "Le temps qu'une bannière reste affichée avant la suivante, quand un espace en a plusieurs."
     }
   }
 }
