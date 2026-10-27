@@ -69,7 +69,7 @@ export default async function AdminShopsPage({ searchParams }: { searchParams: P
           {shops.map((s) => (
             <li key={s.id}>
               <Link
-                href={`/admin/boutiques?status=${tab}&id=${s.id}` as never}
+                href={`/admin/agences?status=${tab}&id=${s.id}` as never}
                 className={`flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 transition ${open?.id === s.id ? "ring-[var(--gold)]" : "ring-border hover:ring-[var(--gold-soft)]"}`}
               >
                 <Logo path={s.logo_path} />
@@ -122,7 +122,7 @@ export default async function AdminShopsPage({ searchParams }: { searchParams: P
             </div>
           </div>
           {shop.status === "approved" && (
-            <Link href={`/boutiques/${shop.slug}` as never} target="_blank" className="inline-flex items-center gap-1 text-[12px] font-bold text-[var(--gold)] hover:underline">
+            <Link href={`/agences/${shop.slug}` as never} target="_blank" className="inline-flex items-center gap-1 text-[12px] font-bold text-[var(--gold)] hover:underline">
               {t("publicPage")} <ExternalLink className="size-3" />
             </Link>
           )}

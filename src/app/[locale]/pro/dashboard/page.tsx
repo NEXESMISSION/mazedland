@@ -24,7 +24,7 @@ import { BadgeCheck, ExternalLink, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-const TABS = ["apercu", "annonces", "visites", "clients", "demandes", "equipe", "abonnement", "boutique", "documents"] as const;
+const TABS = ["apercu", "annonces", "visites", "clients", "demandes", "equipe", "abonnement", "agence", "documents"] as const;
 type TabKey = (typeof TABS)[number];
 
 const STATUS_TONE: Record<string, string> = {
@@ -57,13 +57,15 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
   if (memberships.length === 0) redirect(`/${locale}/pro`);
   const current = memberships.find((m) => m.shop.id === sp.shop) ?? memberships[0];
   const { shop, role } = current;
-  const tab: TabKey = (TABS as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as TabKey) : "apercu";
+  // « boutique » was the tab's name before the shops became agences.
+  const asked = sp.tab === "boutique" ? "agence" : sp.tab;
+  const tab: TabKey = (TABS as readonly string[]).includes(asked ?? "") ? (asked as TabKey) : "apercu";
   // With demandes switched off in the console, there are none to answer.
   const settings = await getSettings();
   const demandesOn = settings.feature_requests;
   // Everyone sees the plan; only those who may act on the page or the papers see those tabs.
   const visibleTabs = TABS.filter((k) =>
-    k === "boutique" ? can(role, "edit_shop") : k === "documents" ? can(role, "documents") : k === "demandes" ? demandesOn && can(role, "clients") : k === "visites" || k === "clients" ? can(role, "clients") : true,
+    k === "agence" ? can(role, "edit_shop") : k === "documents" ? can(role, "documents") : k === "demandes" ? demandesOn && can(role, "clients") : k === "visites" || k === "clients" ? can(role, "clients") : true,
   );
   const href = (k: TabKey) => `/pro/dashboard?shop=${shop.id}&tab=${k}`;
 
@@ -115,7 +117,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded-full px-2.5 py-1 text-[11.5px] font-bold ${STATUS_TONE[shop.status] ?? ""}`}>{tStatus(shop.status)}</span>
           {shop.status === "approved" && (
-            <Link href={`/boutiques/${shop.slug}` as never} className="inline-flex items-center gap-1 text-[12.5px] font-bold text-gold hover:underline">
+            <Link href={`/agences/${shop.slug}` as never} className="inline-flex items-center gap-1 text-[12.5px] font-bold text-gold hover:underline">
               {t("publicPage")} <ExternalLink className="size-3.5" />
             </Link>
           )}
@@ -221,7 +223,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
 
       {tab === "abonnement" && <PlanTab shopId={shop.id} role={role} approved={shop.status === "approved"} current={plan} />}
 
-      {tab === "boutique" && can(role, "edit_shop") && (
+      {tab === "agence" && can(role, "edit_shop") && (
         <section className="mt-5">
           <ShopForm
             mode="edit"

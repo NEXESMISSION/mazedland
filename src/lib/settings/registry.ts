@@ -20,7 +20,7 @@ export const SETTINGS = {
   feature_visits: { group: "features", type: "bool", default: true, client: true },
   feature_compare: { group: "features", type: "bool", default: true, client: true },
   feature_requests: { group: "features", type: "bool", default: true, client: true, href: "/admin/demandes" },
-  feature_pro_signup: { group: "features", type: "bool", default: true, client: true, href: "/admin/boutiques" },
+  feature_pro_signup: { group: "features", type: "bool", default: true, client: true, href: "/admin/agences" },
   feature_promos: { group: "features", type: "bool", default: true, client: true, href: "/admin/offres" },
   social_enabled: { group: "features", type: "bool", default: true, href: "/admin/social" },
   ai_enabled: { group: "features", type: "bool", default: true },

@@ -52,9 +52,9 @@ export async function POST(req: NextRequest) {
   await admin
     .rpc("_notify_admins", {
       p_kind: "admin_shop_pending",
-      p_title: "Boutique à valider",
-      p_body: `« ${shop.name} » demande à ouvrir sa boutique.`,
-      p_link: `/admin/boutiques?id=${shop.id}`,
+      p_title: "Agence à valider",
+      p_body: `« ${shop.name} » demande à ouvrir son agence.`,
+      p_link: `/admin/agences?id=${shop.id}`,
       p_payload: { vars: { name: shop.name } },
     })
     .then(() => {}, () => {});

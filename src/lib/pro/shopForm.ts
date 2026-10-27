@@ -15,7 +15,7 @@ import { slugify, type ShopKind } from "./shops";
  */
 export function slugPreview(name: string): string {
   const slug = slugify(name, "");
-  return slug === "boutique-" ? "boutique-…" : slug;
+  return slug === "agence-" ? "agence-…" : slug;
 }
 
 /**

@@ -133,6 +133,10 @@ const nextConfig: NextConfig = {
         { source: `/:locale/admin/${from}`, destination: `/:locale/admin/${to}`, permanent: true },
         { source: `/:locale/admin/${from}/:path*`, destination: `/:locale/admin/${to}`, permanent: true },
       ]),
+      // « Boutiques » became « agences » (2026-10-27): every old link lands.
+      { source: "/:locale/boutiques", destination: "/:locale/agences", permanent: true },
+      { source: "/:locale/boutiques/:path*", destination: "/:locale/agences/:path*", permanent: true },
+      { source: "/:locale/admin/boutiques", destination: "/:locale/admin/agences", permanent: true },
       ...gone.flatMap((from) => [
         { source: `/:locale/admin/${from}`, destination: "/:locale/admin", permanent: false },
         { source: `/:locale/admin/${from}/:path*`, destination: "/:locale/admin", permanent: false },

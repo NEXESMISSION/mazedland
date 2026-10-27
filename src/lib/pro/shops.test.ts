@@ -29,7 +29,7 @@ describe("slugify", () => {
     expect(slugify("Agence Él Médina — Sfax", "abc")).toBe("agence-el-medina-sfax");
   });
   it("falls back for a name with no Latin letters", () => {
-    expect(slugify("وكالة المدينة", "A1B2C3D4E5")).toBe("boutique-a1b2c3d4");
+    expect(slugify("وكالة المدينة", "A1B2C3D4E5")).toBe("agence-a1b2c3d4");
   });
 });
 
