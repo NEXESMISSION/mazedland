@@ -2529,7 +2529,9 @@
       "social": "Réseaux",
       "socialHint": "Promotions Facebook, Instagram, groupes",
       "shops": "Boutiques",
-      "shopsHint": "Agences et promoteurs : ouvrir, vérifier, suspendre"
+      "shopsHint": "Agences et promoteurs : ouvrir, vérifier, suspendre",
+      "ads": "Publicités",
+      "adsHint": "Bannières des annonceurs : campagnes, vues, clics"
     },
     "siteTabs": {
       "label": "Sections du site",
@@ -3014,7 +3016,13 @@
     "lead_delete": "Client supprimé (boutique)",
     "shop_suggest": "Annonce proposée à une demande (boutique)",
     "listing_edit_waiting": "Annonce corrigée avant vérification",
-    "listing_promo": "Mise en avant demandée"
+    "listing_promo": "Mise en avant demandée",
+    "admin_ad_create": "Publicité créée",
+    "admin_ad_update": "Publicité modifiée",
+    "admin_ad_pause": "Publicité mise en pause",
+    "admin_ad_resume": "Publicité reprise",
+    "admin_ad_delete": "Publicité supprimée",
+    "admin_ad_upload": "Image de publicité envoyée"
   },
   "adminApi": {
     "bulk": {
@@ -4450,6 +4458,174 @@
     "ads_rotate_seconds": {
       "label": "Rotation des bannières",
       "hint": "Le temps qu'une bannière reste affichée avant la suivante, quand un espace en a plusieurs."
+    }
+  },
+  "ads": {
+    "label": "Publicité",
+    "region": "Espace publicitaire",
+    "carousel": "carrousel",
+    "newTab": "(s'ouvre dans un nouvel onglet)",
+    "previous": "Bannière précédente",
+    "next": "Bannière suivante",
+    "goTo": "Bannière {n} sur {total}"
+  },
+  "adminAds": {
+    "unavailable": "Service indisponible.",
+    "title": "Publicités",
+    "summary": "{live} en cours · {total} au total",
+    "newAd": "Nouvelle campagne",
+    "featureOff": "Les espaces publicitaires sont coupés : aucune bannière ne s'affiche sur le site.",
+    "featureOffLink": "Réglages",
+    "tabs": {
+      "all": "Toutes",
+      "live": "En cours",
+      "scheduled": "Programmées",
+      "paused": "En pause",
+      "ended": "Terminées"
+    },
+    "status": {
+      "live": "En cours",
+      "scheduled": "Programmée",
+      "paused": "En pause",
+      "ended": "Terminée"
+    },
+    "placements": {
+      "home_top": "Accueil · en haut",
+      "home_middle": "Accueil · au milieu",
+      "catalogue": "Recherche",
+      "listing": "Page annonce"
+    },
+    "placementHints": {
+      "home_top": "Sous la recherche, sur le premier écran de l'accueil.",
+      "home_middle": "Sur l'accueil, entre deux rubriques d'annonces.",
+      "catalogue": "Dans les résultats de recherche, après les quatre premières annonces.",
+      "listing": "Sur chaque annonce, sous sa description."
+    },
+    "dates": {
+      "range": "{from} – {to}",
+      "from": "Dès le {from}",
+      "until": "Jusqu'au {to}",
+      "always": "Sans dates"
+    },
+    "viewsShort": "vues",
+    "clicksShort": "clics",
+    "emptyTitle": "Aucune campagne",
+    "emptyHint": "Une banque, un notaire, un promoteur achète un espace : son image, son lien, ses dates. Créez la première.",
+    "emptyTab": "Aucune campagne ici.",
+    "pickOne": "Choisissez une campagne",
+    "pickOneHint": "Ses vues et ses clics, jour par jour : le rapport à envoyer à l'annonceur.",
+    "detail": {
+      "back": "Publicités",
+      "edit": "Modifier",
+      "pause": "Mettre en pause",
+      "resume": "Reprendre",
+      "paused": "Campagne mise en pause.",
+      "resumed": "Campagne reprise.",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer cette campagne ?",
+      "deleteBody": "Ses images, ses vues et ses clics disparaissent, rapport compris. Pour l'arrêter en gardant le rapport, mettez-la en pause.",
+      "deleted": "Campagne supprimée.",
+      "openLink": "Ouvrir le lien",
+      "images": "Images",
+      "wide": "Ordinateur",
+      "mobile": "Téléphone",
+      "noMobile": "Pas d'image téléphone : l'image large y est montrée en entier.",
+      "totals": "Depuis le début",
+      "last30": "30 derniers jours",
+      "views": "Vues",
+      "clicks": "Clics",
+      "ctr": "Taux de clic",
+      "chartTitle": "Vues par jour",
+      "chartHint": "Les 30 derniers jours, heure de Tunis. Survolez une barre pour le détail.",
+      "tooltip": "{day} : {views} vues, {clicks} clics",
+      "table": {
+        "day": "Jour",
+        "views": "Vues",
+        "clicks": "Clics",
+        "ctr": "Taux"
+      },
+      "copy": "Copier le rapport",
+      "copied": "Rapport copié : collez-le dans un e-mail ou sur WhatsApp.",
+      "copyFailed": "Copie impossible sur ce navigateur.",
+      "csv": "Télécharger (CSV)",
+      "report": {
+        "title": "Rapport · {advertiser}",
+        "placement": "Espace : {placement}",
+        "period": "Période : {dates}",
+        "total": "Depuis le début : {views} vues · {clicks} clics · taux de clic {ctr}",
+        "last30": "30 derniers jours : {views} vues · {clicks} clics · taux de clic {ctr}",
+        "day": "{day} : {views} vues · {clicks} clics"
+      }
+    },
+    "editor": {
+      "newTitle": "Nouvelle campagne",
+      "editTitle": "Modifier la campagne",
+      "back": "Retour",
+      "advertiser": "Annonceur",
+      "advertiserPlaceholder": "Banque, étude de notaire, promoteur…",
+      "placement": "Emplacement",
+      "images": "Images",
+      "wide": "Image large (ordinateur)",
+      "wideHint": "{width} × {height} px conseillé (4:1). JPG, PNG ou WebP, {max} Mo au plus.",
+      "mobile": "Image téléphone (facultative)",
+      "mobileHint": "{width} × {height} px conseillé (2:1). Sans elle, l'image large est montrée en entier sur téléphone.",
+      "choose": "Choisir une image",
+      "replace": "Remplacer",
+      "remove": "Retirer",
+      "uploading": "Envoi…",
+      "size": "{width} × {height} px",
+      "ratioWarn": "Cette image fait {width} × {height} px : elle sera recadrée. Visez {target}.",
+      "uploadFailed": "L'image n'a pas pu être envoyée. Réessayez.",
+      "tooBig": "Image trop lourde : {max} Mo au plus.",
+      "badType": "JPG, PNG ou WebP seulement.",
+      "link": "Lien",
+      "linkPlaceholder": "www.exemple.tn/offre",
+      "linkHint": "Où mène un clic, dans un nouvel onglet. « https:// » est ajouté s'il manque.",
+      "linkInvalid": "Ce n'est pas une adresse web.",
+      "titles": "Texte de l'image",
+      "titlesHint": "Lu à la place de l'image par les lecteurs d'écran. Vide : le nom de l'annonceur.",
+      "titleFr": "En français",
+      "titleAr": "En arabe",
+      "titleFrPlaceholder": "Crédit immobilier à taux fixe",
+      "titleArPlaceholder": "قرض سكني بنسبة قارّة",
+      "dates": "Dates",
+      "start": "Début",
+      "end": "Dernier jour",
+      "today": "Aujourd'hui",
+      "plusOne": "+1 mois",
+      "plusThree": "+3 mois",
+      "noEnd": "Sans fin",
+      "startHint": "Vide : dès l'enregistrement.",
+      "endHint": "Inclus. Vide : jusqu'à ce qu'elle soit mise en pause.",
+      "datesInvalid": "Le dernier jour vient avant le début.",
+      "display": "Affichage",
+      "active": "Active",
+      "activeHint": "Coupée, la bannière ne s'affiche plus ; ses dates et son rapport restent.",
+      "order": "Ordre",
+      "orderHint": "Dans un même emplacement, la plus petite passe en premier.",
+      "create": "Créer la campagne",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "created": "Campagne créée.",
+      "saved": "Campagne enregistrée.",
+      "missing": {
+        "advertiser": "Nommez l'annonceur.",
+        "image": "Ajoutez l'image large.",
+        "link": "Ajoutez un lien valable.",
+        "dates": "Le dernier jour vient avant le début.",
+        "uploading": "Attendez la fin de l'envoi."
+      }
+    },
+    "api": {
+      "advertiser": "Nommez l'annonceur (120 caractères au plus).",
+      "title": "Le texte de l'image fait 160 caractères au plus.",
+      "image": "Ajoutez l'image large de la bannière.",
+      "imageMobile": "L'image téléphone n'est pas valable : renvoyez-la.",
+      "link": "Ce lien n'est pas une adresse web (http ou https).",
+      "placement": "Choisissez un emplacement.",
+      "dates": "Les dates ne vont pas : le dernier jour doit venir après le début.",
+      "imageType": "JPG, PNG ou WebP seulement.",
+      "imageSize": "Image trop lourde : {max} Mo au plus."
     }
   }
 }
