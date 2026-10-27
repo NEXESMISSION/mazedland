@@ -23,7 +23,7 @@ type TabKey = (typeof TABS)[number];
  * the second says an admin read its papers.
  */
 export default async function AdminShopsPage({ searchParams }: { searchParams: Promise<{ status?: string; id?: string }> }) {
-  await requireAdmin();
+  await requireAdmin("agences");
   const sp = await searchParams;
   const locale = await getLocale();
   const t = await getTranslations("adminShops");

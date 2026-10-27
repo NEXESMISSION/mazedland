@@ -11,7 +11,7 @@ import { parseGroupInput } from "@/lib/social/groups";
  * DELETE /api/admin/social/groups/:id — the jobs that pointed at it keep their history.
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "social");
   if (gate instanceof NextResponse) return gate;
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "social");
   if (gate instanceof NextResponse) return gate;
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);

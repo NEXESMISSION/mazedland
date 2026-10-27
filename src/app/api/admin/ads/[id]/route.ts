@@ -43,7 +43,7 @@ function removeFiles(admin: NonNullable<ReturnType<typeof getServiceSupabase>>, 
 }
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "publicites");
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
   const { id } = await params;
@@ -94,7 +94,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 }
 
 export async function DELETE(req: NextRequest, { params }: Ctx) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "publicites");
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
   const { id } = await params;

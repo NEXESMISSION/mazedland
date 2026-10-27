@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
+import { audit } from "@/lib/admin/audit";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { PRODUCT_KINDS, PRODUCT_SELECT, type ProductKind } from "@/lib/products";
@@ -71,7 +72,7 @@ function posInt(v: unknown, max: number): number | null {
 }
 
 export async function GET(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "offres");
   if (gate instanceof NextResponse) return gate;
 
   const admin = getServiceSupabase();
@@ -88,7 +89,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "offres");
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
 
@@ -157,11 +158,12 @@ export async function POST(req: NextRequest) {
   }
 
   logAction(req, user, "admin.product.create", { id: data.id, kind, slug });
+  await audit(admin, user.id, { action: "product.create", targetType: "product", targetId: data.id, after: { kind, slug } });
   return NextResponse.json({ ok: true, id: data.id });
 }
 
 export async function PATCH(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "offres");
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
 
@@ -190,6 +192,9 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: true, updated: 0 });
   }
 
+  // The fields as they were, for the audit trail.
+  const { data: was } = await admin.from("products").select(Object.keys(patch).join(", ")).eq("id", id).maybeSingle();
+
   const { error } = await admin.from("products").update(patch).eq("id", id);
   if (error) {
     // 23514 = a CHECK from 0157 (pack without quota, badge without duration,
@@ -208,11 +213,12 @@ export async function PATCH(req: NextRequest) {
   }
 
   logAction(req, user, "admin.product.update", { id, fields: Object.keys(patch) });
+  await audit(admin, user.id, { action: "product.update", targetType: "product", targetId: id, before: was, after: patch });
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "offres");
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
 
@@ -228,5 +234,6 @@ export async function DELETE(req: NextRequest) {
   if (error) return fail("product_deactivate_failed", 500, error);
 
   logAction(req, user, "admin.product.deactivate", { id });
+  await audit(admin, user.id, { action: "product.deactivate", targetType: "product", targetId: id, after: { is_active: false } });
   return NextResponse.json({ ok: true, deactivated: true });
 }

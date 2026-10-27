@@ -31,7 +31,7 @@ const MAX = 50;
 const DEFAULT_EXTEND_DAYS = 30;
 
 export async function POST(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "annonces");
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
 

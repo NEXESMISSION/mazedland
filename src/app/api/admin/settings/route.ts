@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
+import { audit, maskSecret } from "@/lib/admin/audit";
 import { fail } from "@/lib/http/errors";
 import { checkSetting, rangeOf } from "@/lib/settings/define";
 import { SETTINGS, isSettingKey } from "@/lib/settings/registry";
@@ -18,7 +19,7 @@ import { apiTranslator } from "@/lib/i18n/server";
  * is the worst kind — the admin sees « enregistré » and nothing moves.
  */
 export async function PUT(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "settings");
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
   const t = await apiTranslator(req, "settingsRegistry.errors");
@@ -53,6 +54,14 @@ export async function PUT(req: NextRequest) {
 
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
+
+  // The values as they were, for the audit trail; a bank detail is masked.
+  const keys = [...rows.map((r) => r.key), ...reset];
+  const { data: wasRows } = await admin.from("app_settings").select("key, value").in("key", keys);
+  const shown = (key: string, v: unknown) =>
+    (SETTINGS[key as keyof typeof SETTINGS] as { secret?: boolean }).secret ? maskSecret(v) : v;
+  const before = Object.fromEntries((wasRows ?? []).map((r) => [r.key, shown(r.key, r.value)]));
+
   if (rows.length > 0) {
     const { error } = await admin.from("app_settings").upsert(rows, { onConflict: "key" });
     if (error) return fail("settings_update_failed", 500, error);
@@ -64,5 +73,10 @@ export async function PUT(req: NextRequest) {
 
   // Bank details are logged as changed, never with their value.
   logAction(req, user, "settings.update", { keys: rows.map((r) => r.key), reset });
+  await audit(admin, user.id, {
+    action: "settings.update", targetType: "setting", targetId: keys.length === 1 ? keys[0] : null,
+    before,
+    after: { ...Object.fromEntries(rows.map((r) => [r.key, shown(r.key, r.value)])), ...Object.fromEntries(reset.map((k) => [k, null])) },
+  });
   return NextResponse.json({ ok: true, updated: rows.length + reset.length });
 }

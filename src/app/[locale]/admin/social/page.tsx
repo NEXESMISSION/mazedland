@@ -41,7 +41,7 @@ export default async function AdminSocialPage({
 }: {
   searchParams: Promise<{ tab?: string; connected?: string; error?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdmin("social");
   const sp = await searchParams;
   const locale = await getLocale();
   const t = await getTranslations("adminSocial");

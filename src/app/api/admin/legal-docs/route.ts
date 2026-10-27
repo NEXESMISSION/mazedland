@@ -33,7 +33,7 @@ type IncomingItem = {
  * written in the console's language. The codes stay as they were.
  */
 export async function PUT(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "legal-docs");
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
 

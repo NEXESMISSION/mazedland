@@ -17,7 +17,7 @@ import { fail } from "@/lib/http/errors";
  * migration 0033) and the route-level role check below.
  */
 export async function POST(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "notifications");
   if (gate instanceof NextResponse) return gate;
   const { user, supabase } = gate;
 

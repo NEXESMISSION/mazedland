@@ -3,8 +3,10 @@
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { NavIcon } from "./LinkPending";
+import { useCanOpen } from "../AdminScopes";
+import type { ConsoleSection } from "@/lib/admin/sections";
 import {
-  LayoutTemplate, MessageSquare, FileText, Bell, Settings2, Activity,
+  LayoutTemplate, MessageSquare, FileText, Bell, Settings2, Activity, UsersRound,
   type LucideIcon,
 } from "lucide-react";
 
@@ -20,21 +22,23 @@ import {
  * so a tab is a tab everywhere in the console.
  */
 
-/** `key` names the label in `admin.siteTabs`. */
-type Tab = { key: string; href: string; Icon: LucideIcon };
+/** `key` names the label in `admin.siteTabs`; `section` is the team section (src/lib/admin/sections.ts). */
+type Tab = { key: string; href: string; Icon: LucideIcon; section: ConsoleSection };
 
-const TABS: Tab[] = [
-  { key: "home", href: "/admin/home", Icon: LayoutTemplate },
-  { key: "popups", href: "/admin/popups", Icon: MessageSquare },
-  { key: "documents", href: "/admin/legal-docs", Icon: FileText },
-  { key: "broadcasts", href: "/admin/notifications", Icon: Bell },
-  { key: "settings", href: "/admin/settings", Icon: Settings2 },
-  { key: "journal", href: "/admin/activity", Icon: Activity },
+export const SITE_TABS: Tab[] = [
+  { key: "home", href: "/admin/home", Icon: LayoutTemplate, section: "home" },
+  { key: "popups", href: "/admin/popups", Icon: MessageSquare, section: "popups" },
+  { key: "documents", href: "/admin/legal-docs", Icon: FileText, section: "legal-docs" },
+  { key: "broadcasts", href: "/admin/notifications", Icon: Bell, section: "notifications" },
+  { key: "settings", href: "/admin/settings", Icon: Settings2, section: "settings" },
+  { key: "journal", href: "/admin/activity", Icon: Activity, section: "activity" },
+  { key: "team", href: "/admin/equipe", Icon: UsersRound, section: "equipe" },
 ];
 
 export function SiteTabs() {
   const pathname = usePathname();
   const t = useTranslations("admin.siteTabs");
+  const canOpen = useCanOpen();
 
   return (
     <nav
@@ -47,7 +51,7 @@ export function SiteTabs() {
       >
         {t("site")}
       </Link>
-      {TABS.map((tab) => {
+      {SITE_TABS.filter((tab) => canOpen(tab.section)).map((tab) => {
         const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
         return (
           <Link

@@ -15,7 +15,7 @@ const PROPERTY_TYPES: PropertyType[] = [
 ];
 
 export default async function AdminLegalDocsPage() {
-  await requireAdmin();
+  await requireAdmin("legal-docs");
   const supabase = await getServerSupabase();
   const { data } = await supabase
     .from("legal_doc_kinds")

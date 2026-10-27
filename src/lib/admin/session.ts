@@ -2,6 +2,7 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { canOpen, scopesFromRow, type AdminScopes, type ConsoleSection } from "./sections";
 
 /**
  * The admin gate, resolved once per request.
@@ -28,6 +29,8 @@ export type AdminSession = {
   supabase: Awaited<ReturnType<typeof getServerSupabase>>;
   user: User | null;
   isAdmin: boolean;
+  /** The sections this member may open; `null` = the whole console (src/lib/admin/sections.ts). */
+  scopes: AdminScopes;
 };
 
 export const getAdminSession = cache(async (): Promise<AdminSession> => {
@@ -36,15 +39,16 @@ export const getAdminSession = cache(async (): Promise<AdminSession> => {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return { supabase, user: null, isAdmin: false };
+  if (!user) return { supabase, user: null, isAdmin: false, scopes: [] };
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, admin_scopes")
     .eq("id", user.id)
     .single();
 
-  return { supabase, user, isAdmin: profile?.role === "admin" };
+  const isAdmin = profile?.role === "admin";
+  return { supabase, user, isAdmin, scopes: isAdmin ? scopesFromRow(profile?.admin_scopes) : [] };
 });
 
 /**
@@ -56,9 +60,12 @@ export const getAdminSession = cache(async (): Promise<AdminSession> => {
  * An anonymous `curl` of /admin/vendeurs came back with sellers' phone
  * numbers. The proxy now turns such a request away before anything renders;
  * this is the second lock, for any path the proxy's matcher does not see.
+ *
+ * `section` is the screen's name in src/lib/admin/sections.ts: a team member
+ * without it gets the same not-found as a visitor.
  */
-export async function requireAdmin(): Promise<AdminSession & { user: User }> {
+export async function requireAdmin(section?: ConsoleSection): Promise<AdminSession & { user: User }> {
   const session = await getAdminSession();
-  if (!session.user || !session.isAdmin) notFound();
+  if (!session.user || !session.isAdmin || !canOpen(session.scopes, section)) notFound();
   return session as AdminSession & { user: User };
 }

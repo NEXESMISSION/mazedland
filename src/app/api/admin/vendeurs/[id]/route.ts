@@ -4,6 +4,9 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
+import { canOpen, type AdminSection } from "@/lib/admin/sections";
+import { audit } from "@/lib/admin/audit";
+import { otherFullAdmins } from "@/lib/admin/team";
 
 /**
  * Everything an admin can do to one account.
@@ -19,7 +22,21 @@ import { apiTranslator } from "@/lib/i18n/server";
  * were two halves of the same screen: whether someone is an agency, whether
  * they hold a badge and how many publications they have left are the same
  * question asked three ways.
+ *
+ * One door, two sections of the team (src/lib/admin/sections.ts): roles and
+ * bans are « vendeurs », credits and badges are money, so « paiements ». And
+ * a console member's account — making one, unmaking one, banning one — is a
+ * full admin's call (the team screen is where that is done properly).
  */
+
+const ACTION_SECTION: Record<string, AdminSection> = {
+  set_role: "vendeurs",
+  ban: "vendeurs",
+  unban: "vendeurs",
+  grant_credits: "paiements",
+  grant_badge: "paiements",
+  revoke_badge: "paiements",
+};
 
 /** v3 roles. `bank`, `bailiff` and `inspector` are dropped (PIVOT-PLAN D6). */
 const ROLES = new Set(["individual", "agency", "admin"]);
@@ -34,26 +51,33 @@ export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  const gate = await requireAdmin(req);
+  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const action = typeof body.action === "string" ? body.action : "";
+  const gate = await requireAdmin(req, ACTION_SECTION[action] ?? "vendeurs");
   if (gate instanceof NextResponse) return gate;
-  const { user } = gate;
+  const { user, scopes } = gate;
   const { id } = await ctx.params;
 
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const action = typeof body.action === "string" ? body.action : "";
   // `detail` sentences are shown as-is, in the language of the page that asked.
   // Notification texts are not (yet).
   const t = await apiTranslator(req, "adminApi.sellers");
 
   const { data: profile } = await admin
     .from("profiles")
-    .select("id, full_name, role, banned_at")
+    .select("id, full_name, role, banned_at, admin_scopes")
     .eq("id", id)
     .maybeSingle();
   if (!profile) return NextResponse.json({ error: "not_found" }, { status: 404 });
+
+  // A console member's account, or making one, is the full admins' business.
+  const touchesTeam =
+    profile.role === "admin" || (action === "set_role" && body.role === "admin");
+  if (touchesTeam && !canOpen(scopes, "equipe")) {
+    return NextResponse.json({ error: "forbidden_section", section: "equipe" }, { status: 403 });
+  }
 
   // ── Role ──────────────────────────────────────────────────────────────────
   if (action === "set_role") {
@@ -73,10 +97,21 @@ export async function POST(
       );
     }
 
-    const { error } = await admin.from("profiles").update({ role }).eq("id", id);
+    // The last full admin cannot be demoted: nobody would be left to manage the team.
+    if (profile.role === "admin" && role !== "admin" && profile.admin_scopes === null
+        && (await otherFullAdmins(admin, id)) === 0) {
+      return NextResponse.json({ error: "last_full_admin", detail: t("lastFullAdmin") }, { status: 409 });
+    }
+
+    // Made admin here = the whole console; scopes are given on the team screen.
+    const { error } = await admin.from("profiles").update({ role, admin_scopes: null }).eq("id", id);
     if (error) return fail("role_update_failed", 500, error);
 
     logAction(req, user, "admin.user.set_role", { id, role });
+    await audit(admin, user.id, {
+      action: "user.set_role", targetType: "profile", targetId: id,
+      before: { role: profile.role, admin_scopes: profile.admin_scopes }, after: { role, admin_scopes: null },
+    });
     return NextResponse.json({ ok: true, role });
   }
 
@@ -103,6 +138,10 @@ export async function POST(
     if (error) return fail("ban_failed", 500, error);
 
     logAction(req, user, "admin.user.ban", { id });
+    await audit(admin, user.id, {
+      action: "user.ban", targetType: "profile", targetId: id,
+      before: { banned_at: profile.banned_at }, after: { banned: true }, note: reason,
+    });
     return NextResponse.json({ ok: true });
   }
 
@@ -114,6 +153,10 @@ export async function POST(
     if (error) return fail("unban_failed", 500, error);
 
     logAction(req, user, "admin.user.unban", { id });
+    await audit(admin, user.id, {
+      action: "user.unban", targetType: "profile", targetId: id,
+      before: { banned_at: profile.banned_at }, after: { banned: false },
+    });
     return NextResponse.json({ ok: true });
   }
 
@@ -176,6 +219,10 @@ export async function POST(
       .then(() => {}, () => {});
 
     logAction(req, user, "admin.seller.grant_credits", { id, quota, productId });
+    await audit(admin, user.id, {
+      action: "credits.grant", targetType: "profile", targetId: id,
+      after: { product_id: productId, quota, days }, note: text(body.note, 300),
+    });
     return NextResponse.json({ ok: true, quota });
   }
 
@@ -214,6 +261,9 @@ export async function POST(
       .then(() => {}, () => {});
 
     logAction(req, user, "admin.seller.grant_badge", { id, days });
+    await audit(admin, user.id, {
+      action: "badge.grant", targetType: "profile", targetId: id, after: { days }, note: text(body.note, 300),
+    });
     return NextResponse.json({ ok: true });
   }
 
@@ -233,6 +283,9 @@ export async function POST(
     if (error) return fail("badge_revoke_failed", 500, error);
 
     logAction(req, user, "admin.seller.revoke_badge", { id });
+    await audit(admin, user.id, {
+      action: "badge.revoke", targetType: "profile", targetId: id, after: { revoked: true }, note: reason,
+    });
     return NextResponse.json({ ok: true });
   }
 

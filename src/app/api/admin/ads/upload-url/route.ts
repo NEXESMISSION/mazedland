@@ -20,7 +20,7 @@ import { AD_IMAGE, adImageExt } from "@/lib/ads/ads";
  * camera would slow every page it shows on), not a defence.
  */
 export async function POST(req: NextRequest) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "publicites");
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
 

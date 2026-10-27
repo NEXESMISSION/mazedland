@@ -98,7 +98,7 @@ export default async function AdminAnnoncesPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string; deal?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdmin("annonces");
   const sp = await searchParams;
   // Sale, rent or both (0166): the same queue, narrowed to one deal.
   const deal = sp.deal === "sale" || sp.deal === "rent" ? sp.deal : null;

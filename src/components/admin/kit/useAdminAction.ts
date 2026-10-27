@@ -31,6 +31,7 @@ import { useApiError } from "@/lib/useApiError";
 const ADMIN_ERROR_CODES = new Set([
   "auth",
   "forbidden",
+  "forbidden_section",
   "cross_origin_blocked",
   "already_claimed",
   "not_found",

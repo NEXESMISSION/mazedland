@@ -44,7 +44,7 @@ export default async function AdminOffresPage({
 }: {
   searchParams: Promise<{ a?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdmin("offres");
   const sp = await searchParams;
   const t = await getTranslations("adminOffers");
   const tc = await getTranslations("common");

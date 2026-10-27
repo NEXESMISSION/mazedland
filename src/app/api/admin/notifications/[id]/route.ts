@@ -14,7 +14,7 @@ export async function DELETE(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  const gate = await requireAdmin(req);
+  const gate = await requireAdmin(req, "notifications");
   if (gate instanceof NextResponse) return gate;
   const { user, supabase } = gate;
   const { id } = await ctx.params;
