@@ -8,8 +8,8 @@ describe("slugPreview", () => {
     expect(slugPreview("Agence Él Médina — Sfax")).toBe(slugify("Agence Él Médina — Sfax", "abcd"));
   });
   it("says the suffix is to come when the name has no Latin letters", () => {
-    expect(slugPreview("وكالة الأمان")).toBe("boutique-…");
-    expect(slugPreview("")).toBe("boutique-…");
+    expect(slugPreview("وكالة الأمان")).toBe("agence-…");
+    expect(slugPreview("")).toBe("agence-…");
   });
 });
 

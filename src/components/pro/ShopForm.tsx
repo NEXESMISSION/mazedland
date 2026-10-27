@@ -227,17 +227,17 @@ export function ShopForm({
           {mode === "create" ? (
             v.name.trim() && (
               <p className={hint}>
-                {t.rich("slugLine", { url: () => <span className="break-all font-semibold text-foreground" dir="ltr">mazed.immo/boutiques/{nameSlug}</span> })} · {t("slugLater")}
+                {t.rich("slugLine", { url: () => <span className="break-all font-semibold text-foreground" dir="ltr">mazed.immo/agences/{nameSlug}</span> })} · {t("slugLater")}
               </p>
             )
           ) : editingSlug ? (
             <div className="mt-3">
               <label className={label} htmlFor="shop-slug">{t("slug")}</label>
               <div className="flex items-center gap-1 rounded-xl border border-border bg-surface px-3" dir="ltr">
-                <span className="text-[13px] text-muted">mazed.immo/boutiques/</span>
+                <span className="text-[13px] text-muted">mazed.immo/agences/</span>
                 <input id="shop-slug" className="h-11 min-w-0 flex-1 bg-transparent text-[14px] text-foreground focus:outline-none" value={v.slug ?? ""} onChange={(e) => set("slug", typedSlug(e.target.value))} autoCapitalize="none" autoCorrect="off" spellCheck={false} />
               </div>
-              {!nameSlug.startsWith("boutique-") && nameSlug !== v.slug && (
+              {!nameSlug.startsWith("agence-") && nameSlug !== v.slug && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   <button type="button" onClick={() => set("slug", nameSlug)} className={chip(false)}>
                     {t("slugFromName")} <span className="break-all" dir="ltr">{nameSlug}</span>
@@ -248,7 +248,7 @@ export function ShopForm({
             </div>
           ) : (
             <p className={cn(hint, "flex flex-wrap items-center gap-x-2")}>
-              <span>{t.rich("slugLine", { url: () => <span className="break-all font-semibold text-foreground" dir="ltr">mazed.immo/boutiques/{v.slug}</span> })}</span>
+              <span>{t.rich("slugLine", { url: () => <span className="break-all font-semibold text-foreground" dir="ltr">mazed.immo/agences/{v.slug}</span> })}</span>
               <button type="button" onClick={() => setEditingSlug(true)} className="tap-target inline-flex items-center font-bold text-gold hover:underline">
                 {t("slugEdit")}
               </button>

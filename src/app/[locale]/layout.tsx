@@ -1,6 +1,7 @@
 import { CompareBar } from "@/components/compare/CompareBar";
 import { Optional } from "@/components/ui/Optional";
 import { NextIntlClientProvider } from "next-intl";
+import { publicMessages } from "@/lib/i18n/publicMessages";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
@@ -95,7 +96,8 @@ export default async function LocaleLayout({
   // home page's `revalidate`). Without this, next-intl reads request headers
   // and forces every route dynamic. Must run before getMessages/getTranslations.
   setRequestLocale(locale);
-  const messages = await getMessages();
+  // The console's texts stay out of public pages (src/lib/i18n/publicMessages.ts).
+  const messages = publicMessages(await getMessages());
   const t = await getTranslations("shell");
   const settings = clientSettings(await getSettings());
 

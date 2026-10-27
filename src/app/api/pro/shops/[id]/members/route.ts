@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .rpc("enqueue_notification", {
       p_user_id: person.id,
       p_kind: "shop_member_added",
-      p_title: "Vous rejoignez une boutique",
+      p_title: "Vous rejoignez une agence",
       p_body: `Vous faites maintenant partie de « ${shop?.name ?? ""} » sur Mazed Immo.`,
       p_link: "/pro/dashboard",
       p_payload: { vars: { name: shop?.name ?? "" } },

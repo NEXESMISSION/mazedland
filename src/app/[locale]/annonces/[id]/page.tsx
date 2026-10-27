@@ -432,7 +432,7 @@ export default async function AnnoncePage({
   const sellerCard = shop ? (
     <section className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center gap-3">
-        <Link href={`/boutiques/${shop.slug}` as never} className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border">
+        <Link href={`/agences/${shop.slug}` as never} className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border">
           {shop.logo_path ? (
             // eslint-disable-next-line @next/next/no-img-element -- the shop's logo
             <img src={propertyPhotoUrl(shop.logo_path, { transform: { width: 100, quality: 75 } })} alt="" className="size-full object-cover" />
@@ -443,7 +443,7 @@ export default async function AnnoncePage({
         <div className="min-w-0 flex-1">
           <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">{t("shopLabel")}</div>
           <div className="flex items-center gap-1.5">
-            <Link href={`/boutiques/${shop.slug}` as never} dir="auto" className="truncate text-[14.5px] font-bold text-foreground hover:underline">
+            <Link href={`/agences/${shop.slug}` as never} dir="auto" className="truncate text-[14.5px] font-bold text-foreground hover:underline">
               {shop.name}
             </Link>
             {shop.verified_at && <BadgeCheck className="size-4 shrink-0 text-gold" strokeWidth={2.4} aria-label={t("verifiedShop")} />}
@@ -463,7 +463,7 @@ export default async function AnnoncePage({
           </div>
         )}
       </div>
-      <Link href={`/boutiques/${shop.slug}` as never} className="mt-3 block text-center text-[12.5px] font-bold text-gold hover:underline">
+      <Link href={`/agences/${shop.slug}` as never} className="mt-3 block text-center text-[12.5px] font-bold text-gold hover:underline">
         {t("seeShop")}
       </Link>
     </section>

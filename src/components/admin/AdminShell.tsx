@@ -49,7 +49,7 @@ const NAV: Item[] = [
   { key: "social", href: "/admin/social", Icon: Megaphone, countKey: "social" },
   { key: "ads", href: "/admin/publicites", Icon: GalleryHorizontalEnd },
   { key: "payments", href: "/admin/paiements", Icon: Receipt, countKey: "paiements" },
-  { key: "shops", href: "/admin/boutiques", Icon: Store, countKey: "boutiques" },
+  { key: "shops", href: "/admin/agences", Icon: Store, countKey: "boutiques" },
   { key: "offers", href: "/admin/offres", Icon: Tag },
   { key: "sellers", href: "/admin/vendeurs", Icon: Users },
   { key: "catalogue", href: "/admin/catalogue", Icon: FolderTree },

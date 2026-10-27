@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getAdminSession } from "@/lib/admin/session";
@@ -87,7 +89,11 @@ export default async function AdminLayout({
     boutiques: shopAsks.count ?? 0,
   };
 
+  // The public layout leaves the console's texts out; its pages get them all.
+  const messages = await getMessages();
+
   return (
+    <NextIntlClientProvider locale={locale} messages={messages}>
     <div className="flex h-dvh overflow-hidden bg-background">
       <AdminRail counts={counts} />
       <div className="flex min-w-0 flex-1 flex-col">
@@ -100,5 +106,6 @@ export default async function AdminLayout({
         </div>
       </div>
     </div>
+    </NextIntlClientProvider>
   );
 }

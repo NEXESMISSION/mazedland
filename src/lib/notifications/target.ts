@@ -90,7 +90,7 @@ type FallbackRoute =
   | "/admin/social"
   | "/admin/annonces"
   | "/pro/dashboard"
-  | "/admin/boutiques"
+  | "/admin/agences"
   | "/account/visites"
   | null;
 
@@ -185,7 +185,7 @@ const KIND_FALLBACK: Record<NotificationKind, FallbackRoute> = {
   shop_approved: "/pro/dashboard",
   shop_rejected: "/pro/dashboard",
   shop_member_added: "/pro/dashboard",
-  admin_shop_pending: "/admin/boutiques",
+  admin_shop_pending: "/admin/agences",
   visit_requested: "/account/visites",
   visit_confirmed: "/account/visites",
   visit_declined: "/account/visites",

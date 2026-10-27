@@ -64,7 +64,7 @@ export function slugify(name: string, fallbackSuffix: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 50)
     .replace(/-+$/g, "");
-  return base.length >= 3 ? base : `boutique-${fallbackSuffix.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8)}`;
+  return base.length >= 3 ? base : `agence-${fallbackSuffix.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8)}`;
 }
 
 export type ShopInput = {

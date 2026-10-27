@@ -16,13 +16,13 @@ export async function generateMetadata(): Promise<Metadata> {
     title: t("metaTitle"),
     description: t("metaDescription"),
     alternates: {
-      canonical: `/${locale}/boutiques`,
-      languages: { fr: `/fr/boutiques`, ar: `/ar/boutiques`, "x-default": `/fr/boutiques` },
+      canonical: `/${locale}/agences`,
+      languages: { fr: `/fr/agences`, ar: `/ar/agences`, "x-default": `/fr/agences` },
     },
   };
 }
 
-/** Les boutiques (0173): the open shops, verified ones first, each with its count of annonces online. */
+/** Les agences (0173, « boutiques » until 2026-10-27): the open shops, verified ones first, each with its count of annonces online. */
 export default async function ShopsPage() {
   const locale = await getLocale();
   const t = await getTranslations("shops");
@@ -61,7 +61,7 @@ export default async function ShopsPage() {
           {shops.map((s) => (
             <li key={s.id}>
               <Link
-                href={`/boutiques/${s.slug}` as never}
+                href={`/agences/${s.slug}` as never}
                 className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:border-gold-soft"
               >
                 <span className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border">

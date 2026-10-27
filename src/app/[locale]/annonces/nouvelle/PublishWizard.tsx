@@ -238,7 +238,7 @@ export function PublishWizard({
   editWaiting?: boolean;
   /** Approved shops where this seller has the right to publish. */
   shops?: WizardShop[];
-  /** ?shop= from the Espace Pro's « Publier pour la boutique ». */
+  /** ?shop= from the Espace Pro's « Publier pour l'agence ». */
   initialShopId?: string | null;
   /** What annonces like it ask, by `${categoryId}:${deal}` — to catch a zero too many. */
   priceRefs?: Record<string, PriceRef>;

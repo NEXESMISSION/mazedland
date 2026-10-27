@@ -193,7 +193,7 @@ export async function POST(
     paid: `« ${listing.title} » est en cours de vérification. Les frais de publication étaient déjà réglés.`,
     credit: `« ${listing.title} » est en cours de vérification. Il vous reste ${remaining} publication(s).`,
     freeQuota: `« ${listing.title} » est en cours de vérification. Votre publication est gratuite.`,
-    subscription: `« ${listing.title} » est en cours de vérification. Elle compte dans l'abonnement de votre boutique.`,
+    subscription: `« ${listing.title} » est en cours de vérification. Elle compte dans l'abonnement de votre agence.`,
   }[variant];
 
   await admin

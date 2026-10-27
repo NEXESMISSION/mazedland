@@ -41,10 +41,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: shop.name,
     description: shop.description?.slice(0, 160) ?? t("shopMetaDescription", { name: shop.name }),
-    // With the locale: « /boutiques/x » redirects, and a canonical must not.
+    // With the locale: « /agences/x » redirects, and a canonical must not.
     alternates: {
-      canonical: `/${locale}/boutiques/${shop.slug}`,
-      languages: { fr: `/fr/boutiques/${shop.slug}`, ar: `/ar/boutiques/${shop.slug}`, "x-default": `/fr/boutiques/${shop.slug}` },
+      canonical: `/${locale}/agences/${shop.slug}`,
+      languages: { fr: `/fr/agences/${shop.slug}`, ar: `/ar/agences/${shop.slug}`, "x-default": `/fr/agences/${shop.slug}` },
     },
     openGraph: shop.logo_path ? { images: [propertyPhotoUrl(shop.logo_path)] } : undefined,
   };
@@ -86,7 +86,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
     "@context": "https://schema.org",
     "@type": "RealEstateAgent",
     name: shop.name,
-    url: absoluteUrl(`/${locale}/boutiques/${shop.slug}`),
+    url: absoluteUrl(`/${locale}/agences/${shop.slug}`),
     ...(shop.logo_path ? { logo: absoluteUrl(propertyPhotoUrl(shop.logo_path)) } : {}),
     ...(shop.phone ? { telephone: shop.phone } : {}),
     address: { "@type": "PostalAddress", addressRegion: shop.governorate, ...(shop.city ? { addressLocality: shop.city } : {}), addressCountry: "TN" },
@@ -130,7 +130,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
               {([null, "sale", "rent"] as const).map((d) => (
                 <Link
                   key={d ?? "all"}
-                  href={(d ? `/boutiques/${shop.slug}?deal=${d}` : `/boutiques/${shop.slug}`) as never}
+                  href={(d ? `/agences/${shop.slug}?deal=${d}` : `/agences/${shop.slug}`) as never}
                   aria-current={deal === d ? "page" : undefined}
                   className={`rounded-full px-3 py-1.5 text-[12.5px] font-bold ring-1 ${deal === d ? "bg-gold-faint text-foreground ring-gold-soft" : "text-muted ring-border"}`}
                 >
