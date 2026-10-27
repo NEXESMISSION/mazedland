@@ -29,6 +29,12 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["lucide-react"],
   },
   images: {
+    // Each size of a picture comes from Supabase's resizer or a file made in
+    // advance, not from Vercel's optimizer, whose free quota ran out and
+    // answered 402 (src/lib/imageLoader.ts). The settings below only shape the
+    // widths next/image asks the loader for.
+    loader: "custom",
+    loaderFile: "./src/lib/imageLoader.ts",
     // AVIF first, then WebP. AVIF is ~25–30 % smaller than WebP at the
     // same perceptual quality; next/image negotiates per request based
     // on the browser's Accept header so older browsers transparently

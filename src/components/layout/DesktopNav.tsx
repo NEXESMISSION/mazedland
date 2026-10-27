@@ -154,8 +154,8 @@ export function DesktopNav() {
             <Image
               src="/logo-mark.webp"
               alt=""
-              width={745}
-              height={936}
+              width={127}
+              height={160}
               loading="eager"
               sizes="36px"
               className="h-10 w-auto"

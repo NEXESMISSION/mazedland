@@ -24,7 +24,7 @@ export default function RootNotFound() {
     <html lang="fr" dir="ltr" className={`${jakarta.variable} ${cairo.variable} h-full antialiased`}>
       <body className="min-h-full bg-background text-foreground font-sans" style={{ background: "#ffffff" }}>
         <main className="mx-auto flex min-h-[100dvh] max-w-md flex-col items-center justify-center px-6 text-center">
-          <Image src="/logo-mark.webp" alt="Mazed Immo" width={745} height={936} sizes="48px" className="h-16 w-auto" />
+          <Image src="/logo-mark.webp" alt="Mazed Immo" width={127} height={160} sizes="48px" className="h-16 w-auto" />
           <h1 className="mt-6 text-[22px] font-extrabold leading-tight tracking-tight text-foreground">
             Page introuvable
           </h1>
