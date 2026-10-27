@@ -1,8 +1,8 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { TrendingRail } from "@/components/landing/TrendingRail";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeDesktop } from "@/components/landing/HomeDesktop";
+import { HomeRailSection, RailHeading } from "@/components/landing/HomeRail";
 import { HomeSearch } from "@/components/landing/HomeSearch";
 import { IntentChooser } from "@/components/landing/IntentChooser";
 import { LG_UP } from "@/components/ui/HiddenAt";
@@ -13,6 +13,8 @@ import { isRtl } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
 import { shownDelegation } from "@/lib/delegations";
 import { getHomeFeed, type HomeListingRow } from "@/lib/home/feed";
+import { homeRailOptions, planHomeRails, splitAtMiddle, type HomeRail } from "@/lib/home/rails";
+import { getSettings } from "@/lib/settings/server";
 import { log } from "@/lib/log";
 import { PerfProbe } from "@/components/dev/PerfProbe";
 import { catalogueHrefForType } from "@/lib/catalog/browse";
@@ -22,14 +24,11 @@ import { catalogueHrefForType } from "@/lib/catalog/browse";
 // are filled in client-side via the watchlist store after hydration. This
 // lets Vercel serve the page straight from the edge CDN — ~20ms TTFB and no
 // serverless cold start — instead of rendering ~200 cards on every request.
+// The rails move in the browser (AutoRail), so they change none of this.
 export const revalidate = 60;
 
-/** A rail with fewer cards than this reads as a leftover, not a section. */
-const MIN_RAIL_CARDS = 4;
 import {
   ArrowUpRight,
-  ChevronRight,
-  ChevronLeft,
   Building2,
   Home,
   Trees,
@@ -148,7 +147,6 @@ export default async function LandingPage({
   setRequestLocale(locale);
   const t = await getTranslations();
   const isRTL = isRtl(locale);
-  const ChevronEnd = isRTL ? ChevronLeft : ChevronRight;
   // Both device trees are rendered and CSS picks one (lg breakpoint). The
   // page is static, so saved-hearts + login state stay false here and the
   // client watchlist store fills them in after hydration.
@@ -156,18 +154,19 @@ export default async function LandingPage({
   // One round-trip for the listing surfaces. The smaller widgets
   // (LiveTicker, RecentBidsFeed, CoverageStrip, EndingSoonBanner) each
   // own their own queries — cheap, parallelizable, fail-soft.
+  //
+  // `trending` is the published slice in its paid-then-viewed order. It no
+  // longer has a rail of its own — « À la une » and « Les plus vus » split
+  // what « Les biens du moment » mixed — but the hero carousels still open on it.
   let trending: HomeListingRow[] = [];
-  let recent: HomeListingRow[] = [];
-  // "Bonnes affaires" rail — the cheapest published annonces per square
-  // metre. This slot used to hold "Offres directes", which separated
-  // fixed-price lots from bidding lots; every annonce is fixed-price now, so
-  // that split says nothing. Price per m² is what a property buyer actually
-  // scans a home page for, and no other surface answers it.
-  let bestValue: HomeListingRow[] = [];
-  // "Nouveautés" rail — newest by created_at, distinct from trending which
-  // leads with the most recently published. Same horizontal scroller, a
-  // different question: "what is new" rather than "what is worth seeing".
-  let nouveautes: HomeListingRow[] = [];
+  // Every rail of annonces, in page order, already cut to what each one
+  // shows: « À la une », « Les plus vus », « Nouveautés », « À louer »,
+  // « Bonnes affaires », one per type. See src/lib/home/rails.ts for why a
+  // rail is there, and when it is not.
+  let rails: HomeRail[] = [];
+  // « À découvrir »: what no rail shows. (Cast, not annotated: it is set
+  // inside the closure below, which TypeScript's narrowing does not follow.)
+  let explore = null as HomeRail | null;
   // Always empty / false at static render time — the client favourites store
   // fills in the real saved set + login state post-hydration.
   const savedIds = new Set<string>();
@@ -200,38 +199,36 @@ export default async function LandingPage({
     // per-user work happens here: the page is statically rendered, so saved
     // hearts + login state are filled client-side after hydration. That is
     // what lets this whole page be CDN-cached instead of rendered per request.
-    const endFeed = perf.time("getHomeFeed (hit≈0ms, miss=4 queries)");
-    const feed = await getHomeFeed(weekStart);
+    //
+    // Which rails, and how many cards each, are the console's (tab « Accueil »).
+    // The layout has already read the settings for this render, so this is
+    // React's cache, not another round trip.
+    const railOptions = homeRailOptions(await getSettings());
+    const endFeed = perf.time("getHomeFeed (hit≈0ms, miss=one round of parallel queries)");
+    const feed = await getHomeFeed(weekStart, railOptions);
     endFeed();
 
     const rows = feed?.published.rows ?? [];
     // eslint-disable-next-line react-hooks/immutability -- synchronising with an external system, which is what an effect is for.
     liveCount = feed?.published.count ?? rows.length;
     newThisWeek = feed?.newThisWeek ?? 0;
-    bestValue = feed?.bestValue ?? [];
-    nouveautes = feed?.nouveautes ?? [];
     coverageGovs = new Set(feed?.govs ?? []).size;
+    // The two hero carousels take five each.
+    trending = rows.slice(0, 10);
 
     // Every rail draws from one inventory, and at a few dozen annonces that made
-    // the home page the same cards over and over: "Les biens du moment" and
-    // "Fraîchement publiés" opened with the same listings in the same order, and
-    // the grid repeated the rail's tail. Each later surface now leaves out what
-    // an earlier one shows, and a rail left with too few cards is not rendered —
-    // it comes back on its own once there are annonces it alone would show.
-    // "Bonnes affaires" is exempt: re-ranking the same annonces by price per m²
-    // is what that rail is for.
-    trending = rows.slice(0, 18);
-    const shown = new Set(trending.map((r) => r.id));
-    nouveautes = nouveautes.filter((r) => !shown.has(r.id));
-    if (nouveautes.length < MIN_RAIL_CARDS) nouveautes = [];
-    for (const r of nouveautes) shown.add(r.id);
-    recent = rows.filter((r) => !shown.has(r.id));
+    // the home page the same cards over and over. The plan has each discovery
+    // rail leave out what an earlier one shows, drops any rail left with fewer
+    // than three cards, and lets the rails that cut by a criterion (rentals,
+    // price per m², one type) keep theirs.
+    // The clock is read when the page is built, about once a minute: a
+    // placement that has just ended leaves « À la une » on the next build.
+    ({ rails, explore } = planHomeRails(feed, railOptions));
 
     perf.debug("data ready", {
       published: rows.length,
-      trending: trending.length,
-      nouv: nouveautes.length,
-      bestValue: bestValue.length,
+      rails: rails.map((r) => `${r.key}:${r.rows.length}`).join(" "),
+      explore: explore?.rows.length ?? 0,
     });
     })(), HOME_DATA_BUDGET_MS);
   } catch (err) {
@@ -281,6 +278,9 @@ export default async function LandingPage({
         })
       : [];
 
+  // The middle advertising space goes between these two halves, in both layouts.
+  const [railsAbove, railsBelow] = splitAtMiddle(rails);
+
   return (
     <>
     {/* Client-side perf probe — logs nav/paint/LCP/long-task/resource
@@ -319,122 +319,41 @@ export default async function LandingPage({
         <HomeSearch isRTL={isRTL} />
       </div>
 
+      {/* An advertiser's banner will go here (src/components/ads): under the
+          search, above the first rail. Nothing is rendered yet. */}
+      {/* AD_SLOT: home_top */}
 
       {/* ══════════════════════════════════════════════════════════════
-          BROWSE — the page's center of gravity. Trending rail on top
-          (auto-rotating, 8 cards), live-activity feed slipped under,
-          coverage strip, then a 2-col grid of the next batch. No
-          repeated rail headers, no marketing-section dividers between
-          listings — the cards themselves carry the page.
+          BROWSE — the page's center of gravity: the rails of annonces,
+          each moving by itself (AutoRail), each with its « Tout voir ».
+          Which rails, in which order, and when one is left out is
+          `planHomeRails` — the desktop tree renders the same list.
+
+          These rails used to be followed by a `hidden lg:grid` of eight more
+          cards "for desktop" — inside this tree, which is itself lg:hidden,
+          so no screen ever showed them. Home shipped 24 invisible cards, and
+          their photos were preloaded. The desktop layout is HomeDesktop.
           ══════════════════════════════════════════════════════════════ */}
+      {railsAbove.map((rail) => (
+        <HomeRailSection key={rail.key} rail={rail} layout="phone" savedIds={savedIds} loggedIn={loggedIn} />
+      ))}
 
-      {/* Trending rail — horizontal scroller of the top 8 hottest auctions. */}
-      <section className="mt-7">
-        <RailHeader
-          eyebrow={t("home.trendingEyebrow")}
-          title={t("home.trendingTitle")}
-          countLabel={trending.length}
-          ctaHref="/annonces"
-          ChevronEnd={ChevronEnd}
-          isRTL={isRTL}
-          seeAllLabel={t("home.seeAll")}
-          flush
-        />
-        {/* Horizontal snap rail, auto-advancing.
-            These rails used to be followed by a `hidden lg:grid` of eight more
-            cards "for desktop" — inside this tree, which is itself lg:hidden,
-            so no screen ever showed them. Home shipped 24 invisible cards, and
-            their photos were preloaded. The desktop layout is HomeDesktop. */}
-        {trending.length > 0 ? (
-          <TrendingRail>
-            {trending.map((a) => (
-              <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                <AnnonceCard
-                  listing={a}
-                  saved={savedIds.has(a.id)}
-                  loggedIn={loggedIn}
-                />
-              </div>
-            ))}
-            <div className="w-1 shrink-0" />
-          </TrendingRail>
-        ) : (
-          <TrendingRail>
+      {/* A second banner, halfway down the rails. Nothing is rendered yet. */}
+      {/* AD_SLOT: home_middle */}
+
+      {railsBelow.map((rail) => (
+        <HomeRailSection key={rail.key} rail={rail} layout="phone" savedIds={savedIds} loggedIn={loggedIn} />
+      ))}
+
+      {/* No rail at all — an empty catalogue, or the data phase timed out in
+          development: the shape of a rail, so the page does not open on a gap. */}
+      {rails.length === 0 && (
+        <section className="mt-7" aria-hidden>
+          <div className="hide-scrollbar mt-4 flex gap-3 overflow-x-hidden px-4 pb-2">
             <TrendingSkeleton />
             <TrendingSkeleton />
             <TrendingSkeleton />
-          </TrendingRail>
-        )}
-      </section>
-
-      {/* ─── "Bonnes affaires" rail — the cheapest published annonces per
-          square metre.
-
-          This slot held "Offres directes": fixed-price stock, kept apart from
-          the bidding lots. Every annonce is fixed-price now, so that split
-          distinguished nothing. Price per m² is the comparison a property
-          buyer is actually making, and no other surface on the site answers
-          it. Listings with no surface are excluded rather than sorted to the
-          bottom with an invented number — see `pricePerSqm` in the feed. */}
-      {bestValue.length > 0 && (
-        <section className="mt-7">
-          <RailHeader
-            eyebrow={t("home.bestValueEyebrow")}
-            title={t("home.bestValueTitle")}
-            countLabel={bestValue.length}
-            ctaHref="/annonces"
-            ChevronEnd={ChevronEnd}
-            isRTL={isRTL}
-            seeAllLabel={t("home.seeAll")}
-            flush
-          />
-          <TrendingRail>
-            {bestValue.map((a) => (
-              <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                <AnnonceCard
-                  listing={a}
-                  saved={savedIds.has(a.id)}
-                  loggedIn={loggedIn}
-                />
-              </div>
-            ))}
-            <div className="w-1 shrink-0" />
-          </TrendingRail>
-        </section>
-      )}
-
-      {/* ─── "Nouveautés" rail — sibling of the trending rail above,
-          sorted by created_at desc instead of ends_at + paid placement.
-          Same card layout so it feels familiar, different headline so
-          the user understands the section answers "what's new" rather
-          than "what's hottest". Only rendered when we actually have
-          fresh inventory — falls back to nothing rather than empty
-          skeletons because the trending rail above already absorbs the
-          "we just opened" copy. */}
-      {nouveautes.length > 0 && (
-        <section className="mt-7">
-          <RailHeader
-            eyebrow={t("home.nouveautesEyebrow")}
-            title={t("home.nouveautesTitle")}
-            countLabel={nouveautes.length}
-            ctaHref="/annonces"
-            ChevronEnd={ChevronEnd}
-            isRTL={isRTL}
-            seeAllLabel={t("home.seeAll")}
-            flush
-          />
-          <TrendingRail>
-            {nouveautes.map((a) => (
-              <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                <AnnonceCard
-                  listing={a}
-                  saved={savedIds.has(a.id)}
-                  loggedIn={loggedIn}
-                />
-              </div>
-            ))}
-            <div className="w-1 shrink-0" />
-          </TrendingRail>
+          </div>
         </section>
       )}
 
@@ -457,22 +376,24 @@ export default async function LandingPage({
 
 
 
-      {/* More auctions — second batch on a 2-up grid. Replaces the
-          old "Featured estates" + "Recently added" duplicate sections
+      {/* « À découvrir » — what no rail above shows, on a 2-up grid. Replaces
+          the old "Featured estates" + "Recently added" duplicate sections
           (those rendered the same rows.slice as the trending rail).
           One header, one grid, the rest of the available data. */}
-      {recent.length > 0 && (
-        <section className="mt-9 px-4">
-          <RailHeader
-            title={t("home.moreToExplore")}
-            ctaHref="/annonces"
-            ChevronEnd={ChevronEnd}
+      {explore && (
+        <section className="mt-9" aria-labelledby="home-explore-phone">
+          <RailHeading
+            id="home-explore-phone"
+            layout="phone"
             isRTL={isRTL}
+            eyebrow={t("home.rails.explore.eyebrow")}
+            title={t("home.rails.explore.title")}
+            sub={t("home.rails.explore.sub")}
+            href={explore.href}
             seeAllLabel={t("home.seeAll")}
-            flush
           />
-          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
-            {recent.map((a) => (
+          <div className="mt-4 grid grid-cols-2 gap-3 px-4">
+            {explore.rows.map((a) => (
               <AnnonceCard
                 key={a.id}
                 listing={a}
@@ -687,9 +608,9 @@ export default async function LandingPage({
     <HomeDesktop
       endingSoonSlides={endingSoonSlides}
       trending={trending}
-      bestValue={bestValue}
-      nouveautes={nouveautes}
-      recent={recent}
+      railsAbove={railsAbove}
+      railsBelow={railsBelow}
+      explore={explore}
       savedIds={savedIds}
       loggedIn={loggedIn}
       liveCount={liveCount}
@@ -703,84 +624,6 @@ export default async function LandingPage({
 // ──────────────────────────────────────────────────────────────────────
 // Building blocks — ported from the mazed-auto home pattern
 // ──────────────────────────────────────────────────────────────────────
-
-/**
- * Rail header — lightweight title above a horizontal scroller or grid.
- */
-function RailHeader({
-  eyebrow,
-  title,
-  countLabel,
-  ctaHref,
-  ChevronEnd,
-  isRTL,
-  seeAllLabel,
-  flush,
-  noCta,
-}: {
-  /** Tracked uppercase metallic-gold label sitting above the title.
-      Optional — only the headline section needs it; secondary rails
-      can stay single-line for less visual noise. */
-  eyebrow?: string;
-  title: string;
-  countLabel?: number;
-  /** All "see all" CTAs point at /properties — the unified Explore
-      surface (Reels + Grid + numbered pagination). The /auctions
-      index was removed (it was a duplicate of /properties); the
-      detail route /auctions/[id] still exists for individual lots. */
-  ctaHref: "/annonces";
-  ChevronEnd: React.ComponentType<{ className?: string }>;
-  isRTL: boolean;
-  /** Pre-translated "See all" label. Server component callers pass
-      `t("home.seeAll")`. */
-  seeAllLabel: string;
-  flush?: boolean;
-  noCta?: boolean;
-}) {
-  return (
-    <div className={`flex items-end justify-between gap-3 ${flush ? "px-4" : ""}`}>
-      <div className="min-w-0">
-        {eyebrow && (
-          <div className="mb-1.5 flex items-center gap-2">
-            <span className="mazed-gold-rule-short" />
-            <span
-              className={`mazed-eyebrow ${isRTL ? "font-arabic tracking-[0.18em]" : ""}`}
-            >
-              {eyebrow}
-            </span>
-          </div>
-        )}
-        <h3
-          className={`inline-flex items-center gap-2 text-[19px] font-extrabold leading-tight tracking-tight ${
-            isRTL ? "font-arabic" : ""
-          }`}
-        >
-          {title}
-          {countLabel !== undefined && (
-            // Count as a soft gold chip rather than naked parens —
-            // reads as "7 of these" instead of debug metadata. Sized
-            // with a touch of breathing room so the number doesn't sit
-            // flush against the chip border.
-            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-gold-faint px-2.5 text-[11px] font-extrabold tracking-wider text-gold-bright">
-              {countLabel}
-            </span>
-          )}
-        </h3>
-      </div>
-      {!noCta && (
-        // Every "See all" link goes to the unified Explore page —
-        // user picks Grid vs Reels there via the toolbar toggle.
-        <Link
-          href={ctaHref}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-[11px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
-        >
-          {seeAllLabel}
-          <ChevronEnd className="size-3" />
-        </Link>
-      )}
-    </div>
-  );
-}
 
 /**
  * Build the hero carousel's slide list from the top annonces.
