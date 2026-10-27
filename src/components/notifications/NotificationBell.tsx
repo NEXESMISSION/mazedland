@@ -227,6 +227,18 @@ export function NotificationBell() {
     return () => window.clearInterval(id);
   }, [refresh, sessionCookie]);
 
+  // Until the first answer comes in, ask again every 20s instead of waiting
+  // for the 5-minute poll: a first request lost to a slow moment left a
+  // signed-in visitor without their badge for five minutes. Stops once loaded.
+  useEffect(() => {
+    if (!sessionCookie || loaded) return;
+    const id = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      void refresh();
+    }, 20_000);
+    return () => window.clearInterval(id);
+  }, [refresh, sessionCookie, loaded]);
+
   // Realtime INSERT channel + reset on user change.
   //
   // Critical: the channel is filtered to user_id = caller. Without the
@@ -472,10 +484,17 @@ export function NotificationBell() {
     }
   }
 
-  // A guest has nothing to load, so the bell shows straight away with its empty
-  // state — what the empty API answer used to produce one round trip later.
-  if (!loaded && sessionCookie !== false) return null;
+  // The bell is in the header from the first frame, signed in or not; only
+  // its badge waits for the list. It used to render nothing until
+  // /api/notifications had answered, so the header changed from page to page:
+  // a slow first answer (photos uploading in the publish form, a heavy page
+  // like « Mes annonces ») meant no bell for a while, and a lost one meant no
+  // bell until the 5-minute poll. A guest's list is empty anyway.
+  if (sessionCookie === null) return <span className="inline-block h-9 w-9" />;
 
+  // Signed in, list not in yet: the panel shows a spinner, not « Aucune
+  // notification », and opening it asks again.
+  const waiting = sessionCookie && !loaded;
   const BellIcon = unread > 0 ? BellDot : Bell;
   const visibleItems = filter === "unread" ? items.filter((n) => !n.read_at) : items;
 
@@ -486,7 +505,10 @@ export function NotificationBell() {
         aria-label={t("title")}
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (!open && waiting) void refresh();
+          setOpen((v) => !v);
+        }}
         className={`relative inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
           open ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]"
         }`}
@@ -609,7 +631,11 @@ export function NotificationBell() {
                 </div>
               )}
 
-              {items.length === 0 ? (
+              {waiting ? (
+                <div className="flex flex-1 items-center justify-center py-16 text-[var(--foreground-muted)]">
+                  <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2} />
+                </div>
+              ) : items.length === 0 ? (
                 <div className="flex flex-1 flex-col items-center justify-center px-8 py-16 text-center">
                   <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--gold-faint)]">
                     <Bell className="h-6 w-6 text-[var(--gold)]" strokeWidth={1.8} />

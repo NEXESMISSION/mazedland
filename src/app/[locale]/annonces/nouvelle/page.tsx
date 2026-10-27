@@ -15,14 +15,11 @@ import {
   type WizardCategory,
   type AttributeDef,
 } from "./PublishWizard";
-import {
-  PRODUCT_SELECT,
-  resolveListingFee,
-  toProduct,
-  type Product,
-} from "@/lib/products";
-import { liveListingCount, moderationSettings } from "@/lib/moderation/server";
-import { asDealType } from "@/lib/listings/deal";
+import { liveListingCount } from "@/lib/moderation/server";
+import { getSettings } from "@/lib/settings/server";
+import { asDealType, isDealType } from "@/lib/listings/deal";
+import { draftNeedsChoice } from "@/lib/listings/wizard";
+import { isoDayIn } from "@/lib/listings/choices";
 import { aiAvailable } from "@/lib/ai/server";
 import { asPendingEdit, isEditable } from "@/lib/listings/edit";
 import { activePlan, can, membershipsOf, shopLiveCount } from "@/lib/pro/shops";
@@ -61,8 +58,12 @@ export default async function NewListingPage({
   const wantedDraft = Array.isArray(sp.draft) ? sp.draft[0] : sp.draft;
   // « Modifier » on an annonce that is online (0172): the same form, in edit mode.
   const wantedEdit = Array.isArray(sp.edit) ? sp.edit[0] : sp.edit;
-  // « J'ai un bien à louer » on the home page sends ?deal=rent (0166).
-  const initialDeal = asDealType(Array.isArray(sp.deal) ? sp.deal[0] : sp.deal);
+  // « J'ai un bien à louer » on the home page sends ?deal=rent (0166). Kept
+  // apart from the default: only a deal the seller asked for can disagree
+  // with the draft the form would otherwise reopen.
+  const rawDeal = Array.isArray(sp.deal) ? sp.deal[0] : sp.deal;
+  const askedDeal = isDealType(rawDeal) ? rawDeal : null;
+  const initialDeal = askedDeal ?? "sale";
   // « Publier pour la boutique » in the Espace Pro sends ?shop=<id> (0173).
   const initialShopId = (Array.isArray(sp.shop) ? sp.shop[0] : sp.shop) ?? null;
   const locale = await getLocale();
@@ -70,11 +71,17 @@ export default async function NewListingPage({
   const tRoot = await getTranslations();
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
+  const settings = await getSettings();
+
+  // Editing switched off in /admin/settings: « Modifier » is gone from the
+  // seller's annonces, and a link kept from before lands there too. Drafts
+  // (?draft=) still open — they are not online yet.
+  if (wantedEdit && !settings.feature_listing_edit) redirect(`/${locale}/account/listings`);
 
   if (!user) {
     const back = wantedEdit
       ? `/${locale}/annonces/nouvelle?edit=${encodeURIComponent(wantedEdit)}`
-      : `/${locale}/annonces/nouvelle${initialDeal === "rent" ? "?deal=rent" : ""}`;
+      : `/${locale}/annonces/nouvelle${askedDeal ? `?deal=${askedDeal}` : ""}`;
     redirect(`/${locale}/login?next=${encodeURIComponent(back)}`);
   }
 
@@ -87,7 +94,7 @@ export default async function NewListingPage({
     );
   }
 
-  const [catRes, attrRes, prodRes, creditRes, profRes, draftRes, pricedRes] = await Promise.all([
+  const [catRes, attrRes, creditRes, profRes, draftRes, pricedRes] = await Promise.all([
     admin
       .from("categories")
       .select("id, parent_id, slug, label_fr, label_ar, kind, sort_order")
@@ -97,7 +104,6 @@ export default async function NewListingPage({
       .from("category_attributes")
       .select("id, category_id, field_key, label, data_type, options, unit, required, sort_order, deal_types")
       .order("sort_order"),
-    admin.from("products").select(PRODUCT_SELECT).eq("is_active", true),
     admin
       .from("seller_credits")
       .select("quota_total, quota_used, expires_at, status")
@@ -116,7 +122,7 @@ export default async function NewListingPage({
         .from("listings")
         .select(
           `id, category_id, title, description, price, price_on_request, negotiable,
-           governorate, delegation, attributes, contact_name, contact_phone, updated_at,
+           governorate, delegation, address, attributes, contact_name, contact_phone, updated_at,
            deal_type, deposit_amount, charges_amount, furnished, available_from, min_lease_months,
            pending_edit, shop_id, status, review_flags,
            photos:listing_photos (storage_path, sort_order)`,
@@ -131,12 +137,15 @@ export default async function NewListingPage({
     })(),
     // What annonces like this one ask (online, same category and offer): the
     // form compares a typed price with it to catch a zero too many or too few.
-    admin
-      .from("listings")
-      .select("category_id, deal_type, governorate, price, attributes")
-      .eq("status", "published")
-      .eq("price_on_request", false)
-      .limit(3000),
+    // Not read at all while the price help is switched off.
+    settings.feature_price_help
+      ? admin
+          .from("listings")
+          .select("category_id, deal_type, governorate, price, attributes")
+          .eq("status", "published")
+          .eq("price_on_request", false)
+          .limit(3000)
+      : Promise.resolve({ data: [] }),
   ]);
 
   type CatRow = {
@@ -178,32 +187,17 @@ export default async function NewListingPage({
     });
   }
 
-  const products: Product[] = (prodRes.data ?? []).map((r) =>
-    toProduct(r as Parameters<typeof toProduct>[0]),
-  );
-
-  // What each category costs, resolved here so the wizard never guesses. The
-  // parent goes in too: a price set on « Terrains » covers all of its
-  // sub-categories without being retyped on each.
-  const parentOf = new Map(catRows.map((c) => [c.id, c.parent_id]));
-  const feeByCategory: Record<string, number | null> = {};
-  for (const c of categories) {
-    feeByCategory[c.id] =
-      resolveListingFee(products, c.id, parentOf.get(c.id) ?? null)?.price ?? null;
-  }
-
   const now = Date.now();
   const creditsLeft = (creditRes.data ?? []).reduce((n, c) => {
     if (new Date(c.expires_at as string).getTime() <= now) return n;
     return n + Math.max(0, (c.quota_total as number) - (c.quota_used as number));
   }, 0);
 
-  // Free places (0165): an individual publishes for free while they have fewer
-  // than the limit live. The submit route decides for real; this is so the
-  // form says "Gratuit" instead of showing a fee nobody will be asked for.
-  const settings = await moderationSettings(admin);
+  // Free places (0165): every account publishes for free while it has fewer
+  // than the limit live, and past it the way on is a Pro plan. The submit route
+  // decides for real; this is so the form says which before the seller starts.
   const live = await liveListingCount(admin, user!.id, "00000000-0000-0000-0000-000000000000");
-  const freePlacesLeft = Math.max(0, settings.freeLimit - live);
+  const freePlacesLeft = Math.max(0, settings.free_listing_limit - live);
 
   const groups = parents.map((p) => ({ id: p.id, label: categoryLabel(p, locale) }));
 
@@ -251,6 +245,9 @@ export default async function NewListingPage({
     | null;
   if (wantedEdit && (!row || !isEditable(row))) redirect(`/${locale}/account/listings`);
   const pending = wantedEdit ? asPendingEdit(row?.pending_edit) : null;
+  // The newest draft is a sale and they came to let (or the reverse): the
+  // form asks which they meant instead of reopening it as if they had chosen.
+  const askResume = draftNeedsChoice({ opened: Boolean(wantedDraft || wantedEdit), askedDeal, draft: row });
   const initialDraft: InitialDraft | null = row
     ? {
         ...row,
@@ -267,15 +264,15 @@ export default async function NewListingPage({
       categories={categories}
       groups={groups}
       attributesByCategory={attributesByCategory}
-      feeByCategory={feeByCategory}
       creditsLeft={creditsLeft}
       freePlacesLeft={freePlacesLeft}
-      freeLimit={settings.freeLimit}
+      freeLimit={settings.free_listing_limit}
       defaultContactName={(profRes.data?.full_name as string | null) ?? ""}
       defaultContactPhone={(profRes.data?.phone as string | null) ?? ""}
       defaultGovernorate={(profRes.data?.governorate as string | null) ?? ""}
       initialDraft={initialDraft}
       initialDeal={initialDeal}
+      askResume={askResume}
       aiAvailable={wantedEdit ? false : await aiAvailable(admin)}
       mode={wantedEdit ? "edit" : "create"}
       editPending={Boolean(pending)}
@@ -283,6 +280,9 @@ export default async function NewListingPage({
       shops={shops}
       initialShopId={initialShopId}
       priceRefs={priceRefs}
+      // Read here, in Tunis: the form's « Tout de suite » and « Neuf » then
+      // mean the same day on the server's render and the phone's.
+      today={isoDayIn(new Date(), "Africa/Tunis")}
       locale={locale}
     />
   );

@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Loader2, Smartphone, CheckCircle2 } from "lucide-react";
 import { PhoneInput } from "./PhoneInput";
+import { OtpCodeInput } from "./OtpCodeInput";
+import { forgetPhone, useRememberedPhone } from "./rememberedPhone";
 import { normalizeE164, validatePhone } from "@/lib/tunisia";
 import { Ltr } from "@/components/ui/Ltr";
 
@@ -28,8 +30,14 @@ export function ForgotPasswordForm() {
   const tPhone = useTranslations("phone");
   const t = useTranslations("auth");
   const [phase, setPhase] = useState<Phase>("phone");
-  const [dialCode, setDialCode] = useState("+216");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  // The number typed on the login form, until another is typed here.
+  const remembered = useRememberedPhone();
+  const [typed, setTyped] = useState<{ dialCode: string; number: string } | null>(null);
+  const dialCode = typed?.dialCode ?? remembered?.dialCode ?? "+216";
+  const phoneNumber = typed?.number ?? remembered?.number ?? "";
+  // Functional updates: PhoneInput may set the code and the number in one go.
+  const setDialCode = (code: string) => setTyped((s) => ({ dialCode: code, number: s?.number ?? phoneNumber }));
+  const setPhoneNumber = (number: string) => setTyped((s) => ({ dialCode: s?.dialCode ?? dialCode, number }));
   const [phone, setPhone] = useState<string | null>(null); // normalized E.164
   const [otpCode, setOtpCode] = useState("");
   const [password, setPassword] = useState("");
@@ -179,6 +187,7 @@ export function ForgotPasswordForm() {
         });
         const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
         if (res.ok && j.ok) {
+          forgetPhone();
           setPhase("done");
           setTimeout(() => router.replace("/login"), 1600);
           return;
@@ -238,18 +247,7 @@ export function ForgotPasswordForm() {
           })}
         </p>
 
-        <input
-          type="text"
-          dir="ltr"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={6}
-          value={otpCode}
-          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-          placeholder="••••••"
-          aria-label={t("otp.codeLabel")}
-          className="mt-5 w-full rounded-xl border border-mazed-gold/25 bg-mazed-surface-2 px-4 py-3 text-center text-[22px] font-bold tracking-[0.4em] text-mazed-cream placeholder:text-mazed-muted focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
-        />
+        <OtpCodeInput value={otpCode} onChange={setOtpCode} ariaLabel={t("otp.codeLabel")} />
 
         {error && (
           <p role="alert" aria-live="assertive" className="mazed-tone-bad mt-3 rounded-lg px-3 py-2 text-xs">{error}</p>

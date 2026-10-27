@@ -3,7 +3,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LegalPage } from "@/components/legal/LegalPage";
 import { Ltr } from "@/components/ui/Ltr";
 import { Mail, Phone, MapPin, Clock, MessageCircle } from "lucide-react";
-import { CONTACT_WHATSAPP, whatsappHref } from "@/lib/contact";
+import { whatsappHref } from "@/lib/contact";
+import { getSettings } from "@/lib/settings/server";
 
 export async function generateMetadata({
   params,
@@ -15,41 +16,17 @@ export async function generateMetadata({
   return { title: t("metaTitle") };
 }
 
-// Pure static content — prerender at build and serve from the edge CDN.
+// Prerendered and served from the edge CDN; the layout's `revalidate` rebuilds
+// it within a minute of a change in /admin/settings → Contact.
 export const dynamic = "force-static";
-
-/**
- * Both reachable channels are env-driven and DISAPPEAR when unset.
- *
- * The e-mail used to be a literal on the pre-rebrand domain, which the business
- * owned; the rebrand has no domain behind it yet, and an address that bounces
- * is worse than no address. The phone was a literal too — "+216 70 000 000",
- * which is not a number anyone answers. It sat on the page as the ONLY
- * actionable detail, presented exactly like a real one: a visitor with a
- * question about a payment dialled it and got nothing.
- *
- * Set NEXT_PUBLIC_CONTACT_EMAIL / NEXT_PUBLIC_CONTACT_PHONE and the rows come
- * back. Until one of them is set the page says so, which is honest and is also
- * hard to miss.
- *
- * The e-mail now has a real mailbox behind it: contact@mazed.immo, the
- * company's own (Google Workspace, given by the owner on 2026-10-21). It is
- * the default, so the page shows it without a dashboard setting; the env var
- * still overrides it.
- *
- * WhatsApp comes first (src/lib/contact.ts): it is where the team answers.
- * Messages only — the row opens a chat, never a call.
- */
-const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || "contact@mazed.immo";
-const CONTACT_PHONE = process.env.NEXT_PUBLIC_CONTACT_PHONE?.trim();
 
 /** tel: wants digits and a leading +, not the spaces that make it readable. */
 const telHref = (v: string) => `tel:${v.replace(/[^\d+]/g, "")}`;
 
 /**
  * Labels are message keys under `contact`, translated at render. A row's
- * value is either the env-provided literal (`value`, shown as-is and kept
- * left-to-right) or a message key (`valueKey`).
+ * value is either a setting (`value`, shown as-is and kept left-to-right) or
+ * a message key (`valueKey`).
  */
 type Item = {
   Icon: typeof Mail;
@@ -62,20 +39,26 @@ type Item = {
   href: string | null;
 };
 
-const ITEMS: Item[] = [
-  { Icon: MessageCircle, labelKey: "whatsapp", value: CONTACT_WHATSAPP, href: whatsappHref(), noteKey: "whatsappNote", external: true },
-  ...(CONTACT_EMAIL
-    ? [{ Icon: Mail, labelKey: "email", value: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` } satisfies Item]
-    : []),
-  ...(CONTACT_PHONE
-    ? [{ Icon: Phone, labelKey: "phone", value: CONTACT_PHONE, href: telHref(CONTACT_PHONE) } satisfies Item]
-    : []),
-  { Icon: MapPin, labelKey: "address", valueKey: "addressValue", href: null },
-  { Icon: Clock, labelKey: "hours", valueKey: "hoursValue", href: null },
-];
-
-const HAS_CHANNEL = Boolean(CONTACT_WHATSAPP || CONTACT_EMAIL || CONTACT_PHONE);
-
+/**
+ * Every channel is a setting (/admin/settings → Contact), and its row
+ * DISAPPEARS when it is empty.
+ *
+ * The e-mail used to be a literal on the pre-rebrand domain, which the business
+ * owned; the rebrand has no domain behind it yet, and an address that bounces
+ * is worse than no address. The phone was a literal too — "+216 70 000 000",
+ * which is not a number anyone answers. It sat on the page as the ONLY
+ * actionable detail, presented exactly like a real one: a visitor with a
+ * question about a payment dialled it and got nothing. With no channel left
+ * the page says so, which is honest and is also hard to miss.
+ *
+ * The e-mail has a real mailbox behind it: contact@mazed.immo, the company's
+ * own (Google Workspace, given by the owner on 2026-10-21), the setting's
+ * default. The phone has none by default; NEXT_PUBLIC_CONTACT_PHONE, which
+ * set it before the console did, still fills it while the setting is empty.
+ *
+ * WhatsApp comes first (src/lib/contact.ts): it is where the team answers.
+ * Messages only — the row opens a chat, never a call. Its switch hides it.
+ */
 export default async function ContactPage({
   params,
 }: {
@@ -86,18 +69,34 @@ export default async function ContactPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("contact");
+  const s = await getSettings();
+  const whatsapp = s.feature_whatsapp ? s.contact_whatsapp : "";
+  const email = s.contact_email;
+  const phone = s.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE?.trim() || "";
+
+  const items: Item[] = [
+    ...(whatsapp
+      ? [{ Icon: MessageCircle, labelKey: "whatsapp", value: whatsapp, href: whatsappHref(whatsapp), noteKey: "whatsappNote", external: true } satisfies Item]
+      : []),
+    ...(email ? [{ Icon: Mail, labelKey: "email", value: email, href: `mailto:${email}` } satisfies Item] : []),
+    ...(phone ? [{ Icon: Phone, labelKey: "phone", value: phone, href: telHref(phone) } satisfies Item] : []),
+    { Icon: MapPin, labelKey: "address", valueKey: "addressValue", href: null },
+    { Icon: Clock, labelKey: "hours", valueKey: "hoursValue", href: null },
+  ];
+  const hasChannel = Boolean(whatsapp || email || phone);
+
   return (
     <LegalPage eyebrow={t("eyebrow")} title={t("title")}>
       <p className="text-[13.5px] leading-relaxed text-foreground/80">
         {t("intro")}
       </p>
-      {!HAS_CHANNEL && (
+      {!hasChannel && (
         <p className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[12.5px] leading-relaxed text-muted ring-1 ring-border">
           {t("pending")}
         </p>
       )}
       <ul className="mt-5 space-y-2.5">
-        {ITEMS.map((it) => {
+        {items.map((it) => {
           const inner = (
             <>
               <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/30">

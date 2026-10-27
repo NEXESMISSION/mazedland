@@ -2,38 +2,54 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Loader2, Send } from "lucide-react";
+import { Check, Loader2, Send } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { useApiError } from "@/lib/useApiError";
+import { MAX_SUGGESTIONS_PER_REQUEST } from "@/lib/pro/suggest";
 
-/** Put one of the shop's annonces in front of a demande's author (who stays anonymous). */
+/** How many of the shop's annonces show before « Voir les autres ». */
+const SHOWN = 3;
+
+/**
+ * Put one of the shop's annonces in front of a demande's author (who stays
+ * anonymous).
+ *
+ * It was a select and a button: the best match went in one tap, any other in
+ * three, behind a list of titles cut short. Now the shop's annonces for this
+ * demande are listed, best first, each with its own « Proposer » — one tap,
+ * whichever it is. The request is the same.
+ */
 export function SuggestListing({
   shopId,
   requestId,
   options,
+  left,
 }: {
   shopId: string;
   requestId: string;
-  /** The shop's annonces for this demande, best first, already labelled. */
-  options: { id: string; label: string }[];
+  /** The shop's annonces for this demande, best first: `ok` when it meets every condition. */
+  options: { id: string; title: string; score: number; ok: boolean }[];
+  /** How many more the shop may still propose to this demande (MAX_SUGGESTIONS_PER_REQUEST in all). */
+  left: number;
 }) {
   const t = useTranslations("pro.demandes");
   const router = useRouter();
   const { toast } = useToast();
   const apiError = useApiError();
-  const [pick, setPick] = useState(options[0]?.id ?? "");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [all, setAll] = useState(false);
 
+  if (left <= 0) return <p className="text-[12px] text-muted">{t("noneLeft", { max: MAX_SUGGESTIONS_PER_REQUEST })}</p>;
   if (options.length === 0) return <p className="text-[12px] text-muted">{t("noneToOffer")}</p>;
 
-  async function send() {
-    setBusy(true);
+  async function send(listingId: string) {
+    setBusy(listingId);
     try {
       const res = await fetch(`/api/pro/shops/${shopId}/suggest`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ requestId, listingId: pick }),
+        body: JSON.stringify({ requestId, listingId }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -45,25 +61,40 @@ export function SuggestListing({
     } catch {
       toast(t("failed"), "error");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
+  const shown = all ? options : options.slice(0, SHOWN);
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <select
-        value={pick}
-        onChange={(e) => setPick(e.target.value)}
-        aria-label={t("choose")}
-        className="h-9 min-w-0 flex-1 rounded-xl border border-border bg-surface px-2 text-[12.5px] text-foreground"
-      >
-        {options.map((o) => (
-          <option key={o.id} value={o.id}>{o.label}</option>
+    <div className="space-y-2">
+      <p className="text-[12px] font-bold text-foreground">{t("choose")}</p>
+      <ul className="divide-y divide-border rounded-xl ring-1 ring-border">
+        {shown.map((o) => (
+          <li key={o.id} className="flex items-center justify-between gap-3 px-3 py-2">
+            <div className="min-w-0">
+              <p className="line-clamp-2 text-[13px] font-bold text-foreground" dir="auto">{o.title}</p>
+              <p className="mt-0.5 inline-flex items-center gap-1 text-[11.5px] text-muted">
+                {o.ok && <Check className="size-3.5 text-[var(--tone-ok)]" strokeWidth={3} />}
+                {o.ok ? t("fullMatch", { score: o.score }) : t("partialMatch", { score: o.score })}
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() => void send(o.id)}
+              className="mazed-btn-luxe tap-target inline-flex h-10 shrink-0 items-center gap-1.5 px-4 text-[13px] disabled:opacity-60"
+            >
+              {busy === o.id ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5 rtl:-scale-x-100" />} {t("offer")}
+            </button>
+          </li>
         ))}
-      </select>
-      <button type="button" disabled={busy || !pick} onClick={() => void send()} className="mazed-btn-luxe tap-target inline-flex h-9 items-center gap-1.5 px-3.5 text-[12.5px] disabled:opacity-60">
-        {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />} {t("offer")}
-      </button>
+      </ul>
+      {!all && options.length > SHOWN && (
+        <button type="button" onClick={() => setAll(true)} className="tap-target text-[12.5px] font-bold text-gold hover:underline">
+          {t("showAll", { count: options.length - SHOWN })}
+        </button>
+      )}
     </div>
   );
 }

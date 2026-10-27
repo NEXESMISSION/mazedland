@@ -1,20 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { useApiError } from "@/lib/useApiError";
 import { formatTND } from "@/lib/utils";
-import { Check, Loader2, ShieldCheck } from "lucide-react";
+import { Check, Loader2, Send, ShieldCheck } from "lucide-react";
 import { OFFERED_CHANNELS, SOCIAL_LANGUAGES, type SocialChannel, type SocialLanguage } from "@/lib/social/channels";
 import { PostPreview } from "@/components/social/PostPreview";
 
 /**
- * The ask itself. Nothing is ticked to begin with — the seller picks every
- * channel — and the button stays off until they have picked one and agreed
- * to the sentence that says what will be posted and that their number never
- * is. The previews are the texts the server generated, in each language.
+ * The ask itself, ready to send: every channel this annonce can go on is
+ * ticked (Instagram only with a photo), the posts are in the page's
+ * language, and the previews show them at once. The seller unticks what
+ * they do not want; one tap on « J'accepte et j'envoie », under the sentence
+ * that says what will be posted and that their number never is, sends it.
+ * Pressing it is the agreement — the same `consent: true` the box sent, to
+ * the same wording (CONSENT_VERSION). The previews are the texts the server
+ * generated, in each language.
  */
 export function PromoteForm({
   listingId,
@@ -30,25 +34,27 @@ export function PromoteForm({
   priceTnd: number;
 }) {
   const t = useTranslations("promote");
+  const locale = useLocale();
   const router = useRouter();
   const { toast } = useToast();
   const apiError = useApiError();
-  const [channels, setChannels] = useState<SocialChannel[]>([]);
-  const [language, setLanguage] = useState<SocialLanguage>("both");
-  const [consent, setConsent] = useState(false);
+  const offered = (c: SocialChannel) => c !== "instagram" || hasPhotos;
+  const [channels, setChannels] = useState<SocialChannel[]>(() => OFFERED_CHANNELS.filter(offered));
+  const [language, setLanguage] = useState<SocialLanguage>(locale === "ar" ? "ar" : "fr");
   const [busy, setBusy] = useState(false);
 
   const toggle = (c: SocialChannel) =>
     setChannels((now) => (now.includes(c) ? now.filter((x) => x !== c) : [...now, c]));
 
   async function submit() {
-    if (channels.length === 0 || !consent) return;
+    if (channels.length === 0) return;
     setBusy(true);
     try {
       const res = await fetch("/api/social/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ listingId, channels, language, consent }),
+        // The tap on « J'accepte et j'envoie » is the consent.
+        body: JSON.stringify({ listingId, channels, language, consent: true }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -74,7 +80,7 @@ export function PromoteForm({
         <p className="mt-0.5 text-[12.5px] text-muted">{t("whereHint")}</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           {OFFERED_CHANNELS.map((c) => {
-            const disabled = c === "instagram" && !hasPhotos;
+            const disabled = !offered(c);
             const on = channels.includes(c);
             return (
               <button
@@ -118,14 +124,15 @@ export function PromoteForm({
 
       {/* Language */}
       <section>
-        <h2 className="text-[14px] font-extrabold text-foreground">{t("languageTitle")}</h2>
-        <div className="mt-2 inline-flex rounded-xl bg-surface-2 p-1 ring-1 ring-border">
+        <h2 id="promote-language" className="text-[14px] font-extrabold text-foreground">{t("languageTitle")}</h2>
+        <div role="radiogroup" aria-labelledby="promote-language" className="mt-2 inline-flex rounded-xl bg-surface-2 p-1 ring-1 ring-border">
           {SOCIAL_LANGUAGES.map((l) => (
             <button
               key={l}
               type="button"
+              role="radio"
               onClick={() => setLanguage(l)}
-              aria-pressed={language === l}
+              aria-checked={language === l}
               className={[
                 "tap-target rounded-lg px-3 py-1.5 text-[12.5px] font-bold transition",
                 language === l ? "bg-surface text-foreground shadow-sm ring-1 ring-border" : "text-muted hover:text-foreground",
@@ -162,27 +169,21 @@ export function PromoteForm({
             {priceTnd > 0 ? t("price", { amount: formatTND(priceTnd, "fr") }) : t("freeLaunch")}
           </span>
         </div>
-        <label className="mt-4 flex cursor-pointer items-start gap-3">
-          <input
-            type="checkbox"
-            checked={consent}
-            onChange={(e) => setConsent(e.target.checked)}
-            className="mt-0.5 size-5 shrink-0 accent-[var(--gold)]"
-          />
-          <span className="text-[12.5px] leading-relaxed text-foreground">{t("consent")}</span>
-        </label>
+        <p id="promote-consent" className="mt-4 text-[12.5px] leading-relaxed text-foreground">{t("consent")}</p>
         <p className="mt-3 flex items-start gap-2 text-[11.5px] leading-snug text-muted">
           <ShieldCheck className="mt-0.5 size-3.5 shrink-0" /> {t("reviewNote")}
         </p>
         <button
           type="button"
           onClick={submit}
-          disabled={busy || channels.length === 0 || !consent}
+          disabled={busy || channels.length === 0}
+          aria-describedby="promote-consent"
           className="mazed-btn-luxe tap-target mt-4 flex h-12 w-full items-center justify-center gap-2 text-[14px] disabled:opacity-50"
         >
-          {busy && <Loader2 className="size-4 animate-spin" />}
-          {t("confirm")}
+          {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4 rtl:-scale-x-100" />}
+          {t("acceptAndSend")}
         </button>
+        {channels.length === 0 && <p className="mt-2 text-center text-[11.5px] text-muted">{t("previewEmpty")}</p>}
       </section>
     </div>
   );

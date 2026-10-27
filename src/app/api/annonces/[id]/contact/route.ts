@@ -7,6 +7,7 @@ import { clientIp } from "@/lib/clientIp";
 import { fail } from "@/lib/http/errors";
 import { log } from "@/lib/log";
 import { apiTranslator } from "@/lib/i18n/server";
+import { getSettings } from "@/lib/settings/server";
 
 /**
  * POST /api/annonces/[id]/contact — reveal the seller's number, once, on demand.
@@ -19,13 +20,12 @@ import { apiTranslator } from "@/lib/i18n/server";
  *   • every reveal is a row in contact_reveals — the anti-harvesting signal
  *     (a burst from one ip_hash is a bot, not a buyer) and the sellers' proof
  *     that their listing is working;
- *   • it is rate-limited per IP, so the whole catalogue cannot be walked.
+ *   • it is rate-limited per IP (`limit_phone_reveals_per_hour`, set in
+ *     /admin/settings), so the whole catalogue cannot be walked.
  *
  * Only PUBLISHED listings reveal, and only when the seller left show_phone on.
  * The IP is hashed, never stored raw.
  */
-
-const MAX_REVEALS_PER_IP_PER_HOUR = 40;
 
 function hashIp(ip: string): string {
   // Salted with a server secret so the table cannot be reversed into a list of
@@ -54,7 +54,7 @@ export async function POST(
   // true once over the cap.
   const { data: over } = await admin.rpc("check_rate_limit", {
     p_key: `reveal:${ipHash}`,
-    p_max: MAX_REVEALS_PER_IP_PER_HOUR,
+    p_max: (await getSettings()).limit_phone_reveals_per_hour,
     p_window_secs: 3600,
   });
   if (over === true) {

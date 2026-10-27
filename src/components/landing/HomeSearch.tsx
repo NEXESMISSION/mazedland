@@ -6,9 +6,11 @@ import { useRouter } from "@/i18n/navigation";
 import { normalizeSearchQuery } from "@/lib/search";
 import { isMostlyArabic } from "@/lib/search/script";
 import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
+import { delegationLabel, delegationsOf } from "@/lib/delegations";
 import { Search, MapPin } from "lucide-react";
 import { SelectMenu, type SelectOption } from "@/components/ui/SelectMenu";
 import { TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
+import { useSetting } from "@/components/settings/SettingsProvider";
 
 // Canonical 24-wilaya list (previously a truncated 16 here).
 const GOVERNORATES = TUNISIAN_GOVERNORATES;
@@ -43,14 +45,27 @@ export function HomeSearch({
   const router = useRouter();
   const t = useTranslations();
   const locale = useLocale();
+  const arabicRedirect = useSetting("feature_arabic_redirect");
   const [q, setQ] = useState("");
   const [gov, setGov] = useState("");
+  const [del, setDel] = useState("");
   const [type, setType] = useState("");
+  // A délégation belongs to one governorate: changing it starts over.
+  const pickGov = (g: string) => {
+    setGov(g);
+    setDel("");
+  };
 
   const govOptions: SelectOption[] = [
     { value: "", label: t("search.allWilayas") },
     // The value stays the stored French name; only the label is translated.
     ...GOVERNORATES.map((g) => ({ value: g, label: governorateLabel(g, locale) })),
+  ];
+  const delOptions: SelectOption[] = [
+    { value: "", label: t("search.allDelegations") },
+    ...delegationsOf(gov)
+      .map((d) => ({ value: d, label: delegationLabel(d, locale) }))
+      .sort((a, b) => a.label.localeCompare(b.label, locale)),
   ];
   const typeOptions: SelectOption[] = [
     { value: "", label: t("search.allTypes") },
@@ -65,13 +80,15 @@ export function HomeSearch({
     const cleanQ = normalizeSearchQuery(q);
     if (cleanQ) params.set("q", cleanQ);
     if (gov) params.set("gov", gov);
+    if (gov && del) params.set("del", del);
     // The catalogue filters by CATEGORY. This used to send `types=` — the
     // auction-era explore page's parameter — through a redirect to a page that
     // never reads it, so choosing « Villa » searched everything.
     if (type && TYPE_TO_CATEGORY[type]) params.set("cat", TYPE_TO_CATEGORY[type]);
     const qs = params.toString();
-    // Typed in Arabic on the French site: answered in Arabic, and remembered.
-    if (locale === "fr" && isMostlyArabic(cleanQ)) {
+    // Typed in Arabic on the French site: answered in Arabic, and remembered —
+    // unless an admin switched that off.
+    if (arabicRedirect && locale === "fr" && isMostlyArabic(cleanQ)) {
       fetch("/api/account/language", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -112,7 +129,7 @@ export function HomeSearch({
         <div className="my-1.5 w-px shrink-0 bg-border" />
         <SelectMenu
           value={gov}
-          onChange={setGov}
+          onChange={pickGov}
           options={govOptions}
           ariaLabel={t("search.governorate")}
           icon={<MapPin className="size-4 shrink-0 text-gold" strokeWidth={2} aria-hidden />}
@@ -138,8 +155,11 @@ export function HomeSearch({
     );
   }
 
+  // No side padding of its own: the home page's wrapper already gives it the
+  // 16px gutter the cards above it have. With both, the card sat 32px in from
+  // each edge, narrower than everything around it.
   return (
-    <section className="px-4">
+    <section>
       <form
         onSubmit={submit}
         className="rounded-2xl bg-surface p-2 ring-1 ring-gold/20"
@@ -147,7 +167,7 @@ export function HomeSearch({
         {/* Top row: keyword box + submit. Stays single-row even on
             narrow phones — the type + governorate pickers drop below. */}
         <div className="flex items-center gap-2">
-          <div className="relative flex-1">
+          <div className="relative min-w-0 flex-1">
             <Search
               className="pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted ltr:left-3.5 rtl:right-3.5"
               strokeWidth={2}
@@ -171,19 +191,37 @@ export function HomeSearch({
         </div>
 
         {/* Second row: two soft-pill custom dropdowns (matching menus,
-            chevron affordance, gold-checked selection). */}
-        <div className="mt-2 flex gap-2">
-          <div className="flex-1">
+            chevron affordance, gold-checked selection).
+            They wrap. Side by side they need about 330px, and « Tous les
+            gouvernorats » would not shrink below its text: at 320px the row
+            ran 50px past the screen and the whole page scrolled sideways. Now
+            each pill is at least 10rem and `min-w-0`, so under ~380px they
+            stack full width, and above it a long label truncates inside its
+            pill instead of pushing it out. */}
+        <div className="mt-2 flex flex-wrap gap-2">
+          <div className="min-w-0 flex-[1_1_10rem]">
             <SelectMenu
               value={gov}
-              onChange={setGov}
+              onChange={pickGov}
               options={govOptions}
               ariaLabel={t("search.governorate")}
               icon={<MapPin className="size-3.5 shrink-0 text-gold" strokeWidth={2} aria-hidden />}
               triggerClassName="tap-target flex w-full items-center gap-2 rounded-full bg-surface-2 px-3 py-2.5 text-[12px] font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40"
             />
           </div>
-          <div className="flex-1">
+          {gov && (
+            <div className="min-w-0 basis-full">
+              <SelectMenu
+                value={del}
+                onChange={setDel}
+                options={delOptions}
+                ariaLabel={t("search.delegation")}
+                icon={<MapPin className="size-3.5 shrink-0 text-muted" strokeWidth={2} aria-hidden />}
+                triggerClassName="tap-target flex w-full items-center gap-2 rounded-full bg-surface-2 px-3 py-2.5 text-[12px] font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40"
+              />
+            </div>
+          )}
+          <div className="min-w-0 flex-[1_1_10rem]">
             <SelectMenu
               value={type}
               onChange={setType}

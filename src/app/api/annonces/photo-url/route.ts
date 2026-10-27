@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { log } from "@/lib/log";
 import { apiTranslator } from "@/lib/i18n/server";
+import { getSettings } from "@/lib/settings/server";
 
 /**
  * Signed upload URLs for annonce photos.
@@ -33,7 +34,6 @@ import { apiTranslator } from "@/lib/i18n/server";
  * POST { exts: string[] } → { uploads: [{ path, signedUrl }] }
  */
 
-const MAX_PER_REQUEST = 12;
 const SAFE_EXT = /^[a-z0-9]{1,5}$/;
 
 export async function POST(req: NextRequest) {
@@ -47,10 +47,12 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json().catch(() => ({}))) as { exts?: unknown };
   const rawExts: unknown[] = Array.isArray(body.exts) ? body.exts : [];
+  // Never more URLs in one call than an annonce may hold photos.
+  const { listing_max_photos } = await getSettings();
   const exts = rawExts
     .map((e) => String(e ?? "").toLowerCase())
     .map((e) => (SAFE_EXT.test(e) ? e : "webp"))
-    .slice(0, MAX_PER_REQUEST);
+    .slice(0, listing_max_photos);
   if (exts.length === 0) {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }

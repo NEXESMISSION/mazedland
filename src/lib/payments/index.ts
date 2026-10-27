@@ -210,3 +210,36 @@ export function usablePayeeMethods(p: PayeeDetails): { bank_transfer: boolean; d
     d17: nameOk && real(p.d17, DEFAULT_PAYEE.d17),
   };
 }
+
+/** The `payee_*` settings (src/lib/settings/registry.ts), "" when unset. */
+export type PayeeSettings = {
+  payee_name: string;
+  payee_bank: string;
+  payee_rib: string;
+  payee_iban: string;
+  payee_d17: string;
+};
+
+/**
+ * Whether a payment started now could be paid: at least one method carries
+ * real details (see usablePayeeMethods — the seed's example account counts as
+ * not set).
+ *
+ * Checkout refuses to show transfer instructions without one, which is right,
+ * but it was the LAST step: a seller chose a placement or a plan, a payment
+ * was created, and only then did « Paiement momentanément indisponible »
+ * appear — after the commitment, with a pending payment left behind that
+ * nobody could pay. Every place that starts or continues a payment asks this
+ * first and says so instead of offering the button; the APIs that create one
+ * refuse with `payments_closed`.
+ */
+export function paymentsOpen(s: PayeeSettings): boolean {
+  const usable = usablePayeeMethods({
+    name: s.payee_name,
+    bank: s.payee_bank,
+    rib: s.payee_rib,
+    iban: s.payee_iban,
+    d17: s.payee_d17,
+  });
+  return usable.bank_transfer || usable.d17;
+}

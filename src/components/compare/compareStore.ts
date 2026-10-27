@@ -1,12 +1,13 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { COMPARE_MAX } from "@/lib/compare";
+import { useSetting } from "@/components/settings/SettingsProvider";
 
 /**
  * The annonces picked for comparison, kept in this browser only (a visitor
  * compares without an account). Every toggle and bar reads the same list and
- * hears every change, in this tab and in the others.
+ * hears every change, in this tab and in the others. It holds `compare_max`
+ * at most; a list kept from when the console allowed more shows its first ones.
  */
 const KEY = "mazed:compare";
 const EVENT = "mazed:compare";
@@ -24,7 +25,7 @@ function read(): string[] {
   let ids: string[] = EMPTY;
   try {
     const parsed = JSON.parse(raw ?? "[]");
-    ids = Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string").slice(0, COMPARE_MAX) : EMPTY;
+    ids = Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : EMPTY;
   } catch {
     ids = EMPTY;
   }
@@ -54,23 +55,27 @@ function subscribe(onChange: () => void) {
 }
 
 export function useCompare() {
-  const ids = useSyncExternalStore(subscribe, read, () => EMPTY);
+  const max = useSetting("compare_max");
+  const stored = useSyncExternalStore(subscribe, read, () => EMPTY);
+  const ids = stored.length > max ? stored.slice(0, max) : stored;
+  const current = () => read().slice(0, max);
   return {
     ids,
+    max,
     has: (id: string) => ids.includes(id),
-    full: ids.length >= COMPARE_MAX,
+    full: ids.length >= max,
     /** Adds or removes; false when the list is full and nothing was added. */
     toggle(id: string): boolean {
-      const now = read();
+      const now = current();
       if (now.includes(id)) {
         write(now.filter((x) => x !== id));
         return true;
       }
-      if (now.length >= COMPARE_MAX) return false;
+      if (now.length >= max) return false;
       write([...now, id]);
       return true;
     },
-    remove: (id: string) => write(read().filter((x) => x !== id)),
+    remove: (id: string) => write(current().filter((x) => x !== id)),
     clear: () => write([]),
   };
 }

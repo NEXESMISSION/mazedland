@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { asPendingEdit, changedKeys, isEditable, newFlags } from "./edit";
-import { listingFields, listingPhotos } from "./input";
+import { MAX_PHOTOS, listingFields, listingPhotos } from "./input";
 
 describe("newFlags", () => {
   it("holds back only what the edit itself trips", () => {
@@ -62,6 +62,21 @@ describe("the form, as the server reads it", () => {
     expect(f.deposit_amount).toBeNull();
     expect(f.furnished).toBeNull();
   });
+  it("keeps a délégation of the governorate, in its stored spelling", () => {
+    expect(listingFields({ governorate: "Tunis", delegation: "la marsa" }).delegation).toBe("La Marsa");
+    expect(listingFields({ governorate: "Tunis", delegation: "المرسى" }).delegation).toBe("La Marsa");
+  });
+  it("turns a délégation off the list into the quartier, unless one is given", () => {
+    expect(listingFields({ governorate: "Ariana", delegation: "Ennasr" })).toMatchObject({ delegation: null, address: "Ennasr" });
+    expect(listingFields({ governorate: "Ariana", delegation: "La Marsa" })).toMatchObject({ delegation: null, address: "La Marsa" });
+    expect(listingFields({ governorate: "Ariana", delegation: "Ennasr", address: "Ennasr 2" })).toMatchObject({ delegation: null, address: "Ennasr 2" });
+    expect(listingFields({ governorate: "Ariana", delegation: "" })).toMatchObject({ delegation: null });
+  });
+  it("drops a figure no property has, and keeps the rest of the answers", () => {
+    const f = listingFields({ attributes: { year_built: 13, area_sqm: "120", rooms: 3, floor: 0, elevator: true, view: "mer" } });
+    expect(f.attributes).toEqual({ area_sqm: 120, rooms: 3, floor: 0, elevator: true, view: "mer" });
+    expect(listingFields({ attributes: { year_built: 2015 } }).attributes).toEqual({ year_built: 2015 });
+  });
   it("drops a phone number that is not one, and a price on request has no price", () => {
     expect(listingFields({ contact_phone: "abc" }).contact_phone).toBeNull();
     expect(listingFields({ price: 5000, price_on_request: true }).price).toBeNull();
@@ -72,6 +87,14 @@ describe("the form, as the server reads it", () => {
       { storage_path: "b", sort_order: 1 },
     ]);
     expect(listingPhotos({})).toBeNull();
+  });
+  it("keeps at most the photos an admin allows, twelve by default", () => {
+    const sent = { photos: Array.from({ length: 20 }, (_, i) => ({ storage_path: `p${i}` })) };
+    expect(listingPhotos(sent)).toHaveLength(MAX_PHOTOS);
+    const five = listingPhotos(sent, 5);
+    expect(five).toHaveLength(5);
+    expect(five?.[4]).toEqual({ storage_path: "p4", sort_order: 4 });
+    expect(listingPhotos(sent, 30)).toHaveLength(20);
   });
 });
 

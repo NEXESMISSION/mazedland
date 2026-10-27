@@ -7,6 +7,7 @@ import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { listingFields, listingPhotos, num, text, type ListingBody } from "@/lib/listings/input";
 import { can, roleIn } from "@/lib/pro/shops";
+import { getSettings } from "@/lib/settings/server";
 
 /**
  * POST /api/annonces — create or update the seller's draft listing.
@@ -139,7 +140,8 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Photos: the wizard uploads to storage first, then sends the paths ─────
-  const photos = listingPhotos(body);
+  // At most what an admin allows per annonce.
+  const photos = listingPhotos(body, (await getSettings()).listing_max_photos);
   if (photos) {
     // Replace wholesale: the client sends the gallery as it should end up, so
     // reordering and removal need no separate endpoints.

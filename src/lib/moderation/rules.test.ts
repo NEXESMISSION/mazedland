@@ -6,8 +6,11 @@ import {
   isPriceImplausible,
   latinDigits,
   sameTitle,
+  MIN_PHOTOS,
   type ListingFacts,
+  type ListingRules,
 } from "./rules";
+import { SETTINGS } from "@/lib/settings/registry";
 
 const clean: ListingFacts = {
   title: "Villa avec jardin · Sakiet Ezzit",
@@ -21,18 +24,30 @@ const clean: ListingFacts = {
   duplicate: false,
 };
 
+const RULES: ListingRules = { minPhotos: MIN_PHOTOS, bannedWords: ["casino"] };
+
 describe("checkListing", () => {
   it("passes a clean annonce", () => {
-    expect(checkListing(clean, ["casino"])).toEqual([]);
+    expect(checkListing(clean, RULES)).toEqual([]);
   });
 
   it("names every rule an annonce fails", () => {
     expect(
       checkListing(
         { ...clean, photoCount: 1, description: "Appelez le 98 124 111", price: 500, duplicate: true },
-        [],
+        { ...RULES, bannedWords: [] },
       ),
     ).toEqual(["too_few_photos", "contact_in_text", "price_implausible", "duplicate"]);
+  });
+
+  it("counts photos against the minimum an admin set", () => {
+    expect(checkListing({ ...clean, photoCount: 5 }, { ...RULES, minPhotos: 6 })).toEqual(["too_few_photos"]);
+    expect(checkListing({ ...clean, photoCount: 0 }, { ...RULES, minPhotos: 0 })).toEqual([]);
+  });
+
+  it("keeps MIN_PHOTOS equal to the setting's default", () => {
+    // Code without the settings at hand falls back on the constant: no drift.
+    expect(MIN_PHOTOS).toBe(SETTINGS.moderation_min_photos.default);
   });
 });
 

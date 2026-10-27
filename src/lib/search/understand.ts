@@ -2,7 +2,8 @@
  * A search typed the way people talk (P3, without AI): « S+2 meublé à louer
  * Tunis 1200 dt », « أرض صفاقس 300 مليون », « villa nabeul moins de 800 mille ».
  * Read into the catalogue's own filters — offer, category, governorate,
- * rooms, surface, budget, furnished — and what is left stays a keyword.
+ * délégation, rooms, surface, budget, furnished — and what is left stays a
+ * keyword.
  *
  * Money the Tunisian way: « mille » and « ألف » are thousands of dinars;
  * « مليون » (and a Latin « million » that would be absurd in dinars) is a
@@ -15,11 +16,14 @@
  * and every pattern looks for them on both sides.
  */
 import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
+import { DELEGATIONS } from "@/lib/delegations";
 
 export type Understood = {
   deal?: "sale" | "rent";
   cat?: string;
   gov?: string;
+  /** One of the governorate's délégations, in its stored spelling. */
+  del?: string;
   rooms?: number;
   surface?: number;
   min?: number;
@@ -88,6 +92,26 @@ const PLACES: { gov: string; forms: string[] }[] = TUNISIAN_GOVERNORATES.map((g)
   forms: [g, GOV_AR[g], ...(GOV_ALIASES[g] ?? [])].map(fold).sort((a, b) => b.length - a.length),
 }));
 const GOV_NAMES = new Set(TUNISIAN_GOVERNORATES.flatMap((g) => [fold(g), fold(GOV_AR[g])]));
+
+/**
+ * Words too common to stand for a place on their own: « المدينة » is « the
+ * town », « القصر » « the palace ». Their longer names still count.
+ */
+const TOO_COMMON = new Set(["المدينة", "القصر", "الزهور", "العيون", "التحرير", "السند"].map((w) => fold(w)));
+
+/**
+ * The 264 délégations, by the names people type: French with and without its
+ * apostrophe (« m'saken », « msaken »), and Arabic. A délégation named like
+ * its governorate (Nabeul, Monastir…) is read as the governorate.
+ */
+const DELEGATION_PLACES: { gov: string; del: string; forms: string[] }[] = TUNISIAN_GOVERNORATES.flatMap((g) =>
+  DELEGATIONS[g].map(([fr, ar]) => ({
+    gov: g,
+    del: fr,
+    forms: Array.from(new Set([fold(fr), fold(fr.replace(/['’]/g, "")), fold(ar)]))
+      .filter((f) => f && !GOV_NAMES.has(f) && !TOO_COMMON.has(f)),
+  })),
+);
 
 /** A sum the way it was said, in dinars. */
 function money(n: number, unit: string | undefined): number | null {
@@ -220,7 +244,35 @@ export function understand(input: string): Understood {
       out.gov = gov;
     }
   }
-  // A district stays a keyword too: « la marsa » narrows inside Tunis.
+  // A délégation is more precise than its governorate: « la marsa » is La
+  // Marsa, in Tunis. At equal length it wins over an alias (« la marsa » is
+  // both); a délégation of the governorate named beside it wins over a
+  // namesake elsewhere (Ezzouhour is in Tunis and in Kasserine).
+  let del: { gov: string; del: string; form: string } | null = null;
+  for (const d of DELEGATION_PLACES) {
+    const hit = d.forms.find((f) => s.includes(` ${f} `));
+    if (!hit) continue;
+    const better =
+      !del ||
+      hit.length > del.form.length ||
+      (hit.length === del.form.length && out.gov === d.gov && del.gov !== out.gov);
+    if (better) del = { gov: d.gov, del: d.del, form: hit };
+  }
+  if (del && (!place || del.form.length >= place.length || GOV_NAMES.has(place))) {
+    // Named with its governorate (« hammamet nabeul »), or alone.
+    if (place && GOV_NAMES.has(place) && out.gov !== del.gov) {
+      // « sfax ... la marsa »: two places, the governorate said outright wins.
+      del = null;
+    } else {
+      out.gov = del.gov;
+      out.del = del.del;
+      s = s.replace(` ${del.form} `, " ");
+      if (place && place !== del.form && GOV_NAMES.has(place)) s = s.replace(` ${place} `, " ");
+      place = null;
+    }
+  }
+  // A district that is not a délégation stays a keyword too: « ennasr »
+  // narrows inside Ariana.
   const district = place && !GOV_NAMES.has(place) ? place : null;
   if (place) s = s.replace(` ${place} `, " ");
 
@@ -235,5 +287,5 @@ export function understand(input: string): Understood {
 
 /** Whether the words said anything the filters can use. */
 export function understoodSomething(u: Understood): boolean {
-  return !!(u.deal || u.cat || u.gov || u.rooms || u.surface || u.min || u.max || u.furnished);
+  return !!(u.deal || u.cat || u.gov || u.del || u.rooms || u.surface || u.min || u.max || u.furnished);
 }

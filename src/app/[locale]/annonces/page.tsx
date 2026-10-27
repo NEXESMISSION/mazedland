@@ -6,16 +6,20 @@ import { coverPhoto } from "@/lib/listingCover";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatNumber, formatTND } from "@/lib/utils";
 import { searchTokens } from "@/lib/search";
-import { PRICE_BUCKETS, RENT_BUCKETS, TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
+import { PRICE_BUCKETS, RENT_BUCKETS, TYPE_TO_CATEGORY, findCategory } from "@/lib/catalog/browse";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
-import { BellRing, ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, SlidersHorizontal, Wallet, X } from "lucide-react";
+import { canonicalDelegation, delegationLabel, shownDelegation } from "@/lib/delegations";
+import { BellRing, ChevronDown, ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { FURNISHED, isoDay, type Furnished } from "@/lib/listings/deal";
 import { CompareToggle } from "@/components/compare/CompareToggle";
 import { redirect } from "next/navigation";
 import { understand, understoodSomething } from "@/lib/search/understand";
 import { isMostlyArabic } from "@/lib/search/script";
 import { Sparkles } from "lucide-react";
+import { getSettings } from "@/lib/settings/server";
+import { usableRange } from "@/lib/range";
+import { BudgetFields } from "./BudgetFields";
 
 export const dynamic = "force-dynamic";
 
@@ -63,9 +67,6 @@ function dealOf(v: string | undefined): "sale" | "rent" | null {
 /** The deal tabs, in order; the text is `catalogue.deal.<key>`. */
 const DEALS = ["all", "sale", "rent"] as const;
 
-/** Annonces per page — four rows of the desktop grid. */
-const PAGE_SIZE = 24;
-
 /** "Surface" sorts in JS (the area lives in jsonb), over at most this many. */
 const SURFACE_SORT_WINDOW = 500;
 
@@ -76,6 +77,7 @@ type Row = {
   price_on_request: boolean;
   negotiable: boolean;
   governorate: string;
+  delegation: string | null;
   attributes: Record<string, unknown> | null;
   published_at: string | null;
   deal_type: string | null;
@@ -165,13 +167,20 @@ export default async function AnnoncesPage({
   const locale = await getLocale();
   const t = await getTranslations("catalogue");
   const admin = getServiceSupabase();
+  const settings = await getSettings();
+  // A délégation of the chosen governorate (src/lib/delegations.ts), in its
+  // stored spelling; anything else is no filter.
+  const del = sp.gov ? canonicalDelegation(sp.gov, sp.del) : null;
+  // Annonces per page (/admin/settings → Publication).
+  const pageSize = settings.catalogue_page_size;
 
   // The catalogue's own search box (via=search) typed in Arabic on the French
   // site: the same search, in Arabic. The /ar page sets the language cookie.
+  // With the switch off, it stays on the French site.
   if (sp.via === "search") {
     const next = new URLSearchParams();
     for (const [k, v] of Object.entries(sp)) if (v != null && k !== "via" && k !== "page") next.set(k, v);
-    if (locale === "fr" && isMostlyArabic(sp.q)) redirect(`/ar/annonces?${next.toString()}`);
+    if (locale === "fr" && settings.feature_arabic_redirect && isMostlyArabic(sp.q)) redirect(`/ar/annonces?${next.toString()}`);
     redirect(`/${locale}/annonces?${next.toString()}`);
   }
 
@@ -179,8 +188,9 @@ export default async function AnnoncesPage({
   // 1200 dt » becomes the filters below — once, through a redirect, so every
   // control on the page shows what was understood and can be changed. What
   // was not understood stays the keyword; ?nl=0 searches the words as typed,
-  // and `nlq` (the original words) marks a search already read.
-  if (sp.q?.trim() && sp.nl !== "0" && !sp.nlq) {
+  // and `nlq` (the original words) marks a search already read. Switched off,
+  // every search is the plain keyword search.
+  if (settings.feature_natural_search && sp.q?.trim() && sp.nl !== "0" && !sp.nlq) {
     const u = understand(sp.q);
     if (understoodSomething(u)) {
       const next = new URLSearchParams();
@@ -191,6 +201,7 @@ export default async function AnnoncesPage({
       put("deal", u.deal);
       put("cat", u.cat);
       put("gov", u.gov);
+      put("del", u.del);
       put("rooms", u.rooms);
       put("surface", u.surface);
       put("min", u.min);
@@ -214,8 +225,12 @@ export default async function AnnoncesPage({
     const n = Math.floor(Number(v));
     return Number.isFinite(n) && n > 0 ? n : null;
   };
-  const min = positive(sp.min ?? sp.min_price);
-  const max = positive(sp.max ?? sp.max_price);
+  const minAsked = positive(sp.min ?? sp.min_price);
+  const maxAsked = positive(sp.max ?? sp.max_price);
+  // A minimum above the maximum matches nothing: it is not applied, and the
+  // budget opens on the two numbers with the reason (src/lib/range.ts),
+  // instead of « 0 bien » under a chip reading « 500 000 – 100 000 TND ».
+  const { min, max, inverted: priceInverted } = usableRange(minAsked, maxAsked);
   // « Plus de filtres ». Surface and rooms live in `attributes`, which the
   // wizard requires for every category that has them, so a hard minimum loses
   // nothing. Furnished and the date only mean something for a rental.
@@ -247,12 +262,21 @@ export default async function AnnoncesPage({
     .order("sort_order");
   const cats = (catRows ?? []) as Cat[];
   const leaves = cats.filter((c) => c.parent_id);
-  const active = leaves.find((c) => c.slug === sp.cat) ?? null;
+  const active = findCategory(sp.cat, leaves);
+  // A category named by its id (the old « Tout voir » links) goes to the same
+  // search written with the slug, so a filter has one address and every chip
+  // and link below reads it the same way.
+  if (active && sp.cat !== active.slug) {
+    const next = new URLSearchParams();
+    for (const [k, v] of Object.entries(sp)) if (v != null) next.set(k, v);
+    next.set("cat", active.slug);
+    redirect(`/${locale}/annonces?${next.toString()}`);
+  }
 
   let q = admin
     .from("listings")
     .select(
-      `id, title, price, price_on_request, negotiable, governorate, attributes, published_at,
+      `id, title, price, price_on_request, negotiable, governorate, delegation, attributes, published_at,
        deal_type, availability, available_from,
        category:categories (label_fr, label_ar, kind),
        promo_top_listed,
@@ -264,6 +288,7 @@ export default async function AnnoncesPage({
   if (deal) q = q.eq("deal_type", deal);
   if (active) q = q.eq("category_id", active.id);
   if (sp.gov) q = q.eq("governorate", sp.gov);
+  if (del) q = q.eq("delegation", del);
   // One ILIKE per word, against the accent-folded column: every word has to
   // appear, in any order. See searchTokens.
   for (const token of searchTokens(sp.q)) q = q.ilike("search_text", `%${token}%`);
@@ -302,28 +327,43 @@ export default async function AnnoncesPage({
       .slice()
       .sort((a, b) => (surfaceOf(b.attributes) ?? 0) - (surfaceOf(a.attributes) ?? 0));
     total = count ?? all.length;
-    page = Math.min(page, Math.max(1, Math.ceil(all.length / PAGE_SIZE)));
-    rows = all.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    page = Math.min(page, Math.max(1, Math.ceil(all.length / pageSize)));
+    rows = all.slice((page - 1) * pageSize, page * pageSize);
   } else {
-    const from = (page - 1) * PAGE_SIZE;
-    let res = await q.range(from, from + PAGE_SIZE - 1);
+    const from = (page - 1) * pageSize;
+    let res = await q.range(from, from + pageSize - 1);
     // A page past the end — a stale bookmark, an indexed link, or annonces that
     // have expired since — makes PostgREST refuse the range. `count` then came
     // back null, so the page printed "0 bien" with no pager to escape with.
     if (res.error && page > 1) {
       page = 1;
-      res = await q.range(0, PAGE_SIZE - 1);
+      res = await q.range(0, pageSize - 1);
     }
     rows = (res.data ?? []) as unknown as Row[];
     total = res.count ?? rows.length;
   }
-  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const lastPage = Math.max(1, Math.ceil(total / pageSize));
 
   const { data: govRows } = await admin
     .from("listings")
     .select("governorate")
     .eq("status", "published");
   const govs = [...new Set((govRows ?? []).map((g) => g.governorate as string))].sort();
+
+  // The chosen governorate's délégations that have annonces online, in the
+  // reader's alphabet — plus the one asked, even with nothing left in it.
+  const dels: string[] = [];
+  if (sp.gov) {
+    const { data: delRows } = await admin
+      .from("listings")
+      .select("delegation")
+      .eq("status", "published")
+      .eq("governorate", sp.gov)
+      .not("delegation", "is", null);
+    const found = new Set((delRows ?? []).map((r) => canonicalDelegation(sp.gov, r.delegation as string)).filter((d): d is string => !!d));
+    if (del) found.add(del);
+    dels.push(...[...found].sort((a, b) => delegationLabel(a, locale).localeCompare(delegationLabel(b, locale), locale)));
+  }
 
   // What the Budget row reads when it is closed — the whole state of the
   // filter in one line, so it does not have to be opened to be understood.
@@ -336,12 +376,32 @@ export default async function AnnoncesPage({
           ? t("priceUpTo", { max: formatTND(max, locale) })
           : null;
 
+  // « Plus de filtres » closed, in one line.
+  const moreChips = [
+    surface ? t("surfaceChip", { area: formatNumber(surface, locale) }) : null,
+    roomsMin ? t("roomsChip", { count: roomsMin }) : null,
+    furnished ? t(`furnished.${furnished}`) : null,
+    availBy ? t("availChip", { date: availBy.split("-").reverse().join("/") }) : null,
+  ].filter((x): x is string => Boolean(x));
+
+  // The phone's « Filtrer » row: everything the folded panel has set — a
+  // budget to correct first, where the truncation cannot hide it.
+  const filterSummary = [
+    priceInverted ? t("filtersBudgetToFix") : null,
+    active ? categoryLabel(active, locale) : null,
+    sp.gov ? governorateLabel(sp.gov, locale) : null,
+    del ? delegationLabel(del, locale) : null,
+    priceLabel,
+    ...moreChips,
+    sort !== "recent" ? t(`sort.${sort}`) : null,
+  ].filter((x): x is string => Boolean(x));
+
   const qs = (next: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
     // `page` is deliberately absent from the defaults: changing any filter
     // returns to page 1, and only the pager passes a page explicitly.
     const merged = {
-      deal: deal ?? undefined, cat: sp.cat, gov: sp.gov, sort: sp.sort, q: sp.q,
+      deal: deal ?? undefined, cat: sp.cat, gov: sp.gov, del: del ?? undefined, sort: sp.sort, q: sp.q,
       min: min ? String(min) : undefined, max: max ? String(max) : undefined,
       surface: surface ? String(surface) : undefined,
       rooms: roomsMin ? String(roomsMin) : undefined,
@@ -371,6 +431,7 @@ export default async function AnnoncesPage({
         {deal && <input type="hidden" name="deal" value={deal} />}
         {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
         {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
+        {del && <input type="hidden" name="del" value={del} />}
         {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
         {min ? <input type="hidden" name="min" value={String(min)} /> : null}
         {max ? <input type="hidden" name="max" value={String(max)} /> : null}
@@ -383,8 +444,12 @@ export default async function AnnoncesPage({
           className="pointer-events-none absolute start-4 top-1/2 size-4 -translate-y-1/2 text-muted"
           strokeWidth={2}
         />
-        {/* 16px text: iOS zooms the whole page into any smaller input on focus. */}
+        {/* 16px text: iOS zooms the whole page into any smaller input on focus.
+            Keyed on `q`: clearing the search, a link or the back button is a
+            client navigation, and an uncontrolled input that has been typed
+            in would otherwise keep the old words. */}
         <input
+          key={sp.q ?? ""}
           type="search"
           name="q"
           defaultValue={sp.q ?? ""}
@@ -425,298 +490,345 @@ export default async function AnnoncesPage({
         })}
       </div>
 
-      {/* Filters. Property is filtered by what it IS and where it is — the two
-          questions a buyer actually starts from. */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Link
-          href={qs({ cat: undefined }) as never}
-          className={
-            "whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition " +
-            (!active
-              ? "bg-foreground text-[var(--background)]"
-              : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
-          }
+      {/* ── Filtrer, on a phone ──────────────────────────────────────────
+          At 390 px the categories, the places, the sort and the two panels
+          below took the whole first screen before a single annonce. On a phone
+          they fold behind one row that says what is set; a desktop has the
+          room and always shows them. A checkbox and its label rather than a
+          script: like everything else here, it opens before any JavaScript
+          has run. Open on arrival when the budget needs correcting. */}
+      <input
+        type="checkbox"
+        id="catalogue-filters"
+        defaultChecked={priceInverted}
+        aria-controls="catalogue-filters-panel"
+        className="peer sr-only lg:hidden"
+      />
+      <label
+        htmlFor="catalogue-filters"
+        className="tap-target mt-3 flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-surface px-3.5 py-2.5 peer-checked:[&_.chevron]:rotate-180 peer-focus-visible:ring-2 peer-focus-visible:ring-gold-soft lg:hidden"
+      >
+        <span className="inline-flex shrink-0 items-center gap-2 text-[12.5px] font-bold text-foreground">
+          <SlidersHorizontal className="size-4 text-muted" strokeWidth={2} />
+          {t("filtersToggle")}
+        </span>
+        <span
+          className={`min-w-0 flex-1 truncate text-end text-[11.5px] font-semibold ${
+            priceInverted ? "text-[var(--danger)]" : filterSummary.length ? "text-gold" : "text-muted"
+          }`}
         >
-          {t("allCategories")}
-        </Link>
-        {leaves.map((c) => (
+          {filterSummary.length ? filterSummary.join(" · ") : t("filtersNone")}
+        </span>
+        <ChevronDown className="chevron size-4 shrink-0 text-muted transition" strokeWidth={2} />
+      </label>
+
+      <div id="catalogue-filters-panel" className="hidden peer-checked:block lg:block">
+        {/* Filters. Property is filtered by what it IS and where it is — the two
+            questions a buyer actually starts from. */}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <Link
-            key={c.id}
-            href={qs({ cat: c.slug }) as never}
+            href={qs({ cat: undefined }) as never}
             className={
               "whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition " +
-              (active?.slug === c.slug
+              (!active
                 ? "bg-foreground text-[var(--background)]"
                 : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
             }
           >
-            {categoryLabel(c, locale)}
+            {t("allCategories")}
           </Link>
-        ))}
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Link
-          href={qs({ gov: undefined }) as never}
-          className={
-"whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
-            (!sp.gov
-              ? "bg-foreground text-[var(--background)]"
-              : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
-          }
-        >
-          {t("allTunisia")}
-        </Link>
-        {govs.map((g) => (
-          <Link
-            key={g}
-            href={qs({ gov: g }) as never}
-            className={
-"whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
-              (sp.gov === g
-                ? "bg-foreground text-[var(--background)]"
-                : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
-            }
-          >
-            {governorateLabel(g, locale)}
-          </Link>
-        ))}
-
-        {/* `flex-wrap`, not `inline-flex`. As bare text these four fitted a
-            phone row; as chips they do not, and an `inline-flex` cannot break —
-            so « Surface » was cut off at the right edge with no way to reach it. */}
-        <span className="ms-auto flex flex-wrap items-center gap-1.5">
-          {SORTS.map((s) => (
+          {leaves.map((c) => (
             <Link
-              key={s}
-              href={qs({ sort: s }) as never}
+              key={c.id}
+              href={qs({ cat: c.slug }) as never}
               className={
-"whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
-                (sort === s
+                "whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition " +
+                (active?.slug === c.slug
                   ? "bg-foreground text-[var(--background)]"
                   : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
               }
             >
-              {t(`sort.${s}`)}
+              {categoryLabel(c, locale)}
             </Link>
           ))}
-        </span>
-      </div>
+        </div>
 
-      {/* ── Budget ───────────────────────────────────────────────────────
-          The catalogue already filtered on `min`/`max` — the home page's
-          brackets link straight into it — but nothing here could set them.
-          A buyer arriving from the nav or from Google could narrow by type
-          and by governorate, and not by price.
-
-          A <details> with a GET form inside: it opens, applies and clears
-          before any JavaScript has run, which is also what the keyword
-          search above it does. */}
-      <details className="mt-3 overflow-hidden rounded-2xl border border-border bg-surface">
-        <summary className="tap-target flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5">
-          <span className="inline-flex items-center gap-2 text-[12.5px] font-bold text-foreground">
-            <Wallet className="size-4 text-muted" strokeWidth={2} />
-            {t(deal === "rent" ? "budgetRent" : "budget")}
-          </span>
-          <span
-            className={`mazed-tabular text-[11.5px] font-semibold ${priceLabel ? "text-gold" : "text-muted"}`}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Link
+            href={qs({ gov: undefined, del: undefined }) as never}
+            className={
+              "whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
+              (!sp.gov
+                ? "bg-foreground text-[var(--background)]"
+                : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
+            }
           >
-            {priceLabel ?? t("allPrices")}
-          </span>
-        </summary>
+            {t("allTunisia")}
+          </Link>
+          {govs.map((g) => (
+            <Link
+              key={g}
+              href={qs({ gov: g, del: undefined }) as never}
+              className={
+                "whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
+                (sp.gov === g
+                  ? "bg-foreground text-[var(--background)]"
+                  : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
+              }
+            >
+              {governorateLabel(g, locale)}
+            </Link>
+          ))}
 
-        <div className="border-t border-border p-3">
-          <div className="flex flex-wrap gap-1.5">
-            {buckets.map((b) => {
-              const on = (b.min ?? 0) === (min ?? 0) && (b.max ?? 0) === (max ?? 0);
-              return (
-                <Link
-                  key={b.key}
-                  href={qs({
-                    min: b.min ? String(b.min) : undefined,
-                    max: b.max ? String(b.max) : undefined,
-                  }) as never}
-                  className={
-                    "tap-target whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
-                    (on
-                      ? "bg-foreground text-[var(--background)]"
-                      : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
-                  }
-                >
-                  {t(deal === "rent" ? `rentBuckets.${b.key}` : `priceBuckets.${b.key}`)}
-                </Link>
-              );
-            })}
-            {(min || max) && (
+          {/* `flex-wrap`, not `inline-flex`. As bare text these four fitted a
+              phone row; as chips they do not, and an `inline-flex` cannot break —
+              so « Surface » was cut off at the right edge with no way to reach it. */}
+          <span className="ms-auto flex flex-wrap items-center gap-1.5">
+            {SORTS.map((s) => (
               <Link
-                href={qs({ min: undefined, max: undefined }) as never}
-                className="tap-target inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold text-muted transition hover:text-foreground"
+                key={s}
+                href={qs({ sort: s }) as never}
+                className={
+                  "whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
+                  (sort === s
+                    ? "bg-foreground text-[var(--background)]"
+                    : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
+                }
               >
-                <X className="size-3" strokeWidth={2.5} /> {t("allPrices")}
+                {t(`sort.${s}`)}
               </Link>
-            )}
-          </div>
+            ))}
+          </span>
+        </div>
 
-          {/* An exact bracket, for someone whose budget is not one of four. */}
+        {/* The governorate's délégations, once one is chosen — the ones with
+            annonces online, so no chip leads to an empty page. */}
+        {sp.gov && dels.length > 0 && (
+          <nav aria-label={t("delegationsLabel")} className="mt-2 flex flex-wrap items-center gap-1.5">
+            <Link
+              href={qs({ del: undefined }) as never}
+              className={
+                "whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold transition " +
+                (!del
+                  ? "bg-foreground text-[var(--background)]"
+                  : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
+              }
+            >
+              {t("allDelegations")}
+            </Link>
+            {dels.map((d) => (
+              <Link
+                key={d}
+                href={qs({ del: d }) as never}
+                aria-current={del === d ? "true" : undefined}
+                className={
+                  "whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold transition " +
+                  (del === d
+                    ? "bg-foreground text-[var(--background)]"
+                    : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
+                }
+              >
+                {delegationLabel(d, locale)}
+              </Link>
+            ))}
+          </nav>
+        )}
+
+        {/* ── Budget ───────────────────────────────────────────────────────
+            The catalogue already filtered on `min`/`max` — the home page's
+            brackets link straight into it — but nothing here could set them.
+            A buyer arriving from the nav or from Google could narrow by type
+            and by governorate, and not by price.
+
+            A <details> with a GET form inside: it opens, applies and clears
+            before any JavaScript has run, which is also what the keyword
+            search above it does. */}
+        <details open={priceInverted} className="mt-3 overflow-hidden rounded-2xl border border-border bg-surface">
+          <summary className="tap-target flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5">
+            <span className="inline-flex items-center gap-2 text-[12.5px] font-bold text-foreground">
+              <Wallet className="size-4 text-muted" strokeWidth={2} />
+              {t(deal === "rent" ? "budgetRent" : "budget")}
+            </span>
+            <span
+              className={`mazed-tabular text-[11.5px] font-semibold ${
+                priceInverted ? "text-[var(--danger)]" : priceLabel ? "text-gold" : "text-muted"
+              }`}
+            >
+              {priceInverted ? t("budgetToFix") : priceLabel ?? t("allPrices")}
+            </span>
+          </summary>
+
+          <div className="border-t border-border p-3">
+            <div className="flex flex-wrap gap-1.5">
+              {buckets.map((b) => {
+                const on = (b.min ?? 0) === (min ?? 0) && (b.max ?? 0) === (max ?? 0);
+                return (
+                  <Link
+                    key={b.key}
+                    href={qs({
+                      min: b.min ? String(b.min) : undefined,
+                      max: b.max ? String(b.max) : undefined,
+                    }) as never}
+                    className={
+                      "tap-target whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
+                      (on
+                        ? "bg-foreground text-[var(--background)]"
+                        : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
+                    }
+                  >
+                    {t(deal === "rent" ? `rentBuckets.${b.key}` : `priceBuckets.${b.key}`)}
+                  </Link>
+                );
+              })}
+              {(min || max || priceInverted) && (
+                <Link
+                  href={qs({ min: undefined, max: undefined }) as never}
+                  className="tap-target inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold text-muted transition hover:text-foreground"
+                >
+                  <X className="size-3" strokeWidth={2.5} /> {t("allPrices")}
+                </Link>
+              )}
+            </div>
+
+            {/* An exact bracket, for someone whose budget is not one of four. */}
+            <form
+              action={`/${locale}/annonces`}
+              method="get"
+              className="mt-3 flex flex-wrap items-end gap-2 border-t border-border pt-3"
+            >
+              {deal && <input type="hidden" name="deal" value={deal} />}
+              {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
+              {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
+              {del && <input type="hidden" name="del" value={del} />}
+              {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
+              {sp.q && <input type="hidden" name="q" value={sp.q} />}
+              {surface ? <input type="hidden" name="surface" value={String(surface)} /> : null}
+              {roomsMin ? <input type="hidden" name="rooms" value={String(roomsMin)} /> : null}
+              {furnished && <input type="hidden" name="furnished" value={furnished} />}
+              {availBy && <input type="hidden" name="avail" value={availBy} />}
+              {/* Keyed on the address: a bracket chip or « Tous les prix » is a
+                  client navigation, and the numbers must follow it. */}
+              <BudgetFields
+                key={`${minAsked ?? ""}-${maxAsked ?? ""}`}
+                defaultMin={minAsked ? String(minAsked) : ""}
+                defaultMax={maxAsked ? String(maxAsked) : ""}
+                minLabel={t("minLabel")}
+                maxLabel={t("maxLabel")}
+                maxPlaceholder={t("maxPlaceholder")}
+                step={deal === "rent" ? 50 : 1000}
+                invertedMessage={t("rangeInverted")}
+              />
+              <button
+                type="submit"
+                className="mazed-btn-luxe tap-target h-11 shrink-0 px-4 text-[12.5px]"
+              >
+                {t("apply")}
+              </button>
+            </form>
+          </div>
+        </details>
+
+        {/* ── Plus de filtres ───────────────────────────────────────────────
+            Same shape as the budget: a GET form in a <details>, working before
+            any JavaScript. Open on arrival when one of its filters is set. */}
+        <details open={moreActive} className="mt-2 overflow-hidden rounded-2xl border border-border bg-surface">
+          <summary className="tap-target flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5">
+            <span className="inline-flex items-center gap-2 text-[12.5px] font-bold text-foreground">
+              <SlidersHorizontal className="size-4 text-muted" strokeWidth={2} />
+              {t("moreFilters")}
+            </span>
+            <span className={`text-[11.5px] font-semibold ${moreActive ? "text-gold" : "text-muted"}`}>
+              {moreActive ? moreChips.join(" · ") : t("moreNone")}
+            </span>
+          </summary>
+
           <form
             action={`/${locale}/annonces`}
             method="get"
-            className="mt-3 flex flex-wrap items-end gap-2 border-t border-border pt-3"
+            className="grid gap-3 border-t border-border p-3 sm:grid-cols-2"
           >
             {deal && <input type="hidden" name="deal" value={deal} />}
             {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
             {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
+            {del && <input type="hidden" name="del" value={del} />}
             {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
             {sp.q && <input type="hidden" name="q" value={sp.q} />}
-            {surface ? <input type="hidden" name="surface" value={String(surface)} /> : null}
-            {roomsMin ? <input type="hidden" name="rooms" value={String(roomsMin)} /> : null}
-            {furnished && <input type="hidden" name="furnished" value={furnished} />}
-            {availBy && <input type="hidden" name="avail" value={availBy} />}
-            {/* 16px, like the search field: iOS zooms into anything smaller. */}
-            <label className="flex-1 basis-28 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
-              {t("minLabel")}
+            {min ? <input type="hidden" name="min" value={String(min)} /> : null}
+            {max ? <input type="hidden" name="max" value={String(max)} /> : null}
+
+            <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+              {t("surfaceMin")}
               <input
                 type="number"
-                name="min"
+                name="surface"
                 min={0}
-                step={deal === "rent" ? 50 : 1000}
+                step={10}
                 inputMode="numeric"
-                defaultValue={min ? String(min) : ""}
-                placeholder="0"
+                defaultValue={surface ? String(surface) : ""}
+                placeholder="100"
                 className="mazed-tabular mt-1 h-11 w-full rounded-xl border border-border bg-surface-2 px-3 text-[16px] font-bold text-foreground outline-none transition placeholder:font-normal placeholder:text-muted focus:border-gold-soft focus:bg-surface"
               />
             </label>
-            <label className="flex-1 basis-28 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
-              {t("maxLabel")}
-              <input
-                type="number"
-                name="max"
-                min={0}
-                step={deal === "rent" ? 50 : 1000}
-                inputMode="numeric"
-                defaultValue={max ? String(max) : ""}
-                placeholder={t("maxPlaceholder")}
-                className="mazed-tabular mt-1 h-11 w-full rounded-xl border border-border bg-surface-2 px-3 text-[16px] font-bold text-foreground outline-none transition placeholder:font-normal placeholder:text-muted focus:border-gold-soft focus:bg-surface"
-              />
-            </label>
-            <button
-              type="submit"
-              className="mazed-btn-luxe tap-target h-11 shrink-0 px-4 text-[12.5px]"
-            >
-              {t("apply")}
-            </button>
-          </form>
-        </div>
-      </details>
 
-      {/* ── Plus de filtres ───────────────────────────────────────────────
-          Same shape as the budget: a GET form in a <details>, working before
-          any JavaScript. Open on arrival when one of its filters is set. */}
-      <details open={moreActive} className="mt-2 overflow-hidden rounded-2xl border border-border bg-surface">
-        <summary className="tap-target flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5">
-          <span className="inline-flex items-center gap-2 text-[12.5px] font-bold text-foreground">
-            <SlidersHorizontal className="size-4 text-muted" strokeWidth={2} />
-            {t("moreFilters")}
-          </span>
-          <span className={`text-[11.5px] font-semibold ${moreActive ? "text-gold" : "text-muted"}`}>
-            {moreActive
-              ? [
-                  surface ? t("surfaceChip", { area: formatNumber(surface, locale) }) : null,
-                  roomsMin ? t("roomsChip", { count: roomsMin }) : null,
-                  furnished ? t(`furnished.${furnished}`) : null,
-                  availBy ? t("availChip", { date: availBy.split("-").reverse().join("/") }) : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")
-              : t("moreNone")}
-          </span>
-        </summary>
-
-        <form
-          action={`/${locale}/annonces`}
-          method="get"
-          className="grid gap-3 border-t border-border p-3 sm:grid-cols-2"
-        >
-          {deal && <input type="hidden" name="deal" value={deal} />}
-          {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
-          {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
-          {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
-          {sp.q && <input type="hidden" name="q" value={sp.q} />}
-          {min ? <input type="hidden" name="min" value={String(min)} /> : null}
-          {max ? <input type="hidden" name="max" value={String(max)} /> : null}
-
-          <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
-            {t("surfaceMin")}
-            <input
-              type="number"
-              name="surface"
-              min={0}
-              step={10}
-              inputMode="numeric"
-              defaultValue={surface ? String(surface) : ""}
-              placeholder="100"
-              className="mazed-tabular mt-1 h-11 w-full rounded-xl border border-border bg-surface-2 px-3 text-[16px] font-bold text-foreground outline-none transition placeholder:font-normal placeholder:text-muted focus:border-gold-soft focus:bg-surface"
-            />
-          </label>
-
-          <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
-            {t("roomsMin")}
-            <select
-              name="rooms"
-              defaultValue={roomsMin ? String(roomsMin) : ""}
-              className="mt-1 h-11 w-full appearance-none rounded-xl border border-border bg-surface-2 px-3 text-[15px] font-bold text-foreground outline-none focus:border-gold-soft"
-            >
-              <option value="">{t("anyValue")}</option>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <option key={n} value={n}>{t("roomsAtLeast", { count: n })}</option>
-              ))}
-            </select>
-          </label>
-
-          {deal === "rent" && (
-            <>
-              <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
-                {t("furnishedLabel")}
-                <select
-                  name="furnished"
-                  defaultValue={furnished ?? ""}
-                  className="mt-1 h-11 w-full appearance-none rounded-xl border border-border bg-surface-2 px-3 text-[15px] font-bold text-foreground outline-none focus:border-gold-soft"
-                >
-                  <option value="">{t("anyValue")}</option>
-                  {FURNISHED.map((f) => (
-                    <option key={f} value={f}>{t(`furnished.${f}`)}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
-                {t("availBy")}
-                <input
-                  type="date"
-                  name="avail"
-                  defaultValue={availBy ?? ""}
-                  className="mt-1 h-11 w-full rounded-xl border border-border bg-surface-2 px-3 text-[15px] font-bold text-foreground outline-none focus:border-gold-soft"
-                />
-              </label>
-            </>
-          )}
-
-          <div className="flex items-center gap-2 sm:col-span-2">
-            <button type="submit" className="mazed-btn-luxe tap-target h-11 px-5 text-[12.5px]">
-              {t("apply")}
-            </button>
-            {moreActive && (
-              <Link
-                href={qs({ surface: undefined, rooms: undefined, furnished: undefined, avail: undefined }) as never}
-                className="tap-target inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11.5px] font-semibold text-muted transition hover:text-foreground"
+            <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+              {t("roomsMin")}
+              <select
+                name="rooms"
+                defaultValue={roomsMin ? String(roomsMin) : ""}
+                className="mt-1 h-11 w-full appearance-none rounded-xl border border-border bg-surface-2 px-3 text-[15px] font-bold text-foreground outline-none focus:border-gold-soft"
               >
-                <X className="size-3" strokeWidth={2.5} /> {t("clearMore")}
-              </Link>
-            )}
-          </div>
-        </form>
-      </details>
+                <option value="">{t("anyValue")}</option>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>{t("roomsAtLeast", { count: n })}</option>
+                ))}
+              </select>
+            </label>
 
-      {sp.nlq && (
+            {deal === "rent" && (
+              <>
+                <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+                  {t("furnishedLabel")}
+                  <select
+                    name="furnished"
+                    defaultValue={furnished ?? ""}
+                    className="mt-1 h-11 w-full appearance-none rounded-xl border border-border bg-surface-2 px-3 text-[15px] font-bold text-foreground outline-none focus:border-gold-soft"
+                  >
+                    <option value="">{t("anyValue")}</option>
+                    {FURNISHED.map((f) => (
+                      <option key={f} value={f}>{t(`furnished.${f}`)}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+                  {t("availBy")}
+                  <input
+                    type="date"
+                    name="avail"
+                    defaultValue={availBy ?? ""}
+                    className="mt-1 h-11 w-full rounded-xl border border-border bg-surface-2 px-3 text-[15px] font-bold text-foreground outline-none focus:border-gold-soft"
+                  />
+                </label>
+              </>
+            )}
+
+            <div className="flex items-center gap-2 sm:col-span-2">
+              <button type="submit" className="mazed-btn-luxe tap-target h-11 px-5 text-[12.5px]">
+                {t("apply")}
+              </button>
+              {moreActive && (
+                <Link
+                  href={qs({ surface: undefined, rooms: undefined, furnished: undefined, avail: undefined }) as never}
+                  className="tap-target inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11.5px] font-semibold text-muted transition hover:text-foreground"
+                >
+                  <X className="size-3" strokeWidth={2.5} /> {t("clearMore")}
+                </Link>
+              )}
+            </div>
+          </form>
+        </details>
+      </div>
+
+      {settings.feature_natural_search && sp.nlq && (
         <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] text-foreground ring-1 ring-gold-soft">
           <Sparkles className="size-3.5 shrink-0 text-gold" />
           <span>{t("understood", { query: sp.nlq })}</span>
@@ -828,7 +940,7 @@ export default async function AnnoncesPage({
                         </span>
                       )}
                       <span className="inline-flex items-center gap-1">
-                        <MapPin className="size-3" /> {governorateLabel(r.governorate, locale)}
+                        <MapPin className="size-3" /> {shownDelegation(r.governorate, r.delegation, locale) ? `${shownDelegation(r.governorate, r.delegation, locale)}, ` : ""}{governorateLabel(r.governorate, locale)}
                       </span>
                     </div>
                     {/* Kept in by the « libre avant » filter because the owner gave
@@ -845,19 +957,23 @@ export default async function AnnoncesPage({
       )}
 
       {/* Nothing here, or nothing right: keep the search as a demande and be
-          told when it is answered (0168). Same filters, nothing to retype. */}
-      <section className="mt-8 flex flex-col items-start gap-3 rounded-2xl border border-gold-soft bg-gold-faint p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[14px] font-extrabold text-foreground">{t("requestCtaTitle")}</p>
-          <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{t("requestCtaBody")}</p>
-        </div>
-        <Link
-          href={qs({ sort: undefined, q: undefined }).replace("/annonces", "/demandes/nouvelle") as never}
-          className="mazed-btn-luxe tap-target inline-flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-[13px]"
-        >
-          <BellRing className="size-4" /> {t("requestCta")}
-        </Link>
-      </section>
+          told when it is answered (0168). Same filters, nothing to retype —
+          the words too: the form keeps them in « Autres souhaits » and says
+          they are not a criterion (src/lib/requests/prefill.ts). */}
+      {settings.feature_requests && (
+        <section className="mt-8 flex flex-col items-start gap-3 rounded-2xl border border-gold-soft bg-gold-faint p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[14px] font-extrabold text-foreground">{t("requestCtaTitle")}</p>
+            <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{t("requestCtaBody")}</p>
+          </div>
+          <Link
+            href={qs({ sort: undefined }).replace("/annonces", "/demandes/nouvelle") as never}
+            className="mazed-btn-luxe tap-target inline-flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-[13px]"
+          >
+            <BellRing className="size-4" /> {t("requestCta")}
+          </Link>
+        </section>
+      )}
 
       {lastPage > 1 && (
         <nav className="mt-8 flex items-center justify-center gap-2" aria-label={t("pagination")}>

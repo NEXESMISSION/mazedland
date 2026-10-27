@@ -63,3 +63,33 @@ export function catalogueHrefForType(type: string): string {
   const slug = TYPE_TO_CATEGORY[type];
   return slug ? `/annonces?cat=${slug}` : "/annonces";
 }
+
+/**
+ * The category a catalogue link names, by slug or by id.
+ *
+ * The catalogue filters by slug (?cat=terrain). « Tout voir » under
+ * « Annonces similaires » used to send the id instead; no slug matched it, so
+ * the page showed every annonce and a terrain's « similar » list held a flat.
+ * The id is still read, so those links keep working, and the page redirects
+ * them to the slug: one filter, one way to write it.
+ */
+export function findCategory<C extends { id: string; slug: string }>(
+  param: string | null | undefined,
+  cats: readonly C[],
+): C | null {
+  const v = param?.trim();
+  if (!v) return null;
+  return cats.find((c) => c.slug === v) ?? cats.find((c) => c.id === v.toLowerCase()) ?? null;
+}
+
+/**
+ * The catalogue filtered on one category (by its slug) and one deal — what
+ * « Tout voir » opens: the rail above it shows rentals next to a rental.
+ */
+export function catalogueHrefFor(filters: { cat?: string | null; deal?: "sale" | "rent" | null }): string {
+  const p = new URLSearchParams();
+  if (filters.cat) p.set("cat", filters.cat);
+  if (filters.deal) p.set("deal", filters.deal);
+  const s = p.toString();
+  return s ? `/annonces?${s}` : "/annonces";
+}

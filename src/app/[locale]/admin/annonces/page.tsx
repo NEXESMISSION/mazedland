@@ -241,7 +241,9 @@ export default async function AdminAnnoncesPage({
       // whole annonce. Otherwise, how old it is.
       hint:
         r.pending_edit_at
-          ? t("editWaiting", { why: (asPendingEdit(r.pending_edit)?.flags ?? []).map((f) => flagLabel(tRoot, f)).join(" · ") || "—" })
+          ? (asPendingEdit(r.pending_edit)?.flags ?? []).length > 0
+            ? t("editWaiting", { why: (asPendingEdit(r.pending_edit)?.flags ?? []).map((f) => flagLabel(tRoot, f)).join(" · ") })
+            : t("editWaitingPlain")
           : r.status === "pending_review" && (r.review_flags?.length ?? 0) > 0
           ? (r.review_flags ?? []).map((f) => flagLabel(tRoot, f)).join(" · ")
           : ageLabel(r.status === "published" ? r.expires_at : r.created_at, r.status, t),

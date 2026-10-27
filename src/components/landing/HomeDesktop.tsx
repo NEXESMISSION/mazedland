@@ -11,8 +11,10 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatNumber, formatTND } from "@/lib/utils";
 import { isRtl } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
+import { shownDelegation } from "@/lib/delegations";
 import type { HomeListingRow } from "@/lib/home/feed";
 import { catalogueHrefForType } from "@/lib/catalog/browse";
+import { asDealType } from "@/lib/listings/deal";
 import {
   ArrowUpRight,
   ChevronRight,
@@ -58,12 +60,14 @@ const PROPERTY_TYPES: { key: string; icon: string }[] = [
   { key: "warehouse",  icon: "commercial" },
 ];
 
-// Labels come from `home.priceBuckets.<labelKey>`.
+// Labels come from `home.priceBuckets.<labelKey>`. Sale prices: without
+// `deal=sale`, « Moins de 100k » listed every rental too — a month's rent is
+// always under 100 000.
 const PRICE_BUCKETS: { key: string; labelKey: string; query: string }[] = [
-  { key: "under-100k", labelKey: "under100k",      query: "max=99999" },
-  { key: "100k-500k",  labelKey: "from100kTo500k", query: "min=100000&max=499999" },
-  { key: "500k-1m",    labelKey: "from500kTo1m",   query: "min=500000&max=999999" },
-  { key: "1m-plus",    labelKey: "over1m",         query: "min=1000000" },
+  { key: "under-100k", labelKey: "under100k",      query: "deal=sale&max=99999" },
+  { key: "100k-500k",  labelKey: "from100kTo500k", query: "deal=sale&min=100000&max=499999" },
+  { key: "500k-1m",    labelKey: "from500kTo1m",   query: "deal=sale&min=500000&max=999999" },
+  { key: "1m-plus",    labelKey: "over1m",         query: "deal=sale&min=1000000" },
 ];
 
 const TRUST_PILLARS: {
@@ -190,13 +194,13 @@ export async function HomeDesktop({
         id: l.id,
         imageUrl: propertyPhotoUrl(photo.storage_path),
         href: `/annonces/${l.id}`,
-        governorate: l.delegation?.trim() || governorateLabel(l.governorate, locale),
+        governorate: shownDelegation(l.governorate, l.delegation, locale) ?? governorateLabel(l.governorate, locale),
         title: l.title,
         priceLabel:
           l.price_on_request || l.price == null
             ? t("home.priceOnRequest")
             : formatTND(Number(l.price), locale),
-        perMonth: l.deal_type === "rent",
+        dealType: asDealType(l.deal_type),
         endsAt: null,
         isLive: false,
       };

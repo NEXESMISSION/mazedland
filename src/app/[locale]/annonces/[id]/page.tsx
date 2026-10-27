@@ -10,15 +10,18 @@ import { cn, formatDate, formatNumber, formatTND } from "@/lib/utils";
 import { asDealType, firstMonthCost } from "@/lib/listings/deal";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
+import { canonicalDelegation, shownDelegation } from "@/lib/delegations";
 import { routing } from "@/i18n/routing";
 import { Ltr } from "@/components/ui/Ltr";
 import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
 import { ContactReveal } from "./ContactReveal";
+import { StickyContact } from "./StickyContact";
 import { ReportListing } from "./ReportListing";
 import { VisitRequest } from "./VisitRequest";
 import { CompareToggle } from "@/components/compare/CompareToggle";
 import type { VisitSlot, VisitStatus } from "@/lib/visits";
 import { isEditable } from "@/lib/listings/edit";
+import { getSettings } from "@/lib/settings/server";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { RelatedListings } from "@/components/listing/RelatedListings";
 import { ViewTracker } from "@/components/listing/ViewTracker";
@@ -55,7 +58,7 @@ export const dynamic = "force-dynamic";
 type Row = {
   id: string; title: string; description: string | null;
   price: number | null; price_on_request: boolean; negotiable: boolean;
-  governorate: string; delegation: string | null;
+  governorate: string; delegation: string | null; address: string | null;
   attributes: Record<string, unknown> | null;
   contact_name: string | null; show_phone: boolean;
   status: string; published_at: string | null; expires_at: string | null;
@@ -80,7 +83,7 @@ type Row = {
 
 const SELECT = `
   id, title, description, price, price_on_request, negotiable,
-  governorate, delegation, attributes, contact_name, show_phone, status,
+  governorate, delegation, address, attributes, contact_name, show_phone, status,
   published_at, expires_at, seller_id, reference, rejection_reason, review_flags,
   deal_type, deposit_amount, charges_amount, furnished, available_from,
   min_lease_months, availability, shop_id,
@@ -89,6 +92,9 @@ const SELECT = `
 `;
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
+
+/** The phone column's seller card, which StickyContact steps away from. */
+const CONTACT_CARD_ID = "annonce-contact";
 
 // How a non-public status reads in the seller's own preview banner:
 // `listing.previewStatus.<status>` in messages/.
@@ -402,9 +408,11 @@ export default async function AnnoncePage({
     </div>
   );
 
-  // Its seller sees the way to correct it, not « call » and « visit » (0172).
+  // Its seller sees the way to correct it, not « call » and « visit » (0172) —
+  // unless an admin has switched editing off.
+  const editOn = (await getSettings()).feature_listing_edit;
   const ownerCard =
-    isOwner && isEditable(l) ? (
+    isOwner && editOn && isEditable(l) ? (
       <section className="rounded-2xl border border-border bg-surface p-4">
         <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">{t("yourListing")}</p>
         <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{t("yourListingHint")}</p>
@@ -595,7 +603,9 @@ export default async function AnnoncePage({
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-muted">
               <span className="inline-flex items-center gap-1">
                 <MapPin className="size-3.5" /> {governorateLabel(l.governorate, locale)}
-                {l.delegation ? ` · ${l.delegation}` : ""}
+                {shownDelegation(l.governorate, l.delegation, locale) ? ` · ${shownDelegation(l.governorate, l.delegation, locale)}` : ""}
+                {/* An old free-text délégation off the list reads as the quartier it was. */}
+                {(l.address ?? (l.delegation && !canonicalDelegation(l.governorate, l.delegation) ? l.delegation : null)) ? ` · ${l.address ?? l.delegation}` : ""}
               </span>
               {l.published_at && (
                 <span className="inline-flex items-center gap-1">
@@ -620,7 +630,7 @@ export default async function AnnoncePage({
             {/* On a phone the price and the seller sit here, in reading order.
                 On a desktop they are in the rail instead. */}
             <div className="mt-3 lg:hidden">{priceBlock}</div>
-            <div className="mt-5 lg:hidden">{ownerCard ?? sellerCard}</div>
+            <div id={CONTACT_CARD_ID} className="mt-5 lg:hidden">{ownerCard ?? sellerCard}</div>
 
             {specs.length > 0 && (
               <section className="mt-6">
@@ -692,6 +702,21 @@ export default async function AnnoncePage({
         dealType={asDealType(l.deal_type)}
         locale={locale}
       />
+
+      {/* On a phone the seller card sits under the photo, the title and the
+          price — below the first screen. This keeps the number one tap away.
+          Only where there is a number to give, and never to its own seller. */}
+      {!isOwner && !isPreview && l.show_phone && (
+        <StickyContact
+          listingId={l.id}
+          watchId={CONTACT_CARD_ID}
+          price={
+            l.price_on_request || l.price == null
+              ? t("priceOnRequest")
+              : `${formatTND(Number(l.price), locale)} ${rent ? t("tndPerMonth") : tRoot("common.tnd")}`
+          }
+        />
+      )}
     </main>
   );
 }

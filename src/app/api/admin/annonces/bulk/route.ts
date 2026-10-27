@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSettings } from "@/lib/settings/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   const { data: rows, error: readErr } = await admin
     .from("listings")
-    .select("id, title, status, contact_phone, expires_at, fee_payment_id, seller_id")
+    .select("id, title, status, contact_phone, expires_at, fee_payment_id, seller_id, pending_edit_at")
     .in("id", ids);
   if (readErr) return fail("listings_read_failed", 500, readErr);
 
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
     const fallbackDays =
       Number.isFinite(Number(prod?.duration_days)) && Number(prod?.duration_days) > 0
         ? Number(prod!.duration_days)
-        : 30;
+        : (await getSettings()).listing_default_days;
 
     const now = new Date();
     for (const r of found) {
@@ -93,6 +94,12 @@ export async function POST(req: NextRequest) {
       }
       if (!r.contact_phone) {
         skipped.push({ id: r.id, title: r.title, why: t("skipNoPhone") });
+        continue;
+      }
+      // Held for a seller's edit (0176): approving here would put the old
+      // version online. The edit is read and decided on from its own sheet.
+      if (r.pending_edit_at) {
+        skipped.push({ id: r.id, title: r.title, why: t("skipEditWaiting") });
         continue;
       }
       const expires = new Date(now.getTime() + fallbackDays * 86_400_000);

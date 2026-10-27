@@ -3,10 +3,12 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { proGate } from "@/lib/pro/api";
-import { MAX_SUGGESTIONS_PER_DAY, MAX_SUGGESTIONS_PER_REQUEST } from "@/lib/pro/suggest";
+import { MAX_SUGGESTIONS_PER_REQUEST } from "@/lib/pro/suggest";
 import { matchRequest } from "@/lib/requests/model";
 import { toMatchable } from "@/lib/requests/server";
 import { asDealType } from "@/lib/listings/deal";
+import { featureOff } from "@/lib/settings/gate";
+import { getSettings } from "@/lib/settings/server";
 
 /**
  * POST /api/pro/shops/:id/suggest  { requestId, listingId }
@@ -14,10 +16,13 @@ import { asDealType } from "@/lib/listings/deal";
  * A shop puts one of its online annonces in front of the person behind a
  * demande. The shop never learns who that is: the notice goes from here.
  * Only an open demande that asked for alerts, only the same offer (sale or
- * rent), three annonces per demande per shop, thirty a day per shop, and
- * never the same annonce twice.
+ * rent), three annonces per demande per shop, `limit_suggestions_per_day`
+ * per shop, and never the same annonce twice. Not while demandes are
+ * switched off in the console.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const off = await featureOff("feature_requests");
+  if (off) return off;
   const { id } = await params;
   const gate = await proGate(req, { id, action: "clients" });
   if (gate instanceof NextResponse) return gate;
@@ -63,8 +68,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if ((already ?? []).length >= MAX_SUGGESTIONS_PER_REQUEST) {
     return NextResponse.json({ error: "conflict", detail: t("suggest.perRequest", { max: MAX_SUGGESTIONS_PER_REQUEST }) }, { status: 409 });
   }
-  const { data: over } = await admin.rpc("check_rate_limit", { p_key: `suggest:${id}`, p_max: MAX_SUGGESTIONS_PER_DAY, p_window_secs: 86_400 });
-  if (over === true) return NextResponse.json({ error: "rate_limited", detail: t("suggest.perDay", { max: MAX_SUGGESTIONS_PER_DAY }) }, { status: 429 });
+  const perDay = (await getSettings()).limit_suggestions_per_day;
+  const { data: over } = await admin.rpc("check_rate_limit", { p_key: `suggest:${id}`, p_max: perDay, p_window_secs: 86_400 });
+  if (over === true) return NextResponse.json({ error: "rate_limited", detail: t("suggest.perDay", { max: perDay }) }, { status: 429 });
 
   const m = matchRequest(listing as never, request);
   const { error } = await admin.from("matches").insert({

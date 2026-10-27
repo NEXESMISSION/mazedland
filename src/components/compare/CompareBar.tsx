@@ -3,18 +3,21 @@
 import { useTranslations } from "next-intl";
 import { Scale, X } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
+import { useSetting } from "@/components/settings/SettingsProvider";
 import { useCompare } from "./compareStore";
 
 /**
  * The comparison's tray: shows once something is picked, above the phone's
  * bottom bar, with the way to the comparison and to empty it. Not on the
- * comparison itself, the publish form or the console.
+ * comparison itself, the publish form or the console, nor anywhere once the
+ * console switches comparing off.
  */
 export function CompareBar() {
   const t = useTranslations("compare");
   const pathname = usePathname();
+  const enabled = useSetting("feature_compare");
   const { ids, clear } = useCompare();
-  if (ids.length === 0 || /^\/(comparer|admin|annonces\/nouvelle)(\/|$)/.test(pathname)) return null;
+  if (!enabled || ids.length === 0 || /^\/(comparer|admin|annonces\/nouvelle)(\/|$)/.test(pathname)) return null;
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--mazed-bottombar-h,64px)+env(safe-area-inset-bottom)+8px)] z-30 flex justify-center px-4 lg:bottom-6">

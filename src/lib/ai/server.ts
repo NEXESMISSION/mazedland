@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { getServiceSupabase } from "@/lib/supabase/admin";
+import { loadSettings } from "@/lib/settings/server";
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
 
@@ -23,7 +24,6 @@ const PRICES: Record<string, { input: number; output: number; cacheRead: number;
   "claude-opus-4-8": { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
 };
 
-const DEFAULT_DAILY_BUDGET_USD = 2;
 const TZ_OFFSET_MS = 3_600_000; // Tunisia is UTC+1 all year.
 
 export function hasAiKey(): boolean {
@@ -31,16 +31,8 @@ export function hasAiKey(): boolean {
 }
 
 export async function aiSettings(admin: Admin): Promise<{ enabled: boolean; dailyBudgetUsd: number }> {
-  const { data } = await admin
-    .from("app_settings")
-    .select("key, value")
-    .in("key", ["ai_enabled", "ai_daily_budget_usd"]);
-  const byKey = new Map((data ?? []).map((r) => [r.key as string, r.value as unknown]));
-  const budget = Number(byKey.get("ai_daily_budget_usd"));
-  return {
-    enabled: byKey.get("ai_enabled") !== false,
-    dailyBudgetUsd: Number.isFinite(budget) && budget >= 0 ? budget : DEFAULT_DAILY_BUDGET_USD,
-  };
+  const s = await loadSettings(admin);
+  return { enabled: s.ai_enabled, dailyBudgetUsd: s.ai_daily_budget_usd };
 }
 
 /** What the AI has cost since midnight in Tunis. */

@@ -6,6 +6,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { formatTND } from "@/lib/utils";
 import { membershipsOf } from "@/lib/pro/shops";
+import { getSettings } from "@/lib/settings/server";
 import { BadgeCheck, Check, LayoutGrid, Store, Users, Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +38,7 @@ export default async function ProLandingPage() {
   const { data: { user } } = await supabase.auth.getUser();
   const admin = getServiceSupabase();
 
-  const [{ data: planRows }, memberships] = await Promise.all([
+  const [{ data: planRows }, memberships, settings] = await Promise.all([
     (admin ?? supabase)
       .from("products")
       .select("slug, name_fr, name_ar, description, description_ar, price, listing_quota")
@@ -45,17 +46,22 @@ export default async function ProLandingPage() {
       .eq("is_active", true)
       .order("price"),
     user && admin ? membershipsOf(admin, user.id) : Promise.resolve([]),
+    getSettings(),
   ]);
   const plans = (planRows ?? []) as Plan[];
   const hasShop = memberships.length > 0;
   const cta = hasShop ? "/pro/dashboard" : user ? "/pro/creer" : `/login?next=${encodeURIComponent(`/${locale}/pro/creer`)}`;
+  // New shops switched off in the console: no « Ouvrir ma boutique ». The plans
+  // stay on show, and whoever runs a shop still gets to its dashboard.
+  const showCta = hasShop || settings.feature_pro_signup;
 
-  const benefits = [
+  // « Les demandes » is only a benefit while demandes are on in the console.
+  const benefits = ([
     { Icon: Store, key: "shop" },
     { Icon: LayoutGrid, key: "marketplace" },
     { Icon: Users, key: "team" },
     { Icon: Sparkles, key: "matches" },
-  ] as const;
+  ] as const).filter((b) => b.key !== "matches" || settings.feature_requests);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 lg:py-14">
@@ -63,9 +69,11 @@ export default async function ProLandingPage() {
         <p className="text-[12px] font-extrabold uppercase tracking-[0.16em] text-gold">Mazed Immo Pro</p>
         <h1 className="mx-auto mt-2 max-w-2xl text-[28px] font-extrabold leading-tight tracking-tight lg:text-[40px]">{t("title")}</h1>
         <p className="mx-auto mt-3 max-w-xl text-[14px] leading-relaxed text-muted lg:text-[15px]">{t("subtitle")}</p>
-        <Link href={cta as never} className="mazed-btn-luxe tap-target mt-6 inline-flex h-12 items-center px-7 text-[14px]">
-          {t(hasShop ? "ctaDashboard" : "ctaCreate")}
-        </Link>
+        {showCta && (
+          <Link href={cta as never} className="mazed-btn-luxe tap-target mt-6 inline-flex h-12 items-center px-7 text-[14px]">
+            {t(hasShop ? "ctaDashboard" : "ctaCreate")}
+          </Link>
+        )}
       </section>
 
       <section className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

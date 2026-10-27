@@ -11,6 +11,7 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatNumber, formatTND } from "@/lib/utils";
 import { isRtl } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
+import { shownDelegation } from "@/lib/delegations";
 import { getHomeFeed, type HomeListingRow } from "@/lib/home/feed";
 import { log } from "@/lib/log";
 import { PerfProbe } from "@/components/dev/PerfProbe";
@@ -818,7 +819,7 @@ function buildHeroSlides(
     const photo = (l.photos ?? []).slice().sort((p, q) => p.sort_order - q.sort_order)[0];
     if (!photo) continue;
     const area = Number((l.attributes ?? {}).area_sqm);
-    const where = l.delegation?.trim() || governorateLabel(l.governorate, locale);
+    const where = shownDelegation(l.governorate, l.delegation, locale) ?? governorateLabel(l.governorate, locale);
     slides.push({
       id: l.id,
       imageUrl: propertyPhotoUrl(photo.storage_path),
@@ -871,7 +872,7 @@ function buildEndingSoonSlides(
     slides.push({
       id: l.id,
       imageUrl: propertyPhotoUrl(photo.storage_path),
-      eyebrow: `${labels.endingSoonWord} · ${l.delegation?.trim() || governorateLabel(l.governorate, locale)}`,
+      eyebrow: `${labels.endingSoonWord} · ${shownDelegation(l.governorate, l.delegation, locale) ?? governorateLabel(l.governorate, locale)}`,
       title: l.title,
       subtitle:
         l.price_on_request || l.price == null
@@ -910,13 +911,14 @@ const PROPERTY_TYPES: {
 const PRICE_BUCKETS: {
   key: string;
   labelKey: string;
-  /** The price params the catalogue reads (`min` / `max`, in TND). */
+  /** The params the catalogue reads (`min` / `max` in TND). Sale prices, so
+   *  `deal=sale`: « Moins de 100k » listed every rental too otherwise. */
   query: string;
 }[] = [
-  { key: "under-100k",  labelKey: "under100k",      query: "max=99999" },
-  { key: "100k-500k",   labelKey: "from100kTo500k", query: "min=100000&max=499999" },
-  { key: "500k-1m",     labelKey: "from500kTo1m",   query: "min=500000&max=999999" },
-  { key: "1m-plus",     labelKey: "over1m",         query: "min=1000000" },
+  { key: "under-100k",  labelKey: "under100k",      query: "deal=sale&max=99999" },
+  { key: "100k-500k",   labelKey: "from100kTo500k", query: "deal=sale&min=100000&max=499999" },
+  { key: "500k-1m",     labelKey: "from500kTo1m",   query: "deal=sale&min=500000&max=999999" },
+  { key: "1m-plus",     labelKey: "over1m",         query: "deal=sale&min=1000000" },
 ];
 
 // StatTile lives near the top of the file as a const expression so

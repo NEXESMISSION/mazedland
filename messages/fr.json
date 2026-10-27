@@ -34,7 +34,7 @@
       "browse": "Explorer",
       "sell": "Vendre",
       "watchlist": "Favoris",
-      "activity": "Activité",
+      "activity": "Favoris",
       "account": "Compte"
     },
     "pageTitles": {
@@ -104,7 +104,8 @@
         "online": "En ligne",
         "inProgress": "En cours",
         "toFix": "À corriger",
-        "ended": "Terminées"
+        "ended": "Terminées",
+        "drafts": "Brouillons"
       },
       "status": {
         "draft": "Brouillon",
@@ -119,10 +120,11 @@
         "rented": "Louée"
       },
       "statusHint": {
-        "draft": "Pas encore envoyée.",
+        "draft": "Jamais envoyée : reprenez-la pour la publier.",
         "pending_payment": "Réglez les frais pour lancer la vérification.",
         "pending_review": "Notre équipe la contrôle — moins de 24 h.",
-        "expired": "Renouvelez-la pour la remettre en ligne."
+        "expired": "Renouvelez-la pour la remettre en ligne.",
+        "rejected": "Refusée par notre équipe : corrigez-la, puis renvoyez-la."
       },
       "receiptInReview": "Reçu en vérification",
       "receiptInReviewHint": "Nous validons votre reçu — moins de 24 h.",
@@ -158,7 +160,11 @@
       "promote": "Promouvoir",
       "edit": "Modifier",
       "editPending": "Modification en attente",
-      "boost": "Mettre en avant"
+      "boost": "Mettre en avant",
+      "priceNotGiven": "Prix non renseigné",
+      "rejectedPrefix": "Refusée :",
+      "promoteHint": "Partagée sur nos réseaux : Facebook, Instagram",
+      "boostHint": "Placement payant sur le site : accueil, haut des résultats"
     },
     "listingActions": {
       "mark_sold": {
@@ -214,9 +220,10 @@
       "networkError": "Erreur réseau.",
       "button": "Renouveler",
       "viaCredit": "1 publication du forfait",
-      "paid": "payante",
+      "full": "places gratuites prises",
       "free": "Gratuit",
-      "donePublished": "Votre annonce est de nouveau en ligne."
+      "donePublished": "Votre annonce est de nouveau en ligne.",
+      "freeLeft": "{left, plural, =0 {C'était votre dernière annonce gratuite.} one {Il vous reste # annonce gratuite.} other {Il vous reste # annonces gratuites.}}"
     },
     "payments": {
       "eyebrow": "Historique",
@@ -271,7 +278,13 @@
       "receipt": "Reçu",
       "viewListing": "Voir l'annonce",
       "invoice": "Facture",
-      "invoiceReceipt": "Reçu"
+      "invoiceReceipt": "Reçu",
+      "closed": {
+        "title": "Paiement momentanément indisponible",
+        "body": "Nos coordonnées de paiement sont en cours de mise à jour. Ne faites pas de virement pour l'instant : vous pourrez payer et téléverser votre reçu dès qu'elles seront en ligne. Vos paiements en attente restent enregistrés.",
+        "row": "Paiement indisponible pour le moment",
+        "contact": "Nous contacter"
+      }
     },
     "favorites": {
       "title": "Mes favoris",
@@ -423,13 +436,13 @@
     "stepUpload": "Téléversez le reçu du virement",
     "fileSize": "{size} Ko",
     "removeFile": "Retirer {name}",
-    "chooseFile": "Choisir une photo ou un PDF",
+    "chooseFile": "Choisir la photo ou le PDF du reçu",
     "addAnother": "Ajouter une autre image",
     "uploadHint": "JPG · PNG · HEIC · PDF · max {maxMb} Mo · jusqu'à {max} images ({used}/{max})",
     "sending": "Envoi…",
     "send": "{count, plural, one {Envoyer le reçu} other {Envoyer les # reçus}}",
     "hintReady": "Validation sous 24 h — vous serez notifié(e).",
-    "hintEmpty": "Téléversez d'abord le reçu pour activer le bouton.",
+    "hintEmpty": "Le reçu part dès que vous l'avez choisi. Validation sous 24 h.",
     "cancelling": "Annulation…",
     "cancelPayment": "Annuler ce paiement",
     "instructions": {
@@ -447,7 +460,8 @@
       "bank": "Banque",
       "amount": "Montant",
       "amountValue": "{amount} TND"
-    }
+    },
+    "sendAnother": "Pas le bon fichier ? Envoyer un autre reçu"
   },
   "accountApi": {
     "renew": {
@@ -554,7 +568,8 @@
       "live": "En direct",
       "forSale": "À vendre",
       "price": "Prix",
-      "view": "Voir"
+      "view": "Voir",
+      "forRent": "À louer"
     },
     "countdown": {
       "ended": "ended",
@@ -649,7 +664,9 @@
     "governorate": "Gouvernorat",
     "allWilayas": "Tous les gouvernorats",
     "type": "Type",
-    "allTypes": "Tous les types"
+    "allTypes": "Tous les types",
+    "allDelegations": "Toutes les délégations",
+    "delegation": "Délégation"
   },
   "notificationsUi": {
     "title": "Notifications",
@@ -810,7 +827,14 @@
     "requestCta": "Enregistrer ma demande",
     "understood": "Recherche comprise : « {query} » — les filtres ci-dessous ont été remplis.",
     "searchAsTyped": "Chercher le texte tel quel",
-    "promoted": "Mise en avant"
+    "promoted": "Mise en avant",
+    "rangeInverted": "Le maximum doit être supérieur ou égal au minimum.",
+    "budgetToFix": "À corriger",
+    "filtersToggle": "Filtrer",
+    "filtersNone": "Type, lieu, budget, tri…",
+    "filtersBudgetToFix": "Budget à corriger",
+    "allDelegations": "Toutes les délégations",
+    "delegationsLabel": "Délégations"
   },
   "listing": {
     "metaNotFound": "Annonce introuvable — Mazed Immo",
@@ -850,7 +874,8 @@
       "networkError": "Erreur réseau.",
       "disclaimer": "Mazed Immo met en relation, sans intervenir dans la vente. Visitez le bien et vérifiez le titre de propriété avant tout versement.",
       "hidden": "Ce vendeur ne partage pas son numéro. Enregistrez l'annonce pour la retrouver.",
-      "reveal": "Afficher le numéro"
+      "reveal": "Afficher le numéro",
+      "call": "Appeler"
     },
     "related": {
       "eyebrow": "Ça pourrait vous intéresser",
@@ -877,7 +902,15 @@
       "send": "Envoyer le signalement",
       "thanks": "Merci, votre signalement a été envoyé.",
       "failed": "Signalement impossible pour le moment.",
-      "alreadySent": "Signalement envoyé. Merci."
+      "alreadySent": "Signalement envoyé. Merci.",
+      "chips": {
+        "scam": "Arnaque",
+        "wrong_info": "Infos fausses",
+        "sold": "Plus disponible",
+        "duplicate": "En double",
+        "inappropriate": "Inapproprié",
+        "other": "Autre"
+      }
     },
     "forRent": "À louer",
     "forSale": "À vendre",
@@ -904,7 +937,7 @@
     "verifiedShop": "Boutique vérifiée",
     "seeShop": "Voir la boutique et ses annonces",
     "yourListing": "Votre annonce",
-    "yourListingHint": "Une erreur dans le prix, la surface ou les photos ? Corrigez-la : une correction simple est en ligne tout de suite.",
+    "yourListingHint": "Une erreur dans le prix, la surface ou les photos ? Corrigez-la : notre équipe vérifie la modification, et l'annonce revient en ligne dès qu'elle est validée.",
     "editYourListing": "Modifier l'annonce",
     "yourListings": "Mes annonces",
     "promoted": "Mise en avant"
@@ -982,7 +1015,9 @@
     "listing_relist_failed": "Remise en ligne impossible. Réessayez.",
     "unknown_action": "Action inconnue. Rechargez la page.",
     "too_large": "Fichier trop volumineux.",
-    "empty_body": "Fichier vide."
+    "empty_body": "Fichier vide.",
+    "feature_off": "Cette fonctionnalité est désactivée pour le moment.",
+    "payments_closed": "Paiement momentanément indisponible : nos coordonnées de paiement sont en cours de mise à jour. Réessayez plus tard."
   },
   "notifications": {
     "listing_expiring": {
@@ -1112,15 +1147,15 @@
     },
     "listing_edit_applied": {
       "title": "Modification publiée",
-      "body": "Vos modifications de « {title} » sont en ligne."
+      "body": "« {title} » est de nouveau en ligne, avec vos modifications."
     },
     "listing_edit_rejected": {
       "title": "Modification refusée",
-      "body": "Les modifications de « {title} » n'ont pas été publiées. Motif : {reason}"
+      "body": "Les modifications de « {title} » n'ont pas été publiées. Motif : {reason}. L'annonce reste telle qu'elle était avant."
     },
     "admin_listing_edit_pending": {
       "title": "Modification à vérifier",
-      "body": "« {title} » — le vendeur a modifié son annonce en ligne."
+      "body": "« {title} » — le vendeur a modifié son annonce : elle est hors ligne jusqu'à votre validation."
     },
     "shop_approved": {
       "title": "Boutique ouverte",
@@ -1207,7 +1242,6 @@
     "creditsInPlan": "{count, plural, one {# publication dans votre forfait} other {# publications dans votre forfait}}",
     "groupAria": "Famille de bien",
     "categoryAria": "Catégorie",
-    "freeInCategory": "Publication gratuite dans cette catégorie.",
     "photosTitle": "Vos photos",
     "photosHint": "Elles décident si un acheteur clique. Montrez la façade, le séjour, les chambres, la cuisine et la vue — et le plan ou le titre foncier si vous l'avez.",
     "detailsTitle": "Le bien",
@@ -1232,19 +1266,16 @@
     "contactNamePlaceholder": "Karim B.",
     "phoneLabel": "Téléphone",
     "governorate": "Gouvernorat",
-    "delegationLabel": "Délégation / quartier",
-    "delegationPlaceholder": "La Marsa",
+    "delegationLabel": "Délégation",
+    "delegationPlaceholder": "Choisir la délégation",
     "preview": "Aperçu",
     "noPhoto": "Aucune photo",
     "priceOnRequestShort": "Sur demande",
     "attestation": "J'atteste sur l'honneur que toutes les informations, photos et documents fournis sont exacts, complets et concernent bien ce bien. Je déclare être propriétaire ou mandaté pour le vendre ou le louer. Je suis seul responsable de toute information fausse, inexacte ou trompeuse. En cas de fausse déclaration, Mazed Immo peut refuser ou retirer l'annonce et conserver les frais déjà réglés.",
     "feeFromPlan": "Publication depuis votre forfait",
     "feePublication": "Publication",
-    "feeLabel": "Frais de publication",
     "free": "Gratuit",
     "creditExplain": "Aucun paiement : une publication est décomptée de votre forfait.",
-    "freeExplain": "Gratuit dans cette catégorie : votre annonce part directement en vérification.",
-    "paidExplain": "Vous serez redirigé vers le paiement. L'annonce part en vérification dès la réception du reçu.",
     "beforePublish": "Avant de publier",
     "allReady": "Tout est prêt.",
     "itemsToComplete": "{count, plural, one {# élément à compléter} other {# éléments à compléter}}",
@@ -1252,7 +1283,6 @@
     "sendingPhotos": "Envoi des photos…",
     "publishCta": "Publier mon annonce",
     "useOneCredit": "Utilise 1 de vos {count} publications.",
-    "feeShownAfterCategory": "Le prix de publication s'affiche dès que la catégorie est choisie.",
     "missingCategory": "Choisissez le type de bien.",
     "missingPhotosUploading": "{count, plural, one {Encore # photo en cours d'envoi…} other {Encore # photos en cours d'envoi…}}",
     "missingPhoto": "Ajoutez au moins une photo.",
@@ -1267,7 +1297,6 @@
     "doneTitle": "Annonce envoyée",
     "doneBody": "Notre équipe la vérifie avant publication — généralement en moins de 24 h. Vous serez prévenu dès qu'elle est en ligne.",
     "doneCreditsLeft": "{count, plural, one {Il vous reste # publication.} other {Il vous reste # publications.}}",
-    "doneFree": "La publication était gratuite dans cette catégorie.",
     "seeMyListings": "Voir mes annonces",
     "donePublishedTitle": "Votre annonce est en ligne",
     "donePublishedBody": "Les acheteurs la voient dès maintenant.",
@@ -1275,6 +1304,14 @@
     "seeListing": "Voir mon annonce",
     "freeQuotaExplain": "{left, plural, one {Il vous reste # annonce gratuite} other {Il vous reste # annonces gratuites}} sur {limit} en ligne en même temps.",
     "freeQuotaHint": "Publication gratuite.",
+    "limitTitle": "{limit, plural, one {Votre annonce gratuite est déjà en ligne} other {Vos # annonces gratuites sont déjà en ligne}}",
+    "limitBannerBody": "Vous pouvez quand même préparer celle-ci : elle reste en brouillon. Pour la publier, passez à Mazed Immo Pro ou retirez une de vos annonces.",
+    "limitModalBody": "Votre annonce est enregistrée en brouillon. Chaque compte publie {limit, plural, one {# annonce gratuite} other {# annonces gratuites}} en même temps. Pour publier celle-ci, passez à Mazed Immo Pro, ou retirez une de vos annonces en ligne pour libérer une place.",
+    "limitHint": "Vos annonces gratuites sont toutes en ligne.",
+    "limitValue": "Limite atteinte",
+    "limitExplain": "Chaque compte publie {limit, plural, one {# annonce gratuite} other {# annonces gratuites}} en même temps. Pour en publier plus : Mazed Immo Pro, ou retirez une annonce.",
+    "seePro": "Voir les offres Pro",
+    "doneFreeLeft": "{left, plural, =0 {C'était votre dernière annonce gratuite ({limit} en même temps).} one {Il vous reste # annonce gratuite sur {limit}.} other {Il vous reste # annonces gratuites sur {limit}.}}",
     "steps": {
       "where": "Le bien",
       "photos": "Photos",
@@ -1285,16 +1322,14 @@
     "stepOf": "Étape {current} sur {total}",
     "next": "Continuer",
     "back": "Retour",
-    "stepMissing": "{count, plural, one {Il manque # information à cette étape.} other {Il manque # informations à cette étape.}}",
+    "stepMissing": "{count, plural, one {Il manque une information : {fields}.} other {Il manque # informations : {fields}.}}",
     "locationTitle": "Où se trouve le bien ?",
-    "feeLinePlain": "Publication : {amount}",
-    "feeAfterReviewPlain": "{amount} — à régler après vérification.",
     "reviewTitle": "Vérifiez votre annonce",
     "reviewHint": "Voici ce que verront les acheteurs. Modifiez ce que vous voulez avant de publier.",
     "edit": "Modifier",
     "noDescription": "Pas encore de description.",
     "tipsTitle": "Pour une annonce publiée plus vite",
-    "tipPhotos": "Ajoutez au moins {min} photos : en dessous, l'annonce passe par une vérification manuelle.",
+    "tipPhotos": "Ajoutez au moins {min, plural, one {# photo} other {# photos}} : en dessous, l'annonce passe par une vérification manuelle.",
     "tipPhotosOk": "{count, plural, one {# photo} other {# photos}} — parfait.",
     "tipContact": "Retirez le numéro, l'e-mail ou le lien du titre et de la description : les acheteurs vous joignent avec le bouton « Voir le numéro ».",
     "tipContactOk": "Pas de coordonnées dans le texte : votre numéro reste protégé.",
@@ -1348,19 +1383,19 @@
     "aiQuestions": "Pour compléter l'annonce, dites-nous aussi :",
     "aiPrivacy": "Votre numéro et vos e-mails ne sont jamais envoyés. Rien n'est publié sans que vous l'ayez vérifié.",
     "editTitle": "Modifier mon annonce",
-    "editSubtitle": "Corrigez ce qui doit l'être. L'annonce reste en ligne pendant ce temps.",
-    "editBanner": "Vous modifiez une annonce en ligne. Rien ne change tant que vous n'avez pas enregistré.",
-    "editPendingBanner": "Votre dernière modification attend une vérification : vous la voyez telle que vous l'avez envoyée.",
+    "editSubtitle": "Corrigez ce qui doit l'être. Une fois enregistrée, la modification passe par notre équipe : l'annonce quitte le site jusqu'à sa validation.",
+    "editBanner": "Vous modifiez une annonce en ligne. Rien ne change tant que vous n'avez pas enregistré ; ensuite, elle est hors ligne jusqu'à ce que notre équipe valide la modification.",
+    "editPendingBanner": "Votre dernière modification attend une vérification : vous la voyez telle que vous l'avez envoyée. L'annonce est hors ligne en attendant.",
     "editWaitingSubtitle": "Corrigez ce qui doit l'être avant sa mise en ligne.",
     "editWaitingBanner": "Votre annonce attend encore la vérification. Vos corrections la remplacent dès que vous enregistrez.",
     "editWaitingNote": "Corriger une annonce en vérification est gratuit. Si elle passe maintenant les contrôles, elle est en ligne tout de suite ; sinon elle reste dans la file, avec vos corrections.",
     "saveChanges": "Enregistrer les modifications",
-    "editFreeNote": "Modifier une annonce est gratuit et ne change pas sa date de fin. Si une modification doit être vérifiée, l'annonce reste en ligne telle quelle en attendant.",
+    "editFreeNote": "Modifier une annonce est gratuit et ne change pas sa date de fin. Chaque modification est vérifiée par notre équipe : l'annonce est retirée du site en attendant, et revient en ligne dès qu'elle est validée — généralement en moins de 24 h.",
     "editFailed": "Impossible d'enregistrer les modifications pour le moment.",
     "editAppliedTitle": "Modifications en ligne",
     "editAppliedBody": "Votre annonce affiche déjà la nouvelle version.",
     "editPendingTitle": "Modifications envoyées",
-    "editPendingBody": "Notre équipe vérifie ces modifications. Votre annonce reste en ligne telle qu'elle était, et vous êtes prévenu dès qu'elles sont publiées.",
+    "editPendingBody": "Notre équipe vérifie ces modifications. En attendant, votre annonce n'apparaît plus sur le site ; vous êtes prévenu dès qu'elle revient en ligne.",
     "publishFor": "Publier pour",
     "publishForMe": "Moi-même",
     "publishForMeHint": "Annonce de particulier",
@@ -1381,7 +1416,95 @@
     "editWaitingBody": "Votre annonce attend encore la vérification, avec vos corrections. Vous serez prévenu dès qu'elle est en ligne.",
     "tipPriceTypo": "Un zéro de trop dans le prix ? Les annonces semblables sont plutôt autour de {fix}.",
     "estimateLocal": "D'après {count, plural, one {# annonce semblable} other {# annonces semblables}} à {governorate} : entre {low} et {high} pour cette surface.",
-    "estimateNational": "D'après {count, plural, one {# annonce semblable} other {# annonces semblables}} en Tunisie : entre {low} et {high} pour cette surface."
+    "estimateNational": "D'après {count, plural, one {# annonce semblable} other {# annonces semblables}} en Tunisie : entre {low} et {high} pour cette surface.",
+    "draftChoice": {
+      "title": {
+        "sale": "Vous avez un brouillon de vente",
+        "rent": "Vous avez un brouillon de location"
+      },
+      "body": {
+        "sale": "Votre dernier brouillon est une annonce de vente. Que voulez-vous faire ?",
+        "rent": "Votre dernier brouillon est une annonce de location. Que voulez-vous faire ?"
+      },
+      "resume": {
+        "sale": "Reprendre le brouillon de vente",
+        "rent": "Reprendre le brouillon de location"
+      },
+      "startNew": {
+        "sale": "Commencer une annonce de vente",
+        "rent": "Commencer une annonce de location"
+      },
+      "savedOn": "Enregistré le {date}",
+      "keepsDraft": "Le brouillon reste dans « Mes annonces »."
+    },
+    "priceNotGiven": "Prix non renseigné",
+    "rentNotGiven": "Loyer non renseigné",
+    "fieldName": {
+      "category": "le type de bien",
+      "photos": "une photo",
+      "title": "le titre",
+      "price": "le prix",
+      "rent": "le loyer",
+      "phone": "le téléphone",
+      "attestation": "l'attestation"
+    },
+    "quartierLabel": "Quartier (facultatif)",
+    "quartierPlaceholder": "Ennasr, Route El Ain, Les Berges du Lac…",
+    "chips": {
+      "orMore": "{count} et +",
+      "groundFloor": "RDC",
+      "yearNew": "Neuf ({year})",
+      "yearUnknown": "Je ne sais pas",
+      "hectares": "{count} ha",
+      "months": "{count, plural, one {# mois} other {# mois}}",
+      "otherAmount": "Autre montant",
+      "otherLease": "Autre",
+      "noCharges": "Aucune / incluses",
+      "now": "Tout de suite",
+      "inMonth": "Dans 1 mois",
+      "pickDate": "Choisir une date",
+      "quickArea": "Surfaces courantes"
+    },
+    "depositNeedsRent": "Indiquez d'abord le loyer : la caution se calcule en mois de loyer.",
+    "depositIs": "Caution : {amount}",
+    "estimatePick": "Choisir un prix d'après l'estimation",
+    "describeCta": "Écrire la description pour moi",
+    "describeHint": "D'après ce que vous avez choisi. Vous pouvez tout modifier ensuite.",
+    "describeDone": "Description écrite : relisez-la et modifiez ce que vous voulez.",
+    "describeAsk": "Vous avez déjà écrit une description. Que faire du texte proposé ?",
+    "describeReplace": "Remplacer le mien",
+    "describeAppend": "L'ajouter à la suite",
+    "describeCancel": "Garder le mien",
+    "highlightsLabel": "Points forts",
+    "highlightsHint": "Touchez pour ajouter une ligne à la description, et encore pour la retirer.",
+    "highlights": {
+      "seaView": "Vue mer",
+      "nearBeach": "Proche de la plage",
+      "nearSchools": "Proche des écoles",
+      "nearShops": "Proche des commerces",
+      "quietArea": "Quartier calme",
+      "equippedKitchen": "Cuisine équipée",
+      "terrace": "Terrasse",
+      "secureResidence": "Résidence sécurisée",
+      "renovated": "Rénové",
+      "highStandard": "Haut standing",
+      "blueTitle": "Titre bleu",
+      "easyAccess": "Accès facile"
+    },
+    "contactFromProfile": "D'après votre profil",
+    "contactNoName": "Aucun nom affiché",
+    "contactEdit": "Modifier le nom et le téléphone",
+    "titleUseSuggested": "Reprendre le titre proposé : {title}",
+    "titleNoun": {
+      "appartements": "Appartement",
+      "villas": "Villa",
+      "maisons": "Maison",
+      "terrain": "Terrain",
+      "fermes": "Ferme",
+      "locaux-commerciaux": "Local commercial",
+      "bureaux": "Bureau",
+      "depots": "Dépôt"
+    }
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",
@@ -1418,6 +1541,7 @@
     "notEditable": "Cette annonce est déjà en cours de traitement.",
     "photoRateLimited": "Trop d'envois de photos. Réessayez dans une heure.",
     "notSubmittable": "Cette annonce est déjà « {status} ».",
+    "freeLimitReached": "{limit, plural, one {Votre annonce gratuite est déjà en ligne.} other {Vos # annonces gratuites sont déjà en ligne.}} Pour en publier plus, passez à Mazed Immo Pro, ou retirez une annonce pour libérer une place.",
     "statuses": {
       "pending_review": "en vérification",
       "published": "en ligne",
@@ -1600,7 +1724,7 @@
         },
         "sharing": {
           "title": "4. Partage",
-          "body": "Vos données ne sont pas vendues. Elles peuvent être partagées avec des prestataires strictement nécessaires (hébergement, envoi de SMS et d'e-mails) et avec les autorités lorsque la loi l'exige."
+          "body": "Vos données ne sont pas vendues. Elles peuvent être partagées avec des prestataires strictement nécessaires (hébergement, envoi de SMS et d'e-mails) et avec les autorités lorsque la loi l'exige. Lorsqu'une demande est active et que ses alertes sont activées, ses critères (type de bien, lieu, budget, surface…) sont visibles par les agences Pro, afin qu'elles puissent proposer un bien par l'intermédiaire de Mazed Immo ; le nom et le numéro de la personne ne leur sont jamais communiqués."
         },
         "retention": {
           "title": "5. Conservation et sécurité",
@@ -2371,45 +2495,11 @@
     "empty": "Aucune annonce publiée pour le moment."
   },
   "adminSettings": {
-    "eyebrow": "Paiement",
+    "eyebrow": "Console",
     "title": "Réglages",
-    "description": "Les coordonnées vers lesquelles les vendeurs règlent leurs frais de publication, par virement ou D17.",
+    "description": "Tout ce qui se change sans déploiement : les fonctionnalités, les règles, les limites, le contact et le paiement.",
     "noPayeeMethod": "<strong>Aucun moyen de paiement valide.</strong> La page de paiement est bloquée tant que ces champs sont vides ou contiennent les valeurs d'exemple : un vendeur ne doit jamais virer de l'argent vers un compte fictif.",
-    "pricesLink": "Les prix des annonces et des options se règlent dans <link>Offres</link>.",
-    "saveFailed": "Échec de l'enregistrement.",
-    "saved": "Réglages enregistrés.",
-    "payeeTitle": "Coordonnées du bénéficiaire",
-    "payeeHint": "Affichées au vendeur sur la page de paiement. Un moyen de paiement n'est proposé que si ses coordonnées sont renseignées.",
-    "fields": {
-      "name": "Bénéficiaire",
-      "bank": "Banque",
-      "rib": "RIB",
-      "iban": "IBAN",
-      "d17": "Numéro D17",
-      "companyName": "Raison sociale",
-      "companyTaxId": "Matricule fiscal",
-      "companyAddress": "Adresse",
-      "vatRate": "TVA en % (vide : pas de ligne TVA)"
-    },
-    "saving": "Enregistrement…",
-    "savedButton": "Enregistré",
-    "save": "Enregistrer",
-    "moderation": {
-      "title": "Gratuité et modération",
-      "hint": "Ce qui décide combien de travail le site fait seul. Pris en compte dès la prochaine annonce.",
-      "freeLimitLabel": "Annonces gratuites en ligne en même temps, par vendeur",
-      "freeLimitHint": "Au-delà, le vendeur paie la publication ou utilise un pack. 0 = tout est payant.",
-      "bannedWordsLabel": "Mots qui envoient une annonce en vérification manuelle",
-      "bannedWordsHint": "Un mot par ligne. L'annonce n'est pas refusée : un admin la lit avant publication.",
-      "limitInvalid": "Entrez un nombre entier entre 0 et 50.",
-      "save": "Enregistrer",
-      "saving": "Enregistrement…",
-      "saved": "Réglages de modération enregistrés.",
-      "savedButton": "Enregistré",
-      "saveFailed": "Enregistrement impossible."
-    },
-    "companyTitle": "Société (factures)",
-    "companyHint": "Copiés dans chaque facture au moment où elle est émise. Tant que le nom et le matricule fiscal sont vides, Mazed Immo émet des reçus de paiement, pas des factures."
+    "pricesLink": "Les prix des annonces et des options se règlent dans <link>Offres</link>."
   },
   "admin": {
     "console": "Console",
@@ -2693,7 +2783,7 @@
       "editApproved": "Modification publiée.",
       "editRejected": "Modification refusée.",
       "rejectEditTitle": "Refuser cette modification ?",
-      "rejectEditBody": "L'annonce reste en ligne telle qu'elle était. Le vendeur reçoit le motif."
+      "rejectEditBody": "L'annonce revient en ligne telle qu'elle était avant la modification. Le vendeur reçoit le motif."
     },
     "forRent": "À louer",
     "perMonth": "{amount} / mois",
@@ -2703,7 +2793,7 @@
       "sale": "Vente",
       "rent": "Location"
     },
-    "editWaiting": "Modification à vérifier · {why}",
+    "editWaiting": "Modification à vérifier (hors ligne) · {why}",
     "editFields": {
       "title": "Titre",
       "description": "Description",
@@ -2725,7 +2815,8 @@
       "contact_whatsapp": "WhatsApp",
       "category_id": "Catégorie",
       "show_phone": "Numéro affiché"
-    }
+    },
+    "editWaitingPlain": "Modification à vérifier (hors ligne)"
   },
   "adminSellers": {
     "title": "Vendeurs",
@@ -2858,6 +2949,8 @@
     "listing_renew_free": "Annonce renouvelée (gratuite)",
     "listing_renew_credit": "Annonce renouvelée (pack)",
     "listing_renew_payment": "Annonce renouvelée (payante)",
+    "listing_submit_free_limit": "Annonce bloquée (places gratuites prises)",
+    "listing_renew_free_limit": "Renouvellement bloqué (places gratuites prises)",
     "listing_report": "Annonce signalée",
     "admin_listing_approve_edit": "Modification publiée",
     "admin_listing_reject_edit": "Modification refusée",
@@ -2931,7 +3024,8 @@
       "skipServerError": "erreur serveur",
       "skipAlreadyArchived": "déjà archivée",
       "skipNotPublished": "pas en ligne",
-      "skipNotFound": "introuvable"
+      "skipNotFound": "introuvable",
+      "skipEditWaiting": "modification à valider depuis sa fiche"
     },
     "listing": {
       "notAwaitingPayment": "Cette annonce est « {status} ».",
@@ -2969,7 +3063,7 @@
   "moderation": {
     "flags": {
       "first_listing": "Première annonce du vendeur",
-      "too_few_photos": "Moins de 3 photos",
+      "too_few_photos": "Pas assez de photos",
       "contact_in_text": "Coordonnées dans le texte",
       "banned_words": "Mot interdit",
       "price_implausible": "Prix peu plausible",
@@ -3031,11 +3125,9 @@
     "dealSale": "Acheter",
     "dealRent": "Louer",
     "categoriesLabel": "Type de bien",
-    "categoriesAny": "Rien de coché : tous les types.",
     "governoratesLabel": "Où ?",
     "governoratesAdd": "Ajouter un gouvernorat",
     "governoratesAny": "Toute la Tunisie",
-    "removeGovernorate": "Retirer {name}",
     "budgetMaxSale": "Budget maximum (TND)",
     "budgetMaxRent": "Loyer maximum par mois (TND)",
     "budgetMin": "Minimum (facultatif)",
@@ -3085,19 +3177,46 @@
     "edit": "Modifier",
     "pause": "Mettre en pause",
     "resume": "Réactiver",
-    "renew": "Prolonger 60 jours",
+    "renew": "Prolonger {days} jours",
     "delete": "Supprimer",
     "deleteConfirm": "Supprimer cette demande ?",
     "deleted": "Demande supprimée.",
     "paused": "Alertes en pause.",
     "resumed": "Alertes réactivées.",
-    "renewed": "Demande prolongée de 60 jours.",
+    "renewed": "Demande prolongée de {days} jours.",
     "actionFailed": "Action impossible pour le moment.",
-    "alertsShops": "Les agences Pro peuvent aussi voir ce que vous cherchez — jamais votre nom ni votre numéro — et vous proposer un bien."
+    "alertsShops": "Avec les alertes, les agences Pro voient aussi vos critères — jamais votre nom, votre numéro ni vos autres souhaits — et peuvent vous proposer un bien : c'est Mazed Immo qui vous le transmet.",
+    "budgetOrder": "Le maximum doit être supérieur ou égal au minimum.",
+    "anyDealHint": "Votre recherche montrait la vente et la location ; une demande est l'une ou l'autre : choisissez ci-dessus.",
+    "summaryTitle": "Ce qui sera enregistré",
+    "summaryDeal": "Offre",
+    "summaryWhere": "Lieu",
+    "summaryBudget": "Budget",
+    "summaryBudgetMissing": "À indiquer",
+    "summarySurface": "Surface",
+    "summaryNotCriteria": "Pas un critère",
+    "summaryNoteLine": "Autres souhaits : « {note} »",
+    "summaryWords": "Les mots de votre recherche sont gardés dans « Autres souhaits » : les alertes ne les vérifient pas.",
+    "summaryWordsDropped": "Les mots de votre recherche, « {words} », ne seront pas gardés.",
+    "summaryNote": "« Autres souhaits » vous sert de mémo : les alertes ne le vérifient pas.",
+    "budgetOther": "Autre budget",
+    "surfaceChip": "{area} m²",
+    "surfaceOther": "Autre",
+    "roomsChip": "S+{count}",
+    "moveInOther": "Autre date",
+    "governoratesMax": "{max} au maximum : retirez-en un pour en choisir un autre.",
+    "notePhrasesLabel": "Suggestions",
+    "notePhrases": {
+      "seaView": "Vue mer",
+      "schools": "Proche des écoles",
+      "groundFloor": "Rez-de-chaussée",
+      "parking": "Avec parking",
+      "furnished": "Meublé"
+    }
   },
   "requestsApi": {
     "budgetRequired": "Indiquez un budget maximum.",
-    "budgetOrder": "Le minimum dépasse le maximum.",
+    "budgetOrder": "Le maximum doit être supérieur ou égal au minimum.",
     "tooMany": "Vous avez déjà {max} demandes actives. Mettez-en une en pause ou supprimez-la."
   },
   "adminDemandes": {
@@ -3158,11 +3277,12 @@
     "requestAlerts": "Les alertes de mes demandes",
     "privacyTitle": "Ce que le site montre de vous",
     "privacyPhone": "Votre numéro n'apparaît pas dans la page : un acheteur le voit seulement en appuyant sur « Voir le numéro », et chaque affichage est compté.",
-    "privacyRequests": "Vos demandes restent privées : aucun vendeur ne les voit. C'est vous qu'on prévient quand un bien correspond.",
+    "privacyRequests": "Vos demandes : les agences Pro voient vos critères (type de bien, lieu, budget…) pour vous proposer un bien, jamais votre nom ni votre numéro. Une demande en pause, expirée ou sans alertes n'est montrée à aucune agence.",
     "privacyReports": "Un signalement ne dit pas au vendeur qui l'a fait.",
     "privacyPolicy": "Politique de confidentialité",
     "deleteTitle": "Supprimer mon compte",
-    "deleteBody": "Vos annonces sont retirées du site et votre compte est fermé. C'est définitif."
+    "deleteBody": "Vos annonces sont retirées du site et votre compte est fermé. C'est définitif.",
+    "governorateFromListing": "{governorate}, comme votre dernière annonce"
   },
   "aiApi": {
     "tooShort": "Écrivez une phrase un peu plus longue.",
@@ -3174,7 +3294,7 @@
     "back": "Mes annonces",
     "title": "Promouvoir mon annonce",
     "whereTitle": "Où la publier ?",
-    "whereHint": "Choisissez un ou plusieurs réseaux. Rien n'est coché pour vous.",
+    "whereHint": "Tous les réseaux possibles sont cochés. Décochez ceux que vous ne voulez pas.",
     "channels": {
       "facebook_page": {
         "name": "Page Facebook Mazed Immo",
@@ -3208,7 +3328,6 @@
     "price": "{amount} DT",
     "consent": "J'accepte que Mazed Immo publie cette annonce — photos, prix, type de bien et localisation, jamais mon numéro — sur les réseaux choisis. Je peux la retirer à tout moment depuis cette page.",
     "reviewNote": "Notre équipe relit chaque publication avant sa mise en ligne.",
-    "confirm": "Confirmer la promotion",
     "sent": "Demande envoyée. Nous vous prévenons dès que c'est en ligne.",
     "sentScheduled": "C'est validé : la publication part dans quelques minutes.",
     "failed": "Impossible d'envoyer la demande pour le moment.",
@@ -3258,7 +3377,13 @@
     "withdrawn": "C'est noté : l'annonce est retirée des réseaux.",
     "notOnline": "L'annonce doit être en ligne pour être promue. Revenez ici une fois qu'elle est publiée.",
     "disabled": "La promotion sur les réseaux est momentanément fermée.",
-    "lastRejected": "Votre dernière demande n'a pas été retenue."
+    "lastRejected": "Votre dernière demande n'a pas été retenue.",
+    "closed": {
+      "title": "Paiement momentanément indisponible",
+      "body": "La promotion sur les réseaux est payante, et nos coordonnées de paiement sont en cours de mise à jour. Vous pourrez la demander dès qu'elles seront en ligne.",
+      "contact": "Nous contacter"
+    },
+    "acceptAndSend": "J'accepte et j'envoie"
   },
   "socialApi": {
     "disabled": "La promotion sur les réseaux est momentanément fermée.",
@@ -3503,7 +3628,7 @@
         },
         "matches": {
           "title": "Les demandes",
-          "body": "Les acheteurs et locataires qui cherchent ce que vous proposez sont prévenus de vos annonces."
+          "body": "Les acheteurs et locataires qui cherchent ce que vous proposez sont prévenus de vos annonces. Vous voyez aussi leurs critères, jamais leur nom ni leur numéro, et pouvez leur proposer un bien."
         }
       },
       "plansTitle": "Trois abonnements, sans engagement",
@@ -3546,7 +3671,29 @@
       "slugHint": "Lettres minuscules, chiffres et tirets. Changer l'adresse casse les liens déjà partagés.",
       "legalHint": "La raison sociale et le matricule ne sont pas publiés : ils servent à vérifier la boutique.",
       "submitCreate": "Envoyer ma boutique",
-      "submitSave": "Enregistrer"
+      "submitSave": "Enregistrer",
+      "useMyName": "Mon nom : {name}",
+      "slugLine": "Adresse de la page : <url></url>",
+      "slugLater": "modifiable ensuite",
+      "slugEdit": "Modifier",
+      "slugFromName": "D'après le nom :",
+      "delegation": "Délégation",
+      "delegationPlaceholder": "Choisir la délégation",
+      "cityOther": "Autre (à écrire)",
+      "cityOtherPlaceholder": "Ville ou quartier",
+      "presentationWrite": "Écrire la présentation pour moi",
+      "presentationReplace": "Remplacer votre présentation par un texte écrit pour vous ?",
+      "presentationNeedsName": "Écrivez d'abord le nom de la boutique.",
+      "presentationEdit": "Un premier jet : modifiez-le à votre façon.",
+      "more": "Plus d'informations",
+      "moreHint": "Site web, horaires, raison sociale — facultatif",
+      "hoursPresets": {
+        "weekdays": "Lun–Ven, 9h–17h",
+        "sixDays": "Lun–Sam, 9h–18h",
+        "everyDay": "7j/7, 9h–19h",
+        "appointment": "Sur rendez-vous"
+      },
+      "legalSameName": "Même nom que la boutique"
     },
     "dashboard": {
       "unavailable": "Service momentanément indisponible.",
@@ -3596,7 +3743,7 @@
       "view": "Voir",
       "noName": "Sans nom",
       "planRunning": "Abonnement {name} en cours jusqu'au {date}. Un nouveau paiement prolonge à partir de cette date.",
-      "planNone": "Aucun abonnement en cours : vos annonces suivent les règles d'un particulier (annonces gratuites, puis frais par annonce).",
+      "planNone": "Aucun abonnement en cours : vos annonces suivent les règles d'un particulier (annonces gratuites en nombre limité, sans frais par annonce).",
       "perMonthTnd": "DT / mois",
       "planQuota": "{count, plural, one {# annonce en ligne} other {# annonces en ligne}}",
       "renewWith": "Prolonger avec celui-ci",
@@ -3625,7 +3772,13 @@
       "clientUpdated": "Mis à jour le {date}",
       "noDemandes": "Aucune demande ouverte près de la boutique ou à laquelle ses annonces répondent, pour l'instant.",
       "demandesHint": "Ce que cherchent les acheteurs et locataires qui ont demandé des alertes. Vous ne voyez ni leur nom ni leur numéro : proposez une annonce, Mazed Immo la leur transmet. ✓ = elle remplit toutes leurs conditions.",
-      "alreadyOffered": "Déjà proposé : {titles}"
+      "alreadyOffered": "Déjà proposé : {titles}",
+      "closed": {
+        "title": "Paiement momentanément indisponible",
+        "body": "Vous pourrez choisir ou renouveler un abonnement dès que nos coordonnées de paiement seront en ligne. Votre boutique et vos annonces restent en ligne.",
+        "row": "Paiement bientôt disponible",
+        "contact": "Nous contacter"
+      }
     },
     "clients": {
       "open": "En cours",
@@ -3660,14 +3813,31 @@
         "visit": "Visite",
         "manual": "Ajouté",
         "suggestion": "Demande"
-      }
+      },
+      "quickLabel": "Ajouter à la note",
+      "quick": {
+        "called": "Rappelé",
+        "visit_planned": "Visite prévue",
+        "offer_made": "Offre faite",
+        "not_interested": "Pas intéressé"
+      },
+      "when": {
+        "tomorrow": "Demain",
+        "in3": "Dans 3 jours",
+        "nextWeek": "Dans une semaine"
+      },
+      "otherDay": "Un autre jour"
     },
     "demandes": {
-      "choose": "Annonce à proposer",
+      "choose": "Vos annonces pour cette demande",
       "offer": "Proposer",
       "sent": "Annonce proposée. La personne est prévenue.",
       "failed": "Proposition impossible. Réessayez.",
-      "noneToOffer": "Aucune annonce en ligne de la boutique pour cette offre."
+      "noneToOffer": "Aucune annonce en ligne de la boutique pour cette offre.",
+      "fullMatch": "Remplit toutes ses conditions · {score} %",
+      "partialMatch": "Correspond à {score} %",
+      "showAll": "{count, plural, one {Voir l'autre annonce} other {Voir les # autres annonces}}",
+      "noneLeft": "Vous avez déjà proposé {max} annonces pour cette demande : c'est le maximum."
     }
   },
   "proApi": {
@@ -3801,7 +3971,15 @@
       "sentTitle": "Visite demandée",
       "confirmedTitle": "Visite confirmée",
       "sentBody": "Le vendeur vous répondra ici et par SMS.",
-      "follow": "Suivre dans Mes visites"
+      "follow": "Suivre dans Mes visites",
+      "slotsLabel": "Vos moments",
+      "defaultMessage": "Bonjour, votre annonce m'intéresse. Je souhaite la visiter.",
+      "phrasesLabel": "Ajouter une phrase",
+      "phrases": {
+        "quick": "Je suis disponible rapidement.",
+        "financing": "Financement prêt.",
+        "family": "Je viens avec ma famille."
+      }
     },
     "actions": {
       "pickSlot": "Moment retenu",
@@ -3817,7 +3995,25 @@
       "cancelled": "Visite annulée.",
       "cancelConfirm": "Annuler cette visite ?",
       "cancelSellerConfirm": "Annuler cette visite ? L'acheteur sera prévenu.",
-      "failed": "Action impossible. Réessayez."
+      "failed": "Action impossible. Réessayez.",
+      "defaultNote": "Merci, à bientôt pour la visite.",
+      "hourLabel": "Heure (facultatif)",
+      "hourChip": "{hour} h",
+      "hourPhrase": "Rendez-vous à {hour} h.",
+      "phrasesLabel": "Ajouter une phrase",
+      "phrases": {
+        "call": "Appelez-moi en arrivant.",
+        "entrance": "Je vous attends devant l'immeuble."
+      },
+      "declineTitle": "Pourquoi refuser ?",
+      "declineReasons": {
+        "slots": "Aucun de ces moments ne me convient.",
+        "unavailable": "Le bien n'est plus disponible."
+      },
+      "proposeLabel": "Proposer un autre moment (facultatif)",
+      "proposePhrase": "Je peux vous recevoir {day}, {part}.",
+      "declineSend": "Envoyer le refus",
+      "back": "Retour"
     },
     "card": {
       "asked": "Demandée le {date}",
@@ -3835,11 +4031,19 @@
       },
       "emptyReceived": "Aucune demande de visite sur vos annonces pour l'instant.",
       "emptySent": "Vous n'avez demandé aucune visite. Sur une annonce, « Demander une visite » propose vos moments au vendeur."
+    },
+    "chips": {
+      "today": "Aujourd'hui",
+      "tomorrow": "Demain",
+      "otherDate": "Autre date",
+      "morning": "Matin",
+      "afternoon": "Après-midi",
+      "evening": "Soir"
     }
   },
   "visitsApi": {
     "tooMany": "Trop de demandes de visite aujourd'hui. Réessayez demain.",
-    "slots": "Choisissez de 1 à 3 moments, d'aujourd'hui à 30 jours.",
+    "slots": "Choisissez de 1 à {max} moments, d'aujourd'hui à {days} jours.",
     "phone": "Numéro de téléphone invalide.",
     "name": "Indiquez votre nom.",
     "notOnline": "Cette annonce n'est plus en ligne.",
@@ -3879,7 +4083,9 @@
     "perMonth": "/ mois",
     "negotiable": "négociable",
     "best": "Le meilleur sur cette ligne",
-    "bestNote": "Le trophée marque le prix et le prix au m² les plus bas, la plus grande surface et le plus de pièces — quand au moins deux annonces les indiquent."
+    "bestNote": "Le trophée marque le prix et le prix au m² les plus bas, la plus grande surface et le plus de pièces — quand au moins deux annonces les indiquent. Un loyer ne se compare pas à un prix de vente : entre une vente et une location, les deux lignes de prix n'ont pas de trophée.",
+    "perSqmSale": "{amount} TND/m²",
+    "perSqmRent": "{amount} TND/m²/mois"
   },
   "whatsapp": {
     "help": "Une question ? Écrivez-nous sur WhatsApp :",
@@ -3914,7 +4120,13 @@
     "receiptSent": "Reçu envoyé — en vérification",
     "oneAtATime": "Une mise en avant à la fois : celle en cours doit se terminer d'abord.",
     "how": "Paiement par D17 ou virement, comme les autres paiements Mazed Immo. La mise en avant démarre dès que le reçu est validé ; prolongée, elle repart de sa date de fin.",
-    "failed": "Impossible pour le moment. Réessayez."
+    "failed": "Impossible pour le moment. Réessayez.",
+    "closed": {
+      "title": "Paiement momentanément indisponible",
+      "body": "Les mises en avant pourront être réglées dès que nos coordonnées de paiement seront en ligne. En attendant, votre annonce reste en ligne comme avant.",
+      "row": "Paiement bientôt disponible",
+      "contact": "Nous contacter"
+    }
   },
   "promoApi": {
     "product": "Mise en avant inconnue.",
@@ -3942,5 +4154,281 @@
     "reference": "Référence du paiement",
     "noVat": "Montant toutes taxes comprises.",
     "receiptNote": "Ce reçu atteste le paiement. Il ne tient pas lieu de facture."
+  },
+  "settingsRegistry": {
+    "groups": {
+      "features": {
+        "title": "Fonctionnalités",
+        "hint": "Chaque partie du site, en marche ou à l'arrêt. Une fonctionnalité coupée disparaît du site et son API refuse ; ce qui existe déjà est gardé."
+      },
+      "moderation": {
+        "title": "Modération",
+        "hint": "Combien d'annonces sont gratuites, et ce qui fait passer une annonce par un admin avant sa publication."
+      },
+      "publication": {
+        "title": "Publication",
+        "hint": "Durée des annonces, photos et pages de recherche."
+      },
+      "buyers": {
+        "title": "Acheteurs",
+        "hint": "Visites, comparaison et demandes d'acheteurs."
+      },
+      "contact": {
+        "title": "Contact",
+        "hint": "Comment joindre Mazed Immo, tel qu'affiché sur le site."
+      },
+      "social": {
+        "title": "Réseaux et IA",
+        "hint": "Social Publisher et assistant d'annonce."
+      },
+      "payment": {
+        "title": "Paiement",
+        "hint": "Les coordonnées vers lesquelles les vendeurs paient, par virement ou D17. Laissez-les vides tant que vos démarches ne sont pas terminées : la page de paiement reste fermée."
+      },
+      "company": {
+        "title": "Société",
+        "hint": "Copié dans chaque facture au moment où elle est émise. Sans raison sociale ni matricule fiscal, les paiements reçoivent un reçu."
+      },
+      "limits": {
+        "title": "Limites",
+        "hint": "Combien de fois une même personne peut faire une chose : contre les abus et les robots."
+      }
+    },
+    "feature_visits": {
+      "label": "Demandes de visite",
+      "hint": "Le bouton « Demander une visite » sur les annonces. Coupé : plus de nouvelle demande ; celles en cours restent dans « Mes visites »."
+    },
+    "feature_compare": {
+      "label": "Comparer des annonces",
+      "hint": "La case « Comparer » sur les annonces, le bandeau et la page de comparaison."
+    },
+    "feature_requests": {
+      "label": "Demandes d'acheteurs",
+      "hint": "Un acheteur décrit ce qu'il cherche et il est prévenu des annonces qui y répondent. Coupé : plus de nouvelle demande ni d'alerte."
+    },
+    "feature_pro_signup": {
+      "label": "Ouverture de boutiques Pro",
+      "hint": "Les agences et promoteurs ouvrent une boutique depuis la page Pro. Coupé : plus de nouvelle boutique ; celles qui existent continuent."
+    },
+    "feature_promos": {
+      "label": "Mises en avant payantes",
+      "hint": "Un vendeur achète une place en page d'accueil, en tête de recherche ou en bannière. Coupé : plus d'achat ; les places en cours vont jusqu'au bout."
+    },
+    "social_enabled": {
+      "label": "Social Publisher",
+      "hint": "Un vendeur demande la publication de son annonce sur les pages Mazed Immo."
+    },
+    "ai_enabled": {
+      "label": "Assistant d'annonce (IA)",
+      "hint": "Rédige un brouillon d'annonce à partir de quelques mots. Ne marche qu'avec une clé API."
+    },
+    "feature_listing_edit": {
+      "label": "Modifier une annonce en ligne",
+      "hint": "Un vendeur corrige son annonce publiée ; elle passe hors ligne jusqu'à votre validation. Coupé : plus de modification."
+    },
+    "feature_reports": {
+      "label": "Signalements",
+      "hint": "Un visiteur signale une annonce douteuse ; au-delà du seuil, elle est retirée en attendant un admin."
+    },
+    "feature_price_help": {
+      "label": "Aide au prix",
+      "hint": "Dans le formulaire : le prix en toutes lettres, l'alerte « un zéro de trop » et l'estimation d'après les annonces semblables."
+    },
+    "feature_watermark": {
+      "label": "Logo sur les photos",
+      "hint": "Le logo Mazed Immo posé sur chaque nouvelle photo. Les photos déjà envoyées ne changent pas."
+    },
+    "feature_natural_search": {
+      "label": "Recherche en langage courant",
+      "hint": "« S+2 à La Marsa moins de 300 mille » est compris et devient des filtres."
+    },
+    "feature_arabic_redirect": {
+      "label": "Recherche en arabe → site en arabe",
+      "hint": "Une recherche tapée en arabe ouvre la version arabe du site."
+    },
+    "feature_whatsapp": {
+      "label": "Contact WhatsApp",
+      "hint": "Le lien WhatsApp de Mazed Immo sur la page contact, le paiement et la page Pro."
+    },
+    "free_listing_limit": {
+      "label": "Annonces gratuites en ligne en même temps",
+      "hint": "Par compte. Au-delà, il faut une boutique Pro. 0 : rien de gratuit."
+    },
+    "moderation_auto_publish": {
+      "label": "Publication automatique des vendeurs de confiance",
+      "hint": "Un vendeur déjà validé, sans signalement retenu, publie sans attendre si son annonce passe toutes les règles. Coupé : un admin lit chaque annonce."
+    },
+    "moderation_min_photos": {
+      "label": "Photos minimum pour la publication automatique",
+      "hint": "Avec moins, l'annonce passe par un admin."
+    },
+    "moderation_report_threshold": {
+      "label": "Signalements qui retirent une annonce",
+      "hint": "De personnes différentes. L'annonce est retirée jusqu'à ce qu'un admin la regarde."
+    },
+    "moderation_banned_words": {
+      "label": "Mots qui envoient en vérification",
+      "hint": "L'annonce n'est pas refusée : un admin la lit avant publication."
+    },
+    "listing_default_days": {
+      "label": "Durée d'une annonce",
+      "hint": "Quand l'offre ne fixe pas de durée. Une offre de la page Offres garde la sienne."
+    },
+    "listing_max_photos": {
+      "label": "Photos maximum par annonce",
+      "hint": "Le formulaire n'en accepte pas plus."
+    },
+    "catalogue_page_size": {
+      "label": "Annonces par page de recherche",
+      "hint": "Le catalogue en montre autant avant « page suivante »."
+    },
+    "visits_max_slots": {
+      "label": "Créneaux par demande de visite",
+      "hint": "L'acheteur en propose jusqu'à ce nombre ; le vendeur en choisit un."
+    },
+    "visits_horizon_days": {
+      "label": "Visites proposées jusqu'à",
+      "hint": "Combien de jours à l'avance un créneau peut être proposé."
+    },
+    "compare_max": {
+      "label": "Annonces comparées à la fois",
+      "hint": "Au-delà de 4, le tableau ne tient plus sur un téléphone."
+    },
+    "requests_max_active": {
+      "label": "Demandes actives par acheteur",
+      "hint": "Une demande expirée ou supprimée libère une place."
+    },
+    "requests_days": {
+      "label": "Durée d'une demande",
+      "hint": "Ensuite, l'acheteur n'est plus prévenu des nouvelles annonces."
+    },
+    "contact_whatsapp": {
+      "label": "Numéro WhatsApp",
+      "hint": "Messages seulement. Affiché sur la page contact, le paiement et la page Pro."
+    },
+    "contact_email": {
+      "label": "Adresse e-mail",
+      "hint": "Affichée sur la page contact."
+    },
+    "contact_phone": {
+      "label": "Téléphone",
+      "hint": "Affiché sur la page contact. Vide : pas de téléphone affiché."
+    },
+    "social_price_tnd": {
+      "label": "Prix d'une publication sur les réseaux",
+      "hint": "0 : gratuit."
+    },
+    "social_auto_approve": {
+      "label": "Accepter les demandes sans vérification",
+      "hint": "Coupé : un admin valide chaque demande avant publication."
+    },
+    "social_daily_limit": {
+      "label": "Publications sur les réseaux",
+      "hint": "Au-delà, les suivantes attendent le lendemain."
+    },
+    "ai_daily_budget_usd": {
+      "label": "Budget IA par jour (USD)",
+      "hint": "Une fois dépensé, l'assistant s'arrête jusqu'au lendemain."
+    },
+    "payee_name": {
+      "label": "Bénéficiaire",
+      "hint": "Le titulaire du compte, tel qu'il apparaît à la banque."
+    },
+    "payee_bank": {
+      "label": "Banque",
+      "hint": "Le nom de la banque."
+    },
+    "payee_rib": {
+      "label": "RIB",
+      "hint": "20 chiffres."
+    },
+    "payee_iban": {
+      "label": "IBAN",
+      "hint": "TN59 suivi du RIB."
+    },
+    "payee_d17": {
+      "label": "Numéro D17",
+      "hint": "Le numéro qui reçoit les paiements D17."
+    },
+    "company_name": {
+      "label": "Raison sociale",
+      "hint": "Tel qu'au registre du commerce."
+    },
+    "company_tax_id": {
+      "label": "Matricule fiscal",
+      "hint": "Avec la raison sociale, les paiements reçoivent une facture au lieu d'un reçu."
+    },
+    "company_address": {
+      "label": "Adresse",
+      "hint": "Imprimée sur chaque facture."
+    },
+    "invoice_vat_rate": {
+      "label": "TVA",
+      "hint": "Vide : pas de ligne TVA sur les factures."
+    },
+    "limit_visits_per_day": {
+      "label": "Demandes de visite par acheteur",
+      "hint": "Au-delà, il attend le lendemain."
+    },
+    "limit_reports_per_hour": {
+      "label": "Signalements par personne",
+      "hint": "Freine ceux qui signalent en masse."
+    },
+    "limit_edits_per_hour": {
+      "label": "Modifications d'annonce par vendeur",
+      "hint": "Chaque modification passe par un admin : ceci évite d'en être inondé."
+    },
+    "limit_phone_reveals_per_hour": {
+      "label": "Numéros affichés par connexion",
+      "hint": "Freine ceux qui aspirent les numéros des vendeurs."
+    },
+    "limit_suggestions_per_day": {
+      "label": "Propositions d'une boutique aux demandes",
+      "hint": "Par boutique."
+    },
+    "limit_shop_create_per_hour": {
+      "label": "Créations de boutique par personne",
+      "hint": "Contre les inscriptions en série."
+    },
+    "sms_daily_cap": {
+      "label": "SMS par personne",
+      "hint": "Au-delà, les avis suivants restent dans le site. 0 : aucun SMS."
+    },
+    "units": {
+      "days": "jours",
+      "tnd": "DT",
+      "percent": "%",
+      "photos": "photos",
+      "per_hour": "par heure",
+      "per_day": "par jour"
+    },
+    "ui": {
+      "tabsLabel": "Parties des réglages",
+      "manage": "Gérer",
+      "reset": "Rétablir la valeur par défaut",
+      "default": "Par défaut : {value}",
+      "defaultOn": "Par défaut : activé",
+      "defaultOff": "Par défaut : désactivé",
+      "defaultEmpty": "Par défaut : vide",
+      "range": "de {min} à {max}",
+      "listHint": "un par ligne",
+      "on": "Activé",
+      "off": "Désactivé",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saveCount": "{count, plural, one {Enregistrer # changement} other {Enregistrer # changements}}",
+      "saved": "Réglages enregistrés.",
+      "savedButton": "Enregistré",
+      "saveFailed": "Enregistrement impossible.",
+      "fixErrors": "Corrigez les champs en rouge."
+    },
+    "errors": {
+      "invalid_bool": "Choisissez oui ou non.",
+      "invalid_number": "Entrez un nombre.",
+      "out_of_range": "Entre {min} et {max}.",
+      "invalid_text": "Entrez un texte.",
+      "too_long": "{max} caractères au plus.",
+      "invalid_list": "Un élément par ligne."
+    }
   }
 }

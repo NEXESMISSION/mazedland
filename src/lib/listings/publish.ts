@@ -1,12 +1,12 @@
 import type { getServiceSupabase } from "@/lib/supabase/admin";
 import { notifyMatchingRequests } from "@/lib/requests/server";
+import { loadSettings } from "@/lib/settings/server";
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
 
-const DEFAULT_DURATION_DAYS = 30;
-
 /** How long a publication lasts: what its payment bought, else the active
- *  `listing_single` product, else 30 days. Never a constant in a caller. */
+ *  `listing_single` product, else `listing_default_days` (/admin/settings).
+ *  Never a constant in a caller. */
 export async function publicationDays(admin: Admin, feePaymentId: string | null): Promise<number> {
   if (feePaymentId) {
     const { data: pay } = await admin
@@ -25,7 +25,8 @@ export async function publicationDays(admin: Admin, feePaymentId: string | null)
     .limit(1)
     .maybeSingle();
   const d = Number(prod?.duration_days);
-  return Number.isFinite(d) && d > 0 ? d : DEFAULT_DURATION_DAYS;
+  if (Number.isFinite(d) && d > 0) return d;
+  return (await loadSettings(admin)).listing_default_days;
 }
 
 /**

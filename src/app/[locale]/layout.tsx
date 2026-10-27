@@ -19,6 +19,13 @@ import { FavoritesSync } from "@/components/listing/FavoritesSync";
 import { ClientLogger } from "@/components/dev/ClientLogger";
 import { ClientErrorReporter } from "@/components/observability/ClientErrorReporter";
 import type { Metadata } from "next";
+import { SettingsProvider } from "@/components/settings/SettingsProvider";
+import { clientSettings, getSettings } from "@/lib/settings/server";
+
+// The settings an admin changes reach every page (feature switches, limits).
+// Pages rendered ahead of time (terms, contact…) are rebuilt at most a minute
+// after a change; the others read them on each request.
+export const revalidate = 60;
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -90,6 +97,7 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
   const t = await getTranslations("shell");
+  const settings = clientSettings(await getSettings());
 
   // Origin of the Supabase project so the browser can warm a TLS +
   // HTTP/2 connection before we issue the first auth/db/storage call.
@@ -139,6 +147,7 @@ export default async function LocaleLayout({
           {t("skipToContent")}
         </a>
         <NextIntlClientProvider locale={locale} messages={messages}>
+          <SettingsProvider value={settings}>
           <ToastProvider>
             <NetworkStatus />
             <FavoritesSync />
@@ -153,6 +162,7 @@ export default async function LocaleLayout({
               <CompareBar />
             </Optional>
           </ToastProvider>
+          </SettingsProvider>
         </NextIntlClientProvider>
         <PWARegister />
         {/* Ships uncaught client errors + unhandled rejections to the server

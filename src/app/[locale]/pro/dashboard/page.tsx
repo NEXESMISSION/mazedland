@@ -11,12 +11,15 @@ import { ShopForm } from "@/components/pro/ShopForm";
 import { AddMember, ChoosePlan, RemoveMember, SendDocument } from "./ProActions";
 import { ProClients, type ClientRow } from "./ProClients";
 import { SuggestListing } from "./SuggestListing";
-import { rankForRequest } from "@/lib/pro/suggest";
+import { MAX_SUGGESTIONS_PER_REQUEST, rankForRequest } from "@/lib/pro/suggest";
 import { toMatchable } from "@/lib/requests/server";
 import { categoryLabel } from "@/lib/i18n";
 import { VisitCard } from "@/components/visits/VisitCard";
 import { loadVisits } from "@/lib/visits-server";
-import type { LeadStage } from "@/lib/visits";
+import { tunisDay, type LeadStage } from "@/lib/visits";
+import { getSettings } from "@/lib/settings/server";
+import { paymentsAreOpen } from "@/lib/payments/server";
+import { PaymentsClosedNotice } from "@/components/payments/PaymentsClosedNotice";
 import { BadgeCheck, ExternalLink, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -55,9 +58,12 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
   const current = memberships.find((m) => m.shop.id === sp.shop) ?? memberships[0];
   const { shop, role } = current;
   const tab: TabKey = (TABS as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as TabKey) : "apercu";
+  // With demandes switched off in the console, there are none to answer.
+  const settings = await getSettings();
+  const demandesOn = settings.feature_requests;
   // Everyone sees the plan; only those who may act on the page or the papers see those tabs.
   const visibleTabs = TABS.filter((k) =>
-    k === "boutique" ? can(role, "edit_shop") : k === "documents" ? can(role, "documents") : k === "visites" || k === "clients" || k === "demandes" ? can(role, "clients") : true,
+    k === "boutique" ? can(role, "edit_shop") : k === "documents" ? can(role, "documents") : k === "demandes" ? demandesOn && can(role, "clients") : k === "visites" || k === "clients" ? can(role, "clients") : true,
   );
   const href = (k: TabKey) => `/pro/dashboard?shop=${shop.id}&tab=${k}`;
 
@@ -195,7 +201,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
                   </div>
                   <div className="flex items-center gap-3 text-[12.5px] font-bold">
                     {/* The edit form is its author's (0172). */}
-                    {l.status === "published" && l.seller_id === user!.id && <Link href={`/annonces/nouvelle?edit=${l.id}` as never} className="text-foreground hover:underline">{t("edit")}</Link>}
+                    {settings.feature_listing_edit && l.status === "published" && l.seller_id === user!.id && <Link href={`/annonces/nouvelle?edit=${l.id}` as never} className="text-foreground hover:underline">{t("edit")}</Link>}
                     {l.status === "published" && <Link href={`/annonces/${l.id}` as never} className="text-gold hover:underline">{t("view")}</Link>}
                   </div>
                 </li>
@@ -209,7 +215,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
 
       {tab === "clients" && can(role, "clients") && <ClientsTab shopId={shop.id} />}
 
-      {tab === "demandes" && can(role, "clients") && <DemandesTab shopId={shop.id} shopGovernorate={shop.governorate} approved={shop.status === "approved"} />}
+      {tab === "demandes" && demandesOn && can(role, "clients") && <DemandesTab shopId={shop.id} shopGovernorate={shop.governorate} approved={shop.status === "approved"} />}
 
       {tab === "equipe" && <TeamTab shopId={shop.id} role={role} />}
 
@@ -333,7 +339,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
           const done = offered.get(r.id) ?? [];
           const options = ranked
             .filter((x) => !done.includes(x.listing.id))
-            .map((x) => ({ id: x.listing.id, label: `${x.match.ok ? "✓ " : ""}${x.listing.title} · ${x.match.score} %` }));
+            .map((x) => ({ id: x.listing.id, title: x.listing.title, score: x.match.score, ok: x.match.ok }));
           return (
             <article key={r.id} className={`rounded-2xl bg-surface p-4 ring-1 ${full ? "ring-gold-soft" : "ring-border"}`}>
               <div className="flex flex-wrap items-start justify-between gap-2">
@@ -349,7 +355,11 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
                   {t("alreadyOffered", { titles: done.map((id) => listings.find((l) => l.id === id)?.title ?? "").filter(Boolean).join(", ") })}
                 </p>
               )}
-              {approved && <div className="mt-3"><SuggestListing shopId={shopId} requestId={r.id} options={options} /></div>}
+              {approved && (
+                <div className="mt-3">
+                  <SuggestListing shopId={shopId} requestId={r.id} options={options} left={MAX_SUGGESTIONS_PER_REQUEST - done.length} />
+                </div>
+              )}
             </article>
           );
         })}
@@ -379,7 +389,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
       listing: Array.isArray(r.listing) ? r.listing[0] ?? null : r.listing,
       updated_label: t("clientUpdated", { date: formatDate(r.updated_at, locale, "dayMonth") }),
     }));
-    return <ProClients shopId={shopId} clients={clients} listings={(own ?? []) as { id: string; title: string }[]} />;
+    return <ProClients shopId={shopId} clients={clients} listings={(own ?? []) as { id: string; title: string }[]} today={tunisDay()} />;
   }
 
   async function TeamTab({ shopId, role: actor }: { shopId: string; role: ShopRole }) {
@@ -419,16 +429,23 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
   }
 
   async function PlanTab({ shopId, role: actor, approved, current: running }: { shopId: string; role: ShopRole; approved: boolean; current: Awaited<ReturnType<typeof activePlan>> }) {
-    const [{ data: planRows }, { data: periods }] = await Promise.all([
+    const [{ data: planRows }, { data: periods }, open] = await Promise.all([
       admin!.from("products").select("slug, name_fr, name_ar, price, listing_quota").eq("kind", "subscription").eq("is_active", true).order("price"),
       admin!.from("shop_subscriptions").select("starts_at, ends_at, listing_quota, product:products (name_fr)").eq("shop_id", shopId).order("starts_at", { ascending: false }).limit(12),
+      paymentsAreOpen(),
     ]);
     const plans = (planRows ?? []) as { slug: string; name_fr: string; name_ar: string | null; price: number | string; listing_quota: number }[];
+    // With no payee to pay, « Choisir » created a payment and only the checkout
+    // then said « indisponible ». The tab says it first, in place of the buttons.
+    const mayBuy = can(actor, "subscribe") && approved;
     return (
       <section className="mt-5 space-y-5">
         <p className="rounded-2xl bg-surface-2 px-4 py-3 text-[12.5px] leading-relaxed text-foreground ring-1 ring-border">
           {running ? t("planRunning", { name: running.name, date: formatDate(running.endsAt, locale, "medium") }) : t("planNone")}
         </p>
+        {mayBuy && !open && (
+          <PaymentsClosedNotice title={t("closed.title")} body={t("closed.body")} contactLabel={t("closed.contact")} />
+        )}
         <div className="grid gap-3 md:grid-cols-3">
           {plans.map((p) => (
             <div key={p.slug} className="rounded-2xl border border-border bg-surface p-4">
@@ -437,9 +454,12 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
                 {formatTND(Number(p.price), locale)} <span className="text-[12px] font-normal text-muted">{t("perMonthTnd")}</span>
               </p>
               <p className="text-[12.5px] font-bold text-gold">{t("planQuota", { count: p.listing_quota })}</p>
-              {can(actor, "subscribe") && approved && (
-                <ChoosePlan shopId={shopId} plan={p.slug} label={running ? t("renewWith") : t("choose")} />
-              )}
+              {mayBuy &&
+                (open ? (
+                  <ChoosePlan shopId={shopId} plan={p.slug} label={running ? t("renewWith") : t("choose")} />
+                ) : (
+                  <p className="mt-3 text-[12px] font-semibold text-muted">{t("closed.row")}</p>
+                ))}
             </div>
           ))}
         </div>

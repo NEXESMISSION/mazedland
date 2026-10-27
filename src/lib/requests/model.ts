@@ -13,9 +13,15 @@
  */
 import { asDealType, FURNISHED, isoDay, type DealType, type Furnished } from "@/lib/listings/deal";
 import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
+import { rangeInverted } from "@/lib/range";
 
-export const MAX_ACTIVE_REQUESTS = 10;
-export const REQUEST_DAYS = 60;
+/**
+ * When a demande made or renewed now stops: `days` is the console's
+ * `requests_days` (60 by default), read by the route and passed in.
+ */
+export function requestExpiresAt(days: number, now: number = Date.now()): string {
+  return new Date(now + days * 86_400_000).toISOString();
+}
 
 export type RequestInput = {
   deal_type: DealType;
@@ -77,7 +83,9 @@ export function parseRequestInput(
   // The ceiling is the one thing a demande cannot do without: it is what makes
   // every match worth sending.
   if (value.budget_max == null) return { ok: false, error: "budget_required" };
-  if (value.budget_min != null && value.budget_min > value.budget_max) {
+  // The same rule as the catalogue's budget and the form (src/lib/range.ts):
+  // a floor above the ceiling would never match, so no alert would ever go.
+  if (rangeInverted(value.budget_min, value.budget_max)) {
     return { ok: false, error: "budget_order" };
   }
   return { ok: true, value };

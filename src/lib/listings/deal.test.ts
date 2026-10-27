@@ -3,6 +3,7 @@ import {
   appliesTo,
   asDealType,
   closedStatus,
+  dealLabelKey,
   firstMonthCost,
   isoDay,
   parseRentFacts,
@@ -19,6 +20,16 @@ describe("asDealType", () => {
   it("closes a rental as let and a sale as sold", () => {
     expect(closedStatus("rent")).toBe("rented");
     expect(closedStatus("sale")).toBe("sold");
+  });
+});
+
+describe("dealLabelKey", () => {
+  it("labels a rental « À louer » and everything else « À vendre »", () => {
+    expect(dealLabelKey("rent")).toBe("forRent");
+    expect(dealLabelKey("sale")).toBe("forSale");
+    // A row read without the column is a sale, as asDealType says.
+    expect(dealLabelKey(null)).toBe("forSale");
+    expect(dealLabelKey(undefined)).toBe("forSale");
   });
 });
 

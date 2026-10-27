@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
-import { Home, Search, Plus, LayoutGrid, User } from "lucide-react";
+import { Home, Search, Plus, Heart, User } from "lucide-react";
 
 /**
  * Bottom tab bar — full-width, flush-bottom, clean white surface.
@@ -61,9 +61,13 @@ const TABS: Tab[] = [
     isCenter: true,
   },
   {
+    // The saved annonces. The tab said « Activité » over a grid icon and
+    // opened a page titled « Mes favoris »; it now says « Favoris » (the
+    // `activity` key, which the desktop nav shares) with the heart that saves
+    // them. The route keeps its old name for the links that point at it.
     href: "/account/activity",
     labelKey: "activity",
-    Icon: LayoutGrid,
+    Icon: Heart,
     match: (p) =>
       p === "/account/activity" ||
       p === "/watchlist" ||

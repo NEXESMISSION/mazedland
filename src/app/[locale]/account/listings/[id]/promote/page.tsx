@@ -11,6 +11,8 @@ import {
   type JobStatus, type RequestStatus, type SocialChannel, type SocialLanguage,
 } from "@/lib/social/channels";
 import { buildVariants, loadSocialListing, socialOrigin, socialSettings, tunisToday } from "@/lib/social/server";
+import { paymentsAreOpen } from "@/lib/payments/server";
+import { PaymentsClosedNotice } from "@/components/payments/PaymentsClosedNotice";
 import { PromoteForm } from "./PromoteForm";
 import { WithdrawButton } from "./WithdrawButton";
 
@@ -49,10 +51,11 @@ const TONE: Record<string, string> = {
 };
 
 /**
- * Promouvoir mon annonce (cahier « Mazed Social Publisher » §3): the seller
- * chooses where — nothing is ticked for them — sees the posts as they will
- * read, sees the price, and agrees in so many words before anything is sent
- * for review. Once asked, the same page shows where it stands, the links to
+ * Promouvoir mon annonce (cahier « Mazed Social Publisher » §3): the form
+ * opens ready — every channel the annonce can go on, in the page's language —
+ * and the seller unticks what they do not want, sees the posts as they will
+ * read, sees the price, and agrees in so many words, with the one tap that
+ * sends it for review. Once asked, the same page shows where it stands, the links to
  * the posts, the visits they brought, and the way to take it all back.
  */
 export default async function PromotePage({ params }: { params: Promise<{ id: string }> }) {
@@ -81,6 +84,10 @@ export default async function PromotePage({ params }: { params: Promise<{ id: st
   ]);
   const last = ((reqRows ?? []) as RequestRow[])[0] ?? null;
   const open = last && (OPEN_REQUEST_STATUSES as readonly string[]).includes(last.status) ? last : null;
+  // Free at launch. Once it has a price it is paid like the rest, and with no
+  // payee to pay the form is not offered — the API refuses too
+  // (`payments_closed`), so nobody fills it in to be told no at the end.
+  const closed = settings.priceTnd > 0 && !open && !(await paymentsAreOpen());
 
   let visits = 0;
   let contacts = 0;
@@ -199,6 +206,8 @@ export default async function PromotePage({ params }: { params: Promise<{ id: st
           <Info className="mt-0.5 size-4 shrink-0 text-muted" />
           <p>{t("disabled")}</p>
         </section>
+      ) : closed ? (
+        <PaymentsClosedNotice className="mt-6" title={t("closed.title")} body={t("closed.body")} contactLabel={t("closed.contact")} />
       ) : (
         <>
           {last?.status === "rejected" && (

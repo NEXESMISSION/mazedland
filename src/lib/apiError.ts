@@ -34,6 +34,11 @@ export const API_ERROR_CODES = [
   "unknown_action",
   "too_large",
   "empty_body",
+  // A feature an admin switched off in /admin/settings (src/lib/settings/gate.ts).
+  "feature_off",
+  // No payee method has real details yet, so no payment is created
+  // (src/lib/payments/server.ts).
+  "payments_closed",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

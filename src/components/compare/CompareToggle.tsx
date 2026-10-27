@@ -4,21 +4,25 @@ import { useTranslations } from "next-intl";
 import { Scale } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
-import { COMPARE_MAX } from "@/lib/compare";
+import { useSetting } from "@/components/settings/SettingsProvider";
 import { useCompare } from "./compareStore";
 
 /**
  * « Comparer »: adds this annonce to the comparison, or takes it out. On a
  * photo it is a round chip like the heart; on the page, a labelled pill.
+ * Gone when the console switches comparing off.
  */
 export function CompareToggle({ listingId, variant = "chip" }: { listingId: string; variant?: "chip" | "pill" }) {
   const t = useTranslations("compare");
   const { toast } = useToast();
-  const { has, toggle } = useCompare();
+  const enabled = useSetting("feature_compare");
+  const { has, toggle, max } = useCompare();
   const on = has(listingId);
 
+  if (!enabled) return null;
+
   const onClick = () => {
-    if (!toggle(listingId)) toast(t("full", { max: COMPARE_MAX }), "warning");
+    if (!toggle(listingId)) toast(t("full", { max }), "warning");
   };
 
   if (variant === "pill") {

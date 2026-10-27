@@ -6,30 +6,39 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { listingFields, listingPhotos, type ListingBody } from "@/lib/listings/input";
-import { editWaiting, isEditable, proposeEdit } from "@/lib/listings/edit";
+import { dropEdit, editWaiting, isEditable, proposeEdit } from "@/lib/listings/edit";
+import { featureOff } from "@/lib/settings/gate";
+import { getSettings } from "@/lib/settings/server";
 
 /**
  * POST /api/annonces/:id/edit — the seller's new version of an annonce that is
  * online (0172). Same body as the draft route; the whole form is sent at the
  * end, nothing is written while the seller types.
  *
- *   → { status: "applied" }            clean: it is online now
- *   → { status: "pending", flags }     an admin looks first; the annonce stays
- *                                      online as it was meanwhile
+ *   → { status: "pending", flags }     every edit: an admin approves it first,
+ *                                      and the annonce is offline until then
+ *                                      (0176). Sent again while it waits, the
+ *                                      newer version replaces the waiting one.
  *
- * An annonce still waiting for an admin can be corrected too — a zero too
+ * An annonce still waiting for its first approval can be corrected too — a zero too
  * many on the price is noticed right after sending. It is not online, so the
  * new version replaces it and the moderation runs again:
  *   → { status: "published" }          clean now: online
  *   → { status: "pending_review" }     still waiting, reasons updated
  * Not one taken offline after reports: an admin judges it as it was reported.
  *
- * DELETE /api/annonces/:id/edit — withdraw an edit still waiting for an admin.
+ * DELETE /api/annonces/:id/edit — withdraw an edit still waiting for an admin:
+ * the approved version goes back online as it was.
+ *
+ * With editing switched off in /admin/settings, POST refuses; DELETE still
+ * works, so an edit sent before the switch can be taken back.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
   }
+  const off = await featureOff("feature_listing_edit");
+  if (off) return off;
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
@@ -37,17 +46,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!admin) return fail("server_misconfigured", 500);
   const { id } = await params;
   const t = await apiTranslator(req, "publishApi");
+  const settings = await getSettings();
 
   const { data: over } = await admin.rpc("check_rate_limit", {
     p_key: `listing-edit:${user.id}`,
-    p_max: 20,
+    p_max: settings.limit_edits_per_hour,
     p_window_secs: 3600,
   });
   if (over === true) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
   const { data: listing } = await admin
     .from("listings")
-    .select("id, seller_id, status, review_flags")
+    .select("id, seller_id, status, review_flags, pending_edit_at")
     .eq("id", id)
     .maybeSingle();
   if (!listing || listing.seller_id !== user.id) return NextResponse.json({ error: "not_owner" }, { status: 403 });
@@ -58,7 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const body = (await req.json().catch(() => ({}))) as ListingBody;
   const fields = listingFields(body);
-  const photos = listingPhotos(body);
+  const photos = listingPhotos(body, settings.listing_max_photos);
 
   // What a live annonce cannot lose: a title, a place, a price (or « sur
   // demande »), a way to call, a photo.
@@ -83,7 +93,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // The attestation was given when it went online; an edit does not re-sign it.
   delete fields.seller_attestation_version;
 
-  if (listing.status === "pending_review") {
+  if (listing.status === "pending_review" && !listing.pending_edit_at) {
     const waiting = await editWaiting(admin, id, { fields, photos });
     if (waiting.status === "error") return fail("listing_edit_failed", 500, waiting.error);
     logAction(req, user, "listing.edit_waiting", { id, status: waiting.status });
@@ -93,7 +103,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const result = await proposeEdit(admin, id, { fields, photos });
   if (result.status === "error") return fail("listing_edit_failed", 500, result.error);
   logAction(req, user, "listing.edit", { id, status: result.status });
-  return NextResponse.json(result.status === "applied" ? { ok: true, status: "applied" } : { ok: true, status: "pending", flags: result.flags });
+  return NextResponse.json({ ok: true, status: "pending", flags: result.flags });
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -107,14 +117,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!admin) return fail("server_misconfigured", 500);
   const { id } = await params;
 
-  const { data } = await admin
-    .from("listings")
-    .update({ pending_edit: null, pending_edit_at: null })
-    .eq("id", id)
-    .eq("seller_id", user.id)
-    .not("pending_edit", "is", null)
-    .select("id");
-  if (!data || data.length === 0) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  logAction(req, user, "listing.edit_withdrawn", { id });
-  return NextResponse.json({ ok: true });
+  const out = await dropEdit(admin, id, { sellerId: user.id });
+  if (!out.ok) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  logAction(req, user, "listing.edit_withdrawn", { id, status: out.status });
+  return NextResponse.json({ ok: true, status: out.status });
 }

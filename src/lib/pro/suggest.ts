@@ -5,10 +5,12 @@
  */
 import { matchRequest, type MatchableListing, type MatchableRequest, type MatchResult } from "@/lib/requests/model";
 
-/** A demande hears from one shop three times at most. */
+/**
+ * A demande hears from one shop three times at most. How many a shop may
+ * propose a day across all demandes is the console's
+ * `limit_suggestions_per_day` (thirty by default).
+ */
 export const MAX_SUGGESTIONS_PER_REQUEST = 3;
-/** And a shop proposes thirty annonces a day at most, across all demandes. */
-export const MAX_SUGGESTIONS_PER_DAY = 30;
 
 export type Ranked<L> = { listing: L; match: MatchResult };
 

@@ -9,7 +9,6 @@ type Status = "idle" | "submitting" | "success" | "error";
 export function WaitlistForm() {
   const t = useTranslations("landing");
   const locale = useLocale();
-  const isRTL = locale === "ar";
   const [status, setStatus] = useState<Status>("idle");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -50,22 +49,30 @@ export function WaitlistForm() {
 
   return (
     <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-[1.3fr_1fr_auto]">
+      {/* What the browser already knows fills these. An address and a number
+          read left to right on an Arabic page too. */}
       <input
         type="email"
         required
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder={t("emailPlaceholder")}
+        autoComplete="email"
+        inputMode="email"
+        autoCapitalize="none"
+        spellCheck={false}
         className="rounded-full border border-gold/25 bg-surface-2 px-5 py-3 text-foreground placeholder:text-muted focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/30"
-        dir={isRTL ? "rtl" : "ltr"}
+        dir="ltr"
       />
       <input
         type="tel"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         placeholder={t("phonePlaceholder")}
+        autoComplete="tel"
+        inputMode="tel"
         className="rounded-full border border-gold/25 bg-surface-2 px-5 py-3 text-foreground placeholder:text-muted focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/30"
-        dir={isRTL ? "rtl" : "ltr"}
+        dir="ltr"
       />
       <button
         type="submit"

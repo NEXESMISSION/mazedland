@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { HiddenAt } from "@/components/ui/HiddenAt";
 import { LiveCountdown } from "@/components/landing/LiveCountdown";
 import { MapPin, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { dealLabelKey, type DealType } from "@/lib/listings/deal";
 
 export type ShowcaseSlide = {
   /** Auction id — used as the React key and to build the detail href. */
@@ -27,8 +28,8 @@ export type ShowcaseSlide = {
    *  in HomeDesktop's showcase builder. Kept so the chip logic reads plainly
    *  rather than being deleted and half-remembered. */
   isLive: boolean;
-  /** A rental's price is per month (0166). */
-  perMonth?: boolean;
+  /** Sale or rent (0166): names the chip, and a rental's price is per month. */
+  dealType: DealType;
 };
 
 /**
@@ -238,7 +239,9 @@ function SlideBody({
           {slide.isLive && (
             <span className="mazed-pulse-dot size-1.5 rounded-full bg-red-500 text-red-500/40" />
           )}
-          {slide.isLive ? t("live") : t("forSale")}
+          {/* From the annonce's own deal. This said « À vendre » on every
+              slide, rentals included, while the catalogue said « À louer ». */}
+          {slide.isLive ? t("live") : t(dealLabelKey(slide.dealType))}
         </span>
         {slide.endsAt && (
           <span className="shrink-0 drop-shadow">
@@ -273,7 +276,7 @@ function SlideBody({
               {/* "Prix sur demande" takes no currency after it. */}
               {/\d/.test(slide.priceLabel) && (
                 <span className="ms-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/60">
-                  {slide.perMonth ? tl("tndPerMonth") : tc("tnd")}
+                  {slide.dealType === "rent" ? tl("tndPerMonth") : tc("tnd")}
                 </span>
               )}
             </div>

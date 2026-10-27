@@ -1,4 +1,5 @@
 import { asDealType, NO_RENT_FACTS, parseRentFacts } from "./deal";
+import { canonicalDelegation, governorateOfDelegation } from "@/lib/delegations";
 
 /**
  * What the publish wizard sends, read the way the server trusts it — shared by
@@ -36,6 +37,7 @@ export type ListingBody = {
   min_lease_months?: unknown;
 };
 
+/** `listing_max_photos` when nothing is stored; the routes pass the setting. */
 export const MAX_PHOTOS = 12;
 
 export function text(v: unknown, max: number): string | null {
@@ -83,10 +85,19 @@ export function listingFields(body: ListingBody): Record<string, unknown> {
     Object.assign(fields, deal === "rent" ? parseRentFacts(body as Record<string, unknown>) : NO_RENT_FACTS);
   }
   if (governorate) fields.governorate = governorate;
-  if ("delegation" in body) fields.delegation = text(body.delegation, 60);
   if ("address" in body) fields.address = text(body.address, 200);
+  // The délégation is one of the governorate's (src/lib/delegations.ts), in
+  // its stored spelling. A name off the list — a neighbourhood typed in the
+  // old free field, « Ennasr » — is not lost: it becomes the quartier, unless
+  // one was sent.
+  if ("delegation" in body) {
+    const typed = text(body.delegation, 80);
+    const listed = canonicalDelegation(governorate ?? governorateOfDelegation(typed), typed);
+    fields.delegation = listed;
+    if (typed && !listed && !fields.address) fields.address = typed.slice(0, 200);
+  }
   if ("attributes" in body && body.attributes && typeof body.attributes === "object" && !Array.isArray(body.attributes)) {
-    fields.attributes = body.attributes;
+    fields.attributes = saneAttributes(body.attributes as Record<string, unknown>);
   }
   if ("contact_name" in body) fields.contact_name = text(body.contact_name, 80);
   if ("contact_phone" in body) fields.contact_phone = phone(body.contact_phone);
@@ -101,12 +112,44 @@ export function listingFields(body: ListingBody): Record<string, unknown> {
 
 export type PhotoRow = { storage_path: string; sort_order: number };
 
-/** The gallery as it should end up, in order — or null when the body sends none. */
-export function listingPhotos(body: ListingBody): PhotoRow[] | null {
+/**
+ * The gallery as it should end up, in order — or null when the body sends none.
+ * At most `max` photos: what an admin allows per annonce in /admin/settings.
+ */
+export function listingPhotos(body: ListingBody, max = MAX_PHOTOS): PhotoRow[] | null {
   if (!Array.isArray(body.photos)) return null;
   return body.photos
-    .slice(0, MAX_PHOTOS)
+    .slice(0, max)
     .map((p) => text(((p ?? {}) as Record<string, unknown>).storage_path, 300))
     .filter((path): path is string => !!path)
     .map((storage_path, sort_order) => ({ storage_path, sort_order }));
+}
+
+/**
+ * The figures a property can have. A value outside them was a slip — « 13 »
+ * typed for the year it was built, a surface with three zeros too many — and
+ * is dropped rather than shown on the annonce and fed to the filters. Other
+ * answers (yes/no, an admin's own questions) pass as sent.
+ */
+const ATTRIBUTE_BOUNDS: Record<string, [min: number, max: number]> = {
+  area_sqm: [1, 10_000_000],
+  rooms: [0, 50],
+  bathrooms: [0, 20],
+  floor: [-3, 100],
+  year_built: [1850, new Date().getFullYear() + 3],
+};
+
+export function saneAttributes(attrs: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(attrs)) {
+    const bounds = ATTRIBUTE_BOUNDS[k];
+    if (bounds && v !== null && v !== "") {
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < bounds[0] || n > bounds[1]) continue;
+      out[k] = n;
+      continue;
+    }
+    out[k] = v;
+  }
+  return out;
 }

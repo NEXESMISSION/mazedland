@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
+import { shownDelegation } from "@/lib/delegations";
 import { formatDate, formatNumber, formatTND } from "@/lib/utils";
 import { asDealType } from "@/lib/listings/deal";
 import { bestOf, comparable, parseCompareIds, pricePerSqm } from "@/lib/compare";
+import { getSettings } from "@/lib/settings/server";
 import { Ltr } from "@/components/ui/Ltr";
 import { Home, Scale, Trophy } from "lucide-react";
 import { CompareSync, RemoveFromCompare } from "./CompareControls";
@@ -39,17 +42,20 @@ type Row = {
 };
 
 /**
- * Comparer (P3): two or three annonces side by side — price, price per m²,
- * surface, rooms, place, the rent terms, then every detail either seller
- * filled. The best on each of the first four lines is marked. The ids live
- * in the address, so a comparison can be sent to someone.
+ * Comparer (P3): two annonces side by side, or up to the console's
+ * `compare_max` — price, price per m², surface, rooms, place, the rent terms,
+ * then every detail either seller filled. The best on each of the first four
+ * lines is marked. The ids live in the address, so a comparison can be sent
+ * to someone. Switched off in the console, the page is not there.
  */
 export default async function ComparePage({ searchParams }: { searchParams: Promise<{ ids?: string | string[] }> }) {
+  const settings = await getSettings();
+  if (!settings.feature_compare) notFound();
   const sp = await searchParams;
   const locale = await getLocale();
   const t = await getTranslations("compare");
   const tRoot = await getTranslations();
-  const ids = parseCompareIds(sp.ids);
+  const ids = parseCompareIds(sp.ids, settings.compare_max);
   const admin = getServiceSupabase();
 
   let rows: Row[] = [];
@@ -127,10 +133,19 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         items[i].price == null ? t("onRequest") : `${money(items[i].price!)}${asDealType(r.deal_type) === "rent" ? ` ${t("perMonth")}` : ""}${r.negotiable ? ` · ${t("negotiable")}` : ""}`,
       ),
     },
-    { label: t("perSqm"), bestId: best.perSqm, cells: items.map((c) => (pricePerSqm(c) != null ? money(pricePerSqm(c)!) : "—")) },
+    {
+      label: t("perSqm"),
+      bestId: best.perSqm,
+      // A rent's per-m² is per month: « 15 TND/m²/mois », so it is not read as
+      // a sale price per m².
+      cells: items.map((c) => {
+        const v = pricePerSqm(c);
+        return v == null ? "—" : t(c.deal === "rent" ? "perSqmRent" : "perSqmSale", { amount: formatTND(v, locale) });
+      }),
+    },
     { label: t("area"), bestId: best.area, cells: items.map((c) => (c.area != null ? `${formatNumber(c.area, locale)} ${tRoot("common.sqm")}` : "—")) },
     { label: t("rooms"), bestId: best.rooms, cells: items.map((c) => (c.rooms != null ? <Ltr key={c.id}>S+{c.rooms}</Ltr> : "—")) },
-    { label: t("place"), cells: rows.map((r) => [r.delegation, governorateLabel(r.governorate, locale)].filter(Boolean).join(", ") || "—") },
+    { label: t("place"), cells: rows.map((r) => [shownDelegation(r.governorate, r.delegation, locale), governorateLabel(r.governorate, locale)].filter(Boolean).join(", ") || "—") },
     { label: t("category"), cells: rows.map((r) => (one(r.category) ? categoryLabel(one(r.category)!, locale) : "—")) },
     { label: t("deal"), cells: rows.map((r) => t(asDealType(r.deal_type) === "rent" ? "rent" : "sale")) },
     ...(anyRent

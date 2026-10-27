@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ChevronDown, Check } from "lucide-react";
 import { DIAL_CODES, dialCodeLabel } from "@/lib/tunisia";
+import { phoneEntry } from "@/lib/authEntry";
 
 /**
  * Single-field phone input: dial-code chip + number input share one
@@ -20,6 +21,9 @@ import { DIAL_CODES, dialCodeLabel } from "@/lib/tunisia";
  *     wide) while still showing the country name in the open list.
  *   - Escape + outside-click close handlers ship with the popover so
  *     the keyboard / touch flow matches the rest of the app.
+ *
+ * +216 is the forms' default; the keypad is the numeric one; a number that
+ * arrives whole with its code sets the chip itself.
  */
 export function PhoneInput({
   dialCode,
@@ -134,19 +138,32 @@ export function PhoneInput({
         </button>
         {/* Digits read left to right in both languages. Under RTL the field
             sits after the chip, so `rtl:text-end` (the right edge of this
-            ltr box) keeps the number next to its dial code. */}
+            ltr box) keeps the number next to its dial code.
+
+            `tel`, not `tel-national`: what the phone offers is the person's
+            own number whole (« +33 6 12 34 56 78 »), and phoneEntry moves its
+            code to the chip. The national form drops the code, so a number
+            from abroad landed under +216. */}
         <input
           type="tel"
           dir="ltr"
           inputMode="numeric"
-          autoComplete="tel-national"
+          autoComplete="tel"
           value={number}
           required={required}
           placeholder={placeholder}
           aria-label={ariaLabel ?? t("numberLabel")}
-          onChange={(e) =>
-            onNumberChange(e.target.value.replace(/\D/g, ""))
-          }
+          onChange={(e) => {
+            const ie = e.nativeEvent as InputEvent;
+            // One key at a time is typing; anything else came whole — autofill,
+            // a paste, a keyboard suggestion — and may carry its dial code.
+            const keystroke =
+              !!ie.inputType?.startsWith("delete") ||
+              ((ie.inputType === "insertText" || ie.inputType === "insertCompositionText") && (ie.data ?? "").length <= 1);
+            const next = phoneEntry(e.target.value, dialCode, !keystroke);
+            if (next.dialCode !== dialCode) onDialCodeChange(next.dialCode);
+            onNumberChange(next.number);
+          }}
           className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-mazed-cream placeholder:text-mazed-muted focus:outline-none rtl:text-end"
         />
       </div>

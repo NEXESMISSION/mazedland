@@ -4,7 +4,6 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
-import { PRODUCT_SELECT, resolveListingFee, toProduct } from "@/lib/products";
 import { apiTranslator } from "@/lib/i18n/server";
 import { liveListingCount, moderationSettings, publishOrQueue } from "@/lib/moderation/server";
 import { planCovers } from "@/lib/pro/shops";
@@ -12,23 +11,29 @@ import { planCovers } from "@/lib/pro/shops";
 /**
  * POST /api/annonces/[id]/submit — send a draft listing for publication.
  *
- * This is the one place that decides how a publication is paid for, and it
- * decides server-side because the client must never get a vote on price:
+ * This is the one place that decides whether a publication is covered, and it
+ * decides server-side because the client must never get a vote on it:
  *
- *   0. Its fee was already captured (a rejected annonce coming back) → settled.
- *   1. The seller has fewer than `free_listing_limit` annonces live (0165)
+ *   0. Its fee was already captured (an annonce from the days of the 15 TND
+ *      fee coming back)                         → settled.
+ *   1. A shop's annonce, while the shop's plan has room (0173) → the plan.
+ *   2. The seller has fewer than `free_listing_limit` annonces live (0165)
  *                                               → free.
- *   2. The seller holds a pack with quota left  → spend one credit.
- *   3. Otherwise                                → a `listing_fee` payment for
- *      THIS category's price; the browser goes to /payment/checkout to upload a
- *      receipt, and the listing waits in `pending_payment` until it is captured.
+ *   3. The seller holds a pack with quota left  → spend one credit.
+ *   4. Otherwise                                → refused, `free_limit_reached`.
  *
- * Once settled (0–2, or a category priced at zero), the moderation rules decide:
- * a trusted seller's annonce that passes every rule is published on the spot,
- * anything else goes to the admin queue with its reasons (`review_flags`).
+ * There is no fee per annonce any more. Every account publishes its free
+ * places, and more than that is what Mazed Immo Pro is for: a shop and its
+ * monthly plan. The annonce stays as it is (a draft, usually) until a place
+ * frees up or the seller publishes it for their shop.
  *
- * Returns { status: "published" }, { status: "pending_review" } or
- * { status: "pending_payment", paymentId }.
+ * Once settled, the moderation rules decide: a trusted seller's annonce that
+ * passes every rule is published on the spot, anything else goes to the admin
+ * queue with its reasons (`review_flags`).
+ *
+ * Returns { status: "published" } or { status: "pending_review" }, with
+ * `freeLeft` when a free place paid for it, so the seller is told how many
+ * remain.
  */
 export async function POST(
   req: NextRequest,
@@ -101,8 +106,10 @@ export async function POST(
   }
 
   const settings = await moderationSettings(admin);
-  let paidWith: "already_paid" | "free_quota" | "credit" | "free" | "subscription";
+  let paidWith: "already_paid" | "free_quota" | "credit" | "subscription";
   let remaining: number | undefined;
+  /** Free places still open once this one is taken. */
+  let freeLeft: number | undefined;
 
   // ── 0. A fee that was already captured ────────────────────────────────────
   // A rejected annonce keeps its `fee_payment_id`. Re-submitting it ran the
@@ -119,7 +126,7 @@ export async function POST(
 
   // A shop's annonce (0173) goes online under the shop's plan while it has
   // room. Without a running plan, or once it is full, it falls back to the
-  // seller's own free places, credits or fee, like any annonce.
+  // seller's own free places or credits, like any annonce.
   const shopPlan = listing.shop_id
     ? await planCovers(admin, listing.shop_id as string, user.id, id)
     : null;
@@ -129,104 +136,37 @@ export async function POST(
   } else if (shopPlan?.ok) {
     paidWith = "subscription";
     remaining = shopPlan.left;
-  } else if ((await liveListingCount(admin, user.id, id)) < settings.freeLimit) {
-    // ── 1. Within the free places ───────────────────────────────────────────
-    // An individual publishes for free while they have fewer than
-    // `free_listing_limit` annonces live. Beyond that comes a credit or the
-    // fee — which is how an agency with thirty annonces pays without anyone
-    // having to decide who is an agency.
-    paidWith = "free_quota";
   } else {
-    // ── 2. A pack credit, if they have one ──────────────────────────────────
-    const { data: credited } = await admin.rpc("consume_listing_credit", {
-      p_seller: user.id,
-      p_listing: id,
-      p_actor: user.id,
-    });
-
-    if (credited?.ok === true) {
+    const live = await liveListingCount(admin, user.id, id);
+    if (live < settings.freeLimit) {
+      // ── 2. Within the free places ─────────────────────────────────────────
+      // Every account publishes for free while it has fewer than
+      // `free_listing_limit` annonces live — which is how an agency with thirty
+      // annonces ends up on a Pro plan without anyone deciding who is an agency.
+      paidWith = "free_quota";
+      freeLeft = settings.freeLimit - live - 1;
+    } else {
+      // ── 3. A pack credit, if they have one ────────────────────────────────
+      const { data: credited } = await admin.rpc("consume_listing_credit", {
+        p_seller: user.id,
+        p_listing: id,
+        p_actor: user.id,
+      });
+      if (credited?.ok !== true) {
+        // ── 4. The free places are full ─────────────────────────────────────
+        const t = await apiTranslator(req, "publishApi");
+        logAction(req, user, "listing.submit.free_limit", { id, live, limit: settings.freeLimit });
+        return NextResponse.json(
+          {
+            error: "free_limit_reached",
+            freeLimit: settings.freeLimit,
+            detail: t("freeLimitReached", { limit: settings.freeLimit }),
+          },
+          { status: 402 },
+        );
+      }
       paidWith = "credit";
       remaining = credited.remaining as number;
-    } else {
-      // ── 3. Otherwise it is paid for, at this category's price ───────────
-      const { data: prodRows } = await admin
-        .from("products")
-        .select(PRODUCT_SELECT)
-        .eq("is_active", true);
-      const products = (prodRows ?? []).map((r) => toProduct(r as Parameters<typeof toProduct>[0]));
-      // The parent category too, so a price set on « Terrains » covers every one
-      // of its sub-categories without repeating the number on each.
-      const { data: cat } = await admin
-        .from("categories")
-        .select("parent_id")
-        .eq("id", listing.category_id as string)
-        .maybeSingle();
-
-      const fee = resolveListingFee(
-        products,
-        listing.category_id as string,
-        (cat?.parent_id as string | null) ?? null,
-      );
-
-      if (!fee) {
-        // No price configured is NOT "free" — it is a misconfiguration, and
-        // publishing for nothing would be a silent revenue hole.
-        return fail("no_price_configured", 503);
-      }
-
-      if (fee.price > 0) {
-        // Reuse an actionable payment so a double-submit can't create two.
-        const { data: existing } = await admin
-          .from("payments")
-          .select("id, amount")
-          .eq("user_id", user.id)
-          .eq("kind", "listing_fee")
-          .in("status", ["pending", "pending_review"])
-          .contains("metadata", { listing_id: id })
-          .limit(1);
-
-        let paymentId = existing?.[0]?.id as string | undefined;
-
-        if (!paymentId) {
-          const { data: created, error } = await admin
-            .from("payments")
-            .insert({
-              user_id: user.id,
-              kind: "listing_fee",
-              provider: "bank_transfer",
-              amount: fee.price,
-              status: "pending",
-              metadata: {
-                listing_id: id,
-                product_id: fee.id,
-                product_slug: fee.slug,
-                duration_days: fee.durationDays,
-                initiated_at: new Date().toISOString(),
-              },
-            })
-            .select("id")
-            .single();
-          if (error || !created) return fail("payment_create_failed", 500, error);
-          paymentId = created.id as string;
-        }
-
-        await admin
-          .from("listings")
-          .update({ status: "pending_payment", fee_payment_id: paymentId, rejection_reason: null })
-          .eq("id", id);
-
-        logAction(req, user, "listing.submit.payment", { id, paymentId, amount: fee.price });
-        return NextResponse.json({
-          status: "pending_payment",
-          paidWith: "payment",
-          paymentId,
-          amount: fee.price,
-        });
-      }
-
-      // Priced at zero: free on purpose. A payment row for 0 TND would send the
-      // seller to a checkout to upload a receipt for nothing.
-      paidWith = "free";
     }
   }
 
@@ -241,6 +181,8 @@ export async function POST(
       status: "published",
       paidWith,
       remaining,
+      freeLeft,
+      freeLimit: settings.freeLimit,
       expires_at: outcome.expiresAt.toISOString(),
     });
   }
@@ -250,7 +192,6 @@ export async function POST(
   const body = {
     paid: `« ${listing.title} » est en cours de vérification. Les frais de publication étaient déjà réglés.`,
     credit: `« ${listing.title} » est en cours de vérification. Il vous reste ${remaining} publication(s).`,
-    free: `« ${listing.title} » est en cours de vérification. La publication est gratuite dans cette catégorie.`,
     freeQuota: `« ${listing.title} » est en cours de vérification. Votre publication est gratuite.`,
     subscription: `« ${listing.title} » est en cours de vérification. Elle compte dans l'abonnement de votre boutique.`,
   }[variant];
@@ -267,5 +208,12 @@ export async function POST(
     .then(() => {}, () => {});
 
   logAction(req, user, `listing.submit.${paidWith}`, { id, flags: outcome.flags, remaining });
-  return NextResponse.json({ status: "pending_review", paidWith, remaining, flags: outcome.flags });
+  return NextResponse.json({
+    status: "pending_review",
+    paidWith,
+    remaining,
+    freeLeft,
+    freeLimit: settings.freeLimit,
+    flags: outcome.flags,
+  });
 }

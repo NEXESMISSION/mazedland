@@ -10,6 +10,7 @@ node scripts/backup-db.mjs
 
 | Migration | Rollback | What is lost |
 |---|---|---|
+| 0176 server writes only | `0176_listings_server_writes_only.down.sql` | nothing (sellers may write their rows directly again) |
 | 0175 invoices | `0175_invoices.down.sql` | every issued invoice and the numbering (reissue by hand) |
 | 0174 visits and leads | `0174_visits_and_leads.down.sql` | every visit request and every shop client |
 | 0173 pro shops | `0173_pro_shops.down.sql` | shops, teams, subscription periods (annonces stay, unlinked) |
