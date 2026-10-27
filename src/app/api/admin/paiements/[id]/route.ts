@@ -138,9 +138,10 @@ export async function POST(
       }
     }
 
-    // A plan (0173): one period of the plan for the shop, starting today or
-    // when the period still running ends. The payment id is unique on the
-    // period, so the same receipt never grants twice.
+    // A plan (0173): one period of the plan for the shop — at once for a
+    // bigger plan than the one running, else when what is paid for ends
+    // (periodStart). The payment id is unique on the period, so the same
+    // receipt never grants twice.
     if (pay.kind === "subscription" && meta.product_id && meta.shop_id) {
       const { data: product } = await admin
         .from("products")
@@ -150,7 +151,7 @@ export async function POST(
       const quota = Number(product?.listing_quota);
       const days = Number(product?.duration_days);
       if (!(Number.isFinite(quota) && quota > 0)) return fail("subscription_product_invalid", 500);
-      const starts = await nextPeriodStart(admin, meta.shop_id);
+      const starts = await nextPeriodStart(admin, meta.shop_id, quota);
       const ends = new Date(starts.getTime() + (Number.isFinite(days) && days > 0 ? days : 30) * 86_400_000);
       const { error: subErr } = await admin.from("shop_subscriptions").upsert(
         {

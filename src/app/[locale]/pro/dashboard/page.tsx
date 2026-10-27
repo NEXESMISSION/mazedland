@@ -461,7 +461,13 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
               <p className="text-[12.5px] font-bold text-gold">{t("planQuota", { count: p.listing_quota })}</p>
               {mayBuy &&
                 (open ? (
-                  <ChoosePlan shopId={shopId} plan={p.slug} label={running ? t("renewWith") : t("choose")} />
+                  // A bigger plan starts as soon as it is paid; the same or a
+                  // smaller one follows the period running (periodStart).
+                  <ChoosePlan
+                    shopId={shopId}
+                    plan={p.slug}
+                    label={!running ? t("choose") : p.listing_quota > running.quota ? t("upgradeNow") : t("renewWith")}
+                  />
                 ) : (
                   <p className="mt-3 text-[12px] font-semibold text-muted">{t("closed.row")}</p>
                 ))}

@@ -3799,7 +3799,7 @@
       "edit": "Modifier",
       "view": "Voir",
       "noName": "Sans nom",
-      "planRunning": "Abonnement {name} en cours jusqu'au {date}. Un nouveau paiement prolonge à partir de cette date.",
+      "planRunning": "Abonnement {name} en cours jusqu'au {date}. Un abonnement plus grand démarre dès que son paiement est validé ; le même, ou un plus petit, prend la suite à cette date.",
       "planNone": "Aucun abonnement en cours : vos annonces suivent les règles d'un particulier (annonces gratuites en nombre limité, sans frais par annonce).",
       "perMonthTnd": "DT / mois",
       "planQuota": "{count, plural, one {# annonce en ligne} other {# annonces en ligne}}",
@@ -3835,7 +3835,8 @@
         "body": "Vous pourrez choisir ou renouveler un abonnement dès que nos coordonnées de paiement seront en ligne. Votre agence et vos annonces restent en ligne.",
         "row": "Paiement bientôt disponible",
         "contact": "Nous contacter"
-      }
+      },
+      "upgradeNow": "Passer à celui-ci maintenant"
     },
     "clients": {
       "open": "En cours",
