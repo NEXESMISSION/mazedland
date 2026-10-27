@@ -257,3 +257,94 @@ export async function nextPeriodStart(admin: Admin, shopId: string, quota: numbe
   });
 }
 
+
+export type PaidPeriod = { id: string; quota: number; startsAt: Date; endsAt: Date };
+
+/**
+ * What an upgrade takes over from the smaller periods still ahead (the
+ * owner's choice, 2026-10-27): their remaining time is added to the new
+ * plan, and they end — the running one today, one paid in advance is
+ * cancelled. Periods of the same plan or a bigger one are left as they are.
+ */
+export function carryOver(input: { now: Date; quota: number; periods: PaidPeriod[] }): {
+  carriedMs: number;
+  endNow: string[];
+  cancel: string[];
+} {
+  const now = input.now.getTime();
+  let carriedMs = 0;
+  const endNow: string[] = [];
+  const cancel: string[] = [];
+  for (const p of input.periods) {
+    const end = p.endsAt.getTime();
+    if (p.quota >= input.quota || end <= now) continue;
+    const start = Math.max(p.startsAt.getTime(), now);
+    carriedMs += end - start;
+    (p.startsAt.getTime() < now ? endNow : cancel).push(p.id);
+  }
+  return { carriedMs, endNow, cancel };
+}
+
+/**
+ * One paid period of a plan, as « Accepter » in the payment queue grants it:
+ * starting by periodStart, and — for an upgrade that starts at once — longer
+ * by the time left on the smaller periods it replaces (carryOver), which end.
+ * The payment id is unique on the period, so the same receipt never grants
+ * twice, and a second call changes nothing.
+ */
+export async function grantPlanPeriod(
+  admin: Admin,
+  g: { shopId: string; productId: string; paymentId: string; quota: number; days: number; grantedBy: string },
+  now: Date = new Date(),
+): Promise<{ startsAt: Date; endsAt: Date; carriedDays: number } | { error: unknown }> {
+  const starts = await nextPeriodStart(admin, g.shopId, g.quota, now);
+  const upgrade = starts.getTime() === now.getTime();
+  let carry = { carriedMs: 0, endNow: [] as string[], cancel: [] as string[] };
+  if (upgrade) {
+    const { data } = await admin
+      .from("shop_subscriptions")
+      .select("id, listing_quota, starts_at, ends_at")
+      .eq("shop_id", g.shopId)
+      .eq("status", "active")
+      .lt("listing_quota", g.quota)
+      .gt("ends_at", now.toISOString());
+    carry = carryOver({
+      now,
+      quota: g.quota,
+      periods: (data ?? []).map((p) => ({
+        id: p.id as string,
+        quota: p.listing_quota as number,
+        startsAt: new Date(p.starts_at as string),
+        endsAt: new Date(p.ends_at as string),
+      })),
+    });
+  }
+  const ends = new Date(starts.getTime() + g.days * 86_400_000 + carry.carriedMs);
+  const { data: inserted, error } = await admin
+    .from("shop_subscriptions")
+    .upsert(
+      {
+        shop_id: g.shopId,
+        product_id: g.productId,
+        payment_id: g.paymentId,
+        listing_quota: g.quota,
+        starts_at: starts.toISOString(),
+        ends_at: ends.toISOString(),
+        granted_by: g.grantedBy,
+      },
+      { onConflict: "payment_id", ignoreDuplicates: true },
+    )
+    .select("id");
+  if (error) return { error };
+  // Already granted by this payment: nothing to move twice.
+  if (!inserted || inserted.length === 0) return { startsAt: starts, endsAt: ends, carriedDays: 0 };
+  if (carry.endNow.length) {
+    const { error: e } = await admin.from("shop_subscriptions").update({ ends_at: now.toISOString() }).in("id", carry.endNow);
+    if (e) return { error: e };
+  }
+  if (carry.cancel.length) {
+    const { error: e } = await admin.from("shop_subscriptions").update({ status: "cancelled" }).in("id", carry.cancel);
+    if (e) return { error: e };
+  }
+  return { startsAt: starts, endsAt: ends, carriedDays: Math.round(carry.carriedMs / 86_400_000) };
+}

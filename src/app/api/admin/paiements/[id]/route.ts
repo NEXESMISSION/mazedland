@@ -6,7 +6,7 @@ import { logAction } from "@/lib/activity";
 import { audit } from "@/lib/admin/audit";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
-import { nextPeriodStart } from "@/lib/pro/shops";
+import { grantPlanPeriod } from "@/lib/pro/shops";
 
 /**
  * Receipt review — the v3 money queue.
@@ -139,9 +139,10 @@ export async function POST(
     }
 
     // A plan (0173): one period of the plan for the shop — at once for a
-    // bigger plan than the one running, else when what is paid for ends
-    // (periodStart). The payment id is unique on the period, so the same
-    // receipt never grants twice.
+    // bigger plan than the one running, with the time left on the smaller one
+    // added to it, else when what is paid for ends (grantPlanPeriod). The
+    // payment id is unique on the period, so the same receipt never grants
+    // twice.
     if (pay.kind === "subscription" && meta.product_id && meta.shop_id) {
       const { data: product } = await admin
         .from("products")
@@ -151,22 +152,17 @@ export async function POST(
       const quota = Number(product?.listing_quota);
       const days = Number(product?.duration_days);
       if (!(Number.isFinite(quota) && quota > 0)) return fail("subscription_product_invalid", 500);
-      const starts = await nextPeriodStart(admin, meta.shop_id, quota);
-      const ends = new Date(starts.getTime() + (Number.isFinite(days) && days > 0 ? days : 30) * 86_400_000);
-      const { error: subErr } = await admin.from("shop_subscriptions").upsert(
-        {
-          shop_id: meta.shop_id,
-          product_id: meta.product_id,
-          payment_id: pay.id,
-          listing_quota: quota,
-          starts_at: starts.toISOString(),
-          ends_at: ends.toISOString(),
-          granted_by: user.id,
-        },
-        { onConflict: "payment_id", ignoreDuplicates: true },
-      );
-      if (subErr) return fail("subscription_grant_failed", 500, subErr);
-      granted = `${product?.name_fr ?? "Pro"} jusqu'au ${ends.toISOString().slice(0, 10)}`;
+      const period = await grantPlanPeriod(admin, {
+        shopId: meta.shop_id,
+        productId: meta.product_id,
+        paymentId: pay.id,
+        quota,
+        days: Number.isFinite(days) && days > 0 ? days : 30,
+        grantedBy: user.id,
+      });
+      if ("error" in period) return fail("subscription_grant_failed", 500, period.error);
+      granted = `${product?.name_fr ?? "Pro"} jusqu'au ${period.endsAt.toISOString().slice(0, 10)}`
+        + (period.carriedDays > 0 ? ` (+${period.carriedDays} j reportés)` : "");
     }
 
     if (pay.kind === "badge" && meta.product_id) {

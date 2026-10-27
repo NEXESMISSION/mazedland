@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { can, canAssign, parseShopInput, periodStart, slugify } from "./shops";
+import { can, canAssign, carryOver, parseShopInput, periodStart, slugify } from "./shops";
 
 const USER = "11111111-2222-3333-4444-555555555555";
 
@@ -79,5 +79,45 @@ describe("periodStart", () => {
 
   it("starts today once what was paid for has ended", () => {
     expect(periodStart({ now, quota: 10, runningQuota: null, paidUntil: new Date("2026-10-01T00:00:00Z") })).toEqual(now);
+  });
+});
+
+describe("carryOver", () => {
+  const now = new Date("2026-10-27T12:00:00Z");
+  const day = 86_400_000;
+  const at = (d: number) => new Date(now.getTime() + d * day);
+
+  it("adds the days left on the running smaller plan, and ends it today", () => {
+    const r = carryOver({ now, quota: 40, periods: [{ id: "starter", quota: 10, startsAt: at(-10), endsAt: at(20) }] });
+    expect(r.carriedMs).toBe(20 * day);
+    expect(r.endNow).toEqual(["starter"]);
+    expect(r.cancel).toEqual([]);
+  });
+
+  it("adds a smaller period paid in advance too, and cancels it", () => {
+    const r = carryOver({
+      now,
+      quota: 40,
+      periods: [
+        { id: "running", quota: 10, startsAt: at(-10), endsAt: at(20) },
+        { id: "renewal", quota: 10, startsAt: at(20), endsAt: at(50) },
+      ],
+    });
+    expect(r.carriedMs).toBe(50 * day);
+    expect(r.endNow).toEqual(["running"]);
+    expect(r.cancel).toEqual(["renewal"]);
+  });
+
+  it("leaves periods of the same plan or a bigger one, and those already over", () => {
+    const r = carryOver({
+      now,
+      quota: 40,
+      periods: [
+        { id: "same", quota: 40, startsAt: at(5), endsAt: at(35) },
+        { id: "bigger", quota: 120, startsAt: at(-1), endsAt: at(29) },
+        { id: "over", quota: 10, startsAt: at(-40), endsAt: at(-10) },
+      ],
+    });
+    expect(r).toEqual({ carriedMs: 0, endNow: [], cancel: [] });
   });
 });
