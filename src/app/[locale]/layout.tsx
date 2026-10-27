@@ -75,13 +75,9 @@ export async function generateMetadata({
       description: t("tagline"),
       images: ["/og.png"],
     },
-    alternates: {
-      languages: {
-        fr: "/fr",
-        ar: "/ar",
-        "x-default": "/fr",
-      },
-    },
+    // No `alternates` here: every page names its own twin and canonical
+    // (src/lib/seo.ts). Set here, they reached every page that set none, and
+    // /fr/annonces told Google its Arabic version was /ar, the home page.
   };
 }
 

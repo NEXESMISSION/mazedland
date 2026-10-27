@@ -28,6 +28,8 @@ import { ViewTracker } from "@/components/listing/ViewTracker";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { BadgeCheck, MapPin, Clock, ShieldAlert, Hash, Home, Store, PencilLine } from "lucide-react";
 import type { Metadata } from "next";
+import { jsonLdSafe } from "@/lib/jsonld";
+import { breadcrumbLd, listingDescription } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -117,9 +119,10 @@ export async function generateMetadata({
   params: Promise<{ id: string; locale: string }>;
 }): Promise<Metadata> {
   const { id, locale } = await params;
-  const [l, t] = await Promise.all([
+  const [l, t, tRoot] = await Promise.all([
     fetchListing(id),
     getTranslations({ locale, namespace: "listing" }),
+    getTranslations({ locale }),
   ]);
   if (!l) return { title: t("metaNotFound"), robots: { index: false } };
   // Visible to its seller and to an admin (see the page), never to a crawler.
@@ -133,12 +136,22 @@ export async function generateMetadata({
         })
       : t("priceOnRequest");
   const title = `${l.title} · ${price}`;
-  const description =
-    l.description?.slice(0, 160) ??
-    t("metaDescriptionFallback", {
-      title: l.title,
-      governorate: governorateLabel(l.governorate, locale),
-    });
+  // The facts lead when the seller's words are few (« ممتاز »): what, how big,
+  // where, how much — in the page's language.
+  const cat = one(l.category);
+  const facts = (l.attributes ?? {}) as Record<string, unknown>;
+  const area = Number(facts.area_sqm);
+  const rooms = String(facts.rooms ?? "");
+  const description = listingDescription(
+    l.description,
+    [
+      cat ? categoryLabel(cat, locale) : null,
+      Number.isFinite(area) && area > 0 ? `${formatNumber(area, locale)} ${tRoot("common.sqm")}` : null,
+      /^\d+$/.test(rooms) ? `S+${rooms}` : null,
+      governorateLabel(l.governorate, locale),
+      price,
+    ].filter(Boolean).join(" · "),
+  );
   const url = `/${locale}/annonces/${l.id}`;
   const cover = (l.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0];
   const image = cover ? propertyPhotoUrl(cover.storage_path) : null;
@@ -535,7 +548,22 @@ export default async function AnnoncePage({
     <main className="mx-auto max-w-3xl pb-16 lg:max-w-6xl">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        // jsonLdSafe: the title and description are the seller's words, and a
+        // « </script> » in them must not end this tag (src/lib/jsonld.ts).
+        dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLdSafe(
+            breadcrumbLd([
+              { name: tRoot("nav.home"), url: absoluteUrl(`/${locale}`) },
+              { name: tRoot("catalogue.breadcrumb"), url: absoluteUrl(`/${locale}/annonces`) },
+              { name: governorateLabel(l.governorate, locale), url: absoluteUrl(`/${locale}/annonces?gov=${encodeURIComponent(l.governorate)}`) },
+              { name: l.title, url: absoluteUrl(`/${locale}/annonces/${l.id}`) },
+            ]),
+          ),
+        }}
       />
       {/* Renders nothing; reports from the browser that this page was really
           looked at, rather than merely prefetched. */}

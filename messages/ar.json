@@ -889,7 +889,11 @@
     "filtersNone": "النوع، البلاصة، الميزانية، الترتيب…",
     "filtersBudgetToFix": "الميزانية لازم تتصلّح",
     "allDelegations": "المعتمديات الكل",
-    "delegationsLabel": "المعتمديات"
+    "delegationsLabel": "المعتمديات",
+    "breadcrumb": "الإعلانات",
+    "crumbHome": "الرئيسية",
+    "metaDescription": "{count, plural, =0 {ما فماش إعلانات توّا} one {إعلان واحد} two {زوز إعلانات} few {# إعلانات} many {# إعلان} other {# إعلان}}: {title}. الأسوام ظاهرة والبايع تتصل بيه مباشرة، بالعربي وبالفرنسي.",
+    "metaDescriptionAny": "{title}. الأسوام ظاهرة والبايع تتصل بيه مباشرة، بالعربي وبالفرنسي."
   },
   "listing": {
     "metaNotFound": "الإعلان غير موجود — Mazed Immo",

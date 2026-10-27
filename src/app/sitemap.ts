@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { log } from "@/lib/log";
 import { routing } from "@/i18n/routing";
 import { projectsShown } from "@/lib/pro/projectsServer";
+import { catalogueLandings } from "@/lib/seo";
 
 const SITE_URL = siteUrl();
 
@@ -60,7 +61,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // failure a try/catch around a whole query produces.
     const { data, error } = await sb
       .from("listings")
-      .select("id, updated_at, created_at, published_at")
+      .select("id, updated_at, created_at, published_at, deal_type, governorate, category:categories (slug)")
       .eq("status", "published")
       .order("published_at", { ascending: false, nullsFirst: false })
       .limit(5000);
@@ -112,7 +113,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       );
     }
 
-    return [...staticRoutes, ...shopRoutes, ...projectRoutes, ...listingRoutes];
+    // The catalogue's landing pages that hold annonces: a city, a type, both,
+    // for sale or for rent — the searches people type (« appartement à louer
+    // Sfax »). The same addresses the catalogue names as canonical.
+    const landingRoutes: MetadataRoute.Sitemap = catalogueLandings(
+      ((data ?? []) as unknown as { deal_type: string | null; governorate: string | null; category: { slug: string } | { slug: string }[] | null }[]).map((r) => ({
+        deal: r.deal_type,
+        gov: r.governorate,
+        cat: Array.isArray(r.category) ? r.category[0]?.slug ?? null : r.category?.slug ?? null,
+      })),
+      // Next writes each address into the XML as it is: « & » must arrive escaped.
+    ).flatMap((query) => localized(base, `/annonces?${query.replace(/&/g, "&amp;")}`, { changeFrequency: "daily" as const, priority: 0.8 }));
+
+    return [...staticRoutes, ...landingRoutes, ...shopRoutes, ...projectRoutes, ...listingRoutes];
   } catch {
     // Never let a DB hiccup 500 the sitemap — degrade to static routes.
     return staticRoutes;

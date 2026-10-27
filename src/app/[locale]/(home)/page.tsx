@@ -19,6 +19,10 @@ import { getSettings } from "@/lib/settings/server";
 import { log } from "@/lib/log";
 import { PerfProbe } from "@/components/dev/PerfProbe";
 import { catalogueHrefForType } from "@/lib/catalog/browse";
+import { jsonLdSafe } from "@/lib/jsonld";
+import { siteUrl, PRODUCTION_ORIGIN } from "@/lib/siteUrl";
+import { organizationLd, pageAlternates, websiteLd } from "@/lib/seo";
+import type { Metadata } from "next";
 
 // Statically render + ISR-revalidate every 60s. The home page is the same
 // for everyone (public catalogue); per-user bits (saved hearts, login state)
@@ -27,6 +31,12 @@ import { catalogueHrefForType } from "@/lib/catalog/browse";
 // serverless cold start — instead of rendering ~200 cards on every request.
 // The rails move in the browser (AutoRail), so they change none of this.
 export const revalidate = 60;
+
+/** The home page's own address and its twin (the layout no longer sets one for every page). */
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  return { alternates: pageAlternates(locale, "") };
+}
 
 import {
   ArrowUpRight,
@@ -281,9 +291,18 @@ export default async function LandingPage({
 
   // The middle advertising space goes between these two halves, in both layouts.
   const [railsAbove, railsBelow] = splitAtMiddle(rails);
+  // The site and the company, for search engines: the search box Google may
+  // show under the result, and how to reach Mazed Immo (Réglages → Contact).
+  const origin = siteUrl() ?? PRODUCTION_ORIGIN;
+  const settings = await getSettings();
+  const siteLd = [
+    websiteLd(origin, locale, "Mazed Immo"),
+    organizationLd(origin, "Mazed Immo", { whatsapp: settings.contact_whatsapp, email: settings.contact_email }),
+  ];
 
   return (
     <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(siteLd) }} />
     {/* Client-side perf probe — logs nav/paint/LCP/long-task/resource
         timings to the browser console (scope `perf`). Dev-only unless
         NEXT_PUBLIC_PERF_PROBE=1. Renders nothing. */}

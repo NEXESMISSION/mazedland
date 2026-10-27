@@ -889,7 +889,11 @@
     "filtersNone": "Type, lieu, budget, tri…",
     "filtersBudgetToFix": "Budget à corriger",
     "allDelegations": "Toutes les délégations",
-    "delegationsLabel": "Délégations"
+    "delegationsLabel": "Délégations",
+    "breadcrumb": "Annonces",
+    "crumbHome": "Accueil",
+    "metaDescription": "{count, plural, =0 {Aucune annonce pour le moment} one {# annonce} other {# annonces}} : {title}. Prix affichés, vendeurs joignables directement, en français et en arabe.",
+    "metaDescriptionAny": "{title}. Prix affichés, vendeurs joignables directement, en français et en arabe."
   },
   "listing": {
     "metaNotFound": "Annonce introuvable — Mazed Immo",

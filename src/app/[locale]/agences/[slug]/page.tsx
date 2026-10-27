@@ -14,6 +14,7 @@ import { formatTND } from "@/lib/utils";
 import { publishedProjects } from "@/lib/pro/projectsServer";
 import { deliveryParts, priceFrom, unitCounts } from "@/lib/pro/projects";
 import { BadgeCheck, Building2, Clock, Globe, Mail, MapPin, Phone, Store } from "lucide-react";
+import { listingDescription } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -40,10 +41,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const shop = await loadShop(slug);
   if (!shop) return {};
   const t = await getTranslations("shops");
+  const tKinds = await getTranslations("pro.kinds");
   const locale = await getLocale();
+  // « pro immo » alone said nothing in a result: what it is and where.
+  const where = shop.governorate ? governorateLabel(shop.governorate, locale) : null;
   return {
-    title: shop.name,
-    description: shop.description?.slice(0, 160) ?? t("shopMetaDescription", { name: shop.name }),
+    title: `${shop.name} — ${tKinds(shop.kind)}${where ? ` · ${where}` : ""} · Mazed Immo`,
+    description: listingDescription(shop.description, t("shopMetaDescription", { name: shop.name })),
     // With the locale: « /agences/x » redirects, and a canonical must not.
     alternates: {
       canonical: `/${locale}/agences/${shop.slug}`,
