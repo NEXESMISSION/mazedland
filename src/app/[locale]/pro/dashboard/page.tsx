@@ -14,6 +14,8 @@ import { AddMember, ChoosePlan, RemoveMember, SendDocument } from "./ProActions"
 import { ProClients, type ClientRow } from "./ProClients";
 import { SuggestListing } from "./SuggestListing";
 import { ProjectsTab } from "./ProjectsTab";
+import { ReportsTab } from "./ReportsTab";
+import { parsePeriod } from "@/lib/pro/reports";
 import { MAX_SUGGESTIONS_PER_REQUEST, rankForRequest } from "@/lib/pro/suggest";
 import { toMatchable } from "@/lib/requests/server";
 import { categoryLabel } from "@/lib/i18n";
@@ -27,7 +29,7 @@ import { BadgeCheck, ExternalLink, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-const TABS = ["apercu", "annonces", "projets", "visites", "clients", "demandes", "equipe", "abonnement", "agence", "documents"] as const;
+const TABS = ["apercu", "annonces", "rapports", "projets", "visites", "clients", "demandes", "equipe", "abonnement", "agence", "documents"] as const;
 type TabKey = (typeof TABS)[number];
 
 const STATUS_TONE: Record<string, string> = {
@@ -42,7 +44,7 @@ const STATUS_TONE: Record<string, string> = {
  * stands, its annonces, its team, its plan, its page and its papers. What a
  * member sees and may do follows their role (owner, admin, agent).
  */
-export default async function ProDashboardPage({ searchParams }: { searchParams: Promise<{ shop?: string; tab?: string; p?: string }> }) {
+export default async function ProDashboardPage({ searchParams }: { searchParams: Promise<{ shop?: string; tab?: string; p?: string; days?: string }> }) {
   const sp = await searchParams;
   const locale = await getLocale();
   const t = await getTranslations("pro.dashboard");
@@ -67,9 +69,10 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
   const settings = await getSettings();
   const demandesOn = settings.feature_requests;
   const projectsOn = settings.feature_projects;
+  const reportsOn = settings.feature_pro_reports;
   // Everyone sees the plan; only those who may act on the page or the papers see those tabs.
   const visibleTabs = TABS.filter((k) =>
-    k === "projets" ? projectsOn && can(role, "projects") : k === "agence" ? can(role, "edit_shop") : k === "documents" ? can(role, "documents") : k === "demandes" ? demandesOn && can(role, "clients") : k === "visites" || k === "clients" ? can(role, "clients") : true,
+    k === "rapports" ? reportsOn : k === "projets" ? projectsOn && can(role, "projects") : k === "agence" ? can(role, "edit_shop") : k === "documents" ? can(role, "documents") : k === "demandes" ? demandesOn && can(role, "clients") : k === "visites" || k === "clients" ? can(role, "clients") : true,
   );
   const href = (k: TabKey) => `/pro/dashboard?shop=${shop.id}&tab=${k}`;
 
@@ -216,6 +219,16 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
             </ul>
           )}
         </section>
+      )}
+
+      {tab === "rapports" && reportsOn && (
+        // The owner and the admins see the agence's annonces; an agent, their own.
+        <ReportsTab
+          shopId={shop.id}
+          days={parsePeriod(sp.days)}
+          sellerId={can(role, "manage_listings") ? null : user!.id}
+          tracesKeptDays={settings.privacy_traces_days}
+        />
       )}
 
       {tab === "projets" && projectsOn && can(role, "projects") && (
