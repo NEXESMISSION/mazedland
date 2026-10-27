@@ -5,7 +5,8 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
-import { liveListingCount, moderationSettings, publishOrQueue } from "@/lib/moderation/server";
+import { moderationSettings, publishOrQueue } from "@/lib/moderation/server";
+import { coverPlace } from "@/lib/places/server";
 
 /**
  * POST /api/annonces/[id]/renew — put an expired annonce back online.
@@ -38,7 +39,7 @@ export async function POST(
 
   const { data: listing } = await admin
     .from("listings")
-    .select("id, seller_id, category_id, status, title, contact_phone, renewed_count")
+    .select("id, seller_id, category_id, status, title, contact_phone, renewed_count, shop_id")
     .eq("id", id)
     .maybeSingle();
   if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
@@ -80,26 +81,22 @@ export async function POST(
     });
   };
 
-  // ── Within the free places ────────────────────────────────────────────────
-  // The listing itself is expired, so it is not among the live ones counted.
-  const live = await liveListingCount(admin, user.id, id);
-  if (live < settings.freeLimit) {
-    return settle("free_quota", { freeLeft: settings.freeLimit - live - 1 });
-  }
+  // ── A place: the agence's plan, a free place, or a credit ─────────────────
+  // The same decision as a first publication (src/lib/places). The listing
+  // itself is expired, so it is not among the live ones counted. An agence
+  // annonce used to skip its plan here and was refused once the owner's two
+  // free places were taken.
+  const cover = await coverPlace(
+    admin,
+    { userId: user.id, listingId: id, shopId: (listing.shop_id as string | null) ?? null },
+    settings.freeLimit,
+  );
+  if (cover?.via === "free_quota") return settle("free_quota", { freeLeft: cover.left });
+  if (cover) return settle(cover.via, { remaining: cover.left });
 
-  // ── A credit, if they hold one ────────────────────────────────────────────
-  const { data: credited } = await admin.rpc("consume_listing_credit", {
-    p_seller: user.id,
-    p_listing: id,
-    p_actor: user.id,
-  });
-  if (credited?.ok === true) {
-    return settle("credit", { remaining: credited.remaining as number });
-  }
-
-  // ── The free places are full ──────────────────────────────────────────────
+  // ── Nothing covers it ─────────────────────────────────────────────────────
   const t = await apiTranslator(req, "publishApi");
-  logAction(req, user, "listing.renew.free_limit", { id, live, limit: settings.freeLimit });
+  logAction(req, user, "listing.renew.free_limit", { id, limit: settings.freeLimit });
   return NextResponse.json(
     {
       error: "free_limit_reached",

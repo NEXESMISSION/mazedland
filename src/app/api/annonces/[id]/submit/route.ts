@@ -5,8 +5,8 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
-import { liveListingCount, moderationSettings, publishOrQueue } from "@/lib/moderation/server";
-import { planCovers } from "@/lib/pro/shops";
+import { moderationSettings, publishOrQueue } from "@/lib/moderation/server";
+import { coverPlace } from "@/lib/places/server";
 
 /**
  * POST /api/annonces/[id]/submit — send a draft listing for publication.
@@ -16,11 +16,15 @@ import { planCovers } from "@/lib/pro/shops";
  *
  *   0. Its fee was already captured (an annonce from the days of the 15 TND
  *      fee coming back)                         → settled.
- *   1. A shop's annonce, while the shop's plan has room (0173) → the plan.
- *   2. The seller has fewer than `free_listing_limit` annonces live (0165)
- *                                               → free.
+ *   1. An agence's annonce, while the agence's plan has room (0173), or any
+ *      annonce of an agence owner whose plan has room → the plan.
+ *   2. An account without a plan, with fewer than `free_listing_limit`
+ *      annonces live (0165)                    → free.
  *   3. The seller holds a pack with quota left  → spend one credit.
  *   4. Otherwise                                → refused, `free_limit_reached`.
+ *
+ * Steps 1–3 are coverPlace (src/lib/places/server.ts), shared with renew and
+ * relist so that every way back online counts places the same way.
  *
  * There is no fee per annonce any more. Every account publishes its free
  * places, and more than that is what Mazed Immo Pro is for: a shop and its
@@ -124,50 +128,34 @@ export async function POST(
     alreadyPaid = paid?.status === "captured";
   }
 
-  // A shop's annonce (0173) goes online under the shop's plan while it has
-  // room. Without a running plan, or once it is full, it falls back to the
-  // seller's own free places or credits, like any annonce.
-  const shopPlan = listing.shop_id
-    ? await planCovers(admin, listing.shop_id as string, user.id, id)
-    : null;
-
   if (alreadyPaid) {
     paidWith = "already_paid";
-  } else if (shopPlan?.ok) {
-    paidWith = "subscription";
-    remaining = shopPlan.left;
   } else {
-    const live = await liveListingCount(admin, user.id, id);
-    if (live < settings.freeLimit) {
-      // ── 2. Within the free places ─────────────────────────────────────────
-      // Every account publishes for free while it has fewer than
-      // `free_listing_limit` annonces live — which is how an agency with thirty
-      // annonces ends up on a Pro plan without anyone deciding who is an agency.
-      paidWith = "free_quota";
-      freeLeft = settings.freeLimit - live - 1;
-    } else {
-      // ── 3. A pack credit, if they have one ────────────────────────────────
-      const { data: credited } = await admin.rpc("consume_listing_credit", {
-        p_seller: user.id,
-        p_listing: id,
-        p_actor: user.id,
-      });
-      if (credited?.ok !== true) {
-        // ── 4. The free places are full ─────────────────────────────────────
-        const t = await apiTranslator(req, "publishApi");
-        logAction(req, user, "listing.submit.free_limit", { id, live, limit: settings.freeLimit });
-        return NextResponse.json(
-          {
-            error: "free_limit_reached",
-            freeLimit: settings.freeLimit,
-            detail: t("freeLimitReached", { limit: settings.freeLimit }),
-          },
-          { status: 402 },
-        );
-      }
-      paidWith = "credit";
-      remaining = credited.remaining as number;
+    // An agence's plan, the free places, or a credit (src/lib/places): every
+    // account publishes for free while it has fewer than `free_listing_limit`
+    // annonces live — which is how an agency with thirty annonces ends up on a
+    // Pro plan without anyone deciding who is an agency.
+    const cover = await coverPlace(
+      admin,
+      { userId: user.id, listingId: id, shopId: (listing.shop_id as string | null) ?? null },
+      settings.freeLimit,
+    );
+    if (!cover) {
+      // ── 4. Nothing covers it ──────────────────────────────────────────────
+      const t = await apiTranslator(req, "publishApi");
+      logAction(req, user, "listing.submit.free_limit", { id, limit: settings.freeLimit });
+      return NextResponse.json(
+        {
+          error: "free_limit_reached",
+          freeLimit: settings.freeLimit,
+          detail: t("freeLimitReached", { limit: settings.freeLimit }),
+        },
+        { status: 402 },
+      );
     }
+    paidWith = cover.via;
+    if (cover.via === "free_quota") freeLeft = cover.left;
+    else remaining = cover.left;
   }
 
   // ── The moderation decision ────────────────────────────────────────────────

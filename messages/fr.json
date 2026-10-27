@@ -164,7 +164,8 @@
       "priceNotGiven": "Prix non renseigné",
       "rejectedPrefix": "Refusée :",
       "promoteHint": "Partagée sur nos réseaux : Facebook, Instagram",
-      "boostHint": "Placement payant sur le site : accueil, haut des résultats"
+      "boostHint": "Placement payant sur le site : accueil, haut des résultats",
+      "planPlaces": "{used}/{limit} annonces utilisées · abonnement {plan}"
     },
     "listingActions": {
       "mark_sold": {
@@ -1537,7 +1538,9 @@
       "locaux-commerciaux": "Local commercial",
       "bureaux": "Bureau",
       "depots": "Dépôt"
-    }
+    },
+    "publishForMePlanHint": "{count, plural, =0 {Personnelle · abonnement complet} one {Personnelle · # place dans l'abonnement} other {Personnelle · # places dans l'abonnement}}",
+    "ownPlanExplain": "Votre annonce personnelle compte dans l'abonnement de « {name} », comme celles de l'agence. {count, plural, one {Il reste # annonce.} other {Il reste # annonces.}}"
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",
@@ -3760,7 +3763,7 @@
       "noPlan": "Aucun",
       "until": "Jusqu'au {date}",
       "quotaLabel": "Annonces en ligne",
-      "quotaSub": "En ligne et en vérification",
+      "quotaSub": "En ligne et en vérification, les annonces personnelles du propriétaire comprises",
       "viewsLabel": "Vues",
       "revealsLabel": "Numéros affichés",
       "nextTitle": "Et maintenant",

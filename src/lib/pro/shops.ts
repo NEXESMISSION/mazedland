@@ -1,6 +1,6 @@
 /**
- * Mazed Immo Pro (0173): what a shop is, who may do what in it, and how many
- * annonces its plan lets it keep online.
+ * Mazed Immo Pro (0173): what a shop is, who may do what in it, and which plan
+ * it is on. How many annonces that plan holds is counted in src/lib/places.
  *
  * The pure part (kinds, roles, rights, slugs, the form) is tested on its own;
  * the database part reads with the service role, from routes and pages that
@@ -19,9 +19,6 @@ export type ShopRole = (typeof SHOP_ROLES)[number];
 
 export const SHOP_STATUSES = ["pending", "approved", "rejected", "suspended"] as const;
 export type ShopStatus = (typeof SHOP_STATUSES)[number];
-
-/** Annonces that hold a place in the plan: online, or waiting to be. Drafts and archives do not. */
-export const QUOTA_STATUSES = ["published", "pending_review"] as const;
 
 export type ShopAction =
   | "publish"          // put an annonce online for the shop
@@ -226,37 +223,3 @@ export async function nextPeriodStart(admin: Admin, shopId: string, now: Date = 
   return data ? new Date(data.ends_at as string) : now;
 }
 
-/** How many of the shop's annonces hold a place in its plan, not counting `excludeId`. */
-export async function shopLiveCount(admin: Admin, shopId: string, excludeId?: string): Promise<number> {
-  let q = admin
-    .from("listings")
-    .select("id", { count: "exact", head: true })
-    .eq("shop_id", shopId)
-    .in("status", QUOTA_STATUSES as unknown as string[]);
-  if (excludeId) q = q.neq("id", excludeId);
-  const { count } = await q;
-  return count ?? 0;
-}
-
-/**
- * Whether this annonce can go online under its shop's plan: the shop is open,
- * the person is a member who may publish, a plan is running and it has room.
- */
-export async function planCovers(
-  admin: Admin,
-  shopId: string,
-  userId: string,
-  listingId: string,
-): Promise<{ ok: true; left: number } | { ok: false; reason: "not_member" | "shop_closed" | "no_plan" | "quota_full" }> {
-  const [{ data: shop }, role, plan] = await Promise.all([
-    admin.from("shops").select("status").eq("id", shopId).maybeSingle(),
-    roleIn(admin, shopId, userId),
-    activePlan(admin, shopId),
-  ]);
-  if (!can(role, "publish")) return { ok: false, reason: "not_member" };
-  if (shop?.status !== "approved") return { ok: false, reason: "shop_closed" };
-  if (!plan) return { ok: false, reason: "no_plan" };
-  const used = await shopLiveCount(admin, shopId, listingId);
-  if (used >= plan.quota) return { ok: false, reason: "quota_full" };
-  return { ok: true, left: plan.quota - used - 1 };
-}

@@ -15,13 +15,13 @@ import {
   type WizardCategory,
   type AttributeDef,
 } from "./PublishWizard";
-import { liveListingCount } from "@/lib/moderation/server";
 import { getSettings } from "@/lib/settings/server";
 import { asDealType, isDealType } from "@/lib/listings/deal";
 import { isoDayIn } from "@/lib/listings/choices";
 import { aiAvailable } from "@/lib/ai/server";
 import { asPendingEdit, isEditable } from "@/lib/listings/edit";
-import { activePlan, can, membershipsOf, shopLiveCount } from "@/lib/pro/shops";
+import { activePlan, can, membershipsOf } from "@/lib/pro/shops";
+import { accountAllowance, planUsage } from "@/lib/places/server";
 import { median, quartiles, type PriceRef } from "@/lib/listings/priceCheck";
 
 export const dynamic = "force-dynamic";
@@ -195,8 +195,11 @@ export default async function NewListingPage({
   // Free places (0165): every account publishes for free while it has fewer
   // than the limit live, and past it the way on is a Pro plan. The submit route
   // decides for real; this is so the form says which before the seller starts.
-  const live = await liveListingCount(admin, user!.id, "00000000-0000-0000-0000-000000000000");
-  const freePlacesLeft = Math.max(0, settings.free_listing_limit - live);
+  // An agence owner with a running plan is on that plan, for their own
+  // annonces too: their free places are inside it (src/lib/places).
+  const allowance = await accountAllowance(admin, user!.id, settings.free_listing_limit);
+  const freePlacesLeft = allowance.kind === "free" ? allowance.left : 0;
+  const ownPlan = allowance.kind === "plan" ? { shopName: allowance.shopName, left: allowance.left } : null;
 
   const groups = parents.map((p) => ({ id: p.id, label: categoryLabel(p, locale) }));
 
@@ -230,7 +233,7 @@ export default async function NewListingPage({
           .filter((m) => m.shop.status === "approved" && can(m.role, "publish"))
           .map(async ({ shop }) => {
             const plan = await activePlan(admin, shop.id);
-            const used = plan ? await shopLiveCount(admin, shop.id) : 0;
+            const used = plan ? await planUsage(admin, shop.id) : 0;
             return { id: shop.id, name: shop.name, planLeft: plan ? Math.max(0, plan.quota - used) : null };
           }),
       );
@@ -273,6 +276,7 @@ export default async function NewListingPage({
       editPending={Boolean(pending)}
       editWaiting={Boolean(wantedEdit) && row?.status === "pending_review"}
       shops={shops}
+      ownPlan={ownPlan}
       initialShopId={initialShopId}
       priceRefs={priceRefs}
       // Read here, in Tunis: the form's « Tout de suite » and « Neuf » then

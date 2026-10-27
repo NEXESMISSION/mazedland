@@ -178,6 +178,9 @@ export type InitialDraft = {
 /** A shop the seller may publish for (0173), and how many annonces its plan still covers. */
 export type WizardShop = { id: string; name: string; planLeft: number | null };
 
+/** The plan of the agence this seller owns: their own annonces count in it too (src/lib/places). */
+export type WizardOwnPlan = { shopName: string; left: number };
+
 /** A number a buyer can call: eight digits at least, as the submit route asks. */
 const phoneUsable = (phone: string) => phone.replace(/\D/g, "").length >= 8;
 
@@ -198,6 +201,7 @@ export function PublishWizard({
   editPending = false,
   editWaiting = false,
   shops = [],
+  ownPlan = null,
   initialShopId = null,
   priceRefs = {},
   today,
@@ -211,6 +215,8 @@ export function PublishWizard({
    *  0 it needs a shop's plan — there is no fee per annonce any more. */
   freePlacesLeft: number;
   freeLimit: number;
+  /** Set when the seller owns an agence with a running plan: « Pour moi » counts in it. */
+  ownPlan?: WizardOwnPlan | null;
   defaultContactName: string;
   defaultContactPhone: string;
   /** From the seller's profile — signup asks for it, so the form should not
@@ -398,7 +404,9 @@ export function PublishWizard({
   // free place, then a pack credit. Past that the free places are full, and
   // the way on is Mazed Immo Pro — there is no fee per annonce any more.
   const shop = shops.find((s) => s.id === shopId) ?? null;
-  const viaPlan = !!shop && (shop.planLeft ?? 0) > 0;
+  // An agence owner's own annonce counts in their plan, like the agence's.
+  const viaOwnPlan = !shop && !!ownPlan && ownPlan.left > 0;
+  const viaPlan = (!!shop && (shop.planLeft ?? 0) > 0) || viaOwnPlan;
   const freeQuota = !viaPlan && freePlacesLeft > 0;
   const usingCredit = !viaPlan && !freeQuota && creditsLeft > 0;
   const limitReached = !editing && !viaPlan && !freeQuota && !usingCredit;
@@ -2245,7 +2253,9 @@ export function PublishWizard({
                                 <span className="block truncate text-[13.5px] font-extrabold text-foreground" dir="auto">{s.name}</span>
                                 <span className="block text-[11.5px] leading-snug text-muted">
                                   {!s.id
-                                    ? t("publishForMeHint")
+                                    ? ownPlan
+                                      ? t("publishForMePlanHint", { count: ownPlan.left })
+                                      : t("publishForMeHint")
                                     : (s.planLeft ?? 0) > 0
                                       ? t("publishForPlanLeft", { count: s.planLeft ?? 0 })
                                       : t("publishForNoPlan")}
@@ -2297,7 +2307,9 @@ export function PublishWizard({
                       </span>
                     </div>
                     <p className="mt-1.5 text-[11.5px] leading-snug text-muted">
-                      {viaPlan
+                      {viaOwnPlan
+                        ? t("ownPlanExplain", { name: ownPlan!.shopName, count: ownPlan!.left })
+                        : viaPlan
                         ? t("shopPlanExplain", { name: shop!.name, count: shop!.planLeft ?? 0 })
                         : freeQuota
                         ? t("freeQuotaExplain", { left: freePlacesLeft, limit: freeLimit })
