@@ -191,6 +191,7 @@ export function ShopForm({
       <input
         type="file"
         accept="image/*"
+        aria-label={t(k === "logo_path" ? "logo" : "cover")}
         className="sr-only"
         onChange={(e) => {
           const f = e.target.files?.[0];

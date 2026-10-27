@@ -21,6 +21,7 @@ import { isoDayIn } from "@/lib/listings/choices";
 import { aiAvailable } from "@/lib/ai/server";
 import { asPendingEdit, isEditable } from "@/lib/listings/edit";
 import { activePlan, can, membershipsOf } from "@/lib/pro/shops";
+import { paymentsAreOpen } from "@/lib/payments/server";
 import { accountAllowance, planUsage } from "@/lib/places/server";
 import { median, quartiles, type PriceRef } from "@/lib/listings/priceCheck";
 
@@ -276,6 +277,9 @@ export default async function NewListingPage({
       editPending={Boolean(pending)}
       editWaiting={Boolean(wantedEdit) && row?.status === "pending_review"}
       shops={shops}
+      // Pro cannot be bought while the payee details are not in: the limit
+      // banner then offers to write to us instead (2026-10-27 audit).
+      paymentsOpen={await paymentsAreOpen()}
       ownPlan={ownPlan}
       initialShopId={initialShopId}
       priceRefs={priceRefs}

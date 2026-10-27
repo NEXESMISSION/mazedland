@@ -146,7 +146,7 @@ export function planHomeRails(
   add({ key: "rent", rows: feed?.rentals ?? [], href: catalogueHrefFor({ deal: "rent" }) }, { dedupe: false });
   // Sales only (a month's rent has no price per m²), cheapest first: the
   // nearest the catalogue comes to « cheapest per m² ».
-  add({ key: "bestValue", rows: feed?.bestValue ?? [], href: "/annonces?deal=sale&sort=cheap" }, { dedupe: false });
+  add({ key: "bestValue", rows: feed?.bestValue ?? [], href: "/annonces?deal=sale&sort=value" }, { dedupe: false });
   for (const slug of HOME_TYPE_RAILS) {
     add({ key: slug, rows: feed?.byType?.[slug] ?? [], href: catalogueHrefFor({ cat: slug }) }, { dedupe: false });
   }

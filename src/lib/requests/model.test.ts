@@ -149,6 +149,19 @@ describe("catalogueQueryFor", () => {
     );
     expect(q).toBe("/annonces?deal=rent&cat=appartements&gov=Sfax&max=800&rooms=2&furnished=furnished&avail=2026-12-01");
   });
+
+  it("keeps every type and governorate of a demande that names several (2026-10-27 audit)", () => {
+    const q = catalogueQueryFor(
+      request({ deal_type: "rent", category_ids: [FLAT, VILLA], governorates: ["Sfax", "Tunis"], budget_max: 1500, surface_min: 80, rooms_min: null }),
+      new Map([[FLAT, "appartements"], [VILLA, "villas"]]),
+    );
+    const p = new URL(q, "https://x").searchParams;
+    expect(p.get("cats")).toBe("appartements,villas");
+    expect(p.get("govs")).toBe("Sfax,Tunis");
+    expect(p.get("cat")).toBeNull();
+    expect(p.get("max")).toBe("1500");
+    expect(p.get("surface")).toBe("80");
+  });
 });
 
 describe("requestExpiresAt", () => {

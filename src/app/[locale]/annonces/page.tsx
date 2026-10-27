@@ -9,7 +9,7 @@ import { formatNumber, formatTND } from "@/lib/utils";
 import { searchTokens } from "@/lib/search";
 import { PRICE_BUCKETS, RENT_BUCKETS, TYPE_TO_CATEGORY, findCategory } from "@/lib/catalog/browse";
 import { categoryLabel } from "@/lib/i18n";
-import { governorateLabel } from "@/lib/tunisia";
+import { TUNISIAN_GOVERNORATES, governorateLabel } from "@/lib/tunisia";
 import { canonicalDelegation, delegationLabel, shownDelegation } from "@/lib/delegations";
 import { BellRing, ChevronDown, ChevronLeft, ChevronRight, Home, ImageOff, MapPin, Ruler, Search, SearchX, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { FURNISHED, isoDay, type Furnished } from "@/lib/listings/deal";
@@ -106,7 +106,7 @@ const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? nul
 
 /** Sort keys; the chip text is `catalogue.sort.<key>`. */
 // « popular »: the most seen first — where the home page's « Les plus vus » leads.
-const SORTS = ["recent", "popular", "cheap", "dear", "big"] as const;
+const SORTS = ["recent", "popular", "cheap", "value", "dear", "big"] as const;
 
 /** Surface is the one number every property is compared on. */
 function surfaceOf(a: Record<string, unknown> | null): number | null {
@@ -276,6 +276,16 @@ export default async function AnnoncesPage({
     redirect(`/${locale}/annonces?${next.toString()}`);
   }
 
+  // A demande with several types or governorates (src/lib/requests/model.ts)
+  // opens here with all of them: `cats` and `govs` are lists, used only
+  // while no single one is chosen (2026-10-27 audit: they were dropped).
+  const multiCats = !active && sp.cats
+    ? sp.cats.split(",").map((s) => findCategory(s.trim(), leaves)).filter((c): c is Cat => !!c)
+    : [];
+  const multiGovs = !sp.gov && sp.govs
+    ? sp.govs.split(",").map((g) => g.trim()).filter((g) => (TUNISIAN_GOVERNORATES as readonly string[]).includes(g))
+    : [];
+
   let q = admin
     .from("listings")
     .select(
@@ -290,7 +300,9 @@ export default async function AnnoncesPage({
 
   if (deal) q = q.eq("deal_type", deal);
   if (active) q = q.eq("category_id", active.id);
+  else if (multiCats.length) q = q.in("category_id", multiCats.map((c) => c.id));
   if (sp.gov) q = q.eq("governorate", sp.gov);
+  else if (multiGovs.length) q = q.in("governorate", multiGovs);
   if (del) q = q.eq("delegation", del);
   // One ILIKE per word, against the accent-folded column: every word has to
   // appear, in any order. See searchTokens.
@@ -320,16 +332,30 @@ export default async function AnnoncesPage({
   let total: number;
   let page = requestedPage;
 
-  if (sort === "big") {
+  if (sort === "big" || sort === "value") {
     // Surface lives in the jsonb, so it is sorted here rather than in SQL — at
     // catalogue size that is cheaper than an expression index nothing else
     // uses. The whole (bounded) set is sorted first and THEN paged; sorting one
     // page at a time would put the largest bien of page 2 below the smallest of
     // page 1.
+    //
+    // « value » is the price per m², cheapest first — the order of the home's
+    // « Bonnes affaires », which « Tout voir » now keeps (2026-10-27 audit). An
+    // annonce without a price or a surface cannot answer it and comes after.
     const { data, count } = await q.limit(SURFACE_SORT_WINDOW);
+    const perSqm = (r: Row) => {
+      const area = surfaceOf(r.attributes);
+      const price = Number(r.price);
+      return area && price > 0 && !r.price_on_request ? price / area : null;
+    };
     const all = ((data ?? []) as unknown as Row[])
       .slice()
-      .sort((a, b) => (surfaceOf(b.attributes) ?? 0) - (surfaceOf(a.attributes) ?? 0));
+      .sort((a, b) => {
+        if (sort === "big") return (surfaceOf(b.attributes) ?? 0) - (surfaceOf(a.attributes) ?? 0);
+        const pa = perSqm(a);
+        const pb = perSqm(b);
+        return pa === null ? (pb === null ? 0 : 1) : pb === null ? -1 : pa - pb;
+      });
     total = count ?? all.length;
     page = Math.min(page, Math.max(1, Math.ceil(all.length / pageSize)));
     rows = all.slice((page - 1) * pageSize, page * pageSize);
@@ -393,7 +419,9 @@ export default async function AnnoncesPage({
   const filterSummary = [
     priceInverted ? t("filtersBudgetToFix") : null,
     active ? categoryLabel(active, locale) : null,
+    multiCats.length ? multiCats.map((c) => categoryLabel(c, locale)).join(" · ") : null,
     sp.gov ? governorateLabel(sp.gov, locale) : null,
+    multiGovs.length ? multiGovs.map((g) => governorateLabel(g, locale)).join(" · ") : null,
     del ? delegationLabel(del, locale) : null,
     priceLabel,
     ...moreChips,
@@ -406,6 +434,8 @@ export default async function AnnoncesPage({
     // returns to page 1, and only the pager passes a page explicitly.
     const merged = {
       deal: deal ?? undefined, cat: sp.cat, gov: sp.gov, del: del ?? undefined, sort: sp.sort, q: sp.q,
+      cats: multiCats.length ? multiCats.map((c) => c.slug).join(",") : undefined,
+      govs: multiGovs.length ? multiGovs.join(",") : undefined,
       min: min ? String(min) : undefined, max: max ? String(max) : undefined,
       surface: surface ? String(surface) : undefined,
       rooms: roomsMin ? String(roomsMin) : undefined,
@@ -435,6 +465,8 @@ export default async function AnnoncesPage({
         {deal && <input type="hidden" name="deal" value={deal} />}
         {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
         {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
+        {multiCats.length > 0 && <input type="hidden" name="cats" value={multiCats.map((c) => c.slug).join(",")} />}
+        {multiGovs.length > 0 && <input type="hidden" name="govs" value={multiGovs.join(",")} />}
         {del && <input type="hidden" name="del" value={del} />}
         {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
         {min ? <input type="hidden" name="min" value={String(min)} /> : null}
@@ -531,10 +563,10 @@ export default async function AnnoncesPage({
             questions a buyer actually starts from. */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Link
-            href={qs({ cat: undefined }) as never}
+            href={qs({ cat: undefined, cats: undefined }) as never}
             className={
               "whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition " +
-              (!active
+              (!active && multiCats.length === 0
                 ? "bg-foreground text-[var(--background)]"
                 : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
             }
@@ -544,10 +576,10 @@ export default async function AnnoncesPage({
           {leaves.map((c) => (
             <Link
               key={c.id}
-              href={qs({ cat: c.slug }) as never}
+              href={qs({ cat: c.slug, cats: undefined }) as never}
               className={
                 "whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition " +
-                (active?.slug === c.slug
+                (active?.slug === c.slug || multiCats.some((m) => m.id === c.id)
                   ? "bg-foreground text-[var(--background)]"
                   : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
               }
@@ -559,10 +591,10 @@ export default async function AnnoncesPage({
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Link
-            href={qs({ gov: undefined, del: undefined }) as never}
+            href={qs({ gov: undefined, del: undefined, govs: undefined }) as never}
             className={
               "whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
-              (!sp.gov
+              (!sp.gov && multiGovs.length === 0
                 ? "bg-foreground text-[var(--background)]"
                 : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
             }
@@ -572,10 +604,10 @@ export default async function AnnoncesPage({
           {govs.map((g) => (
             <Link
               key={g}
-              href={qs({ gov: g, del: undefined }) as never}
+              href={qs({ gov: g, del: undefined, govs: undefined }) as never}
               className={
                 "whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition " +
-                (sp.gov === g
+                (sp.gov === g || multiGovs.includes(g)
                   ? "bg-foreground text-[var(--background)]"
                   : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
               }
@@ -703,6 +735,8 @@ export default async function AnnoncesPage({
               {deal && <input type="hidden" name="deal" value={deal} />}
               {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
               {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
+        {multiCats.length > 0 && <input type="hidden" name="cats" value={multiCats.map((c) => c.slug).join(",")} />}
+        {multiGovs.length > 0 && <input type="hidden" name="govs" value={multiGovs.join(",")} />}
               {del && <input type="hidden" name="del" value={del} />}
               {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
               {sp.q && <input type="hidden" name="q" value={sp.q} />}
@@ -754,6 +788,8 @@ export default async function AnnoncesPage({
             {deal && <input type="hidden" name="deal" value={deal} />}
             {sp.cat && <input type="hidden" name="cat" value={sp.cat} />}
             {sp.gov && <input type="hidden" name="gov" value={sp.gov} />}
+        {multiCats.length > 0 && <input type="hidden" name="cats" value={multiCats.map((c) => c.slug).join(",")} />}
+        {multiGovs.length > 0 && <input type="hidden" name="govs" value={multiGovs.join(",")} />}
             {del && <input type="hidden" name="del" value={del} />}
             {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
             {sp.q && <input type="hidden" name="q" value={sp.q} />}

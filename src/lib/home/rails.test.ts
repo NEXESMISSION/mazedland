@@ -144,7 +144,7 @@ describe("planHomeRails", () => {
     const p = plan({ rentals: rows("r", 3), bestValue: rows("b", 3), byType: { terrain: rows("t", 3), villas: rows("w", 3) } });
     expect(Object.fromEntries(p.rails.map((r) => [r.key, r.href]))).toEqual({
       rent: "/annonces?deal=rent",
-      bestValue: "/annonces?deal=sale&sort=cheap",
+      bestValue: "/annonces?deal=sale&sort=value",
       villas: "/annonces?cat=villas",
       terrain: "/annonces?cat=terrain",
     });

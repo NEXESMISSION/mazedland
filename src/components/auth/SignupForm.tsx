@@ -332,11 +332,12 @@ export function SignupForm() {
         <input
           id="signup-accept"
           type="checkbox"
+          aria-labelledby="signup-accept-text"
           checked={accepted}
           onChange={(e) => setAccepted(e.target.checked)}
           className="mt-0.5 size-4 shrink-0 accent-[var(--gold)]"
         />
-        <span>
+        <span id="signup-accept-text">
           {t.rich("auth.signup.accept", {
             accept: (chunks) => (
               <label htmlFor="signup-accept" className="cursor-pointer">{chunks}</label>

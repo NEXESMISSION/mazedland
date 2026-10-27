@@ -182,9 +182,9 @@ export function matchRequest(listing: MatchableListing, request: MatchableReques
 
 /**
  * The catalogue search a demande stands for, so « Voir les annonces » shows
- * what is online today with the same conditions. The catalogue filters on one
- * category and one governorate; with several, the first is used and the page
- * is wider than the demande, never narrower.
+ * what is online today with the same conditions. One category or governorate
+ * is `cat` / `gov`; several are the lists `cats` / `govs`, so none of
+ * them is lost on the way (2026-10-27 audit).
  */
 export function catalogueQueryFor(
   r: MatchableRequest,
@@ -192,11 +192,11 @@ export function catalogueQueryFor(
 ): string {
   const p = new URLSearchParams();
   p.set("deal", r.deal_type);
-  if (r.category_ids.length === 1) {
-    const slug = categorySlugById.get(r.category_ids[0]);
-    if (slug) p.set("cat", slug);
-  }
+  const slugs = r.category_ids.map((id) => categorySlugById.get(id)).filter((s): s is string => !!s);
+  if (slugs.length === 1) p.set("cat", slugs[0]);
+  else if (slugs.length > 1) p.set("cats", slugs.join(","));
   if (r.governorates.length === 1) p.set("gov", r.governorates[0]);
+  else if (r.governorates.length > 1) p.set("govs", r.governorates.join(","));
   if (r.budget_min) p.set("min", String(Math.floor(r.budget_min)));
   if (r.budget_max) p.set("max", String(Math.floor(r.budget_max)));
   if (r.surface_min) p.set("surface", String(Math.floor(r.surface_min)));
