@@ -25,6 +25,7 @@ import { getSettings } from "@/lib/settings/server";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { RelatedListings } from "@/components/listing/RelatedListings";
 import { ViewTracker } from "@/components/listing/ViewTracker";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { BadgeCheck, MapPin, Clock, ShieldAlert, Hash, Home, Store, PencilLine } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -665,6 +666,13 @@ export default async function AnnoncePage({
                   {l.description}
                 </p>
               </section>
+            )}
+
+            {/* An advertising space, once the annonce has been read: below its
+                description, never in the seller's card. Not on a seller's own
+                preview — nobody the advertiser pays to reach sees it. */}
+            {!isPreview && (
+              <AdSlot placement="listing" className="mt-8" sizes="(min-width: 1024px) 760px, 100vw" />
             )}
 
             <div className="mt-8 lg:hidden">{safetyNote}</div>
