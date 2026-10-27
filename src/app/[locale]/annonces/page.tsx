@@ -22,6 +22,10 @@ import { getSettings } from "@/lib/settings/server";
 import { usableRange } from "@/lib/range";
 import { BudgetFields } from "./BudgetFields";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { VoiceSearchButton } from "@/components/search/VoiceSearchButton";
+import { jsonLdSafe } from "@/lib/jsonld";
+import { absoluteUrl } from "@/lib/siteUrl";
+import { breadcrumbLd, catalogueIndexing, itemListLd, pageAlternates } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -143,21 +147,54 @@ export async function generateMetadata({
   const admin = getServiceSupabase();
   const deal = dealOf(sp.deal);
   let what = t(deal === "rent" ? "metaTitleRent" : deal === "sale" ? "metaTitleSale" : "metaTitleDefault");
+  let categoryId: string | null = null;
   if (sp.cat && admin) {
     const { data } = await admin
       .from("categories")
-      .select("label_fr, label_ar")
+      .select("id, label_fr, label_ar")
       .eq("slug", sp.cat)
       .maybeSingle();
     if (data?.label_fr) what = categoryLabel(data as { label_fr: string; label_ar: string | null }, locale);
+    categoryId = (data?.id as string | undefined) ?? null;
   }
   const gov = sp.gov?.trim();
+  const title = gov
+    ? t("metaTitleIn", { what, governorate: governorateLabel(gov, locale) })
+    : t("metaTitleTunisia", { what });
+
+  // A city, a type, sale or rent are landing pages; a keyword, a budget or a
+  // sort narrows one into a results page — followed, not indexed, pointing at
+  // the landing page as its canonical (src/lib/seo.ts).
+  const { query, index } = catalogueIndexing(sp);
+  // How many annonces it holds, for the snippet; an empty landing page stays out.
+  let count: number | null = null;
+  if (admin && !(sp.cat && !categoryId)) {
+    let c = admin.from("listings").select("id", { count: "exact", head: true }).eq("status", "published");
+    if (deal) c = c.eq("deal_type", deal);
+    if (categoryId) c = c.eq("category_id", categoryId);
+    if (gov) c = c.eq("governorate", gov);
+    const del = gov ? canonicalDelegation(gov, sp.del) : null;
+    if (del) c = c.eq("delegation", del);
+    count = (await c).count ?? null;
+  } else if (sp.cat && !categoryId) {
+    count = 0;
+  }
+  const place = title.replace(/ — Mazed Immo$/, "");
+  const description = count === null ? t("metaDescriptionAny", { title: place }) : t("metaDescription", { count, title: place });
   return {
-    title: gov
-      ? t("metaTitleIn", { what, governorate: governorateLabel(gov, locale) })
-      : t("metaTitleTunisia", { what }),
-    // A keyword search is a results page, not a page to put in an index.
-    ...(sp.q?.trim() ? { robots: { index: false, follow: true } } : {}),
+    title,
+    description,
+    alternates: pageAlternates(locale, "/annonces", query),
+    ...(!index || count === 0 ? { robots: { index: false, follow: true } } : {}),
+    // `openGraph` replaces the layout's block: the share image and site name are restated.
+    openGraph: {
+      type: "website",
+      siteName: "Mazed Immo",
+      title,
+      description,
+      url: `/${locale}/annonces${query ? `?${query}` : ""}`,
+      images: [{ url: "/og.png", width: 1200, height: 630, alt: title }],
+    },
   };
 }
 
@@ -448,8 +485,28 @@ export default async function AnnoncesPage({
     return `/annonces${s ? `?${s}` : ""}`;
   };
 
+  // What a crawler reads besides the cards: where this page sits, and the
+  // annonces it lists, in order.
+  const crumbs = [
+    { name: t("crumbHome"), url: absoluteUrl(`/${locale}`) },
+    { name: t("breadcrumb"), url: absoluteUrl(`/${locale}/annonces`) },
+    ...(sp.gov ? [{ name: governorateLabel(sp.gov, locale), url: absoluteUrl(`/${locale}/annonces?gov=${encodeURIComponent(sp.gov)}`) }] : []),
+    ...(active && sp.gov
+      ? [{ name: categoryLabel(active, locale), url: absoluteUrl(`/${locale}/annonces?cat=${encodeURIComponent(active.slug)}&gov=${encodeURIComponent(sp.gov)}`) }]
+      : active
+        ? [{ name: categoryLabel(active, locale), url: absoluteUrl(`/${locale}/annonces?cat=${encodeURIComponent(active.slug)}`) }]
+        : []),
+  ];
+
   return (
     <main className="mx-auto max-w-6xl px-4 pb-6 pt-4 lg:px-6 lg:pb-10 lg:pt-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbLd(crumbs)) }} />
+      {rows.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdSafe(itemListLd(rows.map((r) => absoluteUrl(`/${locale}/annonces/${r.id}`)))) }}
+        />
+      )}
       {/* No visible title. An eyebrow, a 32px headline and a strapline took
           180px — a third of a phone screen — to tell a visitor who tapped
           « Explorer » that they are looking at things for sale. The filters
@@ -492,8 +549,10 @@ export default async function AnnoncesPage({
           placeholder={t("searchPlaceholder")}
           aria-label={t("searchLabel")}
           enterKeyHint="search"
-          className="h-11 w-full rounded-full border border-border bg-surface-2 pe-4 ps-11 text-[16px] text-foreground outline-none transition placeholder:text-muted focus:border-gold-soft focus:bg-surface"
+          className="h-11 w-full rounded-full border border-border bg-surface-2 pe-12 ps-11 text-[16px] text-foreground outline-none transition placeholder:text-muted focus:border-gold-soft focus:bg-surface"
         />
+        {/* Say it instead: the words fill the box and the form is sent. */}
+        <VoiceSearchButton className="absolute end-1 top-1/2 -translate-y-1/2" />
       </form>
 
       {/* Buy or rent first: the one question that changes every other filter

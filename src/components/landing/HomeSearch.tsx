@@ -11,6 +11,7 @@ import { Search, MapPin } from "lucide-react";
 import { SelectMenu, type SelectOption } from "@/components/ui/SelectMenu";
 import { TYPE_TO_CATEGORY } from "@/lib/catalog/browse";
 import { useSetting } from "@/components/settings/SettingsProvider";
+import { VoiceSearchButton } from "@/components/search/VoiceSearchButton";
 
 // Canonical 24-wilaya list (previously a truncated 16 here).
 const GOVERNORATES = TUNISIAN_GOVERNORATES;
@@ -123,8 +124,9 @@ export function HomeSearch({
             onChange={(e) => setQ(e.target.value)}
             placeholder={t("search.placeholder")}
             aria-label={t("search.placeholder")}
-            className="w-full rounded-xl bg-transparent py-3.5 text-[14px] text-foreground placeholder:text-muted focus:outline-none ltr:pl-11 ltr:pr-3 rtl:pl-3 rtl:pr-11"
+            className="w-full rounded-xl bg-transparent py-3.5 text-[14px] text-foreground placeholder:text-muted focus:outline-none px-11"
           />
+          <VoiceSearchButton className="absolute end-1 top-1/2 -translate-y-1/2" />
         </div>
         <div className="my-1.5 w-px shrink-0 bg-border" />
         <SelectMenu
@@ -178,8 +180,9 @@ export function HomeSearch({
               onChange={(e) => setQ(e.target.value)}
               placeholder={t("search.placeholder")}
               aria-label={t("search.placeholder")}
-              className="w-full rounded-full bg-surface-2 py-3 text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-gold/40 ltr:pl-9 ltr:pr-3 rtl:pl-3 rtl:pr-9"
+              className="w-full rounded-full bg-surface-2 py-3 text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-gold/40 ltr:pl-9 ltr:pr-10 rtl:pl-10 rtl:pr-9"
             />
+            <VoiceSearchButton className="absolute end-0.5 top-1/2 -translate-y-1/2" />
           </div>
           <button
             type="submit"
