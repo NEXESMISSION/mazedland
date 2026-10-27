@@ -33,6 +33,8 @@ export const SETTINGS = {
   feature_whatsapp: { group: "features", type: "bool", default: true, client: true },
   // Advertising spaces sold to companies (0177), managed in /admin/publicites.
   feature_ads: { group: "features", type: "bool", default: true, href: "/admin/publicites" },
+  // Promoters' projects and their units (0179): the « Projets » tab and pages.
+  feature_projects: { group: "features", type: "bool", default: true, client: true, href: "/admin/agences" },
 
   // ── Home page: the rails of annonces and the ads move by themselves.
   home_rail_autoplay: { group: "home", type: "bool", default: true, client: true },
@@ -64,6 +66,9 @@ export const SETTINGS = {
   listing_default_days: { group: "publication", type: "int", default: 30, min: 1, max: 365, unit: "days" },
   listing_max_photos: { group: "publication", type: "int", default: 12, min: 1, max: 30, unit: "photos", client: true },
   catalogue_page_size: { group: "publication", type: "int", default: 24, min: 12, max: 60 },
+  // A project goes public only while its agence has a running plan.
+  projects_need_plan: { group: "publication", type: "bool", default: true },
+  projects_max_units: { group: "publication", type: "int", default: 300, min: 10, max: 2000 },
 
   // ── Buyers: visits, compare, demandes.
   visits_max_slots: { group: "buyers", type: "int", default: 3, min: 1, max: 5, client: true },

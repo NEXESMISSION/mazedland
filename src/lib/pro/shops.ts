@@ -27,11 +27,12 @@ export type ShopAction =
   | "edit_shop"        // the shop's page and contacts
   | "subscribe"        // choose and pay a plan
   | "documents"        // send the papers behind « vérifié »
-  | "clients";         // the visits and the client pipeline (0174)
+  | "clients"          // the visits and the client pipeline (0174)
+  | "projects";        // the promoter's projects and their units (0179)
 
 const RIGHTS: Record<ShopRole, readonly ShopAction[]> = {
-  owner: ["publish", "manage_listings", "manage_members", "edit_shop", "subscribe", "documents", "clients"],
-  admin: ["publish", "manage_listings", "manage_members", "edit_shop", "clients"],
+  owner: ["publish", "manage_listings", "manage_members", "edit_shop", "subscribe", "documents", "clients", "projects"],
+  admin: ["publish", "manage_listings", "manage_members", "edit_shop", "clients", "projects"],
   agent: ["publish", "clients"],
 };
 

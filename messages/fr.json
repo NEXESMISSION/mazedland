@@ -3075,7 +3075,16 @@
     "listing_relist_free_limit": "Remise en ligne bloquée (places gratuites prises)",
     "admin_team_add": "Membre ajouté à l'équipe",
     "admin_team_update": "Accès d'un membre modifié",
-    "admin_team_remove": "Membre retiré de l'équipe"
+    "admin_team_remove": "Membre retiré de l'équipe",
+    "project_create": "Projet créé",
+    "project_update": "Projet modifié",
+    "project_published": "Projet mis en ligne",
+    "project_archived": "Projet retiré du site",
+    "project_draft": "Projet repassé en brouillon",
+    "project_delete": "Projet supprimé",
+    "project_units_create": "Lots ajoutés à un projet",
+    "project_units_update": "Lots d'un projet modifiés",
+    "project_units_delete": "Lots d'un projet supprimés"
   },
   "adminApi": {
     "bulk": {
@@ -3774,7 +3783,8 @@
         "documents": "Documents",
         "visites": "Visites",
         "clients": "Clients",
-        "demandes": "Demandes"
+        "demandes": "Demandes",
+        "projets": "Projets"
       },
       "planLabel": "Abonnement",
       "noPlan": "Aucun",
@@ -3903,6 +3913,127 @@
       "partialMatch": "Correspond à {score} %",
       "showAll": "{count, plural, one {Voir l'autre annonce} other {Voir les # autres annonces}}",
       "noneLeft": "Vous avez déjà proposé {max} annonces pour cette demande : c'est le maximum."
+    },
+    "projects": {
+      "title": "Projets",
+      "intro": "Résidences, villas, lotissements : vendez lot par lot et montrez ce qui reste disponible.",
+      "new": "Nouveau projet",
+      "empty": "Aucun projet pour l'instant.",
+      "back": "Tous les projets",
+      "planHint": "Un projet est visible sur le site tant que votre agence a un abonnement en cours.",
+      "kinds": {
+        "residence": "Résidence",
+        "villas": "Villas",
+        "lotissement": "Lotissement",
+        "commercial": "Commercial",
+        "mixed": "Mixte"
+      },
+      "unitKinds": {
+        "apartment": "Appartement",
+        "duplex": "Duplex",
+        "villa": "Villa",
+        "land": "Lot de terrain",
+        "shop": "Local commercial",
+        "office": "Bureau",
+        "parking": "Parking"
+      },
+      "unitStatus": {
+        "available": "Disponible",
+        "reserved": "Réservé",
+        "sold": "Vendu"
+      },
+      "status": {
+        "draft": "Brouillon",
+        "published": "En ligne",
+        "archived": "Retiré"
+      },
+      "delivery": {
+        "label": "Livraison",
+        "delivered": "Livré",
+        "quarter": "{q, select, 1 {1er} other {{q}e}} trimestre {year}",
+        "none": "Non précisée"
+      },
+      "counts": "{available} disponibles · {reserved} réservés · {sold} vendus, sur {total}",
+      "priceFrom": "À partir de {price}",
+      "form": {
+        "name": "Nom du projet",
+        "namePlaceholder": "Résidence Les Jasmins",
+        "kind": "Type de projet",
+        "governorate": "Gouvernorat",
+        "delegation": "Délégation",
+        "delegationAny": "Choisir…",
+        "address": "Quartier",
+        "addressHint": "Un quartier ou un repère, sans numéro de rue.",
+        "delivery": "Livraison",
+        "description": "Présentation",
+        "descriptionHint": "Ce qui fait le projet : standing, équipements, distances, modalités de paiement.",
+        "cover": "Image de couverture",
+        "create": "Créer le projet",
+        "save": "Enregistrer",
+        "created": "Projet créé. Ajoutez maintenant ses lots.",
+        "saved": "Projet enregistré.",
+        "failed": "Enregistrement impossible.",
+        "uploadFailed": "Envoi de l'image impossible.",
+        "imageTooBig": "Image trop lourde (8 Mo maximum).",
+        "edit": "Modifier le projet"
+      },
+      "actions": {
+        "publish": "Mettre en ligne",
+        "published": "Projet en ligne.",
+        "archive": "Retirer du site",
+        "archived": "Projet retiré du site.",
+        "republish": "Remettre en ligne",
+        "delete": "Supprimer",
+        "deleteTitle": "Supprimer ce projet ?",
+        "deleteBody": "Le projet et tous ses lots sont supprimés ; cela ne peut pas être annulé.",
+        "deleted": "Projet supprimé.",
+        "cancel": "Annuler",
+        "view": "Voir la page",
+        "failed": "Action impossible."
+      },
+      "generator": {
+        "title": "Ajouter des lots",
+        "floors": "Immeuble, par étage",
+        "lots": "Lots numérotés",
+        "kind": "Type",
+        "block": "Bloc",
+        "floorFrom": "Du niveau",
+        "floorTo": "au niveau",
+        "ground": "RDC",
+        "floor": "Étage {n}",
+        "perFloor": "Lots par étage",
+        "rooms": "Chambres (S+)",
+        "roomsAny": "—",
+        "area": "Surface (m²)",
+        "price": "Prix (TND)",
+        "optional": "facultatif, pour tous les lots",
+        "from": "À partir du n°",
+        "count": "Nombre de lots",
+        "preview": "{count, plural, one {Crée # lot : {first}} other {Crée # lots : {first} … {last}}}",
+        "tooMany": "Au plus {max} lots par projet.",
+        "submit": "Ajouter",
+        "done": "{created, plural, one {# lot ajouté.} other {# lots ajoutés.}}",
+        "skipped": "{skipped, plural, one {# déjà présent, laissé tel quel.} other {# déjà présents, laissés tels quels.}}"
+      },
+      "units": {
+        "title": "Lots ({count})",
+        "empty": "Aucun lot. Ajoutez-les avec « Ajouter des lots ».",
+        "ref": "Réf.",
+        "kind": "Type",
+        "floor": "Étage",
+        "rooms": "Chambres (S+)",
+        "area": "Surface",
+        "price": "Prix",
+        "status": "Statut",
+        "selectAll": "Tout sélectionner",
+        "selected": "{count, plural, one {# sélectionné} other {# sélectionnés}}",
+        "setStatus": "Marquer :",
+        "delete": "Supprimer",
+        "deleteTitle": "{count, plural, one {Supprimer ce lot ?} other {Supprimer ces # lots ?}}",
+        "saved": "Lots mis à jour.",
+        "deleted": "Lots supprimés.",
+        "failed": "Mise à jour impossible."
+      }
     }
   },
   "proApi": {
@@ -3939,6 +4070,24 @@
       "perRequest": "Vous avez déjà proposé {max} annonces pour cette demande.",
       "perDay": "Limite de {max} propositions par jour atteinte. Réessayez demain.",
       "already": "Cette annonce a déjà été proposée pour cette demande."
+    },
+    "projects": {
+      "field": {
+        "name": "Donnez un nom au projet (2 caractères au moins).",
+        "kind": "Choisissez le type de projet.",
+        "governorate": "Choisissez le gouvernorat.",
+        "delegation": "Cette délégation n'est pas dans ce gouvernorat.",
+        "delivery": "Choisissez une date de livraison proposée.",
+        "cover_path": "Image invalide.",
+        "address": "Quartier invalide.",
+        "description": "Présentation invalide."
+      },
+      "shopNotApproved": "L'agence doit être validée avant de publier un projet.",
+      "noUnits": "Ajoutez au moins un lot avant de mettre le projet en ligne.",
+      "planRequired": "Un abonnement en cours est nécessaire pour mettre un projet en ligne.",
+      "archiveFirst": "Retirez d'abord le projet du site.",
+      "badPlan": "Ces lots ne peuvent pas être créés : vérifiez les niveaux et le nombre.",
+      "tooMany": "Au plus {max} lots par projet."
     }
   },
   "shops": {
@@ -3959,7 +4108,21 @@
     },
     "noListings": "Aucune annonce en ligne pour le moment.",
     "verifiedMeans": "« Vérifiée » : l'équipe Mazed Immo a contrôlé les documents de l'entreprise (RNE ou patente).",
-    "notVerifiedMeans": "Les documents de cette agence n'ont pas encore été contrôlés par Mazed Immo."
+    "notVerifiedMeans": "Les documents de cette agence n'ont pas encore été contrôlés par Mazed Immo.",
+    "projects": {
+      "title": "Projets",
+      "available": "{count, plural, =0 {Plus rien de disponible} one {# disponible} other {# disponibles}}",
+      "ofTotal": "sur {total}",
+      "unitsTitle": "Les lots",
+      "filterAll": "Tous",
+      "filterAvailable": "Disponibles",
+      "none": "Aucun lot à afficher.",
+      "by": "Un projet de {name}",
+      "contact": "Intéressé ? Contactez l'agence",
+      "call": "Appeler",
+      "seeAgency": "Voir l'agence",
+      "onRequest": "Prix sur demande"
+    }
   },
   "adminShops": {
     "unavailable": "Service indisponible.",
@@ -4560,6 +4723,18 @@
     "home_rail_explore": {
       "label": "Rubrique « À découvrir »",
       "hint": "En bas de l'accueil, les annonces qu'aucune autre rubrique ne montre."
+    },
+    "feature_projects": {
+      "label": "Projets des promoteurs",
+      "hint": "Les résidences et lotissements vendus lot par lot, avec leurs disponibilités. Coupé : l'onglet « Projets » et les pages des projets disparaissent ; les projets restent enregistrés."
+    },
+    "projects_need_plan": {
+      "label": "Abonnement exigé pour publier un projet",
+      "hint": "Un projet n'est visible que tant que son agence a un abonnement en cours."
+    },
+    "projects_max_units": {
+      "label": "Lots maximum par projet",
+      "hint": "Le générateur de lots n'en crée pas plus."
     }
   },
   "ads": {

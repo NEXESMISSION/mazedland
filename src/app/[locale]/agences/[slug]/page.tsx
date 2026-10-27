@@ -10,7 +10,10 @@ import { delegationLabel } from "@/lib/delegations";
 import { absoluteUrl } from "@/lib/siteUrl";
 import { AnnonceCard, type AnnonceCardRow } from "@/components/listing/AnnonceCard";
 import { Ltr } from "@/components/ui/Ltr";
-import { BadgeCheck, Clock, Globe, Mail, MapPin, Phone, Store } from "lucide-react";
+import { formatTND } from "@/lib/utils";
+import { publishedProjects } from "@/lib/pro/projectsServer";
+import { deliveryParts, priceFrom, unitCounts } from "@/lib/pro/projects";
+import { BadgeCheck, Building2, Clock, Globe, Mail, MapPin, Phone, Store } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +78,15 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
+  const tp = await getTranslations("pro.projects");
+  const tShopProjects = await getTranslations("shops.projects");
+  // The promoter's projects (0179), when they may show (src/lib/pro/projectsServer.ts).
+  const projects = await publishedProjects(admin, shop.id);
+  const deliveryText = (v: string | null) => {
+    const p = deliveryParts(v);
+    return !p ? null : p.delivered ? tp("delivery.delivered") : tp("delivery.quarter", { q: String(p.q), year: String(p.year) });
+  };
+
   const deal = sp.deal === "sale" || sp.deal === "rent" ? sp.deal : null;
   let q = admin.from("listings").select(LISTING_SELECT).eq("shop_id", shop.id).eq("status", "published").order("published_at", { ascending: false }).limit(60);
   if (deal) q = q.eq("deal_type", deal);
@@ -126,6 +138,46 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_300px]">
           <div className="order-2 lg:order-1">
+            {projects.length > 0 && (
+              <section className="mb-7">
+                <h2 className="text-[17px] font-extrabold tracking-tight text-foreground">{tShopProjects("title")}</h2>
+                <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {projects.map((p) => {
+                    const counts = unitCounts(p.units);
+                    const from = priceFrom(p.units);
+                    const due = deliveryText(p.delivery);
+                    return (
+                      <li key={p.id}>
+                        <Link
+                          href={`/agences/${shop.slug}/projets/${p.slug}` as never}
+                          className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-gold-soft"
+                        >
+                          <span className="relative grid aspect-[16/9] w-full place-items-center bg-surface-2">
+                            {p.cover_path ? (
+                              // eslint-disable-next-line @next/next/no-img-element -- the project's own cover
+                              <img src={propertyPhotoUrl(p.cover_path, { transform: { width: 700, quality: 72 } })} alt="" className="size-full object-cover" />
+                            ) : (
+                              <Building2 className="size-8 text-muted" />
+                            )}
+                          </span>
+                          <span className="flex flex-1 flex-col gap-0.5 p-3">
+                            <span className="text-[15px] font-extrabold text-foreground" dir="auto">{p.name}</span>
+                            <span className="text-[12px] text-muted">
+                              {tp(`kinds.${p.kind}`)} · {p.delegation ? `${delegationLabel(p.delegation, locale)}, ` : ""}{governorateLabel(p.governorate, locale)}
+                              {due ? ` · ${due}` : ""}
+                            </span>
+                            <span className="mt-1 text-[12.5px] font-bold text-foreground">
+                              {tShopProjects("available", { count: counts.available })} <span className="font-normal text-muted">{tShopProjects("ofTotal", { total: counts.total })}</span>
+                            </span>
+                            {from !== null && <span className="text-[12.5px] font-bold text-gold">{tp("priceFrom", { price: formatTND(from, locale) })}</span>}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
             <nav className="flex gap-1.5">
               {([null, "sale", "rent"] as const).map((d) => (
                 <Link

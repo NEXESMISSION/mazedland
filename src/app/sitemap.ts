@@ -3,6 +3,7 @@ import { siteUrl } from "@/lib/siteUrl";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { log } from "@/lib/log";
 import { routing } from "@/i18n/routing";
+import { projectsShown } from "@/lib/pro/projectsServer";
 
 const SITE_URL = siteUrl();
 
@@ -94,7 +95,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       localized(base, `/agences/${s.slug}`, { lastModified: s.updated_at ?? undefined, changeFrequency: "daily" as const, priority: 0.6 }),
     );
 
-    return [...staticRoutes, ...shopRoutes, ...listingRoutes];
+    // Each published project (0179) whose agence may show it right now.
+    const { data: projects } = await sb
+      .from("projects")
+      .select("slug, updated_at, shop:shops!inner (id, slug, status)")
+      .eq("status", "published")
+      .eq("shop.status", "approved")
+      .limit(2000);
+    const shown = new Map<string, boolean>();
+    const projectRoutes: MetadataRoute.Sitemap = [];
+    for (const p of (projects ?? []) as unknown as { slug: string; updated_at: string | null; shop: { id: string; slug: string } }[]) {
+      if (!shown.has(p.shop.id)) shown.set(p.shop.id, await projectsShown(sb, p.shop.id));
+      if (!shown.get(p.shop.id)) continue;
+      projectRoutes.push(
+        ...localized(base, `/agences/${p.shop.slug}/projets/${p.slug}`, { lastModified: p.updated_at ?? undefined, changeFrequency: "daily" as const, priority: 0.6 }),
+      );
+    }
+
+    return [...staticRoutes, ...shopRoutes, ...projectRoutes, ...listingRoutes];
   } catch {
     // Never let a DB hiccup 500 the sitemap — degrade to static routes.
     return staticRoutes;
