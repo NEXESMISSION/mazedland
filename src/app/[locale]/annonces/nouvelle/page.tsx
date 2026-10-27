@@ -18,7 +18,6 @@ import {
 import { liveListingCount } from "@/lib/moderation/server";
 import { getSettings } from "@/lib/settings/server";
 import { asDealType, isDealType } from "@/lib/listings/deal";
-import { draftNeedsChoice } from "@/lib/listings/wizard";
 import { isoDayIn } from "@/lib/listings/choices";
 import { aiAvailable } from "@/lib/ai/server";
 import { asPendingEdit, isEditable } from "@/lib/listings/edit";
@@ -114,9 +113,9 @@ export default async function NewListingPage({
     // « Modifier l'annonce » all pass ?draft=<id> — which this page used to
     // ignore, always loading the NEWEST draft instead, so a rejected annonce
     // could not be corrected and « Reprendre » opened the wrong one. Without
-    // the parameter, fall back to that newest draft: publishing a property
-    // takes long enough that a phone call or a stray back gesture interrupts
-    // it, and until then that threw the whole form away.
+    // the parameter the form starts clean (the owner's choice, 2026-10-27):
+    // « Publier » is a new annonce, and a draft is resumed — or deleted —
+    // from « Mes annonces ».
     (() => {
       const q = admin
         .from("listings")
@@ -133,7 +132,7 @@ export default async function NewListingPage({
       return wantedDraft
         ? // Only the seller's own annonce, and only one still editable here.
           q.eq("id", wantedDraft).in("status", ["draft", "rejected", "pending_payment"]).maybeSingle()
-        : q.eq("status", "draft").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+        : Promise.resolve({ data: null, error: null });
     })(),
     // What annonces like this one ask (online, same category and offer): the
     // form compares a typed price with it to catch a zero too many or too few.
@@ -245,9 +244,6 @@ export default async function NewListingPage({
     | null;
   if (wantedEdit && (!row || !isEditable(row))) redirect(`/${locale}/account/listings`);
   const pending = wantedEdit ? asPendingEdit(row?.pending_edit) : null;
-  // The newest draft is a sale and they came to let (or the reverse): the
-  // form asks which they meant instead of reopening it as if they had chosen.
-  const askResume = draftNeedsChoice({ opened: Boolean(wantedDraft || wantedEdit), askedDeal, draft: row });
   const initialDraft: InitialDraft | null = row
     ? {
         ...row,
@@ -272,7 +268,6 @@ export default async function NewListingPage({
       defaultGovernorate={(profRes.data?.governorate as string | null) ?? ""}
       initialDraft={initialDraft}
       initialDeal={initialDeal}
-      askResume={askResume}
       aiAvailable={wantedEdit ? false : await aiAvailable(admin)}
       mode={wantedEdit ? "edit" : "create"}
       editPending={Boolean(pending)}

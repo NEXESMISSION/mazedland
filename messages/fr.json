@@ -211,6 +211,13 @@
         "body": "L'annonce redevient disponible pour tous les visiteurs.",
         "confirm": "Retirer le badge",
         "done": "L'annonce est de nouveau disponible."
+      },
+      "deleteDraft": {
+        "label": "Supprimer",
+        "title": "Supprimer ce brouillon ?",
+        "body": "Il n'a jamais été en ligne. Ses photos sont supprimées avec lui ; cela ne peut pas être annulé.",
+        "confirm": "Supprimer le brouillon",
+        "done": "Brouillon supprimé."
       }
     },
     "renew": {
@@ -1463,26 +1470,6 @@
     "tipPriceTypo": "Un zéro de trop dans le prix ? Les annonces semblables sont plutôt autour de {fix}.",
     "estimateLocal": "D'après {count, plural, one {# annonce semblable} other {# annonces semblables}} à {governorate} : entre {low} et {high} pour cette surface.",
     "estimateNational": "D'après {count, plural, one {# annonce semblable} other {# annonces semblables}} en Tunisie : entre {low} et {high} pour cette surface.",
-    "draftChoice": {
-      "title": {
-        "sale": "Vous avez un brouillon de vente",
-        "rent": "Vous avez un brouillon de location"
-      },
-      "body": {
-        "sale": "Votre dernier brouillon est une annonce de vente. Que voulez-vous faire ?",
-        "rent": "Votre dernier brouillon est une annonce de location. Que voulez-vous faire ?"
-      },
-      "resume": {
-        "sale": "Reprendre le brouillon de vente",
-        "rent": "Reprendre le brouillon de location"
-      },
-      "startNew": {
-        "sale": "Commencer une annonce de vente",
-        "rent": "Commencer une annonce de location"
-      },
-      "savedOn": "Enregistré le {date}",
-      "keepsDraft": "Le brouillon reste dans « Mes annonces »."
-    },
     "priceNotGiven": "Prix non renseigné",
     "rentNotGiven": "Loyer non renseigné",
     "fieldName": {
@@ -1600,7 +1587,8 @@
     "attestationRequired": "Cochez l'attestation sur l'honneur.",
     "photoRequired": "Ajoutez au moins une photo.",
     "editOnlyLive": "Seule une annonce en ligne ou en vérification se modifie ici.",
-    "editHeldReported": "Cette annonce a été signalée par des visiteurs : notre équipe la vérifie telle quelle avant toute modification."
+    "editHeldReported": "Cette annonce a été signalée par des visiteurs : notre équipe la vérifie telle quelle avant toute modification.",
+    "onlyDraftDeletable": "Seul un brouillon peut être supprimé."
   },
   "auth": {
     "hero": {
@@ -3068,7 +3056,9 @@
     "admin_ad_pause": "Publicité mise en pause",
     "admin_ad_resume": "Publicité reprise",
     "admin_ad_delete": "Publicité supprimée",
-    "admin_ad_upload": "Image de publicité envoyée"
+    "admin_ad_upload": "Image de publicité envoyée",
+    "listing_draft_delete": "Brouillon supprimé",
+    "listing_relist_free_limit": "Remise en ligne bloquée (places gratuites prises)"
   },
   "adminApi": {
     "bulk": {

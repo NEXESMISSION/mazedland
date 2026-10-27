@@ -14,6 +14,7 @@ import {
   ArrowRight, AlertTriangle, Inbox, Megaphone, Sparkles,
 } from "lucide-react";
 import { RenewButton } from "./RenewButton";
+import { DeleteDraftButton } from "./DeleteDraftButton";
 import { getSettings } from "@/lib/settings/server";
 import { ListingStatusActions } from "./ListingStatusActions";
 import { PaySubmitButton } from "@/components/payments/PaySubmitButton";
@@ -271,11 +272,15 @@ export default async function MyListingsPage({
     if (l.status === "pending_payment") {
       return <PaySubmitButton listingId={l.id} block={block} />;
     }
+    // A draft: carry on with it, or throw it away.
     if (l.status === "draft") {
       return (
-        <Link href={`/annonces/nouvelle?draft=${l.id}` as never} className={cls}>
-          <PencilLine className="size-3.5" /> {t("resume")}
-        </Link>
+        <>
+          <Link href={`/annonces/nouvelle?draft=${l.id}` as never} className={cls}>
+            <PencilLine className="size-3.5" /> {t("resume")}
+          </Link>
+          <DeleteDraftButton listingId={l.id} block={block} />
+        </>
       );
     }
     // « À corriger » has to reopen THAT annonce. It used to fall through to

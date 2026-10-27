@@ -21,6 +21,7 @@ import { ClientLogger } from "@/components/dev/ClientLogger";
 import { ClientErrorReporter } from "@/components/observability/ClientErrorReporter";
 import type { Metadata } from "next";
 import { SettingsProvider } from "@/components/settings/SettingsProvider";
+import { NoNegativeNumbers } from "@/components/ui/NoNegativeNumbers";
 import { clientSettings, getSettings } from "@/lib/settings/server";
 
 // The settings an admin changes reach every page (feature switches, limits).
@@ -167,6 +168,7 @@ export default async function LocaleLayout({
           </SettingsProvider>
         </NextIntlClientProvider>
         <PWARegister />
+        <NoNegativeNumbers />
         {/* Ships uncaught client errors + unhandled rejections to the server
             log sink — pairs with instrumentation.ts (server errors) for a
             single, unified observability stream. */}
