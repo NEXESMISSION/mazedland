@@ -30,3 +30,29 @@ export async function proGate(
   if (!can(role, shop.action)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   return { user, admin, role };
 }
+
+export type ProjectRow = { id: string; shop_id: string; slug: string; name: string; status: string };
+
+/**
+ * The door of the /api/pro/projects routes: proGate, then the project, and
+ * the caller's right to manage the projects of its agence. A project of an
+ * agence they are not in is « not found », as for shops.
+ */
+export async function projectGate(
+  req: NextRequest,
+  projectId: string,
+): Promise<{ user: User; admin: Admin; role: ShopRole; project: ProjectRow } | NextResponse> {
+  const base = await proGate(req);
+  if (base instanceof NextResponse) return base;
+  if (!/^[0-9a-f-]{36}$/i.test(projectId)) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const { data: project } = await base.admin
+    .from("projects")
+    .select("id, shop_id, slug, name, status")
+    .eq("id", projectId)
+    .maybeSingle();
+  if (!project) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const role = await roleIn(base.admin, project.shop_id as string, base.user.id);
+  if (!role) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (!can(role, "projects")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  return { user: base.user, admin: base.admin, role, project: project as ProjectRow };
+}
