@@ -7,13 +7,15 @@ import { clientIp } from "@/lib/clientIp";
 import { isSmsConfigured } from "@/lib/winsms";
 import { PHONE_PROOF_COOKIE, verifyPhoneProof } from "@/lib/otp";
 import { requestLocale } from "@/lib/i18n/server";
+import { getSettings } from "@/lib/settings/server";
+import { recordConsents } from "@/lib/consents/server";
 
 /**
  * Phone-only signup — fully server-side.
  *
- *   Body: { phone: "+216…" (E.164), password, full_name, governorate }
+ *   Body: { phone: "+216…" (E.164), password, full_name, governorate, accepted: true }
  *   200:  { ok: true }   (account created + signed in; auth cookie on response)
- *   400:  { ok: false, error: "invalid_phone" | "weak_password" | "bad_request" | "signup_failed" }
+ *   400:  { ok: false, error: "invalid_phone" | "weak_password" | "terms_required" | "bad_request" | "signup_failed" }
  *   409:  { ok: false, error: "phone_taken" }
  *   429:  { ok: false, error: "rate_limited" }
  *
@@ -24,6 +26,11 @@ import { requestLocale } from "@/lib/i18n/server";
  * full_name / phone / governorate into public.profiles. After creation we sign
  * the user in on the SSR client so the auth cookie is written onto the response
  * (same mechanism as /api/auth/login-by-phone) and the client hard-navigates.
+ *
+ * `accepted` is the « J'accepte les CGU et la politique de confidentialité »
+ * box: checked in the form, and refused here without it, so no account exists
+ * without the answer. It is recorded in `user_consents` (0182) with the
+ * version in force, once the account exists.
  *
  * SMS confirmation is future work — accounts are active immediately (the
  * synthetic email is pre-confirmed). The signup form's optional WinSMS OTP gate
@@ -64,12 +71,14 @@ export async function POST(req: NextRequest) {
   let password = "";
   let fullName = "";
   let governorate = "";
+  let accepted = false;
   try {
     const body = (await req.json()) as Record<string, unknown>;
     if (typeof body.phone === "string") phone = body.phone.trim();
     if (typeof body.password === "string") password = body.password;
     if (typeof body.full_name === "string") fullName = body.full_name.trim();
     if (typeof body.governorate === "string") governorate = body.governorate.trim();
+    accepted = body.accepted === true;
   } catch {
     return NextResponse.json({ ok: false, error: "bad_request" }, { status: 400 });
   }
@@ -80,6 +89,9 @@ export async function POST(req: NextRequest) {
   }
   if (!password || password.length < 8) {
     return NextResponse.json({ ok: false, error: "weak_password" }, { status: 400 });
+  }
+  if (!accepted) {
+    return NextResponse.json({ ok: false, error: "terms_required" }, { status: 400 });
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -129,7 +141,7 @@ export async function POST(req: NextRequest) {
   }
 
   const email = `${phone.replace(/\D/g, "")}@${PHONE_EMAIL_DOMAIN}`;
-  const { error: createErr } = await admin.auth.admin.createUser({
+  const { data: created, error: createErr } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
@@ -150,6 +162,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "phone_taken" }, { status: 409 });
     }
     return NextResponse.json({ ok: false, error: "signup_failed" }, { status: 400 });
+  }
+  if (created.user) {
+    const { legal_version } = await getSettings();
+    await recordConsents(
+      admin,
+      created.user.id,
+      [{ kind: "terms", granted: true }, { kind: "privacy", granted: true }],
+      legal_version,
+      "signup",
+    );
   }
 
   // Sign in server-side; the SSR client writes the auth cookie onto the response

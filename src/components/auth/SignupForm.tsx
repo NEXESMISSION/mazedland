@@ -81,6 +81,7 @@ export function SignupForm() {
           password,
           full_name: fullName,
           governorate,
+          accepted,
         }),
       });
       const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
@@ -91,6 +92,7 @@ export function SignupForm() {
           invalid_phone: t("auth.errors.invalidPhone"),
           rate_limited: t("auth.errors.tooManyAttempts"),
           phone_not_verified: t("auth.signup.phoneNotVerified"),
+          terms_required: t("auth.signup.acceptRequired"),
         };
         setError(map[j.error ?? ""] ?? t("auth.signup.createFailed"));
         setOtpPhase(false);

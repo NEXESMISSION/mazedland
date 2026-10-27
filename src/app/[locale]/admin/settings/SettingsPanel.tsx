@@ -184,7 +184,8 @@ function defaultLabel(def: SettingDef, t: ReturnType<typeof useTranslations<"set
   if (def.type === "bool") return def.default ? t("ui.defaultOn") : t("ui.defaultOff");
   if (def.type === "list") return def.default.length ? t("ui.default", { value: def.default.join(", ") }) : t("ui.defaultEmpty");
   if (def.default === null || def.default === "") return t("ui.defaultEmpty");
-  return t("ui.default", { value: String(def.default) });
+  // Isolated: « 2026-10 » or « +216 … » reads backwards in an Arabic line otherwise.
+  return t("ui.default", { value: `\u2066${def.default}\u2069` });
 }
 
 function Field({
@@ -240,7 +241,20 @@ function Field({
       <label htmlFor={inputId} className="text-[13px] font-bold text-foreground">{label}</label>
       <p className="mt-0.5 text-[11.5px] leading-relaxed text-[var(--foreground-muted)]">{hint}</p>
       <div className="mt-1.5 flex items-center gap-2">
-        {def.type === "list" || (def.type === "text" && def.multiline) ? (
+        {(def.type === "int" || def.type === "number") && def.choices ? (
+          <select
+            id={inputId}
+            value={String(value)}
+            onChange={(e) => onChange(e.target.value)}
+            className="mazed-input max-w-[14rem]"
+          >
+            {def.choices.map((c) => (
+              <option key={c} value={String(c)}>
+                {c === 0 ? t("ui.never") : unit ? `${c} ${unit}` : String(c)}
+              </option>
+            ))}
+          </select>
+        ) : def.type === "list" || (def.type === "text" && def.multiline) ? (
           <textarea
             id={inputId}
             rows={def.type === "list" ? 5 : 3}
@@ -263,11 +277,11 @@ function Field({
             className={cn("mazed-input", def.type === "text" ? "" : "max-w-[9rem]")}
           />
         )}
-        {unit && <span className="shrink-0 text-[12px] text-[var(--foreground-muted)]">{unit}</span>}
+        {unit && !("choices" in def && def.choices) && <span className="shrink-0 text-[12px] text-[var(--foreground-muted)]">{unit}</span>}
       </div>
       <p className="mt-1 text-[10.5px] text-subtle">
         {defaultLabel}
-        {(def.type === "int" || def.type === "number") && <> · {t("ui.range", { min: def.min, max: def.max })}</>}
+        {(def.type === "int" || def.type === "number") && !def.choices && <> · {t("ui.range", { min: def.min, max: def.max })}</>}
         {def.type === "list" && <> · {t("ui.listHint")}</>}
       </p>
       {error && <p role="alert" className="mt-1 text-[11.5px] font-semibold text-[var(--tone-bad)]">{error}</p>}

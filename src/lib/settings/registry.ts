@@ -110,6 +110,17 @@ export const SETTINGS = {
   limit_suggestions_per_day: { group: "limits", type: "int", default: 30, min: 1, max: 500, unit: "per_day" },
   limit_shop_create_per_hour: { group: "limits", type: "int", default: 5, min: 1, max: 50, unit: "per_hour" },
   sms_daily_cap: { group: "limits", type: "int", default: 6, min: 0, max: 50, unit: "per_day" },
+
+  // ── Personal data (0182): the version of the CGU and privacy policy people
+  //    accept, and how long the nightly jobs keep each trace. The SQL jobs
+  //    read these keys with the same defaults; 0 keeps that trace. Payments,
+  //    invoices and the admin audit trail are never deleted by them.
+  legal_version: { group: "privacy", type: "text", default: "2026-10", max: 40, ltr: true },
+  privacy_anonymize_days: { group: "privacy", type: "int", default: 30, min: 1, max: 90, unit: "days", choices: [7, 14, 30, 60, 90] },
+  privacy_page_views_days: { group: "privacy", type: "int", default: 90, min: 0, max: 730, unit: "days", choices: [30, 60, 90, 180, 365, 0] },
+  privacy_activity_days: { group: "privacy", type: "int", default: 365, min: 0, max: 730, unit: "days", choices: [90, 180, 365, 730, 0] },
+  privacy_notifications_days: { group: "privacy", type: "int", default: 30, min: 0, max: 365, unit: "days", choices: [7, 14, 30, 60, 90, 180, 0] },
+  privacy_traces_days: { group: "privacy", type: "int", default: 365, min: 0, max: 730, unit: "days", choices: [90, 180, 365, 730, 0] },
 } as const satisfies Record<string, SettingDef>;
 
 export type SettingKey = keyof typeof SETTINGS;
@@ -121,7 +132,7 @@ export type ClientSettings = Pick<Settings, ClientSettingKey>;
 
 /** The console's tabs, in order. */
 export const SETTING_GROUPS = [
-  "features", "home", "moderation", "publication", "buyers", "contact", "social", "payment", "company", "limits",
+  "features", "home", "moderation", "publication", "buyers", "contact", "social", "payment", "company", "limits", "privacy",
 ] as const;
 
 export function isSettingKey(k: string): k is SettingKey {

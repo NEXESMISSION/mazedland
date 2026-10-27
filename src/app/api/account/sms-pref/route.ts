@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { getSettings } from "@/lib/settings/server";
+import { recordConsents } from "@/lib/consents/server";
 
 /**
  * POST /api/account/sms-pref  { enabled: boolean }
@@ -10,6 +12,9 @@ import { isSameOrigin } from "@/lib/sameOrigin";
  * important-notification SMS). Authenticated via the SSR cookie, then written
  * with the service-role client so it doesn't depend on a profiles self-update
  * RLS policy — the route only ever updates the caller's own row.
+ *
+ * Each switch is also an answer in `user_consents` (kind « sms », 0182), so
+ * the account page can say when SMS were accepted or refused.
  */
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) {
@@ -42,5 +47,7 @@ export async function POST(req: NextRequest) {
   if (error) {
     return NextResponse.json({ ok: false, error: "update_failed" }, { status: 500 });
   }
+  const { legal_version } = await getSettings();
+  await recordConsents(admin, user.id, [{ kind: "sms", granted: enabled }], legal_version, "settings");
   return NextResponse.json({ ok: true, enabled });
 }

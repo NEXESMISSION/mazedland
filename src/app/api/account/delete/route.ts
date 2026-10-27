@@ -72,6 +72,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ban_duration: "876000h",
     });
     if (authErr) dLog.warn(`auth anonymise failed for ${user.id}: ${authErr.message}`);
+    // The consents (0182) go with the account: the profile is tombstoned, not
+    // deleted, so its cascade does not run.
+    const { error: cErr } = await admin.from("user_consents").delete().eq("user_id", user.id);
+    if (cErr) dLog.warn(`consents purge failed for ${user.id}: ${cErr.message}`);
   } else {
     dLog.warn("service client unavailable — auth PII not anonymised");
   }
