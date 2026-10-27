@@ -579,12 +579,7 @@
     }
   },
   "home": {
-    "trendingEyebrow": "في الواجهة",
-    "trendingTitle": "العقارات اللي عليها الطلب",
-    "nouveautesEyebrow": "جديد",
-    "nouveautesTitle": "تنشرو توّا",
     "endingSoonEyebrow": "فرصة",
-    "moreToExplore": "اكتشف أكثر",
     "browseByType": "تصفّح حسب النوع",
     "browseByPrice": "تصفّح حسب السوم",
     "recentlyHammered": "تباعو مؤخرا",
@@ -617,8 +612,6 @@
     "trustInspectionBody": "الشارة تميّز البائعين اللي راقبهم فريقنا.",
     "trustLegalTitle": "بلا عمولة",
     "trustLegalBody": "تخلّص النشر، موش نسبة من البيعة.",
-    "bestValueEyebrow": "أحسن قيمة",
-    "bestValueTitle": "فرص باهية",
     "browseCatalogue": "تصفّح الإعلانات",
     "priceOnRequest": "السعر عند الطلب",
     "slideEyebrowArea": "{place} · {area} م²",
@@ -656,7 +649,59 @@
     "intentRentOwner": "عندي عقار نكريه",
     "intentRentOwnerHint": "انشر إعلان كراء",
     "intentRentSeeker": "نلوّج على كراء",
-    "intentRentSeekerHint": "شوف العقارات للكراء"
+    "intentRentSeekerHint": "شوف العقارات للكراء",
+    "rails": {
+      "featured": {
+        "eyebrow": "مموّل",
+        "title": "في الواجهة",
+        "sub": "إعلانات مبرّزة في الصفحة الرئيسية"
+      },
+      "mostViewed": {
+        "eyebrow": "عليها الطلب",
+        "title": "الأكثر مشاهدة",
+        "sub": "الإعلانات اللي الناس يحلّوها أكثر"
+      },
+      "nouveautes": {
+        "eyebrow": "جديد",
+        "title": "تنشرو توّا",
+        "sub": "آخر الإعلانات اللي تحطّو"
+      },
+      "rent": {
+        "eyebrow": "كراء",
+        "title": "للكراء",
+        "sub": "آخر إعلانات الكراء اللي تنشرو"
+      },
+      "bestValue": {
+        "eyebrow": "أحسن قيمة",
+        "title": "فرص باهية",
+        "sub": "أرخص سوم للمتر المربّع، للبيع"
+      },
+      "appartements": {
+        "eyebrow": "حسب النوع",
+        "title": "شقق",
+        "sub": "آخر الشقق اللي تنشرو"
+      },
+      "villas": {
+        "eyebrow": "حسب النوع",
+        "title": "فيلات",
+        "sub": "آخر الفيلات اللي تنشرو"
+      },
+      "maisons": {
+        "eyebrow": "حسب النوع",
+        "title": "منازل",
+        "sub": "آخر المنازل اللي تنشرو"
+      },
+      "terrain": {
+        "eyebrow": "حسب النوع",
+        "title": "أراضي",
+        "sub": "آخر الأراضي اللي تنشرو"
+      },
+      "explore": {
+        "eyebrow": "زادة",
+        "title": "اكتشف أكثر",
+        "sub": "إعلانات أخرى منشورة"
+      }
+    }
   },
   "search": {
     "placeholder": "لوّج على عقار…",
@@ -4458,6 +4503,50 @@
     "ads_rotate_seconds": {
       "label": "دوران البانرات",
       "hint": "قدّاش يقعد البانر قبل ما يتعدّى للي بعدو، كي يكون فما برشا في نفس البلاصة."
+    },
+    "home_rail_size": {
+      "label": "عدد الإعلانات في كل قسم",
+      "hint": "قدّاش من إعلان يورّي كل قسم على الأكثر. القسم اللي فيه أقل من 3 ما يبانش."
+    },
+    "home_rail_featured": {
+      "label": "قسم «في الواجهة»",
+      "hint": "الإعلانات المبرّزة في الصفحة الرئيسية، في الأوّل. كي يتقصّ: يقعدو في الأقسام الأخرى."
+    },
+    "home_rail_most_viewed": {
+      "label": "قسم «الأكثر مشاهدة»",
+      "hint": "الإعلانات اللي الناس يحلّوها أكثر."
+    },
+    "home_rail_new": {
+      "label": "قسم «تنشرو توّا»",
+      "hint": "آخر الإعلانات اللي تحطّو."
+    },
+    "home_rail_rent": {
+      "label": "قسم «للكراء»",
+      "hint": "آخر إعلانات الكراء اللي تنشرو."
+    },
+    "home_rail_deals": {
+      "label": "قسم «فرص باهية»",
+      "hint": "البيع بأرخص سوم للمتر المربّع."
+    },
+    "home_rail_appartements": {
+      "label": "قسم «شقق»",
+      "hint": "آخر الشقق اللي تنشرو."
+    },
+    "home_rail_villas": {
+      "label": "قسم «فيلات»",
+      "hint": "آخر الفيلات اللي تنشرو."
+    },
+    "home_rail_maisons": {
+      "label": "قسم «منازل»",
+      "hint": "آخر المنازل اللي تنشرو."
+    },
+    "home_rail_terrain": {
+      "label": "قسم «أراضي»",
+      "hint": "آخر الأراضي اللي تنشرو."
+    },
+    "home_rail_explore": {
+      "label": "قسم «اكتشف أكثر»",
+      "hint": "في آخر الصفحة الرئيسية، الإعلانات اللي حتى قسم آخر ما يورّيها."
     }
   },
   "ads": {

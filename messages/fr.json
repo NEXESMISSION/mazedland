@@ -579,12 +579,7 @@
     }
   },
   "home": {
-    "trendingEyebrow": "À la une",
-    "trendingTitle": "Les biens du moment",
-    "nouveautesEyebrow": "Nouveau",
-    "nouveautesTitle": "Fraîchement publiés",
     "endingSoonEyebrow": "À saisir",
-    "moreToExplore": "À découvrir",
     "browseByType": "Parcourir par type",
     "browseByPrice": "Parcourir par prix",
     "recentlyHammered": "Récemment adjugés",
@@ -617,8 +612,6 @@
     "trustInspectionBody": "Le badge distingue les vendeurs contrôlés par notre équipe.",
     "trustLegalTitle": "Aucune commission",
     "trustLegalBody": "Vous payez la publication, pas un pourcentage de la vente.",
-    "bestValueEyebrow": "Le meilleur rapport",
-    "bestValueTitle": "Bonnes affaires",
     "browseCatalogue": "Parcourir le catalogue",
     "priceOnRequest": "Prix sur demande",
     "slideEyebrowArea": "{place} · {area} m²",
@@ -656,7 +649,59 @@
     "intentRentOwner": "J'ai un bien à louer",
     "intentRentOwnerHint": "Publier une annonce de location",
     "intentRentSeeker": "Je cherche une location",
-    "intentRentSeekerHint": "Voir les biens à louer"
+    "intentRentSeekerHint": "Voir les biens à louer",
+    "rails": {
+      "featured": {
+        "eyebrow": "Sponsorisé",
+        "title": "À la une",
+        "sub": "Des annonces mises en avant sur l'accueil"
+      },
+      "mostViewed": {
+        "eyebrow": "Populaire",
+        "title": "Les plus vus",
+        "sub": "Les annonces que les visiteurs ouvrent le plus"
+      },
+      "nouveautes": {
+        "eyebrow": "Nouveau",
+        "title": "Fraîchement publiés",
+        "sub": "Les dernières annonces en ligne"
+      },
+      "rent": {
+        "eyebrow": "Location",
+        "title": "À louer",
+        "sub": "Les dernières locations publiées"
+      },
+      "bestValue": {
+        "eyebrow": "Le meilleur rapport",
+        "title": "Bonnes affaires",
+        "sub": "Le prix au m² le plus bas, à la vente"
+      },
+      "appartements": {
+        "eyebrow": "Par type",
+        "title": "Appartements",
+        "sub": "Les derniers appartements publiés"
+      },
+      "villas": {
+        "eyebrow": "Par type",
+        "title": "Villas",
+        "sub": "Les dernières villas publiées"
+      },
+      "maisons": {
+        "eyebrow": "Par type",
+        "title": "Maisons",
+        "sub": "Les dernières maisons publiées"
+      },
+      "terrain": {
+        "eyebrow": "Par type",
+        "title": "Terrains",
+        "sub": "Les derniers terrains publiés"
+      },
+      "explore": {
+        "eyebrow": "Et aussi",
+        "title": "À découvrir",
+        "sub": "D'autres annonces en ligne"
+      }
+    }
   },
   "search": {
     "placeholder": "Rechercher un bien…",
@@ -4458,6 +4503,50 @@
     "ads_rotate_seconds": {
       "label": "Rotation des bannières",
       "hint": "Le temps qu'une bannière reste affichée avant la suivante, quand un espace en a plusieurs."
+    },
+    "home_rail_size": {
+      "label": "Annonces par rubrique",
+      "hint": "Combien d'annonces chaque rubrique montre au plus. Une rubrique qui en a moins de 3 ne s'affiche pas."
+    },
+    "home_rail_featured": {
+      "label": "Rubrique « À la une »",
+      "hint": "Les annonces mises en avant sur l'accueil, en premier. Coupée : elles restent dans les autres rubriques."
+    },
+    "home_rail_most_viewed": {
+      "label": "Rubrique « Les plus vus »",
+      "hint": "Les annonces que les visiteurs ouvrent le plus."
+    },
+    "home_rail_new": {
+      "label": "Rubrique « Fraîchement publiés »",
+      "hint": "Les dernières annonces en ligne."
+    },
+    "home_rail_rent": {
+      "label": "Rubrique « À louer »",
+      "hint": "Les dernières locations publiées."
+    },
+    "home_rail_deals": {
+      "label": "Rubrique « Bonnes affaires »",
+      "hint": "Les ventes au prix au m² le plus bas."
+    },
+    "home_rail_appartements": {
+      "label": "Rubrique « Appartements »",
+      "hint": "Les derniers appartements publiés."
+    },
+    "home_rail_villas": {
+      "label": "Rubrique « Villas »",
+      "hint": "Les dernières villas publiées."
+    },
+    "home_rail_maisons": {
+      "label": "Rubrique « Maisons »",
+      "hint": "Les dernières maisons publiées."
+    },
+    "home_rail_terrain": {
+      "label": "Rubrique « Terrains »",
+      "hint": "Les derniers terrains publiés."
+    },
+    "home_rail_explore": {
+      "label": "Rubrique « À découvrir »",
+      "hint": "En bas de l'accueil, les annonces qu'aucune autre rubrique ne montre."
     }
   },
   "ads": {
