@@ -8,6 +8,7 @@ import { DesktopNav } from "./DesktopNav";
 import { BottomTabBar } from "./BottomTabBar";
 import { ScrollToTop } from "./ScrollToTop";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
+import { LegalUpdateBanner } from "@/components/account/LegalUpdateBanner";
 
 /**
  * Mobile-app shell — top bar, scrollable main, bottom tab bar.
@@ -79,7 +80,11 @@ export function MobileShell({ children }: { children: React.ReactNode }) {
       <TopBar />
       <DesktopNav />
       <PullToRefresh>
-        <main id="main-content" tabIndex={-1} className="mazed-shell-main">{children}</main>
+        <main id="main-content" tabIndex={-1} className="mazed-shell-main">
+          {/* Signed in and the CGU / privacy policy in force not accepted yet (0182). */}
+          <LegalUpdateBanner />
+          {children}
+        </main>
       </PullToRefresh>
       <BottomTabBar />
       {/* The KYC nudge stood here. It pushed the visitor towards identity

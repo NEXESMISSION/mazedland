@@ -3355,7 +3355,27 @@
     "privacyPolicy": "Politique de confidentialité",
     "deleteTitle": "Supprimer mon compte",
     "deleteBody": "Vos annonces sont retirées du site et votre compte est fermé. C'est définitif.",
-    "governorateFromListing": "{governorate}, comme votre dernière annonce"
+    "governorateFromListing": "{governorate}, comme votre dernière annonce",
+    "dataTitle": "Mes données",
+    "dataBody": "Ce que vous avez accepté, combien de temps nous gardons chaque trace, et tout ce que Mazed Immo garde de vous en un fichier.",
+    "consentsTitle": "Vos accords",
+    "consent_terms": "Conditions d'utilisation",
+    "consent_privacy": "Politique de confidentialité",
+    "consent_sms": "Avis par SMS",
+    "consentNone": "Pas encore enregistré",
+    "consentGiven": "Accepté le {date} (version {version})",
+    "consentRefused": "Refusé le {date}",
+    "retentionTitle": "Combien de temps nous gardons",
+    "retentionIp": "Adresse IP et navigateur",
+    "retentionPageViews": "Pages vues",
+    "retentionActivity": "Journal d'activité",
+    "retentionNotifications": "Notifications lues",
+    "retentionTraces": "Annonces vues et numéros affichés",
+    "retentionPayments": "Paiements et factures",
+    "retentionPaymentsValue": "Gardés (obligation comptable)",
+    "keptDays": "{days} jours",
+    "keptForever": "Gardé",
+    "dataDownload": "Télécharger mes données (JSON)"
   },
   "aiApi": {
     "tooShort": "Écrivez une phrase un peu plus longue.",
@@ -4425,6 +4445,10 @@
       "home": {
         "title": "Accueil",
         "hint": "Ce qui bouge sur la page d'accueil : les rubriques d'annonces et les bannières."
+      },
+      "privacy": {
+        "title": "Données personnelles",
+        "hint": "La version des CGU et de la politique de confidentialité que chacun accepte, et combien de temps chaque trace est gardée avant que le site l'efface, chaque nuit. Les paiements, les factures et le journal des admins ne sont jamais effacés."
       }
     },
     "feature_visits": {
@@ -4654,7 +4678,8 @@
       "saved": "Réglages enregistrés.",
       "savedButton": "Enregistré",
       "saveFailed": "Enregistrement impossible.",
-      "fixErrors": "Corrigez les champs en rouge."
+      "fixErrors": "Corrigez les champs en rouge.",
+      "never": "Jamais : gardé"
     },
     "errors": {
       "invalid_bool": "Choisissez oui ou non.",
@@ -4735,6 +4760,30 @@
     "projects_max_units": {
       "label": "Lots maximum par projet",
       "hint": "Le générateur de lots n'en crée pas plus."
+    },
+    "legal_version": {
+      "label": "Version des textes légaux",
+      "hint": "Changez-la (par exemple 2026-11) quand les CGU ou la politique de confidentialité changent : chaque personne connectée est invitée à les accepter de nouveau, et son accord est enregistré avec cette version."
+    },
+    "privacy_anonymize_days": {
+      "label": "Adresse IP et navigateur",
+      "hint": "Après ce délai, l'adresse IP, le navigateur et la page d'origine sont retirés du journal d'activité. Le reste de la ligne reste, sans eux."
+    },
+    "privacy_page_views_days": {
+      "label": "Pages vues",
+      "hint": "Les lignes « page vue » du journal d'activité sont effacées après ce délai."
+    },
+    "privacy_activity_days": {
+      "label": "Journal d'activité",
+      "hint": "Tout le reste du journal (connexions, actions) est effacé après ce délai."
+    },
+    "privacy_notifications_days": {
+      "label": "Notifications lues",
+      "hint": "Une notification lue est effacée après ce délai. Les non lues restent."
+    },
+    "privacy_traces_days": {
+      "label": "Vues d'annonces et numéros affichés",
+      "hint": "Qui a vu quelle annonce, qui a affiché quel numéro : effacé après ce délai. Les compteurs des annonces ne bougent pas."
     }
   },
   "ads": {
@@ -5050,5 +5099,11 @@
     "min": "La valeur doit être d'au moins {min}.",
     "max": "La valeur doit être d'au plus {max}.",
     "step": "Cette valeur n'est pas acceptée."
+  },
+  "legalUpdate": {
+    "label": "Conditions d'utilisation",
+    "body": "Pour continuer, acceptez les <terms>conditions d'utilisation</terms> et la <privacy>politique de confidentialité</privacy> en vigueur (version {version}).",
+    "accept": "J'accepte",
+    "failed": "Enregistrement impossible, réessayez."
   }
 }

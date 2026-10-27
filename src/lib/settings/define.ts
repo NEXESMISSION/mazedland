@@ -19,7 +19,8 @@ export type SettingGroup =
   | "social"
   | "payment"
   | "company"
-  | "limits";
+  | "limits"
+  | "privacy";
 
 export type SettingUnit = "days" | "seconds" | "tnd" | "percent" | "photos" | "per_hour" | "per_day";
 
@@ -33,7 +34,14 @@ type Common = {
   href?: string;
 };
 
-type Num = { min: number; max: number; unit?: SettingUnit; step?: number } & (
+type Num = {
+  min: number;
+  max: number;
+  unit?: SettingUnit;
+  step?: number;
+  /** The only values the console offers, as a list instead of a box to type in. 0 reads « jamais ». */
+  choices?: readonly number[];
+} & (
   | { optional?: false; default: number }
   /** Empty is a value of its own (no VAT line), stored as "" and read as null. */
   | { optional: true; default: number | null }
@@ -99,6 +107,7 @@ export function checkSetting(def: SettingDef, raw: unknown): Checked {
       const n = Number(typeof raw === "string" ? raw.trim().replace(",", ".") : raw);
       if (!Number.isFinite(n) || (def.type === "int" && !Number.isInteger(n))) return { ok: false, error: "invalid_number" };
       if (n < def.min || n > def.max) return { ok: false, error: "out_of_range" };
+      if (def.choices && !def.choices.includes(n)) return { ok: false, error: "out_of_range" };
       return { ok: true, value: n };
     }
     case "text": {
