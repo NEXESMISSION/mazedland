@@ -6,6 +6,8 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { asDealType, closedStatus } from "@/lib/listings/deal";
+import { liveListingCount, moderationSettings } from "@/lib/moderation/server";
+import { planCovers } from "@/lib/pro/shops";
 
 /**
  * POST /api/annonces/[id]/status - what a seller can do to their own annonce
@@ -72,7 +74,7 @@ export async function POST(
 
   const { data: listing } = await admin
     .from("listings")
-    .select("id, seller_id, status, expires_at, contact_phone, deal_type, availability")
+    .select("id, seller_id, status, expires_at, contact_phone, deal_type, availability, shop_id")
     .eq("id", id)
     .maybeSingle();
   if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
@@ -104,6 +106,29 @@ export async function POST(
       return NextResponse.json(
         { error: "contact_required", detail: t("contactRequired") },
         { status: 400 },
+      );
+    }
+
+    // Back online takes a place, like any publication. Withdrawing annonces
+    // to free places, publishing new ones, then relisting the withdrawn ones
+    // got round the free limit: two free annonces became as many as one
+    // liked. A free place, the shop's plan, or a credit — else refused.
+    const settings = await moderationSettings(admin);
+    const live = await liveListingCount(admin, user.id, id);
+    let covered = live < settings.freeLimit;
+    if (!covered && listing.shop_id) {
+      covered = (await planCovers(admin, listing.shop_id as string, user.id, id)).ok;
+    }
+    if (!covered) {
+      const { data: credited } = await admin.rpc("consume_listing_credit", { p_seller: user.id, p_listing: id, p_actor: user.id });
+      covered = credited?.ok === true;
+    }
+    if (!covered) {
+      const t = await apiTranslator(req, "publishApi");
+      logAction(req, user, "listing.relist.free_limit", { id, live, limit: settings.freeLimit });
+      return NextResponse.json(
+        { error: "free_limit_reached", freeLimit: settings.freeLimit, detail: t("freeLimitReached", { limit: settings.freeLimit }) },
+        { status: 402 },
       );
     }
 

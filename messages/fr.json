@@ -3077,7 +3077,8 @@
     "admin_ad_resume": "Publicité reprise",
     "admin_ad_delete": "Publicité supprimée",
     "admin_ad_upload": "Image de publicité envoyée",
-    "listing_draft_delete": "Brouillon supprimé"
+    "listing_draft_delete": "Brouillon supprimé",
+    "listing_relist_free_limit": "Remise en ligne bloquée (places gratuites prises)"
   },
   "adminApi": {
     "bulk": {
