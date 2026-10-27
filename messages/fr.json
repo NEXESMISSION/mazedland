@@ -211,6 +211,13 @@
         "body": "L'annonce redevient disponible pour tous les visiteurs.",
         "confirm": "Retirer le badge",
         "done": "L'annonce est de nouveau disponible."
+      },
+      "deleteDraft": {
+        "label": "Supprimer",
+        "title": "Supprimer ce brouillon ?",
+        "body": "Il n'a jamais été en ligne. Ses photos sont supprimées avec lui ; cela ne peut pas être annulé.",
+        "confirm": "Supprimer le brouillon",
+        "done": "Brouillon supprimé."
       }
     },
     "renew": {
@@ -1600,7 +1607,8 @@
     "attestationRequired": "Cochez l'attestation sur l'honneur.",
     "photoRequired": "Ajoutez au moins une photo.",
     "editOnlyLive": "Seule une annonce en ligne ou en vérification se modifie ici.",
-    "editHeldReported": "Cette annonce a été signalée par des visiteurs : notre équipe la vérifie telle quelle avant toute modification."
+    "editHeldReported": "Cette annonce a été signalée par des visiteurs : notre équipe la vérifie telle quelle avant toute modification.",
+    "onlyDraftDeletable": "Seul un brouillon peut être supprimé."
   },
   "auth": {
     "hero": {
@@ -3068,7 +3076,8 @@
     "admin_ad_pause": "Publicité mise en pause",
     "admin_ad_resume": "Publicité reprise",
     "admin_ad_delete": "Publicité supprimée",
-    "admin_ad_upload": "Image de publicité envoyée"
+    "admin_ad_upload": "Image de publicité envoyée",
+    "listing_draft_delete": "Brouillon supprimé"
   },
   "adminApi": {
     "bulk": {
