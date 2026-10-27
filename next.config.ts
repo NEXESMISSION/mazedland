@@ -137,6 +137,12 @@ const nextConfig: NextConfig = {
       { source: "/:locale/boutiques", destination: "/:locale/agences", permanent: true },
       { source: "/:locale/boutiques/:path*", destination: "/:locale/agences/:path*", permanent: true },
       { source: "/:locale/admin/boutiques", destination: "/:locale/admin/agences", permanent: true },
+      // Short addresses for posters, cards and ads (cahier 02.1): what one
+      // came to do, in one word. Temporary, so where they lead can still move.
+      { source: "/:locale/acheter", destination: "/:locale/annonces?deal=sale", permanent: false },
+      { source: "/:locale/louer", destination: "/:locale/annonces?deal=rent", permanent: false },
+      { source: "/:locale/vendre", destination: "/:locale/annonces/nouvelle?deal=sale", permanent: false },
+      { source: "/:locale/mettre-en-location", destination: "/:locale/annonces/nouvelle?deal=rent", permanent: false },
       ...gone.flatMap((from) => [
         { source: `/:locale/admin/${from}`, destination: "/:locale/admin", permanent: false },
         { source: `/:locale/admin/${from}/:path*`, destination: "/:locale/admin", permanent: false },
