@@ -6,7 +6,9 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { formatDate, formatNumber, formatTND } from "@/lib/utils";
 import { governorateLabel } from "@/lib/tunisia";
 import { asDealType } from "@/lib/listings/deal";
-import { activePlan, can, membershipsOf, shopLiveCount, type ShopRole } from "@/lib/pro/shops";
+import { activePlan, can, membershipsOf, type ShopRole } from "@/lib/pro/shops";
+import { planUsage } from "@/lib/places/server";
+import { PLACE_STATUSES } from "@/lib/places/model";
 import { ShopForm } from "@/components/pro/ShopForm";
 import { AddMember, ChoosePlan, RemoveMember, SendDocument } from "./ProActions";
 import { ProClients, type ClientRow } from "./ProClients";
@@ -71,7 +73,8 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
 
   const [plan, used, { data: listingRows }, { count: visitsWaiting }] = await Promise.all([
     activePlan(admin, shop.id),
-    shopLiveCount(admin, shop.id),
+    // The agence's annonces and its owner's own: the plan's places (src/lib/places).
+    planUsage(admin, shop.id),
     admin
       .from("listings")
       .select("id, seller_id, title, status, price, price_on_request, deal_type, view_count, contact_reveal_count, expires_at")
@@ -377,7 +380,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
         .eq("shop_id", shopId)
         .order("updated_at", { ascending: false })
         .limit(300),
-      admin!.from("listings").select("id, title").eq("shop_id", shopId).in("status", ["published", "pending_review"]).order("created_at", { ascending: false }).limit(200),
+      admin!.from("listings").select("id, title").eq("shop_id", shopId).in("status", [...PLACE_STATUSES]).order("created_at", { ascending: false }).limit(200),
     ]);
     type Raw = Omit<ClientRow, "listing" | "updated_label"> & { updated_at: string; listing: { id: string; title: string } | { id: string; title: string }[] | null };
     const clients: ClientRow[] = ((leadRows ?? []) as unknown as Raw[]).map((r) => ({

@@ -16,6 +16,8 @@ import {
 import { RenewButton } from "./RenewButton";
 import { DeleteDraftButton } from "./DeleteDraftButton";
 import { getSettings } from "@/lib/settings/server";
+import { accountAllowance } from "@/lib/places/server";
+import { holdsPlace, placesLeft, type Allowance } from "@/lib/places/model";
 import { ListingStatusActions } from "./ListingStatusActions";
 import { PaySubmitButton } from "@/components/payments/PaySubmitButton";
 
@@ -146,13 +148,18 @@ export default async function MyListingsPage({
   }, 0);
 
   const settings = await getSettings();
-  // Free places (0165): annonces live or waiting count against the limit. The
-  // renew and submit routes decide for real; this is what the page shows.
+  // Places (src/lib/places): the plan of the agence this account owns, its
+  // own annonces counted in it, or else its free places — the same count the
+  // submit, renew and relist routes enforce. Without the service key (a dev
+  // set-up), the free places are counted from the list above.
   const freeLimit = settings.free_listing_limit;
-  const liveCount = (listRes.data ?? []).filter((l) =>
-    ["pending_review", "published"].includes(l.status as string),
-  ).length;
-  const freePlacesLeft = Math.max(0, freeLimit - liveCount);
+  const allowance: Allowance = admin
+    ? await accountAllowance(admin, user.id, freeLimit)
+    : (() => {
+        const used = (listRes.data ?? []).filter((l) => holdsPlace(l.status as string)).length;
+        return { kind: "free" as const, used, limit: freeLimit, left: placesLeft(used, freeLimit) };
+      })();
+  const freePlacesLeft = allowance.left;
 
   type Category = { label_fr: string; label_ar: string | null };
   type Row = {
@@ -396,10 +403,16 @@ export default async function MyListingsPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {freeLimit > 0 && (
+          {allowance.kind === "plan" ? (
             <span className="inline-flex items-center gap-1.5 rounded-xl bg-surface-2 px-3 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-border">
-              {t("freePlaces", { used: Math.min(liveCount, freeLimit), limit: freeLimit })}
+              {t("planPlaces", { used: allowance.used, limit: allowance.limit, plan: allowance.planName })}
             </span>
+          ) : (
+            freeLimit > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-surface-2 px-3 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-border">
+                {t("freePlaces", { used: Math.min(allowance.used, freeLimit), limit: freeLimit })}
+              </span>
+            )
           )}
           {creditsLeft > 0 && (
             <span className="inline-flex items-center gap-1.5 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft">

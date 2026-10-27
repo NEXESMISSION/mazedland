@@ -8,7 +8,8 @@ import { Ltr } from "@/components/ui/Ltr";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { governorateLabel } from "@/lib/tunisia";
 import { formatDate } from "@/lib/utils";
-import { activePlan, shopLiveCount, SHOP_COLUMNS, type ShopRow } from "@/lib/pro/shops";
+import { activePlan, SHOP_COLUMNS, type ShopRow } from "@/lib/pro/shops";
+import { planUsage } from "@/lib/places/server";
 import { BadgeCheck, ExternalLink, FileText, Store } from "lucide-react";
 import { BoutiqueActions } from "./BoutiqueActions";
 
@@ -95,7 +96,7 @@ export default async function AdminShopsPage({ searchParams }: { searchParams: P
       admin!.from("profiles").select("full_name, phone").eq("id", shop.owner_id).maybeSingle(),
       admin!.from("shop_documents").select("id, kind, storage_path, file_name, created_at").eq("shop_id", shop.id).order("created_at", { ascending: false }),
       activePlan(admin!, shop.id),
-      shopLiveCount(admin!, shop.id),
+      planUsage(admin!, shop.id),
       admin!.from("shop_members").select("user_id", { count: "exact", head: true }).eq("shop_id", shop.id),
     ]);
     // The papers are private: ten-minute links, made for this page view only.

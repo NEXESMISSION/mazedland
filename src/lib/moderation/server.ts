@@ -3,11 +3,10 @@ import { publishListing } from "@/lib/listings/publish";
 import { asDealType } from "@/lib/listings/deal";
 import { checkListing, sameTitle, type CategoryKind, type ReviewFlag } from "./rules";
 import { loadSettings } from "@/lib/settings/server";
+import { PLACE_STATUSES } from "@/lib/places/model";
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
 
-/** Statuses that occupy one of a seller's free places. */
-const LIVE = ["pending_review", "published"] as const;
 
 export type ModerationSettings = {
   freeLimit: number;
@@ -29,17 +28,6 @@ export async function moderationSettings(admin: Admin): Promise<ModerationSettin
     reportThreshold: s.moderation_report_threshold,
     bannedWords: s.moderation_banned_words,
   };
-}
-
-/** Annonces the seller has live or waiting, not counting `excludeId`. */
-export async function liveListingCount(admin: Admin, sellerId: string, excludeId: string): Promise<number> {
-  const { count } = await admin
-    .from("listings")
-    .select("id", { count: "exact", head: true })
-    .eq("seller_id", sellerId)
-    .neq("id", excludeId)
-    .in("status", LIVE as unknown as string[]);
-  return count ?? 0;
 }
 
 /**
@@ -108,7 +96,7 @@ export async function reviewFlagsFor(
       .select("title, price, attributes, category_id, governorate, deal_type")
       .eq("seller_id", listing.seller_id)
       .neq("id", listing.id)
-      .in("status", [...LIVE, "pending_payment"]),
+      .in("status", [...PLACE_STATUSES, "pending_payment"]),
     isTrustedSeller(admin, listing.seller_id),
   ]);
 
