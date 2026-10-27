@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { can, canAssign, parseShopInput, slugify } from "./shops";
+import { can, canAssign, parseShopInput, periodStart, slugify } from "./shops";
 
 const USER = "11111111-2222-3333-4444-555555555555";
 
@@ -54,5 +54,30 @@ describe("parseShopInput", () => {
   it("refuses a logo stored under someone else's folder", () => {
     const r = parseShopInput({ ...base, logo_path: "someone-else/logo.webp" }, USER);
     expect(r.ok && r.value.logo_path).toBeNull();
+  });
+});
+
+describe("periodStart", () => {
+  const now = new Date("2026-10-27T12:00:00Z");
+  const in20Days = new Date("2026-11-16T12:00:00Z");
+
+  it("starts the first plan today", () => {
+    expect(periodStart({ now, quota: 10, runningQuota: null, paidUntil: null })).toEqual(now);
+  });
+
+  it("starts a bigger plan at once, mid-period (Starter 10 → Pro 40)", () => {
+    expect(periodStart({ now, quota: 40, runningQuota: 10, paidUntil: in20Days })).toEqual(now);
+  });
+
+  it("puts the same plan after what is already paid for, never cutting it short", () => {
+    expect(periodStart({ now, quota: 10, runningQuota: 10, paidUntil: in20Days })).toEqual(in20Days);
+  });
+
+  it("puts a smaller plan after the bigger one ends", () => {
+    expect(periodStart({ now, quota: 10, runningQuota: 40, paidUntil: in20Days })).toEqual(in20Days);
+  });
+
+  it("starts today once what was paid for has ended", () => {
+    expect(periodStart({ now, quota: 10, runningQuota: null, paidUntil: new Date("2026-10-01T00:00:00Z") })).toEqual(now);
   });
 });

@@ -185,7 +185,12 @@ export async function roleIn(admin: Admin, shopId: string, userId: string): Prom
 
 export type ActivePlan = { subscriptionId: string; productId: string; name: string; quota: number; endsAt: string };
 
-/** The plan paid for right now, if any: the period that covers today. */
+/**
+ * The plan paid for right now, if any: of the periods that cover today, the
+ * biggest one. An upgrade starts at once and can run beside the smaller
+ * period it replaces (or a renewal of it already paid for); the bigger plan
+ * is the one that applies.
+ */
 export async function activePlan(admin: Admin, shopId: string, now: Date = new Date()): Promise<ActivePlan | null> {
   const iso = now.toISOString();
   const { data } = await admin
@@ -195,6 +200,7 @@ export async function activePlan(admin: Admin, shopId: string, now: Date = new D
     .eq("status", "active")
     .lte("starts_at", iso)
     .gt("ends_at", iso)
+    .order("listing_quota", { ascending: false })
     .order("ends_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -209,17 +215,44 @@ export async function activePlan(admin: Admin, shopId: string, now: Date = new D
   };
 }
 
-/** When a new period of a plan starts: today, or the end of the one still running. */
-export async function nextPeriodStart(admin: Admin, shopId: string, now: Date = new Date()): Promise<Date> {
-  const { data } = await admin
-    .from("shop_subscriptions")
-    .select("ends_at")
-    .eq("shop_id", shopId)
-    .eq("status", "active")
-    .gt("ends_at", now.toISOString())
-    .order("ends_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return data ? new Date(data.ends_at as string) : now;
+/**
+ * When a newly paid period starts. A bigger plan than the one running starts
+ * at once (the owner's choice, 2026-10-27): the agence gets its room the day
+ * the receipt is accepted. The same plan, or a smaller one, follows what is
+ * already paid for — renewing early never cuts the running period short.
+ */
+export function periodStart(input: {
+  now: Date;
+  /** Annonces the plan being paid for allows. */
+  quota: number;
+  /** The plan running now, if any. */
+  runningQuota: number | null;
+  /** The end of the last period already paid for, if it is still ahead. */
+  paidUntil: Date | null;
+}): Date {
+  if (input.runningQuota !== null && input.quota > input.runningQuota) return input.now;
+  return input.paidUntil && input.paidUntil > input.now ? input.paidUntil : input.now;
+}
+
+/** When a new period of a plan of `quota` annonces starts for this shop (periodStart). */
+export async function nextPeriodStart(admin: Admin, shopId: string, quota: number, now: Date = new Date()): Promise<Date> {
+  const [running, { data }] = await Promise.all([
+    activePlan(admin, shopId, now),
+    admin
+      .from("shop_subscriptions")
+      .select("ends_at")
+      .eq("shop_id", shopId)
+      .eq("status", "active")
+      .gt("ends_at", now.toISOString())
+      .order("ends_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  return periodStart({
+    now,
+    quota,
+    runningQuota: running?.quota ?? null,
+    paidUntil: data ? new Date(data.ends_at as string) : null,
+  });
 }
 
