@@ -579,12 +579,7 @@
     }
   },
   "home": {
-    "trendingEyebrow": "À la une",
-    "trendingTitle": "Les biens du moment",
-    "nouveautesEyebrow": "Nouveau",
-    "nouveautesTitle": "Fraîchement publiés",
     "endingSoonEyebrow": "À saisir",
-    "moreToExplore": "À découvrir",
     "browseByType": "Parcourir par type",
     "browseByPrice": "Parcourir par prix",
     "recentlyHammered": "Récemment adjugés",
@@ -617,8 +612,6 @@
     "trustInspectionBody": "Le badge distingue les vendeurs contrôlés par notre équipe.",
     "trustLegalTitle": "Aucune commission",
     "trustLegalBody": "Vous payez la publication, pas un pourcentage de la vente.",
-    "bestValueEyebrow": "Le meilleur rapport",
-    "bestValueTitle": "Bonnes affaires",
     "browseCatalogue": "Parcourir le catalogue",
     "priceOnRequest": "Prix sur demande",
     "slideEyebrowArea": "{place} · {area} m²",
@@ -656,7 +649,59 @@
     "intentRentOwner": "J'ai un bien à louer",
     "intentRentOwnerHint": "Publier une annonce de location",
     "intentRentSeeker": "Je cherche une location",
-    "intentRentSeekerHint": "Voir les biens à louer"
+    "intentRentSeekerHint": "Voir les biens à louer",
+    "rails": {
+      "featured": {
+        "eyebrow": "Sponsorisé",
+        "title": "À la une",
+        "sub": "Des annonces mises en avant sur l'accueil"
+      },
+      "mostViewed": {
+        "eyebrow": "Populaire",
+        "title": "Les plus vus",
+        "sub": "Les annonces que les visiteurs ouvrent le plus"
+      },
+      "nouveautes": {
+        "eyebrow": "Nouveau",
+        "title": "Fraîchement publiés",
+        "sub": "Les dernières annonces en ligne"
+      },
+      "rent": {
+        "eyebrow": "Location",
+        "title": "À louer",
+        "sub": "Les dernières locations publiées"
+      },
+      "bestValue": {
+        "eyebrow": "Le meilleur rapport",
+        "title": "Bonnes affaires",
+        "sub": "Le prix au m² le plus bas, à la vente"
+      },
+      "appartements": {
+        "eyebrow": "Par type",
+        "title": "Appartements",
+        "sub": "Les derniers appartements publiés"
+      },
+      "villas": {
+        "eyebrow": "Par type",
+        "title": "Villas",
+        "sub": "Les dernières villas publiées"
+      },
+      "maisons": {
+        "eyebrow": "Par type",
+        "title": "Maisons",
+        "sub": "Les dernières maisons publiées"
+      },
+      "terrain": {
+        "eyebrow": "Par type",
+        "title": "Terrains",
+        "sub": "Les derniers terrains publiés"
+      },
+      "explore": {
+        "eyebrow": "Et aussi",
+        "title": "À découvrir",
+        "sub": "D'autres annonces en ligne"
+      }
+    }
   },
   "search": {
     "placeholder": "Rechercher un bien…",
@@ -752,6 +797,7 @@
     "allTunisia": "Toute la Tunisie",
     "sort": {
       "recent": "Plus récentes",
+      "popular": "Plus vues",
       "cheap": "Prix croissant",
       "dear": "Prix décroissant",
       "big": "Surface"
@@ -2529,7 +2575,9 @@
       "social": "Réseaux",
       "socialHint": "Promotions Facebook, Instagram, groupes",
       "shops": "Boutiques",
-      "shopsHint": "Agences et promoteurs : ouvrir, vérifier, suspendre"
+      "shopsHint": "Agences et promoteurs : ouvrir, vérifier, suspendre",
+      "ads": "Publicités",
+      "adsHint": "Bannières des annonceurs : campagnes, vues, clics"
     },
     "siteTabs": {
       "label": "Sections du site",
@@ -3014,7 +3062,13 @@
     "lead_delete": "Client supprimé (boutique)",
     "shop_suggest": "Annonce proposée à une demande (boutique)",
     "listing_edit_waiting": "Annonce corrigée avant vérification",
-    "listing_promo": "Mise en avant demandée"
+    "listing_promo": "Mise en avant demandée",
+    "admin_ad_create": "Publicité créée",
+    "admin_ad_update": "Publicité modifiée",
+    "admin_ad_pause": "Publicité mise en pause",
+    "admin_ad_resume": "Publicité reprise",
+    "admin_ad_delete": "Publicité supprimée",
+    "admin_ad_upload": "Image de publicité envoyée"
   },
   "adminApi": {
     "bulk": {
@@ -4192,6 +4246,10 @@
       "limits": {
         "title": "Limites",
         "hint": "Combien de fois une même personne peut faire une chose : contre les abus et les robots."
+      },
+      "home": {
+        "title": "Accueil",
+        "hint": "Ce qui bouge sur la page d'accueil : les rubriques d'annonces et les bannières."
       }
     },
     "feature_visits": {
@@ -4400,7 +4458,8 @@
       "percent": "%",
       "photos": "photos",
       "per_hour": "par heure",
-      "per_day": "par jour"
+      "per_day": "par jour",
+      "seconds": "secondes"
     },
     "ui": {
       "tabsLabel": "Parties des réglages",
@@ -4429,6 +4488,234 @@
       "invalid_text": "Entrez un texte.",
       "too_long": "{max} caractères au plus.",
       "invalid_list": "Un élément par ligne."
+    },
+    "feature_ads": {
+      "label": "Espaces publicitaires",
+      "hint": "Les bannières des annonceurs (banques, notaires, promoteurs…) sur l'accueil, la recherche et les annonces. Coupé : plus aucune bannière ; les campagnes restent dans la console."
+    },
+    "home_rail_autoplay": {
+      "label": "Défilement automatique des rubriques",
+      "hint": "Les rubriques d'annonces de l'accueil avancent seules ; elles s'arrêtent dès qu'on les touche."
+    },
+    "home_rail_seconds": {
+      "label": "Vitesse des rubriques",
+      "hint": "Le temps avant de passer à l'annonce suivante."
+    },
+    "ads_rotate_seconds": {
+      "label": "Rotation des bannières",
+      "hint": "Le temps qu'une bannière reste affichée avant la suivante, quand un espace en a plusieurs."
+    },
+    "home_rail_size": {
+      "label": "Annonces par rubrique",
+      "hint": "Combien d'annonces chaque rubrique montre au plus. Une rubrique qui en a moins de 3 ne s'affiche pas."
+    },
+    "home_rail_featured": {
+      "label": "Rubrique « À la une »",
+      "hint": "Les annonces mises en avant sur l'accueil, en premier. Coupée : elles restent dans les autres rubriques."
+    },
+    "home_rail_most_viewed": {
+      "label": "Rubrique « Les plus vus »",
+      "hint": "Les annonces que les visiteurs ouvrent le plus."
+    },
+    "home_rail_new": {
+      "label": "Rubrique « Fraîchement publiés »",
+      "hint": "Les dernières annonces en ligne."
+    },
+    "home_rail_rent": {
+      "label": "Rubrique « À louer »",
+      "hint": "Les dernières locations publiées."
+    },
+    "home_rail_deals": {
+      "label": "Rubrique « Bonnes affaires »",
+      "hint": "Les ventes au prix au m² le plus bas."
+    },
+    "home_rail_appartements": {
+      "label": "Rubrique « Appartements »",
+      "hint": "Les derniers appartements publiés."
+    },
+    "home_rail_villas": {
+      "label": "Rubrique « Villas »",
+      "hint": "Les dernières villas publiées."
+    },
+    "home_rail_maisons": {
+      "label": "Rubrique « Maisons »",
+      "hint": "Les dernières maisons publiées."
+    },
+    "home_rail_terrain": {
+      "label": "Rubrique « Terrains »",
+      "hint": "Les derniers terrains publiés."
+    },
+    "home_rail_explore": {
+      "label": "Rubrique « À découvrir »",
+      "hint": "En bas de l'accueil, les annonces qu'aucune autre rubrique ne montre."
+    }
+  },
+  "ads": {
+    "label": "Publicité",
+    "region": "Espace publicitaire",
+    "carousel": "carrousel",
+    "newTab": "(s'ouvre dans un nouvel onglet)",
+    "previous": "Bannière précédente",
+    "next": "Bannière suivante",
+    "goTo": "Bannière {n} sur {total}"
+  },
+  "adminAds": {
+    "unavailable": "Service indisponible.",
+    "title": "Publicités",
+    "summary": "{live} en cours · {total} au total",
+    "newAd": "Nouvelle campagne",
+    "featureOff": "Les espaces publicitaires sont coupés : aucune bannière ne s'affiche sur le site.",
+    "featureOffLink": "Réglages",
+    "tabs": {
+      "all": "Toutes",
+      "live": "En cours",
+      "scheduled": "Programmées",
+      "paused": "En pause",
+      "ended": "Terminées"
+    },
+    "status": {
+      "live": "En cours",
+      "scheduled": "Programmée",
+      "paused": "En pause",
+      "ended": "Terminée"
+    },
+    "placements": {
+      "home_top": "Accueil · en haut",
+      "home_middle": "Accueil · au milieu",
+      "catalogue": "Recherche",
+      "listing": "Page annonce"
+    },
+    "placementHints": {
+      "home_top": "Sous la recherche, sur le premier écran de l'accueil.",
+      "home_middle": "Sur l'accueil, entre deux rubriques d'annonces.",
+      "catalogue": "Dans les résultats de recherche, après les quatre premières annonces.",
+      "listing": "Sur chaque annonce, sous sa description."
+    },
+    "dates": {
+      "range": "{from} – {to}",
+      "from": "Dès le {from}",
+      "until": "Jusqu'au {to}",
+      "always": "Sans dates"
+    },
+    "viewsShort": "vues",
+    "clicksShort": "clics",
+    "emptyTitle": "Aucune campagne",
+    "emptyHint": "Une banque, un notaire, un promoteur achète un espace : son image, son lien, ses dates. Créez la première.",
+    "emptyTab": "Aucune campagne ici.",
+    "pickOne": "Choisissez une campagne",
+    "pickOneHint": "Ses vues et ses clics, jour par jour : le rapport à envoyer à l'annonceur.",
+    "detail": {
+      "back": "Publicités",
+      "edit": "Modifier",
+      "pause": "Mettre en pause",
+      "resume": "Reprendre",
+      "paused": "Campagne mise en pause.",
+      "resumed": "Campagne reprise.",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer cette campagne ?",
+      "deleteBody": "Ses images, ses vues et ses clics disparaissent, rapport compris. Pour l'arrêter en gardant le rapport, mettez-la en pause.",
+      "deleted": "Campagne supprimée.",
+      "openLink": "Ouvrir le lien",
+      "images": "Images",
+      "wide": "Ordinateur",
+      "mobile": "Téléphone",
+      "noMobile": "Pas d'image téléphone : l'image large y est montrée en entier.",
+      "totals": "Depuis le début",
+      "last30": "30 derniers jours",
+      "views": "Vues",
+      "clicks": "Clics",
+      "ctr": "Taux de clic",
+      "chartTitle": "Vues par jour",
+      "chartHint": "Les 30 derniers jours, heure de Tunis. Survolez une barre pour le détail.",
+      "tooltip": "{day} : {views} vues, {clicks} clics",
+      "table": {
+        "day": "Jour",
+        "views": "Vues",
+        "clicks": "Clics",
+        "ctr": "Taux"
+      },
+      "copy": "Copier le rapport",
+      "copied": "Rapport copié : collez-le dans un e-mail ou sur WhatsApp.",
+      "copyFailed": "Copie impossible sur ce navigateur.",
+      "csv": "Télécharger (CSV)",
+      "report": {
+        "title": "Rapport · {advertiser}",
+        "placement": "Espace : {placement}",
+        "period": "Période : {dates}",
+        "total": "Depuis le début : {views} vues · {clicks} clics · taux de clic {ctr}",
+        "last30": "30 derniers jours : {views} vues · {clicks} clics · taux de clic {ctr}",
+        "day": "{day} : {views} vues · {clicks} clics"
+      }
+    },
+    "editor": {
+      "newTitle": "Nouvelle campagne",
+      "editTitle": "Modifier la campagne",
+      "back": "Retour",
+      "advertiser": "Annonceur",
+      "advertiserPlaceholder": "Banque, étude de notaire, promoteur…",
+      "placement": "Emplacement",
+      "images": "Images",
+      "wide": "Image large (ordinateur)",
+      "wideHint": "{width} × {height} px conseillé (4:1). JPG, PNG ou WebP, {max} Mo au plus.",
+      "mobile": "Image téléphone (facultative)",
+      "mobileHint": "{width} × {height} px conseillé (2:1). Sans elle, l'image large est montrée en entier sur téléphone.",
+      "choose": "Choisir une image",
+      "replace": "Remplacer",
+      "remove": "Retirer",
+      "uploading": "Envoi…",
+      "size": "{width} × {height} px",
+      "ratioWarn": "Cette image fait {width} × {height} px : elle sera recadrée. Visez {target}.",
+      "uploadFailed": "L'image n'a pas pu être envoyée. Réessayez.",
+      "tooBig": "Image trop lourde : {max} Mo au plus.",
+      "badType": "JPG, PNG ou WebP seulement.",
+      "link": "Lien",
+      "linkPlaceholder": "www.exemple.tn/offre",
+      "linkHint": "Où mène un clic, dans un nouvel onglet. « https:// » est ajouté s'il manque.",
+      "linkInvalid": "Ce n'est pas une adresse web.",
+      "titles": "Texte de l'image",
+      "titlesHint": "Lu à la place de l'image par les lecteurs d'écran. Vide : le nom de l'annonceur.",
+      "titleFr": "En français",
+      "titleAr": "En arabe",
+      "titleFrPlaceholder": "Crédit immobilier à taux fixe",
+      "titleArPlaceholder": "قرض سكني بنسبة قارّة",
+      "dates": "Dates",
+      "start": "Début",
+      "end": "Dernier jour",
+      "today": "Aujourd'hui",
+      "plusOne": "+1 mois",
+      "plusThree": "+3 mois",
+      "noEnd": "Sans fin",
+      "startHint": "Vide : dès l'enregistrement.",
+      "endHint": "Inclus. Vide : jusqu'à ce qu'elle soit mise en pause.",
+      "datesInvalid": "Le dernier jour vient avant le début.",
+      "display": "Affichage",
+      "active": "Active",
+      "activeHint": "Coupée, la bannière ne s'affiche plus ; ses dates et son rapport restent.",
+      "order": "Ordre",
+      "orderHint": "Dans un même emplacement, la plus petite passe en premier.",
+      "create": "Créer la campagne",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "created": "Campagne créée.",
+      "saved": "Campagne enregistrée.",
+      "missing": {
+        "advertiser": "Nommez l'annonceur.",
+        "image": "Ajoutez l'image large.",
+        "link": "Ajoutez un lien valable.",
+        "dates": "Le dernier jour vient avant le début.",
+        "uploading": "Attendez la fin de l'envoi."
+      }
+    },
+    "api": {
+      "advertiser": "Nommez l'annonceur (120 caractères au plus).",
+      "title": "Le texte de l'image fait 160 caractères au plus.",
+      "image": "Ajoutez l'image large de la bannière.",
+      "imageMobile": "L'image téléphone n'est pas valable : renvoyez-la.",
+      "link": "Ce lien n'est pas une adresse web (http ou https).",
+      "placement": "Choisissez un emplacement.",
+      "dates": "Les dates ne vont pas : le dernier jour doit venir après le début.",
+      "imageType": "JPG, PNG ou WebP seulement.",
+      "imageSize": "Image trop lourde : {max} Mo au plus."
     }
   }
 }

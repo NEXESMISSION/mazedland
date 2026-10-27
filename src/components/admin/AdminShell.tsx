@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
-  BarChart3, BellRing, Megaphone, Store,
+  BarChart3, BellRing, Megaphone, Store, GalleryHorizontalEnd,
   LayoutDashboard, Inbox, Receipt, Tag, Users, FolderTree,
   SlidersHorizontal, ExternalLink, Menu, X,
   type LucideIcon,
@@ -47,6 +47,7 @@ const NAV: Item[] = [
   { key: "listings", href: "/admin/annonces", Icon: Inbox, countKey: "annonces" },
   { key: "demandes", href: "/admin/demandes", Icon: BellRing },
   { key: "social", href: "/admin/social", Icon: Megaphone, countKey: "social" },
+  { key: "ads", href: "/admin/publicites", Icon: GalleryHorizontalEnd },
   { key: "payments", href: "/admin/paiements", Icon: Receipt, countKey: "paiements" },
   { key: "shops", href: "/admin/boutiques", Icon: Store, countKey: "boutiques" },
   { key: "offers", href: "/admin/offres", Icon: Tag },

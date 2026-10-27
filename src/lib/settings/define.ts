@@ -11,6 +11,7 @@
 
 export type SettingGroup =
   | "features"
+  | "home"
   | "moderation"
   | "publication"
   | "buyers"
@@ -20,7 +21,7 @@ export type SettingGroup =
   | "company"
   | "limits";
 
-export type SettingUnit = "days" | "tnd" | "percent" | "photos" | "per_hour" | "per_day";
+export type SettingUnit = "days" | "seconds" | "tnd" | "percent" | "photos" | "per_hour" | "per_day";
 
 type Common = {
   group: SettingGroup;

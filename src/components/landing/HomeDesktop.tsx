@@ -1,18 +1,19 @@
 import { getTranslations, getLocale } from "next-intl/server";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { Link } from "@/i18n/navigation";
-import { TrendingRail } from "@/components/landing/TrendingRail";
 import { HeroShowcase, type ShowcaseSlide } from "@/components/landing/HeroShowcase";
 import { BELOW_LG } from "@/components/ui/HiddenAt";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
+import { HomeRailSection } from "@/components/landing/HomeRail";
 import { HomeSearch } from "@/components/landing/HomeSearch";
 import { IntentChooser } from "@/components/landing/IntentChooser";
-import { AnnonceCard } from "@/components/listing/AnnonceCard";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatNumber, formatTND } from "@/lib/utils";
 import { isRtl } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
 import { shownDelegation } from "@/lib/delegations";
 import type { HomeListingRow } from "@/lib/home/feed";
+import type { HomeRail } from "@/lib/home/rails";
 import { catalogueHrefForType } from "@/lib/catalog/browse";
 import { asDealType } from "@/lib/listings/deal";
 import {
@@ -39,8 +40,9 @@ import {
  * Design language:
  *   - A CENTERED hero: brand headline + a prominent one-row search +
  *     a centered live-stats strip. No off-center side boxes.
- *   - Every listing section is an AUTO-SLIDING carousel (TrendingRail),
- *     not a static grid — the page breathes and rotates on its own.
+ *   - Every listing section is an AUTO-SLIDING carousel (AutoRail, through
+ *     HomeRailSection), not a static grid — the page breathes and rotates on
+ *     its own. The rails are the phone page's, in the same order.
  *   - Editorial bands (how-it-works, trust, activity, closing spread)
  *     close the page.
  */
@@ -84,9 +86,9 @@ const TRUST_PILLARS: {
 
 export async function HomeDesktop({
   trending,
-  bestValue,
-  nouveautes,
-  recent,
+  railsAbove,
+  railsBelow,
+  explore,
   savedIds,
   loggedIn,
   liveCount,
@@ -95,10 +97,14 @@ export async function HomeDesktop({
   endingSoonSlides = [],
   alwaysVisible = false,
 }: {
+  /** The published slice, paid placement first: the hero showcase opens on it. */
   trending: HomeListingRow[];
-  bestValue: HomeListingRow[];
-  nouveautes: HomeListingRow[];
-  recent: HomeListingRow[];
+  /** The rails of annonces (`planHomeRails`), on either side of the middle
+   *  advertising space. */
+  railsAbove: HomeRail[];
+  railsBelow: HomeRail[];
+  /** « À découvrir », or null when nothing is left for it. */
+  explore: HomeRail | null;
   savedIds: Set<string>;
   loggedIn: boolean;
   liveCount: number;
@@ -339,54 +345,22 @@ export async function HomeDesktop({
         </div>
       </section>
 
-      {/* TRENDING — auto-sliding carousel */}
-      {trending.length > 0 && (
-        <section className="mt-12">
-          <RailHeader
-            eyebrow={t("home.trendingEyebrow")}
-            title={t("home.trendingTitle")}
-            countLabel={trending.length}
-            ChevronEnd={ChevronEnd}
-            isRTL={isRTL}
-            seeAllLabel={t("home.seeAll")}
-          />
-          <CardSlider
-            items={trending}
-            savedIds={savedIds}
-            loggedIn={loggedIn}
-          />
-        </section>
-      )}
+      {/* The hero is the intent and the search; an advertiser's banner
+          (/admin/publicites) under it, above the first rail. */}
+      <AdSlot placement="home_top" className="mt-10" sizes="(min-width: 1280px) 1200px, 100vw" />
 
-      {/* BONNES AFFAIRES — cheapest per m², auto-sliding carousel */}
-      {bestValue.length > 0 && (
-        <section className="mt-12">
-          <RailHeader
-            eyebrow={t("home.bestValueEyebrow")}
-            title={t("home.bestValueTitle")}
-            countLabel={bestValue.length}
-            ChevronEnd={ChevronEnd}
-            isRTL={isRTL}
-            seeAllLabel={t("home.seeAll")}
-          />
-          <CardSlider items={bestValue} savedIds={savedIds} loggedIn={loggedIn} />
-        </section>
-      )}
+      {/* THE RAILS — the phone page's list (`planHomeRails`), each one an
+          auto-sliding carousel with arrows. */}
+      {railsAbove.map((rail) => (
+        <HomeRailSection key={rail.key} rail={rail} layout="desktop" savedIds={savedIds} loggedIn={loggedIn} />
+      ))}
 
-      {/* NOUVEAUTÉS — auto-sliding carousel */}
-      {nouveautes.length > 0 && (
-        <section className="mt-12">
-          <RailHeader
-            eyebrow={t("home.nouveautesEyebrow")}
-            title={t("home.nouveautesTitle")}
-            countLabel={nouveautes.length}
-            ChevronEnd={ChevronEnd}
-            isRTL={isRTL}
-            seeAllLabel={t("home.seeAll")}
-          />
-          <CardSlider items={nouveautes} savedIds={savedIds} loggedIn={loggedIn} />
-        </section>
-      )}
+      {/* A second banner, halfway down the rails. */}
+      <AdSlot placement="home_middle" className="mt-12" sizes="(min-width: 1280px) 1200px, 100vw" />
+
+      {railsBelow.map((rail) => (
+        <HomeRailSection key={rail.key} rail={rail} layout="desktop" savedIds={savedIds} loggedIn={loggedIn} />
+      ))}
 
       {/* SECOND HERO — "ending soon" carousel (was mobile-only). */}
       {endingSoonSlides.length > 0 && (
@@ -460,18 +434,8 @@ export async function HomeDesktop({
         </div>
       </section>
 
-      {/* MORE TO EXPLORE — auto-sliding carousel */}
-      {recent.length > 0 && (
-        <section className="mt-14">
-          <RailHeader
-            title={t("home.moreToExplore")}
-            ChevronEnd={ChevronEnd}
-            isRTL={isRTL}
-            seeAllLabel={t("home.seeAll")}
-          />
-          <CardSlider items={recent} savedIds={savedIds} loggedIn={loggedIn} />
-        </section>
-      )}
+      {/* MORE TO EXPLORE — what no rail above shows, auto-sliding too */}
+      {explore && <HomeRailSection rail={explore} layout="desktop" savedIds={savedIds} loggedIn={loggedIn} />}
 
       {/* ─── POURQUOI MAZED IMMO — one consolidated trust + CTA band ───
               Replaces the old how-it-works / trust / activity / closing
@@ -567,77 +531,4 @@ function StatFigure({ live, children }: { live: boolean; children: React.ReactNo
 /** The label under a stats-strip figure. */
 function StatLabel({ children }: { children: React.ReactNode }) {
   return <div className="mt-1.5 text-[12.5px] font-bold leading-tight text-foreground">{children}</div>;
-}
-
-/** Section header — eyebrow + title + count chip + "see all" link. */
-function RailHeader({
-  eyebrow,
-  title,
-  countLabel,
-  ChevronEnd,
-  isRTL,
-  seeAllLabel,
-}: {
-  eyebrow?: string;
-  title: string;
-  countLabel?: number;
-  ChevronEnd: React.ComponentType<{ className?: string }>;
-  isRTL: boolean;
-  seeAllLabel: string;
-}) {
-  return (
-    <div className="flex items-end justify-between gap-3 px-4">
-      <div className="min-w-0">
-        {eyebrow && (
-          <div className="mb-1.5 flex items-center gap-2">
-            <span className="mazed-gold-rule-short" />
-            <span className={`mazed-eyebrow ${isRTL ? "font-arabic tracking-[0.18em]" : ""}`}>
-              {eyebrow}
-            </span>
-          </div>
-        )}
-        <h3 className="inline-flex items-center gap-2 text-[20px] font-extrabold leading-tight tracking-tight">
-          {title}
-          {countLabel !== undefined && (
-            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-gold-faint px-2.5 text-[11px] font-extrabold tracking-wider text-gold-bright">
-              {countLabel}
-            </span>
-          )}
-        </h3>
-      </div>
-      <Link
-        href="/annonces"
-        className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[11.5px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
-      >
-        {seeAllLabel}
-        <ChevronEnd className="size-3" />
-      </Link>
-    </div>
-  );
-}
-
-/** Auto-sliding property carousel (wraps the shared TrendingRail). */
-function CardSlider({
-  items,
-  savedIds,
-  loggedIn,
-}: {
-  items: HomeListingRow[];
-  savedIds: Set<string>;
-  loggedIn: boolean;
-}) {
-  return (
-    <TrendingRail arrows>
-      {items.map((a) => (
-        <div key={a.id} className="w-[300px] shrink-0 snap-start">
-          <AnnonceCard
-            listing={a}
-            saved={savedIds.has(a.id)}
-            loggedIn={loggedIn}
-          />
-        </div>
-      ))}
-      <div className="w-1 shrink-0" />
-    </TrendingRail>
-  );
 }
