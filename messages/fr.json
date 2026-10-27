@@ -3804,7 +3804,8 @@
         "visites": "Visites",
         "clients": "Clients",
         "demandes": "Demandes",
-        "projets": "Projets"
+        "projets": "Projets",
+        "rapports": "Rapports"
       },
       "planLabel": "Abonnement",
       "noPlan": "Aucun",
@@ -4054,6 +4055,45 @@
         "deleted": "Lots supprimés.",
         "failed": "Mise à jour impossible."
       }
+    },
+    "reports": {
+      "periodLabel": "Période",
+      "period": "{days} jours",
+      "scopeShop": "Toute l'agence",
+      "scopeOwn": "Vos annonces",
+      "range": "du {from} au {to}",
+      "metric": {
+        "visitors": "Nouveaux visiteurs",
+        "reveals": "Numéros affichés",
+        "favourites": "Ajouts en favoris",
+        "visits": "Demandes de visite",
+        "leads": "Nouveaux clients"
+      },
+      "short": {
+        "visitors": "Visiteurs",
+        "reveals": "Numéros",
+        "favourites": "Favoris",
+        "visits": "Visites",
+        "leads": "Clients"
+      },
+      "vsBefore": "par rapport aux {days} jours d'avant",
+      "noCompare": "pas de comparaison : la période d'avant n'est plus gardée",
+      "contactRate": "Taux de contact",
+      "contactRateHint": "numéros affichés pour 100 visiteurs",
+      "peak": "jusqu'à {count} par jour",
+      "byListing": "Par annonce",
+      "byAgent": "Par agent",
+      "listing": "Annonce",
+      "agent": "Agent",
+      "online": "En ligne",
+      "download": "Télécharger (CSV)",
+      "empty": "Aucune annonce en ligne et rien sur la période.",
+      "footnote": "Un visiteur est compté le jour où il voit une annonce pour la première fois ; vos propres visites ne comptent pas. Les jours sont ceux de Tunis.",
+      "csv": {
+        "reference": "Référence",
+        "title": "Annonce"
+      },
+      "nothingBefore": "rien sur les {days} jours d'avant"
     }
   },
   "proApi": {
@@ -4784,6 +4824,10 @@
     "privacy_traces_days": {
       "label": "Vues d'annonces et numéros affichés",
       "hint": "Qui a vu quelle annonce, qui a affiché quel numéro : effacé après ce délai. Les compteurs des annonces ne bougent pas."
+    },
+    "feature_pro_reports": {
+      "label": "Rapports des agences",
+      "hint": "L'onglet « Rapports » de l'espace Pro : visiteurs, numéros affichés, favoris, visites et clients par période, par annonce et par agent. Coupé : l'onglet disparaît ; rien n'est effacé."
     }
   },
   "ads": {

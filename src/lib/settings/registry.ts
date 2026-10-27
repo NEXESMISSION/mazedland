@@ -35,6 +35,8 @@ export const SETTINGS = {
   feature_ads: { group: "features", type: "bool", default: true, href: "/admin/publicites" },
   // Promoters' projects and their units (0179): the « Projets » tab and pages.
   feature_projects: { group: "features", type: "bool", default: true, client: true, href: "/admin/agences" },
+  // What a period brought to an agence's annonces (0183): the « Rapports » tab.
+  feature_pro_reports: { group: "features", type: "bool", default: true },
 
   // ── Home page: the rails of annonces and the ads move by themselves.
   home_rail_autoplay: { group: "home", type: "bool", default: true, client: true },
