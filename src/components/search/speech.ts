@@ -1,6 +1,6 @@
 /**
  * The browser's speech recognition, shared by the search boxes' microphone
- * and the listing assistant's dictation. Chrome, Edge and Safari have it
+ * and « Publier en parlant » (version B of the publish flow). Chrome, Edge and Safari have it
  * (Chrome sends the audio to Google to transcribe); Firefox does not, and
  * every caller hides its microphone there.
  */
@@ -45,15 +45,4 @@ export function transcriptOf(results: ArrayLike<ArrayLike<{ transcript: string }
     .join(" ")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-/**
- * Dictation adds to what is in the box: the words already typed stay, the
- * spoken ones follow after a space, and the whole keeps to the box's limit.
- */
-export function withDictation(before: string, spoken: string, maxLength: number): string {
-  const head = before.trimEnd();
-  const said = spoken.trim();
-  const joined = head && said ? `${head} ${said}` : head || said;
-  return joined.slice(0, maxLength);
 }

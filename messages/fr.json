@@ -1467,13 +1467,10 @@
     "aiPrivacy": "Votre numéro et vos e-mails ne sont jamais envoyés. Rien n'est publié sans que vous l'ayez vérifié.",
     "tryChat": "Nouveau : publier en parlant",
     "tryChatHint": "Discutez avec l'assistant au micro, il remplit tout, vous publiez.",
-    "aiVoiceStart": "Dicter",
-    "aiVoiceStop": "Arrêter",
     "aiVoiceLang": "Langue parlée",
     "aiVoiceLangTn": "Tunisien",
     "aiVoiceLangFr": "Français",
     "aiVoiceLangEn": "English",
-    "aiVoiceListening": "Je vous écoute… Dites tout, puis appuyez sur « Arrêter » et « Remplir pour moi ».",
     "aiVoiceDenied": "Le micro est refusé : autorisez-le dans le navigateur.",
     "aiVoiceNoSpeech": "Je n'ai rien entendu. Réessayez.",
     "aiVoiceLangUnsupported": "Ce navigateur n'écoute pas cette langue. Choisissez-en une autre.",
@@ -4984,8 +4981,8 @@
       "hint": "Un micro dans les champs de recherche : on dit ce qu'on cherche, les mots remplissent le champ et la recherche part. Seulement dans les navigateurs qui savent écouter (Chrome, Edge, Safari)."
     },
     "feature_ai_voice": {
-      "label": "Dictée de l'annonce",
-      "hint": "Un micro dans « Décrivez votre bien en une phrase » : le vendeur parle en tunisien, en français ou en anglais, les mots s'écrivent dans la case, puis l'assistant remplit l'annonce. Seulement dans les navigateurs qui savent écouter (Chrome, Edge, Safari)."
+      "label": "Micro de « Publier en parlant »",
+      "hint": "Le micro de la version B : le vendeur parle en tunisien, en français ou en anglais au lieu d'écrire. Éteint, la conversation se fait au clavier. Seulement dans les navigateurs qui savent écouter (Chrome, Edge, Safari)."
     },
     "feature_publish_chat": {
       "label": "Publier en parlant (version B)",
