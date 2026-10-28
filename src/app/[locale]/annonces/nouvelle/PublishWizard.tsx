@@ -177,7 +177,7 @@ export type InitialDraft = {
 };
 
 /** A shop the seller may publish for (0173), and how many annonces its plan still covers. */
-export type WizardShop = { id: string; name: string; planLeft: number | null };
+export type WizardShop = { id: string; name: string; planLeft: number | null; /** They own it. */ owner?: boolean };
 
 /** The plan of the agence this seller owns: their own annonces count in it too (src/lib/places). */
 export type WizardOwnPlan = { shopName: string; left: number };
@@ -271,9 +271,13 @@ export function PublishWizard({
   const [saved, setSaved] = useState<"idle" | "saving" | "ok">("idle");
   const [listingId, setListingId] = useState<string | null>(d?.id ?? null);
   // "" is the seller themselves. A shop that is no longer theirs to publish for is dropped.
+  // An agence's owner IS the agence (the owner's call, 2026-10-28): there is no
+  // « Moi-même » for them — what they publish is the agence's, counted in the
+  // offer it took. A draft they started without one goes to their agence too.
+  const ownsShop = shops.some((s) => s.owner);
   const [shopId, setShopId] = useState<string>(() => {
-    const wanted = d?.shop_id ?? initialShopId ?? "";
-    return shops.some((s) => s.id === wanted) ? wanted : "";
+    const wanted = d?.shop_id ?? initialShopId ?? shops.find((s) => s.owner)?.id ?? "";
+    return shops.some((s) => s.id === wanted) ? wanted : ownsShop ? shops.find((s) => s.owner)!.id : "";
   });
   /** The submit route said the free places are full: the annonce stays a draft. */
   const [limitHit, setLimitHit] = useState(false);
@@ -1306,6 +1310,11 @@ export function PublishWizard({
   const editNote = waiting ? t("editWaitingNote") : t("editFreeNote");
   const feeHint = editing
     ? editNote
+    : viaOwnPlan
+    ? // Publishing as themselves, inside the plan of the agence they own: no
+      // agence is chosen, so the name is the owned one's. It read shop!.name
+      // here and the whole page crashed for those owners (2026-10-28).
+      t("planHint", { name: ownPlan!.shopName })
     : viaPlan
     ? t("planHint", { name: shop!.name })
     : freeQuota
@@ -2268,7 +2277,7 @@ export function PublishWizard({
                     <div>
                       <p className="text-[12.5px] font-bold text-foreground">{t("publishFor")}</p>
                       <div role="radiogroup" aria-label={t("publishFor")} className="mt-2 grid gap-2 sm:grid-cols-2">
-                        {[{ id: "", name: t("publishForMe"), planLeft: null }, ...shops].map((s) => {
+                        {[...(ownsShop ? [] : [{ id: "", name: t("publishForMe"), planLeft: null }]), ...shops].map((s) => {
                           const on = shopId === s.id;
                           const Icon = s.id ? Store : User;
                           return (
