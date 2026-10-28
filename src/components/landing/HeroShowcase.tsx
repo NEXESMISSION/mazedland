@@ -117,6 +117,9 @@ export function HeroShowcase({
             <SlideBody
               slide={slide}
               active={active}
+              // The shown slide and its neighbours carry their photo, no more:
+              // stacked at opacity 0 in view, every other one was fetched too.
+              near={active || i === (safeIndex + 1) % total || i === (safeIndex - 1 + total) % total}
               priority={priority && i === 0}
               hiddenAt={i === 0 ? hiddenAt : undefined}
               isRTL={isRTL}
@@ -181,12 +184,14 @@ export function HeroShowcase({
 function SlideBody({
   slide,
   active,
+  near,
   priority,
   hiddenAt,
   isRTL,
 }: {
   slide: ShowcaseSlide;
   active: boolean;
+  near: boolean;
   priority: boolean;
   hiddenAt?: string;
   isRTL: boolean;
@@ -196,7 +201,7 @@ function SlideBody({
   const tl = useTranslations("listing");
   const [broken, setBroken] = useState(false);
   const photo =
-    slide.imageUrl && !broken ? (
+    slide.imageUrl && !broken && near ? (
       <Image
         src={slide.imageUrl}
         alt=""
