@@ -90,7 +90,20 @@ export async function POST(req: NextRequest) {
 
   // Published for a shop (0173): only one the seller may publish for.
   if ("shop_id" in body) {
-    const shopId = text((body as Record<string, unknown>).shop_id, 40);
+    let shopId = text((body as Record<string, unknown>).shop_id, 40);
+    // An agence's owner IS the agence (the owner's call, 2026-10-28): « for
+    // myself » from them — a page opened before that rule — is their agence.
+    if (!shopId) {
+      const { data: owned } = await admin
+        .from("shops")
+        .select("id")
+        .eq("owner_id", user.id)
+        .eq("status", "approved")
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      shopId = (owned?.id as string | undefined) ?? null;
+    }
     if (shopId) {
       const [role, { data: shop }] = await Promise.all([
         roleIn(admin, shopId, user.id),

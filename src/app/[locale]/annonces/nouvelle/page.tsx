@@ -232,10 +232,11 @@ export default async function NewListingPage({
     : await Promise.all(
         (await membershipsOf(admin, user!.id))
           .filter((m) => m.shop.status === "approved" && can(m.role, "publish"))
-          .map(async ({ shop }) => {
+          .map(async ({ shop, role }) => {
             const plan = await activePlan(admin, shop.id);
             const used = plan ? await planUsage(admin, shop.id) : 0;
-            return { id: shop.id, name: shop.name, planLeft: plan ? Math.max(0, plan.quota - used) : null };
+            // An owner publishes as their agence, never as themselves (PublishWizard).
+            return { id: shop.id, name: shop.name, planLeft: plan ? Math.max(0, plan.quota - used) : null, owner: role === "owner" };
           }),
       );
 
