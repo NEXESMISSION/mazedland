@@ -61,7 +61,7 @@ const MARK_SRC = "/logo-stamp.webp";
  */
 let markPromise: Promise<HTMLImageElement | null> | null = null;
 
-function loadMark(): Promise<HTMLImageElement | null> {
+export function loadMark(): Promise<HTMLImageElement | null> {
   if (markPromise) return markPromise;
   markPromise = new Promise<HTMLImageElement | null>((resolve) => {
     const img = new Image();
@@ -97,10 +97,11 @@ export function markBox(
  * Draw the logo in the top-right corner of an already-rendered 2D context.
  *
  * Exported separately so a caller that already has a canvas can stamp
- * without a second decode.
+ * without a second decode — `compressImage`'s `decorate` hook does, so a
+ * listing photo is decoded and encoded once, not twice.
  */
 export function drawWatermark(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   mark: HTMLImageElement,
   width: number,
   height: number,

@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { compressImage } from "@/lib/imageCompress";
-import { watermarkImage } from "@/lib/watermark";
+import { drawWatermark, loadMark, watermarkImage } from "@/lib/watermark";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { runPool } from "@/lib/pool";
 import { useToast } from "@/components/ui/Toast";
 import { useSetting } from "@/components/settings/SettingsProvider";
 import {
@@ -43,7 +44,16 @@ type Pending = {
   error?: string;
 };
 
+/** A signed upload URL and the path it writes. */
+type Target = { path: string; signedUrl: string };
+
+/** The server refused to mint a URL, and said why. */
+class MintError extends Error {}
+
 const MAX_PHOTO_MB = 25;
+
+/** Photos prepared and sent at the same time: the CPU encodes one while the network sends another. */
+const IN_FLIGHT = 3;
 
 /** Bigger files get longer: a 20 MB photo on 3G is not a stalled one. */
 const timeoutFor = (bytes: number) => Math.min(180_000, 30_000 + (bytes / 1e6) * 15_000);
@@ -92,6 +102,45 @@ export function PhotoUploader({
     URL.revokeObjectURL(id);
   }, []);
 
+  /** Signed upload URLs minted server-side (/api/annonces/photo-url). */
+  const mint = useCallback(
+    async (exts: string[], signal?: AbortSignal) => {
+      const res = await fetch("/api/annonces/photo-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ exts }),
+        signal,
+      });
+      if (!res.ok) {
+        // The route explains itself ("Trop d'envois de photos…"); that is more
+        // use than "Le serveur a refusé l'envoi."
+        const j = (await res.json().catch(() => ({}))) as { detail?: string };
+        throw new MintError(j.detail ?? t("serverRefused"));
+      }
+      const { uploads } = (await res.json()) as { uploads?: Target[] };
+      return uploads ?? [];
+    },
+    [t],
+  );
+
+  // URLs asked for the whole batch the moment it is picked, so the round trip
+  // runs while the first photo is being encoded and no photo waits for its
+  // own. Nearly every photo comes out as WebP; the odd one that keeps its
+  // original format asks for its own URL. One not used (a cancelled photo)
+  // simply expires.
+  const reserved = useRef<Target[]>([]);
+
+  /** A photo that landed: its tile goes, the annonce gets the path. */
+  const settle = useCallback(
+    (id: string, path: string | null) => {
+      if (!path) return;
+      setPending((p) => p.filter((x) => x.id !== id));
+      URL.revokeObjectURL(id);
+      onChange((prev) => [...prev, { path }]);
+    },
+    [onChange],
+  );
+
   // Report the in-flight count from an EFFECT, not from inside the state
   // updater. It used to be done in the `setPending` callback, which React is
   // free to run during render — so telling the parent from there was a
@@ -108,9 +157,13 @@ export function PhotoUploader({
 
   const room = max - photos.length - pending.length;
 
-  /** Compress, get a signed URL, PUT the bytes. Returns the stored path. */
+  /**
+   * Compress and stamp, take a signed URL, PUT the bytes. Returns the stored
+   * path; the caller settles the tile. `reservation` is the batch's URL
+   * request, awaited only once the photo is ready to go.
+   */
   const send = useCallback(
-    async (file: File, tempId: string) => {
+    async (file: File, tempId: string, reservation: Promise<void> = Promise.resolve()) => {
       const mark = (patch: Partial<Pending>) =>
         setPending((p) => p.map((x) => (x.id === tempId ? { ...x, ...patch } : x)));
 
@@ -134,44 +187,40 @@ export function PhotoUploader({
         cancelled.current.delete(tempId);
       };
 
+      // One decode, one encode: the gold logo is drawn on the scaled photo
+      // right before it is encoded (`decorate`). It used to be stamped in a
+      // second pass that decoded the WebP again and re-encoded it at 0.92 —
+      // twice the CPU on the phone and a bigger file to send, for nothing.
+      // `compressImage` returns the input untouched on a few paths (an
+      // already-small modern format, an input over its byte ceiling, a
+      // re-encode that grew): those are stamped on their own, as before.
+      // Switched off in /admin/settings, new photos go up clean; those
+      // already sent keep theirs.
+      const stamp = watermark ? await loadMark() : null;
       let out = file;
       try {
-        out = await compressImage(file, { maxEdge: 1600, quality: 0.8, format: "webp" });
+        out = await compressImage(file, {
+          maxEdge: 1600,
+          quality: 0.8,
+          format: "webp",
+          decorate: stamp ? (ctx, w, h) => drawWatermark(ctx, stamp, w, h) : undefined,
+        });
       } catch {
         out = file; // compression is an optimisation, not a gate
       }
-
-      // Stamp the gold logo in the top-right corner. AFTER compression, not inside it:
-      // `compressImage` returns the input untouched on several paths (an
-      // already-small modern format, an input over its byte ceiling), so a
-      // watermark folded into that function would silently skip exactly the
-      // photos most worth protecting — the big clean ones. Switched off in
-      // /admin/settings, new photos go up clean; those already sent keep theirs.
-      if (watermark) out = await watermarkImage(out);
+      if (watermark && out === file) out = await watermarkImage(out);
 
       mark({ phase: "sending" });
 
       const ext = out.name.split(".").pop()?.toLowerCase() || "webp";
       try {
-        arm(20_000);
-        const urlRes = await fetch("/api/annonces/photo-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ exts: [ext] }),
-          signal: ac.signal,
-        });
-        disarm();
-        if (!urlRes.ok) {
-          // The route explains itself ("Trop d'envois de photos…"); that is more
-          // use than "Le serveur a refusé l'envoi."
-          const j = (await urlRes.json().catch(() => ({}))) as { detail?: string };
-          mark({ phase: "failed", error: j.detail ?? t("serverRefused") });
-          return null;
+        await reservation;
+        let target: Target | undefined = ext === "webp" ? reserved.current.shift() : undefined;
+        if (!target) {
+          arm(20_000);
+          target = (await mint([ext], ac.signal))[0];
+          disarm();
         }
-        const { uploads } = (await urlRes.json()) as {
-          uploads: { path: string; signedUrl: string }[];
-        };
-        const target = uploads?.[0];
         if (!target) {
           mark({ phase: "failed", error: t("unexpectedResponse") });
           return null;
@@ -205,23 +254,20 @@ export function PhotoUploader({
         // Cancelled after the bytes landed: the seller asked for it gone, so
         // it does not join the annonce even though the upload succeeded.
         if (cancelled.current.has(tempId)) return null;
-
-        setPending((p) => p.filter((x) => x.id !== tempId));
-        URL.revokeObjectURL(tempId);
         return target.path;
-      } catch {
+      } catch (e) {
         // A deliberate cancel is not a failure — the tile is already gone.
         if (cancelled.current.has(tempId)) return null;
         mark({
           phase: "failed",
-          error: timedOut ? t("tooSlow") : t("sendFailed"),
+          error: e instanceof MintError ? e.message : timedOut ? t("tooSlow") : t("sendFailed"),
         });
         return null;
       } finally {
         done();
       }
     },
-    [t, watermark],
+    [t, watermark, mint],
   );
 
   const accept = useCallback(
@@ -257,17 +303,36 @@ export function PhotoUploader({
       });
       setPending((p) => [...p, ...marks]);
 
-      // One at a time: a phone pushing six photos at once on 3G finishes them
-      // all late instead of the first one early.
-      for (const m of marks) {
+      // The batch's upload URLs, asked for now — the round trip runs under
+      // the first photo's encoding. A refusal is not reported here: each
+      // photo then asks for its own URL and hears the reason.
+      const reservation = mint(ok.map(() => "webp")).then(
+        (urls) => { reserved.current.push(...urls); },
+        () => {},
+      );
+
+      // A few at a time (IN_FLIGHT): one photo encodes while another sends.
+      // All at once, a phone pushing six photos on 3G finished them all late
+      // instead of the first one early; one at a time left the network idle
+      // while the CPU worked and the CPU idle while the network sent. The
+      // photos join the annonce in the order they were picked, whatever
+      // order they land in — the first one is the cover.
+      const landed: (string | null | undefined)[] = marks.map(() => undefined);
+      let flushed = 0;
+      const flush = () => {
+        while (flushed < marks.length && landed[flushed] !== undefined) {
+          settle(marks[flushed].id, landed[flushed] ?? null);
+          flushed++;
+        }
+      };
+      await runPool(marks, IN_FLIGHT, async (m, i) => {
         // Cancelled while it was still queued behind another photo: never send
         // it at all.
-        if (cancelled.current.delete(m.id)) continue;
-        const path = await send(m.file, m.id);
-        if (path) onChange((prev) => [...prev, { path }]);
-      }
+        landed[i] = cancelled.current.delete(m.id) ? null : await send(m.file, m.id, reservation);
+        flush();
+      });
     },
-    [disabled, room, max, toast, send, onChange, t],
+    [disabled, room, max, toast, send, settle, mint, t],
   );
 
   function retry(id: string) {
@@ -277,8 +342,7 @@ export function PhotoUploader({
       p.map((x) => (x.id === id ? { ...x, phase: "preparing", error: undefined } : x)),
     );
     void (async () => {
-      const path = await send(item.file, item.id);
-      if (path) onChange((prev) => [...prev, { path }]);
+      settle(item.id, await send(item.file, item.id));
     })();
   }
 
