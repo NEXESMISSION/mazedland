@@ -28,7 +28,7 @@ export async function ReportsTab({
   const t = await getTranslations("pro.reports");
   const report = await loadShopReport(admin, { shopId, days, sellerId, tracesKeptDays });
   const href = (d: number) => `/pro/dashboard?shop=${shopId}&tab=rapports&days=${d}`;
-  const day = new Intl.DateTimeFormat(locale === "ar" ? "ar-TN" : "fr-TN", { day: "numeric", month: "short" });
+  const day = new Intl.DateTimeFormat(locale === "ar" ? "ar-TN" : "fr-TN", { day: "numeric", month: "short", timeZone: "Africa/Tunis" });
   const fmtDay = (d: string) => day.format(new Date(`${d}T12:00:00Z`));
   const contactRate = report.totals.visitors > 0 ? Math.round((report.totals.reveals / report.totals.visitors) * 100) : null;
 

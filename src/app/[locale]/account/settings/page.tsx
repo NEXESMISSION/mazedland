@@ -43,7 +43,7 @@ export default async function AccountSettingsPage() {
     : await db.from("listings").select("governorate").eq("seller_id", user!.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
   const [settings, history] = await Promise.all([getSettings(), consentHistory(db, user!.id)]);
   const consents = currentConsents(history);
-  const day = new Intl.DateTimeFormat(locale === "ar" ? "ar-TN" : "fr-TN", { day: "numeric", month: "long", year: "numeric" });
+  const day = new Intl.DateTimeFormat(locale === "ar" ? "ar-TN" : "fr-TN", { day: "numeric", month: "long", year: "numeric", timeZone: "Africa/Tunis" });
   const kept = (days: number) => (days === 0 ? t("keptForever") : t("keptDays", { days }));
   // Read by the nightly jobs (0182) from the same settings.
   const retention = [

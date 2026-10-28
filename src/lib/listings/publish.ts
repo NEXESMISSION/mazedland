@@ -76,7 +76,7 @@ export async function publishListing(
       p_user_id: listing.seller_id,
       p_kind: "listing_published",
       p_title: "Votre annonce est en ligne",
-      p_body: `« ${listing.title} » est visible jusqu'au ${expires.toLocaleDateString("fr-FR")}.`,
+      p_body: `« ${listing.title} » est visible jusqu'au ${expires.toLocaleDateString("fr-FR", { timeZone: "Africa/Tunis" })}.`,
       p_link: `/annonces/${listing.id}`,
       p_payload: { vars: { title: listing.title, expires_at: expires.toISOString() } },
     })
