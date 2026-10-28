@@ -1,45 +1,26 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import {
-  asDictationLang,
-  recognitionCtor,
-  speechLang,
-  transcriptOf,
-  type DictationLang,
-  type Recognition,
-} from "@/components/search/speech";
+import { useTranslations } from "next-intl";
+import { useToast } from "@/components/ui/Toast";
+import { recognitionCtor, transcriptOf, type Recognition } from "@/components/search/speech";
 
 const noop = () => () => {};
-const LANG_KEY = "mazed_dictation_lang";
 
 export type DictationProblem = "denied" | "noSpeech" | "langUnsupported" | "failed";
 
-/**
- * The language a seller dictates in: the one they picked last time on this
- * browser, else the page's (Tunisian Arabic on /ar, French otherwise).
- */
-export function useDictationLang(locale: string): [DictationLang, (l: DictationLang) => void] {
-  const [lang, setLang] = useState<DictationLang>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = asDictationLang(window.localStorage.getItem(LANG_KEY));
-        if (stored) return stored;
-      } catch {
-        /* storage blocked: fall back to the page's language */
-      }
-    }
-    return speechLang(locale) as DictationLang;
-  });
-  const pick = (l: DictationLang) => {
-    setLang(l);
-    try {
-      window.localStorage.setItem(LANG_KEY, l);
-    } catch {
-      /* private window: the choice lasts for this page only */
-    }
-  };
-  return [lang, pick];
+const PROBLEM_KEY: Record<DictationProblem, string> = {
+  denied: "aiVoiceDenied",
+  noSpeech: "aiVoiceNoSpeech",
+  langUnsupported: "aiVoiceLangUnsupported",
+  failed: "aiVoiceFailed",
+};
+
+/** A toast that says what went wrong with the microphone, in the page's language. */
+export function useDictationProblem() {
+  const t = useTranslations("publish");
+  const { toast } = useToast();
+  return (p: DictationProblem) => toast(t(PROBLEM_KEY[p]), "error");
 }
 
 /**
@@ -55,7 +36,7 @@ export function useDictation(onProblem: (p: DictationProblem) => void) {
 
   useEffect(() => () => rec.current?.abort(), []);
 
-  function start(lang: DictationLang, on: { onText: (said: string) => void; onEnd?: (said: string) => void }) {
+  function start(lang: string, on: { onText: (said: string) => void; onEnd?: (said: string) => void }) {
     const Ctor = recognitionCtor();
     if (!Ctor || rec.current) return;
     const r = new Ctor();

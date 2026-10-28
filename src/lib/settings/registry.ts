@@ -24,7 +24,7 @@ export const SETTINGS = {
   feature_promos: { group: "features", type: "bool", default: true, client: true, href: "/admin/offres" },
   social_enabled: { group: "features", type: "bool", default: true, href: "/admin/social" },
   ai_enabled: { group: "features", type: "bool", default: true },
-  // The microphone of « Publier en parlant »: Tunisian, French or English.
+  // The microphone of « Publier en parlant », in the page's language.
   feature_ai_voice: { group: "features", type: "bool", default: true, client: true },
   // « Publier en parlant » (version B): an annonce made in a conversation, voice first.
   feature_publish_chat: { group: "features", type: "bool", default: true, client: true },
