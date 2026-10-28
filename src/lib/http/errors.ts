@@ -19,6 +19,23 @@ const apiLog = log.scope("api");
  * `requestId` (optional) ties the client-visible response to the server log
  * line so a user-reported failure is locatable.
  */
+/**
+ * What went wrong, in one line for the log. A PostgREST error is a plain
+ * object, not an Error: `String(err)` printed « [object Object] » and the
+ * log said nothing about a 500 (the admin home route, 2026-10-28).
+ */
+export function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object") {
+    const o = err as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown };
+    const parts = [o.message, o.code && `code=${String(o.code)}`, o.details && `details=${String(o.details)}`, o.hint && `hint=${String(o.hint)}`]
+      .filter((p): p is string => typeof p === "string" && p.length > 0);
+    if (parts.length) return parts.join(" · ");
+    try { return JSON.stringify(err); } catch { /* circular */ }
+  }
+  return String(err);
+}
+
 export function fail(
   code: string,
   status: number,
@@ -32,8 +49,7 @@ export function fail(
   // 3f9a1c0b") maps to the server logs across the redaction boundary.
   const rid = requestId ?? getRequestId() ?? crypto.randomUUID().slice(0, 8);
   if (err !== undefined) {
-    const msg = err instanceof Error ? err.message : String(err);
-    apiLog.error(code, { requestId: rid, msg });
+    apiLog.error(code, { requestId: rid, msg: describeError(err) });
   }
   return NextResponse.json({ error: code, requestId: rid }, { status });
 }

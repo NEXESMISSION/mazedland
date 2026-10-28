@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       ? new Date(Date.now() + days * 86_400_000).toISOString()
       : null;
 
-  const { error } = await admin
+  const { data: touched, error } = await admin
     .from("listings")
     .update({
       promo_home_featured: home,
@@ -50,8 +50,15 @@ export async function POST(req: NextRequest) {
       promo_manual: anyOn, // true when an admin curated it (vs paid)
     })
     .eq("id", listingId)
-    .eq("status", "ready");
+    // Only an annonce that is online can be put forward. This said `ready`,
+    // a status from before the listings rewrite that the enum no longer has:
+    // Postgres refused the value and every curation answered 500
+    // (the owner, 2026-10-28).
+    .eq("status", "published")
+    .select("id");
   if (error) return fail("home_feature_failed", 500, error);
+  // Nothing online under that id: say so rather than « ok » about nothing.
+  if (!touched?.length) return NextResponse.json({ error: "listing_not_published" }, { status: 404 });
 
   // Promo flags drive home/explore feed ordering — refresh both immediately.
   revalidateTag("home-feed", "max");
