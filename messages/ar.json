@@ -293,7 +293,7 @@
         "row": "الخلاص مش متاح توّا",
         "contact": "اتصل بينا"
       },
-      "creditNote": "فاتورة تعديل"
+      "creditNote": "أفوار (avoir)"
     },
     "favorites": {
       "title": "المفضّلة",
@@ -1295,6 +1295,10 @@
       "promo": {
         "title": "التبريز خدّام",
         "body": "تبريز « {title} » خدّام حتى {fullDate}."
+      },
+      "invoice": {
+        "title": "الخلاص تقبل — فاتورة {number}",
+        "body": "خلاصك متاع {amount} على {what} تقبل. فاتورتك {number} جاهزة: حلّها باش تطبعها."
       }
     },
     "admin_site_error": {
@@ -1911,26 +1915,28 @@
       "reasonPlaceholder": "مبلغ مختلف، وصل غير مقروء، تحويل غير موجود…",
       "rejected": "تم رفض الوصل.",
       "invoice": "الفاتورة",
-      "cancelledBy": "ملغى بفاتورة التعديل",
-      "creditNote": "اعمل فاتورة تعديل",
+      "cancelledBy": "ملغي بالأفوار",
+      "creditNote": "إلغاء الفاتورة (أفوار)",
       "confirmCreditTitle": "تلغي الفاتورة {number}؟",
-      "confirmCreditBody": "تتعمل فاتورة تعديل بـ {amount}: الفاتورة تقعد كيما هي، وفاتورة التعديل تلغيها. الخلاص يولي « مُسترجَع » وكل شي شراه يوقف (مدة الاشتراك، الرصيد). فاتورة التعديل ما تتلغاش.",
-      "confirmCreditLabel": "اعمل فاتورة التعديل",
-      "creditReasonLabel": "السبب (يتكتب على فاتورة التعديل)",
+      "confirmCreditBody": "يتعمل أفوار (avoir) بـ {amount}: الفاتورة تقعد كيما هي، والأفوار يلغيها. الخلاص يولي « مُسترجَع » وكل شي شراه يوقف (مدة الاشتراك، الرصيد). الأفوار ما يتلغاش.",
+      "confirmCreditLabel": "اعمل الأفوار",
+      "creditReasonLabel": "السبب (يتكتب على الأفوار)",
       "creditReasons": {
         "test": "خلاص تجربة",
         "refunded": "ترجّعولو فلوسو",
         "mistake": "تقبل بالغلط"
       },
-      "credited": "فاتورة التعديل تعملت."
+      "credited": "الأفوار تعمل.",
+      "viewInvoice": "الفاتورة {number} — شوف / اطبع",
+      "detailLabel": "التفاصيل"
     },
     "api": {
       "alreadyResolved": "تمت معالجة هذا الدفع من قبل (الحالة: «{status}»).",
       "wrongKind": "«{kind}» يخصّ منتج المزادات، الذي لم يعد موجودًا.",
       "reasonRequired": "اشرح للبائع ما المشكل — يجب أن يتمكّن من إرسال وصل صالح.",
       "noReceipt": "مازال ما جاش وصل للخلاص هذا: ما يتقبلش قبل ما الحريف يبعثو.",
-      "creditReason": "اختار سبب فاتورة التعديل.",
-      "creditNotCaptured": "كان الخلاص المقبول ياخذ فاتورة تعديل — هذا « {status} ».",
+      "creditReason": "اختار سبب الأفوار.",
+      "creditNotCaptured": "كان الخلاص المقبول ياخذ أفوار — هذا « {status} ».",
       "creditNoInvoice": "الخلاص هذا ما عندوش فاتورة: ما فما شي باش يتلغى."
     }
   },
@@ -3126,7 +3132,7 @@
     "project_units_create": "قطع تزادت لمشروع",
     "project_units_update": "قطع مشروع تبدّلت",
     "project_units_delete": "قطع مشروع تفسخت",
-    "admin_payment_credit_note": "تعملت فاتورة تعديل"
+    "admin_payment_credit_note": "تعمل أفوار"
   },
   "adminApi": {
     "bulk": {
@@ -3929,7 +3935,9 @@
       "chooseFrom": "اختارو من {date} — {amount}",
       "renewFor": "جدّد — {amount}",
       "chooseFor": "اختار — {amount}",
-      "planPayFirst": "اختار اشتراكك وابعث الوصل من توة: وكالتك تتحلّ أوّل ما الوصل يتقبل."
+      "planPayFirst": "اختار اشتراكك وابعث الوصل من توة: وكالتك تتحلّ أوّل ما الوصل يتقبل.",
+      "periodInvoice": "فاتورة {number}",
+      "allPayments": "كل خلاصاتي وفواتيري"
     },
     "clients": {
       "open": "ماشين",
@@ -4505,11 +4513,21 @@
     "reference": "مرجع الخلاص",
     "noVat": "المبلغ بكلّ الأداءات.",
     "receiptNote": "الوصل هذا يثبت الخلاص. ما يقومش مقام فاتورة.",
-    "creditNote": "فاتورة تعديل (avoir)",
+    "creditNote": "أفوار (avoir)",
     "cancels": "تلغي الفاتورة",
     "ofDate": "متاع {date}",
-    "cancelledBy": "ملغاة بفاتورة التعديل",
-    "totalCredit": "مجموع فاتورة التعديل"
+    "cancelledBy": "ملغاة بالأفوار",
+    "totalCredit": "مجموع الأفوار",
+    "amount": "المبلغ",
+    "totalHt": "المجموع دون أداء",
+    "lines": {
+      "plan": "اشتراك {name}",
+      "period": "من {from} إلى {to}",
+      "days": "{count, plural, one {يوم واحد} two {يومين} few {# أيام} many {# يومًا} other {# يوم}}",
+      "quota": "{count, plural, zero {بلا إعلانات} one {إعلان واحد} two {زوز إعلانات} few {# إعلانات} many {# إعلانًا} other {# إعلان}}",
+      "discount": "تخفيض — الوقت الباقي من {name}",
+      "previousPlan": "الاشتراك السابق"
+    }
   },
   "settingsRegistry": {
     "groups": {
@@ -5175,7 +5193,7 @@
         "product_update": "عرض تبدّل",
         "product_deactivate": "عرض تسكّر",
         "settings_update": "الإعدادات تبدّلت",
-        "invoice_credit_note": "فاتورة تعديل تعملت"
+        "invoice_credit_note": "أفوار تعمل"
       },
       "fields": {
         "role": "الدور",

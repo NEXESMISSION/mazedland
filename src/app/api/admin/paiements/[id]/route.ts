@@ -281,20 +281,30 @@ export async function POST(
 
     // The payer hears it — the fee of an annonce already does, through its own
     // trigger (_listing_fee_captured); every other receipt did not, so a Pro
-    // plan or a badge started in silence.
+    // plan or a badge started in silence. With the invoice the capture wrote
+    // (0175): its number, and the tap opens the document itself — nobody found
+    // it in the payments list (the owner, 2026-10-28).
     if (pay.kind !== "listing_fee") {
+      const { data: docRow } = await admin.from("invoices").select("id, number, doc_type").eq("payment_id", pay.id).maybeSingle();
+      const doc = docRow as { id: string; number: string; doc_type: string } | null;
+      const invoiced = doc?.doc_type === "invoice" ? doc : null;
       await admin
         .rpc("enqueue_notification", {
           p_user_id: pay.user_id,
           p_kind: "payment_accepted",
-          p_title: promo ? "Mise en avant active" : "Paiement validé",
+          p_title: promo ? "Mise en avant active" : invoiced ? `Paiement validé — facture ${invoiced.number}` : "Paiement validé",
           p_body: promo
             ? `La mise en avant de « ${promo.title} » est active jusqu'au ${promo.until.toISOString().slice(0, 10)}.`
-            : `Votre paiement de ${pay.amount} TND est validé.`,
-          p_link: promo && meta.listing_id ? `/annonces/${meta.listing_id}` : meta.shop_id ? "/pro/dashboard" : "/account/payments",
+            : `Votre paiement de ${pay.amount} TND est validé.${invoiced ? ` Votre facture ${invoiced.number} est prête.` : ""}`,
+          p_link: promo && meta.listing_id
+            ? `/annonces/${meta.listing_id}`
+            : doc ? `/factures/${doc.id}` : meta.shop_id ? "/pro/dashboard" : "/account/payments",
           p_payload: promo
             ? { vars: { variant: "promo", title: promo.title, expires_at: promo.until.toISOString() }, focus: pay.id }
-            : { vars: { variant: "plain", amount: Number(pay.amount), paymentKind: pay.kind }, focus: pay.id },
+            : {
+                vars: { variant: invoiced ? "invoice" : "plain", amount: Number(pay.amount), paymentKind: pay.kind, number: invoiced?.number ?? null },
+                focus: pay.id,
+              },
         })
         .then(() => {}, () => {});
     }
