@@ -81,18 +81,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // The uploader asks for the whole batch in one call, the moment the photos
+  // are picked; the URLs are minted together, not one round trip each.
   const stamp = Date.now();
-  const uploads: { path: string; signedUrl: string }[] = [];
-  for (let i = 0; i < exts.length; i++) {
-    const path = `${user.id}/annonce-${stamp}-${Math.round(Math.random() * 1e6)}-${i}.${exts[i]}`;
-    const { data, error } = await admin.storage
-      .from("properties")
-      .createSignedUploadUrl(path);
-    if (error || !data?.signedUrl) {
-      log.scope("api").error("annonce photo signed-url failed", { msg: error?.message });
-      return NextResponse.json({ error: "signed_url_failed" }, { status: 500 });
-    }
-    uploads.push({ path, signedUrl: data.signedUrl });
+  const minted = await Promise.all(
+    exts.map(async (ext, i) => {
+      const path = `${user.id}/annonce-${stamp}-${Math.round(Math.random() * 1e6)}-${i}.${ext}`;
+      const { data, error } = await admin.storage.from("properties").createSignedUploadUrl(path);
+      if (error || !data?.signedUrl) {
+        log.scope("api").error("annonce photo signed-url failed", { msg: error?.message });
+        return null;
+      }
+      return { path, signedUrl: data.signedUrl };
+    }),
+  );
+  const uploads = minted.filter((u): u is { path: string; signedUrl: string } => u !== null);
+  if (uploads.length !== exts.length) {
+    return NextResponse.json({ error: "signed_url_failed" }, { status: 500 });
   }
 
   return NextResponse.json({ uploads });

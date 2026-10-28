@@ -50,7 +50,14 @@ export interface CompressOptions {
    *  bytes — guards against decoding a 100 MP DSLR capture, which can
    *  OOM low-memory phones inside createImageBitmap. Default 30 MB. */
   maxInputBytes?: number;
+  /** Draw on the scaled photo right before it is encoded — a watermark, in
+   *  the same pass instead of a second decode + encode of the result. Not
+   *  called when the input is returned untouched (the skip paths): compare
+   *  the result with the input to know. */
+  decorate?: (ctx: DrawingContext, width: number, height: number) => void;
 }
+
+export type DrawingContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 /**
  * Client-side image compression. Decodes the input File on a canvas,
@@ -86,6 +93,7 @@ export async function compressImage(
     fallbackQualityBump = 0.18,
     skipBelowBytes = 120 * 1024,
     maxInputBytes = 30 * 1024 * 1024,
+    decorate,
   } = opts;
 
   // Decode HEIC/HEIF up front — the canvas path below can't read it. After
@@ -152,6 +160,7 @@ export async function compressImage(
     const surface = makeRenderSurface(dstW, dstH);
     surface.ctx.drawImage(renderBitmap, 0, 0, dstW, dstH);
     renderBitmap.close?.();
+    decorate?.(surface.ctx, dstW, dstH);
 
     // Encoder cascade: try the requested format(s) in order, take the
     // first one that produces a real blob. Quality is remapped on
