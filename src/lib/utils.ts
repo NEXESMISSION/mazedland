@@ -71,10 +71,10 @@ const DATE_PRESETS = {
   short: { day: "2-digit", month: "2-digit", year: "numeric" },
   /** 6 oct. · 6 أكتوبر */
   dayMonth: { day: "numeric", month: "short" },
-  /** 6 oct. 2026, 15:30 */
-  dateTime: { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" },
+  /** 6 oct. 2026, 15:30 — 24 h: fr-TN and ar-TN default to « 03:30 PM ». */
+  dateTime: { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" },
   /** 15:30 */
-  time: { hour: "2-digit", minute: "2-digit" },
+  time: { hour: "2-digit", minute: "2-digit", hourCycle: "h23" },
   /** mercredi 28 octobre · الأربعاء 28 أكتوبر — a visit day (0174) */
   weekday: { weekday: "long", day: "numeric", month: "long" },
 } as const satisfies Record<string, Intl.DateTimeFormatOptions>;

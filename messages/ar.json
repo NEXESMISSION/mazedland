@@ -292,7 +292,8 @@
         "body": "بيانات الدفع متاعنا بصدد التحيين. ما تعملش تحويل توّا: تنجم تخلّص وترفع الوصل أوّل ما تتحطّ. المدفوعات اللي تستنّى تبقى محفوظة.",
         "row": "الخلاص مش متاح توّا",
         "contact": "اتصل بينا"
-      }
+      },
+      "creditNote": "فاتورة تعديل"
     },
     "favorites": {
       "title": "المفضّلة",
@@ -1904,13 +1905,29 @@
       "confirmRejectLabel": "رفض",
       "reasonLabel": "السبب (يُرسَل إلى البائع)",
       "reasonPlaceholder": "مبلغ مختلف، وصل غير مقروء، تحويل غير موجود…",
-      "rejected": "تم رفض الوصل."
+      "rejected": "تم رفض الوصل.",
+      "invoice": "الفاتورة",
+      "cancelledBy": "ملغى بفاتورة التعديل",
+      "creditNote": "اعمل فاتورة تعديل",
+      "confirmCreditTitle": "تلغي الفاتورة {number}؟",
+      "confirmCreditBody": "تتعمل فاتورة تعديل بـ {amount}: الفاتورة تقعد كيما هي، وفاتورة التعديل تلغيها. الخلاص يولي « مُسترجَع » وكل شي شراه يوقف (مدة الاشتراك، الرصيد). فاتورة التعديل ما تتلغاش.",
+      "confirmCreditLabel": "اعمل فاتورة التعديل",
+      "creditReasonLabel": "السبب (يتكتب على فاتورة التعديل)",
+      "creditReasons": {
+        "test": "خلاص تجربة",
+        "refunded": "ترجّعولو فلوسو",
+        "mistake": "تقبل بالغلط"
+      },
+      "credited": "فاتورة التعديل تعملت."
     },
     "api": {
       "alreadyResolved": "تمت معالجة هذا الدفع من قبل (الحالة: «{status}»).",
       "wrongKind": "«{kind}» يخصّ منتج المزادات، الذي لم يعد موجودًا.",
       "reasonRequired": "اشرح للبائع ما المشكل — يجب أن يتمكّن من إرسال وصل صالح.",
-      "noReceipt": "مازال ما جاش وصل للخلاص هذا: ما يتقبلش قبل ما الحريف يبعثو."
+      "noReceipt": "مازال ما جاش وصل للخلاص هذا: ما يتقبلش قبل ما الحريف يبعثو.",
+      "creditReason": "اختار سبب فاتورة التعديل.",
+      "creditNotCaptured": "كان الخلاص المقبول ياخذ فاتورة تعديل — هذا « {status} ».",
+      "creditNoInvoice": "الخلاص هذا ما عندوش فاتورة: ما فما شي باش يتلغى."
     }
   },
   "adminActivity": {
@@ -3104,7 +3121,8 @@
     "project_delete": "مشروع تفسخ",
     "project_units_create": "قطع تزادت لمشروع",
     "project_units_update": "قطع مشروع تبدّلت",
-    "project_units_delete": "قطع مشروع تفسخت"
+    "project_units_delete": "قطع مشروع تفسخت",
+    "admin_payment_credit_note": "تعملت فاتورة تعديل"
   },
   "adminApi": {
     "bulk": {
@@ -4475,7 +4493,12 @@
     "paidOn": "تقبل نهار {date}",
     "reference": "مرجع الخلاص",
     "noVat": "المبلغ بكلّ الأداءات.",
-    "receiptNote": "الوصل هذا يثبت الخلاص. ما يقومش مقام فاتورة."
+    "receiptNote": "الوصل هذا يثبت الخلاص. ما يقومش مقام فاتورة.",
+    "creditNote": "فاتورة تعديل (avoir)",
+    "cancels": "تلغي الفاتورة",
+    "ofDate": "متاع {date}",
+    "cancelledBy": "ملغاة بفاتورة التعديل",
+    "totalCredit": "مجموع فاتورة التعديل"
   },
   "settingsRegistry": {
     "groups": {
@@ -5140,7 +5163,8 @@
         "product_create": "عرض تزاد",
         "product_update": "عرض تبدّل",
         "product_deactivate": "عرض تسكّر",
-        "settings_update": "الإعدادات تبدّلت"
+        "settings_update": "الإعدادات تبدّلت",
+        "invoice_credit_note": "فاتورة تعديل تعملت"
       },
       "fields": {
         "role": "الدور",

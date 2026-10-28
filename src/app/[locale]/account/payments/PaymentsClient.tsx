@@ -56,6 +56,8 @@ export type PaymentVM = {
   receiptUrl: string | null;
   /** Its invoice — or receipt, before the company's identity is set (0175). */
   invoice: { id: string; type: "invoice" | "receipt" } | null;
+  /** The credit note that cancelled it (0187). */
+  creditNote?: { id: string; number: string } | null;
   /** The annonce this payment was for, from `payments.metadata.listing_id`. */
   listingId: string | null;
   title: string | null;
@@ -430,7 +432,7 @@ function PaymentRow({
   // button would be. (One already sent just waits; its chip says so.)
   const closedHere = !paymentsOpen && p.status === "pending";
   const entityHref = p.listingId ? (`/annonces/${p.listingId}` as `/annonces/${string}`) : null;
-  const showFooter = (canResume && aHref) || closedHere || canCancel || p.receiptUrl || entityHref || p.invoice;
+  const showFooter = (canResume && aHref) || closedHere || canCancel || p.receiptUrl || entityHref || p.invoice || p.creditNote;
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl bg-surface ring-1 ring-border">
@@ -555,6 +557,15 @@ function PaymentRow({
             >
               <FileText className="size-3" strokeWidth={2} />
               {t(p.invoice.type === "invoice" ? "invoice" : "invoiceReceipt")}
+            </Link>
+          )}
+          {p.creditNote && (
+            <Link
+              href={`/factures/${p.creditNote.id}` as never}
+              className="tap-target inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[11px] font-semibold text-foreground hover:border-gold-soft/50"
+            >
+              <FileText className="size-3" strokeWidth={2} />
+              {t("creditNote")}
             </Link>
           )}
           {entityHref && (

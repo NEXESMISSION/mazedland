@@ -7,12 +7,15 @@ import { audit } from "@/lib/admin/audit";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { grantPlanPeriod } from "@/lib/pro/shops";
+import { CREDIT_NOTE_REASONS, creditNoteReason } from "@/lib/payments/creditNote";
 
 /**
  * Receipt review — the v3 money queue.
  *
  *   POST { action: "accept" }           → captured; what that unlocks depends on kind
  *   POST { action: "reject", reason }   → failed, with a motif the seller sees
+ *   POST { action: "credit_note", reason: "test" | "refunded" | "mistake" }
+ *                                       → a captured one cancelled by a credit note
  *
  * There was no working path to either. `/admin/payments` grouped receipts by
  * auction, and `auctions` is empty, so the queue returned nothing by
@@ -70,6 +73,34 @@ export async function POST(
 
   // `detail` is shown to the operator verbatim, in the page's language.
   const t = await apiTranslator(req, "adminPayments.api");
+
+  // ── Credit note (0187) ────────────────────────────────────────────────────
+  // A payment accepted that should not have been — a test, money given back.
+  // Its invoice stays and keeps its number; a credit note cancels it, and what
+  // the payment bought stops. issue_credit_note does it all in one
+  // transaction, and writes the console's log line itself.
+  if (action === "credit_note") {
+    const reason = creditNoteReason(body.reason);
+    if (!reason) {
+      return NextResponse.json({ error: "reason_required", detail: t("creditReason") }, { status: 400 });
+    }
+    if (pay.status !== "captured") {
+      return NextResponse.json(
+        { error: "conflict", detail: t("creditNotCaptured", { status: String(pay.status) }) },
+        { status: 409 },
+      );
+    }
+    const { data: inv } = await admin.from("invoices").select("id").eq("payment_id", id).maybeSingle();
+    if (!inv) return NextResponse.json({ error: "conflict", detail: t("creditNoInvoice") }, { status: 409 });
+    const { data: noteId, error } = await admin.rpc("issue_credit_note", {
+      p_invoice_id: inv.id,
+      p_reason: CREDIT_NOTE_REASONS[reason],
+      p_actor: user.id,
+    });
+    if (error) return fail("credit_note_failed", 500, error);
+    logAction(req, user, "admin.payment.credit_note", { id, reason, credit_note: noteId });
+    return NextResponse.json({ ok: true, status: "refunded", creditNote: noteId });
+  }
 
   if (pay.status !== "pending" && pay.status !== "pending_review") {
     return NextResponse.json(

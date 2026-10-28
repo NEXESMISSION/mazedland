@@ -19,10 +19,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 type Invoice = {
   id: string;
-  payment_id: string;
+  payment_id: string | null;
   user_id: string | null;
   number: string;
-  doc_type: "invoice" | "receipt";
+  doc_type: "invoice" | "receipt" | "credit_note";
+  /** A credit note (0187): the invoice it cancels, and why. */
+  credits_invoice_id: string | null;
+  reason: string | null;
   issued_at: string;
   amount_ttc: number | string;
   vat_rate: number | string | null;
@@ -41,6 +44,9 @@ const dt = (v: number | string | null, locale: string) =>
  * An invoice — or, while the company's identity is not filled in, a receipt
  * (0175). What it says was fixed when it was issued. Its payer and the admins
  * may open it; « Imprimer » prints the document alone (globals.css).
+ *
+ * A credit note (0187) is the same page: « Facture d'avoir », the invoice it
+ * cancels, the reason, the amounts negative. Its payment is the invoice's.
  */
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -58,10 +64,21 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   ]);
   const inv = row as Invoice | null;
   if (!inv || (inv.user_id !== user!.id && me?.role !== "admin")) notFound();
-  const { data: pay } = await admin.from("payments").select("provider, reviewed_at, created_at").eq("id", inv.payment_id).maybeSingle();
+  const isCredit = inv.doc_type === "credit_note";
+  const { data: original } = isCredit && inv.credits_invoice_id
+    ? await admin.from("invoices").select("id, number, issued_at, payment_id").eq("id", inv.credits_invoice_id).maybeSingle()
+    : { data: null };
+  // An invoice says when a credit note cancelled it.
+  const { data: cancelledBy } = !isCredit
+    ? await admin.from("invoices").select("id, number, issued_at").eq("credits_invoice_id", inv.id).maybeSingle()
+    : { data: null };
+  const paymentId = (isCredit ? original?.payment_id : inv.payment_id) as string | null;
+  const { data: pay } = paymentId
+    ? await admin.from("payments").select("provider, reviewed_at, created_at").eq("id", paymentId).maybeSingle()
+    : { data: null };
   const contactEmail = (await getSettings()).contact_email;
 
-  const isInvoice = inv.doc_type === "invoice";
+  const isInvoice = inv.doc_type === "invoice" || isCredit;
   const hasVat = inv.vat_rate != null && inv.amount_ht != null;
 
   return (
@@ -81,7 +98,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             <p className="text-[12px]">www.mazed.immo · {contactEmail}</p>
           </div>
           <div className="text-end">
-            <h1 className="text-[22px] font-extrabold uppercase tracking-wide">{t(isInvoice ? "invoice" : "receipt")}</h1>
+            <h1 className="text-[22px] font-extrabold uppercase tracking-wide">{t(isCredit ? "creditNote" : isInvoice ? "invoice" : "receipt")}</h1>
             <p className="mt-1 text-[13px] font-bold"><Ltr>{inv.number}</Ltr></p>
             <p className="text-[12px]">{t("issuedOn", { date: formatDate(inv.issued_at, locale, "long") })}</p>
           </div>
@@ -114,15 +131,33 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={hasVat ? 3 : 1} className="pt-4 text-end text-[13px] font-extrabold">{t("total")}</td>
+              <td colSpan={hasVat ? 3 : 1} className="pt-4 text-end text-[13px] font-extrabold">{t(isCredit ? "totalCredit" : "total")}</td>
               <td className="mazed-tabular pt-4 text-end text-[15px] font-extrabold">{dt(inv.amount_ttc, locale)}</td>
             </tr>
           </tfoot>
         </table>
 
         <section className="mt-8 grid gap-1 text-[12px] text-[#3f3f46]">
-          <p>{t("paidBy", { method: t(pay?.provider === "d17" ? "d17" : "transfer") })} · {t("paidOn", { date: formatDate((pay?.reviewed_at ?? pay?.created_at ?? inv.issued_at) as string, locale, "long") })}</p>
-          <p>{t("reference")} : <Ltr>{paymentReference(inv.payment_id)}</Ltr></p>
+          {isCredit && original && (
+            // What it cancels, linked: the accountant follows one to the other.
+            <p className="font-semibold text-[#18181b]">
+              {t("cancels")}{" "}
+              <a href={`/${locale}/factures/${original.id}`} className="underline"><Ltr>{original.number}</Ltr></a>{" "}
+              {t("ofDate", { date: formatDate(original.issued_at as string, locale, "long") })}
+              {inv.reason && <> — {inv.reason}</>}
+            </p>
+          )}
+          {cancelledBy && (
+            <p className="font-semibold text-[#b91c1c]">
+              {t("cancelledBy")}{" "}
+              <a href={`/${locale}/factures/${cancelledBy.id}`} className="underline"><Ltr>{cancelledBy.number}</Ltr></a>{" "}
+              {t("ofDate", { date: formatDate(cancelledBy.issued_at as string, locale, "long") })}
+            </p>
+          )}
+          {!isCredit && (
+            <p>{t("paidBy", { method: t(pay?.provider === "d17" ? "d17" : "transfer") })} · {t("paidOn", { date: formatDate((pay?.reviewed_at ?? pay?.created_at ?? inv.issued_at) as string, locale, "long") })}</p>
+          )}
+          {paymentId && <p>{t("reference")} : <Ltr>{paymentReference(paymentId)}</Ltr></p>}
           {!hasVat && isInvoice && <p>{t("noVat")}</p>}
           {!isInvoice && <p className="mt-2 font-semibold">{t("receiptNote")}</p>}
         </section>

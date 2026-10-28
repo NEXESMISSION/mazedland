@@ -25,6 +25,7 @@ export function Confirm({
   variant = "danger",
   pending = false,
   reason,
+  choice,
   onConfirm,
   onCancel,
 }: {
@@ -37,17 +38,21 @@ export function Confirm({
   pending?: boolean;
   /** Ask for a written motif. `required` blocks confirm until it's filled. */
   reason?: { label: string; placeholder?: string; required?: boolean };
+  /** Pick one of these instead of writing: confirm hands back its value. */
+  choice?: { label: string; options: { value: string; label: string }[] };
   onConfirm: (reason: string) => void;
   onCancel: () => void;
 }) {
   const t = useTranslations("admin");
   const [text, setText] = useState("");
+  const [picked, setPicked] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
     setText("");
+    setPicked("");
     // Focus the motif when there is one, otherwise Cancel — never the
     // destructive button, so Enter can't destroy anything by reflex.
     const id = setTimeout(() => {
@@ -65,7 +70,7 @@ export function Confirm({
 
   if (!open) return null;
 
-  const blocked = Boolean(reason?.required) && text.trim().length === 0;
+  const blocked = (Boolean(reason?.required) && text.trim().length === 0) || (Boolean(choice) && !picked);
 
   return (
     <div
@@ -105,6 +110,35 @@ export function Confirm({
           </label>
         )}
 
+        {choice && (
+          <fieldset className="mt-4">
+            <legend className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-subtle">
+              {choice.label}
+              <span className="ms-1 text-[var(--tone-bad)]">*</span>
+            </legend>
+            <div className="mt-1.5 grid gap-1.5">
+              {choice.options.map((o) => (
+                <label
+                  key={o.value}
+                  className={`flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 text-[13px] text-foreground transition ${
+                    picked === o.value ? "border-gold bg-surface-2" : "border-border hover:border-gold-soft/50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="confirm-choice"
+                    value={o.value}
+                    checked={picked === o.value}
+                    onChange={() => setPicked(o.value)}
+                    className="accent-[var(--gold)]"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
+
         <div className="mt-5 flex justify-end gap-2">
           {/* A plain button, not <AdminButton>, because this one needs a ref:
               it is what receives focus when the dialog opens. */}
@@ -118,7 +152,7 @@ export function Confirm({
             pending={pending}
             disabled={blocked}
             disabledReason={blocked ? t("reasonRequired") : undefined}
-            onClick={() => onConfirm(text.trim())}
+            onClick={() => onConfirm(choice ? picked : text.trim())}
           >
             {confirmLabel ?? t("confirm")}
           </AdminButton>

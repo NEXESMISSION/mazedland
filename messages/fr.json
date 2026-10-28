@@ -292,7 +292,8 @@
         "body": "Nos coordonnées de paiement sont en cours de mise à jour. Ne faites pas de virement pour l'instant : vous pourrez payer et téléverser votre reçu dès qu'elles seront en ligne. Vos paiements en attente restent enregistrés.",
         "row": "Paiement indisponible pour le moment",
         "contact": "Nous contacter"
-      }
+      },
+      "creditNote": "Avoir"
     },
     "favorites": {
       "title": "Mes favoris",
@@ -1904,13 +1905,29 @@
       "confirmRejectLabel": "Refuser",
       "reasonLabel": "Motif (envoyé au vendeur)",
       "reasonPlaceholder": "Montant différent, reçu illisible, virement introuvable…",
-      "rejected": "Reçu refusé."
+      "rejected": "Reçu refusé.",
+      "invoice": "Facture",
+      "cancelledBy": "Annulé par l'avoir",
+      "creditNote": "Émettre un avoir",
+      "confirmCreditTitle": "Annuler la facture {number} ?",
+      "confirmCreditBody": "Un avoir de {amount} est émis : la facture reste, l'avoir l'annule. Le paiement passe en « Remboursé » et ce qu'il a acheté s'arrête (période d'abonnement, crédits). Un avoir ne s'annule pas.",
+      "confirmCreditLabel": "Émettre l'avoir",
+      "creditReasonLabel": "Motif (imprimé sur l'avoir)",
+      "creditReasons": {
+        "test": "Paiement de test",
+        "refunded": "Remboursé au client",
+        "mistake": "Accepté par erreur"
+      },
+      "credited": "Avoir émis."
     },
     "api": {
       "alreadyResolved": "Ce paiement est déjà « {status} ».",
       "wrongKind": "« {kind} » appartient au produit enchères, qui n'existe plus.",
       "reasonRequired": "Dites au vendeur ce qui ne va pas — il doit pouvoir renvoyer un reçu valable.",
-      "noReceipt": "Pas encore de reçu pour ce paiement : il ne peut pas être accepté avant que le client l'envoie."
+      "noReceipt": "Pas encore de reçu pour ce paiement : il ne peut pas être accepté avant que le client l'envoie.",
+      "creditReason": "Choisissez le motif de l'avoir.",
+      "creditNotCaptured": "Seul un paiement validé reçoit un avoir — celui-ci est « {status} ».",
+      "creditNoInvoice": "Ce paiement n'a pas de facture : rien à annuler."
     }
   },
   "adminActivity": {
@@ -3104,7 +3121,8 @@
     "project_delete": "Projet supprimé",
     "project_units_create": "Lots ajoutés à un projet",
     "project_units_update": "Lots d'un projet modifiés",
-    "project_units_delete": "Lots d'un projet supprimés"
+    "project_units_delete": "Lots d'un projet supprimés",
+    "admin_payment_credit_note": "Avoir émis"
   },
   "adminApi": {
     "bulk": {
@@ -4475,7 +4493,12 @@
     "paidOn": "validé le {date}",
     "reference": "Référence du paiement",
     "noVat": "Montant toutes taxes comprises.",
-    "receiptNote": "Ce reçu atteste le paiement. Il ne tient pas lieu de facture."
+    "receiptNote": "Ce reçu atteste le paiement. Il ne tient pas lieu de facture.",
+    "creditNote": "Facture d'avoir",
+    "cancels": "Annule la facture",
+    "ofDate": "du {date}",
+    "cancelledBy": "Annulée par l'avoir",
+    "totalCredit": "Total de l'avoir"
   },
   "settingsRegistry": {
     "groups": {
@@ -5140,7 +5163,8 @@
         "product_create": "Offre créée",
         "product_update": "Offre modifiée",
         "product_deactivate": "Offre désactivée",
-        "settings_update": "Réglages modifiés"
+        "settings_update": "Réglages modifiés",
+        "invoice_credit_note": "Avoir émis"
       },
       "fields": {
         "role": "Rôle",
