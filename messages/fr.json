@@ -1295,6 +1295,10 @@
     "admin_site_error": {
       "title": "Erreur sur le site",
       "body": "{place} — « {message} ». Les visiteurs voient une page d'erreur."
+    },
+    "plan_expiring": {
+      "title": "Votre abonnement se termine bientôt",
+      "body": "L'abonnement {plan} de « {shop} » se termine le {date}. Vous pouvez le renouveler dès maintenant."
     }
   },
   "publish": {
@@ -1905,7 +1909,8 @@
     "api": {
       "alreadyResolved": "Ce paiement est déjà « {status} ».",
       "wrongKind": "« {kind} » appartient au produit enchères, qui n'existe plus.",
-      "reasonRequired": "Dites au vendeur ce qui ne va pas — il doit pouvoir renvoyer un reçu valable."
+      "reasonRequired": "Dites au vendeur ce qui ne va pas — il doit pouvoir renvoyer un reçu valable.",
+      "noReceipt": "Pas encore de reçu pour ce paiement : il ne peut pas être accepté avant que le client l'envoie."
     }
   },
   "adminActivity": {
@@ -3852,14 +3857,14 @@
       "edit": "Modifier",
       "view": "Voir",
       "noName": "Sans nom",
-      "planRunning": "Abonnement {name} en cours jusqu'au {date}. Un abonnement plus grand démarre dès que son paiement est validé, et les jours qui restent sur celui-ci s'y ajoutent ; le même, ou un plus petit, prend la suite à cette date.",
+      "planRunning": "Abonnement {name} en cours jusqu'au {date}. Un abonnement plus grand démarre dès que son paiement est validé : ce qui reste de celui-ci est déduit de son prix. Un plus petit prend la suite à cette date.",
       "planNone": "Aucun abonnement en cours : vos annonces suivent les règles d'un particulier (annonces gratuites en nombre limité, sans frais par annonce).",
       "perMonthTnd": "DT / mois",
       "planQuota": "{count, plural, one {# annonce en ligne} other {# annonces en ligne}}",
       "renewWith": "Prolonger avec celui-ci",
       "choose": "Choisir",
       "planAfterApproval": "Les abonnements sont disponibles dès que l'agence est ouverte.",
-      "planHow": "Paiement par D17 ou virement, comme les autres paiements Mazed Immo. L'abonnement démarre dès que le reçu est validé, pour 30 jours.",
+      "planHow": "Paiement par D17 ou virement, comme les autres paiements Mazed Immo. L'abonnement démarre le jour où le reçu est validé et dure jusqu'au même jour le mois suivant.",
       "history": "Historique",
       "verifiedYes": "Agence vérifiée : le badge s'affiche sur votre page et vos annonces.",
       "verifiedHow": "Envoyez l'extrait RNE ou la patente : une fois contrôlés, le badge « vérifié » s'affiche sur votre page.",
@@ -3889,7 +3894,19 @@
         "row": "Paiement bientôt disponible",
         "contact": "Nous contacter"
       },
-      "upgradeNow": "Passer à celui-ci maintenant"
+      "upgradeNow": "Passer à celui-ci maintenant",
+      "upgradeBadge": "Upgrade",
+      "calcPrice": "Prix de {plan}",
+      "calcCredit": "{days, plural, one {Reste de votre abonnement (# jour)} other {Reste de votre abonnement (# jours)}}",
+      "calcTotal": "À payer",
+      "planDates": "Du {from} au {to}",
+      "planStartsLater": "Après votre abonnement actuel : du {from} au {to}",
+      "planYours": "Votre abonnement, jusqu'au {date}.",
+      "planRenewFrom": "Vous pourrez le renouveler à partir du {date} ; une notification vous le rappellera.",
+      "upgradeFor": "Passer à {plan} — {amount}",
+      "chooseFrom": "Choisir pour le {date} — {amount}",
+      "renewFor": "Renouveler — {amount}",
+      "chooseFor": "Choisir — {amount}"
     },
     "clients": {
       "open": "En cours",
@@ -4129,7 +4146,8 @@
       "slugTaken": "Cette adresse est déjà prise.",
       "notApproved": "L'agence doit être ouverte pour souscrire un abonnement.",
       "plan": "Abonnement inconnu.",
-      "reason": "Indiquez un motif."
+      "reason": "Indiquez un motif.",
+      "planAlready": "Vous avez déjà cet abonnement jusqu'au {date}. Vous pourrez le renouveler à partir du {from}."
     },
     "leadErrors": {
       "name": "Indiquez un nom (2 lettres au moins).",
@@ -4856,6 +4874,10 @@
     "error_alert_hours": {
       "label": "Une alerte par erreur toutes les",
       "hint": "La même erreur répétée par chaque visiteur ne fait qu'une alerte ; si elle continue après ce délai, elle revient."
+    },
+    "plan_renew_days": {
+      "label": "Renouveler un abonnement d'agence",
+      "hint": "Combien de jours avant sa fin une agence peut racheter le même abonnement. Avant, la page lui dit qu'elle l'a déjà jusqu'à telle date."
     }
   },
   "ads": {

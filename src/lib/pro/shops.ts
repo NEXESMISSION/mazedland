@@ -7,6 +7,7 @@
  * have already checked who is asking.
  */
 import type { getServiceSupabase } from "@/lib/supabase/admin";
+import { addMonths, monthsOf, quotePlanChange, type PlanPeriod, type PlanQuote } from "./planChange";
 import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
@@ -286,15 +287,62 @@ export function carryOver(input: { now: Date; quota: number; periods: PaidPeriod
 }
 
 /**
+ * The shop's periods still ahead, with what each plan costs and whether it
+ * was paid for — what quotePlanChange needs (src/lib/pro/planChange.ts).
+ */
+export async function loadPlanPeriods(admin: Admin, shopId: string, now: Date = new Date()): Promise<PlanPeriod[]> {
+  const { data } = await admin
+    .from("shop_subscriptions")
+    .select("id, listing_quota, starts_at, ends_at, payment_id, product:products (price), payment:payments (status)")
+    .eq("shop_id", shopId)
+    .eq("status", "active")
+    .gt("ends_at", now.toISOString());
+  const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
+  return ((data ?? []) as unknown as {
+    id: string; listing_quota: number; starts_at: string; ends_at: string; payment_id: string | null;
+    product: { price: number | string } | { price: number | string }[] | null;
+    payment: { status: string } | { status: string }[] | null;
+  }[]).map((r) => ({
+    id: r.id,
+    quota: r.listing_quota,
+    price: Number(one(r.product)?.price ?? 0),
+    paid: !!r.payment_id && one(r.payment)?.status === "captured",
+    startsAt: new Date(r.starts_at),
+    endsAt: new Date(r.ends_at),
+  }));
+}
+
+/** What choosing this plan would mean for this shop today: price, discount, dates (quotePlanChange). */
+export async function quoteForShop(
+  admin: Admin,
+  shopId: string,
+  plan: { listing_quota: number; price: number | string; duration_days: number | null },
+  renewDays: number,
+  now: Date = new Date(),
+): Promise<PlanQuote> {
+  return quotePlanChange({
+    now,
+    target: { quota: plan.listing_quota, price: Number(plan.price), months: monthsOf(Number(plan.duration_days)) },
+    periods: await loadPlanPeriods(admin, shopId, now),
+    renewDays,
+  });
+}
+
+/**
  * One paid period of a plan, as « Accepter » in the payment queue grants it:
- * starting by periodStart, and — for an upgrade that starts at once — longer
- * by the time left on the smaller periods it replaces (carryOver), which end.
- * The payment id is unique on the period, so the same receipt never grants
- * twice, and a second call changes nothing.
+ * starting by periodStart. The payment id is unique on the period, so the same
+ * receipt never grants twice, and a second call changes nothing.
+ *
+ * An upgrade starts at once and the smaller periods it replaces end (the
+ * running one today, one paid in advance is cancelled). Since 2026-10-28 the
+ * time they had left was taken off the price (quotePlanChange), so the new
+ * period is one plan length — the same day next month. A payment made before
+ * that rule (`legacy`: no `change` in its metadata) paid full price and still
+ * gets the days left added (carryOver), as it was promised.
  */
 export async function grantPlanPeriod(
   admin: Admin,
-  g: { shopId: string; productId: string; paymentId: string; quota: number; days: number; grantedBy: string },
+  g: { shopId: string; productId: string; paymentId: string; quota: number; days: number; grantedBy: string; legacy?: boolean },
   now: Date = new Date(),
 ): Promise<{ startsAt: Date; endsAt: Date; carriedDays: number } | { error: unknown }> {
   const starts = await nextPeriodStart(admin, g.shopId, g.quota, now);
@@ -319,7 +367,10 @@ export async function grantPlanPeriod(
       })),
     });
   }
-  const ends = new Date(starts.getTime() + g.days * 86_400_000 + carry.carriedMs);
+  const ends = g.legacy
+    ? new Date(starts.getTime() + g.days * 86_400_000 + carry.carriedMs)
+    : addMonths(starts, monthsOf(g.days));
+  if (!g.legacy) carry.carriedMs = 0;
   const { data: inserted, error } = await admin
     .from("shop_subscriptions")
     .upsert(

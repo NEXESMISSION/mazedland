@@ -42,6 +42,8 @@ export const SMS_KINDS = new Set<string>([
   "listing_published", "listing_approved",
   "listing_rejected", "listing_payment_rejected",
   "listing_expiring", "listing_expired",
+  // An agence's plan ends in a few days (0186): renewing keeps its annonces online.
+  "plan_expiring",
   "listing_unscheduled_reminder",
   // Payouts (seller)
   "payout_processing", "payout_paid", "payout_rejected",

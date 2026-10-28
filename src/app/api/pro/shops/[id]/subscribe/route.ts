@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
-import { apiTranslator } from "@/lib/i18n/server";
+import { apiTranslator, requestLocale } from "@/lib/i18n/server";
 import { proGate } from "@/lib/pro/api";
 import { paymentsClosed } from "@/lib/payments/server";
+import { getSettings } from "@/lib/settings/server";
+import { quoteForShop } from "@/lib/pro/shops";
+import { formatDate } from "@/lib/utils";
 
 /**
  * POST /api/pro/shops/:id/subscribe  { plan: "pro-starter" | "pro-pro" | "pro-business" }
@@ -13,6 +16,16 @@ import { paymentsClosed } from "@/lib/payments/server";
  * the usual checkout to send the receipt. The period opens when an admin
  * accepts the receipt (/api/admin/paiements). A shop must be approved first:
  * nobody pays for a shop that may not open.
+ *
+ * What it costs follows the owner's rules (src/lib/pro/planChange.ts): an
+ * upgrade costs the new price less what is left of the current plan; a
+ * smaller plan follows the current one; the same plan is not bought again
+ * while it runs, except in its last days (409 « déjà jusqu'au … »).
+ *
+ * One request per agence at a time: choosing a plan replaces the agence's
+ * payments still waiting for a receipt (they are marked failed, like a
+ * cancellation), so the console sees only the last choice — on 2026-10-28 it
+ * saw a Pro 59 DT nobody meant to pay beside the Business 119 DT.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -31,23 +44,41 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: plan } = await admin
     .from("products")
-    .select("id, slug, price, duration_days, listing_quota, name_fr")
+    .select("id, slug, price, duration_days, listing_quota, name_fr, name_ar")
     .eq("slug", slug)
     .eq("kind", "subscription")
     .eq("is_active", true)
     .maybeSingle();
   if (!plan) return NextResponse.json({ error: "invalid", detail: t("errors.plan") }, { status: 400 });
 
-  // The same plan already waiting for a receipt: reuse it, never two.
-  const { data: existing } = await admin
+  // A receipt for this plan already sent and waiting for the console: that one.
+  const { data: sent } = await admin
     .from("payments")
     .select("id")
-    .eq("user_id", user.id)
     .eq("kind", "subscription")
-    .in("status", ["pending", "pending_review"])
+    .eq("status", "pending_review")
     .contains("metadata", { shop_id: id, product_id: plan.id })
     .limit(1);
-  if (existing && existing.length > 0) return NextResponse.json({ ok: true, paymentId: existing[0].id });
+  if (sent && sent.length > 0) return NextResponse.json({ ok: true, paymentId: sent[0].id });
+
+  const settings = await getSettings();
+  const now = new Date();
+  const quote = await quoteForShop(admin, id, plan, settings.plan_renew_days, now);
+  if (quote.kind === "same") {
+    const locale = requestLocale(req);
+    return NextResponse.json(
+      { error: "conflict", detail: t("errors.planAlready", { date: formatDate(quote.until.toISOString(), locale, "medium"), from: formatDate(quote.renewFrom.toISOString(), locale, "medium") }) },
+      { status: 409 },
+    );
+  }
+
+  // The agence's earlier choices still waiting for a receipt give way to this one.
+  await admin
+    .from("payments")
+    .update({ status: "failed", admin_notes: "Remplacé par un autre choix d'abonnement", reviewed_at: now.toISOString() })
+    .eq("kind", "subscription")
+    .eq("status", "pending")
+    .contains("metadata", { shop_id: id });
 
   const { data: created, error } = await admin
     .from("payments")
@@ -55,7 +86,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       user_id: user.id,
       kind: "subscription",
       provider: "bank_transfer",
-      amount: plan.price,
+      amount: quote.amount,
       status: "pending",
       metadata: {
         shop_id: id,
@@ -63,12 +94,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         product_slug: plan.slug,
         duration_days: plan.duration_days,
         listing_quota: plan.listing_quota,
-        initiated_at: new Date().toISOString(),
+        initiated_at: now.toISOString(),
+        // How the amount was reached, frozen when it was quoted (planChange.ts).
+        change: quote.kind,
+        list_price: quote.price,
+        ...(quote.kind === "upgrade" ? { credit: quote.credit, credit_lines: quote.lines, replaces: quote.replaces } : {}),
+        starts_at: quote.startsAt.toISOString(),
+        ends_at: quote.endsAt.toISOString(),
       },
     })
     .select("id")
     .single();
   if (error || !created) return fail("payment_create_failed", 500, error);
-  logAction(req, user, "shop.subscribe", { id, plan: plan.slug, paymentId: created.id });
+  logAction(req, user, "shop.subscribe", { id, plan: plan.slug, paymentId: created.id, change: quote.kind, amount: quote.amount });
   return NextResponse.json({ ok: true, paymentId: created.id });
 }

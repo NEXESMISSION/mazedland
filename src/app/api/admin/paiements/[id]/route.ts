@@ -89,6 +89,12 @@ export async function POST(
 
   // ── Accept ────────────────────────────────────────────────────────────────
   if (action === "accept") {
+    // A payment is accepted on its receipt. On 2026-10-28 a Pro 59 DT with no
+    // receipt — a choice the agence had dropped for Business — was accepted
+    // and invoiced. Nothing to pay (an upgrade fully covered) needs none.
+    if (pay.status !== "pending_review" && Number(pay.amount) > 0) {
+      return NextResponse.json({ error: "conflict", detail: t("noReceipt") }, { status: 409 });
+    }
     const { error } = await admin
       .from("payments")
       .update({
@@ -103,7 +109,7 @@ export async function POST(
       .in("status", ["pending", "pending_review"]);
     if (error) return fail("capture_failed", 500, error);
 
-    const meta = (pay.metadata ?? {}) as { product_id?: string; shop_id?: string; listing_id?: string; product_slug?: string };
+    const meta = (pay.metadata ?? {}) as { product_id?: string; shop_id?: string; listing_id?: string; product_slug?: string; change?: string };
     let granted: string | null = null;
 
     // A pack is only worth money if the credits actually appear. Nothing in
@@ -159,6 +165,8 @@ export async function POST(
         quota,
         days: Number.isFinite(days) && days > 0 ? days : 30,
         grantedBy: user.id,
+        // Quoted before 2026-10-28: full price, so the old days-carried rule.
+        legacy: !meta.change,
       });
       if ("error" in period) return fail("subscription_grant_failed", 500, period.error);
       granted = `${product?.name_fr ?? "Pro"} jusqu'au ${period.endsAt.toISOString().slice(0, 10)}`
