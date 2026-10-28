@@ -267,6 +267,8 @@ export function PublishWizard({
   const minPhotos = useSetting("moderation_min_photos");
   const priceHelp = useSetting("feature_price_help");
   const canEdit = useSetting("feature_listing_edit");
+  // Version B, « Publier en parlant »: offered here while the assistant can answer.
+  const chatOn = useSetting("feature_publish_chat");
 
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<"idle" | "saving" | "ok">("idle");
@@ -1377,6 +1379,19 @@ export function PublishWizard({
           </div>
         )}
 
+        {chatOn && aiAvailable && !editing && !resumed && (
+          <Link
+            href={"/annonces/nouvelle/parler" as never}
+            className="mt-4 flex items-center gap-3 rounded-2xl border border-gold-soft bg-gold-faint px-4 py-3 transition hover:border-gold"
+          >
+            <Sparkles className="size-5 shrink-0 text-gold" />
+            <span className="min-w-0">
+              <span className="block text-[13px] font-extrabold text-foreground">{t("tryChat")}</span>
+              <span className="block text-[12px] text-muted">{t("tryChatHint")}</span>
+            </span>
+          </Link>
+        )}
+
         {resumed && !editing && (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold-soft bg-gold-faint px-4 py-3">
             <p className="text-[12.5px] font-semibold text-gold">
@@ -2462,7 +2477,7 @@ export function PublishWizard({
  * empty answer is dropped rather than stored as `""` — an absent key means
  * "not stated", which is the truth, while an empty string is a value.
  */
-function typedAttributes(
+export function typedAttributes(
   defs: AttributeDef[],
   raw: Record<string, string>,
 ): Record<string, unknown> {

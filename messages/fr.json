@@ -1465,6 +1465,8 @@
     "aiTooShort": "Écrivez une phrase un peu plus longue.",
     "aiQuestions": "Pour compléter l'annonce, dites-nous aussi :",
     "aiPrivacy": "Votre numéro et vos e-mails ne sont jamais envoyés. Rien n'est publié sans que vous l'ayez vérifié.",
+    "tryChat": "Nouveau : publier en parlant",
+    "tryChatHint": "Discutez avec l'assistant au micro, il remplit tout, vous publiez.",
     "aiVoiceStart": "Dicter",
     "aiVoiceStop": "Arrêter",
     "aiVoiceLang": "Langue parlée",
@@ -1584,6 +1586,57 @@
     "invalidAttribute": "Valeur impossible pour « {label} » : elle doit être supérieure à 0 et réaliste.",
     "limitPaymentsClosed": "Les abonnements Pro ouvrent très bientôt. En attendant, écrivez-nous : nous pouvons activer votre accès à la main.",
     "contactForPro": "Nous écrire pour passer Pro"
+  },
+  "publishChat": {
+    "metaTitle": "Publier en parlant",
+    "title": "Publier en parlant",
+    "subtitle": "Appuyez sur le micro et décrivez votre bien comme au téléphone. Je remplis l'annonce, vous publiez.",
+    "toForm": "Version formulaire",
+    "greeting": "Bonjour ! Qu'est-ce que vous voulez publier ? Dites-moi le type de bien, la ville, la surface et le prix. Vous pouvez parler en tunisien, en français ou en anglais.",
+    "noted": "C'est noté. Autre chose ?",
+    "failed": "Je n'ai pas pu lire ce message. Réessayez, ou passez au formulaire.",
+    "offline": "Connexion perdue. Réessayez.",
+    "thinking": "Je lis…",
+    "listening": "Je vous écoute… Appuyez à nouveau pour envoyer.",
+    "tapToSpeak": "Appuyez sur le micro et parlez",
+    "speak": "Parler",
+    "stop": "Arrêter et envoyer",
+    "type": "Écrire au lieu de parler",
+    "typePlaceholder": "Écrivez votre message…",
+    "send": "Envoyer",
+    "noMic": "Ce navigateur n'écoute pas : écrivez vos messages.",
+    "yourAnnonce": "Votre annonce",
+    "photosCount": "{count, plural, =0 {Aucune photo} one {# photo} other {# photos}}",
+    "stillMissing": "Il manque encore : {list}. Dites-le au micro.",
+    "addPhotos": "Ajouter des photos",
+    "publish": "Publier",
+    "photosHint": "Au moins une photo. Avec 3 ou plus, l'annonce peut passer en ligne tout de suite.",
+    "photosDone": "Terminé",
+    "photosTitle": "Photos",
+    "sheetTitle": "Publier l'annonce",
+    "nothingYet": "Parlez-moi d'abord de votre bien.",
+    "sayMissing": "Il manque : {list}. Fermez cette fenêtre et dites-le au micro.",
+    "finishInForm": "Terminer dans le formulaire",
+    "publishNow": "Publier",
+    "publishWhenReady": "Tout est prêt : publier",
+    "needMissing": "Complétez d'abord ce qui manque.",
+    "needPhoto": "Ajoutez au moins une photo.",
+    "needPhone": "Indiquez un numéro joignable.",
+    "needUploads": "Les photos sont encore en cours d'envoi.",
+    "needAttestation": "Cochez l'attestation pour publier.",
+    "saveFailed": "L'annonce n'a pas pu être enregistrée. Réessayez.",
+    "missing": {
+      "category": "le type de bien",
+      "governorate": "la ville",
+      "price": "le prix"
+    },
+    "fields": {
+      "sale": "À vendre",
+      "rent": "À louer",
+      "area": "{n} m²",
+      "rooms": "S+{n}",
+      "floor": "Étage {n}"
+    }
   },
   "photoUploader": {
     "addPhotos": "Ajoutez vos photos",
@@ -4933,6 +4986,14 @@
     "feature_ai_voice": {
       "label": "Dictée de l'annonce",
       "hint": "Un micro dans « Décrivez votre bien en une phrase » : le vendeur parle en tunisien, en français ou en anglais, les mots s'écrivent dans la case, puis l'assistant remplit l'annonce. Seulement dans les navigateurs qui savent écouter (Chrome, Edge, Safari)."
+    },
+    "feature_publish_chat": {
+      "label": "Publier en parlant (version B)",
+      "hint": "Une deuxième façon de publier : le vendeur discute avec l'assistant, surtout à la voix, et appuie sur « Publier » à la fin. Un lien la propose en haut du formulaire. Elle a besoin de l'assistant IA (clé, interrupteur et budget)."
+    },
+    "publish_chat_default": {
+      "label": "« Vendre » ouvre la version B",
+      "hint": "Allumé : le bouton « Vendre » ouvre « Publier en parlant », le formulaire reste à un lien. Éteint : le formulaire d'abord."
     },
     "feature_error_alerts": {
       "label": "Alertes d'erreur",

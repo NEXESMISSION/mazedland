@@ -52,7 +52,7 @@ export const dynamic = "force-dynamic";
 export default async function NewListingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ draft?: string | string[]; deal?: string | string[]; edit?: string | string[]; shop?: string | string[] }>;
+  searchParams: Promise<{ draft?: string | string[]; deal?: string | string[]; edit?: string | string[]; shop?: string | string[]; forme?: string | string[] }>;
 }) {
   const sp = await searchParams;
   const wantedDraft = Array.isArray(sp.draft) ? sp.draft[0] : sp.draft;
@@ -92,6 +92,15 @@ export default async function NewListingPage({
         <p className="text-[13px] text-muted">{t("serviceUnavailable")}</p>
       </main>
     );
+  }
+
+  // Version B as the way in (publish_chat_default): « Vendre » lands in the
+  // conversation. Never for a draft, an edit, a shop or a rental asked for by
+  // name, nor for someone who came back to the form on purpose (?forme=1); the
+  // conversation sends people here itself when the assistant cannot answer.
+  const wantsForm = Boolean(sp.forme) || wantedDraft || wantedEdit || initialShopId || askedDeal;
+  if (!wantsForm && settings.publish_chat_default && settings.feature_publish_chat && (await aiAvailable(admin))) {
+    redirect(`/${locale}/annonces/nouvelle/parler`);
   }
 
   const [catRes, attrRes, creditRes, profRes, draftRes, pricedRes] = await Promise.all([
