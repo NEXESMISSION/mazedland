@@ -137,6 +137,9 @@ export const SETTINGS = {
   privacy_activity_days: { group: "privacy", type: "int", default: 365, min: 0, max: 730, unit: "days", choices: [90, 180, 365, 730, 0] },
   privacy_notifications_days: { group: "privacy", type: "int", default: 30, min: 0, max: 365, unit: "days", choices: [7, 14, 30, 60, 90, 180, 0] },
   privacy_traces_days: { group: "privacy", type: "int", default: 365, min: 0, max: 730, unit: "days", choices: [90, 180, 365, 730, 0] },
+  // The scheduled jobs' run log (0188): technical, no personal data, and it
+  // grew to half the database. Always pruned — no 0 here.
+  cron_history_days: { group: "privacy", type: "int", default: 7, min: 1, max: 90, unit: "days", choices: [3, 7, 14, 30, 90] },
 } as const satisfies Record<string, SettingDef>;
 
 export type SettingKey = keyof typeof SETTINGS;
