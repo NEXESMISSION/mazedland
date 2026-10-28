@@ -1,31 +1,67 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Mic, Square } from "lucide-react";
 import { useSetting } from "@/components/settings/SettingsProvider";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
-import {
-  DICTATION_LANGS,
-  asDictationLang,
-  recognitionCtor,
-  speechLang,
-  transcriptOf,
-  withDictation,
-  type DictationLang,
-  type Recognition,
-} from "@/components/search/speech";
+import { DICTATION_LANGS, withDictation, type DictationLang } from "@/components/search/speech";
+import { useDictation, useDictationLang, type DictationProblem } from "./useDictation";
 
-const noop = () => () => {};
-const LANG_KEY = "mazed_dictation_lang";
+const PROBLEM_KEY: Record<DictationProblem, string> = {
+  denied: "aiVoiceDenied",
+  noSpeech: "aiVoiceNoSpeech",
+  langUnsupported: "aiVoiceLangUnsupported",
+  failed: "aiVoiceFailed",
+};
 
-function storedLang(): DictationLang | null {
-  try {
-    return asDictationLang(window.localStorage.getItem(LANG_KEY));
-  } catch {
-    return null;
-  }
+/** A toast that says what went wrong with the microphone, in the page's language. */
+export function useDictationProblem() {
+  const t = useTranslations("publish");
+  const { toast } = useToast();
+  return (p: DictationProblem) => toast(t(PROBLEM_KEY[p]), "error");
+}
+
+/** Tunisian, French or English: the language the browser listens for. */
+export function DictationLangPicker({
+  value,
+  onChange,
+  disabled = false,
+  className,
+}: {
+  value: DictationLang;
+  onChange: (l: DictationLang) => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  const t = useTranslations("publish");
+  const names: Record<DictationLang, string> = {
+    "ar-TN": t("aiVoiceLangTn"),
+    "fr-FR": t("aiVoiceLangFr"),
+    "en-US": t("aiVoiceLangEn"),
+  };
+  return (
+    <div role="radiogroup" aria-label={t("aiVoiceLang")} className={cn("inline-flex rounded-full bg-surface p-0.5 ring-1 ring-border", className)}>
+      {DICTATION_LANGS.map((l) => (
+        <button
+          key={l}
+          type="button"
+          role="radio"
+          aria-checked={value === l}
+          disabled={disabled}
+          onClick={() => onChange(l)}
+          lang={l.slice(0, 2)}
+          className={cn(
+            "tap-target rounded-full px-3 py-1.5 text-[12px] font-bold transition disabled:opacity-60",
+            value === l ? "bg-[var(--gold)] text-[var(--background)]" : "text-muted hover:text-foreground",
+          )}
+        >
+          {names[l]}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -50,14 +86,8 @@ export function ListingDictation({
   const t = useTranslations("publish");
   const locale = useLocale();
   const enabled = useSetting("feature_ai_voice");
-  const { toast } = useToast();
-  // Known only in the browser: rendered after hydration, never on the server.
-  const supported = useSyncExternalStore(noop, () => recognitionCtor() !== null, () => false);
-  const [lang, setLang] = useState<DictationLang>(
-    () => (typeof window === "undefined" ? null : storedLang()) ?? (speechLang(locale) as DictationLang),
-  );
-  const [listening, setListening] = useState(false);
-  const rec = useRef<Recognition | null>(null);
+  const [lang, setLang] = useDictationLang(locale);
+  const { supported, listening, start, stop } = useDictation(useDictationProblem());
   // The box as it was when the seller started talking, and the latest setter.
   const before = useRef("");
   const latest = useRef({ value, onChange });
@@ -65,67 +95,14 @@ export function ListingDictation({
     latest.current = { value, onChange };
   });
 
-  useEffect(() => () => rec.current?.abort(), []);
-
   if (!enabled || !supported) return null;
 
-  const names: Record<DictationLang, string> = {
-    "ar-TN": t("aiVoiceLangTn"),
-    "fr-FR": t("aiVoiceLangFr"),
-    "en-US": t("aiVoiceLangEn"),
-  };
-
-  function pick(l: DictationLang) {
-    setLang(l);
-    try {
-      window.localStorage.setItem(LANG_KEY, l);
-    } catch {
-      /* private window: the choice lasts for this page only */
-    }
-  }
-
   function toggle() {
-    if (listening) {
-      rec.current?.stop();
-      return;
-    }
-    const Ctor = recognitionCtor();
-    if (!Ctor) return;
-    const r = new Ctor();
-    r.lang = lang;
-    r.interimResults = true;
-    r.maxAlternatives = 1;
-    // A description takes more than one breath: keep listening until the
-    // seller stops it (or the browser does, after a long silence).
-    r.continuous = true;
+    if (listening) return stop();
     before.current = latest.current.value;
-    r.onresult = (e) => {
-      latest.current.onChange(withDictation(before.current, transcriptOf(e.results), maxLength));
-    };
-    r.onerror = (e) => {
-      if (e.error === "aborted") return;
-      toast(
-        e.error === "not-allowed" || e.error === "service-not-allowed"
-          ? t("aiVoiceDenied")
-          : e.error === "no-speech"
-            ? t("aiVoiceNoSpeech")
-            : e.error === "language-not-supported"
-              ? t("aiVoiceLangUnsupported")
-              : t("aiVoiceFailed"),
-        "error",
-      );
-    };
-    r.onend = () => {
-      setListening(false);
-      rec.current = null;
-    };
-    rec.current = r;
-    try {
-      r.start();
-      setListening(true);
-    } catch {
-      toast(t("aiVoiceFailed"), "error");
-    }
+    start(lang, {
+      onText: (said) => latest.current.onChange(withDictation(before.current, said, maxLength)),
+    });
   }
 
   return (
@@ -145,25 +122,7 @@ export function ListingDictation({
         {listening ? <Square className="size-3.5" fill="currentColor" /> : <Mic className="size-4" />}
         {listening ? t("aiVoiceStop") : t("aiVoiceStart")}
       </button>
-      <div role="radiogroup" aria-label={t("aiVoiceLang")} className="inline-flex rounded-full bg-surface p-0.5 ring-1 ring-border">
-        {DICTATION_LANGS.map((l) => (
-          <button
-            key={l}
-            type="button"
-            role="radio"
-            aria-checked={lang === l}
-            disabled={listening}
-            onClick={() => pick(l)}
-            lang={l.slice(0, 2)}
-            className={cn(
-              "tap-target rounded-full px-3 py-1.5 text-[12px] font-bold transition disabled:opacity-60",
-              lang === l ? "bg-[var(--gold)] text-[var(--background)]" : "text-muted hover:text-foreground",
-            )}
-          >
-            {names[l]}
-          </button>
-        ))}
-      </div>
+      <DictationLangPicker value={lang} onChange={setLang} disabled={listening} />
       <p role="status" aria-live="polite" className={cn("w-full text-[11.5px] text-muted", !listening && "sr-only")}>
         {listening ? t("aiVoiceListening") : ""}
       </p>

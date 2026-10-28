@@ -26,6 +26,10 @@ export const SETTINGS = {
   ai_enabled: { group: "features", type: "bool", default: true },
   // Dictation in the listing assistant's box: Tunisian, French or English.
   feature_ai_voice: { group: "features", type: "bool", default: true, client: true },
+  // « Publier en parlant » (version B): an annonce made in a conversation, voice first.
+  feature_publish_chat: { group: "features", type: "bool", default: true, client: true },
+  // « Vendre » opens version B instead of the form (the form stays one tap away).
+  publish_chat_default: { group: "features", type: "bool", default: false },
   feature_listing_edit: { group: "features", type: "bool", default: true, client: true, href: "/admin/annonces?status=edits" },
   feature_reports: { group: "features", type: "bool", default: true, client: true },
   feature_price_help: { group: "features", type: "bool", default: true, client: true },

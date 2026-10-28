@@ -88,6 +88,36 @@ Writing:
 - The site is in French and Arabic: when the seller spoke English, write the title and the description in French (the questions stay in English).`;
 }
 
+/** One line of the « Publier en parlant » conversation (version B). */
+export type ChatTurn = { role: "seller" | "assistant"; text: string };
+
+/** How much of the conversation the model reads back: the last turns, each bounded. */
+export const CHAT_MAX_TURNS = 24;
+export const CHAT_MAX_TURN_CHARS = 800;
+
+/**
+ * The same reading as the one-sentence assistant, held as a conversation: the
+ * whole exchange so far comes in, the whole annonce goes out, plus what to
+ * say next and whether the seller asked to publish.
+ */
+export function buildChatSystemPrompt(categories: DraftCategory[]): string {
+  return `${buildSystemPrompt(categories)}
+
+This is a conversation, not a single message. You receive the whole exchange so far: the seller's messages (most of them dictated by voice) and your earlier replies.
+- Read all of the seller's messages together. A later message corrects an earlier one: "non, le prix c'est 300 mille" replaces the price said before. Answers like "oui", "deux", "au 3e" answer your previous question.
+- Return the full annonce as you now understand it, every field, not only what changed.
+- reply: what you say next, in the seller's language and register (Derja in Arabic script when they speak Derja), at most two short sentences that read well aloud. When something new was said, confirm it in a few words, then ask the ONE most useful missing thing. Never read the whole annonce back. Once the deal, the category, the governorate, the price and the surface are known, also tell them they can add photos and say "انشر" / "publier" / "publish" when they are ready.
+- wants_to_publish: true only when the seller's last message asks to publish or says they are done (انشر، انشرها، يزي هكا، publie, c'est bon, publish, that's all); otherwise false.
+- questions: the things still missing, most important first.`;
+}
+
+/** The conversation as the model reads it, oldest first. */
+export function chatTranscript(turns: ChatTurn[]): string {
+  return turns
+    .map((t) => `${t.role === "seller" ? "Seller" : "You"}: ${t.text}`)
+    .join("\n");
+}
+
 const nullable = (schema: Record<string, unknown>) => ({ anyOf: [schema, { type: "null" }] });
 
 /** The JSON schema the model must answer in (structured outputs). */
@@ -135,7 +165,25 @@ export const LISTING_DRAFT_SCHEMA = {
   },
 } as const;
 
-const inRange = (v: unknown, min: number, max: number, integer = false): number | null => {
+/** The conversation's answer: the whole annonce, plus what to say and whether to publish. */
+export const LISTING_CHAT_SCHEMA = {
+  ...LISTING_DRAFT_SCHEMA,
+  required: [...LISTING_DRAFT_SCHEMA.required, "reply", "wants_to_publish"],
+  properties: {
+    ...LISTING_DRAFT_SCHEMA.properties,
+    reply: { type: "string" },
+    wants_to_publish: { type: "boolean" },
+  },
+} as const;
+
+/** What to say next, kept short and free of contact details. */
+export function chatReply(raw: unknown): { reply: string; wantsToPublish: boolean } {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const reply = typeof r.reply === "string" ? r.reply.replace(/\s+/g, " ").trim().slice(0, 400) : "";
+  return { reply: hasContactInText(reply) ? "" : reply, wantsToPublish: r.wants_to_publish === true };
+}
+
+const inRange =(v: unknown, min: number, max: number, integer = false): number | null => {
   const n = Number(v);
   if (v === null || v === undefined || !Number.isFinite(n) || n < min || n > max) return null;
   return integer ? Math.round(n) : Math.round(n * 100) / 100;
