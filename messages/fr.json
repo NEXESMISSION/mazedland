@@ -1465,6 +1465,17 @@
     "aiTooShort": "Écrivez une phrase un peu plus longue.",
     "aiQuestions": "Pour compléter l'annonce, dites-nous aussi :",
     "aiPrivacy": "Votre numéro et vos e-mails ne sont jamais envoyés. Rien n'est publié sans que vous l'ayez vérifié.",
+    "aiVoiceStart": "Dicter",
+    "aiVoiceStop": "Arrêter",
+    "aiVoiceLang": "Langue parlée",
+    "aiVoiceLangTn": "Tunisien",
+    "aiVoiceLangFr": "Français",
+    "aiVoiceLangEn": "English",
+    "aiVoiceListening": "Je vous écoute… Dites tout, puis appuyez sur « Arrêter » et « Remplir pour moi ».",
+    "aiVoiceDenied": "Le micro est refusé : autorisez-le dans le navigateur.",
+    "aiVoiceNoSpeech": "Je n'ai rien entendu. Réessayez.",
+    "aiVoiceLangUnsupported": "Ce navigateur n'écoute pas cette langue. Choisissez-en une autre.",
+    "aiVoiceFailed": "La dictée n'a pas marché. Écrivez la phrase.",
     "editTitle": "Modifier mon annonce",
     "editSubtitle": "Corrigez ce qui doit l'être. Une fois enregistrée, la modification passe par notre équipe : l'annonce quitte le site jusqu'à sa validation.",
     "editBanner": "Vous modifiez une annonce en ligne. Rien ne change tant que vous n'avez pas enregistré ; ensuite, elle est hors ligne jusqu'à ce que notre équipe valide la modification.",
@@ -4918,6 +4929,10 @@
     "feature_voice_search": {
       "label": "Recherche vocale",
       "hint": "Un micro dans les champs de recherche : on dit ce qu'on cherche, les mots remplissent le champ et la recherche part. Seulement dans les navigateurs qui savent écouter (Chrome, Edge, Safari)."
+    },
+    "feature_ai_voice": {
+      "label": "Dictée de l'annonce",
+      "hint": "Un micro dans « Décrivez votre bien en une phrase » : le vendeur parle en tunisien, en français ou en anglais, les mots s'écrivent dans la case, puis l'assistant remplit l'annonce. Seulement dans les navigateurs qui savent écouter (Chrome, Edge, Safari)."
     },
     "feature_error_alerts": {
       "label": "Alertes d'erreur",

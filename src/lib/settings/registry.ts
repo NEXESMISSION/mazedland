@@ -24,6 +24,8 @@ export const SETTINGS = {
   feature_promos: { group: "features", type: "bool", default: true, client: true, href: "/admin/offres" },
   social_enabled: { group: "features", type: "bool", default: true, href: "/admin/social" },
   ai_enabled: { group: "features", type: "bool", default: true },
+  // Dictation in the listing assistant's box: Tunisian, French or English.
+  feature_ai_voice: { group: "features", type: "bool", default: true, client: true },
   feature_listing_edit: { group: "features", type: "bool", default: true, client: true, href: "/admin/annonces?status=edits" },
   feature_reports: { group: "features", type: "bool", default: true, client: true },
   feature_price_help: { group: "features", type: "bool", default: true, client: true },
