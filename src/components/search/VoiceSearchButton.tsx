@@ -6,34 +6,11 @@ import { Mic, MicOff } from "lucide-react";
 import { useSetting } from "@/components/settings/SettingsProvider";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
+import { recognitionCtor, speechLang, transcriptOf, type Recognition } from "./speech";
 
-/** The browser's speech recognition, where it has one (Chrome, Edge, Safari). */
-type Recognition = {
-  lang: string;
-  interimResults: boolean;
-  maxAlternatives: number;
-  continuous: boolean;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
-  onerror: ((e: { error: string }) => void) | null;
-  onend: (() => void) | null;
-  start(): void;
-  stop(): void;
-  abort(): void;
-};
-type RecognitionCtor = new () => Recognition;
-
-function recognitionCtor(): RecognitionCtor | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as { SpeechRecognition?: RecognitionCtor; webkitSpeechRecognition?: RecognitionCtor };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
+export { speechLang };
 
 const noop = () => () => {};
-
-/** The language the browser listens for: the page's. Tunisian Arabic where it knows it. */
-export function speechLang(locale: string): string {
-  return locale === "ar" ? "ar-TN" : "fr-FR";
-}
 
 /**
  * « Parler » in a search box (cahier P5): the person says what they look for,
@@ -95,7 +72,7 @@ export function VoiceSearchButton({
     let said = "";
     let done = false;
     r.onresult = (e) => {
-      said = Array.from(e.results).map((res) => res[0]?.transcript ?? "").join(" ").replace(/\s+/g, " ").trim();
+      said = transcriptOf(e.results);
       const final = Array.from(e.results).every((res) => res.isFinal);
       fill(said, false);
       if (final && said && !done) {
