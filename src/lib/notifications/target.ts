@@ -51,6 +51,8 @@ export const NOTIFICATION_KINDS = [
   "social_published", "social_rejected", "admin_social_pending", "admin_social_attention",
   // Editing a published annonce (0172): the seller hears the verdict, admins the queue
   "listing_edit_applied", "listing_edit_rejected", "admin_listing_edit_pending",
+  // A crash in production (0185): admins only, in the bell
+  "admin_site_error",
   // Mazed Immo Pro (0173): the shop hears the verdict and who joined it, admins the queue
   "shop_approved", "shop_rejected", "shop_member_added", "admin_shop_pending",
   // Visits (0174): the seller hears the request and a cancellation, the buyer the answer
@@ -92,6 +94,7 @@ type FallbackRoute =
   | "/pro/dashboard"
   | "/admin/agences"
   | "/account/visites"
+  | "/admin/activity"
   | null;
 
 /**
@@ -182,6 +185,7 @@ const KIND_FALLBACK: Record<NotificationKind, FallbackRoute> = {
   listing_edit_applied: "/account/listings",
   listing_edit_rejected: "/account/listings",
   admin_listing_edit_pending: "/admin/annonces",
+  admin_site_error: "/admin/activity",
   shop_approved: "/pro/dashboard",
   shop_rejected: "/pro/dashboard",
   shop_member_added: "/pro/dashboard",
@@ -274,6 +278,7 @@ const FALLBACK_SUPPORTS_FOCUS: Record<NotificationKind, boolean> = {
   social_published: false, social_rejected: false,
   admin_social_pending: false, admin_social_attention: false,
   listing_edit_applied: false, listing_edit_rejected: false, admin_listing_edit_pending: false,
+  admin_site_error: false,
   shop_approved: false, shop_rejected: false, shop_member_added: false, admin_shop_pending: false,
   visit_requested: false, visit_confirmed: false, visit_declined: false, visit_cancelled: false,
   request_suggestion: false,
