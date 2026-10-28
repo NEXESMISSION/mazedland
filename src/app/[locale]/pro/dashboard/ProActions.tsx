@@ -8,6 +8,7 @@ import { useApiError } from "@/lib/useApiError";
 import { FileUp, Loader2, Trash2, UserPlus } from "lucide-react";
 import type { ShopRole } from "@/lib/pro/shops";
 import { cn } from "@/lib/utils";
+import { pickedBeforeReady } from "@/lib/pickedBeforeReady";
 
 const chip = (on: boolean) =>
   cn(
@@ -186,13 +187,14 @@ export function SendDocument({ shopId }: { shopId: string }) {
       <label className={`mazed-btn-luxe tap-target inline-flex h-10 cursor-pointer items-center gap-1.5 px-4 text-[13px] ${busy || sending ? "pointer-events-none opacity-60" : ""}`}>
         {sending ? <Loader2 className="size-4 animate-spin" /> : <FileUp className="size-4" />} {t("sendDocument")}
         <input
+          ref={pickedBeforeReady}
           type="file"
           accept=".pdf,image/*"
           className="sr-only"
           onChange={(e) => {
             const f = e.target.files?.[0];
-            if (f) void send(f);
             e.target.value = "";
+            if (f) void send(f);
           }}
         />
       </label>

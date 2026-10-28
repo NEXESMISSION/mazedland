@@ -12,6 +12,7 @@ import { SHOP_KINDS, type ShopKind } from "@/lib/pro/shops";
 import { shopPresentation, slugPreview, typedSlug } from "@/lib/pro/shopForm";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ImagePlus, Loader2, PenLine } from "lucide-react";
+import { pickedBeforeReady } from "@/lib/pickedBeforeReady";
 
 export type ShopFormValues = {
   id?: string;
@@ -193,8 +194,11 @@ export function ShopForm({
         accept="image/*"
         aria-label={t(k === "logo_path" ? "logo" : "cover")}
         className="sr-only"
+        ref={pickedBeforeReady}
         onChange={(e) => {
           const f = e.target.files?.[0];
+          // Cleared: the same file can be chosen again, and never sent twice.
+          e.target.value = "";
           if (f) void upload(k, f);
         }}
       />

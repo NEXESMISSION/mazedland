@@ -80,9 +80,12 @@ export default async function CheckoutEntry({
     redirect(`/${locale}/payment/success?id=${pay.id}`);
   }
 
-  const listing = await fetchListingSummary(
-    (pay.metadata as { listing_id?: string } | null)?.listing_id,
-  );
+  const meta = (pay.metadata ?? {}) as { listing_id?: string; product_id?: string; shop_id?: string };
+  const listing = await fetchListingSummary(meta.listing_id);
+  // What is being paid for, said in the header: an agence's plan, a placement,
+  // or (the original kind) an annonce's fee. The header said « Frais
+  // d'annonce » for a plan too.
+  const subject = await fetchSubject(pay.kind as string, meta, locale);
 
   // Only offer a method whose details are real — see usablePayeeMethods. With
   // none, refuse to take payment rather than print a fake account.
@@ -101,13 +104,14 @@ export default async function CheckoutEntry({
       paymentId={pay.id as string}
       amount={Number(pay.amount)}
       listing={listing}
+      subject={subject}
       instructions={instructions}
       locale={locale}
       receiptUnderReview={pay.status === "pending_review"}
       // The seller can go back and fix the annonce before paying — a rejected
       // receipt is often a rejected LISTING in disguise. It returns here.
       editHref={
-        listing ? `/${locale}/annonces/nouvelle?draft=${listing.id}` : undefined
+        listing && subject.kind === "fee" ? `/${locale}/annonces/nouvelle?draft=${listing.id}` : undefined
       }
     />
   );
@@ -126,6 +130,30 @@ export default async function CheckoutEntry({
  * the receipt still needs paying, and a checkout with no thumbnail is better
  * than a 404 over a missing photo.
  */
+export type CheckoutSubject = { kind: "plan" | "promo" | "fee"; product: string | null; shop: string | null; shopId: string | null };
+
+/** The plan or placement bought, by name in the page's language, and the agence it is for. */
+async function fetchSubject(
+  kind: string,
+  meta: { product_id?: string; shop_id?: string },
+  locale: string,
+): Promise<CheckoutSubject> {
+  const which = kind === "subscription" ? "plan" : kind === "promo" ? "promo" : "fee";
+  const admin = getServiceSupabase();
+  if (!admin || which === "fee") return { kind: which, product: null, shop: null, shopId: null };
+  const [{ data: product }, { data: shop }] = await Promise.all([
+    meta.product_id ? admin.from("products").select("name_fr, name_ar").eq("id", meta.product_id).maybeSingle() : Promise.resolve({ data: null }),
+    meta.shop_id ? admin.from("shops").select("name").eq("id", meta.shop_id).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
+  const p = product as { name_fr: string; name_ar: string | null } | null;
+  return {
+    kind: which,
+    product: p ? (locale === "ar" ? p.name_ar || p.name_fr : p.name_fr) : null,
+    shop: (shop as { name: string } | null)?.name ?? null,
+    shopId: meta.shop_id ?? null,
+  };
+}
+
 async function fetchListingSummary(listingId: string | undefined) {
   if (!listingId) return null;
   const supabase = await getServerSupabase();

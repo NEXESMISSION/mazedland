@@ -430,7 +430,9 @@
     "sentSteps": {
       "review": "Notre équipe vérifie votre reçu (moins de 24 h).",
       "notify": "Vous recevez une notification : validé ou correction demandée.",
-      "publish": "Votre annonce part en vérification, puis passe en ligne."
+      "publish": "Votre annonce part en vérification, puis passe en ligne.",
+      "plan": "L'abonnement de l'agence démarre, avec les jours qui restaient de l'ancien.",
+      "promo": "La mise en avant démarre sur votre annonce."
     },
     "myListings": "Mes annonces",
     "editListing": "← Modifier l'annonce",
@@ -469,7 +471,12 @@
       "amount": "Montant",
       "amountValue": "{amount} TND"
     },
-    "sendAnother": "Pas le bon fichier ? Envoyer un autre reçu"
+    "sendAnother": "Pas le bon fichier ? Envoyer un autre reçu",
+    "planLabel": "Abonnement {plan}",
+    "planBody": "L'abonnement de votre agence démarre dès que le reçu est validé.",
+    "promoLabel": "Mise en avant",
+    "promoBody": "La mise en avant démarre dès que le reçu est validé.",
+    "toPlan": "Voir l'abonnement"
   },
   "accountApi": {
     "renew": {

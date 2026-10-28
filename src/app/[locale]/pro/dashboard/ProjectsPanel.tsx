@@ -26,6 +26,7 @@ import {
 } from "@/lib/pro/projects";
 import { cn, formatTND } from "@/lib/utils";
 import { ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { pickedBeforeReady } from "@/lib/pickedBeforeReady";
 
 /**
  * The « Projets » tab's controls (0179): the project form, its status
@@ -173,8 +174,11 @@ export function ProjectForm({
           type="file"
           accept="image/*"
           className="sr-only"
+          ref={pickedBeforeReady}
           onChange={(e) => {
             const f = e.target.files?.[0];
+            // Cleared: the same file can be chosen again, and never sent twice.
+            e.target.value = "";
             if (f) void upload(f);
           }}
         />
