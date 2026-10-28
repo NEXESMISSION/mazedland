@@ -63,7 +63,7 @@ describe("admin pages", () => {
 const API = path.join(process.cwd(), "src", "app", "api", "admin");
 
 /** API folders named otherwise than the screen they serve. */
-const API_SECTION: Record<string, string> = { ads: "publicites", boutiques: "agences", products: "offres" };
+const API_SECTION: Record<string, string> = { ads: "publicites", backup: "settings", boutiques: "agences", products: "offres" };
 
 function routes(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {

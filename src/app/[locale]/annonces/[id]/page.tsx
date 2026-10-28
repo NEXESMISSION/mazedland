@@ -23,6 +23,7 @@ import type { VisitSlot, VisitStatus } from "@/lib/visits";
 import { isEditable } from "@/lib/listings/edit";
 import { getSettings } from "@/lib/settings/server";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
+import { ShareButton } from "@/components/listing/ShareButton";
 import { RelatedListings } from "@/components/listing/RelatedListings";
 import { ViewTracker } from "@/components/listing/ViewTracker";
 import { AdSlot } from "@/components/ads/AdSlot";
@@ -475,8 +476,9 @@ export default async function AnnoncePage({
           <VisitRequest listingId={l.id} loggedIn={!!user} defaultName={visitDefaults.name} defaultPhone={visitDefaults.phone} open={openVisit} />
         )}
         {!isPreview && (
-          <div className="mt-3 flex justify-center">
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
             <CompareToggle listingId={l.id} variant="pill" />
+            <ShareButton title={l.title} />
           </div>
         )}
       </div>
@@ -523,8 +525,9 @@ export default async function AnnoncePage({
           <VisitRequest listingId={l.id} loggedIn={!!user} defaultName={visitDefaults.name} defaultPhone={visitDefaults.phone} open={openVisit} />
         )}
         {!isPreview && (
-          <div className="mt-3 flex justify-center">
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
             <CompareToggle listingId={l.id} variant="pill" />
+            <ShareButton title={l.title} />
           </div>
         )}
       </div>

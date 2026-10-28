@@ -37,6 +37,10 @@ export const SETTINGS = {
   feature_natural_search: { group: "features", type: "bool", default: true },
   // A microphone in the search boxes (P5): spoken words fill the box, then search.
   feature_voice_search: { group: "features", type: "bool", default: true, client: true },
+  // « Installer l'app » in the public header (the console always has its own).
+  feature_install_button: { group: "features", type: "bool", default: true, client: true },
+  // « Partager » on every annonce: the phone's share sheet, else WhatsApp, Facebook, copy.
+  feature_share: { group: "features", type: "bool", default: true, client: true },
   feature_arabic_redirect: { group: "features", type: "bool", default: true, client: true },
   feature_whatsapp: { group: "features", type: "bool", default: true, client: true },
   // Advertising spaces sold to companies (0177), managed in /admin/publicites.

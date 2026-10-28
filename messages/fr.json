@@ -2767,7 +2767,15 @@
     "install": {
       "label": "Installer l'app",
       "installed": "App installée",
-      "iosHint": "Sur iPhone ou iPad : touchez Partager, puis « Sur l'écran d'accueil »."
+      "iosHint": "Sur iPhone ou iPad : touchez Partager, puis « Sur l'écran d'accueil ».",
+      "manualHint": "Dans Chrome ou Edge : menu ⋮, puis « Installer » (ou « Ajouter à l'écran d'accueil » sur Android). Sur Safari (Mac) : Fichier, puis « Ajouter au Dock »."
+    },
+    "backup": {
+      "label": "Sauvegarde",
+      "working": "Préparation…",
+      "ready": "Sauvegarde prête : {tables} tables, {rows} lignes, {size} Ko. Le téléchargement commence.",
+      "failed": "La sauvegarde n'a pas pu être faite. Réessayez.",
+      "hint": "Télécharge une copie de toutes les données (noms et numéros compris) : à garder sur un ordinateur sûr."
     }
   },
   "adminDashboard": {
@@ -3051,6 +3059,7 @@
     }
   },
   "adminActions": {
+    "admin_backup": "Sauvegarde téléchargée",
     "listing_create": "Annonce créée",
     "listing_submit_free": "Annonce soumise (gratuite)",
     "listing_submit_payment": "Annonce soumise (payante)",
@@ -4980,6 +4989,14 @@
       "label": "Recherche vocale",
       "hint": "Un micro dans les champs de recherche : on dit ce qu'on cherche, les mots remplissent le champ et la recherche part. Seulement dans les navigateurs qui savent écouter (Chrome, Edge, Safari)."
     },
+    "feature_install_button": {
+      "label": "Bouton « Installer l'app »",
+      "hint": "Dans l'en-tête du site : installe Mazed Immo comme une app sur le téléphone ou l'ordinateur. Caché une fois l'app installée."
+    },
+    "feature_share": {
+      "label": "Bouton « Partager »",
+      "hint": "Sur chaque annonce : le menu de partage du téléphone, sinon WhatsApp, Facebook et « Copier le lien »."
+    },
     "feature_ai_voice": {
       "label": "Micro de « Publier en parlant »",
       "hint": "Le micro de la version B : le vendeur parle au lieu d'écrire, dans la langue de la page (tunisien sur le site arabe, français sur le site français). Éteint, la conversation se fait au clavier. Seulement dans les navigateurs qui savent écouter (Chrome, Edge, Safari)."
@@ -5333,5 +5350,17 @@
     "denied": "Le micro est refusé : autorisez-le dans le navigateur.",
     "noSpeech": "Je n'ai rien entendu. Réessayez.",
     "failed": "La recherche vocale n'a pas marché. Écrivez votre recherche."
+  },
+  "share": {
+    "label": "Partager",
+    "copy": "Copier le lien",
+    "copied": "Lien copié.",
+    "copyFailed": "Impossible de copier le lien."
+  },
+  "install": {
+    "label": "Installer l'app",
+    "installed": "App installée",
+    "iosHint": "Sur iPhone ou iPad : touchez Partager, puis « Sur l'écran d'accueil ».",
+    "manualHint": "Dans Chrome ou Edge : menu ⋮, puis « Installer Mazed Immo » (ou « Ajouter à l'écran d'accueil » sur Android). Sur Safari (Mac) : Fichier, puis « Ajouter au Dock »."
   }
 }

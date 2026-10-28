@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { AccountMenu } from "./AccountMenu";
 import { LocaleSwitcher } from "./LocaleSwitcher";
+import { InstallButton } from "./InstallButton";
 import { normalizeSearchQuery } from "@/lib/search";
 import { isMostlyArabic } from "@/lib/search/script";
 import { useSetting } from "@/components/settings/SettingsProvider";
@@ -103,6 +104,7 @@ export function DesktopNav() {
   const router = useRouter();
   const locale = useLocale();
   const arabicRedirect = useSetting("feature_arabic_redirect");
+  const installOn = useSetting("feature_install_button");
   // What the results are filtered by; QueryFromUrl keeps it on the address.
   const [q, setQ] = useState("");
 
@@ -213,6 +215,7 @@ export function DesktopNav() {
 
         {/* ── Right zone: notifications, account, sell CTA ── */}
         <div className="flex shrink-0 items-center gap-2">
+          {installOn && <InstallButton scope="site" variant="icon" />}
           <Optional name="bell" fallback={<span className="inline-block h-9 w-9" />}>
             <NotificationBell />
           </Optional>
