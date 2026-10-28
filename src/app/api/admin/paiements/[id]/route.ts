@@ -202,6 +202,22 @@ export async function POST(
       if ("error" in period) return fail("subscription_grant_failed", 500, period.error);
       granted = `${product?.name_fr ?? "Pro"} jusqu'au ${period.endsAt.toISOString().slice(0, 10)}`
         + (period.carriedDays > 0 ? ` (+${period.carriedDays} j reportés)` : "");
+
+      // An agence pays before it is opened (2026-10-28): the admins hear that
+      // this one has, and the console's toast says it is still to open.
+      const { data: shopRow } = await admin.from("shops").select("name, status").eq("id", meta.shop_id).maybeSingle();
+      if (shopRow?.status === "pending") {
+        granted = `${granted} — agence encore à ouvrir`;
+        await admin
+          .rpc("_notify_admins", {
+            p_kind: "admin_shop_pending",
+            p_title: "Agence payée — à ouvrir",
+            p_body: `« ${shopRow.name} » a payé son abonnement ${product?.name_fr ?? "Pro"} : ouvrez-la.`,
+            p_link: `/admin/agences?id=${meta.shop_id}`,
+            p_payload: { vars: { name: shopRow.name, plan: product?.name_fr ?? "Pro", variant: "paid" } },
+          })
+          .then(() => {}, () => {});
+      }
     }
 
     if (pay.kind === "badge" && meta.product_id) {

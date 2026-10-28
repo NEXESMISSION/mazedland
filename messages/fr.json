@@ -1244,7 +1244,11 @@
     },
     "admin_shop_pending": {
       "title": "Agence à examiner",
-      "body": "« {name} » demande à ouvrir son agence."
+      "body": "« {name} » demande à ouvrir son agence.",
+      "paid": {
+        "title": "Agence payée — à ouvrir",
+        "body": "« {name} » a payé son abonnement {plan} : ouvrez-la."
+      }
     },
     "visitParts": {
       "morning": "le matin",
@@ -3726,7 +3730,7 @@
       "rejected": "Non retenue",
       "suspended": "Suspendue",
       "hint": {
-        "pending": "Votre agence est en cours de vérification par l'équipe Mazed Immo. Vous serez prévenu dès qu'elle est ouverte.",
+        "pending": "Votre agence est en cours de vérification par l'équipe Mazed Immo. Choisissez votre abonnement et envoyez le reçu dès maintenant : l'agence est ouverte dès que le reçu est validé.",
         "rejected": "Votre agence n'a pas été retenue. Corrigez ce qui est indiqué ci-dessous puis écrivez-nous.",
         "suspended": "Votre agence est suspendue : sa page et ses annonces ne sont plus visibles."
       }
@@ -3924,7 +3928,8 @@
       "upgradeFor": "Passer à {plan} — {amount}",
       "chooseFrom": "Choisir pour le {date} — {amount}",
       "renewFor": "Renouveler — {amount}",
-      "chooseFor": "Choisir — {amount}"
+      "chooseFor": "Choisir — {amount}",
+      "planPayFirst": "Choisissez votre abonnement et envoyez le reçu dès maintenant : votre agence est ouverte dès que le reçu est validé."
     },
     "clients": {
       "open": "En cours",
@@ -4162,7 +4167,7 @@
       "alreadyMember": "Cette personne fait déjà partie de l'agence.",
       "slug": "Adresse invalide : 3 à 60 lettres minuscules, chiffres ou tirets.",
       "slugTaken": "Cette adresse est déjà prise.",
-      "notApproved": "L'agence doit être ouverte pour souscrire un abonnement.",
+      "notApproved": "Une agence refusée ou suspendue ne peut pas souscrire d'abonnement.",
       "plan": "Abonnement inconnu.",
       "reason": "Indiquez un motif.",
       "planAlready": "Vous avez déjà cet abonnement jusqu'au {date}. Vous pourrez le renouveler à partir du {from}."
@@ -4276,7 +4281,13 @@
     "rejectTitle": "Refuser cette agence ?",
     "suspendTitle": "Suspendre cette agence ?",
     "reasonBody": "Le motif est envoyé au propriétaire de l'agence.",
-    "reason": "Motif"
+    "reason": "Motif",
+    "subscription": "Abonnement choisi",
+    "subscriptionPaid": "{plan} · {amount} TND payés — à ouvrir",
+    "subscriptionReceipt": "{plan} · reçu envoyé, à valider",
+    "subscriptionChosen": "{plan} · choisi, reçu pas encore envoyé",
+    "paidChip": "abonnement payé",
+    "receiptChip": "reçu à valider"
   },
   "visits": {
     "parts": {

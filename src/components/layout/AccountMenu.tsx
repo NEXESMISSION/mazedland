@@ -78,8 +78,16 @@ export function AccountMenu() {
         }
       }
       sb.auth.getUser().then((res: { data: { user: unknown } }) => resolve(res.data.user));
+      // Never a Supabase call inside the listener, nor a promise handed back:
+      // auth-js runs it holding its lock and waits for it — every time the tab
+      // comes back to the front (a receipt picked in the gallery) and on every
+      // token refresh. `sb.from()` then waited for that same lock, and from
+      // that moment every call of the client did: a receipt « sending »
+      // forever, until a reload (2026-10-28). Deferred, it runs after the lock.
       const { data: sub } = sb.auth.onAuthStateChange(
-        (_event: AuthChangeEvent, session: Session | null) => resolve(session?.user ?? null),
+        (_event: AuthChangeEvent, session: Session | null) => {
+          setTimeout(() => void resolve(session?.user ?? null), 0);
+        },
       );
       unsubscribe = () => sub.subscription.unsubscribe();
     });

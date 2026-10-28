@@ -172,7 +172,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
                   <Plus className="size-4" /> {t("publishForShop")}
                 </Link>
               )}
-              {!plan && can(role, "subscribe") && shop.status === "approved" && (
+              {!plan && can(role, "subscribe") && (shop.status === "approved" || shop.status === "pending") && (
                 <Link href={href("abonnement") as never} className="tap-target inline-flex h-10 items-center rounded-xl border border-border px-4 text-[13px] font-bold">
                   {t("choosePlan")}
                 </Link>
@@ -244,7 +244,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
 
       {tab === "equipe" && <TeamTab shopId={shop.id} role={role} />}
 
-      {tab === "abonnement" && <PlanTab shopId={shop.id} role={role} approved={shop.status === "approved"} current={plan} />}
+      {tab === "abonnement" && <PlanTab shopId={shop.id} role={role} status={shop.status} current={plan} />}
 
       {tab === "agence" && can(role, "edit_shop") && (
         <section className="mt-5">
@@ -453,7 +453,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
     );
   }
 
-  async function PlanTab({ shopId, role: actor, approved, current: running }: { shopId: string; role: ShopRole; approved: boolean; current: Awaited<ReturnType<typeof activePlan>> }) {
+  async function PlanTab({ shopId, role: actor, status, current: running }: { shopId: string; role: ShopRole; status: string; current: Awaited<ReturnType<typeof activePlan>> }) {
     const [{ data: planRows }, { data: periods }, open, ahead] = await Promise.all([
       admin!.from("products").select("slug, name_fr, name_ar, price, listing_quota, duration_days").eq("kind", "subscription").eq("is_active", true).order("price"),
       // Cancelled periods were moved into an upgrade (carryOver): not history.
@@ -468,7 +468,9 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
     const money = (n: number) => `${formatTND(n, locale)} ${t("tnd")}`;
     // With no payee to pay, « Choisir » created a payment and only the checkout
     // then said « indisponible ». The tab says it first, in place of the buttons.
-    const mayBuy = can(actor, "subscribe") && approved;
+    // An agence waiting to be opened chooses and pays here too (2026-10-28):
+    // the admin opens it on the receipt. A refused or suspended one cannot.
+    const mayBuy = can(actor, "subscribe") && (status === "approved" || status === "pending");
     return (
       <section className="mt-5 space-y-5">
         <p className="rounded-2xl bg-surface-2 px-4 py-3 text-[12.5px] leading-relaxed text-foreground ring-1 ring-border">
@@ -541,7 +543,8 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
             );
           })}
         </div>
-        {!approved && <p className="text-[12px] text-muted">{t("planAfterApproval")}</p>}
+        {status === "pending" && <p className="rounded-2xl bg-gold-faint px-4 py-3 text-[12.5px] font-semibold leading-relaxed text-foreground">{t("planPayFirst")}</p>}
+        {status !== "pending" && status !== "approved" && <p className="text-[12px] text-muted">{t("planAfterApproval")}</p>}
         <p className="text-[11.5px] leading-snug text-muted">{t("planHow")}</p>
         {(periods ?? []).length > 0 && (
           <div>
