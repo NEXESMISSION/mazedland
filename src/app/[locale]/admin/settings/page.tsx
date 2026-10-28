@@ -55,7 +55,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
   return (
     <div>
       <SiteTabs />
-      <AdminPageHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} actions={<BackupButton />} />
+      <AdminPageHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} actions={<div className="flex flex-wrap gap-2"><BackupButton kind="data" /><BackupButton kind="files" /></div>} />
 
       <nav
         aria-label={tr("ui.tabsLabel")}

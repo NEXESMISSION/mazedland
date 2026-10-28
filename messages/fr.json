@@ -2775,7 +2775,12 @@
       "working": "Préparation…",
       "ready": "Sauvegarde prête : {tables} tables, {rows} lignes, {size} Ko. Le téléchargement commence.",
       "failed": "La sauvegarde n'a pas pu être faite. Réessayez.",
-      "hint": "Télécharge une copie de toutes les données (noms et numéros compris) : à garder sur un ordinateur sûr."
+      "hint": "Télécharge une copie de toutes les données (noms et numéros compris) : à garder sur un ordinateur sûr.",
+      "filesLabel": "Fichiers",
+      "filesWorking": "Préparation des fichiers…",
+      "filesReady": "Fichiers prêts : {files} fichiers, {size} Mo. Le téléchargement commence.",
+      "filesHint": "Télécharge toutes les photos, tous les reçus et documents dans un ZIP.",
+      "filesTooBig": "Trop de fichiers pour un téléchargement ({size} Mo) : utilisez sur l'ordinateur « node scripts/backup-storage.mjs »."
     }
   },
   "adminDashboard": {
@@ -3059,6 +3064,7 @@
     }
   },
   "adminActions": {
+    "admin_backup_files": "Fichiers téléchargés (ZIP)",
     "admin_backup": "Sauvegarde téléchargée",
     "listing_create": "Annonce créée",
     "listing_submit_free": "Annonce soumise (gratuite)",
