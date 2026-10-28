@@ -6,7 +6,8 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { formatDate, formatNumber, formatTND } from "@/lib/utils";
 import { governorateLabel } from "@/lib/tunisia";
 import { asDealType } from "@/lib/listings/deal";
-import { activePlan, can, membershipsOf, type ShopRole } from "@/lib/pro/shops";
+import { activePlan, can, loadPlanPeriods, membershipsOf, type ShopRole } from "@/lib/pro/shops";
+import { monthsOf, quotePlanChange } from "@/lib/pro/planChange";
 import { planUsage } from "@/lib/places/server";
 import { PLACE_STATUSES } from "@/lib/places/model";
 import { ShopForm } from "@/components/pro/ShopForm";
@@ -453,13 +454,18 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
   }
 
   async function PlanTab({ shopId, role: actor, approved, current: running }: { shopId: string; role: ShopRole; approved: boolean; current: Awaited<ReturnType<typeof activePlan>> }) {
-    const [{ data: planRows }, { data: periods }, open] = await Promise.all([
-      admin!.from("products").select("slug, name_fr, name_ar, price, listing_quota").eq("kind", "subscription").eq("is_active", true).order("price"),
+    const [{ data: planRows }, { data: periods }, open, ahead] = await Promise.all([
+      admin!.from("products").select("slug, name_fr, name_ar, price, listing_quota, duration_days").eq("kind", "subscription").eq("is_active", true).order("price"),
       // Cancelled periods were moved into an upgrade (carryOver): not history.
       admin!.from("shop_subscriptions").select("starts_at, ends_at, listing_quota, product:products (name_fr)").eq("shop_id", shopId).eq("status", "active").order("starts_at", { ascending: false }).limit(12),
       paymentsAreOpen(),
+      loadPlanPeriods(admin!, shopId),
     ]);
-    const plans = (planRows ?? []) as { slug: string; name_fr: string; name_ar: string | null; price: number | string; listing_quota: number }[];
+    const plans = (planRows ?? []) as { slug: string; name_fr: string; name_ar: string | null; price: number | string; listing_quota: number; duration_days: number | null }[];
+    // What choosing each plan would mean today (the owner's rules, planChange.ts).
+    const now = new Date();
+    const day = (d: Date) => formatDate(d.toISOString(), locale, "medium");
+    const money = (n: number) => `${formatTND(n, locale)} ${t("tnd")}`;
     // With no payee to pay, « Choisir » created a payment and only the checkout
     // then said « indisponible ». The tab says it first, in place of the buttons.
     const mayBuy = can(actor, "subscribe") && approved;
@@ -472,27 +478,68 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
           <PaymentsClosedNotice title={t("closed.title")} body={t("closed.body")} contactLabel={t("closed.contact")} />
         )}
         <div className="grid gap-3 md:grid-cols-3">
-          {plans.map((p) => (
-            <div key={p.slug} className="rounded-2xl border border-border bg-surface p-4">
-              <p className="text-[14px] font-extrabold text-foreground">{locale === "ar" && p.name_ar ? p.name_ar : p.name_fr}</p>
-              <p className="mt-1 text-[22px] font-extrabold text-foreground">
-                {formatTND(Number(p.price), locale)} <span className="text-[12px] font-normal text-muted">{t("perMonthTnd")}</span>
-              </p>
-              <p className="text-[12.5px] font-bold text-gold">{t("planQuota", { count: p.listing_quota })}</p>
-              {mayBuy &&
-                (open ? (
-                  // A bigger plan starts as soon as it is paid; the same or a
-                  // smaller one follows the period running (periodStart).
-                  <ChoosePlan
-                    shopId={shopId}
-                    plan={p.slug}
-                    label={!running ? t("choose") : p.listing_quota > running.quota ? t("upgradeNow") : t("renewWith")}
-                  />
+          {plans.map((p) => {
+            const name = locale === "ar" && p.name_ar ? p.name_ar : p.name_fr;
+            const q = quotePlanChange({
+              now,
+              target: { quota: p.listing_quota, price: Number(p.price), months: monthsOf(Number(p.duration_days)) },
+              periods: ahead,
+              renewDays: settings.plan_renew_days,
+            });
+            const label =
+              q.kind === "upgrade" ? t("upgradeFor", { plan: name, amount: money(q.amount) })
+              : q.kind === "downgrade" ? t("chooseFrom", { date: day(q.startsAt), amount: money(q.amount) })
+              : q.kind === "renew" ? t("renewFor", { amount: money(q.amount) })
+              : q.kind === "new" ? t("chooseFor", { amount: money(q.amount) })
+              : "";
+            return (
+              <div key={p.slug} className={`rounded-2xl border bg-surface p-4 ${q.kind === "same" ? "border-gold-soft ring-1 ring-gold-soft" : "border-border"}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-[14px] font-extrabold text-foreground">{name}</p>
+                  {q.kind === "upgrade" && <span className="rounded-full bg-gold-faint px-2 py-0.5 text-[10.5px] font-extrabold uppercase tracking-wide text-gold">{t("upgradeBadge")}</span>}
+                </div>
+                <p className="mt-1 text-[22px] font-extrabold text-foreground">
+                  {formatTND(Number(p.price), locale)} <span className="text-[12px] font-normal text-muted">{t("perMonthTnd")}</span>
+                </p>
+                <p className="text-[12.5px] font-bold text-gold">{t("planQuota", { count: p.listing_quota })}</p>
+
+                {q.kind === "same" ? (
+                  // The plan they have: not bought twice; renewable in its last days.
+                  <p className="mt-3 rounded-xl bg-gold-faint px-3 py-2 text-[12px] leading-snug text-foreground">
+                    {t("planYours", { date: day(q.until) })} {t("planRenewFrom", { date: day(q.renewFrom) })}
+                  </p>
+                ) : q.kind === "upgrade" ? (
+                  // The calculator: the new price, what is left of the current plan, the total.
+                  <dl className="mt-3 space-y-1 rounded-xl bg-surface-2 px-3 py-2.5 text-[12px] ring-1 ring-border">
+                    <div className="flex justify-between gap-2"><dt className="text-muted">{t("calcPrice", { plan: name })}</dt><dd className="mazed-tabular font-semibold text-foreground">{money(q.price)}</dd></div>
+                    {/* A plan given by an admin leaves nothing to take off: no « − 0 » line. */}
+                    {q.credit > 0 && (
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-muted">{t("calcCredit", { days: q.lines.reduce((n, l) => n + l.days, 0) })}</dt>
+                        <dd className="mazed-tabular font-semibold text-[var(--tone-ok)]"><span dir="ltr">− {money(q.credit)}</span></dd>
+                      </div>
+                    )}
+                    <div className="flex justify-between gap-2 border-t border-border pt-1">
+                      <dt className="font-extrabold text-foreground">{t("calcTotal")}</dt>
+                      <dd className="mazed-tabular font-extrabold text-foreground">{money(q.amount)}</dd>
+                    </div>
+                    <p className="pt-0.5 text-[11px] text-muted">{t("planDates", { from: day(q.startsAt), to: day(q.endsAt) })}</p>
+                  </dl>
                 ) : (
-                  <p className="mt-3 text-[12px] font-semibold text-muted">{t("closed.row")}</p>
-                ))}
-            </div>
-          ))}
+                  <p className="mt-3 text-[11.5px] leading-snug text-muted">
+                    {q.kind === "downgrade" ? t("planStartsLater", { from: day(q.startsAt), to: day(q.endsAt) }) : t("planDates", { from: day(q.startsAt), to: day(q.endsAt) })}
+                  </p>
+                )}
+
+                {mayBuy && q.kind !== "same" &&
+                  (open ? (
+                    <ChoosePlan shopId={shopId} plan={p.slug} label={label} />
+                  ) : (
+                    <p className="mt-3 text-[12px] font-semibold text-muted">{t("closed.row")}</p>
+                  ))}
+              </div>
+            );
+          })}
         </div>
         {!approved && <p className="text-[12px] text-muted">{t("planAfterApproval")}</p>}
         <p className="text-[11.5px] leading-snug text-muted">{t("planHow")}</p>

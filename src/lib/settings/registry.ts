@@ -75,6 +75,8 @@ export const SETTINGS = {
   // A project goes public only while its agence has a running plan.
   projects_need_plan: { group: "publication", type: "bool", default: true },
   projects_max_units: { group: "publication", type: "int", default: 300, min: 10, max: 2000 },
+  // The same agence plan can be renewed only this many days before it ends (planChange.ts).
+  plan_renew_days: { group: "publication", type: "int", default: 5, min: 1, max: 30, unit: "days", choices: [3, 5, 7, 15] },
 
   // ── Buyers: visits, compare, demandes.
   visits_max_slots: { group: "buyers", type: "int", default: 3, min: 1, max: 5, client: true },
