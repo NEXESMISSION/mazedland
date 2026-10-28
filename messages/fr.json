@@ -292,7 +292,8 @@
         "body": "Nos coordonnées de paiement sont en cours de mise à jour. Ne faites pas de virement pour l'instant : vous pourrez payer et téléverser votre reçu dès qu'elles seront en ligne. Vos paiements en attente restent enregistrés.",
         "row": "Paiement indisponible pour le moment",
         "contact": "Nous contacter"
-      }
+      },
+      "creditNote": "Avoir"
     },
     "favorites": {
       "title": "Mes favoris",
@@ -1243,7 +1244,11 @@
     },
     "admin_shop_pending": {
       "title": "Agence à examiner",
-      "body": "« {name} » demande à ouvrir son agence."
+      "body": "« {name} » demande à ouvrir son agence.",
+      "paid": {
+        "title": "Agence payée — à ouvrir",
+        "body": "« {name} » a payé son abonnement {plan} : ouvrez-la."
+      }
     },
     "visitParts": {
       "morning": "le matin",
@@ -1904,13 +1909,29 @@
       "confirmRejectLabel": "Refuser",
       "reasonLabel": "Motif (envoyé au vendeur)",
       "reasonPlaceholder": "Montant différent, reçu illisible, virement introuvable…",
-      "rejected": "Reçu refusé."
+      "rejected": "Reçu refusé.",
+      "invoice": "Facture",
+      "cancelledBy": "Annulé par l'avoir",
+      "creditNote": "Émettre un avoir",
+      "confirmCreditTitle": "Annuler la facture {number} ?",
+      "confirmCreditBody": "Un avoir de {amount} est émis : la facture reste, l'avoir l'annule. Le paiement passe en « Remboursé » et ce qu'il a acheté s'arrête (période d'abonnement, crédits). Un avoir ne s'annule pas.",
+      "confirmCreditLabel": "Émettre l'avoir",
+      "creditReasonLabel": "Motif (imprimé sur l'avoir)",
+      "creditReasons": {
+        "test": "Paiement de test",
+        "refunded": "Remboursé au client",
+        "mistake": "Accepté par erreur"
+      },
+      "credited": "Avoir émis."
     },
     "api": {
       "alreadyResolved": "Ce paiement est déjà « {status} ».",
       "wrongKind": "« {kind} » appartient au produit enchères, qui n'existe plus.",
       "reasonRequired": "Dites au vendeur ce qui ne va pas — il doit pouvoir renvoyer un reçu valable.",
-      "noReceipt": "Pas encore de reçu pour ce paiement : il ne peut pas être accepté avant que le client l'envoie."
+      "noReceipt": "Pas encore de reçu pour ce paiement : il ne peut pas être accepté avant que le client l'envoie.",
+      "creditReason": "Choisissez le motif de l'avoir.",
+      "creditNotCaptured": "Seul un paiement validé reçoit un avoir — celui-ci est « {status} ».",
+      "creditNoInvoice": "Ce paiement n'a pas de facture : rien à annuler."
     }
   },
   "adminActivity": {
@@ -3104,7 +3125,8 @@
     "project_delete": "Projet supprimé",
     "project_units_create": "Lots ajoutés à un projet",
     "project_units_update": "Lots d'un projet modifiés",
-    "project_units_delete": "Lots d'un projet supprimés"
+    "project_units_delete": "Lots d'un projet supprimés",
+    "admin_payment_credit_note": "Avoir émis"
   },
   "adminApi": {
     "bulk": {
@@ -3708,7 +3730,7 @@
       "rejected": "Non retenue",
       "suspended": "Suspendue",
       "hint": {
-        "pending": "Votre agence est en cours de vérification par l'équipe Mazed Immo. Vous serez prévenu dès qu'elle est ouverte.",
+        "pending": "Votre agence est en cours de vérification par l'équipe Mazed Immo. Choisissez votre abonnement et envoyez le reçu dès maintenant : l'agence est ouverte dès que le reçu est validé.",
         "rejected": "Votre agence n'a pas été retenue. Corrigez ce qui est indiqué ci-dessous puis écrivez-nous.",
         "suspended": "Votre agence est suspendue : sa page et ses annonces ne sont plus visibles."
       }
@@ -3906,7 +3928,8 @@
       "upgradeFor": "Passer à {plan} — {amount}",
       "chooseFrom": "Choisir pour le {date} — {amount}",
       "renewFor": "Renouveler — {amount}",
-      "chooseFor": "Choisir — {amount}"
+      "chooseFor": "Choisir — {amount}",
+      "planPayFirst": "Choisissez votre abonnement et envoyez le reçu dès maintenant : votre agence est ouverte dès que le reçu est validé."
     },
     "clients": {
       "open": "En cours",
@@ -4144,7 +4167,7 @@
       "alreadyMember": "Cette personne fait déjà partie de l'agence.",
       "slug": "Adresse invalide : 3 à 60 lettres minuscules, chiffres ou tirets.",
       "slugTaken": "Cette adresse est déjà prise.",
-      "notApproved": "L'agence doit être ouverte pour souscrire un abonnement.",
+      "notApproved": "Une agence refusée ou suspendue ne peut pas souscrire d'abonnement.",
       "plan": "Abonnement inconnu.",
       "reason": "Indiquez un motif.",
       "planAlready": "Vous avez déjà cet abonnement jusqu'au {date}. Vous pourrez le renouveler à partir du {from}."
@@ -4258,7 +4281,13 @@
     "rejectTitle": "Refuser cette agence ?",
     "suspendTitle": "Suspendre cette agence ?",
     "reasonBody": "Le motif est envoyé au propriétaire de l'agence.",
-    "reason": "Motif"
+    "reason": "Motif",
+    "subscription": "Abonnement choisi",
+    "subscriptionPaid": "{plan} · {amount} TND payés — à ouvrir",
+    "subscriptionReceipt": "{plan} · reçu envoyé, à valider",
+    "subscriptionChosen": "{plan} · choisi, reçu pas encore envoyé",
+    "paidChip": "abonnement payé",
+    "receiptChip": "reçu à valider"
   },
   "visits": {
     "parts": {
@@ -4475,7 +4504,12 @@
     "paidOn": "validé le {date}",
     "reference": "Référence du paiement",
     "noVat": "Montant toutes taxes comprises.",
-    "receiptNote": "Ce reçu atteste le paiement. Il ne tient pas lieu de facture."
+    "receiptNote": "Ce reçu atteste le paiement. Il ne tient pas lieu de facture.",
+    "creditNote": "Facture d'avoir",
+    "cancels": "Annule la facture",
+    "ofDate": "du {date}",
+    "cancelledBy": "Annulée par l'avoir",
+    "totalCredit": "Total de l'avoir"
   },
   "settingsRegistry": {
     "groups": {
@@ -5140,7 +5174,8 @@
         "product_create": "Offre créée",
         "product_update": "Offre modifiée",
         "product_deactivate": "Offre désactivée",
-        "settings_update": "Réglages modifiés"
+        "settings_update": "Réglages modifiés",
+        "invoice_credit_note": "Avoir émis"
       },
       "fields": {
         "role": "Rôle",

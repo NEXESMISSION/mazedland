@@ -7,7 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { Ltr } from "@/components/ui/Ltr";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { governorateLabel } from "@/lib/tunisia";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatTND } from "@/lib/utils";
 import { activePlan, SHOP_COLUMNS, type ShopRow } from "@/lib/pro/shops";
 import { planUsage } from "@/lib/places/server";
 import { BadgeCheck, ExternalLink, FileText, Store } from "lucide-react";
@@ -58,6 +58,21 @@ export default async function AdminShopsPage({ searchParams }: { searchParams: P
     return (data as unknown as ShopRow | null) ?? null;
   }
 
+  // An agence chooses and pays its plan before it is opened (2026-10-28): the
+  // list marks the ones whose receipt is in — they are the ones to open first.
+  const paidBy = new Map<string, "captured" | "pending_review">();
+  if (shops.length) {
+    const { data: paid } = await admin
+      .from("payments")
+      .select("shop_id:metadata->>shop_id, status")
+      .eq("kind", "subscription")
+      .in("status", ["pending_review", "captured"])
+      .in("metadata->>shop_id", shops.map((s) => s.id));
+    for (const p of (paid ?? []) as { shop_id: string; status: "captured" | "pending_review" }[]) {
+      if (p.status === "captured" || !paidBy.has(p.shop_id)) paidBy.set(p.shop_id, p.status);
+    }
+  }
+
   return (
     <div>
       <AdminPageHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
@@ -80,6 +95,11 @@ export default async function AdminShopsPage({ searchParams }: { searchParams: P
                   </span>
                   <span className="block truncate text-[11.5px] text-muted">
                     {tKinds(s.kind)} · {governorateLabel(s.governorate, locale)} · {formatDate(s.created_at, locale, "medium")}
+                    {s.status !== "approved" && paidBy.has(s.id) && (
+                      <span className={`ms-1 font-bold ${paidBy.get(s.id) === "captured" ? "text-[var(--tone-ok)]" : "text-[var(--tone-warn)]"}`}>
+                        · {t(paidBy.get(s.id) === "captured" ? "paidChip" : "receiptChip")}
+                      </span>
+                    )}
                   </span>
                 </span>
               </Link>
@@ -92,13 +112,20 @@ export default async function AdminShopsPage({ searchParams }: { searchParams: P
   );
 
   async function Detail({ shop }: { shop: ShopRow }) {
-    const [{ data: owner }, { data: docs }, plan, live, { count: members }] = await Promise.all([
+    const [{ data: owner }, { data: docs }, plan, live, { count: members }, { data: payRow }] = await Promise.all([
       admin!.from("profiles").select("full_name, phone").eq("id", shop.owner_id).maybeSingle(),
       admin!.from("shop_documents").select("id, kind, storage_path, file_name, created_at").eq("shop_id", shop.id).order("created_at", { ascending: false }),
       activePlan(admin!, shop.id),
       planUsage(admin!, shop.id),
       admin!.from("shop_members").select("user_id", { count: "exact", head: true }).eq("shop_id", shop.id),
+      // The plan it chose: paid, its receipt waiting, or chosen with no receipt yet.
+      admin!.from("payments").select("id, status, amount, metadata").eq("kind", "subscription").in("status", ["pending", "pending_review", "captured"]).contains("metadata", { shop_id: shop.id }).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
+    const pay = payRow as { id: string; status: string; amount: number | string; metadata: { product_id?: string } | null } | null;
+    const { data: payPlan } = pay?.metadata?.product_id
+      ? await admin!.from("products").select("name_fr").eq("id", pay.metadata.product_id).maybeSingle()
+      : { data: null };
+    const payPlanName = (payPlan as { name_fr: string } | null)?.name_fr ?? "";
     // The papers are private: ten-minute links, made for this page view only.
     const links = await Promise.all(
       ((docs ?? []) as { id: string; kind: string; storage_path: string; file_name: string | null; created_at: string }[]).map(async (d) => {
@@ -136,6 +163,16 @@ export default async function AdminShopsPage({ searchParams }: { searchParams: P
           {row(t("contacts"), [shop.phone, shop.email, shop.website].filter(Boolean).join(" · ") || "—")}
           {row(t("legal"), [shop.legal_name, shop.legal_id].filter(Boolean).join(" · ") || "—")}
           {row(t("plan"), plan ? t("planValue", { name: plan.name, used: live, quota: plan.quota, date: formatDate(plan.endsAt, locale, "medium") }) : t("noPlan"))}
+          {pay && row(
+            t("subscription"),
+            pay.status === "captured" ? (
+              <span className="font-semibold text-[var(--tone-ok)]">{t("subscriptionPaid", { plan: payPlanName, amount: formatTND(Number(pay.amount), locale) })}</span>
+            ) : (
+              <Link href={`/admin/paiements?status=pending&a=${pay.id}` as never} className="font-semibold text-[var(--gold)] hover:underline">
+                {t(pay.status === "pending_review" ? "subscriptionReceipt" : "subscriptionChosen", { plan: payPlanName })}
+              </Link>
+            ),
+          )}
           {row(t("members"), String(members ?? 0))}
         </dl>
         {shop.description && <p className="mt-2 whitespace-pre-line text-[12.5px] leading-relaxed text-muted" dir="auto">{shop.description}</p>}

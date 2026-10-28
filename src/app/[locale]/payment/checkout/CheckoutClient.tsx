@@ -28,6 +28,22 @@ import { clipboardText } from "@/lib/payments/clipboard";
 import type { PaymentProvider } from "@/lib/payments/types";
 import { pickedBeforeReady } from "@/lib/pickedBeforeReady";
 
+/**
+ * A call that never answers is a spinner forever. On 2026-10-28 a receipt
+ * stayed « sending » until a reload: the Supabase client had deadlocked on its
+ * own lock (AccountMenu). After `ms` the call fails like a lost connection:
+ * the toast says so and the button lets the client try again.
+ */
+function withTimeout<P extends PromiseLike<unknown>>(p: P, ms: number): Promise<Awaited<P>> {
+  return new Promise<Awaited<P>>((resolve, reject) => {
+    const id = setTimeout(() => reject(new Error("timeout")), ms);
+    Promise.resolve(p).then(
+      (v) => { clearTimeout(id); resolve(v as Awaited<P>); },
+      (e) => { clearTimeout(id); reject(e); },
+    );
+  });
+}
+
 interface Props {
   paymentId: string;
   amount: number;
@@ -197,9 +213,9 @@ export function CheckoutClient({
     // Track every object we put in the bucket this attempt so we can clean them
     // ALL up if a later upload or the attach call fails (no orphans).
     const uploadedPaths: string[] = [];
+    const supabase = getBrowserSupabase();
     try {
-      const supabase = getBrowserSupabase();
-      const { data: auth } = await supabase.auth.getUser();
+      const { data: auth } = await withTimeout(supabase.auth.getUser(), 10_000);
       if (!auth.user) {
         toast(t("sessionExpired"), "error");
         setSubmitting(false);
@@ -226,9 +242,14 @@ export function CheckoutClient({
         // Owner-scoped path per RLS (0023); index suffix keeps the 3 distinct.
         const ext = toUpload.name.split(".").pop()?.toLowerCase() ?? "bin";
         const path = `${auth.user.id}/${safePid}-${Date.now()}-${i}.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("receipts")
-          .upload(path, toUpload, { cacheControl: "3600", upsert: false, contentType: toUpload.type });
+        // A receipt is a few hundred KB after compression; a slow phone line
+        // gets 90 s before it is told the send failed.
+        const { error: upErr } = await withTimeout(
+          supabase.storage
+            .from("receipts")
+            .upload(path, toUpload, { cacheControl: "3600", upsert: false, contentType: toUpload.type }),
+          90_000,
+        );
         if (upErr) {
           if (uploadedPaths.length) void supabase.storage.from("receipts").remove(uploadedPaths);
           // upErr.message is the storage API's English text.
@@ -255,6 +276,8 @@ export function CheckoutClient({
       setSubmitted(true);
       setSentHere(true);
     } catch {
+      // A send that gave up halfway leaves nothing behind in the bucket.
+      if (uploadedPaths.length) void supabase.storage.from("receipts").remove(uploadedPaths);
       toast(t("networkError"), "error");
       setSubmitting(false);
     }

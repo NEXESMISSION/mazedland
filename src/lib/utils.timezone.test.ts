@@ -12,8 +12,14 @@ describe("dates in Tunis time", () => {
   });
 
   it("a payment at 11:42 UTC reads 12:42", () => {
-    expect(formatDate("2026-10-28T11:42:00Z", "fr", "time")).toMatch(/^12:42/);
-    expect(formatDate("2026-10-28T11:42:00Z", "fr", "dateTime")).toMatch(/28 oct\. 2026.*12:42/);
+    expect(formatDate("2026-10-28T11:42:00Z", "fr", "time")).toBe("12:42");
+    expect(formatDate("2026-10-28T11:42:00Z", "fr", "dateTime")).toMatch(/28 oct\. 2026.*12:42$/);
+  });
+
+  it("on a 24-hour clock, in both languages — never « 02:42 PM »", () => {
+    expect(formatDate("2026-10-28T13:42:00Z", "fr", "time")).toBe("14:42");
+    expect(formatDate("2026-10-28T13:42:00Z", "ar", "time")).toBe("14:42");
+    expect(formatDate("2026-10-28T13:42:00Z", "fr", "dateTime")).not.toMatch(/PM|AM/);
   });
 
   it("late in the UTC evening is already the next day in Tunis", () => {

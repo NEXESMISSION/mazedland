@@ -10,7 +10,8 @@ import {
 } from "@/components/admin/kit";
 import { Ltr } from "@/components/ui/Ltr";
 import { formatDate, formatTND } from "@/lib/utils";
-import { Check, X, ChevronLeft, ExternalLink, FileWarning } from "lucide-react";
+import { CREDIT_NOTE_REASON_KEYS } from "@/lib/payments/creditNote";
+import { Check, X, ChevronLeft, ExternalLink, FileMinus, FileWarning } from "lucide-react";
 
 /**
  * The right pane: one receipt, and the decision.
@@ -38,6 +39,9 @@ export type PaymentDetailData = {
   listing: { id: string; title: string; status: string } | null;
   /** Signed URLs + their storage paths, so the preview knows the real type. */
   receipts: { url: string; path: string }[];
+  /** Its invoice once captured, and the credit note that cancelled it (0187). */
+  invoice: { id: string; number: string } | null;
+  creditNote: { id: string; number: string; reason: string | null } | null;
 };
 
 /** Providers with a label in messages: adminPayments.providers.<provider>. */
@@ -65,10 +69,12 @@ export function PaymentDetail({
   const t = useTranslations("adminPayments");
   const locale = useLocale();
   const { run, pending } = useAdminAction();
-  const [confirm, setConfirm] = useState<null | "accept" | "reject">(null);
+  const [confirm, setConfirm] = useState<null | "accept" | "reject" | "credit">(null);
   const p = payment;
 
   const open = p.status === "pending" || p.status === "pending_review";
+  // Accepted by mistake — a test, money given back: a credit note cancels it.
+  const cancellable = p.status === "captured" && p.invoice && !p.creditNote;
 
   const money = t("amount", { amount: formatTND(p.amount, locale) });
   const kindLabel = KIND_KEYS.has(p.kind) ? t(`kinds.${p.kind}`) : p.kind;
@@ -126,7 +132,15 @@ export function PaymentDetail({
           </div>
         )}
 
-        {p.adminNotes && (
+        {p.creditNote ? (
+          <p className="mt-4 border-s-2 border-[var(--tone-bad)] ps-3 text-[12.5px] text-[var(--tone-bad)]">
+            <span className="font-semibold">{t("detail.cancelledBy")}</span>{" "}
+            <a href={`/${locale}/factures/${p.creditNote.id}`} className="font-semibold underline">
+              <Ltr>{p.creditNote.number}</Ltr>
+            </a>
+            {p.creditNote.reason && <> — {p.creditNote.reason}</>}
+          </p>
+        ) : p.adminNotes && (
           <p className="mt-4 border-s-2 border-[var(--tone-bad)] ps-3 text-[12.5px] text-[var(--tone-bad)]">
             <span className="font-semibold">{t("detail.rejectionReason")}</span> {p.adminNotes}
           </p>
@@ -143,6 +157,13 @@ export function PaymentDetail({
             <Row label={t("detail.initiatedAt")}>{dt(p.createdAt)}</Row>
             <Row label={t("detail.receiptSentAt")}>{dt(p.uploadedAt)}</Row>
             {p.reviewedAt && <Row label={t("detail.processedAt")}>{dt(p.reviewedAt)}</Row>}
+            {p.invoice && (
+              <Row label={t("detail.invoice")}>
+                <a href={`/${locale}/factures/${p.invoice.id}`} className="font-medium text-[var(--gold)] hover:underline">
+                  <Ltr>{p.invoice.number}</Ltr>
+                </a>
+              </Row>
+            )}
           </dl>
         </section>
 
@@ -200,6 +221,17 @@ export function PaymentDetail({
               {t("detail.reject")}
             </AdminButton>
           </>
+        ) : cancellable ? (
+          <>
+            <span className="me-auto text-[12px] text-subtle">{t("detail.alreadyProcessed")}</span>
+            <AdminButton
+              variant="danger"
+              icon={<FileMinus className="size-3.5" strokeWidth={2.4} />}
+              onClick={() => setConfirm("credit")}
+            >
+              {t("detail.creditNote")}
+            </AdminButton>
+          </>
         ) : (
           <span className="text-[12px] text-subtle">{t("detail.alreadyProcessed")}</span>
         )}
@@ -235,6 +267,21 @@ export function PaymentDetail({
         onCancel={() => setConfirm(null)}
         onConfirm={async (reason) => {
           if (await act({ action: "reject", reason }, t("detail.rejected"))) setConfirm(null);
+        }}
+      />
+      <Confirm
+        open={confirm === "credit"}
+        title={t("detail.confirmCreditTitle", { number: p.invoice?.number ?? "" })}
+        body={t("detail.confirmCreditBody", { amount: money })}
+        confirmLabel={t("detail.confirmCreditLabel")}
+        pending={pending}
+        choice={{
+          label: t("detail.creditReasonLabel"),
+          options: CREDIT_NOTE_REASON_KEYS.map((k) => ({ value: k, label: t(`detail.creditReasons.${k}`) })),
+        }}
+        onCancel={() => setConfirm(null)}
+        onConfirm={async (reason) => {
+          if (await act({ action: "credit_note", reason }, t("detail.credited"))) setConfirm(null);
         }}
       />
     </div>

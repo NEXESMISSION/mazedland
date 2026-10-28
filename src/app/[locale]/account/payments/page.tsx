@@ -141,14 +141,23 @@ export default async function MyPaymentsPage({
       }),
   );
 
-  // ── Their invoice or receipt (0175), issued when each was captured. ──
+  // ── Their invoice or receipt (0175), issued when each was captured, and
+  //    the credit note that cancelled it, if one did (0187). ──
   const docs = new Map<string, { id: string; type: "invoice" | "receipt" }>();
+  const credits = new Map<string, { id: string; number: string }>();
   const service = getServiceSupabase();
-  const captured = payments.filter((p) => p.status === "captured").map((p) => p.id);
+  const captured = payments.filter((p) => p.status === "captured" || p.status === "refunded").map((p) => p.id);
   if (service && captured.length) {
     const { data: inv } = await service.from("invoices").select("id, payment_id, doc_type").in("payment_id", captured);
-    for (const d of (inv ?? []) as { id: string; payment_id: string; doc_type: "invoice" | "receipt" }[]) {
-      docs.set(d.payment_id, { id: d.id, type: d.doc_type });
+    const rows = (inv ?? []) as { id: string; payment_id: string; doc_type: "invoice" | "receipt" }[];
+    for (const d of rows) docs.set(d.payment_id, { id: d.id, type: d.doc_type });
+    if (rows.length) {
+      const { data: notes } = await service.from("invoices").select("id, number, credits_invoice_id").in("credits_invoice_id", rows.map((d) => d.id));
+      const byInvoice = new Map(((notes ?? []) as { id: string; number: string; credits_invoice_id: string }[]).map((n) => [n.credits_invoice_id, n]));
+      for (const d of rows) {
+        const n = byInvoice.get(d.id);
+        if (n) credits.set(d.payment_id, { id: n.id, number: n.number });
+      }
     }
   }
 
@@ -166,6 +175,7 @@ export default async function MyPaymentsPage({
       adminNotes: p.admin_notes ?? null,
       receiptUrl: signed.get(p.id) ?? null,
       invoice: docs.get(p.id) ?? null,
+      creditNote: credits.get(p.id) ?? null,
       listingId,
       title: entity?.title ?? null,
       governorate: entity?.governorate ?? null,

@@ -311,7 +311,7 @@ async function loadDetail(
     }),
   );
 
-  const [listingRes, productRes] = await Promise.all([
+  const [listingRes, productRes, invoiceRes] = await Promise.all([
     r.metadata?.listing_id
       ? admin
           .from("listings")
@@ -326,10 +326,16 @@ async function loadDetail(
           .eq("id", r.metadata.product_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+    admin.from("invoices").select("id, number").eq("payment_id", r.id).maybeSingle(),
   ]);
 
   const listing = listingRes.data as { id: string; title: string; status: string } | null;
   const product = productRes.data as { name_fr: string; name_ar: string | null } | null;
+  const invoice = invoiceRes.data as { id: string; number: string } | null;
+  // The credit note that cancelled it (0187).
+  const { data: note } = invoice
+    ? await admin.from("invoices").select("id, number, reason").eq("credits_invoice_id", invoice.id).maybeSingle()
+    : { data: null };
 
   return {
     id: r.id,
@@ -348,5 +354,7 @@ async function loadDetail(
       : null,
     listing,
     receipts,
+    invoice,
+    creditNote: (note as { id: string; number: string; reason: string | null } | null) ?? null,
   };
 }

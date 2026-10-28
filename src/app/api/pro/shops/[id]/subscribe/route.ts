@@ -14,8 +14,9 @@ import { formatDate } from "@/lib/utils";
  * The owner chooses a plan; this creates the payment (kind « subscription »,
  * the plan's price read here, never from the browser) and the browser goes to
  * the usual checkout to send the receipt. The period opens when an admin
- * accepts the receipt (/api/admin/paiements). A shop must be approved first:
- * nobody pays for a shop that may not open.
+ * accepts the receipt (/api/admin/paiements). An agence still waiting to be
+ * opened chooses and pays first (the owner's rule, 2026-10-28): the admin
+ * opens it on the receipt. A refused or suspended one cannot pay.
  *
  * What it costs follows the owner's rules (src/lib/pro/planChange.ts): an
  * upgrade costs the new price less what is left of the current plan; a
@@ -40,7 +41,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const body = (await req.json().catch(() => ({}))) as { plan?: unknown };
   const slug = typeof body.plan === "string" ? body.plan : "";
   const { data: shop } = await admin.from("shops").select("status, name").eq("id", id).maybeSingle();
-  if (shop?.status !== "approved") return NextResponse.json({ error: "conflict", detail: t("errors.notApproved") }, { status: 409 });
+  if (shop?.status !== "approved" && shop?.status !== "pending") {
+    return NextResponse.json({ error: "conflict", detail: t("errors.notApproved") }, { status: 409 });
+  }
 
   const { data: plan } = await admin
     .from("products")
