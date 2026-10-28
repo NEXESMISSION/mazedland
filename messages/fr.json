@@ -1467,13 +1467,9 @@
     "aiPrivacy": "Votre numéro et vos e-mails ne sont jamais envoyés. Rien n'est publié sans que vous l'ayez vérifié.",
     "tryChat": "Nouveau : publier en parlant",
     "tryChatHint": "Discutez avec l'assistant au micro, il remplit tout, vous publiez.",
-    "aiVoiceLang": "Langue parlée",
-    "aiVoiceLangTn": "Tunisien",
-    "aiVoiceLangFr": "Français",
-    "aiVoiceLangEn": "English",
     "aiVoiceDenied": "Le micro est refusé : autorisez-le dans le navigateur.",
     "aiVoiceNoSpeech": "Je n'ai rien entendu. Réessayez.",
-    "aiVoiceLangUnsupported": "Ce navigateur n'écoute pas cette langue. Choisissez-en une autre.",
+    "aiVoiceLangUnsupported": "Ce navigateur n'écoute pas cette langue. Écrivez votre message.",
     "aiVoiceFailed": "La dictée n'a pas marché. Écrivez la phrase.",
     "editTitle": "Modifier mon annonce",
     "editSubtitle": "Corrigez ce qui doit l'être. Une fois enregistrée, la modification passe par notre équipe : l'annonce quitte le site jusqu'à sa validation.",
@@ -1589,7 +1585,7 @@
     "title": "Publier en parlant",
     "subtitle": "Appuyez sur le micro et décrivez votre bien comme au téléphone. Je remplis l'annonce, vous publiez.",
     "toForm": "Version formulaire",
-    "greeting": "Bonjour ! Qu'est-ce que vous voulez publier ? Dites-moi le type de bien, la ville, la surface et le prix. Vous pouvez parler en tunisien, en français ou en anglais.",
+    "greeting": "Bonjour ! Qu'est-ce que vous voulez publier ? Dites-moi le type de bien, la ville, la surface et le prix.",
     "noted": "C'est noté. Autre chose ?",
     "failed": "Je n'ai pas pu lire ce message. Réessayez, ou passez au formulaire.",
     "offline": "Connexion perdue. Réessayez.",
@@ -4982,7 +4978,7 @@
     },
     "feature_ai_voice": {
       "label": "Micro de « Publier en parlant »",
-      "hint": "Le micro de la version B : le vendeur parle en tunisien, en français ou en anglais au lieu d'écrire. Éteint, la conversation se fait au clavier. Seulement dans les navigateurs qui savent écouter (Chrome, Edge, Safari)."
+      "hint": "Le micro de la version B : le vendeur parle au lieu d'écrire, dans la langue de la page (tunisien sur le site arabe, français sur le site français). Éteint, la conversation se fait au clavier. Seulement dans les navigateurs qui savent écouter (Chrome, Edge, Safari)."
     },
     "feature_publish_chat": {
       "label": "Publier en parlant (version B)",

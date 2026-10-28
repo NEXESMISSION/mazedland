@@ -30,14 +30,6 @@ export function speechLang(locale: string): string {
   return locale === "ar" ? "ar-TN" : "fr-FR";
 }
 
-/** What a seller may dictate the listing assistant in. The assistant reads all three. */
-export const DICTATION_LANGS = ["ar-TN", "fr-FR", "en-US"] as const;
-export type DictationLang = (typeof DICTATION_LANGS)[number];
-
-export function asDictationLang(v: unknown): DictationLang | null {
-  return DICTATION_LANGS.find((l) => l === v) ?? null;
-}
-
 /** Everything recognised so far, as one line. */
 export function transcriptOf(results: ArrayLike<ArrayLike<{ transcript: string }>>): string {
   return Array.from(results)

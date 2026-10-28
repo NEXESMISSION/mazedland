@@ -1,18 +1,20 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { DICTATION_LANGS, asDictationLang, transcriptOf } from "./speech";
+import { speechLang, transcriptOf } from "./speech";
 import { SETTINGS } from "@/lib/settings/registry";
 import { buildSystemPrompt } from "@/lib/ai/listing";
 
 const result = (...said: string[]) => said.map((s) => Object.assign([{ transcript: s }], { isFinal: true }));
+const read = (f: string) => readFileSync(join(process.cwd(), f), "utf8");
 
 describe("dictation", () => {
-  it("listens in Tunisian Arabic, French or English, nothing else", () => {
-    expect(DICTATION_LANGS).toEqual(["ar-TN", "fr-FR", "en-US"]);
-    expect(asDictationLang("en-US")).toBe("en-US");
-    expect(asDictationLang("de-DE")).toBeNull();
-    expect(asDictationLang(null)).toBeNull();
+  it("listens in the page's language, with no language to pick", () => {
+    expect(speechLang("ar")).toBe("ar-TN");
+    expect(speechLang("fr")).toBe("fr-FR");
+    const chat = read("src/app/[locale]/annonces/nouvelle/parler/ChatPublisher.tsx");
+    expect(chat).toContain("speechLang(locale)");
+    expect(chat).not.toMatch(/DictationLangPicker|en-US/);
   });
 
   it("joins what was heard into one line", () => {
@@ -25,7 +27,6 @@ describe("dictation", () => {
   });
 
   it("lives in « Publier en parlant », not in the form", () => {
-    const read = (f: string) => readFileSync(join(process.cwd(), f), "utf8");
     expect(read("src/app/[locale]/annonces/nouvelle/parler/ChatPublisher.tsx")).toContain("useDictation(");
     expect(read("src/app/[locale]/annonces/nouvelle/PublishWizard.tsx")).not.toMatch(/useDictation|DictationLangPicker|ListingDictation/);
   });

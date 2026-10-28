@@ -9,8 +9,8 @@ import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { useSetting } from "@/components/settings/SettingsProvider";
 import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUploader";
-import { DictationLangPicker, useDictationProblem } from "@/components/listing/DictationLangPicker";
-import { useDictation, useDictationLang } from "@/components/listing/useDictation";
+import { useDictation, useDictationProblem } from "@/components/listing/useDictation";
+import { speechLang } from "@/components/search/speech";
 import { appliesTo } from "@/lib/listings/deal";
 import { governorateLabel } from "@/lib/tunisia";
 import { formatTND, cn } from "@/lib/utils";
@@ -28,7 +28,7 @@ type Done = { status: string; id: string; paidWith?: string; remaining?: number;
  * « Publier en parlant » — version B of the publish flow.
  *
  * The seller holds a conversation instead of filling four steps: the big
- * microphone is the main control (Tunisian, French or English), typing is one
+ * microphone is the main control (in the page's language), typing is one
  * tap away. Every message goes to /api/ai/listing-chat with the whole
  * exchange, which answers with the annonce as understood now and the next
  * question; the card at the top shows what is known and what is missing.
@@ -79,7 +79,8 @@ export function ChatPublisher({
   const [listingId, setListingId] = useState<string | null>(null);
   const [done, setDone] = useState<Done | null>(null);
 
-  const [lang, setLang] = useDictationLang(locale);
+  // The microphone listens in the page's language: Tunisian on /ar, French on /fr.
+  const lang = speechLang(locale);
   const { supported, listening, start, stop } = useDictation(useDictationProblem());
   const canSpeak = voiceOn && supported;
 
@@ -412,11 +413,6 @@ export function ChatPublisher({
             >
               <Check className="size-4" /> {t("publishWhenReady")}
             </button>
-          )}
-          {canSpeak && (
-            <div className="flex justify-center">
-              <DictationLangPicker value={lang} onChange={setLang} disabled={listening} />
-            </div>
           )}
           <div className="mt-2.5 flex items-center justify-center gap-5">
             <button
