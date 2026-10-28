@@ -26,6 +26,7 @@ import { compressImage } from "@/lib/imageCompress";
 import type { ProviderInstructions } from "@/lib/payments";
 import { clipboardText } from "@/lib/payments/clipboard";
 import type { PaymentProvider } from "@/lib/payments/types";
+import { pickedBeforeReady } from "@/lib/pickedBeforeReady";
 
 interface Props {
   paymentId: string;
@@ -41,6 +42,8 @@ interface Props {
   /** True when re-uploading after a rejection (or a refresh). */
   /** The seller already sent a receipt and an admin has not ruled on it yet. */
   receiptUnderReview: boolean;
+  /** What is paid for (page.tsx): an agence's plan, a placement or an annonce's fee. */
+  subject?: { kind: "plan" | "promo" | "fee"; product: string | null; shop: string | null; shopId: string | null };
   /** When set (listing-fee payments), shows a "Modifier l'annonce" link so the
    *  seller can go back and fix the listing before paying. Full locale-prefixed
    *  href to the edit page (which returns here after saving). */
@@ -78,6 +81,7 @@ export function CheckoutClient({
   paymentId,
   amount,
   listing,
+  subject,
   instructions,
   locale,
   receiptUnderReview,
@@ -303,7 +307,12 @@ export function CheckoutClient({
     // "passe en ligne automatiquement" was wrong even before the pivot: a
     // captured fee moves the annonce to `pending_review`, not to `published`.
     // Paying buys a publication, not a way past moderation.
-    const steps = [t("sentSteps.review"), t("sentSteps.notify"), t("sentSteps.publish")];
+    // What happens once the receipt is accepted depends on what was paid for.
+    const steps = [
+      t("sentSteps.review"),
+      t("sentSteps.notify"),
+      subject?.kind === "plan" ? t("sentSteps.plan") : subject?.kind === "promo" ? t("sentSteps.promo") : t("sentSteps.publish"),
+    ];
     const bold = (chunks: React.ReactNode) => (
       <span className="font-bold text-foreground">{chunks}</span>
     );
@@ -346,11 +355,17 @@ export function CheckoutClient({
               {/* Where a seller actually wants to go after paying: the list of
                   their own annonces, where this one now shows "En vérification".
                   The caution branch that stood here led to a bid page. */}
+              {/* A plan belongs to the agence: back to its subscription tab. */}
               <a
-                href={`/${locale}/account/listings`}
+                href={
+                  subject?.kind === "plan" && subject.shopId
+                    ? `/${locale}/pro/dashboard?shop=${subject.shopId}&tab=abonnement`
+                    : `/${locale}/account/listings`
+                }
                 className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] px-5 text-[13px] font-bold text-white hover:bg-[var(--gold-bright)]"
               >
-                {t("myListings")} <ArrowRight className="ms-1.5 h-4 w-4 rtl:-scale-x-100" />
+                {subject?.kind === "plan" && subject.shopId ? t("toPlan") : t("myListings")}{" "}
+                <ArrowRight className="ms-1.5 h-4 w-4 rtl:-scale-x-100" />
               </a>
               {listing && (
                 <a
@@ -400,11 +415,15 @@ export function CheckoutClient({
             </div>
           )}
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--gold)]">
-            {t("feeLabel")}
+            {subject?.kind === "plan"
+              ? t("planLabel", { plan: subject.product ?? "" })
+              : subject?.kind === "promo"
+                ? subject.product ?? t("promoLabel")
+                : t("feeLabel")}
           </div>
-          {listing && (
-            <div className="mt-0.5 text-[14px] font-bold leading-tight line-clamp-1">
-              {listing.title}
+          {(subject?.kind === "plan" ? subject.shop : listing?.title) && (
+            <div className="mt-0.5 text-[14px] font-bold leading-tight line-clamp-1" dir="auto">
+              {subject?.kind === "plan" ? subject.shop : listing?.title}
             </div>
           )}
           <div className="mazed-tabular gradient-gold-text mt-3 text-[40px] font-extrabold leading-none">
@@ -414,7 +433,7 @@ export function CheckoutClient({
             </span>
           </div>
           <p className="mx-auto mt-2 max-w-xs text-[11.5px] leading-snug text-[var(--foreground-muted)]">
-            {t("feeBody")}
+            {subject?.kind === "plan" ? t("planBody") : subject?.kind === "promo" ? t("promoBody") : t("feeBody")}
           </p>
           {editHref && (
             // Made a mistake? Go back and fix the listing before paying — saving
@@ -566,7 +585,11 @@ export function CheckoutClient({
                 {t("uploadHint", { maxMb: MAX_FILE_MB, max: MAX_RECEIPTS, used: files.length })}
               </span>
               <input
-                ref={fileInputRef}
+                ref={(el) => {
+                  fileInputRef.current = el;
+                  // A receipt chosen before the page was ready is sent, not lost.
+                  pickedBeforeReady(el);
+                }}
                 type="file"
                 accept={ACCEPTED_TYPES.join(",")}
                 multiple
