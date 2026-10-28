@@ -59,6 +59,9 @@ export function intlTag(locale: string): string {
   return "fr-TN";
 }
 
+/** The site's clock: Tunisia, UTC+1 all year. */
+export const SITE_TIME_ZONE = "Africa/Tunis";
+
 const DATE_PRESETS = {
   /** 6 octobre 2026 · 6 أكتوبر 2026 */
   long: { day: "numeric", month: "long", year: "numeric" },
@@ -89,7 +92,11 @@ export function formatDate(
 ): string {
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return "";
-  return readableSpaces(d.toLocaleString(intlTag(locale), DATE_PRESETS[preset]));
+  // Tunis time, wherever it is formatted. Without it the server (UTC on
+  // Vercel) printed every time an hour early, a date near midnight on the day
+  // before, and a page rendered on both sides disagreed with the browser —
+  // React error #418 on /admin/paiements, caught by the error alerts.
+  return readableSpaces(d.toLocaleString(intlTag(locale), { ...DATE_PRESETS[preset], timeZone: SITE_TIME_ZONE }));
 }
 
 const RELATIVE_STEPS: [Intl.RelativeTimeFormatUnit, number][] = [

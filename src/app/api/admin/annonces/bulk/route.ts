@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
           p_user_id: r.seller_id,
           p_kind: "listing_published",
           p_title: "Votre annonce est en ligne",
-          p_body: `« ${r.title} » est visible jusqu'au ${expires.toLocaleDateString("fr-FR")}.`,
+          p_body: `« ${r.title} » est visible jusqu'au ${expires.toLocaleDateString("fr-FR", { timeZone: "Africa/Tunis" })}.`,
           p_link: `/annonces/${r.id}`,
           p_payload: { vars: { title: r.title, expires_at: expires.toISOString() } },
         })
