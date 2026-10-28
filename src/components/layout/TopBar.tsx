@@ -143,8 +143,8 @@ function BrandMark() {
       <Image
         src="/logo-mark.webp"
         alt=""
-        width={745}
-        height={936}
+        width={127}
+        height={160}
         loading="eager"
         sizes="30px"
         className="h-9 w-auto shrink-0"

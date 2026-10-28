@@ -24,6 +24,9 @@ export function propertyPhotoUrl(
     const params = new URLSearchParams();
     if (opts.transform.width) params.set("width", String(opts.transform.width));
     if (opts.transform.quality) params.set("quality", String(opts.transform.quality));
+    // A width alone with Supabase's default « cover » keeps the original height
+    // and crops to a strip; « contain » scales the whole photo (src/lib/imageLoader.ts).
+    params.set("resize", "contain");
     return `${base}/storage/v1/render/image/public/${bucket}/${storagePath}?${params}`;
   }
   return `${base}/storage/v1/object/public/${bucket}/${storagePath}`;
