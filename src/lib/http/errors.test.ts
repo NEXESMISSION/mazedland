@@ -1,5 +1,26 @@
 import { describe, it, expect } from "vitest";
-import { fail } from "./errors";
+import { describeError, fail } from "./errors";
+
+// What the server log says about an error: a PostgREST error is a plain
+// object, and `String(err)` printed « [object Object] » for every 500.
+describe("describeError()", () => {
+  it("an Error: its message", () => {
+    expect(describeError(new Error("boom"))).toBe("boom");
+  });
+
+  it("a PostgREST error object: message, code, details and hint in one line", () => {
+    expect(describeError({ message: 'invalid input value for enum listing_status: "ready"', code: "22P02", details: null, hint: null }))
+      .toBe('invalid input value for enum listing_status: "ready" · code=22P02');
+    expect(describeError({ message: "duplicate key", code: "23505", details: "Key (id)=(1) already exists.", hint: "" }))
+      .toBe("duplicate key · code=23505 · details=Key (id)=(1) already exists.");
+  });
+
+  it("any other object: its JSON; a primitive: as text", () => {
+    expect(describeError({ status: 500 })).toBe('{"status":500}');
+    expect(describeError("raw")).toBe("raw");
+    expect(describeError(42)).toBe("42");
+  });
+});
 
 // The redaction boundary is load-bearing for security AND observability: the
 // client must get a STABLE code + a correlation id, and the raw Postgres/
