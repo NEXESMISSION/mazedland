@@ -27,6 +27,12 @@ const nextConfig: NextConfig = {
   // compile. Safe, zero-behaviour-change.
   experimental: {
     optimizePackageImports: ["lucide-react"],
+    // Turbopack's on-disk build cache served a stale globals.css (2026-10-28):
+    // the print rules were changed, the build (locally and on Vercel, which
+    // restores .next/cache) kept emitting the old ones, and only a build with
+    // .next/cache/turbopack deleted carried the change. A CSS fix that never
+    // reaches production is worse than a slower build.
+    turbopackFileSystemCacheForBuild: false,
   },
   images: {
     // Each size of a picture comes from Supabase's resizer or a file made in
