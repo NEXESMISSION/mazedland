@@ -24,6 +24,7 @@ import { isEditable } from "@/lib/listings/edit";
 import { getSettings } from "@/lib/settings/server";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { ShareButton } from "@/components/listing/ShareButton";
+import { shareText } from "@/lib/share";
 import { RelatedListings } from "@/components/listing/RelatedListings";
 import { ViewTracker } from "@/components/listing/ViewTracker";
 import { AdSlot } from "@/components/ads/AdSlot";
@@ -397,6 +398,16 @@ export default async function AnnoncePage({
   //
   // Written once and placed twice rather than duplicated by hand. Only one copy
   // is ever visible (the other is display:none at that width).
+  // What travels with the link when the annonce is shared: « Villa S+3 ·
+  // 450 000 DT · Sfax » — the preview shows the photo, this is what is read.
+  const shareWords = shareText({
+    title: l.title,
+    price: l.price_on_request || l.price == null
+      ? t("priceOnRequest")
+      : `${formatTND(Number(l.price), locale)} ${rent ? t("tndPerMonth") : tRoot("common.tnd")}`,
+    place: governorateLabel(l.governorate, locale),
+  });
+
   const priceBlock = (
     <div>
       <div className="mazed-tabular gradient-gold-text text-[34px] font-extrabold leading-none">
@@ -478,7 +489,6 @@ export default async function AnnoncePage({
         {!isPreview && (
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             <CompareToggle listingId={l.id} variant="pill" />
-            <ShareButton title={l.title} />
           </div>
         )}
       </div>
@@ -527,7 +537,6 @@ export default async function AnnoncePage({
         {!isPreview && (
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             <CompareToggle listingId={l.id} variant="pill" />
-            <ShareButton title={l.title} />
           </div>
         )}
       </div>
@@ -662,6 +671,16 @@ export default async function AnnoncePage({
                 </span>
               )}
             </div>
+
+            {/* « Partager » at the top, where the eye lands, not only in the
+                seller's card further down (the owner, 2026-10-28): the link
+                goes out to WhatsApp, Facebook or the clipboard with the title,
+                the price and the place. */}
+            {!isPreview && (
+              <div className="mt-3">
+                <ShareButton title={l.title} text={shareWords} />
+              </div>
+            )}
 
             {/* On a phone the price and the seller sit here, in reading order.
                 On a desktop they are in the rail instead. */}

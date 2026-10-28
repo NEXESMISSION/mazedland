@@ -24,9 +24,18 @@ describe("share, install and backup buttons", () => {
     expect(src).toContain('t("manualHint")');
   });
 
-  it("puts « Partager » on the annonce page, in both contact cards", () => {
+  it("puts « Partager » at the top of the annonce page, with the words that travel with the link", () => {
     const page = read("src/app/[locale]/annonces/[id]/page.tsx");
-    expect((page.match(/<ShareButton\b/g) ?? []).length).toBe(2);
+    // Once, under the title — it used to sit in both contact cards, further
+    // down than anyone looked (the owner, 2026-10-28).
+    expect((page.match(/<ShareButton\b/g) ?? []).length).toBe(1);
+    expect(page).toContain("<ShareButton title={l.title} text={shareWords} />");
+  });
+
+  it("lets a seller share what is online from « Mes annonces » and the agence's dashboard", () => {
+    // A regex: the files are read as they are on disk, CRLF or LF.
+    expect(read("src/app/[locale]/account/listings/page.tsx")).toMatch(/l\.status === "published" && \(\s*<ShareButton\s+variant="text"/);
+    expect(read("src/app/[locale]/pro/dashboard/page.tsx")).toMatch(/l\.status === "published" && <ShareButton variant="text"/);
   });
 
   it("lets only a full admin download a backup, and records it", () => {
