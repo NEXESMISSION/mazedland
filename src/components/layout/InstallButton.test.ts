@@ -36,6 +36,6 @@ describe("share, install and backup buttons", () => {
     const sql = read("supabase/migrations/0189_admin_backup.sql");
     expect(sql).toContain("revoke execute on function public.admin_backup_table(text) from public, anon, authenticated");
     expect(sql).toContain("values ('backups', 'backups', false)");
-    expect(read("src/app/[locale]/admin/settings/page.tsx")).toContain("actions={<BackupButton />}");
+    expect(read("src/app/[locale]/admin/settings/page.tsx")).toContain('<BackupButton kind="data" /><BackupButton kind="files" />');
   });
 });
