@@ -80,7 +80,9 @@ export function logError(rec: {
     status: rec.status ?? null,
     userId: rec.userId ?? null,
     userEmail: rec.userEmail ?? null,
-    metadata: rec.metadata ?? {},
+    // Where it happened: only production errors alert the admins (0185);
+    // local development writes to the same database.
+    metadata: { env: process.env.VERCEL_ENV ?? "local", ...(rec.metadata ?? {}) },
   });
 }
 

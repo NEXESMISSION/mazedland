@@ -1284,6 +1284,10 @@
         "title": "Mise en avant active",
         "body": "La mise en avant de « {title} » est active jusqu'au {fullDate}."
       }
+    },
+    "admin_site_error": {
+      "title": "Erreur sur le site",
+      "body": "{place} — « {message} ». Les visiteurs voient une page d'erreur."
     }
   },
   "publish": {
@@ -4702,7 +4706,8 @@
       "photos": "photos",
       "per_hour": "par heure",
       "per_day": "par jour",
-      "seconds": "secondes"
+      "seconds": "secondes",
+      "hours": "heures"
     },
     "ui": {
       "tabsLabel": "Parties des réglages",
@@ -4836,6 +4841,14 @@
     "feature_voice_search": {
       "label": "Recherche vocale",
       "hint": "Un micro dans les champs de recherche : on dit ce qu'on cherche, les mots remplissent le champ et la recherche part. Seulement dans les navigateurs qui savent écouter (Chrome, Edge, Safari)."
+    },
+    "feature_error_alerts": {
+      "label": "Alertes d'erreur",
+      "hint": "Quand une page du site plante pour un visiteur, les admins le voient dans la cloche de la console, avec la page et le message. Une alerte par erreur et par période (Limites). Coupé : les erreurs restent seulement dans l'activité."
+    },
+    "error_alert_hours": {
+      "label": "Une alerte par erreur toutes les",
+      "hint": "La même erreur répétée par chaque visiteur ne fait qu'une alerte ; si elle continue après ce délai, elle revient."
     }
   },
   "ads": {

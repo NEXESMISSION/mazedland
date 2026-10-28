@@ -22,7 +22,7 @@ export type SettingGroup =
   | "limits"
   | "privacy";
 
-export type SettingUnit = "days" | "seconds" | "tnd" | "percent" | "photos" | "per_hour" | "per_day";
+export type SettingUnit = "days" | "hours" | "seconds" | "tnd" | "percent" | "photos" | "per_hour" | "per_day";
 
 type Common = {
   group: SettingGroup;
