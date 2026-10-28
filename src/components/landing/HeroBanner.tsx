@@ -48,7 +48,13 @@ export type HeroSlide = {
  * SSR: the first slide renders server-side. With `priority` it loads eagerly
  * at high fetch priority — pass it only where the banner opens the page.
  * `hiddenAt` is the media query at which CSS hides the banner's tree, so that
- * first photo is not downloaded there (see HiddenAt). Other slides are lazy.
+ * first photo is not downloaded there (see HiddenAt).
+ *
+ * Only the slides beside the one shown carry their photo: the current one, the
+ * next (it slides in at the next tick) and the previous (a swipe back). The
+ * others are put in as they come near. `loading="lazy"` was not enough: the
+ * slides sit side by side in one row, close enough for the browser to fetch
+ * them all — on a phone, eight photos (≈700 kB) for the one on screen.
  */
 export function HeroBanner({
   slides,
@@ -232,6 +238,7 @@ export function HeroBanner({
               priority={priority && i === 0}
               hiddenAt={i === 0 ? hiddenAt : undefined}
               active={i === index}
+              near={i === index || i === (index + 1) % total || i === (index - 1 + total) % total}
             />
           ))}
         </div>
@@ -299,12 +306,15 @@ function SlideCard({
   priority,
   hiddenAt,
   active,
+  near,
 }: {
   slide: HeroSlide;
   isRTL: boolean;
   priority: boolean;
   hiddenAt?: string;
   active: boolean;
+  /** Shown, next or previous: the only slides that carry their photo. */
+  near: boolean;
 }) {
   // The brand slide gets a dedicated layout — see BrandSlide below.
   // Photo slides keep the original photo + bottom-text composition.
@@ -314,7 +324,7 @@ function SlideCard({
     );
   }
   return (
-    <PhotoSlide slide={slide} isRTL={isRTL} priority={priority} hiddenAt={hiddenAt} active={active} />
+    <PhotoSlide slide={slide} isRTL={isRTL} priority={priority} hiddenAt={hiddenAt} active={active} near={near} />
   );
 }
 
@@ -324,17 +334,19 @@ function PhotoSlide({
   priority,
   hiddenAt,
   active,
+  near,
 }: {
   slide: HeroSlide;
   isRTL: boolean;
   priority: boolean;
   hiddenAt?: string;
   active: boolean;
+  near: boolean;
 }) {
   const t = useTranslations("landing");
   const [imageBroken, setImageBroken] = useState(false);
   const photo =
-    slide.imageUrl && !imageBroken ? (
+    slide.imageUrl && !imageBroken && near ? (
       <Image
         src={slide.imageUrl}
         alt=""
