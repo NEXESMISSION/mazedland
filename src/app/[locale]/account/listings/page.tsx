@@ -19,6 +19,7 @@ import { getSettings } from "@/lib/settings/server";
 import { accountAllowance } from "@/lib/places/server";
 import { holdsPlace, placesLeft, type Allowance } from "@/lib/places/model";
 import { ListingStatusActions } from "./ListingStatusActions";
+import { ShareButton } from "@/components/listing/ShareButton";
 import { PaySubmitButton } from "@/components/payments/PaySubmitButton";
 
 export const dynamic = "force-dynamic";
@@ -323,6 +324,15 @@ export default async function MyListingsPage({
         >
           {t("view")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
         </Link>
+        {/* A seller shares what is online from the list itself (the owner, 2026-10-28). */}
+        {l.status === "published" && (
+          <ShareButton
+            variant="text"
+            href={`/${locale}/annonces/${l.id}`}
+            title={l.title}
+            className={block ? "mt-2 flex justify-center" : "ms-3 inline-flex"}
+          />
+        )}
         {/* Edit what is online (0172), or what is still waiting for an admin —
             a zero too many is often noticed right after sending. Not while
             editing is switched off in the console. */}

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { ShareButton } from "@/components/listing/ShareButton";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { formatDate, formatNumber, formatTND } from "@/lib/utils";
@@ -214,6 +215,8 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
                     {/* The edit form is its author's (0172). */}
                     {settings.feature_listing_edit && l.status === "published" && l.seller_id === user!.id && <Link href={`/annonces/nouvelle?edit=${l.id}` as never} className="text-foreground hover:underline">{t("edit")}</Link>}
                     {l.status === "published" && <Link href={`/annonces/${l.id}` as never} className="text-gold hover:underline">{t("view")}</Link>}
+                    {/* The agence pushes its annonce into its groups from here (the owner, 2026-10-28). */}
+                    {l.status === "published" && <ShareButton variant="text" href={`/${locale}/annonces/${l.id}`} title={l.title} />}
                   </div>
                 </li>
               ))}

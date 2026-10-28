@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Check, Copy, Facebook, MessageCircle, Share2 } from "lucide-react";
 import { useSetting } from "@/components/settings/SettingsProvider";
 import { useToast } from "@/components/ui/Toast";
+import { shareLinks } from "@/lib/share";
 import { cn } from "@/lib/utils";
 
 /**
@@ -16,10 +17,28 @@ import { cn } from "@/lib/utils";
  *  - elsewhere, WhatsApp, Facebook and « Copier le lien ».
  *
  * The link is the page's own address without its query string, so a share
- * never carries a search or a tracking parameter along. Switched off with
- * feature_share.
+ * never carries a search or a tracking parameter along — or `href`, the
+ * annonce's path, when the button sits in a list (« Mes annonces », the
+ * agence's dashboard) and not on the annonce itself. `text` is what travels
+ * with the link (src/lib/share.ts shareText); the title alone otherwise.
+ * Switched off with feature_share.
  */
-export function ShareButton({ title, className }: { title: string; className?: string }) {
+export function ShareButton({
+  title,
+  text,
+  href,
+  variant = "pill",
+  className,
+}: {
+  title: string;
+  /** The words sent with the link: « Villa S+3 · 450 000 DT · Sfax ». */
+  text?: string;
+  /** The annonce's path (`/fr/annonces/<id>`) when not on its page. */
+  href?: string;
+  /** `pill`: a bordered button; `text`: a bare link, for a row of actions. */
+  variant?: "pill" | "text";
+  className?: string;
+}) {
   const t = useTranslations("share");
   const enabled = useSetting("feature_share");
   const { toast } = useToast();
@@ -43,14 +62,15 @@ export function ShareButton({ title, className }: { title: string; className?: s
 
   if (!enabled) return null;
 
-  const link = () => `${window.location.origin}${window.location.pathname}`;
+  const link = () => `${window.location.origin}${href ?? window.location.pathname}`;
+  const words = text ?? title;
 
   async function share() {
     const url = link();
     const touch = window.matchMedia?.("(pointer: coarse)").matches;
     if (touch && typeof navigator.share === "function") {
       try {
-        await navigator.share({ title, text: title, url });
+        await navigator.share({ title, text: words, url });
         return;
       } catch (e) {
         // The person closed the sheet: nothing to say. Anything else: the menu.
@@ -80,16 +100,20 @@ export function ShareButton({ title, className }: { title: string; className?: s
         onClick={share}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="tap-target inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-[12.5px] font-bold text-foreground transition hover:bg-surface-2"
+        className={
+          variant === "text"
+            ? "tap-target inline-flex items-center gap-1 text-[12.5px] font-bold text-foreground hover:underline"
+            : "tap-target inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-[12.5px] font-bold text-foreground transition hover:bg-surface-2"
+        }
       >
-        <Share2 className="size-4" />
+        <Share2 className={variant === "text" ? "size-3.5" : "size-4"} />
         {t("label")}
       </button>
       {open && (
         <div role="menu" className="absolute start-1/2 top-full z-40 mt-1.5 w-56 -translate-x-1/2 rounded-xl bg-surface p-1.5 shadow-lg ring-1 ring-border rtl:translate-x-1/2">
           <a
             role="menuitem"
-            href={`https://wa.me/?text=${encodeURIComponent(`${title} ${link()}`)}`}
+            href={shareLinks(words, link()).whatsapp}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setOpen(false)}
@@ -99,7 +123,7 @@ export function ShareButton({ title, className }: { title: string; className?: s
           </a>
           <a
             role="menuitem"
-            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link())}`}
+            href={shareLinks(words, link()).facebook}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setOpen(false)}
