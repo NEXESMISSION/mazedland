@@ -4968,6 +4968,10 @@
       "label": "Vues d'annonces et numéros affichés",
       "hint": "Qui a vu quelle annonce, qui a affiché quel numéro : effacé après ce délai. Les compteurs des annonces ne bougent pas."
     },
+    "cron_history_days": {
+      "label": "Historique des tâches planifiées",
+      "hint": "Le journal technique des tâches automatiques (SMS, e-mails, publications, expirations) : gardé ce nombre de jours, puis effacé chaque nuit. Aucune donnée personnelle ni de paiement dedans."
+    },
     "feature_pro_reports": {
       "label": "Rapports des agences",
       "hint": "L'onglet « Rapports » de l'espace Pro : visiteurs, numéros affichés, favoris, visites et clients par période, par annonce et par agent. Coupé : l'onglet disparaît ; rien n'est effacé."

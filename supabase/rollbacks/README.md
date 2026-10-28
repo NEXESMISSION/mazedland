@@ -10,6 +10,7 @@ node scripts/backup-db.mjs
 
 | Migration | Rollback | What is lost |
 |---|---|---|
+| 0188 prune cron history | `0188_prune_cron_history.down.sql` | nothing (the run log deleted by 0188 stays deleted; it held no business data) |
 | 0177 ads | `0177_ads.down.sql` | every ad and its daily figures (images stay in storage) |
 | 0176 server writes only | `0176_listings_server_writes_only.down.sql` | nothing (sellers may write their rows directly again) |
 | 0175 invoices | `0175_invoices.down.sql` | every issued invoice and the numbering (reissue by hand) |
