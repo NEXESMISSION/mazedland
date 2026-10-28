@@ -7,6 +7,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePathname, Link } from "@/i18n/navigation";
 import { BackButton } from "./BackButton";
 import { LocaleSwitcher } from "./LocaleSwitcher";
+import { InstallButton } from "./InstallButton";
+import { useSetting } from "@/components/settings/SettingsProvider";
 
 // Lazy-loaded: the bell pulls in ~40 lucide icons, opens a realtime socket,
 // and fetches /api/notifications on mount — none of which is needed for first
@@ -65,6 +67,7 @@ const TITLE_BY_SEGMENT: Record<string, string> = {
  */
 export function TopBar() {
   const t = useTranslations();
+  const installOn = useSetting("feature_install_button");
   const locale = useLocale();
   const isRTL = locale === "ar";
   const pathname = usePathname();
@@ -111,8 +114,9 @@ export function TopBar() {
           )}
         </div>
 
-        {/* TRAILING — notifications bell + locale switcher */}
+        {/* TRAILING — install the app, notifications bell, locale switcher */}
         <div className="flex items-center gap-1">
+          {installOn && <InstallButton scope="site" variant="icon" />}
           <Optional name="bell" fallback={<span className="inline-block h-9 w-9" />}>
             <NotificationBell />
           </Optional>

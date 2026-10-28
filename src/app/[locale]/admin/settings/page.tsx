@@ -8,6 +8,7 @@ import { SETTINGS, SETTING_GROUPS, type SettingKey } from "@/lib/settings/regist
 import { SettingsPanel } from "./SettingsPanel";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
+import { BackupButton } from "@/components/admin/BackupButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -54,7 +55,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
   return (
     <div>
       <SiteTabs />
-      <AdminPageHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
+      <AdminPageHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} actions={<BackupButton />} />
 
       <nav
         aria-label={tr("ui.tabsLabel")}
