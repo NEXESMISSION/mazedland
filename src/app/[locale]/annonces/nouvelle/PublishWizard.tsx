@@ -1306,6 +1306,11 @@ export function PublishWizard({
   const editNote = waiting ? t("editWaitingNote") : t("editFreeNote");
   const feeHint = editing
     ? editNote
+    : viaOwnPlan
+    ? // Publishing as themselves, inside the plan of the agence they own: no
+      // agence is chosen, so the name is the owned one's. It read shop!.name
+      // here and the whole page crashed for those owners (2026-10-28).
+      t("planHint", { name: ownPlan!.shopName })
     : viaPlan
     ? t("planHint", { name: shop!.name })
     : freeQuota
