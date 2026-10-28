@@ -1211,10 +1211,16 @@ html[dir="rtl"] .mazed-marquee-reverse { animation-name: mazed-marquee; }
 }
 
 /* Printing an invoice (0175): only the document, on white, without the site
-   around it. A page marks what it prints with data-print-area. */
+   around it. A page marks what it prints with data-print-area.
+
+   The rule that shows the document is written under the same `body:has()` as
+   the one that hides the page: `:has()` carries its argument's specificity, so
+   a bare `[data-print-area]` lost to the hiding rule and the print came out
+   blank (the owner, 2026-10-28). */
 @media print {
   body:has([data-print-area]) * { visibility: hidden; }
-  [data-print-area], [data-print-area] * { visibility: visible; }
+  body:has([data-print-area]) [data-print-area],
+  body:has([data-print-area]) [data-print-area] * { visibility: visible; }
   [data-print-area] { position: absolute; inset: 0 auto auto 0; width: 100%; box-shadow: none !important; }
   [data-print-hide] { display: none !important; }
   body { background: #fff !important; }

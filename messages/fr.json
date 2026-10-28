@@ -1295,6 +1295,10 @@
       "promo": {
         "title": "Mise en avant active",
         "body": "La mise en avant de « {title} » est active jusqu'au {fullDate}."
+      },
+      "invoice": {
+        "title": "Paiement validé — facture {number}",
+        "body": "Votre paiement de {amount} pour {what} est validé. Votre facture {number} est prête : ouvrez-la pour l'imprimer."
       }
     },
     "admin_site_error": {
@@ -1912,7 +1916,7 @@
       "rejected": "Reçu refusé.",
       "invoice": "Facture",
       "cancelledBy": "Annulé par l'avoir",
-      "creditNote": "Émettre un avoir",
+      "creditNote": "Annuler la facture (avoir)",
       "confirmCreditTitle": "Annuler la facture {number} ?",
       "confirmCreditBody": "Un avoir de {amount} est émis : la facture reste, l'avoir l'annule. Le paiement passe en « Remboursé » et ce qu'il a acheté s'arrête (période d'abonnement, crédits). Un avoir ne s'annule pas.",
       "confirmCreditLabel": "Émettre l'avoir",
@@ -1922,7 +1926,9 @@
         "refunded": "Remboursé au client",
         "mistake": "Accepté par erreur"
       },
-      "credited": "Avoir émis."
+      "credited": "Avoir émis.",
+      "viewInvoice": "Facture {number} — voir / imprimer",
+      "detailLabel": "Détail"
     },
     "api": {
       "alreadyResolved": "Ce paiement est déjà « {status} ».",
@@ -3929,7 +3935,9 @@
       "chooseFrom": "Choisir pour le {date} — {amount}",
       "renewFor": "Renouveler — {amount}",
       "chooseFor": "Choisir — {amount}",
-      "planPayFirst": "Choisissez votre abonnement et envoyez le reçu dès maintenant : votre agence est ouverte dès que le reçu est validé."
+      "planPayFirst": "Choisissez votre abonnement et envoyez le reçu dès maintenant : votre agence est ouverte dès que le reçu est validé.",
+      "periodInvoice": "Facture {number}",
+      "allPayments": "Tous mes paiements et factures"
     },
     "clients": {
       "open": "En cours",
@@ -4509,7 +4517,17 @@
     "cancels": "Annule la facture",
     "ofDate": "du {date}",
     "cancelledBy": "Annulée par l'avoir",
-    "totalCredit": "Total de l'avoir"
+    "totalCredit": "Total de l'avoir",
+    "amount": "Montant",
+    "totalHt": "Total HT",
+    "lines": {
+      "plan": "Abonnement {name}",
+      "period": "du {from} au {to}",
+      "days": "{count, plural, one {# jour} other {# jours}}",
+      "quota": "{count, plural, one {# annonce} other {# annonces}}",
+      "discount": "Remise — temps restant sur {name}",
+      "previousPlan": "l'abonnement précédent"
+    }
   },
   "settingsRegistry": {
     "groups": {

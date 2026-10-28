@@ -12,6 +12,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { PaymentDetail, type PaymentDetailData } from "./PaymentDetail";
 import { formatRelativeTime, formatTND } from "@/lib/utils";
 import { productName } from "@/lib/products";
+import { loadInvoiceLines } from "@/lib/payments/invoiceLinesServer";
 import { Receipt } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -293,7 +294,7 @@ async function loadDetail(
     id: string; kind: string; status: string; amount: number | string;
     provider: string; created_at: string; receipt_uploaded_at: string | null;
     reviewed_at: string | null; admin_notes: string | null;
-    metadata: { listing_id?: string; product_id?: string } | null;
+    metadata: ({ listing_id?: string; product_id?: string } & Record<string, unknown>) | null;
     receipt_url: string | null; receipt_urls: string[] | null;
     payer: { full_name: string | null; phone: string | null } | null;
   };
@@ -336,6 +337,10 @@ async function loadDetail(
   const { data: note } = invoice
     ? await admin.from("invoices").select("id, number, reason").eq("credits_invoice_id", invoice.id).maybeSingle()
     : { data: null };
+  // The amount explained, before the receipt is accepted as well: a receipt of
+  // 31 DT is checked against « Pro 59 − 28 of Starter's time left ».
+  const label = product ? productName({ nameFr: product.name_fr, nameAr: product.name_ar }, locale) : r.kind;
+  const lines = await loadInvoiceLines(admin, { id: r.id, kind: r.kind, amount: r.amount, metadata: r.metadata }, label, locale);
 
   return {
     id: r.id,
@@ -356,5 +361,6 @@ async function loadDetail(
     receipts,
     invoice,
     creditNote: (note as { id: string; number: string; reason: string | null } | null) ?? null,
+    lines,
   };
 }

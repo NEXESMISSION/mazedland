@@ -5,6 +5,8 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { paymentReference } from "@/lib/payments";
+import { loadInvoiceLines } from "@/lib/payments/invoiceLinesServer";
+import type { InvoiceLine } from "@/lib/payments/invoiceLines";
 import { formatDate } from "@/lib/utils";
 import { Ltr } from "@/components/ui/Ltr";
 import { PrintButton } from "./PrintButton";
@@ -74,8 +76,18 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
     : { data: null };
   const paymentId = (isCredit ? original?.payment_id : inv.payment_id) as string | null;
   const { data: pay } = paymentId
-    ? await admin.from("payments").select("provider, reviewed_at, created_at").eq("id", paymentId).maybeSingle()
+    ? await admin.from("payments").select("provider, reviewed_at, created_at, kind, amount, metadata").eq("id", paymentId).maybeSingle()
     : { data: null };
+  // What it is for, line by line — the plan, its period, what an upgrade took
+  // off the price (invoiceLines.ts). A credit note is one line: what it cancels.
+  const lines: InvoiceLine[] = !isCredit && paymentId && pay
+    ? await loadInvoiceLines(
+        admin,
+        { id: paymentId, kind: pay.kind as string | null, amount: pay.amount as number | string, metadata: pay.metadata as Record<string, unknown> | null },
+        inv.label,
+        locale,
+      )
+    : [{ label: inv.label, sub: null, amount: Number(inv.amount_ttc) }];
   const contactEmail = (await getSettings()).contact_email;
 
   const isInvoice = inv.doc_type === "invoice" || isCredit;
@@ -116,23 +128,36 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
           <thead>
             <tr className="border-b border-[#d4d4d8] text-start text-[11px] uppercase tracking-wide text-[#52525b]">
               <th className="py-2 text-start font-bold">{t("item")}</th>
-              {hasVat && <th className="py-2 text-end font-bold">{t("ht")}</th>}
-              {hasVat && <th className="py-2 text-end font-bold">{t("vat", { rate: Number(inv.vat_rate) })}</th>}
-              <th className="py-2 text-end font-bold">{t("ttc")}</th>
+              <th className="py-2 text-end font-bold">{t("amount")}</th>
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b border-[#e4e4e7] align-top">
-              <td className="py-3 pe-4" dir="auto">{inv.label}</td>
-              {hasVat && <td className="mazed-tabular py-3 text-end">{dt(inv.amount_ht, locale)}</td>}
-              {hasVat && <td className="mazed-tabular py-3 text-end">{dt(inv.vat_amount, locale)}</td>}
-              <td className="mazed-tabular py-3 text-end font-bold">{dt(inv.amount_ttc, locale)}</td>
-            </tr>
+            {lines.map((l, i) => (
+              <tr key={i} className="border-b border-[#e4e4e7] align-top">
+                <td className="py-3 pe-4" dir="auto">
+                  {l.label}
+                  {l.sub && <span className="mt-0.5 block text-[11.5px] text-[#52525b]">{l.sub}</span>}
+                </td>
+                <td className="mazed-tabular py-3 text-end">{dt(l.amount, locale)}</td>
+              </tr>
+            ))}
           </tbody>
-          <tfoot>
+          <tfoot className="text-[13px]">
+            {hasVat && (
+              <>
+                <tr>
+                  <td className="pt-4 text-end font-semibold">{t("totalHt")}</td>
+                  <td className="mazed-tabular pt-4 text-end">{dt(inv.amount_ht, locale)}</td>
+                </tr>
+                <tr>
+                  <td className="pt-1 text-end font-semibold">{t("vat", { rate: Number(inv.vat_rate) })}</td>
+                  <td className="mazed-tabular pt-1 text-end">{dt(inv.vat_amount, locale)}</td>
+                </tr>
+              </>
+            )}
             <tr>
-              <td colSpan={hasVat ? 3 : 1} className="pt-4 text-end text-[13px] font-extrabold">{t(isCredit ? "totalCredit" : "total")}</td>
-              <td className="mazed-tabular pt-4 text-end text-[15px] font-extrabold">{dt(inv.amount_ttc, locale)}</td>
+              <td className="pt-3 text-end font-extrabold">{t(isCredit ? "totalCredit" : hasVat ? "ttc" : "total")}</td>
+              <td className="mazed-tabular pt-3 text-end text-[15px] font-extrabold">{dt(inv.amount_ttc, locale)}</td>
             </tr>
           </tfoot>
         </table>

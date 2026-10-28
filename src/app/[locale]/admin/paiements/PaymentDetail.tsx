@@ -4,14 +4,15 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ReceiptPreview } from "@/components/admin/ReceiptPreview";
-import { AdminButton } from "@/components/admin/AdminButton";
+import { AdminButton, adminBtn } from "@/components/admin/AdminButton";
 import {
   StatusPill, Confirm, useAdminAction, EYEBROW,
 } from "@/components/admin/kit";
 import { Ltr } from "@/components/ui/Ltr";
 import { formatDate, formatTND } from "@/lib/utils";
 import { CREDIT_NOTE_REASON_KEYS } from "@/lib/payments/creditNote";
-import { Check, X, ChevronLeft, ExternalLink, FileMinus, FileWarning } from "lucide-react";
+import type { InvoiceLine } from "@/lib/payments/invoiceLines";
+import { Check, X, ChevronLeft, ExternalLink, FileMinus, FileWarning, Printer } from "lucide-react";
 
 /**
  * The right pane: one receipt, and the decision.
@@ -42,6 +43,8 @@ export type PaymentDetailData = {
   /** Its invoice once captured, and the credit note that cancelled it (0187). */
   invoice: { id: string; number: string } | null;
   creditNote: { id: string; number: string; reason: string | null } | null;
+  /** What the amount is made of — the plan's price, what an upgrade took off (invoiceLines.ts). */
+  lines: InvoiceLine[];
 };
 
 /** Providers with a label in messages: adminPayments.providers.<provider>. */
@@ -153,6 +156,25 @@ export function PaymentDetail({
               <span className="mazed-tabular">{money}</span>
             </Row>
             <Row label={t("detail.for")}>{p.productName ?? kindLabel}</Row>
+            {/* The amount, explained — « Pro 59 − 28 of Starter's time left =
+                31 » — so the receipt is checked against what was quoted. */}
+            {p.lines.length > 0 && (p.lines.length > 1 || p.lines[0].sub) && (
+              <Row label={t("detail.detailLabel")}>
+                <ul className="space-y-1">
+                  {p.lines.map((l, i) => (
+                    <li key={i} className="flex items-baseline justify-between gap-3">
+                      <span className="min-w-0">
+                        {l.label}
+                        {l.sub && <span className="text-subtle"> · {l.sub}</span>}
+                      </span>
+                      <span className={`mazed-tabular shrink-0 ${l.amount < 0 ? "text-[var(--tone-ok)]" : ""}`}>
+                        {formatTND(l.amount, locale)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Row>
+            )}
             <Row label={t("detail.method")}>{providerLabel}</Row>
             <Row label={t("detail.initiatedAt")}>{dt(p.createdAt)}</Row>
             <Row label={t("detail.receiptSentAt")}>{dt(p.uploadedAt)}</Row>
@@ -221,16 +243,30 @@ export function PaymentDetail({
               {t("detail.reject")}
             </AdminButton>
           </>
-        ) : cancellable ? (
+        ) : p.invoice ? (
+          // Paid: the invoice is what the admin comes for — to open and print
+          // it. Cancelling it with a credit note is a quiet text at the far
+          // end; as the one button it was pressed for « print » (2026-10-28).
           <>
-            <span className="me-auto text-[12px] text-subtle">{t("detail.alreadyProcessed")}</span>
-            <AdminButton
-              variant="danger"
-              icon={<FileMinus className="size-3.5" strokeWidth={2.4} />}
-              onClick={() => setConfirm("credit")}
+            <a
+              href={`/${locale}/factures/${p.invoice.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={adminBtn("primary")}
             >
-              {t("detail.creditNote")}
-            </AdminButton>
+              <Printer className="size-3.5" strokeWidth={2.4} />
+              {t("detail.viewInvoice", { number: p.invoice.number })}
+            </a>
+            {cancellable && (
+              <AdminButton
+                variant="quiet"
+                className="ms-auto !text-[var(--tone-bad)]"
+                icon={<FileMinus className="size-3.5" strokeWidth={2.4} />}
+                onClick={() => setConfirm("credit")}
+              >
+                {t("detail.creditNote")}
+              </AdminButton>
+            )}
           </>
         ) : (
           <span className="text-[12px] text-subtle">{t("detail.alreadyProcessed")}</span>

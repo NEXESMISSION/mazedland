@@ -457,11 +457,18 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
     const [{ data: planRows }, { data: periods }, open, ahead] = await Promise.all([
       admin!.from("products").select("slug, name_fr, name_ar, price, listing_quota, duration_days").eq("kind", "subscription").eq("is_active", true).order("price"),
       // Cancelled periods were moved into an upgrade (carryOver): not history.
-      admin!.from("shop_subscriptions").select("starts_at, ends_at, listing_quota, product:products (name_fr)").eq("shop_id", shopId).eq("status", "active").order("starts_at", { ascending: false }).limit(12),
+      admin!.from("shop_subscriptions").select("starts_at, ends_at, listing_quota, payment_id, product:products (name_fr)").eq("shop_id", shopId).eq("status", "active").order("starts_at", { ascending: false }).limit(12),
       paymentsAreOpen(),
       loadPlanPeriods(admin!, shopId),
     ]);
     const plans = (planRows ?? []) as { slug: string; name_fr: string; name_ar: string | null; price: number | string; listing_quota: number; duration_days: number | null }[];
+    // Each paid period's invoice (0175), linked from the history: the owner
+    // opens and prints it from here, not from a list elsewhere.
+    const paidIds = (periods ?? []).map((p) => p.payment_id as string | null).filter((id): id is string => !!id);
+    const { data: invoiceRows } = paidIds.length
+      ? await admin!.from("invoices").select("id, number, payment_id").in("payment_id", paidIds)
+      : { data: [] as unknown[] };
+    const invoiceOf = new Map(((invoiceRows ?? []) as { id: string; number: string; payment_id: string }[]).map((i) => [i.payment_id, i]));
     // What choosing each plan would mean today (the owner's rules, planChange.ts).
     const now = new Date();
     const day = (d: Date) => formatDate(d.toISOString(), locale, "medium");
@@ -552,15 +559,23 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
             <ul className="mt-2 space-y-1 text-[12.5px] text-muted">
               {(periods ?? []).map((p, i) => {
                 const product = (Array.isArray(p.product) ? p.product[0] : p.product) as { name_fr: string } | null;
+                const inv = p.payment_id ? invoiceOf.get(p.payment_id as string) : undefined;
                 return (
                   <li key={i}>
                     {product?.name_fr} · {formatDate(p.starts_at as string, locale, "medium")} → {formatDate(p.ends_at as string, locale, "medium")} · {t("planQuota", { count: p.listing_quota as number })}
+                    {inv && (
+                      <>
+                        {" · "}
+                        <a href={`/${locale}/factures/${inv.id}`} className="font-bold text-foreground underline">{t("periodInvoice", { number: inv.number })}</a>
+                      </>
+                    )}
                   </li>
                 );
               })}
             </ul>
           </div>
         )}
+        <a href={`/${locale}/account/payments`} className="inline-block text-[12px] font-bold text-foreground underline">{t("allPayments")}</a>
       </section>
     );
   }
