@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { useSetting } from "@/components/settings/SettingsProvider";
 import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUploader";
-import { DictationLangPicker, useDictationProblem } from "@/components/listing/ListingDictation";
+import { DictationLangPicker, useDictationProblem } from "@/components/listing/DictationLangPicker";
 import { useDictation, useDictationLang } from "@/components/listing/useDictation";
 import { appliesTo } from "@/lib/listings/deal";
 import { governorateLabel } from "@/lib/tunisia";

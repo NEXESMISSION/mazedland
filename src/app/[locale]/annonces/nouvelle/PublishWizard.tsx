@@ -6,7 +6,6 @@ import { useApiError } from "@/lib/useApiError";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUploader";
-import { ListingDictation } from "@/components/listing/ListingDictation";
 import { ListingImage } from "@/components/media/ListingImage";
 import { Ltr } from "@/components/ui/Ltr";
 import { Modal } from "@/components/ui/Modal";
@@ -1464,8 +1463,6 @@ export function PublishWizard({
                     placeholder={t("aiPlaceholder")}
                     className="mt-3 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[14px] leading-relaxed text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
                   />
-                  {/* Or say it: Tunisian, French or English, into the same box. */}
-                  <ListingDictation value={aiText} onChange={setAiText} maxLength={800} disabled={aiBusy} />
                   <button
                     type="button"
                     onClick={fillFromSentence}
