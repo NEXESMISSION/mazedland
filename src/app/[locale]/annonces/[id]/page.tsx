@@ -128,8 +128,17 @@ export async function generateMetadata({
   ]);
   if (!l) return { title: t("metaNotFound"), robots: { index: false } };
   // Visible to its seller and to an admin (see the page), never to a crawler.
+  // The title stays with them too: the page answered « introuvable » to
+  // everyone else, but the <title> still carried the draft's own words.
   if (l.status !== "published") {
-    return { title: `${l.title} · Mazed Immo`, robots: { index: false } };
+    const { data: { user } } = await (await getServerSupabase()).auth.getUser();
+    let theirs = !!user && user.id === l.seller_id;
+    if (user && !theirs) {
+      const admin = getServiceSupabase();
+      const { data: prof } = admin ? await admin.from("profiles").select("role").eq("id", user.id).maybeSingle() : { data: null };
+      theirs = prof?.role === "admin";
+    }
+    return { title: theirs ? `${l.title} · Mazed Immo` : t("metaNotFound"), robots: { index: false } };
   }
   const price =
     l.price != null && !l.price_on_request

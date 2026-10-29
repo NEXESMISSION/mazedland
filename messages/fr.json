@@ -1305,6 +1305,16 @@
       "title": "Erreur sur le site",
       "body": "{place} — « {message} ». Les visiteurs voient une page d'erreur."
     },
+    "qa_report": {
+      "found": {
+        "title": "Tour de contrôle du site",
+        "body": "{found, plural, =0 {Aucun problème trouvé.} one {# problème trouvé} other {# problèmes trouvés}}{found, plural, =0 {} other { ({critical, plural, =0 {aucun critique} one {# critique} other {# critiques}}).}} Les corrections sont en cours : vous serez prévenu quand elles seront en ligne."
+      },
+      "fixed": {
+        "title": "Tour de contrôle : corrections en ligne",
+        "body": "{fixed, plural, =0 {Aucune correction nécessaire.} one {# problème corrigé et publié.} other {# problèmes corrigés et publiés.}} {left, plural, =0 {Rien ne reste à traiter.} one {# point reste à traiter.} other {# points restent à traiter.}}"
+      }
+    },
     "plan_expiring": {
       "title": "Votre abonnement se termine bientôt",
       "body": "L'abonnement {plan} de « {shop} » se termine le {date}. Vous pouvez le renouveler dès maintenant."

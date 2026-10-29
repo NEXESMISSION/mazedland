@@ -25,6 +25,11 @@ import { paymentsAreOpen } from "@/lib/payments/server";
 import { accountAllowance, planUsage } from "@/lib/places/server";
 import { median, quartiles, type PriceRef } from "@/lib/listings/priceCheck";
 
+import type { Metadata } from "next";
+
+/** Private to the signed-in person: never listed by a search engine. */
+export const metadata: Metadata = { robots: { index: false } };
+
 export const dynamic = "force-dynamic";
 
 /**

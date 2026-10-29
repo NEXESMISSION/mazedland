@@ -18,7 +18,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "auth.login" });
-  return { title: t("metaTitle") };
+  // Not a page to list in search results: a sign-in box, not content.
+  return { title: t("metaTitle"), robots: { index: false } };
 }
 
 export default async function LoginPage({

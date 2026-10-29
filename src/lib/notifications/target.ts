@@ -53,6 +53,8 @@ export const NOTIFICATION_KINDS = [
   "listing_edit_applied", "listing_edit_rejected", "admin_listing_edit_pending",
   // A crash in production (0185): admins only, in the bell
   "admin_site_error",
+  // The QA tour (2026-10-28): what was found, then what was fixed — admins only
+  "qa_report",
   // Mazed Immo Pro (0173): the shop hears the verdict and who joined it, admins the queue
   "shop_approved", "shop_rejected", "shop_member_added", "admin_shop_pending",
   // An agence's plan enters its renewal days (0186)
@@ -74,6 +76,7 @@ export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
  * to introduce a dead fallback, so keep it honest.
  */
 type FallbackRoute =
+  | "/admin"
   | "/properties"
   | "/account/activity"
   | "/account"
@@ -188,6 +191,7 @@ const KIND_FALLBACK: Record<NotificationKind, FallbackRoute> = {
   listing_edit_rejected: "/account/listings",
   admin_listing_edit_pending: "/admin/annonces",
   admin_site_error: "/admin/activity",
+  qa_report: "/admin",
   shop_approved: "/pro/dashboard",
   plan_expiring: "/pro/dashboard",
   shop_rejected: "/pro/dashboard",
@@ -282,6 +286,7 @@ const FALLBACK_SUPPORTS_FOCUS: Record<NotificationKind, boolean> = {
   admin_social_pending: false, admin_social_attention: false,
   listing_edit_applied: false, listing_edit_rejected: false, admin_listing_edit_pending: false,
   admin_site_error: false,
+  qa_report: false,
   shop_approved: false, shop_rejected: false, shop_member_added: false, admin_shop_pending: false,
   plan_expiring: false,
   visit_requested: false, visit_confirmed: false, visit_declined: false, visit_cancelled: false,
