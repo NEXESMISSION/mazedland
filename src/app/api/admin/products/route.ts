@@ -69,7 +69,7 @@ function slugify(raw: string): string {
  * field — and "invalid" for anything that is not a price.
  */
 function money(v: unknown): number | null | "invalid" {
-  if (v == null || v === "") return null;
+  if (v == null || (typeof v === "string" && v.trim() === "")) return null;
   const n = typeof v === "number" ? v : typeof v === "string" ? Number(v.trim()) : Number.NaN;
   if (!Number.isFinite(n) || n < 0) return "invalid";
   return Math.min(MAX_PRICE, Math.round(n * 100) / 100);
@@ -98,14 +98,17 @@ const refuse = (error: string, detail: string, status = 400) => NextResponse.jso
  *   23503 — the category does not exist
  *   22P02 / 23502 — a value the column cannot hold (a junk id, a blank name)
  */
-function refusedBy(error: { code?: string }, t: (key: string) => string): NextResponse | null {
+function refusedBy(error: { code?: string; message?: string; details?: string }, t: (key: string) => string): NextResponse | null {
   switch (error.code) {
     case "23514":
     case "22P02":
     case "23502":
       return refuse("invalid_product", t("invalidProduct"));
     case "23505":
-      return refuse("slug_taken", t("slugTaken"), 409);
+      // Two unique rules: the slug, and one active single price per category (0148).
+      return /slug/i.test(`${error.message ?? ""} ${error.details ?? ""}`)
+        ? refuse("slug_taken", t("slugTaken"), 409)
+        : refuse("invalid_product", t("invalidProduct"));
     case "23503":
       return refuse("invalid_category", t("categoryUnknown"));
     default:

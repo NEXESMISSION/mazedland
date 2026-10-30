@@ -4,8 +4,11 @@ import { amountMatches, expectedAmount, PRODUCT_KIND_OF, PRODUCT_REQUIRED } from
 // The console grants what the server quoted, never what the row says: in the
 // QA tour a self-written row of 1 TND bought a Business plan.
 describe("expectedAmount()", () => {
-  it("a placement, a badge, a pack: the product's price", () => {
-    expect(expectedAmount("promo", { list_price: 1 }, 15)).toBe(15);
+  it("a placement, a badge, a pack: the price frozen at the quote, else the product's", () => {
+    // The console raised the placement to 20 TND while this receipt waited: 15 was the quote.
+    expect(expectedAmount("promo", { list_price: 15 }, 20)).toBe(15);
+    expect(expectedAmount("promo", null, 15)).toBe(15);
+    expect(expectedAmount("promo", { list_price: "abc" }, 15)).toBe(15);
     expect(expectedAmount("badge", null, 49.9)).toBe(49.9);
     expect(expectedAmount("listing_pack", undefined, 50)).toBe(50);
   });

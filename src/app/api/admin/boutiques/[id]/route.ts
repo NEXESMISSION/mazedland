@@ -51,7 +51,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const now = new Date().toISOString();
   const by = gate.user.id;
 
-  const from = FROM[action];
+  // Own keys only: { action: "constructor" } used to reach a prototype function.
+  const from = Object.prototype.hasOwnProperty.call(FROM, action) ? FROM[action] : undefined;
   if (from && !from.includes(shop.status)) {
     const why = refusal(action, shop.status);
     return NextResponse.json({ error: why.error, detail: t(`errors.${why.key}`) }, { status: 409 });

@@ -17,6 +17,10 @@
 -- Periods replaced before this migration carry no mark: a credit note on an
 -- older upgrade still cancels that upgrade's period only, as before.
 --
+-- Builds on 0192 (same function): the placement and the badge the refunded
+-- payment bought stop too. Both migrations ship together; this one is the
+-- last word on issue_credit_note.
+--
 -- Rollback: supabase/rollbacks/0193_credit_note_restores_periods.down.sql.
 -- ============================================================================
 
@@ -40,9 +44,11 @@ security definer
 set search_path = public
 as $$
 declare
-  v_inv  public.invoices;
-  v_id   uuid;
-  v_year text;
+  v_inv       public.invoices;
+  v_id        uuid;
+  v_year      text;
+  v_placement text;
+  v_listing   text;
 begin
   select * into v_inv from public.invoices where id = p_invoice_id for update;
   if v_inv.id is null then raise exception 'invoice_not_found'; end if;
@@ -86,6 +92,43 @@ begin
 
   update public.seller_credits set status = 'revoked'
    where payment_id = v_inv.payment_id and status = 'active';
+
+  -- … the placement it bought (0192), when it is the one running on the
+  -- annonce. The promo route writes the column in metadata.placement; an
+  -- older row says it through its product's slug.
+  select coalesce(p.metadata->>'placement',
+                  case pr.slug
+                    when 'promo-accueil'       then 'promo_home_featured'
+                    when 'promo-top-recherche' then 'promo_top_listed'
+                    when 'promo-banniere'      then 'promo_banner'
+                  end),
+         p.metadata->>'listing_id'
+    into v_placement, v_listing
+    from public.payments p
+    left join public.products pr on pr.id::text = p.metadata->>'product_id'
+   where p.id = v_inv.payment_id
+     and p.kind::text = 'promo';
+
+  if v_placement is not null
+     and v_listing ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    update public.listings
+       set promo_home_featured = false,
+           promo_top_listed    = false,
+           promo_banner        = false,
+           promo_expires_at    = null
+     where id = v_listing::uuid
+       and coalesce(promo_manual, false) = false
+       and ((v_placement = 'promo_home_featured' and promo_home_featured)
+         or (v_placement = 'promo_top_listed'    and promo_top_listed)
+         or (v_placement = 'promo_banner'        and promo_banner));
+  end if;
+
+  -- … and the badge it bought (0192).
+  update public.seller_badges
+     set revoked_at = now(),
+         revoke_reason = left('Avoir : ' || trim(p_reason), 300)
+   where payment_id = v_inv.payment_id
+     and revoked_at is null;
 
   insert into public.admin_audit (actor_id, action, target_type, target_id, note, after)
   values (p_actor, 'invoice.credit_note', 'invoice', v_inv.id::text, trim(p_reason),

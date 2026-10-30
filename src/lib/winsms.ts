@@ -76,13 +76,15 @@ const TYPOGRAPHY: [RegExp, string][] = [
 const LETTERS: Record<string, string> = {
   ç: "c", Ç: "C", ô: "o", Ô: "O", ê: "e", Ê: "E", â: "a", Â: "A", î: "i", Î: "I",
   û: "u", Û: "U", ë: "e", Ë: "E", ï: "i", Ï: "I", œ: "oe", Œ: "OE",
+  // GSM-7 has the small à è ù ì ò, not their capitals: an ALL-CAPS title flipped the SMS to unicode.
+  À: "A", È: "E", Ù: "U", Ì: "I", Ò: "O",
 };
 
 /** `text` with the GSM-7 alphabet wherever French typography stood. */
 export function toGsmText(text: string): string {
   let out = text;
   for (const [re, to] of TYPOGRAPHY) out = out.replace(re, to);
-  return out.replace(/[çÇôÔêÊâÂîÎûÛëËïÏœŒ]/g, (c) => LETTERS[c] ?? c);
+  return out.replace(/[çÇôÔêÊâÂîÎûÛëËïÏœŒÀÈÙÌÒ]/g, (c) => LETTERS[c] ?? c);
 }
 
 // The least of a quoted title an SMS keeps before the end of the sentence is

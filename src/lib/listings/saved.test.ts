@@ -11,7 +11,10 @@ describe("savedVisibility", () => {
     expect(savedVisibility({ status: "sold", published_at: once, taken_down_at: null })).toBe("shown");
     expect(savedVisibility({ status: "expired", published_at: once, taken_down_at: null })).toBe("shown");
     // Held offline for the seller's edit: it was public, and it comes back.
-    expect(savedVisibility({ status: "pending_review", published_at: once, taken_down_at: null })).toBe("shown");
+    // Once public and back in the pipeline: kept, but its words may be an unmoderated rewrite.
+    expect(savedVisibility({ status: "pending_review", published_at: once, taken_down_at: null })).toBe("withheld");
+    expect(savedVisibility({ status: "rejected", published_at: once, taken_down_at: null })).toBe("withheld");
+    expect(savedVisibility({ status: "pending_payment", published_at: once, taken_down_at: null })).toBe("withheld");
   });
 
   it("keeps a taken-down annonce in the list without its content", () => {

@@ -500,7 +500,11 @@ export async function POST(
         await releaseDecision(admin, id, user.id);
         return fail("reject_failed", 500, error);
       }
-      if (!rejected || rejected.length === 0) return conflict(t("alreadyResolved", { status: "captured" }));
+      if (!rejected || rejected.length === 0) {
+        // Another decision landed first, or a stale claim was taken over: say which.
+        const { data: cur } = await admin.from("payments").select("status").eq("id", id).maybeSingle();
+        return conflict(t("alreadyResolved", { status: String(cur?.status ?? "captured") }));
+      }
 
       // The tap lands on the checkout of this payment, where a new receipt is
       // sent (the receipt route takes one on a refused payment).

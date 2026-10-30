@@ -109,6 +109,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         listing_id: id,
         product_id: product.id,
         product_slug: product.slug,
+        // The quote, frozen: the console checks the receipt against it, not
+        // against the price of the day (src/lib/payments/quoteCheck.ts).
+        list_price: product.price,
         placement: column,
         duration_days: product.duration_days,
       },

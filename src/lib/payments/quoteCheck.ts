@@ -29,16 +29,17 @@ export type QuoteMeta = { list_price?: unknown; credit?: unknown; change?: unkno
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /**
- * The amount the payer was asked for. A plan is quoted by the subscribe route
- * (src/lib/pro/planChange.ts): the plan's list price at the time, less the
- * credit of an upgrade — both frozen in the metadata, so a price changed since
- * does not void a receipt that matches the quote. Everything else costs the
- * product's price.
+ * The amount the payer was asked for: the price frozen in the metadata when
+ * the server quoted it (`list_price`, written by the subscribe and promo
+ * routes), so a price the console changed while the receipt waited does not
+ * void a receipt that matches the quote. A plan's quote is also less the
+ * credit of an upgrade (src/lib/pro/planChange.ts). A row from before the
+ * freeze carries no list price and is held to the product's current price.
  */
 export function expectedAmount(kind: string, meta: QuoteMeta | null | undefined, productPrice: number): number {
-  if (kind !== "subscription") return round2(productPrice);
   const list = Number(meta?.list_price);
   const price = Number.isFinite(list) && list >= 0 ? list : productPrice;
+  if (kind !== "subscription") return round2(price);
   const credit = meta?.change === "upgrade" ? Number(meta?.credit) : 0;
   return Math.max(0, round2(price - (Number.isFinite(credit) && credit > 0 ? credit : 0)));
 }

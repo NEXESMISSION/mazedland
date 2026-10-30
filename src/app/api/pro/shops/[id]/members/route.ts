@@ -76,6 +76,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = (await req.json().catch(() => ({}))) as { userId?: unknown; role?: unknown };
   const role = asRole(body.role);
   const userId = typeof body.userId === "string" ? body.userId : "";
+  if (!isUuid(userId)) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (!role || !actor || !canAssign(actor, role)) return NextResponse.json({ error: "forbidden", detail: t("errors.role") }, { status: 403 });
 
   const { data: member } = await admin.from("shop_members").select("role").eq("shop_id", id).eq("user_id", userId).maybeSingle();
@@ -98,6 +99,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   const body = (await req.json().catch(() => ({}))) as { userId?: unknown };
   const userId = typeof body.userId === "string" ? body.userId : "";
+  if (!isUuid(userId)) return NextResponse.json({ error: "not_found" }, { status: 404 });
   // Removing oneself is leaving: a right of every member but the owner,
   // whatever else they may do — so the door is chosen once the body is read.
   if (!isUuid(id)) return NextResponse.json({ error: "not_found" }, { status: 404 });
