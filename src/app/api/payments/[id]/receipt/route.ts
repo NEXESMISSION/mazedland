@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { jsonObject } from "@/lib/http/body";
+import { isUuid } from "@/lib/uuid";
 import type { PaymentProvider } from "@/lib/payments/types";
 import { objectExists } from "@/lib/listings/storage";
 
@@ -23,6 +25,14 @@ import { objectExists } from "@/lib/listings/storage";
  * upload timestamp, and update the provider choice. Payments has no
  * UPDATE policy for the owner, so we use the service-role for the
  * mutation while keeping the auth context for ownership verification.
+ *
+ * A receipt an admin refused (status `failed` with a reviewer) takes a new
+ * one too: the refusal says « vous pouvez en envoyer un nouveau » and links
+ * here, and this answered 409 — the only way on was to buy again and leave
+ * the refused row behind. The payment goes back to review, under nobody's
+ * name, with the old motif cleared (the trail keeps it). A payment the seller
+ * cancelled, or one replaced by another choice, has no reviewer and stays
+ * closed.
  */
 export async function POST(
   req: NextRequest,
@@ -32,11 +42,12 @@ export async function POST(
     return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
   }
   const { id: paymentId } = await ctx.params;
+  if (!isUuid(paymentId)) return NextResponse.json({ error: "payment_not_found" }, { status: 404 });
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
 
-  const body = await req.json().catch(() => ({}));
+  const body = await jsonObject(req);
   const provider = body.provider as PaymentProvider;
   // Up to 3 receipt images. New clients send `receipt_paths: string[]`; keep
   // `receipt_path` (single) for backward-compat. Cap at 3 SERVER-SIDE — never
@@ -69,7 +80,7 @@ export async function POST(
   // so a forged paymentId belonging to another user just 404s.
   const { data: pay, error: payErr } = await supabase
     .from("payments")
-    .select("id, user_id, status")
+    .select("id, user_id, status, reviewer_id")
     .eq("id", paymentId)
     .single();
   if (payErr || !pay) {
@@ -78,8 +89,11 @@ export async function POST(
   if (pay.user_id !== user.id) {
     return NextResponse.json({ error: "not_owner" }, { status: 403 });
   }
-  // Allow re-upload only while the payment is still actionable.
-  if (pay.status !== "pending" && pay.status !== "pending_review") {
+  // Allow re-upload only while the payment is still actionable — or after an
+  // admin refused the receipt, when a new one is exactly what is asked for.
+  const open = pay.status === "pending" || pay.status === "pending_review";
+  const refused = pay.status === "failed" && pay.reviewer_id != null;
+  if (!open && !refused) {
     return NextResponse.json(
       { error: "payment_already_resolved", status: pay.status },
       { status: 409 },
@@ -102,8 +116,9 @@ export async function POST(
   }
 
   // Compare-and-set: only attach a receipt to a still-actionable row. If it was
-  // captured/failed concurrently, match 0 rows rather than resurrecting it.
-  const { data: updated, error: updErr } = await admin
+  // captured/failed concurrently, match 0 rows rather than resurrecting it. A
+  // refused one is matched on exactly that state: refused, by an admin.
+  const update = admin
     .from("payments")
     .update({
       provider,
@@ -113,10 +128,15 @@ export async function POST(
       receipt_url: receiptPaths[0],
       receipt_uploaded_at: new Date().toISOString(),
       status: "pending_review",
+      // Back in the queue as a fresh receipt: the old motif would show in red
+      // on a payment nobody has refused yet.
+      ...(refused ? { reviewer_id: null, reviewed_at: null, admin_notes: null } : {}),
     })
-    .eq("id", paymentId)
-    .in("status", ["pending", "pending_review"])
-    .select("id");
+    .eq("id", paymentId);
+  const { data: updated, error: updErr } = await (refused
+    ? update.eq("status", "failed").not("reviewer_id", "is", null)
+    : update.in("status", ["pending", "pending_review"])
+  ).select("id");
   if (updErr) {
     return NextResponse.json({ error: "receipt_failed" }, { status: 500 });
   }

@@ -6,6 +6,7 @@ import {
   isFree,
   resolveListingFee,
   toProduct,
+  unsellable,
   usableCredits,
   type Product,
   type SellerCredit,
@@ -173,5 +174,22 @@ describe("toProduct", () => {
     });
     expect(p.kind).toBe("listing_single");
     expect(p.price).toBe(12.5);
+  });
+});
+
+// A plan or a placement on sale at 0 TND sends every buyer to a 500: a payment
+// is never for nothing (payments_amount_check). A free single publication is
+// an answer, not a mistake.
+describe("unsellable", () => {
+  it("flags a paid kind on sale at 0 or with no price", () => {
+    expect(unsellable({ kind: "subscription", price: 0, isActive: true })).toBe(true);
+    expect(unsellable({ kind: "promo", price: null, isActive: true })).toBe(true);
+    expect(unsellable({ kind: "badge_verified", price: 0, isActive: true })).toBe(true);
+  });
+
+  it("lets a free single publication, a priced offer and anything withdrawn through", () => {
+    expect(unsellable({ kind: "listing_single", price: 0, isActive: true })).toBe(false);
+    expect(unsellable({ kind: "subscription", price: 59, isActive: true })).toBe(false);
+    expect(unsellable({ kind: "subscription", price: 0, isActive: false })).toBe(false);
   });
 });

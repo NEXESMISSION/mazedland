@@ -266,7 +266,8 @@
       "action": {
         "upload": "Téléverser le reçu",
         "review": "Voir / corriger le reçu",
-        "resubmit": "Soumettre à nouveau"
+        "resubmit": "Soumettre à nouveau",
+        "resend": "Renvoyer un reçu"
       },
       "cancelFailed": "Annulation impossible.",
       "cancelDone": "Paiement annulé.",
@@ -366,7 +367,8 @@
         "pending_review": "Reçu en vérification",
         "captured": "Confirmé",
         "failed": "Refusé",
-        "refunded": "Remboursé"
+        "refunded": "Remboursé",
+        "cancelled": "Annulé"
       },
       "receivedTitle": "Paiement reçu",
       "failedTitle": "Paiement non validé",
@@ -377,6 +379,16 @@
       "eyebrowConfirmed": "Paiement confirmé",
       "eyebrowRejected": "Reçu refusé",
       "eyebrowWaiting": "En attente de confirmation",
+      "eyebrowCancelled": "Paiement annulé",
+      "eyebrowRefunded": "Paiement remboursé",
+      "cancelledTitle": "Rien n'a été prélevé",
+      "cancelledBody": "Vous avez annulé ce paiement avant d'envoyer un reçu. Vous pouvez relancer l'achat à tout moment.",
+      "refundedTitle": "Avoir émis",
+      "refundedBody": "Ce paiement a été annulé par un avoir : le montant vous est remboursé et ce qu'il avait acheté est arrêté.",
+      "resendReceipt": "Renvoyer un reçu",
+      "buyAgain": "Relancer la mise en avant",
+      "choosePlan": "Choisir un abonnement",
+      "viewCreditNote": "Voir l'avoir",
       "failedBody": "Votre reçu n'a pas été validé. Rien n'a été encaissé — vous pouvez relancer le paiement et envoyer un nouveau justificatif.",
       "payAgain": "Payer à nouveau",
       "amount": "Montant",
@@ -445,6 +457,8 @@
     "myListings": "Mes annonces",
     "editListing": "← Modifier l'annonce",
     "receiptUnderReview": "Reçu en vérification — moins de 24 h. Vous serez notifié(e) dès qu'il est validé. Envoyez-en un autre seulement s'il y a une erreur.",
+    "receiptRefused": "Reçu refusé — motif : {reason}. Envoyez un nouveau justificatif.",
+    "receiptRefusedNoReason": "Reçu refusé. Envoyez un nouveau justificatif.",
     "stepMethod": "Choisissez le mode de paiement",
     "providerBank": "Virement (RIB)",
     "providerD17": "D17 mobile",
@@ -1968,7 +1982,7 @@
       "failed": "Refusés",
       "all": "Tous"
     },
-    "searchPlaceholder": "Référence, motif…",
+    "searchPlaceholder": "Référence, nom, téléphone, motif…",
     "thisMonth": "Ce mois",
     "total": "Total",
     "amount": "{amount} TND",
@@ -2053,7 +2067,14 @@
       "noReceipt": "Pas encore de reçu pour ce paiement : il ne peut pas être accepté avant que le client l'envoie.",
       "creditReason": "Choisissez le motif de l'avoir.",
       "creditNotCaptured": "Seul un paiement validé reçoit un avoir — celui-ci est « {status} ».",
-      "creditNoInvoice": "Ce paiement n'a pas de facture : rien à annuler."
+      "creditNoInvoice": "Ce paiement n'a pas de facture : rien à annuler.",
+      "deciding": "Un autre membre traite ce paiement en ce moment. Rechargez dans un instant.",
+      "productUnknown": "Ce paiement ne désigne aucune offre connue de son type : il ne peut pas être accepté.",
+      "subjectMissing": "Ce paiement ne dit pas à quelle agence (ou quelle annonce) il s'applique : il ne peut pas être accepté.",
+      "notPayers": "L'agence (ou l'annonce) de ce paiement n'appartient pas à la personne qui paie.",
+      "amountMismatch": "Le reçu est de {amount} TND et l'offre coûte {expected} TND : rien n'est accordé sur un montant qui ne correspond pas.",
+      "listingNotOnline": "L'annonce n'est plus en ligne : personne ne verrait la mise en avant. Refusez le reçu, ou attendez sa remise en ligne.",
+      "promoRunning": "Une autre mise en avant payée court jusqu'au {date} : accepter celle-ci l'effacerait. Attendez sa fin, ou refusez le reçu."
     }
   },
   "adminActivity": {
@@ -2538,7 +2559,7 @@
     "newOffer": "Nouvelle offre",
     "emptyTitle": "Aucune offre",
     "emptyHint": "Créez ce qu'un vendeur peut acheter : une publication, un pack, une mise en avant, le badge.",
-    "misconfigured": "{count, plural, one {# offre} other {# offres}} en vente sans prix configuré — le vendeur ne peut pas payer.",
+    "misconfigured": "{count, plural, one {# offre} other {# offres}} en vente sans prix ou à 0 TND — le vendeur ne peut pas payer.",
     "allCategoriesShort": "toutes catégories",
     "listingQuota": "{count} annonces",
     "durationDays": "{count} j",
@@ -2596,7 +2617,7 @@
       "availability": "Disponibilité",
       "onSale": "En vente",
       "onSaleHint": "Désactivée, l'offre disparaît de la page Tarifs mais reste liée aux paiements déjà faits.",
-      "onSaleNoPrice": "En vente sans prix configuré : le vendeur ne pourra pas payer.",
+      "onSaleNoPrice": "En vente sans prix (ou à 0 TND) : le vendeur ne pourra pas payer.",
       "nameMissing": "Donnez un nom à l'offre.",
       "create": "Créer",
       "save": "Enregistrer",
@@ -2610,7 +2631,11 @@
       "quotaRequired": "Un pack doit accorder au moins une publication.",
       "durationRequired": "Le badge doit avoir une durée de validité.",
       "slugTaken": "Un produit porte déjà ce nom.",
-      "invalidProduct": "Vérifiez la cohérence : un pack a besoin d'un quota, un badge d'une durée, et une seule annonce à l'unité peut être active par catégorie."
+      "invalidProduct": "Vérifiez la cohérence : un pack a besoin d'un quota, un badge d'une durée, et une seule annonce à l'unité peut être active par catégorie.",
+      "invalidPrice": "Le prix doit être un nombre positif ou nul.",
+      "priceRequired": "Indiquez un prix.",
+      "priceForSale": "Une offre en vente doit coûter plus de 0 TND : à 0, personne ne peut la payer.",
+      "categoryUnknown": "Cette catégorie n'existe pas."
     }
   },
   "adminLegalDocs": {
@@ -4362,7 +4387,8 @@
       "alreadySuspended": "Cette agence est déjà suspendue.",
       "reinstateOnlySuspended": "Seule une agence suspendue se rouvre ici : une agence en attente s'ouvre avec « Ouvrir », une fois son abonnement réglé.",
       "wrongStatus": "Cette décision ne s'applique pas à l'état actuel de l'agence : rechargez la page.",
-      "choiceInFlight": "Un autre choix d'abonnement vient d'être enregistré pour cette agence. Rechargez la page."
+      "choiceInFlight": "Un autre choix d'abonnement vient d'être enregistré pour cette agence. Rechargez la page.",
+      "planPending": "Un autre choix d'abonnement est en cours : rechargez la page."
     },
     "leadErrors": {
       "name": "Indiquez un nom (2 lettres au moins).",
@@ -4675,7 +4701,8 @@
   "promoApi": {
     "product": "Mise en avant inconnue.",
     "notOnline": "Seule une annonce en ligne peut être mise en avant.",
-    "oneAtATime": "Une autre mise en avant court jusqu'au {date} : une à la fois."
+    "oneAtATime": "Une autre mise en avant court jusqu'au {date} : une à la fois.",
+    "pendingOther": "Une autre mise en avant de cette annonce attend son paiement : une à la fois."
   },
   "invoice": {
     "metaTitle": "Facture — Mazed Immo",

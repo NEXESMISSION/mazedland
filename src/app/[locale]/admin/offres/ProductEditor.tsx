@@ -8,7 +8,7 @@ import {
   TextField, TextareaField, NumberField, SelectField, ToggleField,
   FieldGrid, Confirm, useAdminAction, EYEBROW,
 } from "@/components/admin/kit";
-import { PRODUCT_KINDS, type ProductKind } from "@/lib/products";
+import { PRODUCT_KINDS, unsellable, type ProductKind } from "@/lib/products";
 import { Save, Power, ChevronLeft } from "lucide-react";
 
 /**
@@ -241,7 +241,8 @@ export function ProductEditor({
                 hint={t("editor.onSaleHint")}
               />
             </div>
-            {isActive && price == null && (
+            {/* The API refuses this (priceForSale); said here first, as it is typed. */}
+            {unsellable({ kind, price, isActive }) && (
               <p className="mt-3 border-s-2 border-[var(--tone-warn)] ps-3 text-[12px] text-[var(--tone-warn)]">
                 {t("editor.onSaleNoPrice")}
               </p>

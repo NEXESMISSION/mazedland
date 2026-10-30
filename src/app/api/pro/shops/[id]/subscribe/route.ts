@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { jsonObject } from "@/lib/http/body";
 import { apiTranslator, requestLocale } from "@/lib/i18n/server";
 import { proGate } from "@/lib/pro/api";
 import { paymentsClosed } from "@/lib/payments/server";
@@ -26,10 +27,7 @@ import { formatDate } from "@/lib/utils";
  * One request per agence at a time: choosing a plan replaces the agence's
  * payments still waiting for a receipt (they are marked failed, like a
  * cancellation), so the console sees only the last choice — on 2026-10-28 it
- * saw a Pro 59 DT nobody meant to pay beside the Business 119 DT. Two choices
- * sent at the same moment both passed that step; the table now allows one
- * pending plan payment per payer (payments_one_pending_subscription, 0191),
- * and the second answers 409: the first one stands.
+ * saw a Pro 59 DT nobody meant to pay beside the Business 119 DT.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -41,7 +39,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (closed) return closed;
   const t = await apiTranslator(req, "proApi");
 
-  const body = (await req.json().catch(() => ({}))) as { plan?: unknown };
+  const body = await jsonObject(req);
   const slug = typeof body.plan === "string" ? body.plan : "";
   const { data: shop } = await admin.from("shops").select("status, name").eq("id", id).maybeSingle();
   if (shop?.status !== "approved" && shop?.status !== "pending") {
@@ -104,16 +102,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         // How the amount was reached, frozen when it was quoted (planChange.ts).
         change: quote.kind,
         list_price: quote.price,
-        // The smaller periods this one replaces and what they take off — an
-        // upgrade's running plan, or a smaller plan queued behind a renewal.
-        ...(quote.replaces.length > 0 ? { credit: quote.credit, credit_lines: quote.lines, replaces: quote.replaces } : {}),
+        ...(quote.kind === "upgrade" ? { credit: quote.credit, credit_lines: quote.lines, replaces: quote.replaces } : {}),
         starts_at: quote.startsAt.toISOString(),
         ends_at: quote.endsAt.toISOString(),
       },
     })
     .select("id")
     .single();
-  if (error?.code === "23505") return NextResponse.json({ error: "conflict", detail: t("errors.choiceInFlight") }, { status: 409 });
+  if (error?.code === "23505") {
+    // Two choices sent at the same moment (payments_one_pending_subscription,
+    // 0191): the one that won is the agence's request. The same plan is
+    // simply that payment; another plan means the page is stale.
+    const { data: won } = await admin
+      .from("payments")
+      .select("id, metadata")
+      .eq("user_id", user.id)
+      .eq("kind", "subscription")
+      .eq("status", "pending")
+      .limit(1)
+      .maybeSingle();
+    const wonMeta = (won?.metadata ?? {}) as { shop_id?: string; product_id?: string };
+    if (won && wonMeta.shop_id === id && wonMeta.product_id === plan.id) {
+      return NextResponse.json({ ok: true, paymentId: won.id });
+    }
+    return NextResponse.json({ error: "conflict", detail: t("errors.planPending") }, { status: 409 });
+  }
   if (error || !created) return fail("payment_create_failed", 500, error);
   logAction(req, user, "shop.subscribe", { id, plan: plan.slug, paymentId: created.id, change: quote.kind, amount: quote.amount });
   return NextResponse.json({ ok: true, paymentId: created.id });

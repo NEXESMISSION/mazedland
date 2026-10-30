@@ -58,6 +58,8 @@ export type PaymentVM = {
   invoice: { id: string; type: "invoice" | "receipt" } | null;
   /** The credit note that cancelled it (0187). */
   creditNote?: { id: string; number: string } | null;
+  /** `failed` because an admin refused the receipt (a reviewer is set): a new one is sent from the checkout. */
+  refused: boolean;
   /** The annonce this payment was for, from `payments.metadata.listing_id`. */
   listingId: string | null;
   title: string | null;
@@ -108,10 +110,12 @@ function providerLabel(t: T, provider: string): string {
  *  - pending / pending_review → back into this payment's checkout, while
  *    payments are open (with no payee to pay, that checkout can only say
  *    « indisponible », so there is no link to it)
+ *  - failed, receipt refused  → the same checkout, to send a new receipt (the
+ *    refusal promised one; a placement's row had no way to do it)
  *  - failed (listing-bound)   → the seller's annonces, to re-submit it */
 function actionHref(p: PaymentVM, paymentsOpen: boolean): string | null {
   if (isCancelled(p)) return null;
-  if (p.status === "pending" || p.status === "pending_review") {
+  if (p.status === "pending" || p.status === "pending_review" || (p.status === "failed" && p.refused)) {
     return paymentsOpen ? `/payment/checkout?payment=${p.id}` : null;
   }
   if (p.status === "failed" && LISTING_KINDS.has(p.kind)) return "/account/listings";
@@ -121,6 +125,7 @@ function actionHref(p: PaymentVM, paymentsOpen: boolean): string | null {
 function actionLabel(t: T, p: PaymentVM): string {
   if (p.status === "pending") return t("action.upload");
   if (p.status === "pending_review") return t("action.review");
+  if (p.refused) return t("action.resend");
   return t("action.resubmit");
 }
 
