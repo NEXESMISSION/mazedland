@@ -53,7 +53,20 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       canonical: `/${locale}/agences/${shop.slug}`,
       languages: { fr: `/fr/agences/${shop.slug}`, ar: `/ar/agences/${shop.slug}`, "x-default": `/fr/agences/${shop.slug}` },
     },
-    openGraph: shop.logo_path ? { images: [propertyPhotoUrl(shop.logo_path)] } : undefined,
+    // Shared into WhatsApp or Messenger, the link showed no name and no
+    // picture: `openGraph` replaces the layout's block, so the name and the
+    // description have to be restated here, with the cover (or the logo).
+    openGraph: {
+      title: `${shop.name} — ${tKinds(shop.kind)}${where ? ` · ${where}` : ""}`,
+      description: listingDescription(shop.description, t("shopMetaDescription", { name: shop.name })),
+      type: "website",
+      siteName: "Mazed Immo",
+      locale: locale === "ar" ? "ar_TN" : "fr_TN",
+      url: `/${locale}/agences/${shop.slug}`,
+      ...(shop.cover_path || shop.logo_path
+        ? { images: [{ url: propertyPhotoUrl((shop.cover_path || shop.logo_path) as string), alt: shop.name }] }
+        : {}),
+    },
   };
 }
 

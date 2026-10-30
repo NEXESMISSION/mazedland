@@ -26,6 +26,12 @@ type Group = (typeof SETTING_GROUPS)[number];
  * « Réglages enregistrés » and nothing on the site moved. Every setting here
  * is read by the code (the registry is the list the code reads from).
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminSettings");
+  return { title: t("title") };
+}
+
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ g?: string }> }) {
   await requireAdmin("settings");
   const sp = await searchParams;

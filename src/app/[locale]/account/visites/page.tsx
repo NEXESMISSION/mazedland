@@ -12,6 +12,12 @@ export const dynamic = "force-dynamic";
  * Mes visites (0174): the requests others sent about my annonces, and the
  * ones I sent. A shop's team also sees its annonces' visits in the Espace Pro.
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("visits.page");
+  return { title: t("title") };
+}
+
 export default async function MyVisitsPage({ searchParams }: { searchParams: Promise<{ tab?: string; v?: string }> }) {
   const sp = await searchParams;
   const locale = await getLocale();

@@ -8,7 +8,10 @@ const nextConfig: NextConfig = {
   // higher in the tree. `import.meta.dirname` is Node 20+ and survives
   // Next's CJS-output transform of the config file.
   turbopack: {
-    root: import.meta.dirname,
+    // A QA build in a git worktree whose node_modules is a junction to the
+    // main checkout needs a root that holds both, or Turbopack refuses the
+    // link (« points out of the filesystem root »). Unset everywhere else.
+    root: process.env.TURBOPACK_ROOT_OVERRIDE || import.meta.dirname,
   },
   // Metadata in <head> for every client, not only the crawlers on Next's list.
   //

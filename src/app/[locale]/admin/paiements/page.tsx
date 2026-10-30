@@ -56,6 +56,12 @@ const TAB_STATUSES: Record<TabKey, string[] | null> = {
   all: null,
 };
 
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminPayments");
+  return { title: t("title") };
+}
+
 export default async function AdminPaiementsPage({
   searchParams,
 }: {

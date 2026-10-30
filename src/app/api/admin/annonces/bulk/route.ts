@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSettings } from "@/lib/settings/server";
+import { publishListing } from "@/lib/listings/publish";
+import { missingPhotos } from "@/lib/listings/storage";
+import { isUuid } from "@/lib/uuid";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
@@ -52,6 +54,8 @@ export async function POST(req: NextRequest) {
     : [];
 
   if (ids.length === 0) return NextResponse.json({ error: "no_ids" }, { status: 400 });
+  // Not a uuid: Postgres would answer with a cast error, a 500 for the console.
+  if (ids.some((x) => !isUuid(x))) return NextResponse.json({ error: "invalid_ids" }, { status: 400 });
   if (!["approve", "archive", "extend"].includes(action)) {
     return NextResponse.json(
       {
@@ -73,20 +77,6 @@ export async function POST(req: NextRequest) {
   const skipped: { id: string; title: string; why: string }[] = [];
 
   if (action === "approve") {
-    // One product lookup for the whole batch rather than one per row.
-    const { data: prod } = await admin
-      .from("products")
-      .select("duration_days")
-      .eq("kind", "listing_single")
-      .eq("is_active", true)
-      .limit(1)
-      .maybeSingle();
-    const fallbackDays =
-      Number.isFinite(Number(prod?.duration_days)) && Number(prod?.duration_days) > 0
-        ? Number(prod!.duration_days)
-        : (await getSettings()).listing_default_days;
-
-    const now = new Date();
     for (const r of found) {
       if (r.status !== "pending_review") {
         skipped.push({ id: r.id, title: r.title, why: t("skipStatus", { status: r.status }) });
@@ -102,41 +92,24 @@ export async function POST(req: NextRequest) {
         skipped.push({ id: r.id, title: r.title, why: t("skipEditWaiting") });
         continue;
       }
-      const expires = new Date(now.getTime() + fallbackDays * 86_400_000);
-      const { error } = await admin
-        .from("listings")
-        .update({
-          status: "published",
-          published_at: now.toISOString(),
-          expires_at: expires.toISOString(),
-          reviewed_by: user.id,
-          reviewed_at: now.toISOString(),
-          rejection_reason: null,
-          review_flags: [],
-        })
-        .eq("id", r.id);
-      if (error) {
+      if ((await missingPhotos(admin, r.id)).length > 0) {
+        skipped.push({ id: r.id, title: r.title, why: t("skipPhotoMissing") });
+        continue;
+      }
+      // The same path as a single approval and the automatic publication
+      // (src/lib/listings/publish.ts): the dates, the review state, the
+      // reports, the seller's notification — and the buyers whose demande
+      // this annonce answers, whom this loop used to skip.
+      const published = await publishListing(
+        admin,
+        { id: r.id, seller_id: r.seller_id, title: r.title, fee_payment_id: (r.fee_payment_id as string | null) ?? null },
+        { reviewerId: user.id },
+      );
+      if (!published.ok) {
         skipped.push({ id: r.id, title: r.title, why: t("skipServerError") });
         continue;
       }
-      // Reports that were waiting on it have been dealt with (as in publishListing).
-      await admin
-        .from("listing_reports")
-        .update({ resolved_at: now.toISOString() })
-        .eq("listing_id", r.id)
-        .is("resolved_at", null)
-        .then(() => {}, () => {});
       ok.push(r.id);
-      await admin
-        .rpc("enqueue_notification", {
-          p_user_id: r.seller_id,
-          p_kind: "listing_published",
-          p_title: "Votre annonce est en ligne",
-          p_body: `« ${r.title} » est visible jusqu'au ${expires.toLocaleDateString("fr-FR", { timeZone: "Africa/Tunis" })}.`,
-          p_link: `/annonces/${r.id}`,
-          p_payload: { vars: { title: r.title, expires_at: expires.toISOString() } },
-        })
-        .then(() => {}, () => {});
     }
   }
 
@@ -148,12 +121,17 @@ export async function POST(req: NextRequest) {
       }
     }
     if (movable.length > 0) {
+      // An admin's takedown (0190), like the single action: the seller cannot
+      // relist what the console took down.
+      const now = new Date().toISOString();
       const { error } = await admin
         .from("listings")
         .update({
           status: "archived",
           reviewed_by: user.id,
-          reviewed_at: new Date().toISOString(),
+          reviewed_at: now,
+          taken_down_at: now,
+          taken_down_by: user.id,
         })
         .in("id", movable.map((r) => r.id));
       if (error) return fail("bulk_archive_failed", 500, error);

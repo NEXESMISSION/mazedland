@@ -7,6 +7,7 @@
 import { requireAdmin } from "@/lib/admin/session";
 import { Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { actionText, type ActionTranslator } from "@/lib/admin/actions";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { formatDate, formatNumber } from "@/lib/utils";
 import { Ltr } from "@/components/ui/Ltr";
@@ -74,10 +75,14 @@ const ACTION_META: Record<string, { key: string; tone: Tone }> = {
 function actionMeta(
   action: string | null,
   t: (key: string) => string,
+  tActions: ActionTranslator,
 ): { label: string; tone: Tone } {
   if (!action) return { label: t("actionFallback"), tone: "neutral" };
   const meta = ACTION_META[action];
-  return meta ? { label: t(`actions.${meta.key}`), tone: meta.tone } : { label: action, tone: "neutral" };
+  if (meta) return { label: t(`actions.${meta.key}`), tone: meta.tone };
+  // The other codes, in words (adminActions, the dashboard's table): a raw
+  // « admin.listing.approve » was what nine entries in ten showed.
+  return { label: actionText(tActions, action), tone: "neutral" };
 }
 
 type ActivityRow = {
@@ -120,6 +125,12 @@ function deviceLabel(ua: string | null, unknownBrowser: string): string {
  * by type (pill links) + free-text search + date range (AdminQueryBar),
  * server-paginated. See migration 0056 + src/lib/activity.ts.
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminActivity");
+  return { title: t("title") };
+}
+
 export default async function AdminActivity({
   searchParams,
 }: {
@@ -128,6 +139,7 @@ export default async function AdminActivity({
   await requireAdmin("activity");
   const { q: qP, type: typeP, range: rangeP, page: pageP } = await searchParams;
   const t = await getTranslations("adminActivity");
+  const tActions = await getTranslations("adminActions");
   const locale = await getLocale();
   const sb = await getServerSupabase();
 
@@ -259,7 +271,7 @@ export default async function AdminActivity({
               {rows.map((e) => {
                 const prof = e.user_id ? profById.get(e.user_id) : undefined;
                 const isAction = e.type === "action";
-                const meta = isAction ? actionMeta(e.action, t) : null;
+                const meta = isAction ? actionMeta(e.action, t, tActions) : null;
                 return (
                   <tr key={e.id} className="hover:bg-surface-2">
                     <td className="mazed-tabular whitespace-nowrap px-4 py-2.5 text-muted">

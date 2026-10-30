@@ -98,7 +98,9 @@ export default async function PaymentSuccess({
   }
 
   const kind = payment.kind as string;
-  const kindLabel = KINDS.has(kind) ? t(`kind.${kind}`) : t("receivedTitle");
+  // A refused or cancelled payment is not « réglé », whatever it was for.
+  const kindLabel =
+    payment.status === "failed" ? t("failedTitle") : KINDS.has(kind) ? t(`kind.${kind}`) : t("receivedTitle");
   const subLabel = KINDS.has(kind) ? t(`kindBody.${kind}`) : t("defaultBody");
   const status = payment.status as string;
   // Every payment is in dinars; say so in the reader's language.

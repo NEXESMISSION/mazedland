@@ -495,9 +495,10 @@ export function ListingDetail({
         confirmLabel={t("archive")}
         variant="default"
         pending={pending}
+        reason={{ label: t("archiveReasonLabel"), placeholder: t("archiveReasonPlaceholder"), required: false }}
         onCancel={() => setConfirm(null)}
-        onConfirm={async () => {
-          if (await act({ action: "archive" }, t("archived"))) setConfirm(null);
+        onConfirm={async (reason) => {
+          if (await act({ action: "archive", ...(reason ? { reason } : {}) }, t("archived"))) setConfirm(null);
         }}
       />
       <Confirm

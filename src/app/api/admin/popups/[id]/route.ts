@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isUuid } from "@/lib/uuid";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
@@ -36,6 +37,7 @@ export async function GET(
   const { id } = await params;
   const g = await requireAdmin();
   if (!g.supabase) return NextResponse.json({ error: g.error }, { status: g.status });
+  if (!isUuid(id)) return NextResponse.json({ error: "popup_not_found" }, { status: 404 });
 
   const { data, error } = await g.supabase
     .from("popups").select("*").eq("id", id).single();
@@ -53,6 +55,7 @@ export async function PATCH(
   const { id } = await params;
   const g = await requireAdmin();
   if (!g.supabase) return NextResponse.json({ error: g.error }, { status: g.status });
+  if (!isUuid(id)) return NextResponse.json({ error: "popup_not_found" }, { status: 404 });
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const payload = sanitizePopupBody(body);
@@ -66,7 +69,12 @@ export async function PATCH(
     .eq("id", id)
     .select("*")
     .single();
-  if (error) return fail("popup_update_failed", 500, error);
+  if (error) {
+    // PGRST116: no such popup; 23505: the slug is taken by another one.
+    if (error.code === "PGRST116") return NextResponse.json({ error: "popup_not_found" }, { status: 404 });
+    if (error.code === "23505") return NextResponse.json({ error: "slug_taken" }, { status: 409 });
+    return fail("popup_update_failed", 500, error);
+  }
   logAction(req, g.user!, "popup.update", { popupId: id });
   return NextResponse.json({ item: data });
 }
@@ -81,6 +89,7 @@ export async function DELETE(
   const { id } = await params;
   const g = await requireAdmin();
   if (!g.supabase) return NextResponse.json({ error: g.error }, { status: g.status });
+  if (!isUuid(id)) return NextResponse.json({ error: "popup_not_found" }, { status: 404 });
 
   const { error } = await g.supabase.from("popups").delete().eq("id", id);
   if (error) return fail("popup_delete_failed", 500, error);

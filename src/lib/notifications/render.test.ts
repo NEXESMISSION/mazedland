@@ -41,6 +41,18 @@ describe("renderNotification", () => {
     expect(renderNotification(n, tr("ar"), "ar").body).toBe("وصل معلوم نشر إعلان (15 د.ت) في انتظار المصادقة.");
   });
 
+  it("tells the admins about the QA tour, in their language, with real plurals", () => {
+    const found = { kind: "qa_report", title: "x", body: "x", payload: { vars: { variant: "found", found: 12, critical: 2 } } };
+    expect(renderNotification(found, tr("fr"), "fr")).toEqual({
+      title: "Tour de contrôle du site",
+      body: "12 problèmes trouvés (2 critiques). Les corrections sont en cours : vous serez prévenu quand elles seront en ligne.",
+    });
+    expect(renderNotification(found, tr("ar"), "ar").body).toContain("لقينا 12 مشكل");
+    const fixed = { kind: "qa_report", title: "x", body: "x", payload: { vars: { variant: "fixed", fixed: 1, left: 0 } } };
+    expect(renderNotification(fixed, tr("fr"), "fr").body).toBe("1 problème corrigé et publié. Rien ne reste à traiter.");
+    expect(renderNotification(fixed, tr("ar"), "ar").body).toBe("تصلّح مشكل واحد وتنشر. ما بقى حتى شي.");
+  });
+
   it("uses real plurals", () => {
     const n = (count: number) => ({ kind: "credits_expired", title: "x", body: "x", payload: { vars: { count } } });
     expect(renderNotification(n(1), tr("fr"), "fr").body).toBe("Votre publication restante a expiré.");

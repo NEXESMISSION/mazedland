@@ -40,6 +40,12 @@ type Row = {
  * for is the other side of the catalogue — the demand an agency, a promotion
  * or a phone call to an owner could answer — and whether the matches reach it.
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminDemandes");
+  return { title: t("title") };
+}
+
 export default async function AdminDemandesPage({
   searchParams,
 }: {

@@ -8,6 +8,11 @@ import { requestFormFromSearch, type RequestFormValue } from "@/lib/requests/pre
 import { getSettings } from "@/lib/settings/server";
 import { RequestForm } from "./RequestForm";
 
+import type { Metadata } from "next";
+
+/** Private to the signed-in person: never listed by a search engine. */
+export const metadata: Metadata = { robots: { index: false } };
+
 export const dynamic = "force-dynamic";
 
 /**

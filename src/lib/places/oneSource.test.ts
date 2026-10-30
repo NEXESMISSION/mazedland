@@ -27,11 +27,11 @@ const SCREENS = [
 ];
 
 describe("places", () => {
-  it("are decided by coverPlace in every route that puts an annonce online", () => {
+  it("are decided by takePlace in every route that puts an annonce online", () => {
     for (const file of ROUTES) {
       const src = read(file);
-      expect(src, file).toContain("coverPlace(");
-      // Credits are spent inside coverPlace, once, in its order.
+      expect(src, file).toContain("takePlace(");
+      // Credits are spent inside takePlace, once, in its order.
       expect(src, file).not.toContain("consume_listing_credit");
     }
   });

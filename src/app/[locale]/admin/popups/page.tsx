@@ -29,6 +29,12 @@ export const revalidate = 0;
  *
  * Auth is enforced by the admin layout one level up (role=admin redirect).
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminPopups");
+  return { title: t("title") };
+}
+
 export default async function AdminPopupsPage() {
   await requireAdmin("popups");
   const t = await getTranslations("adminPopups");

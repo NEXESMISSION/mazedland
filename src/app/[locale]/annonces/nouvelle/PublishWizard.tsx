@@ -282,7 +282,8 @@ export function PublishWizard({
     return shops.some((s) => s.id === wanted) ? wanted : ownsShop ? shops.find((s) => s.owner)!.id : "";
   });
   /** The submit route said the free places are full: the annonce stays a draft. */
-  const [limitHit, setLimitHit] = useState(false);
+  /** Which limit the submit route hit: the free places, or the agence's plan (with its size). */
+  const [limitHit, setLimitHit] = useState<null | { kind: "free" } | { kind: "plan"; limit: number }>(null);
   const [done, setDone] = useState<null | {
     paidWith: string;
     remaining?: number;
@@ -1099,11 +1100,16 @@ export function PublishWizard({
       const res = await fetch(`/api/annonces/${id}/submit`, { method: "POST" });
       const j = (await res.json().catch(() => ({}))) as {
         status?: string; paidWith?: string; remaining?: number; freeLeft?: number;
-        error?: string; detail?: string;
+        error?: string; detail?: string; limit?: number;
       };
       if (j.error === "free_limit_reached") {
         // Saved as a draft above; the popup says what to do with it.
-        setLimitHit(true);
+        setLimitHit({ kind: "free" });
+        return;
+      }
+      if (j.error === "plan_full") {
+        // The agence's plan, not the free places: the popup names the plan.
+        setLimitHit({ kind: "plan", limit: typeof j.limit === "number" ? j.limit : 0 });
         return;
       }
       if (!res.ok) {
@@ -2443,10 +2449,10 @@ export function PublishWizard({
       {/* The submit route refused: the free places are full. The annonce is
           kept as a draft; the way on is a Pro plan or a place freed up. */}
       <Modal
-        open={limitHit}
-        onClose={() => setLimitHit(false)}
-        title={t("limitTitle", { limit: freeLimit })}
-        description={t("limitModalBody", { limit: freeLimit })}
+        open={limitHit !== null}
+        onClose={() => setLimitHit(null)}
+        title={limitHit?.kind === "plan" ? t("planFullTitle", { limit: limitHit.limit }) : t("limitTitle", { limit: freeLimit })}
+        description={limitHit?.kind === "plan" ? t("planFullBody", { limit: limitHit.limit }) : t("limitModalBody", { limit: freeLimit })}
       >
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
           <Link
@@ -2455,12 +2461,21 @@ export function PublishWizard({
           >
             {t("seeMyListings")}
           </Link>
-          <Link
-            href={"/pro" as never}
-            className="mazed-btn-luxe tap-target inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-[13px]"
-          >
-            <Store className="size-4" /> {t("seePro")}
-          </Link>
+          {limitHit?.kind === "plan" ? (
+            <Link
+              href={"/pro/dashboard?tab=abonnement" as never}
+              className="mazed-btn-luxe tap-target inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-[13px]"
+            >
+              <Store className="size-4" /> {t("seeSubscription")}
+            </Link>
+          ) : (
+            <Link
+              href={"/pro" as never}
+              className="mazed-btn-luxe tap-target inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-[13px]"
+            >
+              <Store className="size-4" /> {t("seePro")}
+            </Link>
+          )}
         </div>
       </Modal>
     </main>

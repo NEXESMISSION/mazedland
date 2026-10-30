@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import type { PaymentProvider } from "@/lib/payments/types";
+import { objectExists } from "@/lib/listings/storage";
 
 /**
  * Attach a receipt to a pending payment and flip it to
@@ -90,6 +91,14 @@ export async function POST(
   const admin = getServiceSupabase();
   if (!admin) {
     return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
+  }
+
+  // The files must be there: a path never uploaded used to move the payment
+  // to « pending_review » with nothing for the moderator to look at.
+  for (const p of receiptPaths) {
+    if (!(await objectExists(admin, "receipts", p))) {
+      return NextResponse.json({ error: "receipt_missing" }, { status: 400 });
+    }
   }
 
   // Compare-and-set: only attach a receipt to a still-actionable row. If it was

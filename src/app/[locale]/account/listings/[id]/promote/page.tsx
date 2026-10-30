@@ -58,6 +58,12 @@ const TONE: Record<string, string> = {
  * sends it for review. Once asked, the same page shows where it stands, the links to
  * the posts, the visits they brought, and the way to take it all back.
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("promote");
+  return { title: t("title") };
+}
+
 export default async function PromotePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const locale = await getLocale();

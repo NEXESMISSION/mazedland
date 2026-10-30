@@ -219,12 +219,14 @@ export function QueueList({
                   )}
                 </span>
 
-                {wide ? (
+                {wide && (
                   /* Columns. The width is spent on the facts a moderator scans
                      — who, what, where, how much, how long — instead of on a
                      gap between a left-aligned title and a right-aligned
-                     price. */
-                  <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_110px_150px_130px_110px_100px] items-center gap-4">
+                     price. Only where that width exists: on a phone the six
+                     columns ran off the screen, so below lg the compact
+                     layout takes over. */
+                  <span className="hidden min-w-0 flex-1 grid-cols-[minmax(0,1fr)_110px_150px_130px_110px_100px] items-center gap-4 lg:grid">
                     <span className="min-w-0">
                       <span
                         className={`block truncate text-[13px] ${
@@ -243,8 +245,8 @@ export function QueueList({
                       {r.hint}
                     </span>
                   </span>
-                ) : (
-                  <>
+                )}
+                <span className={wide ? "contents lg:hidden" : "contents"}>
                     <span className="min-w-0 flex-1">
                       <span
                         className={`block truncate text-[13px] ${
@@ -266,8 +268,7 @@ export function QueueList({
                         {r.hint}
                       </span>
                     </span>
-                  </>
-                )}
+                </span>
               </Link>
             </li>
           );

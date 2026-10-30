@@ -7,6 +7,7 @@ import { apiTranslator } from "@/lib/i18n/server";
 import { canOpen, type AdminSection } from "@/lib/admin/sections";
 import { audit } from "@/lib/admin/audit";
 import { otherFullAdmins } from "@/lib/admin/team";
+import { PLACE_STATUSES } from "@/lib/places/model";
 
 /**
  * Everything an admin can do to one account.
@@ -131,13 +132,28 @@ export async function POST(
       );
     }
 
+    const now = new Date().toISOString();
     const { error } = await admin
       .from("profiles")
-      .update({ banned_at: new Date().toISOString(), banned_reason: reason })
+      .update({ banned_at: now, banned_reason: reason })
       .eq("id", id);
     if (error) return fail("ban_failed", 500, error);
 
-    logAction(req, user, "admin.user.ban", { id });
+    // « Ne pourra plus publier », kept (the QA tour, 2026-10-29): the login
+    // is refused at the auth layer — the session dies at its next refresh —
+    // and what they had online or in the queue comes down, recorded as an
+    // admin's takedown (0190) so the seller cannot relist it. The routes that
+    // write an annonce refuse the account meanwhile (src/lib/moderation/ban.ts).
+    const { error: authErr } = await admin.auth.admin.updateUserById(id, { ban_duration: "876000h" });
+    if (authErr) return fail("ban_auth_failed", 500, authErr);
+    const { data: down } = await admin
+      .from("listings")
+      .update({ status: "archived", taken_down_at: now, taken_down_by: user.id, taken_down_reason: reason, reviewed_by: user.id, reviewed_at: now })
+      .eq("seller_id", id)
+      .in("status", [...PLACE_STATUSES])
+      .select("id");
+
+    logAction(req, user, "admin.user.ban", { id, takenDown: down?.length ?? 0 });
     await audit(admin, user.id, {
       action: "user.ban", targetType: "profile", targetId: id,
       before: { banned_at: profile.banned_at }, after: { banned: true }, note: reason,
@@ -151,6 +167,10 @@ export async function POST(
       .update({ banned_at: null, banned_reason: null })
       .eq("id", id);
     if (error) return fail("unban_failed", 500, error);
+    // The login works again. The annonces taken down stay down until an admin
+    // republishes them one by one.
+    const { error: authErr } = await admin.auth.admin.updateUserById(id, { ban_duration: "none" });
+    if (authErr) return fail("unban_auth_failed", 500, authErr);
 
     logAction(req, user, "admin.user.unban", { id });
     await audit(admin, user.id, {

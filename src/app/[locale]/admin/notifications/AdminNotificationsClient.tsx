@@ -300,6 +300,7 @@ function ComposeTab() {
 
           {audienceType === "users" && (
             <textarea
+              aria-label={t("compose.userIdsPlaceholder")}
               value={userIds}
               onChange={(e) => setUserIds(e.target.value)}
               rows={5}
@@ -408,6 +409,7 @@ function DynamicField({
             return (
               <>
                 <input
+                  aria-label={t(`${base}.label`)}
                   type={field.type === "url" ? "text" : "text"}
                   value={str}
                   onChange={(e) => onChange(e.target.value)}
@@ -429,6 +431,7 @@ function DynamicField({
             return (
               <>
                 <textarea
+                  aria-label={t(`${base}.label`)}
                   value={str}
                   onChange={(e) => onChange(e.target.value)}
                   maxLength={field.maxLength}
@@ -446,6 +449,7 @@ function DynamicField({
           case "number":
             return (
               <input
+                aria-label={t(`${base}.label`)}
                 type="number"
                 value={str}
                 onChange={(e) => onChange(e.target.value === "" ? "" : e.target.value)}
@@ -456,6 +460,7 @@ function DynamicField({
           case "datetime":
             return (
               <input
+                aria-label={t(`${base}.label`)}
                 type="datetime-local"
                 value={str}
                 onChange={(e) => onChange(e.target.value)}
@@ -804,6 +809,7 @@ function QueueTab() {
               setPage(0);
             }}
             placeholder={t("searchPlaceholder")}
+            aria-label={t("searchPlaceholder")}
             className="rounded-full border border-border bg-surface py-1.5 ps-7 pe-3 text-[12px]"
           />
         </div>
@@ -815,6 +821,7 @@ function QueueTab() {
             setPage(0);
           }}
           placeholder="kind"
+          aria-label="kind"
           dir="ltr"
           className="w-32 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px]"
         />
@@ -826,6 +833,7 @@ function QueueTab() {
             setPage(0);
           }}
           placeholder="user_id"
+          aria-label="user_id"
           dir="ltr"
           className="w-44 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px]"
         />
@@ -837,6 +845,7 @@ function QueueTab() {
             setPage(0);
           }}
           placeholder="broadcast_id"
+          aria-label="broadcast_id"
           dir="ltr"
           className="w-44 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px]"
         />

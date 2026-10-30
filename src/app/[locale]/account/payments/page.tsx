@@ -41,6 +41,12 @@ function coverFrom(photos: Photo[] | null | undefined): string | null {
   return cover ? propertyPhotoUrl(cover.storage_path) : null;
 }
 
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("account.payments");
+  return { title: t("title") };
+}
+
 export default async function MyPaymentsPage({
   params,
 }: {

@@ -100,9 +100,13 @@ export async function planCovers(
   shopId: string,
   userId: string,
   listingId: string,
-): Promise<{ ok: true; left: number } | { ok: false; reason: "not_member" | "shop_closed" | "no_plan" | "quota_full" }> {
+): Promise<
+  | { ok: true; left: number; quota: number; ownerId: string | null }
+  | { ok: false; reason: "not_member" | "shop_closed" | "no_plan"; quota?: undefined }
+  | { ok: false; reason: "quota_full"; quota: number }
+> {
   const [{ data: shop }, role, plan] = await Promise.all([
-    admin.from("shops").select("status").eq("id", shopId).maybeSingle(),
+    admin.from("shops").select("status, owner_id").eq("id", shopId).maybeSingle(),
     roleIn(admin, shopId, userId),
     activePlan(admin, shopId),
   ]);
@@ -110,8 +114,8 @@ export async function planCovers(
   if (shop?.status !== "approved") return { ok: false, reason: "shop_closed" };
   if (!plan) return { ok: false, reason: "no_plan" };
   const used = await planUsage(admin, shopId, listingId);
-  if (used >= plan.quota) return { ok: false, reason: "quota_full" };
-  return { ok: true, left: plan.quota - used - 1 };
+  if (used >= plan.quota) return { ok: false, reason: "quota_full", quota: plan.quota };
+  return { ok: true, left: plan.quota - used - 1, quota: plan.quota, ownerId: (shop.owner_id as string | null) ?? null };
 }
 
 export type Cover =
@@ -157,4 +161,103 @@ export async function coverPlace(
   });
   if (credited?.ok === true) return { via: "credit", left: credited.remaining as number };
   return null;
+}
+
+export type Claim = { from: readonly string[]; to: "pending_review" | "published" };
+export type Taken =
+  | { ok: true; cover: Cover }
+  | { ok: false; reason: "not_submittable" | "taken_down" | "free_limit_reached" }
+  /** The agence's plan is full: said as such, not as « your free annonces ». */
+  | { ok: false; reason: "plan_full"; limit: number };
+
+/** The plan a place is taken under, for the count the database makes under its lock. */
+type PlanLock = { shopId: string; ownerId: string | null; quota: number };
+
+/**
+ * coverPlace, with the place taken in the same breath. The count of free
+ * places and the flip of the status happen in one transaction under a lock
+ * (claim_listing_place, 0190): two submits sent at the same moment cannot
+ * both pass the count, a double tap on « Publier » is one publication, not
+ * two, and an annonce an admin took down (`taken_down_at`) is refused before
+ * anything is spent. A credit is spent only once the status is held; when
+ * there is none to spend, the status goes back to `fromStatus`.
+ */
+export async function takePlace(
+  admin: Admin,
+  { userId, listingId, shopId, fromStatus }: { userId: string; listingId: string; shopId: string | null; fromStatus: string },
+  freeLimit: number,
+  claim: Claim,
+): Promise<Taken> {
+  const flip = async (limit: number | null, plan: PlanLock | null = null) => {
+    const { data, error } = await admin.rpc("claim_listing_place", {
+      p_listing: listingId,
+      p_seller: userId,
+      p_from: [...claim.from],
+      p_to: claim.to,
+      p_limit: limit,
+      p_shop: plan?.shopId ?? null,
+      p_shop_owner: plan?.ownerId ?? null,
+      p_shop_limit: plan?.quota ?? null,
+    });
+    if (error) throw error;
+    return data as "ok" | "not_submittable" | "taken_down" | "full";
+  };
+  const deny = (r: "not_submittable" | "taken_down" | "full", plan: PlanLock | null = null): Taken =>
+    r === "full"
+      ? plan
+        ? { ok: false, reason: "plan_full", limit: plan.quota }
+        : { ok: false, reason: "free_limit_reached" }
+      : { ok: false, reason: r };
+
+  const shopPlan = shopId ? await planCovers(admin, shopId, userId, listingId) : null;
+  const owned = shopPlan?.ok ? null : await ownedPlan(admin, userId, listingId);
+  const accountUsed = shopPlan?.ok || owned ? 0 : await accountUsage(admin, userId, listingId);
+  const way = placeFor({
+    forShop: Boolean(shopId),
+    shopPlanHasRoom: Boolean(shopPlan?.ok),
+    ownedPlan: owned,
+    accountUsed,
+    freeLimit,
+  });
+
+  // A plan's places are counted again by the database, under a lock on the
+  // agence: N submits at once by its members used to all pass the count made
+  // here. An agence annonce whose plan is full stops here too — it does not
+  // fall back to the owner's free places, which the plan contains.
+  if (way === "shop_plan" && shopPlan?.ok) {
+    const plan = { shopId: shopId!, ownerId: shopPlan.ownerId, quota: shopPlan.quota };
+    const r = await flip(null, plan);
+    return r === "ok" ? { ok: true, cover: { via: "subscription", left: shopPlan.left, shopId: shopId! } } : deny(r, plan);
+  }
+  if (shopId && shopPlan && !shopPlan.ok && shopPlan.reason === "quota_full") {
+    return { ok: false, reason: "plan_full", limit: shopPlan.quota };
+  }
+  if (way === "own_plan" && owned) {
+    const plan = { shopId: owned.shopId, ownerId: userId, quota: owned.quota };
+    const r = await flip(null, plan);
+    return r === "ok"
+      ? { ok: true, cover: { via: "subscription", left: owned.quota - owned.used - 1, shopId: owned.shopId } }
+      : deny(r, plan);
+  }
+  if (way === "free_quota") {
+    const r = await flip(freeLimit);
+    if (r === "ok") return { ok: true, cover: { via: "free_quota", left: freeLimit - accountUsed - 1 } };
+    if (r !== "full") return deny(r);
+    // A place went to another annonce between the count and the lock: a
+    // credit, if the seller holds one.
+  }
+
+  // A credit — the status first, so a double tap cannot spend two.
+  const r = await flip(null);
+  if (r !== "ok") return deny(r);
+  const { data: credited } = await admin.rpc("consume_listing_credit", {
+    p_seller: userId,
+    p_listing: listingId,
+    p_actor: userId,
+  });
+  if (credited?.ok === true) return { ok: true, cover: { via: "credit", left: credited.remaining as number } };
+  await admin.from("listings").update({ status: fromStatus }).eq("id", listingId).eq("status", claim.to);
+  // An owner whose plan is full is told about the plan, not the free places.
+  if (owned && !shopId) return { ok: false, reason: "plan_full", limit: owned.quota };
+  return { ok: false, reason: "free_limit_reached" };
 }

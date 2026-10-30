@@ -43,11 +43,12 @@ export const getAdminSession = cache(async (): Promise<AdminSession> => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, admin_scopes")
+    .select("role, admin_scopes, banned_at")
     .eq("id", user.id)
     .single();
 
-  const isAdmin = profile?.role === "admin";
+  // A suspended member (banned_at) is a non-admin until reinstated.
+  const isAdmin = profile?.role === "admin" && !profile.banned_at;
   return { supabase, user, isAdmin, scopes: isAdmin ? scopesFromRow(profile?.admin_scopes) : [] };
 });
 

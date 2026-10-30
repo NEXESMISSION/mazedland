@@ -673,6 +673,7 @@ function LocalisedInputs({
         </div>
       </div>
       <Input
+        aria-label={`${label} (${active.toUpperCase()})`}
         value={value}
         onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
           setter(e.target.value)

@@ -93,6 +93,12 @@ const LIST_SELECT = `
   photos:listing_photos (storage_path, sort_order, is_cover)
 `;
 
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminListings");
+  return { title: t("title") };
+}
+
 export default async function AdminAnnoncesPage({
   searchParams,
 }: {

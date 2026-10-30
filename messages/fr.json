@@ -363,6 +363,7 @@
         "refunded": "Remboursé"
       },
       "receivedTitle": "Paiement reçu",
+      "failedTitle": "Paiement non validé",
       "receivedBody": "Nous avons enregistré votre paiement. Vous serez notifié dès que tout est confirmé.",
       "notFoundTitle": "Reçu introuvable",
       "notFoundBody": "Nous n'avons pas trouvé ce paiement. Si la somme a été débitée, contactez le support avec le numéro de référence ci-dessus.",
@@ -488,7 +489,8 @@
       "refusal": {
         "mark_sold": "Seule une annonce en ligne peut être marquée vendue.",
         "withdraw": "Cette annonce n'est pas en ligne.",
-        "relist": "Cette annonce est déjà en ligne ou en cours de traitement."
+        "relist": "Cette annonce est déjà en ligne ou en cours de traitement.",
+        "takenDown": "Cette annonce a été retirée par l'équipe Mazed Immo. Contactez-nous pour la remettre en ligne."
       },
       "windowClosed": "Votre période de publication est terminée — renouvelez l'annonce.",
       "contactRequired": "Ajoutez un numéro joignable avant de republier."
@@ -1305,6 +1307,26 @@
       "title": "Erreur sur le site",
       "body": "{place} — « {message} ». Les visiteurs voient une page d'erreur."
     },
+    "listing_archived": {
+      "plain": {
+        "title": "Annonce retirée",
+        "body": "« {title} » a été retirée par l'équipe Mazed Immo. Contactez-nous pour en savoir plus."
+      },
+      "withReason": {
+        "title": "Annonce retirée",
+        "body": "« {title} » a été retirée par l'équipe Mazed Immo. Motif : {reason}"
+      }
+    },
+    "qa_report": {
+      "found": {
+        "title": "Tour de contrôle du site",
+        "body": "{found, plural, =0 {Aucun problème trouvé.} one {# problème trouvé} other {# problèmes trouvés}}{found, plural, =0 {} other { ({critical, plural, =0 {aucun critique} one {# critique} other {# critiques}}).}} Les corrections sont en cours : vous serez prévenu quand elles seront en ligne."
+      },
+      "fixed": {
+        "title": "Tour de contrôle : corrections en ligne",
+        "body": "{fixed, plural, =0 {Aucune correction nécessaire.} one {# problème corrigé et publié.} other {# problèmes corrigés et publiés.}} {left, plural, =0 {Rien ne reste à traiter.} one {# point reste à traiter.} other {# points restent à traiter.}}"
+      }
+    },
     "plan_expiring": {
       "title": "Votre abonnement se termine bientôt",
       "body": "L'abonnement {plan} de « {shop} » se termine le {date}. Vous pouvez le renouveler dès maintenant."
@@ -1390,6 +1412,9 @@
     "limitTitle": "{limit, plural, one {Votre annonce gratuite est déjà en ligne} other {Vos # annonces gratuites sont déjà en ligne}}",
     "limitBannerBody": "Vous pouvez quand même préparer celle-ci : elle reste en brouillon. Pour la publier, passez à Mazed Immo Pro ou retirez une de vos annonces.",
     "limitModalBody": "Votre annonce est enregistrée en brouillon. Chaque compte publie {limit, plural, one {# annonce gratuite} other {# annonces gratuites}} en même temps. Pour publier celle-ci, passez à Mazed Immo Pro, ou retirez une de vos annonces en ligne pour libérer une place.",
+    "planFullTitle": "{limit, plural, one {L'annonce de votre abonnement est déjà en ligne} other {Les # annonces de votre abonnement sont déjà en ligne}}",
+    "planFullBody": "Votre annonce est enregistrée en brouillon. L'abonnement de votre agence couvre {limit, plural, one {# annonce} other {# annonces}} en ligne en même temps. Pour publier celle-ci, passez à un forfait supérieur depuis votre espace Pro, ou retirez une annonce en ligne pour libérer une place.",
+    "seeSubscription": "Voir mon abonnement",
     "limitHint": "Vos annonces gratuites sont toutes en ligne.",
     "limitValue": "Limite atteinte",
     "limitExplain": "Chaque compte publie {limit, plural, one {# annonce gratuite} other {# annonces gratuites}} en même temps. Pour en publier plus : Mazed Immo Pro, ou retirez une annonce.",
@@ -1667,6 +1692,11 @@
     "photoRateLimited": "Trop d'envois de photos. Réessayez dans une heure.",
     "notSubmittable": "Cette annonce est déjà « {status} ».",
     "freeLimitReached": "{limit, plural, one {Votre annonce gratuite est déjà en ligne.} other {Vos # annonces gratuites sont déjà en ligne.}} Pour en publier plus, passez à Mazed Immo Pro, ou retirez une annonce pour libérer une place.",
+    "planFull": "{limit, plural, one {L'abonnement de votre agence couvre # annonce, déjà en ligne.} other {L'abonnement de votre agence couvre # annonces, déjà en ligne.}} Passez à un forfait supérieur, ou retirez une annonce pour libérer une place.",
+    "accountSuspended": "Votre compte est suspendu : vous ne pouvez plus publier d'annonces. Contactez-nous si vous pensez qu'il s'agit d'une erreur.",
+    "titleTooShort": "Le titre doit faire au moins 3 caractères.",
+    "photoMissing": "Une des photos n'a pas été reçue : renvoyez-la avant de publier.",
+    "tooManyDrafts": "Vous avez trop de brouillons en attente ({limit}). Publiez-en ou supprimez-en avant d'en créer un autre.",
     "statuses": {
       "pending_review": "en vérification",
       "published": "en ligne",
@@ -2923,6 +2953,8 @@
       "rejectReasonPlaceholder": "Photos floues, prix incohérent, doublon…",
       "archiveTitle": "Archiver cette annonce ?",
       "archiveBody": "Elle disparaît du site. Rien n'est remboursé, et vous pourrez la remettre en ligne.",
+      "archiveReasonLabel": "Motif (facultatif, envoyé au vendeur)",
+      "archiveReasonPlaceholder": "Ex. : bien déjà vendu, annonce en double…",
       "soldTitle": "Marquer vendue ?",
       "soldBody": "L'annonce quitte le catalogue mais reste dans l'historique du vendeur.",
       "soldConfirm": "Marquer vendue",
@@ -3119,7 +3151,9 @@
     "listing_renew_credit": "Annonce renouvelée (pack)",
     "listing_renew_payment": "Annonce renouvelée (payante)",
     "listing_submit_free_limit": "Annonce bloquée (places gratuites prises)",
+    "listing_submit_plan_full": "Annonce bloquée (abonnement de l'agence complet)",
     "listing_renew_free_limit": "Renouvellement bloqué (places gratuites prises)",
+    "listing_renew_plan_full": "Renouvellement bloqué (abonnement de l'agence complet)",
     "listing_report": "Annonce signalée",
     "admin_listing_approve_edit": "Modification publiée",
     "admin_listing_reject_edit": "Modification refusée",
@@ -3192,6 +3226,7 @@
     "admin_ad_upload": "Image de publicité envoyée",
     "listing_draft_delete": "Brouillon supprimé",
     "listing_relist_free_limit": "Remise en ligne bloquée (places gratuites prises)",
+    "listing_relist_plan_full": "Remise en ligne bloquée (abonnement de l'agence complet)",
     "admin_team_add": "Membre ajouté à l'équipe",
     "admin_team_update": "Accès d'un membre modifié",
     "admin_team_remove": "Membre retiré de l'équipe",
@@ -3211,6 +3246,7 @@
       "unsupported": "Le refus et la suppression se font une annonce à la fois.",
       "skipStatus": "statut « {status} »",
       "skipNoPhone": "aucun numéro",
+      "skipPhotoMissing": "une photo est introuvable dans le stockage",
       "skipServerError": "erreur serveur",
       "skipAlreadyArchived": "déjà archivée",
       "skipNotPublished": "pas en ligne",
@@ -3222,6 +3258,13 @@
       "noPayment": "Aucun paiement n'est rattaché à cette annonce.",
       "noPhone": "Cette annonce n'a pas de numéro : elle ne peut pas être publiée.",
       "alreadyPublished": "Cette annonce est déjà en ligne.",
+      "alreadyRejected": "Cette annonce est déjà refusée.",
+      "alreadyArchived": "Cette annonce est déjà retirée.",
+      "badGovernorate": "Gouvernorat inconnu.",
+      "badPhone": "Numéro de téléphone invalide.",
+      "badPrice": "Prix invalide.",
+      "titleTooShort": "Le titre doit faire au moins 3 caractères.",
+      "photoMissing": "Une photo de l'annonce est introuvable dans le stockage : demandez au vendeur de la renvoyer.",
       "reasonRequired": "Dites au vendeur ce qui ne va pas — sinon il renverra la même annonce.",
       "creditsNotSupported": "Cette annonce a été payée avec un forfait, et le remboursement de forfait n'existe pas encore ici. Traitez-la à la main.",
       "notPublished": "Seule une annonce en ligne peut être prolongée.",
@@ -3466,6 +3509,7 @@
     "saved": "Profil enregistré.",
     "saveFailed": "Impossible d'enregistrer le profil.",
     "nameInvalid": "Le nom doit faire entre 2 et 80 caractères.",
+    "governorateInvalid": "Choisissez un gouvernorat dans la liste.",
     "notificationsTitle": "Notifications",
     "requestAlerts": "Les alertes de mes demandes",
     "privacyTitle": "Ce que le site montre de vous",
@@ -4249,6 +4293,7 @@
       "slugTaken": "Cette adresse est déjà prise.",
       "notApproved": "Une agence refusée ou suspendue ne peut pas souscrire d'abonnement.",
       "plan": "Abonnement inconnu.",
+      "planRequired": "L'agence n'a pas encore réglé son abonnement : elle s'ouvre une fois le paiement validé.",
       "reason": "Indiquez un motif.",
       "planAlready": "Vous avez déjà cet abonnement jusqu'au {date}. Vous pourrez le renouveler à partir du {from}."
     },
@@ -4824,6 +4869,10 @@
       "label": "Demandes de visite par acheteur",
       "hint": "Au-delà, il attend le lendemain."
     },
+    "limit_drafts_per_account": {
+      "label": "Brouillons par compte",
+      "hint": "Au-delà, il faut en publier ou en supprimer avant d'en créer un autre."
+    },
     "limit_reports_per_hour": {
       "label": "Signalements par personne",
       "hint": "Freine ceux qui signalent en masse."
@@ -5192,6 +5241,7 @@
       "link": "Ce lien n'est pas une adresse web (http ou https).",
       "placement": "Choisissez un emplacement.",
       "dates": "Les dates ne vont pas : le dernier jour doit venir après le début.",
+      "active": "« Actif » doit être oui ou non.",
       "imageType": "JPG, PNG ou WebP seulement.",
       "imageSize": "Image trop lourde : {max} Mo au plus."
     }

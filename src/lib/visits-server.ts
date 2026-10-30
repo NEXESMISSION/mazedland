@@ -20,7 +20,7 @@ export type VisitRow = {
   shop_id: string | null;
   slots: VisitSlot[];
   buyer_name: string;
-  buyer_phone: string;
+  buyer_phone: string | null;
   message: string | null;
   status: VisitStatus;
   confirmed_slot: VisitSlot | null;

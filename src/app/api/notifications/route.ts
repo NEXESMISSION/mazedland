@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 
@@ -25,8 +27,10 @@ export async function GET(req: NextRequest) {
 
   const url = new URL(req.url);
   const unreadOnly = url.searchParams.get("unread") === "1";
-  const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? 20), 1), 50);
-  const offset = Math.max(Number(url.searchParams.get("offset") ?? 0), 0);
+  // Junk (« limit=abc ») falls back to the defaults instead of NaN → an empty list.
+  const int = (v: string | null, d: number) => (v != null && /^-?\d+$/.test(v) ? Number(v) : d);
+  const limit = Math.min(Math.max(int(url.searchParams.get("limit"), 20), 1), 50);
+  const offset = Math.max(int(url.searchParams.get("offset"), 0), 0);
 
   let query = supabase
     .from("notifications")
@@ -87,6 +91,10 @@ export async function PATCH(req: NextRequest) {
     if (ids.length === 0) {
       return NextResponse.json({ error: "ids_required" }, { status: 400 });
     }
+    // Not a uuid: Postgres would answer with a cast error, a 500 for the caller.
+    if (ids.some((x) => !UUID.test(x))) {
+      return NextResponse.json({ error: "invalid_ids" }, { status: 400 });
+    }
     update = update.in("id", ids);
   } else if (body.all !== true) {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
@@ -129,10 +137,13 @@ export async function DELETE(req: NextRequest) {
 
   if (Array.isArray(body.ids) && body.ids.length > 0) {
     const ids = (body.ids as string[])
-      .filter((x) => typeof x === "string" && x.length > 0)
+      .filter((x): x is string => typeof x === "string" && x.length > 0)
       .slice(0, 500);
     if (ids.length === 0) {
       return NextResponse.json({ error: "ids_required" }, { status: 400 });
+    }
+    if (ids.some((x) => !UUID.test(x))) {
+      return NextResponse.json({ error: "invalid_ids" }, { status: 400 });
     }
     del = del.in("id", ids);
   } else if (body.all !== true) {

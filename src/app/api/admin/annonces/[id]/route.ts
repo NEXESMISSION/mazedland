@@ -8,6 +8,9 @@ import { publishListing } from "@/lib/listings/publish";
 import { asDealType, closedStatus } from "@/lib/listings/deal";
 import { applyEdit, asPendingEdit, dropEdit } from "@/lib/listings/edit";
 import { getSettings } from "@/lib/settings/server";
+import { missingPhotos } from "@/lib/listings/storage";
+import { MAX_PRICE, phone } from "@/lib/listings/input";
+import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
 
 /**
  * Everything an admin can do to one annonce.
@@ -76,7 +79,7 @@ export async function POST(
   const { data: listing } = await admin
     .from("listings")
     .select(
-      "id, seller_id, title, status, seller_credit_id, fee_payment_id, contact_phone, expires_at, deal_type, pending_edit",
+      "id, seller_id, title, status, seller_credit_id, fee_payment_id, contact_phone, expires_at, deal_type, pending_edit, taken_down_at",
     )
     .eq("id", id)
     .maybeSingle();
@@ -166,11 +169,17 @@ export async function POST(
         { status: 400 },
       );
     }
-    if (action === "republish" && listing.status === "published") {
+    // Twice is not a second approval: it reset the expiry and told the seller again.
+    if (listing.status === "published") {
       return NextResponse.json(
         { error: "already_published", detail: t("alreadyPublished") },
         { status: 409 },
       );
+    }
+    // The same rule as the seller's submit: a photo row whose file never
+    // arrived would go online as a broken image.
+    if ((await missingPhotos(admin, id)).length > 0) {
+      return NextResponse.json({ error: "photo_missing", detail: t("photoMissing") }, { status: 400 });
     }
 
     // The same path the automatic publication takes (src/lib/listings/publish.ts):
@@ -194,6 +203,9 @@ export async function POST(
 
   // ── Reject ────────────────────────────────────────────────────────────────
   if (action === "reject") {
+    if (listing.status === "rejected") {
+      return NextResponse.json({ error: "already_rejected", detail: t("alreadyRejected") }, { status: 409 });
+    }
     const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
     if (!reason) {
       return NextResponse.json(
@@ -252,14 +264,42 @@ export async function POST(
   }
 
   // ── Archive ───────────────────────────────────────────────────────────────
+  // An admin's takedown, recorded as such (0190): the seller's « Remettre en
+  // ligne » and « Renouveler » refuse while `taken_down_at` is set, and the
+  // seller is told — with the reason, when the moderator gives one.
   if (action === "archive") {
+    if (listing.taken_down_at) {
+      return NextResponse.json({ error: "already_archived", detail: t("alreadyArchived") }, { status: 409 });
+    }
+    const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
+    const now = new Date().toISOString();
     const { error } = await admin
       .from("listings")
-      .update({ status: "archived", reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+      .update({
+        status: "archived",
+        reviewed_by: user.id,
+        reviewed_at: now,
+        taken_down_at: now,
+        taken_down_by: user.id,
+        taken_down_reason: reason || null,
+      })
       .eq("id", id);
     if (error) return fail("listing_archive_failed", 500, error);
 
-    logAction(req, user, "admin.listing.archive", { id });
+    await admin
+      .rpc("enqueue_notification", {
+        p_user_id: listing.seller_id,
+        p_kind: "listing_archived",
+        p_title: "Annonce retirée",
+        p_body: reason
+          ? `« ${listing.title} » a été retirée par l'équipe Mazed Immo. Motif : ${reason}`
+          : `« ${listing.title} » a été retirée par l'équipe Mazed Immo. Contactez-nous pour en savoir plus.`,
+        p_link: "/account/listings",
+        p_payload: { vars: { title: listing.title, variant: reason ? "withReason" : "plain", ...(reason ? { reason } : {}) } },
+      })
+      .then(() => {}, () => {});
+
+    logAction(req, user, "admin.listing.archive", { id, withReason: Boolean(reason) });
     return NextResponse.json({ ok: true, status: "archived" });
   }
 
@@ -323,16 +363,35 @@ export async function POST(
     const f = (body.fields ?? {}) as Record<string, unknown>;
     const patch: Record<string, unknown> = {};
 
-    if (typeof f.title === "string" && f.title.trim()) patch.title = f.title.trim().slice(0, 200);
+    // The same bounds as the seller's form (src/lib/listings/input.ts): the
+    // database refused a longer title or a wider price with a 500, and a
+    // governorate or a phone that is not one went online as typed.
+    if (typeof f.title === "string" && f.title.trim()) {
+      const title = f.title.trim().slice(0, 140);
+      if (title.length < 3) return NextResponse.json({ error: "title_too_short", detail: t("titleTooShort") }, { status: 400 });
+      patch.title = title;
+    }
     if (typeof f.description === "string") patch.description = f.description.trim().slice(0, 5000) || null;
     if (typeof f.contact_name === "string") patch.contact_name = f.contact_name.trim().slice(0, 120) || null;
-    if (typeof f.contact_phone === "string") patch.contact_phone = f.contact_phone.trim().slice(0, 40) || null;
-    if (typeof f.governorate === "string" && f.governorate.trim()) patch.governorate = f.governorate.trim();
+    if (typeof f.contact_phone === "string") {
+      const p = phone(f.contact_phone);
+      if (f.contact_phone.trim() && !p) return NextResponse.json({ error: "bad_phone", detail: t("badPhone") }, { status: 400 });
+      patch.contact_phone = p;
+    }
+    if (typeof f.governorate === "string" && f.governorate.trim()) {
+      const gov = f.governorate.trim();
+      if (!(TUNISIAN_GOVERNORATES as readonly string[]).includes(gov)) {
+        return NextResponse.json({ error: "bad_governorate", detail: t("badGovernorate") }, { status: 400 });
+      }
+      patch.governorate = gov;
+    }
     if (typeof f.negotiable === "boolean") patch.negotiable = f.negotiable;
     if (typeof f.price_on_request === "boolean") patch.price_on_request = f.price_on_request;
     if (f.price === null) patch.price = null;
-    else if (typeof f.price === "number" && Number.isFinite(f.price) && f.price >= 0) {
-      patch.price = f.price;
+    else if (typeof f.price === "number" && Number.isFinite(f.price) && f.price >= 0 && f.price <= MAX_PRICE) {
+      patch.price = Math.round(f.price * 100) / 100;
+    } else if (f.price !== undefined) {
+      return NextResponse.json({ error: "bad_price", detail: t("badPrice") }, { status: 400 });
     }
 
     if (Object.keys(patch).length === 0) {

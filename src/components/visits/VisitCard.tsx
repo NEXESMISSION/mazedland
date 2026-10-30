@@ -71,10 +71,16 @@ export async function VisitCard({ visit, side, locale, highlight = false }: { vi
         {side === "seller" && (
           <p className="flex items-center gap-2 text-foreground">
             <Phone className="size-4 shrink-0 text-muted" />
-            <span dir="auto">{visit.buyer_name}</span> ·{" "}
-            <a href={`tel:${visit.buyer_phone}`} className="font-bold hover:underline">
-              <Ltr>{visit.buyer_phone}</Ltr>
-            </a>
+            <span dir="auto">{visit.buyer_name}</span>
+            {/* No number once the buyer deleted their account: the slot stays, the person does not. */}
+            {visit.buyer_phone && (
+              <>
+                {" "}·{" "}
+                <a href={`tel:${visit.buyer_phone}`} className="font-bold hover:underline">
+                  <Ltr>{visit.buyer_phone}</Ltr>
+                </a>
+              </>
+            )}
           </p>
         )}
         {visit.message && (

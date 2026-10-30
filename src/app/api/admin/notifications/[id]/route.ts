@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isUuid } from "@/lib/uuid";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
@@ -18,6 +19,7 @@ export async function DELETE(
   if (gate instanceof NextResponse) return gate;
   const { user, supabase } = gate;
   const { id } = await ctx.params;
+  if (!isUuid(id)) return NextResponse.json({ error: "invalid_id" }, { status: 400 });
 
   const { error } = await supabase
     .from("notifications")

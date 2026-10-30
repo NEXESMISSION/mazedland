@@ -72,7 +72,11 @@ export async function POST(req: NextRequest) {
     .insert({ ...payload, created_by: g.user!.id })
     .select("*")
     .single();
-  if (error) return fail("popup_create_failed", 500, error);
+  // 23505: the slug is taken — a 409 the form can say, not a 500.
+  if (error) {
+    if (error.code === "23505") return NextResponse.json({ error: "slug_taken" }, { status: 409 });
+    return fail("popup_create_failed", 500, error);
+  }
   logAction(req, g.user!, "popup.create", { slug: payload.slug });
   return NextResponse.json({ item: data });
 }
@@ -108,7 +112,9 @@ export function sanitizePopupBody(
   const icon = typeof body.icon === "string" ? body.icon.slice(0, 64) : null;
 
   const cta_primary = sanitizeCta(body.cta_primary);
+  if (typeof cta_primary === "string") return cta_primary;
   const cta_secondary = sanitizeCta(body.cta_secondary);
+  if (typeof cta_secondary === "string") return cta_secondary;
 
   const audience = sanitizeAudience(body.audience);
   if (typeof audience === "string") return audience;
@@ -130,8 +136,13 @@ export function sanitizePopupBody(
   const cleanDevices =
     devices && DEVICES.includes(devices as typeof DEVICES[number]) ? devices : "both";
 
-  const starts_at = typeof body.starts_at === "string" ? body.starts_at : null;
-  const ends_at = typeof body.ends_at === "string" ? body.ends_at : null;
+  // A date Postgres cannot read, or an end before the start, used to be a 500.
+  const starts_at = typeof body.starts_at === "string" && body.starts_at.trim() ? body.starts_at.trim() : null;
+  const ends_at = typeof body.ends_at === "string" && body.ends_at.trim() ? body.ends_at.trim() : null;
+  if ((starts_at && Number.isNaN(Date.parse(starts_at))) || (ends_at && Number.isNaN(Date.parse(ends_at)))) {
+    return "dates_invalid";
+  }
+  if (starts_at && ends_at && Date.parse(ends_at) < Date.parse(starts_at)) return "dates_invalid";
 
   const frequency = body.frequency as string | undefined;
   const cleanFreq =
@@ -179,11 +190,15 @@ function sanitizeLocalised(input: unknown): Record<string, string> | null {
   return out;
 }
 
-function sanitizeCta(input: unknown): Record<string, unknown> | null {
+/** A page of the site, a web address, a mail or a phone — never a script. */
+const CTA_HREF = /^(\/(?!\/)|https?:\/\/|mailto:|tel:)/i;
+
+function sanitizeCta(input: unknown): Record<string, unknown> | null | "cta_href_invalid" {
   if (!input || typeof input !== "object") return null;
   const obj = input as Record<string, unknown>;
   const href = typeof obj.href === "string" ? obj.href.trim().slice(0, 500) : "";
   if (!href) return null;
+  if (!CTA_HREF.test(href)) return "cta_href_invalid";
   const label = sanitizeLocalised(obj.label);
   if (!label || !label.fr) return null;
   const toneRaw = obj.tone as string | undefined;

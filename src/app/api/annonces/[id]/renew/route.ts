@@ -6,7 +6,9 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { moderationSettings, publishOrQueue } from "@/lib/moderation/server";
-import { coverPlace } from "@/lib/places/server";
+import { suspendedResponse } from "@/lib/moderation/ban";
+import { takePlace } from "@/lib/places/server";
+import { placeRefusal, planFullResponse } from "@/lib/places/refusal";
 
 /**
  * POST /api/annonces/[id]/renew — put an expired annonce back online.
@@ -21,6 +23,10 @@ import { coverPlace } from "@/lib/places/server";
  * same moderation decision as a new annonce — a trusted seller's clean annonce
  * is back online at once, anything else waits for an admin.
  */
+
+/** What has actually come down. A live listing renewing itself would be paying twice for one publication. */
+const RENEWABLE = ["expired", "archived", "sold", "rented"];
+
 export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
@@ -47,9 +53,11 @@ export async function POST(
     return NextResponse.json({ error: "not_owner" }, { status: 403 });
   }
 
-  // Only something that has actually come down can be renewed. A live listing
-  // renewing itself would be paying twice for one publication.
-  if (!["expired", "archived", "sold", "rented"].includes(listing.status as string)) {
+  // A suspended seller publishes nothing (src/lib/moderation/ban.ts).
+  const banned = await suspendedResponse(admin, req, user.id);
+  if (banned) return banned;
+
+  if (!RENEWABLE.includes(listing.status as string)) {
     const t = await apiTranslator(req, "accountApi.renew");
     return NextResponse.json(
       { error: "not_renewable", detail: t("notRenewable") },
@@ -86,13 +94,21 @@ export async function POST(
   // itself is expired, so it is not among the live ones counted. An agence
   // annonce used to skip its plan here and was refused once the owner's two
   // free places were taken.
-  const cover = await coverPlace(
+  // The place is counted and the status flipped to « pending_review » in one
+  // transaction (0190); an annonce an admin took down is refused there.
+  const taken = await takePlace(
     admin,
-    { userId: user.id, listingId: id, shopId: (listing.shop_id as string | null) ?? null },
+    { userId: user.id, listingId: id, shopId: (listing.shop_id as string | null) ?? null, fromStatus: String(listing.status) },
     settings.freeLimit,
+    { from: RENEWABLE, to: "pending_review" },
   );
-  if (cover?.via === "free_quota") return settle("free_quota", { freeLeft: cover.left });
-  if (cover) return settle(cover.via, { remaining: cover.left });
+  if (taken.ok && taken.cover.via === "free_quota") return settle("free_quota", { freeLeft: taken.cover.left });
+  if (taken.ok) return settle(taken.cover.via, { remaining: taken.cover.left });
+  if (taken.reason === "not_submittable" || taken.reason === "taken_down") return placeRefusal(req, taken.reason);
+  if (taken.reason === "plan_full") {
+    logAction(req, user, "listing.renew.plan_full", { id, limit: taken.limit });
+    return planFullResponse(req, taken.limit);
+  }
 
   // ── Nothing covers it ─────────────────────────────────────────────────────
   const t = await apiTranslator(req, "publishApi");

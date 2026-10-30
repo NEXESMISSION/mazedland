@@ -6,6 +6,7 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { listingFields, listingPhotos, num, text, type ListingBody } from "@/lib/listings/input";
+import { suspendedResponse } from "@/lib/moderation/ban";
 import { can, roleIn } from "@/lib/pro/shops";
 import { getSettings } from "@/lib/settings/server";
 
@@ -41,6 +42,10 @@ export async function POST(req: NextRequest) {
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
+  // A suspended seller writes nothing (src/lib/moderation/ban.ts).
+  const banned = await suspendedResponse(admin, req, user.id);
+  if (banned) return banned;
+
   const body = (await req.json().catch(() => ({}))) as ListingBody;
 
   const categoryId = text(body.category_id, 40);
@@ -54,6 +59,12 @@ export async function POST(req: NextRequest) {
       { error: "incomplete", detail: t("incomplete") },
       { status: 400 },
     );
+  }
+  // A title of one or two characters is not one; the database refused it
+  // after the fact, as a 500.
+  if (title && title.length < 3) {
+    const t = await apiTranslator(req, "publishApi");
+    return NextResponse.json({ error: "title_too_short", detail: t("titleTooShort") }, { status: 400 });
   }
 
   // The category must exist and be a leaf — a listing filed under
@@ -138,10 +149,29 @@ export async function POST(req: NextRequest) {
       );
     }
     if (Object.keys(fields).length > 0) {
+      // « Prix sur demande » off with no price: the database refuses the row
+      // (price_on_request or price is not null) — as a 500, until now.
+      if ("price" in fields && fields.price == null && fields.price_on_request !== true) {
+        const t = await apiTranslator(req, "publishApi");
+        return NextResponse.json({ error: "price_required", detail: t("priceRequired") }, { status: 400 });
+      }
       const { error } = await admin.from("listings").update(fields).eq("id", listingId);
       if (error) return fail("listing_update_failed", 500, error);
     }
   } else {
+    // So many drafts and no more (limit_drafts_per_account, /admin/settings):
+    // drafts and their upload URLs had no ceiling, so a script could create
+    // them without end.
+    const { count: drafts } = await admin
+      .from("listings")
+      .select("id", { count: "exact", head: true })
+      .eq("seller_id", user.id)
+      .eq("status", "draft");
+    const limit = (await getSettings()).limit_drafts_per_account;
+    if ((drafts ?? 0) >= limit) {
+      const t = await apiTranslator(req, "publishApi");
+      return NextResponse.json({ error: "too_many_drafts", limit, detail: t("tooManyDrafts", { limit }) }, { status: 429 });
+    }
     const { data: created, error } = await admin
       .from("listings")
       .insert({ ...fields, seller_id: user.id, status: "draft" })

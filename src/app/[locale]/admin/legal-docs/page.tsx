@@ -14,6 +14,12 @@ const PROPERTY_TYPES: PropertyType[] = [
   "commercial", "office", "warehouse", "farm",
 ];
 
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminLegalDocs");
+  return { title: t("eyebrow") };
+}
+
 export default async function AdminLegalDocsPage() {
   await requireAdmin("legal-docs");
   const supabase = await getServerSupabase();

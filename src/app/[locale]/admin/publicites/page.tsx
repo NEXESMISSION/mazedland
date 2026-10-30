@@ -60,6 +60,12 @@ function dayText(day: string, locale: string, withYear = true): string {
     .replace(/ /g, " ");
 }
 
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminAds");
+  return { title: t("title") };
+}
+
 export default async function AdminAdsPage({
   searchParams,
 }: {

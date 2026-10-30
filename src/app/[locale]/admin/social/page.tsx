@@ -36,6 +36,12 @@ type TabKey = (typeof TABS)[number];
 type ListingRef = { id: string; title: string; governorate: string; deal_type: string | null };
 const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? v[0] ?? null : v ?? null);
 
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminSocial");
+  return { title: t("title") };
+}
+
 export default async function AdminSocialPage({
   searchParams,
 }: {
