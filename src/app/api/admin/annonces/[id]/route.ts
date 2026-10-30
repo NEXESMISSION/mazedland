@@ -84,6 +84,9 @@ export async function POST(
   // The `detail` sentences below are shown to the moderator as-is, in the
   // language of the page that asked. Notification texts are not (yet).
   const t = await apiTranslator(req, "adminApi.listing");
+  // A status in words (« en vérification »), not the enum (« pending_review »).
+  const tStatus = await apiTranslator(req, "publishApi.statuses");
+  const statusWord = (s: unknown) => (tStatus.has(String(s)) ? tStatus(String(s)) : String(s));
 
   const { data: listing } = await admin
     .from("listings")
@@ -117,7 +120,7 @@ export async function POST(
   if (action === "mark_paid" || action === "waive_fee") {
     if (listing.status !== "pending_payment" && listing.status !== "pending_review") {
       return NextResponse.json(
-        { error: "not_awaiting_payment", detail: t("notAwaitingPayment", { status: listing.status }) },
+        { error: "not_awaiting_payment", detail: t("notAwaitingPayment", { status: statusWord(listing.status) }) },
         { status: 409 },
       );
     }
@@ -191,7 +194,7 @@ export async function POST(
     const from = action === "approve" ? APPROVE_FROM : REPUBLISH_FROM;
     if (!from.includes(listing.status)) {
       return NextResponse.json(
-        { error: "wrong_status", detail: t("notAwaitingReview", { status: listing.status }) },
+        { error: "wrong_status", detail: t("notAwaitingReview", { status: statusWord(listing.status) }) },
         { status: 409 },
       );
     }
@@ -364,7 +367,7 @@ export async function POST(
   if (action === "mark_sold") {
     if (listing.status !== "published" && listing.status !== "expired") {
       return NextResponse.json(
-        { error: "not_sellable", detail: t("notSellable", { status: listing.status }) },
+        { error: "not_sellable", detail: t("notSellable", { status: statusWord(listing.status) }) },
         { status: 409 },
       );
     }

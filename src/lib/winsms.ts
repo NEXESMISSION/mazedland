@@ -99,15 +99,38 @@ const TITLE_KEEP = 8;
  * cut only when even that is not enough. Cutting from the end alone used to
  * lose the visit's day for any title past thirty-five characters.
  */
+/**
+ * The quoted title in a body: from the first opening quote to the LAST closing
+ * one. A title may hold a quote of its own, and a lazy regex stopped there,
+ * shortened the wrong span and cut the date after all.
+ */
+function quotedSpan(body: string): { open: string; inner: string; close: string; index: number; length: number } | null {
+  for (const [o, c] of [["«", "»"], ['"', '"']] as const) {
+    const start = body.indexOf(o);
+    const end = body.lastIndexOf(c);
+    if (start < 0 || end <= start) continue;
+    let open = o;
+    let close = c;
+    let innerStart = start + 1;
+    let innerEnd = end;
+    if (body[innerStart] === " ") { open += " "; innerStart++; }
+    if (body[innerEnd - 1] === " ") { close = " " + close; innerEnd--; }
+    const inner = body.slice(innerStart, innerEnd);
+    if (!inner) continue;
+    return { open, inner, close, index: start, length: end + 1 - start };
+  }
+  return null;
+}
+
 function fitBody(body: string, room: number): string {
   if (body.length <= room) return body;
-  const quoted = /(«\s?|")(.+?)(\s?»|")/.exec(body);
+  const quoted = quotedSpan(body);
   if (quoted) {
-    const [whole, open, inner, close] = quoted;
+    const { open, inner, close, index, length } = quoted;
     const keep = Math.max(TITLE_KEEP, inner.length - (body.length - room) - 3);
     if (keep < inner.length) {
       const short = `${open}${inner.slice(0, keep).trimEnd()}...${close}`;
-      body = body.slice(0, quoted.index) + short + body.slice(quoted.index + whole.length);
+      body = body.slice(0, index) + short + body.slice(index + length);
       if (body.length <= room) return body;
     }
   }

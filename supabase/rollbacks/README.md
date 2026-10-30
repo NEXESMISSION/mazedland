@@ -10,6 +10,8 @@ node scripts/backup-db.mjs
 
 | Migration | Rollback | What is lost |
 |---|---|---|
+| 0199 deletion passes the guard | `0199_deletion_passes_the_profile_guard.down.sql` | request_account_deletion() without the bypass — every deletion fails again while 0195's guard stands |
+| 0198 replaced_by without FK | `0198_replaced_by_without_fk.down.sql` | the second foreign key to payments comes back; only safe with code that names the relationship it embeds |
 | 0195 QA tour, wave 3 | `0195_qa_tour_3.down.sql` | the client may write listings again and read the audit columns; is_admin() trusts the JWT claim again; every policy and the two gates answer to any admin; the profile guard, the photo-overwrite and legacy bucket policies and listing_reference_next() return to before; the plan descriptions keep « agence » |
 | 0194 broadcast guard | `0194_notifications.down.sql` | nothing: a broadcast may again carry any kind (one the SMS and e-mail drains send) and any link |
 | 0193 credit note restores periods | `0193_credit_note_restores_periods.down.sql` | which payment replaced each plan period and the end it had (roll the code back first: grantPlanPeriod writes them); a credit note on an upgrade cancels its own period only again, the replaced plan stays cut short |

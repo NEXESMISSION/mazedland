@@ -156,6 +156,9 @@ export async function POST(
 
   // `detail` is shown to the operator verbatim, in the page's language.
   const t = await apiTranslator(req, "adminPayments.api");
+  // The payment status in the reader's words, never the enum code.
+  const tPay = await apiTranslator(req, "payment.success.status");
+  const payWord = (v: unknown) => (tPay.has(String(v)) ? tPay(String(v)) : String(v));
   const locale = requestLocale(req);
   const conflict = (detail: string) => NextResponse.json({ error: "conflict", detail }, { status: 409 });
 
@@ -170,7 +173,7 @@ export async function POST(
     if (!reason) {
       return NextResponse.json({ error: "reason_required", detail: t("creditReason") }, { status: 400 });
     }
-    if (pay.status !== "captured") return conflict(t("creditNotCaptured", { status: String(pay.status) }));
+    if (pay.status !== "captured") return conflict(t("creditNotCaptured", { status: payWord(pay.status) }));
     const { data: inv } = await admin.from("invoices").select("id").eq("payment_id", id).maybeSingle();
     if (!inv) return conflict(t("creditNoInvoice"));
     const { data: noteId, error } = await admin.rpc("issue_credit_note", {
@@ -183,7 +186,7 @@ export async function POST(
     return NextResponse.json({ ok: true, status: "refunded", creditNote: noteId });
   }
 
-  if (!OPEN.includes(String(pay.status))) return conflict(t("alreadyResolved", { status: String(pay.status) }));
+  if (!OPEN.includes(String(pay.status))) return conflict(t("alreadyResolved", { status: payWord(pay.status) }));
   if (!REVIEWABLE.has(pay.kind as string)) {
     return NextResponse.json(
       {
@@ -265,7 +268,7 @@ export async function POST(
     if (typeof claim !== "string") {
       return "error" in claim
         ? fail("decision_failed", 500, claim.error)
-        : conflict(t("alreadyResolved", { status: claim.resolved }));
+        : conflict(t("alreadyResolved", { status: payWord(claim.resolved) }));
     }
     if (claim === "taken") return conflict(t("deciding"));
 
@@ -469,7 +472,7 @@ export async function POST(
     if (typeof claim !== "string") {
       return "error" in claim
         ? fail("decision_failed", 500, claim.error)
-        : conflict(t("alreadyResolved", { status: claim.resolved }));
+        : conflict(t("alreadyResolved", { status: payWord(claim.resolved) }));
     }
     if (claim === "taken") return conflict(t("deciding"));
 
@@ -503,7 +506,7 @@ export async function POST(
       if (!rejected || rejected.length === 0) {
         // Another decision landed first, or a stale claim was taken over: say which.
         const { data: cur } = await admin.from("payments").select("status").eq("id", id).maybeSingle();
-        return conflict(t("alreadyResolved", { status: String(cur?.status ?? "captured") }));
+        return conflict(t("alreadyResolved", { status: payWord(cur?.status ?? "captured") }));
       }
 
       // The tap lands on the checkout of this payment, where a new receipt is

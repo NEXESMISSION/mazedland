@@ -1746,7 +1746,10 @@
       "expired": "expirée",
       "archived": "retirée",
       "sold": "vendue",
-      "rented": "louée"
+      "rented": "louée",
+      "draft": "brouillon",
+      "rejected": "refusée",
+      "pending_payment": "en attente de paiement"
     },
     "contactRequired": "Ajoutez un numéro de téléphone joignable.",
     "attestationRequired": "Cochez l'attestation sur l'honneur.",

@@ -54,6 +54,8 @@ export async function POST(req: NextRequest) {
   // `detail` and each skipped row's `why` are shown to the moderator as-is,
   // in the language of the page that asked.
   const t = await apiTranslator(req, "adminApi.bulk");
+  const tStatus = await apiTranslator(req, "publishApi.statuses");
+  const statusWord = (s: unknown) => (tStatus.has(String(s)) ? tStatus(String(s)) : String(s));
   const ids = Array.isArray(body.ids)
     ? body.ids.filter((v): v is string => typeof v === "string").slice(0, MAX)
     : [];
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
   if (action === "approve") {
     for (const r of found) {
       if (r.status !== "pending_review") {
-        skipped.push({ id: r.id, title: r.title, why: t("skipStatus", { status: r.status }) });
+        skipped.push({ id: r.id, title: r.title, why: t("skipStatus", { status: statusWord(r.status) }) });
         continue;
       }
       if (!r.contact_phone) {

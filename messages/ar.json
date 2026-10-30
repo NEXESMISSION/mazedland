@@ -1746,7 +1746,10 @@
       "expired": "منتهي الصلاحية",
       "archived": "مؤرشف",
       "sold": "مُباع",
-      "rented": "مُؤجَّر"
+      "rented": "مُؤجَّر",
+      "draft": "مسودة",
+      "rejected": "مرفوضة",
+      "pending_payment": "في انتظار الخلاص"
     },
     "contactRequired": "أضف رقم هاتف يمكن الاتصال به.",
     "attestationRequired": "يجب الموافقة على التصريح على الشرف.",
