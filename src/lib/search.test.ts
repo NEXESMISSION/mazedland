@@ -10,6 +10,10 @@ describe("normalizeSearchQuery", () => {
     expect(normalizeSearchQuery("50%_off (deal)")).toBe("50off deal");
     expect(normalizeSearchQuery('a"b\\c')).toBe("abc");
   });
+  it("keeps a decimal comma as a dot, so « 1,5 million » is not « 15 million »", () => {
+    expect(normalizeSearchQuery("villa 1,5 million")).toBe("villa 1.5 million");
+    expect(normalizeSearchQuery("300,000 dt")).toBe("300.000 dt");
+  });
   it("returns empty string for nullish input", () => {
     expect(normalizeSearchQuery(null)).toBe("");
     expect(normalizeSearchQuery(undefined)).toBe("");

@@ -57,6 +57,8 @@ export function normalizeSearchQuery(raw: string | null | undefined): string {
   return raw
     .trim()
     .replace(/\s+/g, " ")
+    // A decimal comma (« 1,5 million ») survives as a dot: stripped, it read as 15.
+    .replace(/(?<=\d),(?=\d)/g, ".")
     .replace(ILIKE_AND_OR_SPECIALS, "");
 }
 

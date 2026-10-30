@@ -81,4 +81,92 @@ describe("understand — Arabic and Derja", () => {
   it("reads « مليار » as a million dinars and Eastern digits", () => {
     expect(understand("فيلا ١ مليار").max).toBe(1_000_000);
   });
+
+  it("reads a final ة typed as ه, in a category and in a place", () => {
+    expect(understand("شقه في سوسة")).toEqual({ cat: "appartements", gov: "Sousse", rest: "" });
+    expect(understand("مزرعه جندوبه")).toEqual({ cat: "fermes", gov: "Jendouba", rest: "" });
+    expect(understand("دار اريانه")).toMatchObject({ cat: "maisons", gov: "Ariana" });
+  });
+
+  it("reads a preposition attached to the figure, and the rent period", () => {
+    expect(understand("فيلا بـ800 ألف")).toEqual({ cat: "villas", max: 800_000, rest: "" });
+    expect(understand("شقة للكراء سوسة 700 دينار في الشهر")).toEqual({ deal: "rent", cat: "appartements", gov: "Sousse", max: 700, rest: "" });
+    expect(understand("شقة للايجار تونس")).toMatchObject({ deal: "rent", cat: "appartements", gov: "Tunis" });
+  });
+
+  it("reads the bounds said in Arabic", () => {
+    expect(understand("فيلا على الأقل 300 ألف")).toEqual({ cat: "villas", min: 300_000, rest: "" });
+    expect(understand("فيلا من 300 ألف")).toEqual({ cat: "villas", min: 300_000, rest: "" });
+    expect(understand("فيلا موش أكثر من 300 ألف")).toEqual({ cat: "villas", max: 300_000, rest: "" });
+  });
+});
+
+describe("understand — figures written the French way", () => {
+  it("reads digits grouped by three as one figure", () => {
+    expect(understand("appartement S+2 à Sfax moins de 300 000")).toEqual({ cat: "appartements", gov: "Sfax", rooms: 2, max: 300_000, rest: "" });
+    expect(understand("villa 350 000").max).toBe(350_000);
+    expect(understand("villa 1 200 000").max).toBe(1_200_000);
+    expect(understand("terrain sfax 150 000 dt")).toMatchObject({ cat: "terrain", gov: "Sfax", max: 150_000 });
+    expect(understand("appartement a louer tunis 1 200 dt")).toMatchObject({ deal: "rent", gov: "Tunis", max: 1200 });
+    expect(understand("maison 250.000 dt sfax")).toMatchObject({ cat: "maisons", gov: "Sfax", max: 250_000 });
+    expect(understand("villa 350.000 dt").max).toBe(350_000);
+    // A no-break space, as dictation and the site's own prices write it.
+    expect(understand("villa 300 000").max).toBe(300_000);
+  });
+
+  it("keeps a decimal comma", () => {
+    expect(understand("appartement sousse 1,5 million")).toEqual({ cat: "appartements", gov: "Sousse", max: 1_500_000, rest: "" });
+  });
+
+  it("does not join a rooms count to the budget", () => {
+    expect(understand("S 2 300 000")).toEqual({ rooms: 2, max: 300_000, rest: "" });
+  });
+});
+
+describe("understand — the words around a figure", () => {
+  it("reads a minimum however it is said", () => {
+    for (const q of ["villa au moins 300 mille", "villa 300 mille minimum", "villa au dessus de 300 mille", "villa pas moins de 300 mille", "villa a partir de 300 mille", "villa 300 mille et plus"]) {
+      expect(understand(q), q).toEqual({ cat: "villas", min: 300_000, rest: "" });
+    }
+  });
+
+  it("reads a maximum however it is said", () => {
+    for (const q of ["villa pas plus de 300 mille", "villa au plus 300 mille", "villa 300 mille maximum", "villa en dessous de 300 mille", "villa jusqu'à 300 mille", "villa 300 mille max"]) {
+      expect(understand(q), q).toEqual({ cat: "villas", max: 300_000, rest: "" });
+    }
+  });
+
+  it("reads a floor and a ceiling said together, and a range with a dash", () => {
+    expect(understand("villa plus de 100 mille moins de 200 mille")).toMatchObject({ min: 100_000, max: 200_000 });
+    expect(understand("villa 300-400 mille")).toEqual({ cat: "villas", min: 300_000, max: 400_000, rest: "" });
+    expect(understand("villa 300 à 400 mille")).toMatchObject({ min: 300_000, max: 400_000 });
+  });
+
+  it("never leaves the words of a bound as keywords", () => {
+    expect(understand("appartement moins de 200").rest).toBe("");
+  });
+});
+
+describe("understand — rooms and rent periods", () => {
+  it("reads « S 2 » and « S2 », the way a + reaches the server from a plain link", () => {
+    expect(understand("S 2 tunis")).toEqual({ rooms: 2, gov: "Tunis", rest: "" });
+    expect(understand("s2 tunis")).toMatchObject({ rooms: 2 });
+    expect(understand("s plus 2 tunis")).toMatchObject({ rooms: 2 });
+  });
+
+  it("counts « 3 pièces » as an S+2, and « 3 chambres » as three", () => {
+    expect(understand("appartement 3 pièces la marsa")).toMatchObject({ rooms: 2, del: "La Marsa" });
+    expect(understand("appartement S+2 tunis 3 pièces")).toEqual({ cat: "appartements", gov: "Tunis", rooms: 2, rest: "" });
+    expect(understand("appartement 3 chambres").rooms).toBe(3);
+  });
+
+  it("reads a rent period as « to rent », never as a keyword", () => {
+    expect(understand("appartement a louer sousse 700 dt par mois")).toEqual({ deal: "rent", cat: "appartements", gov: "Sousse", max: 700, rest: "" });
+    expect(understand("studio tunis 600 dt/mois")).toEqual({ deal: "rent", cat: "appartements", gov: "Tunis", max: 600, rest: "" });
+  });
+
+  it("reads Latin Derja money", () => {
+    expect(understand("dar sousse 250 alf")).toEqual({ cat: "maisons", gov: "Sousse", max: 250_000, rest: "" });
+    expect(understand("villa 400 mlyoun").max).toBe(400_000);
+  });
 });

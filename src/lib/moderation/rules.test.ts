@@ -7,6 +7,7 @@ import {
   isPriceImplausible,
   isThinText,
   latinDigits,
+  redactContacts,
   sameTitle,
   MIN_PHOTOS,
   type ListingFacts,
@@ -70,6 +71,28 @@ describe("hasContactInText", () => {
   it("leaves surfaces, prices and years alone", () => {
     expect(hasContactInText("Terrain de 13 000 m², construit en 2019, 4 pièces, prix 350000")).toBe(false);
     expect(hasContactInText("أرض 4942م² · طريق المطار كلم 10")).toBe(false);
+  });
+
+  it("does not take a figure that happens to start with 216 for the country code", () => {
+    for (const t of ["prix 216 000 dinars", "Terrain de 2160 m2", "12160 m2", "21600 dt", "1 216 000 TND", "216 m2"]) {
+      expect(hasContactInText(t), t).toBe(false);
+    }
+    expect(hasContactInText("216 98 123 456")).toBe(true);
+  });
+});
+
+describe("redactContacts", () => {
+  it("takes the whole number out, country code included", () => {
+    expect(redactContacts("TEL +216 98 123 456")).toBe("TEL […]");
+    expect(redactContacts("00216 98 123 456")).toBe("[…]");
+    expect(redactContacts("+21698123456")).toBe("[…]");
+    expect(redactContacts("appelez le 98-123-456 svp")).toBe("appelez le […] svp");
+  });
+
+  it("leaves a price or a surface with 216 in it alone", () => {
+    expect(redactContacts("prix 216 000 dinars")).toBe("prix 216 000 dinars");
+    expect(redactContacts("Terrain de 2160 m2")).toBe("Terrain de 2160 m2");
+    expect(redactContacts("titre foncier, 216 000 dinars. Appelez-moi au 98 765 432")).toBe("titre foncier, 216 000 dinars. Appelez-moi au […]");
   });
 });
 
