@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { paymentInstructions, fetchPayeeDetails, usablePayeeMethods } from "@/lib/payments";
+import { isUuid } from "@/lib/uuid";
 import { Link } from "@/i18n/navigation";
 import { CheckoutClient } from "./CheckoutClient";
 
@@ -55,7 +56,9 @@ export default async function CheckoutEntry({
     );
   }
 
-  if (!paymentParam) notFound();
+  // A malformed id is not a payment: the lookup below would throw on the cast
+  // and the page would land on its error boundary instead of a 404.
+  if (!paymentParam || !isUuid(paymentParam)) notFound();
 
   // The payee rows in app_settings are admin-only, so with the seller's own
   // client this came back empty, fell back to the built-in example account, and
@@ -69,14 +72,19 @@ export default async function CheckoutEntry({
   // invisible for as long as it did.
   const { data: pay, error } = await supabase
     .from("payments")
-    .select("id, user_id, kind, amount, status, metadata")
+    .select("id, user_id, kind, amount, status, metadata, reviewer_id, admin_notes")
     .eq("id", paymentParam)
     .maybeSingle();
 
   if (error) throw new Error(`checkout payment lookup failed: ${error.message}`);
   if (!pay || pay.user_id !== user.id) notFound();
 
-  if (pay.status !== "pending" && pay.status !== "pending_review") {
+  // A receipt an admin refused is sent again from here — the refusal's
+  // notification says so and links here; this page used to bounce it to the
+  // success page, which offered nothing a seller could do. A payment the
+  // seller cancelled, or one already paid, has nothing to do here.
+  const refused = pay.status === "failed" && pay.reviewer_id != null;
+  if (pay.status !== "pending" && pay.status !== "pending_review" && !refused) {
     redirect(`/${locale}/payment/success?id=${pay.id}`);
   }
 
@@ -108,6 +116,7 @@ export default async function CheckoutEntry({
       instructions={instructions}
       locale={locale}
       receiptUnderReview={pay.status === "pending_review"}
+      refusedReason={refused ? ((pay.admin_notes as string | null) ?? "") : null}
       // The seller can go back and fix the annonce before paying — a rejected
       // receipt is often a rejected LISTING in disguise. It returns here.
       editHref={

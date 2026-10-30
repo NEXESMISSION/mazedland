@@ -6,7 +6,7 @@ import { adminBtn } from "@/components/admin/AdminButton";
 import { FullBleed, EmptyState, QueueKeys, EYEBROW } from "@/components/admin/kit";
 import { ROW_BASE, ROW_IDLE, ROW_SELECTED, ROW_FOCUS } from "@/components/admin/kit/surface";
 import { ProductEditor, type EditableProduct } from "./ProductEditor";
-import { PRODUCT_SELECT, productName, toProduct, type ProductKind } from "@/lib/products";
+import { PRODUCT_SELECT, productName, toProduct, unsellable, type ProductKind } from "@/lib/products";
 import { categoryLabel } from "@/lib/i18n";
 import { formatTND } from "@/lib/utils";
 import { Tag, Plus } from "lucide-react";
@@ -102,7 +102,9 @@ export default async function AdminOffresPage({
   const showEditor = creating || Boolean(editable);
 
   // Anything the seller can see but not buy is a dead end on the Tarifs page.
-  const misconfigured = products.filter((p) => p.isActive && (p.price === null || p.price === undefined));
+  // `price` is never null once read (toProduct); what happens is a plan or a
+  // placement on sale at 0 TND, which no payment can carry.
+  const misconfigured = products.filter(unsellable);
 
   return (
     <FullBleed>

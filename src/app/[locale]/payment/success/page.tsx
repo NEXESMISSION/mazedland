@@ -2,8 +2,10 @@ import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { formatDate, formatTND } from "@/lib/utils";
-import { CheckCircle2, ArrowRight, Loader2, XCircle } from "lucide-react";
+import { isUuid } from "@/lib/uuid";
+import { CheckCircle2, ArrowRight, Loader2, Undo2, XCircle } from "lucide-react";
 import { PaySubmitButton } from "@/components/payments/PaySubmitButton";
 import { Ltr } from "@/components/ui/Ltr";
 import { SuccessAutoRedirect } from "./SuccessAutoRedirect";
@@ -40,6 +42,13 @@ function destinationFor(kind: string): string {
  * The page is server-side so the TX details are loaded with no client
  * round-trip. The auto-redirect is a small client component that fires
  * after 1.8s — fast enough to feel snappy, slow enough to read.
+ *
+ * A payment that did not go through is one of three things, and the page
+ * says which (the QA tour, 2026-10-30): a receipt an admin refused (there is
+ * a reviewer — a new receipt is sent from the checkout), a payment the seller
+ * cancelled before sending one (no reviewer — buy again from where it
+ * started), or a payment refunded by a credit note. Every one of them read
+ * « Votre reçu n'a pas été validé » before, and a refund span a spinner.
  */
 export default async function PaymentSuccess({
   searchParams,
@@ -79,11 +88,14 @@ export default async function PaymentSuccess({
     redirect(`/${locale}/login?next=${encodeURIComponent(`/payment/success?id=${id}`)}`);
   }
 
-  const { data: payment } = await supabase
-    .from("payments")
-    .select("id, kind, amount, status, currency, created_at, metadata")
-    .eq("id", id)
-    .maybeSingle();
+  // A malformed id is no payment; asking Postgres would only log a cast error.
+  const { data: payment } = isUuid(id)
+    ? await supabase
+        .from("payments")
+        .select("id, kind, amount, status, currency, created_at, metadata, reviewer_id")
+        .eq("id", id)
+        .maybeSingle()
+    : { data: null };
 
   if (!payment) {
     return (
@@ -98,22 +110,81 @@ export default async function PaymentSuccess({
   }
 
   const kind = payment.kind as string;
-  // A refused or cancelled payment is not « réglé », whatever it was for.
-  const kindLabel =
-    payment.status === "failed" ? t("failedTitle") : KINDS.has(kind) ? t(`kind.${kind}`) : t("receivedTitle");
-  const subLabel = KINDS.has(kind) ? t(`kindBody.${kind}`) : t("defaultBody");
   const status = payment.status as string;
+  const isCaptured = status === "captured";
+  const isRefunded = status === "refunded";
+  // A refused receipt carries the admin who refused it; a payment the seller
+  // cancelled (or one replaced by another choice) was never reviewed.
+  const isRejected = status === "failed" && payment.reviewer_id != null;
+  const isCancelled = status === "failed" && payment.reviewer_id == null;
+  const isFailed = isRejected || isCancelled;
+
+  const kindLabel = KINDS.has(kind) ? t(`kind.${kind}`) : t("receivedTitle");
+  const subLabel = KINDS.has(kind) ? t(`kindBody.${kind}`) : t("defaultBody");
+  const title = isRejected ? t("failedTitle") : isCancelled ? t("cancelledTitle") : isRefunded ? t("refundedTitle") : kindLabel;
+  const body = isRejected ? t("failedBody") : isCancelled ? t("cancelledBody") : isRefunded ? t("refundedBody") : subLabel;
+  const eyebrow = isCaptured
+    ? t("eyebrowConfirmed")
+    : isRejected
+      ? t("eyebrowRejected")
+      : isCancelled
+        ? t("eyebrowCancelled")
+        : isRefunded
+          ? t("eyebrowRefunded")
+          : t("eyebrowWaiting");
   // Every payment is in dinars; say so in the reader's language.
   const tc = await getTranslations("common");
   const currency =
     payment.currency === "TND" || !payment.currency ? tc("tnd") : (payment.currency as string);
-  const isCaptured = payment.status === "captured";
-  // A refused receipt (or a cancelled payment) used to land here and read
-  // « Frais de publication réglés » under a spinner that never stopped.
-  const isFailed = payment.status === "failed";
-  const listingId =
-    (payment.metadata as { listing_id?: string } | null)?.listing_id ?? null;
-  const dest = safeInternalPath(returnUrl, destinationFor(payment.kind as string)) as `/${string}`;
+  const meta = (payment.metadata ?? {}) as { listing_id?: string; shop_id?: string };
+  const listingId = isUuid(meta.listing_id) ? meta.listing_id : null;
+  const shopId = isUuid(meta.shop_id) ? meta.shop_id : null;
+  const dest = safeInternalPath(returnUrl, destinationFor(kind)) as `/${string}`;
+
+  // The credit note that refunded it (0187), to open from here.
+  let creditNoteId: string | null = null;
+  if (isRefunded) {
+    const service = getServiceSupabase();
+    const { data: inv } = service
+      ? await service.from("invoices").select("id").eq("payment_id", payment.id).maybeSingle()
+      : { data: null };
+    const { data: note } = service && inv
+      ? await service.from("invoices").select("id").eq("credits_invoice_id", inv.id).maybeSingle()
+      : { data: null };
+    creditNoteId = (note?.id as string | undefined) ?? null;
+  }
+
+  // What the payer can do from here. A refused receipt: send another one. A
+  // cancelled purchase: start it again where it is bought — the annonce's
+  // placement page, the agence's plan tab, or (a fee) the annonce itself.
+  // « Payer à nouveau » used to re-submit the annonce of ANY failed payment,
+  // which a placement's annonce — already online — refused with a 409.
+  const retryHref =
+    isRejected
+      ? `/payment/checkout?payment=${payment.id}`
+      : isCancelled && kind === "promo" && listingId
+        ? `/account/listings/${listingId}/mise-en-avant`
+        : isCancelled && kind === "subscription" && shopId
+          ? `/pro/dashboard?shop=${shopId}&tab=abonnement`
+          : null;
+  const retryLabel = isRejected ? t("resendReceipt") : kind === "promo" ? t("buyAgain") : t("choosePlan");
+  const resubmit = isCancelled && (kind === "listing_fee" || kind === "renewal") && listingId;
+
+  const iconTone = isCaptured
+    ? "bg-emerald-500 text-white shadow-[0_0_30px_rgba(16,185,129,0.4)]"
+    : isRejected
+      ? "bg-red-500/15 text-red-700 ring-1 ring-red-500/40"
+      : isCancelled || isRefunded
+        ? "bg-surface-2 text-muted ring-1 ring-border"
+        : "bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/40";
+  const chipTone = isCaptured
+    ? "mazed-tone-ok"
+    : isRejected
+      ? "mazed-tone-bad"
+      : isCancelled || isRefunded
+        ? "bg-surface-2 text-muted ring-1 ring-border"
+        : "mazed-tone-warn";
+  const chipLabel = isCancelled ? t("status.cancelled") : STATUSES.has(status) ? t(`status.${status}`) : status;
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-var(--desktop-nav-h))] w-full max-w-md flex-col items-center justify-center px-4 py-10">
@@ -127,19 +198,13 @@ export default async function PaymentSuccess({
               aria-hidden
             />
           )}
-          <div
-            className={`relative h-16 w-16 rounded-full flex items-center justify-center ${
-              isCaptured
-                ? "bg-emerald-500 text-white shadow-[0_0_30px_rgba(16,185,129,0.4)]"
-                : isFailed
-                  ? "bg-red-500/15 text-red-700 ring-1 ring-red-500/40"
-                  : "bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/40"
-            }`}
-          >
+          <div className={`relative h-16 w-16 rounded-full flex items-center justify-center ${iconTone}`}>
             {isCaptured ? (
               <CheckCircle2 className="h-9 w-9" strokeWidth={2.2} />
             ) : isFailed ? (
               <XCircle className="h-9 w-9" strokeWidth={2.2} />
+            ) : isRefunded ? (
+              <Undo2 className="h-8 w-8" strokeWidth={2.2} />
             ) : (
               <Loader2 className="h-7 w-7 animate-spin" />
             )}
@@ -147,18 +212,36 @@ export default async function PaymentSuccess({
         </div>
 
         <div className="mt-5 text-[10px] uppercase tracking-[0.18em] font-extrabold text-[var(--gold)]">
-          {isCaptured ? t("eyebrowConfirmed") : isFailed ? t("eyebrowRejected") : t("eyebrowWaiting")}
+          {eyebrow}
         </div>
         <h1 className="mt-1 text-2xl font-extrabold tracking-tight">
-          {kindLabel}
+          {title}
         </h1>
         <p className="mt-2 text-sm text-[var(--foreground-muted)] leading-relaxed">
-          {isFailed ? t("failedBody") : subLabel}
+          {body}
         </p>
 
-        {isFailed && listingId && (
+        {retryHref && (
           <div className="mt-5">
-            <PaySubmitButton listingId={listingId} block label={t("payAgain")} />
+            <Link href={retryHref as `/${string}`} className="mazed-btn-luxe tap-target flex w-full items-center justify-center gap-1.5 px-3 py-2.5 text-[12.5px]">
+              {retryLabel}
+              <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />
+            </Link>
+          </div>
+        )}
+        {resubmit && (
+          <div className="mt-5">
+            <PaySubmitButton listingId={resubmit} block label={t("payAgain")} />
+          </div>
+        )}
+        {isRefunded && creditNoteId && (
+          <div className="mt-5">
+            <Link
+              href={`/factures/${creditNoteId}` as `/${string}`}
+              className="inline-flex items-center justify-center gap-2 w-full h-11 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] text-foreground font-semibold text-[13px] hover:border-[var(--gold-soft)] transition-colors"
+            >
+              {t("viewCreditNote")}
+            </Link>
           </div>
         )}
 
@@ -182,12 +265,8 @@ export default async function PaymentSuccess({
           <Row label={t("statusLabel")}>
             {/* Light-theme tones. `text-emerald-300` / `text-amber-300` were
                 chosen for a dark page and sat at ~1.6:1 on this one. */}
-            <span
-              className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                isCaptured ? "mazed-tone-ok" : "mazed-tone-warn"
-              }`}
-            >
-              {STATUSES.has(status) ? t(`status.${status}`) : status}
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${chipTone}`}>
+              {chipLabel}
             </span>
           </Row>
         </dl>

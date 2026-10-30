@@ -55,9 +55,10 @@ interface Props {
   } | null;
   instructions: ProviderInstructions[];
   locale: string;
-  /** True when re-uploading after a rejection (or a refresh). */
   /** The seller already sent a receipt and an admin has not ruled on it yet. */
   receiptUnderReview: boolean;
+  /** An admin refused the last receipt, with this motif (empty when none was kept): a new one is sent from here. */
+  refusedReason?: string | null;
   /** What is paid for (page.tsx): an agence's plan, a placement or an annonce's fee. */
   subject?: { kind: "plan" | "promo" | "fee"; product: string | null; shop: string | null; shopId: string | null };
   /** When set (listing-fee payments), shows a "Modifier l'annonce" link so the
@@ -101,6 +102,7 @@ export function CheckoutClient({
   instructions,
   locale,
   receiptUnderReview,
+  refusedReason = null,
   editHref,
 }: Props) {
   const t = useTranslations("checkout");
@@ -470,16 +472,21 @@ export function CheckoutClient({
           )}
         </section>
 
-        {/* This said « Reçu précédent refusé » in red. Reaching checkout with a
-            payment in `pending_review` means the opposite: the receipt arrived
-            and is waiting for an admin. A refused one is `failed`, and never
-            lands here. */}
-        {underReview && (
+        {/* Reaching checkout with a payment in `pending_review` means the
+            receipt arrived and is waiting for an admin. A refused one lands
+            here too (page.tsx), with the admin's motif: the next receipt
+            answers it. */}
+        {underReview ? (
           <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] text-amber-900">
             <AlertCircle className="mt-0.5 size-4 shrink-0" />
             <span>{t("receiptUnderReview")}</span>
           </div>
-        )}
+        ) : refusedReason !== null ? (
+          <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[12px] text-red-900">
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            <span>{refusedReason ? t("receiptRefused", { reason: refusedReason }) : t("receiptRefusedNoReason")}</span>
+          </div>
+        ) : null}
         </div>
 
         {/* RIGHT (desktop) / BELOW (mobile) — payment steps */}
@@ -649,8 +656,9 @@ export function CheckoutClient({
           {files.length > 0 ? t("hintReady") : t("hintEmpty")}
         </p>
 
-        {/* Cancel — small, out of the way */}
-        {!underReview && (
+        {/* Cancel — small, out of the way. A refused payment is already
+            closed; only a new receipt moves it. */}
+        {!underReview && refusedReason === null && (
           <button
             type="button"
             onClick={cancelPayment}
