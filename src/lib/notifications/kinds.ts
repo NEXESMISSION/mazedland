@@ -41,6 +41,10 @@ export type FieldDef = {
   options?: string[];
   /** The field has a helper line in messages. */
   helper?: boolean;
+  /** The same field on every kind: its texts live under `adminNotifications.fields.<key>`. */
+  shared?: boolean;
+  /** The direction the field is typed in, when it is not the admin's. */
+  dir?: "ltr" | "rtl";
 };
 
 export type KindDef = {
@@ -52,12 +56,24 @@ export type KindDef = {
 // everything else flows into payload jsonb.
 export const CORE_FIELD_KEYS = new Set(["title", "body", "link"]);
 
+// The same message in Arabic, for the readers whose site is /ar: the bell
+// shows it to them and the French to everyone else (src/lib/notifications/
+// render.ts). Sent beside the French as `title_ar` / `body_ar`, stored by the
+// API under payload.i18n.ar; a broadcast has no template to translate from,
+// so without these the admin's language reached everybody.
+export const I18N_FIELD_KEYS = new Set(["title_ar", "body_ar"]);
+const ARABIC_COPY: FieldDef[] = [
+  { key: "title_ar", type: "text", maxLength: 200, placeholder: true, shared: true, dir: "rtl" },
+  { key: "body_ar", type: "textarea", maxLength: 1000, placeholder: true, helper: true, shared: true, dir: "rtl" },
+];
+
 export const KIND_CONFIG: KindDef[] = [
   {
     value: "announcement",
     fields: [
       { key: "title", type: "text", required: true, maxLength: 200, placeholder: true },
       { key: "body", type: "textarea", maxLength: 1000, placeholder: true },
+      ...ARABIC_COPY,
       { key: "link", type: "url", maxLength: 500, placeholder: true },
       { key: "cta_label", type: "text", maxLength: 60, placeholder: true, helper: true },
     ],
@@ -67,6 +83,7 @@ export const KIND_CONFIG: KindDef[] = [
     fields: [
       { key: "title", type: "text", required: true, maxLength: 200, placeholder: true },
       { key: "body", type: "textarea", maxLength: 1000, placeholder: true },
+      ...ARABIC_COPY,
       { key: "scheduled_at", type: "datetime", required: true, helper: true },
       { key: "duration_min", type: "number", placeholder: true },
       { key: "affected", type: "text", maxLength: 200, placeholder: true },
@@ -77,6 +94,7 @@ export const KIND_CONFIG: KindDef[] = [
     fields: [
       { key: "title", type: "text", required: true, maxLength: 200, placeholder: true },
       { key: "body", type: "textarea", maxLength: 1000, placeholder: true },
+      ...ARABIC_COPY,
       { key: "link", type: "url", maxLength: 500, placeholder: true },
       { key: "cta_label", type: "text", maxLength: 60, placeholder: true },
       { key: "expires_at", type: "datetime", helper: true },
@@ -88,6 +106,7 @@ export const KIND_CONFIG: KindDef[] = [
     fields: [
       { key: "title", type: "text", required: true, maxLength: 200, placeholder: true },
       { key: "body", type: "textarea", maxLength: 1000, placeholder: true },
+      ...ARABIC_COPY,
       {
         key: "severity",
         type: "select",

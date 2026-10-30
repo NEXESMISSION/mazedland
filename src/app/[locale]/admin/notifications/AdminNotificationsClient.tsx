@@ -22,6 +22,7 @@ import {
   KIND_CONFIG,
   KIND_BY_VALUE,
   CORE_FIELD_KEYS,
+  I18N_FIELD_KEYS,
   type FieldDef,
 } from "@/lib/notifications/kinds";
 
@@ -142,12 +143,14 @@ function ComposeTab() {
   const canSend = !sending && !missingRequired;
 
   function buildPayloadAndCore() {
-    const core: { title: string; body: string; link: string } = { title: "", body: "", link: "" };
+    // The Arabic copy travels beside the French (title_ar / body_ar); the
+    // API stores it under payload.i18n.ar, not as loose payload keys.
+    const core = { title: "", body: "", link: "", title_ar: "", body_ar: "" };
     const payload: Record<string, unknown> = {};
     for (const f of config.fields) {
       const v = values[f.key];
       if (v === undefined || v === null || (typeof v === "string" && v.trim() === "")) continue;
-      if (CORE_FIELD_KEYS.has(f.key)) {
+      if (CORE_FIELD_KEYS.has(f.key) || I18N_FIELD_KEYS.has(f.key)) {
         (core as Record<string, string>)[f.key] = typeof v === "string" ? v.trim() : String(v);
       } else if (f.type === "number") {
         const n = Number(v);
@@ -193,6 +196,8 @@ function ComposeTab() {
           title: core.title,
           body: core.body,
           link: core.link,
+          title_ar: core.title_ar,
+          body_ar: core.body_ar,
           payload,
           audience,
           test,
@@ -223,6 +228,8 @@ function ComposeTab() {
   const titleValue = String(values.title ?? "");
   const bodyValue = String(values.body ?? "");
   const linkValue = String(values.link ?? "");
+  const titleArValue = String(values.title_ar ?? "");
+  const bodyArValue = String(values.body_ar ?? "");
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -312,12 +319,19 @@ function ComposeTab() {
         </Field>
 
         <Field label={t("compose.preview")}>
-          <PreviewCard kind={kind} title={titleValue} body={bodyValue} link={linkValue} />
+          <PreviewCard
+            kind={kind}
+            title={titleValue}
+            body={bodyValue}
+            link={linkValue}
+            titleAr={titleArValue}
+            bodyAr={bodyArValue}
+          />
           {/* Show the non-core payload fields underneath the preview so
               the admin can see what extras the recipient row will carry.
               Useful before clicking "Diffuser". */}
           <PayloadSummary
-            fields={config.fields.filter((f) => !CORE_FIELD_KEYS.has(f.key))}
+            fields={config.fields.filter((f) => !CORE_FIELD_KEYS.has(f.key) && !I18N_FIELD_KEYS.has(f.key))}
             values={values}
           />
         </Field>
@@ -396,8 +410,9 @@ function DynamicField({
 }) {
   const t = useTranslations("adminNotifications");
   const str = value === undefined || value === null ? "" : String(value);
-  // Texts for this field: adminNotifications.kinds.<kind>.fields.<key>.*
-  const base = `kinds.${kind}.fields.${field.key}`;
+  // Texts for this field: adminNotifications.kinds.<kind>.fields.<key>.* —
+  // or adminNotifications.fields.<key>.* for a field every kind shares.
+  const base = field.shared ? `fields.${field.key}` : `kinds.${kind}.fields.${field.key}`;
   const placeholder = field.placeholder ? t(`${base}.placeholder`) : undefined;
 
   return (
@@ -415,7 +430,7 @@ function DynamicField({
                   onChange={(e) => onChange(e.target.value)}
                   maxLength={field.maxLength}
                   placeholder={placeholder}
-                  dir={field.type === "url" ? "ltr" : undefined}
+                  dir={field.type === "url" ? "ltr" : field.dir}
                   className={`w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] ${
                     field.type === "url" ? "font-mono text-[12px]" : ""
                   }`}
@@ -437,6 +452,7 @@ function DynamicField({
                   maxLength={field.maxLength}
                   rows={4}
                   placeholder={placeholder}
+                  dir={field.dir}
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px]"
                 />
                 {field.maxLength && (
@@ -569,11 +585,15 @@ function PreviewCard({
   title,
   body,
   link,
+  titleAr,
+  bodyAr,
 }: {
   kind: string;
   title: string;
   body: string;
   link: string;
+  titleAr: string;
+  bodyAr: string;
 }) {
   const t = useTranslations("adminNotifications");
   return (
@@ -589,6 +609,16 @@ function PreviewCard({
           {body && (
             <div className="mt-1 text-[12px] text-muted leading-relaxed">
               {body}
+            </div>
+          )}
+          {/* What the readers of /ar get instead; each line falls back to
+              the French when its Arabic is empty. */}
+          {(titleAr || bodyAr) && (
+            <div dir="rtl" className="mt-2 border-t border-border pt-2 text-start">
+              <div className="text-[13px] font-bold text-foreground leading-tight">{titleAr || title}</div>
+              {(bodyAr || body) && (
+                <div className="mt-1 text-[12px] text-muted leading-relaxed">{bodyAr || body}</div>
+              )}
             </div>
           )}
           {link && (

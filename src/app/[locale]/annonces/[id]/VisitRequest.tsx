@@ -7,7 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { useApiError } from "@/lib/useApiError";
 import { useSetting } from "@/components/settings/SettingsProvider";
-import { tunisDay, VISIT_PARTS, type VisitSlot, type VisitStatus } from "@/lib/visits";
+import { tunisDay, VISIT_NAME_MAX, VISIT_PARTS, type VisitSlot, type VisitStatus } from "@/lib/visits";
 import { addDays, dayLabel, nextDays } from "@/lib/dayChips";
 import { BUYER_PHRASES, freePart, partTaken, suggestSlot, VISIT_MESSAGE_MAX } from "@/lib/visitChoices";
 import { hasPhrase, togglePhrase } from "@/lib/phrases";
@@ -286,7 +286,7 @@ export function VisitRequest({
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={120} autoComplete="name" placeholder={t("name")} aria-label={t("name")} className={field} dir="auto" />
+        <input value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={VISIT_NAME_MAX} autoComplete="name" placeholder={t("name")} aria-label={t("name")} className={field} dir="auto" />
         <input value={phone} onChange={(e) => setPhone(e.target.value)} required type="tel" inputMode="tel" autoComplete="tel" placeholder={t("phone")} aria-label={t("phone")} className={field} dir="ltr" />
       </div>
 

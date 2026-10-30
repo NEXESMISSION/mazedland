@@ -2,16 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { KIND_BY_VALUE } from "@/lib/notifications/kinds";
+import { isInternalLink } from "@/lib/notifications/target";
 
 /**
  * Admin compose + broadcast notification.
  *
  * Body:
  *   {
- *     kind:  string,    // free-form tag for icon (e.g. "announcement")
+ *     kind:  string,    // one of the composer's kinds (src/lib/notifications/kinds.ts)
  *     title: string,
  *     body?: string,
- *     link?: string,
+ *     link?: string,    // a path of the site
+ *     title_ar?: string, // the same, for the readers of /ar (payload.i18n.ar)
+ *     body_ar?: string,
  *     audience: {
  *       type: "all" | "role" | "users",
  *       role?: "individual" | "agency" | "admin",
@@ -36,19 +40,33 @@ export async function POST(req: NextRequest) {
   const title = typeof body.title === "string" ? body.title.trim().slice(0, 200) : "";
   const text = typeof body.body === "string" ? body.body.trim().slice(0, 1000) : "";
   const link = typeof body.link === "string" ? body.link.trim().slice(0, 500) : "";
+  const titleAr = typeof body.title_ar === "string" ? body.title_ar.trim().slice(0, 200) : "";
+  const bodyAr = typeof body.body_ar === "string" ? body.body_ar.trim().slice(0, 1000) : "";
   // Kind-specific extras land in notifications.payload (jsonb). Schema
   // is enforced client-side per kind; here we just validate the shape
   // is an object and cap the size so a misbehaving client can't push
-  // megabytes into the column.
+  // megabytes into the column. The Arabic copy goes under its own key, so
+  // the bell can pick it by locale (src/lib/notifications/render.ts).
   const rawPayload = body.payload;
-  const payload =
+  const payload: Record<string, unknown> =
     rawPayload && typeof rawPayload === "object" && !Array.isArray(rawPayload)
       ? sanitizePayload(rawPayload as Record<string, unknown>)
       : {};
+  if (titleAr || bodyAr) {
+    payload.i18n = { ar: { ...(titleAr ? { title: titleAr } : {}), ...(bodyAr ? { body: bodyAr } : {}) } };
+  }
   const test = body.test === true;
 
   if (!kind) return NextResponse.json({ error: "kind_required" }, { status: 400 });
+  // Only the kinds the composer offers. The SMS and e-mail drains send every
+  // row whose kind they know, so a broadcast of kind `listing_published`
+  // would have reached every profile as a paid SMS and an e-mail. The RPC
+  // refuses the same (0194), for a call that skips this route.
+  if (!KIND_BY_VALUE.has(kind)) return NextResponse.json({ error: "invalid_kind" }, { status: 400 });
   if (!title) return NextResponse.json({ error: "title_required" }, { status: 400 });
+  // A path of the site: `//evil.example/x` starts with a slash too, and the
+  // bell would have followed it off the site.
+  if (link && !isInternalLink(link)) return NextResponse.json({ error: "invalid_link" }, { status: 400 });
 
   let audience = body.audience as
     | { type: "all" }

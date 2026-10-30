@@ -6,7 +6,7 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { anyPhoneToE164 } from "@/lib/tunisia";
-import { parseSlots, tunisDay } from "@/lib/visits";
+import { parseSlots, personName, tunisDay } from "@/lib/visits";
 import { leadForVisit, VISIT_COLUMNS, type VisitRow } from "@/lib/visits-server";
 import { featureOff } from "@/lib/settings/gate";
 import { getSettings } from "@/lib/settings/server";
@@ -41,8 +41,12 @@ export async function POST(req: NextRequest) {
   if (!slots) return NextResponse.json({ error: "invalid", detail: t("slots", { max: rules.maxSlots, days: rules.horizonDays }) }, { status: 400 });
   const phone = anyPhoneToE164(body.phone);
   if (!phone) return NextResponse.json({ error: "invalid", detail: t("phone") }, { status: 400 });
-  const name = typeof body.name === "string" ? body.name.trim().replace(/\s+/g, " ").slice(0, 120) : "";
-  if (name.length < 2) return NextResponse.json({ error: "invalid", detail: t("name") }, { status: 400 });
+  // A name, not a message: it reaches the seller under the platform's name.
+  const name = personName(body.name);
+  if (!name) {
+    const typed = typeof body.name === "string" && body.name.trim().length >= 2;
+    return NextResponse.json({ error: "invalid", detail: t(typed ? "nameLetters" : "name") }, { status: 400 });
+  }
   const message = typeof body.message === "string" && body.message.trim() ? body.message.trim().slice(0, 600) : null;
 
   const { data: listing } = listingId

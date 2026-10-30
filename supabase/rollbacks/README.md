@@ -10,6 +10,7 @@ node scripts/backup-db.mjs
 
 | Migration | Rollback | What is lost |
 |---|---|---|
+| 0194 broadcast guard | `0194_notifications.down.sql` | nothing: a broadcast may again carry any kind (one the SMS and e-mail drains send) and any link |
 | 0191 QA tour, wave 2 | `0191_qa_tour_2.down.sql` | the unique indexes, the bucket limits, the admin alerts to every admin, a person's full update right on their notifications, the self-insert of payments come back; claim_listing_place returns to 0190 (roll the code back first); buyer_phone stays nullable |
 | 0190 QA tour | `0190_qa_tour.down.sql` | the takedown marks on annonces; claim_listing_place (roll the code back first); the deletion cascade for accounts deleted after it stays applied; bucket limits |
 | 0189 admin backup | `0189_admin_backup.down.sql` | the console's « Sauvegarde » stops; the `backups` bucket and its files stay (remove them from the dashboard) |
