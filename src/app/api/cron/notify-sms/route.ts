@@ -4,7 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { sendSms, isSmsConfigured, toSmsText } from "@/lib/winsms";
 import { log } from "@/lib/log";
 import { fail } from "@/lib/http/errors";
-import { SMS_KINDS, CAPPED_KINDS } from "@/lib/sms-kinds";
+import { SMS_KINDS, CAPPED_KINDS, forSms } from "@/lib/sms-kinds";
 import { getTranslations } from "next-intl/server";
 import { renderNotification } from "@/lib/notifications/render";
 import { PRODUCTION_ORIGIN, siteUrl } from "@/lib/siteUrl";
@@ -24,7 +24,7 @@ const cLog = log.scope("cron-sms");
  * skips opted-out / phoneless recipients), sends via WinSMS, and stamps
  * sms_sent_at. Twin of /api/cron/notify-email.
  *
- * Auth: shared CRON_SECRET (Bearer or ?key=). Safe before WinSMS is configured —
+ * Auth: shared CRON_SECRET as a Bearer header. Safe before WinSMS is configured —
  * it no-ops and leaves rows untouched, so enabling it later only sends the
  * recent backlog (LOOKBACK_DAYS), never the whole history.
  */
@@ -35,7 +35,8 @@ const MAX_ATTEMPTS = 3;
 const CONCURRENCY = 4;
 const LOOKBACK_DAYS = 2; // stale SMS is pointless; never blast old rows
 // The per-user cap per 24 h (anti-spam + cost) is `sms_daily_cap` in
-// /admin/settings; 0 there switches SMS off.
+// /admin/settings; 0 there switches SMS off. Which kinds it spares is decided
+// in src/lib/sms-kinds.ts.
 
 // First line of every SMS so the user can tell which app sent it (the sender ID
 // is MAZED for both apps, so the body must carry the brand).
@@ -56,8 +57,7 @@ async function run(req: NextRequest) {
     return NextResponse.json({ error: "cron_secret_not_set" }, { status: 503 });
   }
   const auth = req.headers.get("authorization") ?? "";
-  const key = req.nextUrl.searchParams.get("key") ?? "";
-  const provided = auth.startsWith("Bearer ") ? auth.slice(7) : key;
+  const provided = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   if (!secretMatches(provided, secret)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
@@ -159,11 +159,13 @@ async function run(req: NextRequest) {
       return "skipped";
     }
 
-    // Per-user daily cap — applies ONLY to high-frequency kinds (CAPPED_KINDS),
-    // so a critical "you won" / payment / KYC SMS is NEVER suppressed because an
-    // earlier outbid storm used up the quota. check_rate_limit records a hit when
-    // under the cap and returns true once over it. On cap-hit we SUPPRESS (stamp
-    // sms_sent_at): the user still has the in-app bell + email.
+    // Per-user daily cap — applies to every kind but the verdicts and the
+    // visit date (UNCAPPED_KINDS in src/lib/sms-kinds.ts), so thirty annonces
+    // approved at once are a few SMS and a bell full of the rest, while a
+    // payment verdict is NEVER suppressed because the quota is spent.
+    // check_rate_limit records a hit when under the cap and returns true once
+    // over it. On cap-hit we SUPPRESS (stamp sms_sent_at): the user still has
+    // the in-app bell + email.
     if (CAPPED_KINDS.has(row.kind)) {
       const { data: capped } = await db.rpc("check_rate_limit", {
         p_key: `sms:${row.user_id}`,
@@ -180,8 +182,10 @@ async function run(req: NextRequest) {
     }
 
     const lang = langByUser.get(row.user_id) ?? "fr";
+    // What another user typed (a buyer's name, a seller's note) stays out of
+    // the SMS: it would be the first line under the platform's sender name.
     const said = renderNotification(
-      { kind: row.kind, title: row.title ?? BRAND, body: row.body, payload: row.payload },
+      forSms({ kind: row.kind, title: row.title ?? BRAND, body: row.body, payload: row.payload }, tNotif[lang]("visitor")),
       tNotif[lang],
       lang,
     );

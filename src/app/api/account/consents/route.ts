@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "auth" }, { status: 401 });
 
-  const body = (await req.json().catch(() => ({}))) as { accept?: unknown };
+  const body = (await jsonObject(req)) as { accept?: unknown };
   if (body.accept !== true) return NextResponse.json({ ok: false, error: "bad_request" }, { status: 400 });
 
   const admin = getServiceSupabase();

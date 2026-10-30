@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { requireAdmin } from "@/lib/admin/guard";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { logAction } from "@/lib/activity";
@@ -11,7 +12,32 @@ import { activePlan } from "@/lib/pro/shops";
  *   approve | reject (reason) | suspend (reason) | reinstate
  *   verify | unverify — separate from opening it: « vérifié » means an admin
  *   checked who they are, and paying never sets it.
+ *
+ * Each decision starts from a known status, tested in the same statement as
+ * the write. A second click, or a second moderator, used to go through again:
+ * the review date was overwritten and the owner was told twice. And
+ * `reinstate` reopens a suspended agence only — it was a second door for a
+ * pending one that had not paid its plan, which only `approve` checks.
  */
+const FROM: Record<string, readonly string[]> = {
+  approve: ["pending", "rejected"],
+  reject: ["pending"],
+  suspend: ["approved"],
+  reinstate: ["suspended"],
+};
+
+/** The code and the sentence for a decision the shop's status does not allow. */
+function refusal(action: string, status: string): { error: string; key: string } {
+  if (status === "approved" && (action === "approve" || action === "reinstate")) return { error: "already_approved", key: "alreadyOpen" };
+  if (status === "rejected" && action === "reject") return { error: "already_rejected", key: "alreadyRejected" };
+  if (status === "suspended" && action === "suspend") return { error: "already_suspended", key: "alreadySuspended" };
+  if (action === "reinstate") return { error: "wrong_status", key: "reinstateOnlySuspended" };
+  return { error: "wrong_status", key: "wrongStatus" };
+}
+
+/** The takedown reason an agence's annonces carry while it is closed; « Rouvrir » lifts exactly these. */
+const SHOP_CLOSED = "Agence suspendue";
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const gate = await requireAdmin(req, "agences");
   if (gate instanceof NextResponse) return gate;
@@ -20,7 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const t = await apiTranslator(req, "proApi");
 
-  const body = (await req.json().catch(() => ({}))) as { action?: unknown; reason?: unknown };
+  const body = (await jsonObject(req)) as { action?: unknown; reason?: unknown };
   const action = typeof body.action === "string" ? body.action : "";
   const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
 
@@ -28,6 +54,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!shop) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const now = new Date().toISOString();
   const by = gate.user.id;
+
+  // Own keys only: { action: "constructor" } used to reach a prototype function.
+  const from = Object.prototype.hasOwnProperty.call(FROM, action) ? FROM[action] : undefined;
+  if (from && !from.includes(shop.status)) {
+    const why = refusal(action, shop.status);
+    return NextResponse.json({ error: why.error, detail: t(`errors.${why.key}`) }, { status: 409 });
+  }
 
   let update: Record<string, unknown>;
   let notice: { kind: string; title: string; body: string; vars: Record<string, string> } | null = null;
@@ -66,8 +99,47 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "invalid" }, { status: 400 });
   }
 
-  const { error } = await admin.from("shops").update(update).eq("id", id);
+  let write = admin.from("shops").update(update).eq("id", id);
+  if (from) write = write.in("status", [...from]);
+  const { data: moved, error } = await write.select("id");
   if (error) return fail("shop_review_failed", 500, error);
+  // Moved between the read above and the write: nothing was written, and the
+  // owner — told by whoever got there first — is not told again.
+  if (from && (moved ?? []).length === 0) {
+    return NextResponse.json({ error: "wrong_status", detail: t("errors.wrongStatus") }, { status: 409 });
+  }
+
+  // The agence's annonces follow it: the dashboard promises « sa page et ses
+  // annonces ne sont plus visibles », and every annonce stayed online (the QA
+  // tour). Down as a takedown the owner cannot relist, and back up — still
+  // within their time — when the agence reopens. A queued one stays in the
+  // queue, where approve refuses while the agence is closed.
+  if (action === "suspend" || action === "reject") {
+    await admin
+      .from("listings")
+      .update({ status: "archived", taken_down_at: now, taken_down_by: by, taken_down_reason: `${SHOP_CLOSED} : ${reason}`.slice(0, 500) })
+      .eq("shop_id", id)
+      .eq("status", "published")
+      .is("taken_down_at", null)
+      .then(() => {}, () => {});
+  }
+  if (action === "reinstate") {
+    const lifted = { taken_down_at: null, taken_down_by: null, taken_down_reason: null };
+    await admin
+      .from("listings")
+      .update({ status: "published", ...lifted })
+      .eq("shop_id", id)
+      .like("taken_down_reason", `${SHOP_CLOSED}%`)
+      .gt("expires_at", now)
+      .then(() => {}, () => {});
+    await admin
+      .from("listings")
+      .update({ status: "expired", ...lifted })
+      .eq("shop_id", id)
+      .like("taken_down_reason", `${SHOP_CLOSED}%`)
+      .lte("expires_at", now)
+      .then(() => {}, () => {});
+  }
   if (notice) {
     await admin
       .rpc("enqueue_notification", {

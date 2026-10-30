@@ -29,12 +29,13 @@ export type ShopAction =
   | "subscribe"        // choose and pay a plan
   | "documents"        // send the papers behind « vérifié »
   | "clients"          // the visits and the client pipeline (0174)
-  | "projects";        // the promoter's projects and their units (0179)
+  | "projects"         // the promoter's projects and their units (0179)
+  | "leave";           // walk out of the agence (anyone added to one; never its owner)
 
 const RIGHTS: Record<ShopRole, readonly ShopAction[]> = {
   owner: ["publish", "manage_listings", "manage_members", "edit_shop", "subscribe", "documents", "clients", "projects"],
-  admin: ["publish", "manage_listings", "manage_members", "edit_shop", "clients", "projects"],
-  agent: ["publish", "clients"],
+  admin: ["publish", "manage_listings", "manage_members", "edit_shop", "clients", "projects", "leave"],
+  agent: ["publish", "clients", "leave"],
 };
 
 /** Whether a member with this role may do this. The owner alone pays and sends the papers. */
@@ -221,7 +222,9 @@ export async function activePlan(admin: Admin, shopId: string, now: Date = new D
  * When a newly paid period starts. A bigger plan than the one running starts
  * at once (the owner's choice, 2026-10-27): the agence gets its room the day
  * the receipt is accepted. The same plan, or a smaller one, follows what is
- * already paid for — renewing early never cuts the running period short.
+ * already paid for at that level or above — renewing early never cuts the
+ * running period short, and a smaller plan queued behind does not push the
+ * start back (it is replaced instead, see grantPlanPeriod).
  */
 export function periodStart(input: {
   now: Date;
@@ -229,7 +232,7 @@ export function periodStart(input: {
   quota: number;
   /** The plan running now, if any. */
   runningQuota: number | null;
-  /** The end of the last period already paid for, if it is still ahead. */
+  /** The end of the last period already paid for, of this plan or a bigger one, if it is still ahead. */
   paidUntil: Date | null;
 }): Date {
   if (input.runningQuota !== null && input.quota > input.runningQuota) return input.now;
@@ -245,6 +248,7 @@ export async function nextPeriodStart(admin: Admin, shopId: string, quota: numbe
       .select("ends_at")
       .eq("shop_id", shopId)
       .eq("status", "active")
+      .gte("listing_quota", quota)
       .gt("ends_at", now.toISOString())
       .order("ends_at", { ascending: false })
       .limit(1)
@@ -262,10 +266,11 @@ export async function nextPeriodStart(admin: Admin, shopId: string, quota: numbe
 export type PaidPeriod = { id: string; quota: number; startsAt: Date; endsAt: Date };
 
 /**
- * What an upgrade takes over from the smaller periods still ahead (the
- * owner's choice, 2026-10-27): their remaining time is added to the new
- * plan, and they end — the running one today, one paid in advance is
- * cancelled. Periods of the same plan or a bigger one are left as they are.
+ * What a new period takes over from the smaller periods still ahead of its
+ * start (`now`; the owner's choice, 2026-10-27): their remaining time is
+ * added to the new plan, and they end — one running at that moment ends
+ * then, one wholly ahead is cancelled. Periods of the same plan or a bigger
+ * one are left as they are.
  */
 export function carryOver(input: { now: Date; quota: number; periods: PaidPeriod[] }): {
   carriedMs: number;
@@ -333,12 +338,20 @@ export async function quoteForShop(
  * starting by periodStart. The payment id is unique on the period, so the same
  * receipt never grants twice, and a second call changes nothing.
  *
- * An upgrade starts at once and the smaller periods it replaces end (the
- * running one today, one paid in advance is cancelled). Since 2026-10-28 the
- * time they had left was taken off the price (quotePlanChange), so the new
- * period is one plan length — the same day next month. A payment made before
- * that rule (`legacy`: no `change` in its metadata) paid full price and still
- * gets the days left added (carryOver), as it was promised.
+ * The smaller periods still ahead when the new one starts are replaced (one
+ * running then ends at that moment, one paid in advance is cancelled): an
+ * upgrade replaces the running plan, a renewal or a bigger plan queued for
+ * later replaces a smaller one queued behind it. Since 2026-10-28 the time
+ * they had left was taken off the price (quotePlanChange), so the new period
+ * is one plan length — the same day next month. A payment made before that
+ * rule (`legacy`: no `change` in its metadata) paid full price and still gets
+ * the days left added (carryOver), as it was promised.
+ *
+ * Each replaced period remembers which payment replaced it and the end it
+ * had (`replaced_by`, `ends_at_before`, 0193): a credit note on that payment
+ * gives the periods back (issue_credit_note) — on 2026-10-30 refunding an
+ * upgrade left the agence with no plan at all, the Starter month it had paid
+ * cut short for nothing.
  */
 export async function grantPlanPeriod(
   admin: Admin,
@@ -346,27 +359,20 @@ export async function grantPlanPeriod(
   now: Date = new Date(),
 ): Promise<{ startsAt: Date; endsAt: Date; carriedDays: number } | { error: unknown }> {
   const starts = await nextPeriodStart(admin, g.shopId, g.quota, now);
-  const upgrade = starts.getTime() === now.getTime();
-  let carry = { carriedMs: 0, endNow: [] as string[], cancel: [] as string[] };
-  if (upgrade) {
-    const { data } = await admin
-      .from("shop_subscriptions")
-      .select("id, listing_quota, starts_at, ends_at")
-      .eq("shop_id", g.shopId)
-      .eq("status", "active")
-      .lt("listing_quota", g.quota)
-      .gt("ends_at", now.toISOString());
-    carry = carryOver({
-      now,
-      quota: g.quota,
-      periods: (data ?? []).map((p) => ({
-        id: p.id as string,
-        quota: p.listing_quota as number,
-        startsAt: new Date(p.starts_at as string),
-        endsAt: new Date(p.ends_at as string),
-      })),
-    });
-  }
+  const { data: smaller } = await admin
+    .from("shop_subscriptions")
+    .select("id, listing_quota, starts_at, ends_at")
+    .eq("shop_id", g.shopId)
+    .eq("status", "active")
+    .lt("listing_quota", g.quota)
+    .gt("ends_at", starts.toISOString());
+  const replaced = (smaller ?? []).map((p) => ({
+    id: p.id as string,
+    quota: p.listing_quota as number,
+    startsAt: new Date(p.starts_at as string),
+    endsAt: new Date(p.ends_at as string),
+  }));
+  const carry = carryOver({ now: starts, quota: g.quota, periods: replaced });
   const ends = g.legacy
     ? new Date(starts.getTime() + g.days * 86_400_000 + carry.carriedMs)
     : addMonths(starts, monthsOf(g.days));
@@ -389,12 +395,17 @@ export async function grantPlanPeriod(
   if (error) return { error };
   // Already granted by this payment: nothing to move twice.
   if (!inserted || inserted.length === 0) return { startsAt: starts, endsAt: ends, carriedDays: 0 };
-  if (carry.endNow.length) {
-    const { error: e } = await admin.from("shop_subscriptions").update({ ends_at: now.toISOString() }).in("id", carry.endNow);
+  // One at a time: each keeps its own end, for the credit note that would undo this.
+  for (const id of carry.endNow) {
+    const before = replaced.find((p) => p.id === id)?.endsAt ?? null;
+    const { error: e } = await admin
+      .from("shop_subscriptions")
+      .update({ ends_at: starts.toISOString(), ends_at_before: before?.toISOString() ?? null, replaced_by: g.paymentId })
+      .eq("id", id);
     if (e) return { error: e };
   }
   if (carry.cancel.length) {
-    const { error: e } = await admin.from("shop_subscriptions").update({ status: "cancelled" }).in("id", carry.cancel);
+    const { error: e } = await admin.from("shop_subscriptions").update({ status: "cancelled", replaced_by: g.paymentId }).in("id", carry.cancel);
     if (e) return { error: e };
   }
   return { startsAt: starts, endsAt: ends, carriedDays: Math.round(carry.carriedMs / 86_400_000) };

@@ -132,6 +132,23 @@ export function resolveListingFee(
  */
 export const isFree = (fee: Product | null): boolean => fee != null && fee.price <= 0;
 
+/**
+ * Kinds that are bought through a payment, and a payment is never for 0 TND
+ * (payments_amount_check): on sale at 0 they would send every buyer to a 500.
+ * A single publication at 0 is different — it is simply free (isFree).
+ */
+export const PAID_KINDS: ReadonlySet<ProductKind> = new Set<ProductKind>([
+  "listing_pack",
+  "subscription",
+  "promo",
+  "badge_verified",
+]);
+
+/** On sale, but nobody can pay for it: no price, or 0 TND on a kind that is bought. */
+export function unsellable(p: { kind: ProductKind; price: number | null; isActive: boolean }): boolean {
+  return p.isActive && (p.price == null || (p.price <= 0 && PAID_KINDS.has(p.kind)));
+}
+
 /** Packs and subscriptions a seller can buy right now, cheapest first. */
 export function purchasablePacks(products: Product[]): Product[] {
   return products

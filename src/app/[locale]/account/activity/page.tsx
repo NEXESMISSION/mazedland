@@ -6,6 +6,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { categoryLabel } from "@/lib/i18n";
 import { governorateLabel } from "@/lib/tunisia";
 import { asDealType } from "@/lib/listings/deal";
+import { savedVisibility } from "@/lib/listings/saved";
 import { FavoritesList, type SavedItem } from "./FavoritesList";
 
 export const dynamic = "force-dynamic";
@@ -29,9 +30,12 @@ export const dynamic = "force-dynamic";
  * every one of those links keeps working without a new redirect. (The route
  * keeps its old name; the tab that opens it says « Favoris », like the page.)
  *
- * Expired and archived listings are kept in the list rather than hidden. If
- * someone saved a bien and it came down, "plus disponible" is the answer they
- * came for — silently dropping it looks like we lost their favourite.
+ * Expired, sold and withdrawn listings are kept in the list rather than hidden.
+ * If someone saved a bien and it came down, "plus disponible" is the answer
+ * they came for — silently dropping it looks like we lost their favourite.
+ * What may be read here is another matter: an annonce taken down by the
+ * console stays as a card without its words, and one that was never public
+ * — a draft saved by id — is not shown at all (src/lib/listings/saved.ts).
  *
  * The list itself is FavoritesList (client): removing one updates it at once.
  */
@@ -39,6 +43,7 @@ export const dynamic = "force-dynamic";
 type ListingRow = {
     id: string; title: string; price: number | null; price_on_request: boolean;
     governorate: string; status: string; deal_type: string | null;
+    published_at: string | null; taken_down_at: string | null;
     category: { label_fr: string; label_ar: string | null } | { label_fr: string; label_ar: string | null }[] | null;
     photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
 };
@@ -46,9 +51,6 @@ type ListingRow = {
 type Row = { listing_id: string; listing: ListingRow | ListingRow[] | null };
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
-
-/** Never public, or no longer: a draft or a taken-down annonce could be saved by id and read from here. */
-const HIDDEN = new Set(["draft", "pending_payment", "pending_review", "rejected", "archived"]);
 
 export async function generateMetadata() {
   const t = await getTranslations("account.favorites");
@@ -71,7 +73,7 @@ export default async function ActivityPage() {
     .select(
       `listing_id,
        listing:listings (
-         id, title, price, price_on_request, governorate, status, deal_type,
+         id, title, price, price_on_request, governorate, status, deal_type, published_at, taken_down_at,
          category:categories (label_fr, label_ar),
          photos:listing_photos (storage_path, sort_order, is_cover)
        )`,
@@ -82,18 +84,34 @@ export default async function ActivityPage() {
 
   const items: SavedItem[] = ((data ?? []) as unknown as Row[])
     .map((r) => one<ListingRow>(r.listing))
-    .filter((l): l is ListingRow => l !== null && !HIDDEN.has(l.status))
-    .map((l) => ({
-      id: l.id,
-      title: l.title,
-      category: categoryLabel(one(l.category), locale),
-      place: governorateLabel(l.governorate, locale),
-      price: l.price == null ? null : Number(l.price),
-      priceOnRequest: l.price_on_request,
-      rent: asDealType(l.deal_type) === "rent",
-      coverPath: coverPhoto(l.photos)?.storage_path ?? null,
-      gone: l.status !== "published",
-    }));
+    .filter((l): l is ListingRow => l !== null && savedVisibility(l) !== "dropped")
+    .map((l) =>
+      savedVisibility(l) === "withheld"
+        ? {
+            id: l.id,
+            title: "",
+            category: "",
+            place: "",
+            price: null,
+            priceOnRequest: false,
+            rent: false,
+            coverPath: null,
+            gone: true,
+            withheld: true,
+          }
+        : {
+            id: l.id,
+            title: l.title,
+            category: categoryLabel(one(l.category), locale),
+            place: governorateLabel(l.governorate, locale),
+            price: l.price == null ? null : Number(l.price),
+            priceOnRequest: l.price_on_request,
+            rent: asDealType(l.deal_type) === "rent",
+            coverPath: coverPhoto(l.photos)?.storage_path ?? null,
+            gone: l.status !== "published",
+            withheld: false,
+          },
+    );
 
   return (
     // Narrow on a phone, wide on a desktop. It was max-w-2xl at every width:

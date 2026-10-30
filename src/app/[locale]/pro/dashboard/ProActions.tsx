@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { useApiError } from "@/lib/useApiError";
-import { FileUp, Loader2, Trash2, UserPlus } from "lucide-react";
+import { FileUp, Loader2, LogOut, Trash2, UserPlus } from "lucide-react";
 import type { ShopRole } from "@/lib/pro/shops";
 import { cn } from "@/lib/utils";
 import { pickedBeforeReady } from "@/lib/pickedBeforeReady";
@@ -116,6 +116,33 @@ export function RemoveMember({ shopId, userId }: { shopId: string; userId: strin
       aria-label={t("removeMember")}
     >
       <Trash2 className="size-3.5" /> {t("removeMember")}
+    </button>
+  );
+}
+
+/**
+ * « Quitter l'agence » — one's own membership, for anyone but the owner. A
+ * person added to an agence they never asked to join (the QA tour,
+ * 2026-10-30) walks out from here; the dashboard then has nothing to show
+ * them, so they land on the Pro page.
+ */
+export function LeaveShop({ shopId, userId, shopName }: { shopId: string; userId: string; shopName: string }) {
+  const t = useTranslations("pro.dashboard");
+  const router = useRouter();
+  const { call, busy } = useCall();
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={async () => {
+        if (!window.confirm(t("leaveConfirm", { name: shopName }))) return;
+        if (await call(`/api/pro/shops/${shopId}/members`, { method: "DELETE", body: JSON.stringify({ userId }) }, t("leftShop"))) {
+          router.push("/pro" as never);
+        }
+      }}
+      className="tap-target inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-bold text-muted ring-1 ring-border hover:text-[var(--danger)] disabled:opacity-60"
+    >
+      <LogOut className="size-3.5" /> {t("leaveShop")}
     </button>
   );
 }

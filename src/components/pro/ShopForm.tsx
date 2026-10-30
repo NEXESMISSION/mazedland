@@ -141,12 +141,14 @@ export function ShopForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(v),
       });
-      const j = (await res.json().catch(() => ({}))) as { id?: string };
+      const j = (await res.json().catch(() => ({}))) as { id?: string; reverify?: boolean };
       if (!res.ok) {
         toast(apiError(j, t("saveFailed")), "error");
         return;
       }
-      toast(t(mode === "create" ? "created" : "saved"), "success");
+      // A verified agence that changed its name or legal identity loses the
+      // badge until an admin looks again: said here, not discovered later.
+      toast(t(mode === "create" ? "created" : j.reverify ? "savedReverify" : "saved"), "success");
       if (mode === "create") router.push(`/pro/dashboard?shop=${j.id}` as never);
       else router.refresh();
     } finally {

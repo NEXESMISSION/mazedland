@@ -4,6 +4,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { fail } from "@/lib/http/errors";
+import { isUuid } from "@/lib/uuid";
 import { can, roleIn, type ShopAction, type ShopRole } from "./shops";
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
@@ -24,7 +25,7 @@ export async function proGate(
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
   if (!shop) return { user, admin, role: null };
-  if (!/^[0-9a-f-]{36}$/i.test(shop.id)) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (!isUuid(shop.id)) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const role = await roleIn(admin, shop.id, user.id);
   if (!role) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (!can(role, shop.action)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -44,7 +45,7 @@ export async function projectGate(
 ): Promise<{ user: User; admin: Admin; role: ShopRole; project: ProjectRow } | NextResponse> {
   const base = await proGate(req);
   if (base instanceof NextResponse) return base;
-  if (!/^[0-9a-f-]{36}$/i.test(projectId)) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (!isUuid(projectId)) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const { data: project } = await base.admin
     .from("projects")
     .select("id, shop_id, slug, name, status")

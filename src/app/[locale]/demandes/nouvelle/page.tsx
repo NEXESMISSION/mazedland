@@ -10,8 +10,19 @@ import { RequestForm } from "./RequestForm";
 
 import type { Metadata } from "next";
 
-/** Private to the signed-in person: never listed by a search engine. */
-export const metadata: Metadata = { robots: { index: false } };
+/**
+ * The tab's title — the page carried the site's home title — and private to
+ * the signed-in person: never listed by a search engine.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const { id } = await searchParams;
+  const t = await getTranslations("requests");
+  return { title: t(id ? "editTitle" : "newTitle"), robots: { index: false } };
+}
 
 export const dynamic = "force-dynamic";
 

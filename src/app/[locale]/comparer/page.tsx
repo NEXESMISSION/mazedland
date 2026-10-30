@@ -179,12 +179,18 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         <table className="w-full min-w-[520px] table-fixed border-separate border-spacing-0 text-[13px]">
           <thead>
             <tr>
-              <th className="sticky start-0 z-10 w-24 bg-background sm:w-32" />
+              {/* The corner above the row labels: empty to the eye, named for a screen reader. */}
+              <th scope="col" className="sticky start-0 z-10 w-24 bg-background sm:w-32">
+                <span className="sr-only">{t("criterion")}</span>
+              </th>
               {rows.map((r) => {
                 const photo = (r.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0]?.storage_path;
                 return (
-                  <th key={r.id} className="min-w-[150px] p-2 text-start align-top font-normal">
-                    <Link href={`/annonces/${r.id}` as never} className="block overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-border">
+                  <th key={r.id} scope="col" className="min-w-[150px] p-2 text-start align-top font-normal">
+                    {/* The title link below is the one named link per annonce; the
+                        picture is the same link again — hidden from assistive tech
+                        and skipped by the keyboard, so nobody tabs twice per column. */}
+                    <Link href={`/annonces/${r.id}` as never} aria-hidden tabIndex={-1} className="block overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-border">
                       <span className="block aspect-[4/3]">
                         {photo ? (
                           // eslint-disable-next-line @next/next/no-img-element -- a compact thumbnail

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { createHash } from "node:crypto";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
@@ -48,7 +49,7 @@ export async function POST(
   if (!admin) return fail("server_misconfigured", 500);
   const settings = await getSettings();
 
-  const body = (await req.json().catch(() => ({}))) as { reason?: unknown; note?: unknown };
+  const body = (await jsonObject(req)) as { reason?: unknown; note?: unknown };
   const reason = REASONS.includes(body.reason as Reason) ? (body.reason as Reason) : null;
   if (!reason) {
     const t = await apiTranslator(req, "listingApi");
@@ -103,7 +104,9 @@ export async function POST(
     : await admin
         .from("listing_reports")
         .insert({ listing_id: id, reporter_id: user?.id ?? null, reporter_key: reporterKey, reason, note });
-  if (insErr) return fail("report_failed", 500, insErr);
+  // Two taps at once both read « no prior report » and both insert: the one
+  // the unique key refuses is the same report, already recorded — not an error.
+  if (insErr && insErr.code !== "23505") return fail("report_failed", 500, insErr);
 
   const { count } = await admin
     .from("listing_reports")

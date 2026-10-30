@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { createHash } from "node:crypto";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { clientIp } from "@/lib/clientIp";
+import { isSameOrigin } from "@/lib/sameOrigin";
 import { channelFromUtmSource } from "@/lib/social/channels";
 import { readTracking } from "@/lib/social/content";
 
@@ -16,10 +18,17 @@ import { readTracking } from "@/lib/social/content";
  * kept only to count one person reloading the page once.
  */
 export async function POST(req: NextRequest) {
+  // Only the annonce page's own fetch (src/lib/social/visit.ts) sends these.
+  // The refs are public — in every shared link, on every post — so without
+  // this any web page could make its visitors' browsers inflate a request's
+  // report (the QA tour, 2026-10-30), as the other mutating routes refuse.
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
+  }
   const admin = getServiceSupabase();
   if (!admin) return NextResponse.json({ ok: false }, { status: 200 });
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = await jsonObject(req);
   const str = (v: unknown) => (typeof v === "string" ? v.slice(0, 120) : null);
   const listingId = str(body.listingId);
   const tracking = readTracking({

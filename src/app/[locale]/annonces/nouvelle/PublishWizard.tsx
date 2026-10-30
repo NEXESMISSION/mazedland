@@ -33,7 +33,7 @@ import {
 } from "@/lib/listings/deal";
 import type { ListingDraft } from "@/lib/ai/listing";
 import { estimateRange, priceInWords, suggestPriceFix, type PriceRef } from "@/lib/listings/priceCheck";
-import { attributeOutOfBounds } from "@/lib/listings/input";
+import { attributeOutOfBounds, titleTooShort } from "@/lib/listings/input";
 import {
   attributeFieldId,
   listOfFields,
@@ -731,7 +731,7 @@ export function PublishWizard({
       });
     }
   }
-  if (title.trim().length < 3) {
+  if (titleTooShort(title)) {
     missing.push({ label: t("missingTitle"), fieldId: "f-title", name: t("fieldName.title") });
   }
   if (!onRequest && !(Number(price) > 0)) {

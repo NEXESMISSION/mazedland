@@ -4,8 +4,10 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { audit } from "@/lib/admin/audit";
 import { fail } from "@/lib/http/errors";
+import { jsonObject } from "@/lib/http/body";
+import { isUuid } from "@/lib/uuid";
 import { apiTranslator } from "@/lib/i18n/server";
-import { PRODUCT_KINDS, PRODUCT_SELECT, type ProductKind } from "@/lib/products";
+import { PRODUCT_KINDS, PRODUCT_SELECT, unsellable, type ProductKind } from "@/lib/products";
 
 /**
  * The price list, editable.
@@ -18,7 +20,10 @@ import { PRODUCT_KINDS, PRODUCT_SELECT, type ProductKind } from "@/lib/products"
  *            deleting the row would orphan a seller's forfait.
  *
  * Admin-only. Prices are money, so every field is re-validated here rather than
- * trusted from the form.
+ * trusted from the form — and refused, not clamped: « abc », « 59,5 » and −5
+ * all became 0 TND, and an active plan at 0 TND sends every buyer to a 500
+ * (a payment is never for nothing, payments_amount_check). A kind that is
+ * bought cannot go on sale at 0 (src/lib/products.ts, unsellable).
  *
  * `name_ar` / `description_ar` (0163) are optional, with the French fields'
  * limits; an empty string stores null and the Arabic site falls back to French.
@@ -58,10 +63,15 @@ function slugify(raw: string): string {
     .slice(0, 60);
 }
 
-/** Money in, sane number out. Rejects nothing — clamps, like the settings route. */
-function money(v: unknown): number {
-  const n = Number(v);
-  if (!Number.isFinite(n) || n < 0) return 0;
+/**
+ * Money in: a finite number ≥ 0 (a numeric string counts), to the centime,
+ * capped. `null` when no price was given — the form sends null for a cleared
+ * field — and "invalid" for anything that is not a price.
+ */
+function money(v: unknown): number | null | "invalid" {
+  if (v == null || (typeof v === "string" && v.trim() === "")) return null;
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v.trim()) : Number.NaN;
+  if (!Number.isFinite(n) || n < 0) return "invalid";
   return Math.min(MAX_PRICE, Math.round(n * 100) / 100);
 }
 
@@ -69,6 +79,41 @@ function posInt(v: unknown, max: number): number | null {
   const n = Math.floor(Number(v));
   if (!Number.isFinite(n) || n <= 0) return null;
   return Math.min(max, n);
+}
+
+/** A category id: a uuid, or none (null / empty: the price applies to every category). */
+function category(v: unknown): string | null | "invalid" {
+  if (v == null || v === "") return null;
+  return isUuid(v) ? v : "invalid";
+}
+
+/** A refusal the admin can act on; `error` stays a stable code. */
+const refuse = (error: string, detail: string, status = 400) => NextResponse.json({ error, detail }, { status });
+
+/**
+ * A Postgres refusal the admin can act on, or null for a real failure.
+ *   23514 — a CHECK from 0157 (pack without quota, badge without duration,
+ *           two active single prices for one category)
+ *   23505 — the slug is taken
+ *   23503 — the category does not exist
+ *   22P02 / 23502 — a value the column cannot hold (a junk id, a blank name)
+ */
+function refusedBy(error: { code?: string; message?: string; details?: string }, t: (key: string) => string): NextResponse | null {
+  switch (error.code) {
+    case "23514":
+    case "22P02":
+    case "23502":
+      return refuse("invalid_product", t("invalidProduct"));
+    case "23505":
+      // Two unique rules: the slug, and one active single price per category (0148).
+      return /slug/i.test(`${error.message ?? ""} ${error.details ?? ""}`)
+        ? refuse("slug_taken", t("slugTaken"), 409)
+        : refuse("invalid_product", t("invalidProduct"));
+    case "23503":
+      return refuse("invalid_category", t("categoryUnknown"));
+    default:
+      return null;
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -96,7 +141,7 @@ export async function POST(req: NextRequest) {
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
-  const body = (await req.json().catch(() => ({}))) as Body;
+  const body = (await jsonObject(req)) as Body;
   const t = await apiTranslator(req, "adminOffers.api");
   const kind = PRODUCT_KINDS.includes(body.kind as ProductKind)
     ? (body.kind as ProductKind)
@@ -106,22 +151,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "kind_and_name_required" }, { status: 400 });
   }
 
+  const price = money(body.price);
+  if (price === "invalid") return refuse("invalid_price", t("invalidPrice"));
+  if (price === null) return refuse("price_required", t("priceRequired"));
+  const categoryId = category(body.category_id);
+  if (categoryId === "invalid") return refuse("invalid_category", t("categoryUnknown"));
+  const isActive = body.is_active === true;
+  if (unsellable({ kind, price, isActive })) return refuse("price_required", t("priceForSale"));
+
   const quota = posInt(body.listing_quota, 1000);
   const duration = posInt(body.duration_days, 3650);
 
   // The DB enforces these too (0157); catching them here turns a redacted 500
   // into a sentence the admin can act on.
   if ((kind === "listing_pack" || kind === "subscription") && !quota) {
-    return NextResponse.json(
-      { error: "quota_required", detail: t("quotaRequired") },
-      { status: 400 },
-    );
+    return refuse("quota_required", t("quotaRequired"));
   }
   if (kind === "badge_verified" && !duration) {
-    return NextResponse.json(
-      { error: "duration_required", detail: t("durationRequired") },
-      { status: 400 },
-    );
+    return refuse("duration_required", t("durationRequired"));
   }
 
   const slug = text(body.slug, 60) ? slugify(text(body.slug, 60) as string) : slugify(nameFr);
@@ -136,26 +183,18 @@ export async function POST(req: NextRequest) {
       name_ar: text(body.name_ar, 120),
       description: text(body.description, 500),
       description_ar: text(body.description_ar, 500),
-      price: money(body.price),
-      category_id: text(body.category_id, 40),
+      price,
+      category_id: categoryId,
       listing_quota: quota,
       duration_days: duration,
-      is_active: body.is_active === true,
+      is_active: isActive,
       sort_order: posInt(body.sort_order, 9999) ?? 100,
       created_by: user.id,
     })
     .select("id")
     .single();
 
-  if (error) {
-    if (error.code === "23505") {
-      return NextResponse.json(
-        { error: "slug_taken", detail: t("slugTaken") },
-        { status: 409 },
-      );
-    }
-    return fail("product_create_failed", 500, error);
-  }
+  if (error) return refusedBy(error, t) ?? fail("product_create_failed", 500, error);
 
   logAction(req, user, "admin.product.create", { id: data.id, kind, slug });
   await audit(admin, user.id, { action: "product.create", targetType: "product", targetId: data.id, after: { kind, slug } });
@@ -170,19 +209,33 @@ export async function PATCH(req: NextRequest) {
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
-  const body = (await req.json().catch(() => ({}))) as Body;
-  const id = text(body.id, 40);
-  if (!id) return NextResponse.json({ error: "id_required" }, { status: 400 });
+  const body = (await jsonObject(req)) as Body;
+  const t = await apiTranslator(req, "adminOffers.api");
+  if (!isUuid(body.id)) return NextResponse.json({ error: "id_required" }, { status: 400 });
+  const id = body.id;
 
   // Only the fields actually sent are touched, so a form that renders one row
   // can't blank the rest.
   const patch: Record<string, unknown> = {};
-  if ("name_fr" in body) patch.name_fr = text(body.name_fr, 120);
+  if ("name_fr" in body) {
+    const nameFr = text(body.name_fr, 120);
+    if (!nameFr) return NextResponse.json({ error: "kind_and_name_required" }, { status: 400 });
+    patch.name_fr = nameFr;
+  }
   if ("name_ar" in body) patch.name_ar = text(body.name_ar, 120);
   if ("description" in body) patch.description = text(body.description, 500);
   if ("description_ar" in body) patch.description_ar = text(body.description_ar, 500);
-  if ("price" in body) patch.price = money(body.price);
-  if ("category_id" in body) patch.category_id = text(body.category_id, 40);
+  if ("price" in body) {
+    const price = money(body.price);
+    if (price === "invalid") return refuse("invalid_price", t("invalidPrice"));
+    if (price === null) return refuse("price_required", t("priceRequired"));
+    patch.price = price;
+  }
+  if ("category_id" in body) {
+    const categoryId = category(body.category_id);
+    if (categoryId === "invalid") return refuse("invalid_category", t("categoryUnknown"));
+    patch.category_id = categoryId;
+  }
   if ("listing_quota" in body) patch.listing_quota = posInt(body.listing_quota, 1000);
   if ("duration_days" in body) patch.duration_days = posInt(body.duration_days, 3650);
   if ("is_active" in body) patch.is_active = body.is_active === true;
@@ -192,28 +245,27 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: true, updated: 0 });
   }
 
-  // The fields as they were, for the audit trail.
-  const { data: was } = await admin.from("products").select(Object.keys(patch).join(", ")).eq("id", id).maybeSingle();
+  // The fields as they were, for the audit trail — and the row as it will be,
+  // for the one rule that spans two fields: on sale at a price nobody can pay.
+  const columns = new Set([...Object.keys(patch), "kind", "price", "is_active"]);
+  const { data: wasRow } = await admin.from("products").select([...columns].join(", ")).eq("id", id).maybeSingle();
+  if (!wasRow) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const was = wasRow as unknown as Record<string, unknown>;
+  const row = was as unknown as { kind: ProductKind; price: number | string; is_active: boolean };
+  const next = {
+    kind: row.kind,
+    price: "price" in patch ? (patch.price as number) : Number(row.price),
+    isActive: "is_active" in patch ? (patch.is_active as boolean) : row.is_active,
+  };
+  if (unsellable(next)) return refuse("price_required", t("priceForSale"));
 
-  const { error } = await admin.from("products").update(patch).eq("id", id);
-  if (error) {
-    // 23514 = a CHECK from 0157 (pack without quota, badge without duration,
-    // two active single prices for one category).
-    if (error.code === "23514" || error.code === "23505") {
-      const t = await apiTranslator(req, "adminOffers.api");
-      return NextResponse.json(
-        {
-          error: "invalid_product",
-          detail: t("invalidProduct"),
-        },
-        { status: 400 },
-      );
-    }
-    return fail("product_update_failed", 500, error);
-  }
+  const { data: updated, error } = await admin.from("products").update(patch).eq("id", id).select("id");
+  if (error) return refusedBy(error, t) ?? fail("product_update_failed", 500, error);
+  if (!updated || updated.length === 0) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
+  const before = Object.fromEntries(Object.keys(patch).map((k) => [k, was[k]]));
   logAction(req, user, "admin.product.update", { id, fields: Object.keys(patch) });
-  await audit(admin, user.id, { action: "product.update", targetType: "product", targetId: id, before: was, after: patch });
+  await audit(admin, user.id, { action: "product.update", targetType: "product", targetId: id, before, after: patch });
   return NextResponse.json({ ok: true });
 }
 
@@ -226,12 +278,13 @@ export async function DELETE(req: NextRequest) {
   if (!admin) return fail("server_misconfigured", 500);
 
   const id = req.nextUrl.searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id_required" }, { status: 400 });
+  if (!isUuid(id)) return NextResponse.json({ error: "id_required" }, { status: 400 });
 
   // Deactivate, never delete: sellers hold credits bought under this row, and
   // the payments that funded them point at it.
-  const { error } = await admin.from("products").update({ is_active: false }).eq("id", id);
+  const { data: updated, error } = await admin.from("products").update({ is_active: false }).eq("id", id).select("id");
   if (error) return fail("product_deactivate_failed", 500, error);
+  if (!updated || updated.length === 0) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   logAction(req, user, "admin.product.deactivate", { id });
   await audit(admin, user.id, { action: "product.deactivate", targetType: "product", targetId: id, after: { is_active: false } });

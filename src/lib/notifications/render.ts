@@ -11,7 +11,10 @@ import { formatTND } from "@/lib/utils";
  * open and the SMS / e-mail drains in the recipient's profile language.
  *
  * A row written before payloads existed, or of a kind with no template
- * (admin broadcasts are typed by an admin), keeps its stored title and body.
+ * (admin broadcasts are typed by an admin), keeps its stored title and body
+ * — unless the admin also typed it in the reader's language: a broadcast
+ * carries that copy under `payload.i18n.<locale>`, each field falling back
+ * to the stored one.
  *
  * `t` is a translator scoped to the `notifications` namespace:
  * `useTranslations("notifications")` in the bell,
@@ -43,6 +46,20 @@ type AnyTranslator = {
 // runs in UTC; a 23:30 expiry would otherwise read as the next day).
 const TZ = "Africa/Tunis";
 
+/**
+ * The title and body an admin typed for this locale, when a broadcast
+ * carries them (`payload.i18n.ar.title` …); an empty field is left to the
+ * stored one.
+ */
+function typedCopy(payload: Record<string, unknown> | null, locale: string): { title?: string; body?: string } {
+  const i18n = payload?.i18n && typeof payload.i18n === "object" ? (payload.i18n as Record<string, unknown>) : null;
+  const mine = i18n?.[locale] && typeof i18n[locale] === "object" ? (i18n[locale] as Record<string, unknown>) : null;
+  const out: { title?: string; body?: string } = {};
+  if (typeof mine?.title === "string" && mine.title.trim()) out.title = mine.title;
+  if (typeof mine?.body === "string" && mine.body.trim()) out.body = mine.body;
+  return out;
+}
+
 function dateParts(iso: string, locale: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
@@ -61,8 +78,8 @@ export function renderNotification(
   locale: string,
 ): { title: string; body: string | null } {
   const t = translator as unknown as StringTranslator;
-  const stored = { title: n.title, body: n.body };
   const payload = n.payload && typeof n.payload === "object" ? (n.payload as Record<string, unknown>) : null;
+  const stored = { title: n.title, body: n.body, ...typedCopy(payload, locale) };
   const vars = payload?.vars && typeof payload.vars === "object" ? (payload.vars as Record<string, unknown>) : null;
   if (!vars) return stored;
 
@@ -100,9 +117,13 @@ export function renderNotification(
   if (vars.amount !== undefined && vars.amount !== null && Number.isFinite(Number(vars.amount))) {
     values.amount = formatTND(Number(vars.amount), locale);
   }
+  // What was paid for, in the three forms a French sentence needs: the bare
+  // noun, « d'abonnement » / « de frais d'annonce », « pour votre abonnement ».
   if (typeof vars.paymentKind === "string") {
-    const key = `paymentKinds.${vars.paymentKind}`;
-    values.what = t.has(key) ? t(key) : t("paymentKinds.other");
+    for (const [name, map] of [["what", "paymentKinds"], ["ofWhat", "paymentKindsOf"], ["forWhat", "paymentKindsFor"]]) {
+      const key = `${map}.${vars.paymentKind}`;
+      values[name] = t.has(key) ? t(key) : t(`${map}.other`);
+    }
   }
   for (const k of ["count", "quota", "remaining", "attempts"]) {
     if (values[k] !== undefined) values[k] = Number(values[k]);

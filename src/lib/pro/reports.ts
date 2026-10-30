@@ -138,9 +138,17 @@ export function buildReport(input: {
   };
 }
 
-/** One line per annonce, for a spreadsheet: `;`-separated (French Excel), quoted. */
+/**
+ * One line per annonce, for a spreadsheet: `;`-separated (French Excel), quoted.
+ * A cell that begins like a formula (`=`, `+`, `-`, `@`, a tab) is kept as
+ * text with a leading apostrophe: Excel and LibreOffice run a quoted
+ * `=HYPERLINK(…)` otherwise, and a title is typed by whoever publishes.
+ */
 export function reportCsv(report: ShopReport, headers: Record<"reference" | "title" | ReportMetric, string>): string {
-  const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  const cell = (v: string | number) => {
+    const s = String(v);
+    return `"${(/^[=+\-@\t\r]/.test(s) ? `'${s}` : s).replace(/"/g, '""')}"`;
+  };
   const cols = ["reference", "title", ...REPORT_METRICS] as const;
   const lines = [cols.map((c) => cell(headers[c])).join(";")];
   for (const l of report.listings) {

@@ -117,14 +117,17 @@
         "sold": "Vendue",
         "archived": "Retirée",
         "reserved": "Réservée",
-        "rented": "Louée"
+        "rented": "Louée",
+        "takenDown": "Retirée par l'équipe"
       },
       "statusHint": {
         "draft": "Jamais envoyée : reprenez-la pour la publier.",
         "pending_payment": "Réglez les frais pour lancer la vérification.",
         "pending_review": "Notre équipe la contrôle — moins de 24 h.",
         "expired": "Renouvelez-la pour la remettre en ligne.",
-        "rejected": "Refusée par notre équipe : corrigez-la, puis renvoyez-la."
+        "rejected": "Refusée par notre équipe : corrigez-la, puis renvoyez-la.",
+        "takenDown": "Retirée par l'équipe Mazed Immo. Contactez-nous pour en savoir plus.",
+        "takenDownReason": "Retirée par l'équipe Mazed Immo. Motif : {reason}"
       },
       "receiptInReview": "Reçu en vérification",
       "receiptInReviewHint": "Nous validons votre reçu — moins de 24 h.",
@@ -165,7 +168,8 @@
       "rejectedPrefix": "Refusée :",
       "promoteHint": "Partagée sur nos réseaux : Facebook, Instagram",
       "boostHint": "Placement payant sur le site : accueil, haut des résultats",
-      "planPlaces": "{used}/{limit} annonces utilisées · abonnement {plan}"
+      "planPlaces": "{used}/{limit} annonces utilisées · abonnement {plan}",
+      "contactUs": "Nous contacter"
     },
     "listingActions": {
       "mark_sold": {
@@ -262,7 +266,8 @@
       "action": {
         "upload": "Téléverser le reçu",
         "review": "Voir / corriger le reçu",
-        "resubmit": "Soumettre à nouveau"
+        "resubmit": "Soumettre à nouveau",
+        "resend": "Renvoyer un reçu"
       },
       "cancelFailed": "Annulation impossible.",
       "cancelDone": "Paiement annulé.",
@@ -305,7 +310,8 @@
       "onRequest": "Sur demande",
       "price": "{amount} TND",
       "unavailable": "plus disponible",
-      "pricePerMonth": "{amount} TND / mois"
+      "pricePerMonth": "{amount} TND / mois",
+      "withheldTitle": "Annonce retirée"
     },
     "deleteAccount": {
       "blockers": {
@@ -341,6 +347,7 @@
       "networkError": "Erreur réseau."
     },
     "success": {
+      "pageTitle": "Confirmation de paiement",
       "kind": {
         "listing_fee": "Frais de publication réglés",
         "renewal": "Renouvellement réglé",
@@ -360,7 +367,8 @@
         "pending_review": "Reçu en vérification",
         "captured": "Confirmé",
         "failed": "Refusé",
-        "refunded": "Remboursé"
+        "refunded": "Remboursé",
+        "cancelled": "Annulé"
       },
       "receivedTitle": "Paiement reçu",
       "failedTitle": "Paiement non validé",
@@ -371,6 +379,16 @@
       "eyebrowConfirmed": "Paiement confirmé",
       "eyebrowRejected": "Reçu refusé",
       "eyebrowWaiting": "En attente de confirmation",
+      "eyebrowCancelled": "Paiement annulé",
+      "eyebrowRefunded": "Paiement remboursé",
+      "cancelledTitle": "Rien n'a été prélevé",
+      "cancelledBody": "Vous avez annulé ce paiement avant d'envoyer un reçu. Vous pouvez relancer l'achat à tout moment.",
+      "refundedTitle": "Avoir émis",
+      "refundedBody": "Ce paiement a été annulé par un avoir : le montant vous est remboursé et ce qu'il avait acheté est arrêté.",
+      "resendReceipt": "Renvoyer un reçu",
+      "buyAgain": "Relancer la mise en avant",
+      "choosePlan": "Choisir un abonnement",
+      "viewCreditNote": "Voir l'avoir",
       "failedBody": "Votre reçu n'a pas été validé. Rien n'a été encaissé — vous pouvez relancer le paiement et envoyer un nouveau justificatif.",
       "payAgain": "Payer à nouveau",
       "amount": "Montant",
@@ -439,6 +457,8 @@
     "myListings": "Mes annonces",
     "editListing": "← Modifier l'annonce",
     "receiptUnderReview": "Reçu en vérification — moins de 24 h. Vous serez notifié(e) dès qu'il est validé. Envoyez-en un autre seulement s'il y a une erreur.",
+    "receiptRefused": "Reçu refusé — motif : {reason}. Envoyez un nouveau justificatif.",
+    "receiptRefusedNoReason": "Reçu refusé. Envoyez un nouveau justificatif.",
     "stepMethod": "Choisissez le mode de paiement",
     "providerBank": "Virement (RIB)",
     "providerD17": "D17 mobile",
@@ -1117,7 +1137,7 @@
     },
     "admin_receipt_pending": {
       "title": "Nouveau reçu à vérifier",
-      "body": "Un reçu de {what} ({amount} TND) attend votre validation."
+      "body": "Un reçu {ofWhat} ({amount} TND) attend votre validation."
     },
     "promo_expired": {
       "title": "Mise en avant terminée",
@@ -1139,6 +1159,24 @@
       "renewal": "renouvellement",
       "subscription": "abonnement",
       "other": "paiement"
+    },
+    "paymentKindsOf": {
+      "listing_fee": "de frais d'annonce",
+      "listing_pack": "de forfait",
+      "badge": "de badge vendeur",
+      "promo": "de mise en avant",
+      "renewal": "de renouvellement",
+      "subscription": "d'abonnement",
+      "other": "de paiement"
+    },
+    "paymentKindsFor": {
+      "listing_fee": "pour vos frais d'annonce",
+      "listing_pack": "pour votre forfait",
+      "badge": "pour votre badge vendeur",
+      "promo": "pour votre mise en avant",
+      "renewal": "pour votre renouvellement",
+      "subscription": "pour votre abonnement",
+      "other": "pour ce service"
     },
     "listing_submitted": {
       "paid": {
@@ -1242,7 +1280,7 @@
     },
     "shop_member_added": {
       "title": "Vous faites partie d'une agence",
-      "body": "Vous avez été ajouté à « {name} ». Retrouvez-la dans votre Espace Pro."
+      "body": "Vous avez été ajouté à « {name} ». Retrouvez-la dans votre Espace Pro ; vous pouvez la quitter depuis l'onglet Équipe."
     },
     "admin_shop_pending": {
       "title": "Agence à examiner",
@@ -1250,8 +1288,13 @@
       "paid": {
         "title": "Agence payée — à ouvrir",
         "body": "« {name} » a payé son abonnement {plan} : ouvrez-la."
+      },
+      "reverify": {
+        "title": "Agence à revérifier",
+        "body": "« {name} » a changé d'identité ({fields}) : le badge « vérifié » est retiré, contrôlez-la de nouveau."
       }
     },
+    "visitor": "Un acheteur",
     "visitParts": {
       "morning": "le matin",
       "afternoon": "l'après-midi",
@@ -1292,7 +1335,7 @@
     "payment_accepted": {
       "plain": {
         "title": "Paiement validé",
-        "body": "Votre paiement de {amount} pour {what} est validé."
+        "body": "Votre paiement de {amount} TND {forWhat} est validé."
       },
       "promo": {
         "title": "Mise en avant active",
@@ -1300,7 +1343,7 @@
       },
       "invoice": {
         "title": "Paiement validé — facture {number}",
-        "body": "Votre paiement de {amount} pour {what} est validé. Votre facture {number} est prête : ouvrez-la pour l'imprimer."
+        "body": "Votre paiement de {amount} TND {forWhat} est validé. Votre facture {number} est prête : ouvrez-la pour l'imprimer."
       }
     },
     "admin_site_error": {
@@ -1616,6 +1659,8 @@
     "offline": "Connexion perdue. Réessayez.",
     "thinking": "Je lis…",
     "listening": "Je vous écoute… Appuyez à nouveau pour envoyer.",
+    "listeningLong": "Je vous écoute… {count} / {max} caractères. Appuyez pour envoyer.",
+    "messageFull": "C'est le maximum pour un message : il est envoyé. Continuez dans un nouveau message.",
     "tapToSpeak": "Appuyez sur le micro et parlez",
     "speak": "Parler",
     "stop": "Arrêter et envoyer",
@@ -1703,7 +1748,10 @@
       "expired": "expirée",
       "archived": "retirée",
       "sold": "vendue",
-      "rented": "louée"
+      "rented": "louée",
+      "draft": "brouillon",
+      "rejected": "refusée",
+      "pending_payment": "en attente de paiement"
     },
     "contactRequired": "Ajoutez un numéro de téléphone joignable.",
     "attestationRequired": "Cochez l'attestation sur l'honneur.",
@@ -1939,7 +1987,7 @@
       "failed": "Refusés",
       "all": "Tous"
     },
-    "searchPlaceholder": "Référence, motif…",
+    "searchPlaceholder": "Référence, nom, téléphone, motif…",
     "thisMonth": "Ce mois",
     "total": "Total",
     "amount": "{amount} TND",
@@ -2024,7 +2072,14 @@
       "noReceipt": "Pas encore de reçu pour ce paiement : il ne peut pas être accepté avant que le client l'envoie.",
       "creditReason": "Choisissez le motif de l'avoir.",
       "creditNotCaptured": "Seul un paiement validé reçoit un avoir — celui-ci est « {status} ».",
-      "creditNoInvoice": "Ce paiement n'a pas de facture : rien à annuler."
+      "creditNoInvoice": "Ce paiement n'a pas de facture : rien à annuler.",
+      "deciding": "Un autre membre traite ce paiement en ce moment. Rechargez dans un instant.",
+      "productUnknown": "Ce paiement ne désigne aucune offre connue de son type : il ne peut pas être accepté.",
+      "subjectMissing": "Ce paiement ne dit pas à quelle agence (ou quelle annonce) il s'applique : il ne peut pas être accepté.",
+      "notPayers": "L'agence (ou l'annonce) de ce paiement n'appartient pas à la personne qui paie.",
+      "amountMismatch": "Le reçu est de {amount} TND et l'offre coûte {expected} TND : rien n'est accordé sur un montant qui ne correspond pas.",
+      "listingNotOnline": "L'annonce n'est plus en ligne : personne ne verrait la mise en avant. Refusez le reçu, ou attendez sa remise en ligne.",
+      "promoRunning": "Une autre mise en avant payée court jusqu'au {date} : accepter celle-ci l'effacerait. Attendez sa fin, ou refusez le reçu."
     }
   },
   "adminActivity": {
@@ -2113,6 +2168,17 @@
       "yes": "Oui",
       "payload": "Payload",
       "previewTitle": "Titre de la notification"
+    },
+    "fields": {
+      "title_ar": {
+        "label": "Titre en arabe",
+        "placeholder": "Le même titre, pour les lecteurs du site en arabe"
+      },
+      "body_ar": {
+        "label": "Message en arabe",
+        "placeholder": "Le même message, en arabe.",
+        "helper": "Les lecteurs du site en arabe voient ce texte ; les autres, le français. Vide : tout le monde voit le français."
+      }
     },
     "kinds": {
       "announcement": {
@@ -2406,7 +2472,13 @@
         "variant_invalid": "Variante inconnue.",
         "audience_invalid": "Audience invalide.",
         "forbidden": "Accès refusé.",
-        "auth": "Veuillez vous reconnecter."
+        "auth": "Veuillez vous reconnecter.",
+        "forbidden_section": "Cette rubrique n'est pas dans vos accès.",
+        "slug_taken": "Ce slug est déjà pris par un autre popup.",
+        "body_required": "Le texte du popup est requis, dans au moins une langue.",
+        "dates_invalid": "Dates invalides : vérifiez le début et la fin (la fin ne peut pas précéder le début).",
+        "cta_href_invalid": "Lien du bouton non autorisé : une page du site (/…), une adresse https://, mailto: ou tel:.",
+        "popup_not_found": "Ce popup n'existe plus."
       }
     }
   },
@@ -2492,7 +2564,7 @@
     "newOffer": "Nouvelle offre",
     "emptyTitle": "Aucune offre",
     "emptyHint": "Créez ce qu'un vendeur peut acheter : une publication, un pack, une mise en avant, le badge.",
-    "misconfigured": "{count, plural, one {# offre} other {# offres}} en vente sans prix configuré — le vendeur ne peut pas payer.",
+    "misconfigured": "{count, plural, one {# offre} other {# offres}} en vente sans prix ou à 0 TND — le vendeur ne peut pas payer.",
     "allCategoriesShort": "toutes catégories",
     "listingQuota": "{count} annonces",
     "durationDays": "{count} j",
@@ -2550,7 +2622,7 @@
       "availability": "Disponibilité",
       "onSale": "En vente",
       "onSaleHint": "Désactivée, l'offre disparaît de la page Tarifs mais reste liée aux paiements déjà faits.",
-      "onSaleNoPrice": "En vente sans prix configuré : le vendeur ne pourra pas payer.",
+      "onSaleNoPrice": "En vente sans prix (ou à 0 TND) : le vendeur ne pourra pas payer.",
       "nameMissing": "Donnez un nom à l'offre.",
       "create": "Créer",
       "save": "Enregistrer",
@@ -2564,7 +2636,11 @@
       "quotaRequired": "Un pack doit accorder au moins une publication.",
       "durationRequired": "Le badge doit avoir une durée de validité.",
       "slugTaken": "Un produit porte déjà ce nom.",
-      "invalidProduct": "Vérifiez la cohérence : un pack a besoin d'un quota, un badge d'une durée, et une seule annonce à l'unité peut être active par catégorie."
+      "invalidProduct": "Vérifiez la cohérence : un pack a besoin d'un quota, un badge d'une durée, et une seule annonce à l'unité peut être active par catégorie.",
+      "invalidPrice": "Le prix doit être un nombre positif ou nul.",
+      "priceRequired": "Indiquez un prix.",
+      "priceForSale": "Une offre en vente doit coûter plus de 0 TND : à 0, personne ne peut la payer.",
+      "categoryUnknown": "Cette catégorie n'existe pas."
     }
   },
   "adminLegalDocs": {
@@ -2887,7 +2963,9 @@
       "publish": "Publier",
       "extend30": "+30 j",
       "archive": "Archiver",
-      "cancelSelection": "Annuler la sélection"
+      "cancelSelection": "Annuler la sélection",
+      "archiveTitle": "{count, plural, one {Archiver cette annonce ?} other {Archiver ces # annonces ?}}",
+      "archiveBody": "{count, plural, one {Elle disparaît du site et son vendeur est prévenu} other {Elles disparaissent du site et leurs vendeurs sont prévenus}}, avec le motif s'il y en a un. Rien n'est remboursé."
     },
     "detail": {
       "back": "File",
@@ -3187,10 +3265,12 @@
     "request_renew": "Demande renouvelée",
     "shop_create": "Agence demandée",
     "shop_update": "Agence modifiée",
+    "shop_reverify": "Agence à revérifier (identité modifiée)",
     "shop_document": "Document d'agence envoyé",
     "shop_member_add": "Membre ajouté à une agence",
     "shop_member_role": "Rôle d'un membre changé",
     "shop_member_remove": "Membre retiré d'une agence",
+    "shop_member_leave": "Membre parti d'une agence",
     "shop_subscribe": "Abonnement Pro choisi",
     "social_request": "Promotion réseaux demandée",
     "social_withdraw": "Promotion réseaux retirée",
@@ -3251,7 +3331,8 @@
       "skipAlreadyArchived": "déjà archivée",
       "skipNotPublished": "pas en ligne",
       "skipNotFound": "introuvable",
-      "skipEditWaiting": "modification à valider depuis sa fiche"
+      "skipEditWaiting": "modification à valider depuis sa fiche",
+      "skipChanged": "a changé d'état entre-temps"
     },
     "listing": {
       "notAwaitingPayment": "Cette annonce est « {status} ».",
@@ -3260,11 +3341,15 @@
       "alreadyPublished": "Cette annonce est déjà en ligne.",
       "alreadyRejected": "Cette annonce est déjà refusée.",
       "alreadyArchived": "Cette annonce est déjà retirée.",
+      "notSubmitted": "Cette annonce est un brouillon : le vendeur ne l'a pas encore envoyée.",
+      "notAwaitingReview": "Cette annonce est « {status} » : elle n'attend pas de validation.",
+      "statusChanged": "L'annonce a changé d'état entre-temps : rechargez la page.",
       "badGovernorate": "Gouvernorat inconnu.",
       "badPhone": "Numéro de téléphone invalide.",
       "badPrice": "Prix invalide.",
       "titleTooShort": "Le titre doit faire au moins 3 caractères.",
       "photoMissing": "Une photo de l'annonce est introuvable dans le stockage : demandez au vendeur de la renvoyer.",
+      "shopClosed": "L'agence de cette annonce est fermée : elle attend sa réouverture.",
       "reasonRequired": "Dites au vendeur ce qui ne va pas — sinon il renverra la même annonce.",
       "creditsNotSupported": "Cette annonce a été payée avec un forfait, et le remboursement de forfait n'existe pas encore ici. Traitez-la à la main.",
       "notPublished": "Seule une annonce en ligne peut être prolongée.",
@@ -3736,6 +3821,7 @@
     "copied": "Copié",
     "openGroup": "Ouvrir le groupe",
     "postUrlPlaceholder": "Lien de la publication (facultatif)",
+    "postText": "Texte de la publication",
     "markDone": "Marquer comme fait",
     "markedDone": "Noté comme fait.",
     "noLinks": "Ce groupe refuse les liens : le texte est copié sans lien.",
@@ -3792,6 +3878,7 @@
     "disconnected": "Compte déconnecté.",
     "addGroup": "Ajouter le groupe",
     "groupName": "Nom du groupe",
+    "groupUrl": "Lien du groupe",
     "groupDeals": "Annonces acceptées",
     "groupKindsHint": "Sans type coché : tous les biens.",
     "groupGovernorates": "Gouvernorats",
@@ -3910,6 +3997,7 @@
       "saveFailed": "Enregistrement impossible. Réessayez.",
       "created": "Agence envoyée à la vérification.",
       "saved": "Agence enregistrée.",
+      "savedReverify": "Agence enregistrée. Son nom ou son identité légale a changé : le badge « vérifié » reviendra après un nouveau contrôle de l'équipe Mazed Immo.",
       "logo": "Logo",
       "cover": "Bannière",
       "imagesHint": "Logo carré et bannière large (3:1). JPG, PNG ou WebP.",
@@ -4005,6 +4093,7 @@
       "noName": "Sans nom",
       "planRunning": "Abonnement {name} en cours jusqu'au {date}. Un abonnement plus grand démarre dès que son paiement est validé : ce qui reste de celui-ci est déduit de son prix. Un plus petit prend la suite à cette date.",
       "planNone": "Aucun abonnement en cours : vos annonces suivent les règles d'un particulier (annonces gratuites en nombre limité, sans frais par annonce).",
+      "planThen": "Ensuite : {name} du {from} au {to}.",
       "perMonthTnd": "DT / mois",
       "planQuota": "{count, plural, one {# annonce en ligne} other {# annonces en ligne}}",
       "renewWith": "Prolonger avec celui-ci",
@@ -4024,6 +4113,9 @@
       "removeConfirm": "Retirer ce membre de l'agence ?",
       "memberRemoved": "Membre retiré.",
       "removeMember": "Retirer",
+      "leaveShop": "Quitter l'agence",
+      "leaveConfirm": "Quitter « {name} » ? Vous n'y publierez plus et ne verrez plus ses clients.",
+      "leftShop": "Vous avez quitté l'agence.",
       "fileTooBig": "Fichier trop lourd (10 Mo au maximum).",
       "documentSent": "Document envoyé.",
       "documentKind": "Type de document",
@@ -4297,7 +4389,14 @@
       "plan": "Abonnement inconnu.",
       "planRequired": "L'agence n'a pas encore réglé son abonnement : elle s'ouvre une fois le paiement validé.",
       "reason": "Indiquez un motif.",
-      "planAlready": "Vous avez déjà cet abonnement jusqu'au {date}. Vous pourrez le renouveler à partir du {from}."
+      "planAlready": "Vous avez déjà cet abonnement jusqu'au {date}. Vous pourrez le renouveler à partir du {from}.",
+      "alreadyOpen": "Cette agence est déjà ouverte.",
+      "alreadyRejected": "Cette agence est déjà refusée.",
+      "alreadySuspended": "Cette agence est déjà suspendue.",
+      "reinstateOnlySuspended": "Seule une agence suspendue se rouvre ici : une agence en attente s'ouvre avec « Ouvrir », une fois son abonnement réglé.",
+      "wrongStatus": "Cette décision ne s'applique pas à l'état actuel de l'agence : rechargez la page.",
+      "choiceInFlight": "Un autre choix d'abonnement vient d'être enregistré pour cette agence. Rechargez la page.",
+      "planPending": "Un autre choix d'abonnement est en cours : rechargez la page."
     },
     "leadErrors": {
       "name": "Indiquez un nom (2 lettres au moins).",
@@ -4523,6 +4622,7 @@
     "slots": "Choisissez de 1 à {max} moments, d'aujourd'hui à {days} jours.",
     "phone": "Numéro de téléphone invalide.",
     "name": "Indiquez votre nom.",
+    "nameLetters": "Votre nom, en lettres seulement (2 à 60 caractères).",
     "notOnline": "Cette annonce n'est plus en ligne.",
     "own": "C'est votre annonce.",
     "alreadyOpen": "Vous avez déjà une demande en cours pour cette annonce.",
@@ -4563,7 +4663,8 @@
     "bestNote": "Le trophée marque le prix et le prix au m² les plus bas, la plus grande surface et le plus de chambres — quand au moins deux annonces les indiquent. Un loyer ne se compare pas à un prix de vente : entre une vente et une location, les deux lignes de prix n'ont pas de trophée.",
     "perSqmSale": "{amount} TND/m²",
     "perSqmRent": "{amount} TND/m²/mois",
-    "scrollHint": "Faites glisser le tableau pour voir toutes les annonces."
+    "scrollHint": "Faites glisser le tableau pour voir toutes les annonces.",
+    "criterion": "Critère"
   },
   "whatsapp": {
     "help": "Une question ? Écrivez-nous sur WhatsApp :",
@@ -4609,7 +4710,8 @@
   "promoApi": {
     "product": "Mise en avant inconnue.",
     "notOnline": "Seule une annonce en ligne peut être mise en avant.",
-    "oneAtATime": "Une autre mise en avant court jusqu'au {date} : une à la fois."
+    "oneAtATime": "Une autre mise en avant court jusqu'au {date} : une à la fois.",
+    "pendingOther": "Une autre mise en avant de cette annonce attend son paiement : une à la fois."
   },
   "invoice": {
     "metaTitle": "Facture — Mazed Immo",
@@ -4781,7 +4883,7 @@
     },
     "catalogue_page_size": {
       "label": "Annonces par page de recherche",
-      "hint": "Le catalogue en montre autant avant « page suivante »."
+      "hint": "Le catalogue et la page d'une agence en montrent autant avant « page suivante »."
     },
     "visits_max_slots": {
       "label": "Créneaux par demande de visite",
@@ -4830,6 +4932,10 @@
     "ai_daily_budget_usd": {
       "label": "Budget IA par jour (USD)",
       "hint": "Une fois dépensé, l'assistant s'arrête jusqu'au lendemain."
+    },
+    "ai_user_daily_budget_usd": {
+      "label": "Budget IA par jour et par compte (USD)",
+      "hint": "Un seul compte ne peut pas dépenser tout le budget du jour : au-delà, l'assistant lui répond « indisponible » jusqu'au lendemain."
     },
     "payee_name": {
       "label": "Bénéficiaire",
@@ -4895,9 +5001,13 @@
       "label": "Créations d'agence par personne",
       "hint": "Contre les inscriptions en série."
     },
+    "limit_member_adds_per_hour": {
+      "label": "Ajouts à l'équipe d'une agence par personne",
+      "hint": "Chaque ajout dit si un numéro a un compte : la limite empêche d'en tester en série."
+    },
     "sms_daily_cap": {
       "label": "SMS par personne",
-      "hint": "Au-delà, les avis suivants restent dans le site. 0 : aucun SMS."
+      "hint": "Au-delà, les avis suivants restent dans le site ; un verdict (paiement, annonce refusée, visite confirmée) part toujours. 0 : aucun SMS."
     },
     "units": {
       "days": "jours",
@@ -5037,6 +5147,10 @@
     "cron_history_days": {
       "label": "Historique des tâches planifiées",
       "hint": "Le journal technique des tâches automatiques (SMS, e-mails, publications, expirations) : gardé ce nombre de jours, puis effacé chaque nuit. Aucune donnée personnelle ni de paiement dedans."
+    },
+    "uploads_prune_days": {
+      "label": "Photos et reçus abandonnés",
+      "hint": "Une photo envoyée sans finir l'annonce, un reçu sans paiement envoyé : effacés chaque nuit une fois plus vieux que ce délai. Rien de ce qu'une annonce, une agence, une publicité ou un paiement utilise n'est touché."
     },
     "feature_pro_reports": {
       "label": "Rapports des agences",

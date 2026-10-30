@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { requireAdmin } from "@/lib/admin/guard";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { logAction } from "@/lib/activity";
@@ -22,7 +23,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const t = await apiTranslator(req, "adminSocial.errors");
-  const payload = (await req.json().catch(() => ({}))) as { body?: unknown };
+  const payload = (await jsonObject(req)) as { body?: unknown };
   const body = typeof payload.body === "string" ? payload.body.replace(/\r\n/g, "\n").trim() : "";
   if (body.length < 10 || body.length > 2200) return NextResponse.json({ error: "invalid", detail: t("length") }, { status: 400 });
 

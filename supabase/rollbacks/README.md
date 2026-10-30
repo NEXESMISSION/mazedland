@@ -10,6 +10,17 @@ node scripts/backup-db.mjs
 
 | Migration | Rollback | What is lost |
 |---|---|---|
+| 0202 photos create-only | `0202_photos_create_only.down.sql` | the owner may delete (and so swap) their photos again; the activity-only member loses the names |
+| 0201 social job secret in header | `0201_social_job_secret_in_header.down.sql` | the social job carries the key in its URL again (only with code that accepts ?key=) |
+| 0200 cron secret in the Vault | `0200_cron_secret_in_vault.down.sql` | the Vault forgets the secret — only once the jobs carry it in their URL again |
+| 0199 deletion passes the guard | `0199_deletion_passes_the_profile_guard.down.sql` | request_account_deletion() without the bypass — every deletion fails again while 0195's guard stands |
+| 0198 replaced_by without FK | `0198_replaced_by_without_fk.down.sql` | the second foreign key to payments comes back; only safe with code that names the relationship it embeds |
+| 0195 QA tour, wave 3 | `0195_qa_tour_3.down.sql` | the client may write listings again and read the audit columns; is_admin() trusts the JWT claim again; every policy and the two gates answer to any admin; the profile guard, the photo-overwrite and legacy bucket policies and listing_reference_next() return to before; the plan descriptions keep « agence » |
+| 0196 rate limit lock | `0196_rate_limit_lock.down.sql` | nothing: requests arriving at the same moment may again pass a cap together (the count and the hit are two steps again) |
+| 0197 prune uploads | `0197_prune_uploads.down.sql` | nothing: the nightly sweep of abandoned uploads stops (what it already removed does not come back) |
+| 0194 broadcast guard | `0194_notifications.down.sql` | nothing: a broadcast may again carry any kind (one the SMS and e-mail drains send) and any link |
+| 0193 credit note restores periods | `0193_credit_note_restores_periods.down.sql` | which payment replaced each plan period and the end it had (roll the code back first: grantPlanPeriod writes them); a credit note on an upgrade cancels its own period only again, the replaced plan stays cut short |
+| 0192 credit note stops promo and badge | `0192_credit_note_stops_promo_badge.down.sql` | a credit note no longer stops the placement or revokes the badge it refunds (those already stopped stay stopped) |
 | 0192 legacy phones | `0192_legacy_phones_e164.down.sql` | nothing (the two admin profiles go back to their bare 8-digit number; sign-in by phone then fails again for them) |
 | 0191 QA tour, wave 2 | `0191_qa_tour_2.down.sql` | the unique indexes, the bucket limits, the admin alerts to every admin, a person's full update right on their notifications, the self-insert of payments come back; claim_listing_place returns to 0190 (roll the code back first); buyer_phone stays nullable |
 | 0190 QA tour | `0190_qa_tour.down.sql` | the takedown marks on annonces; claim_listing_place (roll the code back first); the deletion cascade for accounts deleted after it stays applied; bucket limits |

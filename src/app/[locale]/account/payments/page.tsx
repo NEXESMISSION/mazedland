@@ -25,6 +25,8 @@ type PaymentRow = {
   created_at: string;
   metadata: { listing_id?: string } | null;
   admin_notes: string | null;
+  /** The admin who refused (or accepted) it; null on a payment the seller cancelled. */
+  reviewer_id: string | null;
 };
 
 type Photo = { storage_path: string; sort_order: number };
@@ -65,7 +67,7 @@ export default async function MyPaymentsPage({
   const { data } = await supabase
     .from("payments")
     .select(
-      "id, kind, provider, amount, status, receipt_url, created_at, metadata, admin_notes",
+      "id, kind, provider, amount, status, receipt_url, created_at, metadata, admin_notes, reviewer_id",
     )
     .eq("user_id", user!.id)
     .order("created_at", { ascending: false })
@@ -182,6 +184,7 @@ export default async function MyPaymentsPage({
       receiptUrl: signed.get(p.id) ?? null,
       invoice: docs.get(p.id) ?? null,
       creditNote: credits.get(p.id) ?? null,
+      refused: p.status === "failed" && p.reviewer_id != null,
       listingId,
       title: entity?.title ?? null,
       governorate: entity?.governorate ?? null,

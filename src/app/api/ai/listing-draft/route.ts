@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { fail } from "@/lib/http/errors";
+import { jsonObject } from "@/lib/http/body";
 import { apiTranslator } from "@/lib/i18n/server";
 import { categoryLabel } from "@/lib/i18n";
 import { redactContacts } from "@/lib/moderation/rules";
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (!admin) return fail("server_misconfigured", 500);
   const t = await apiTranslator(req, "aiApi");
 
-  const body = (await req.json().catch(() => ({}))) as { text?: unknown };
+  const body = await jsonObject(req);
   const source = typeof body.text === "string" ? body.text.trim().slice(0, 800) : "";
   if (source.length < 12) {
     return NextResponse.json({ error: "too_short", detail: t("tooShort") }, { status: 400 });

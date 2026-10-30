@@ -17,9 +17,11 @@ export function secretMatches(provided: string, secret: string): boolean {
 }
 
 /**
- * Validate the cron shared secret (Vercel `Authorization: Bearer <secret>` or
- * `?key=<secret>`). Returns a NextResponse to return IMMEDIATELY on failure
- * (503 if unset, 403 if wrong), or null when the caller is authorized.
+ * Validate the cron shared secret: `Authorization: Bearer <secret>`, as Vercel
+ * sends it and as the pg_cron jobs send it from the Vault (0158, 0200, 0201).
+ * A `?key=` in the URL is not accepted any more: it ended up in every request
+ * log. Returns a NextResponse to return IMMEDIATELY on failure (503 if
+ * unset, 403 if wrong), or null when the caller is authorized.
  *
  *   const denied = verifyCronSecret(req);
  *   if (denied) return denied;
@@ -30,8 +32,7 @@ export function verifyCronSecret(req: NextRequest): NextResponse | null {
     return NextResponse.json({ error: "cron_secret_not_set" }, { status: 503 });
   }
   const auth = req.headers.get("authorization") ?? "";
-  const key = req.nextUrl.searchParams.get("key") ?? "";
-  const provided = auth.startsWith("Bearer ") ? auth.slice(7) : key;
+  const provided = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   if (!secretMatches(provided, secret)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }

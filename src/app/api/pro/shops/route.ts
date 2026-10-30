@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { randomBytes } from "node:crypto";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   const { data: owned } = await admin.from("shops").select("id").eq("owner_id", user.id).limit(1);
   if (owned && owned.length > 0) return NextResponse.json({ error: "conflict", detail: t("oneShop") }, { status: 409 });
 
-  const parsed = parseShopInput((await req.json().catch(() => ({}))) as Record<string, unknown>, user.id);
+  const parsed = parseShopInput(await jsonObject(req), user.id);
   if (!parsed.ok) return NextResponse.json({ error: "invalid", detail: t(`errors.${parsed.error}`) }, { status: 400 });
 
   // A free address: the name's, or the name's with a short suffix.
@@ -36,11 +37,24 @@ export async function POST(req: NextRequest) {
   const { data: taken } = await admin.from("shops").select("id").eq("slug", slug).maybeSingle();
   if (taken) slug = `${slug.slice(0, 50)}-${randomBytes(2).toString("hex")}`;
 
-  const { data: shop, error } = await admin
-    .from("shops")
-    .insert({ ...parsed.value, slug, owner_id: user.id, status: "pending" })
-    .select("id, slug, name")
-    .single();
+  const create = (withSlug: string) =>
+    admin
+      .from("shops")
+      .insert({ ...parsed.value, slug: withSlug, owner_id: user.id, status: "pending" })
+      .select("id, slug, name")
+      .single();
+  let { data: shop, error } = await create(slug);
+  // The address went to a request a moment earlier: once more, with a suffix.
+  if (error?.code === "23505" && !error.message.includes("shops_one_live_per_owner")) {
+    slug = `${slug.slice(0, 50)}-${randomBytes(2).toString("hex")}`;
+    ({ data: shop, error } = await create(slug));
+  }
+  // Two requests at the same moment both passed the check above (the QA
+  // tour, 2026-10-30: three agences for one owner); the table allows one
+  // (shops_one_live_per_owner, 0191) and the second is the same 409.
+  if (error?.code === "23505" && error.message.includes("shops_one_live_per_owner")) {
+    return NextResponse.json({ error: "conflict", detail: t("oneShop") }, { status: 409 });
+  }
   if (error || !shop) return fail("shop_create_failed", 500, error);
 
   const { error: mErr } = await admin.from("shop_members").insert({ shop_id: shop.id, user_id: user.id, role: "owner", invited_by: user.id });

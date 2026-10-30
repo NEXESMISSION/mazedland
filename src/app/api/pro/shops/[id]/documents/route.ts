@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (gate instanceof NextResponse) return gate;
   const { user, admin } = gate;
   const t = await apiTranslator(req, "proApi");
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = await jsonObject(req);
 
   if (body.step === "url") {
     const { data: over } = await admin.rpc("check_rate_limit", { p_key: `shop-doc:${user.id}`, p_max: 30, p_window_secs: 3600 });

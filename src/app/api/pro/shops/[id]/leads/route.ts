@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { proGate } from "@/lib/pro/api";
 import { parseLeadPatch, parseNewLead } from "@/lib/pro/leads";
+import { isUuid } from "@/lib/uuid";
 
 /**
  * A shop's clients (0174). Every member follows them.
@@ -19,7 +21,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { user, admin } = gate;
   const t = await apiTranslator(req, "proApi");
 
-  const parsed = parseNewLead((await req.json().catch(() => ({}))) as Record<string, unknown>);
+  const parsed = parseNewLead(await jsonObject(req));
   if (!parsed.ok) return NextResponse.json({ error: "invalid", detail: t(`leadErrors.${parsed.error}`) }, { status: 400 });
   const value = parsed.value;
   if (value.listing_id) {
@@ -43,8 +45,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { user, admin } = gate;
   const t = await apiTranslator(req, "proApi");
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const leadId = typeof body.leadId === "string" ? body.leadId : "";
+  const body = await jsonObject(req);
+  const leadId = body.leadId;
+  // Checked before Postgres sees it: a malformed id was a cast error turned 500.
+  if (!isUuid(leadId)) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const patch = parseLeadPatch(body);
   if (!patch) return NextResponse.json({ error: "invalid", detail: t("leadErrors.patch") }, { status: 400 });
   const { data, error } = await admin.from("leads").update(patch).eq("id", leadId).eq("shop_id", id).select("id");
@@ -59,8 +63,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const gate = await proGate(req, { id, action: "clients" });
   if (gate instanceof NextResponse) return gate;
   const { user, admin } = gate;
-  const body = (await req.json().catch(() => ({}))) as { leadId?: unknown };
-  const leadId = typeof body.leadId === "string" ? body.leadId : "";
+  const body = (await jsonObject(req)) as { leadId?: unknown };
+  const leadId = body.leadId;
+  if (!isUuid(leadId)) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const { data, error } = await admin.from("leads").delete().eq("id", leadId).eq("shop_id", id).select("id");
   if (error) return fail("lead_delete_failed", 500, error);
   if (!data || data.length === 0) return NextResponse.json({ error: "not_found" }, { status: 404 });

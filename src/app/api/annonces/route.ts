@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
-import { listingFields, listingPhotos, num, text, type ListingBody } from "@/lib/listings/input";
+import { listingFields, listingPhotos, num, text, titleTooShort, type ListingBody } from "@/lib/listings/input";
 import { suspendedResponse } from "@/lib/moderation/ban";
 import { can, roleIn } from "@/lib/pro/shops";
 import { getSettings } from "@/lib/settings/server";
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
   const banned = await suspendedResponse(admin, req, user.id);
   if (banned) return banned;
 
-  const body = (await req.json().catch(() => ({}))) as ListingBody;
+  const body = (await jsonObject(req)) as ListingBody;
 
   const categoryId = text(body.category_id, 40);
   const title = text(body.title, 140);
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
   }
   // A title of one or two characters is not one; the database refused it
   // after the fact, as a 500.
-  if (title && title.length < 3) {
+  if (title && titleTooShort(title)) {
     const t = await apiTranslator(req, "publishApi");
     return NextResponse.json({ error: "title_too_short", detail: t("titleTooShort") }, { status: 400 });
   }

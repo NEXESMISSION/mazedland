@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -37,7 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const side = await visitSide(admin, visit, user.id);
   if (!side) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = await jsonObject(req);
   const action = ACTIONS.find((a) => a === body.action);
   const next = action ? nextStatus(visit.status, action, side) : null;
   if (!action || !next) return NextResponse.json({ error: "conflict", detail: t("transition") }, { status: 409 });

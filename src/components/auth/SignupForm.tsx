@@ -388,7 +388,7 @@ export function SignupForm() {
         size="lg"
         title={legalModal === "privacy" ? t("legal.privacy.title") : t("legal.terms.title")}
       >
-        {legalModal === "privacy" ? <PrivacyContent /> : <TermsContent />}
+        {legalModal === "privacy" ? <PrivacyContent level={4} /> : <TermsContent level={4} />}
       </Modal>
       <p className="text-center text-[11px] text-mazed-muted">
         {t.rich("auth.signup.proNote", {

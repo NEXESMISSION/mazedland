@@ -39,12 +39,15 @@ export function phoneToWinSMS(phone: string): string {
   return phone.replace(/\D/g, "");
 }
 
-// WinSMS "PLAIN" (GSM-7) charset — accented French (è é à ù) stays 1 segment /
-// 160 chars. Anything OUTSIDE this set (Arabic, emoji) forces UNICODE (70-char
-// segments). We do NOT strip those chars (that silently dropped Arabic property
-// titles from outbid/won SMS); instead we detect them and tell the caller to
-// send as unicode so the content survives. `\n` is GSM-7, so it's allowed.
-const HAS_NON_PLAIN = /[^A-Za-z0-9èéàù \n%@"'()_\-.\/:,;<=>?!&$]/;
+// WinSMS "PLAIN" (GSM-7) charset, as far as French needs it: letters, digits,
+// the punctuation of a sentence and of a URL, and the accents GSM-7 carries
+// (è é à ù É). A message within it bills 160 characters a part; one character
+// outside it (Arabic, emoji) makes the operator send the whole message as
+// UNICODE, 70 characters a part. We do NOT strip those chars (that silently
+// dropped Arabic property titles from outbid/won SMS); instead we detect them
+// and tell the caller to send as unicode so the content survives. `\n` is
+// GSM-7, so it's allowed.
+const HAS_NON_PLAIN = /[^A-Za-z0-9èéàùÉ \n%@"'()_\-.\/:,;<=>?!&$+*#]/;
 
 /** True when `text` has a character outside the plain set — send it with
  *  `unicode: true` (any Arabic text, « », ç…). */
@@ -52,12 +55,94 @@ export function needsUnicode(text: string): boolean {
   return HAS_NON_PLAIN.test(text);
 }
 
+// What the French templates say with typography, said with the GSM-7 alphabet:
+// « » become straight quotes, ’ an apostrophe, the dashes and the middle dot a
+// hyphen, a no-break space a space, and the few French letters GSM-7 lacks
+// (ç ô ê â î û ë ï œ) lose their mark. Nearly every French notification
+// quotes the annonce in « », which alone made it unicode and doubled its
+// cost. The bell and the e-mail keep the typography; only the SMS, billed by
+// the alphabet, is flattened — and only when flattening makes it plain: an
+// Arabic message is unicode whatever we do, so it goes out exactly as written.
+const TYPOGRAPHY: [RegExp, string][] = [
+  [/«\s?/g, '"'],
+  [/\s?»/g, '"'],
+  [/[“”„]/g, '"'],
+  [/[‘’‚]/g, "'"],
+  [/[–—]/g, "-"],
+  [/·/g, "-"],
+  [/…/g, "..."],
+  [/[   ]/g, " "],
+];
+const LETTERS: Record<string, string> = {
+  ç: "c", Ç: "C", ô: "o", Ô: "O", ê: "e", Ê: "E", â: "a", Â: "A", î: "i", Î: "I",
+  û: "u", Û: "U", ë: "e", Ë: "E", ï: "i", Ï: "I", œ: "oe", Œ: "OE",
+  // GSM-7 has the small à è ù ì ò, not their capitals: an ALL-CAPS title flipped the SMS to unicode.
+  À: "A", È: "E", Ù: "U", Ì: "I", Ò: "O",
+};
+
+/** `text` with the GSM-7 alphabet wherever French typography stood. */
+export function toGsmText(text: string): string {
+  let out = text;
+  for (const [re, to] of TYPOGRAPHY) out = out.replace(re, to);
+  return out.replace(/[çÇôÔêÊâÂîÎûÛëËïÏœŒÀÈÙÌÒ]/g, (c) => LETTERS[c] ?? c);
+}
+
+// The least of a quoted title an SMS keeps before the end of the sentence is
+// cut instead.
+const TITLE_KEEP = 8;
+
+/**
+ * `body` within `room` characters. A quoted annonce title is the one part of
+ * the sentence whose length nobody controls, so when the body does not fit
+ * the title gives way first — "Appartement S+2 à L..." — and the fact the
+ * sentence states (the day of a visit, an expiry date) survives; the end is
+ * cut only when even that is not enough. Cutting from the end alone used to
+ * lose the visit's day for any title past thirty-five characters.
+ */
+/**
+ * The quoted title in a body: from the first opening quote to the LAST closing
+ * one. A title may hold a quote of its own, and a lazy regex stopped there,
+ * shortened the wrong span and cut the date after all.
+ */
+function quotedSpan(body: string): { open: string; inner: string; close: string; index: number; length: number } | null {
+  for (const [o, c] of [["«", "»"], ['"', '"']] as const) {
+    const start = body.indexOf(o);
+    const end = body.lastIndexOf(c);
+    if (start < 0 || end <= start) continue;
+    let open = o;
+    let close = c;
+    let innerStart = start + 1;
+    let innerEnd = end;
+    if (body[innerStart] === " ") { open += " "; innerStart++; }
+    if (body[innerEnd - 1] === " ") { close = " " + close; innerEnd--; }
+    const inner = body.slice(innerStart, innerEnd);
+    if (!inner) continue;
+    return { open, inner, close, index: start, length: end + 1 - start };
+  }
+  return null;
+}
+
+function fitBody(body: string, room: number): string {
+  if (body.length <= room) return body;
+  const quoted = quotedSpan(body);
+  if (quoted) {
+    const { open, inner, close, index, length } = quoted;
+    const keep = Math.max(TITLE_KEEP, inner.length - (body.length - room) - 3);
+    if (keep < inner.length) {
+      const short = `${open}${inner.slice(0, keep).trimEnd()}...${close}`;
+      body = body.slice(0, index) + short + body.slice(index + length);
+      if (body.length <= room) return body;
+    }
+  }
+  return body.slice(0, room).trim();
+}
+
 /**
  * Build a readable, 4-line SMS for a notification and report whether it must be
  * sent as UNICODE:
  *   {brand}  ← "Mazed Auto" / "Mazed Immo" (sender ID is MAZED for both)
  *   {title}  ← headline ("Identité vérifiée")
- *   {body}   ← detail (truncated to fit; content preserved verbatim, incl. Arabic)
+ *   {body}   ← detail (the quoted title shortened, then the end cut, to fit)
  *   {url}    ← deep link (kept; body is trimmed first)
  * Length-capped — tighter for unicode, since those bill in 70-char segments.
  */
@@ -69,15 +154,17 @@ export function toSmsText(opts: {
   maxLen?: number;
 }): { text: string; unicode: boolean } {
   const { brand, title, body, url, maxLen = 300 } = opts;
-  const clean = (s: string) => (s || "").replace(/\s+/g, " ").trim();
-  const tail = url ? `\n${clean(url)}` : "";
-  let msg = `${clean(brand)}\n${clean(title)}`;
-  const b = clean(body ?? "");
-  const unicode = HAS_NON_PLAIN.test(`${msg}\n${b}${tail}`);
+  const clean = (s: string | null | undefined) => (s || "").replace(/\s+/g, " ").trim();
+  const raw = { brand: clean(brand), title: clean(title), body: clean(body), url: clean(url) };
+  const flat = { ...raw, brand: toGsmText(raw.brand), title: toGsmText(raw.title), body: toGsmText(raw.body) };
+  const unicode = HAS_NON_PLAIN.test(`${flat.brand}\n${flat.title}\n${flat.body}\n${flat.url}`);
+  const say = unicode ? raw : flat;
   const cap = unicode ? Math.min(maxLen, 210) : maxLen;
-  if (b) {
+  const tail = say.url ? `\n${say.url}` : "";
+  let msg = `${say.brand}\n${say.title}`;
+  if (say.body) {
     const room = cap - msg.length - tail.length - 1; // -1 for the body's leading newline
-    if (room > 12) msg += `\n${b.length > room ? b.slice(0, room).trim() : b}`;
+    if (room > 12) msg += `\n${fitBody(say.body, room)}`;
   }
   let out = (msg + tail).trim();
   if (out.length > cap) out = out.slice(0, cap).trim();

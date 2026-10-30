@@ -3,11 +3,13 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { fail } from "@/lib/http/errors";
+import { jsonObject } from "@/lib/http/body";
 import { apiTranslator } from "@/lib/i18n/server";
 import { categoryLabel } from "@/lib/i18n";
 import { redactContacts } from "@/lib/moderation/rules";
 import { callJson } from "@/lib/ai/server";
 import {
+  CHAT_MAX_MESSAGE_CHARS,
   CHAT_MAX_TURNS,
   CHAT_MAX_TURN_CHARS,
   LISTING_CHAT_SCHEMA,
@@ -15,6 +17,7 @@ import {
   chatReply,
   chatTranscript,
   normalizeListingDraft,
+  splitTurn,
   type ChatTurn,
   type DraftCategory,
 } from "@/lib/ai/listing";
@@ -42,7 +45,7 @@ export async function POST(req: NextRequest) {
   if (!admin) return fail("server_misconfigured", 500);
   const t = await apiTranslator(req, "aiApi");
 
-  const body = (await req.json().catch(() => ({}))) as { turns?: unknown };
+  const body = await jsonObject(req);
   const turns: ChatTurn[] = (Array.isArray(body.turns) ? body.turns : [])
     .filter(
       (x): x is ChatTurn =>
@@ -50,11 +53,14 @@ export async function POST(req: NextRequest) {
         ((x as ChatTurn).role === "seller" || (x as ChatTurn).role === "assistant") &&
         typeof (x as ChatTurn).text === "string",
     )
-    .map((x) => ({
-      role: x.role,
-      // The seller's words are redacted; the assistant's were written by the model.
-      text: (x.role === "seller" ? redactContacts(x.text) : x.text).trim().slice(0, CHAT_MAX_TURN_CHARS),
-    }))
+    // The seller's words are redacted; the assistant's were written by the
+    // model. A dictated message longer than a turn is read as several turns,
+    // not cut to the first: the price is usually said last.
+    .flatMap((x): ChatTurn[] =>
+      x.role === "seller"
+        ? splitTurn(redactContacts(x.text.slice(0, CHAT_MAX_MESSAGE_CHARS))).map((text) => ({ role: "seller", text }))
+        : [{ role: "assistant", text: x.text.trim().slice(0, CHAT_MAX_TURN_CHARS) }],
+    )
     .filter((x) => x.text)
     .slice(-CHAT_MAX_TURNS);
 

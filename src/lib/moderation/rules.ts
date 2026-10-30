@@ -54,7 +54,13 @@ export function normalizeText(s: string): string {
     .trim();
 }
 
-const PHONE = /(?:\+|00)?\s*216[\s.-]*\d|(?<!\d)[2-9]\d(?:[\s.-]?\d){6}(?!\d)/;
+/**
+ * A Tunisian number: eight digits, or the country code and then the eight
+ * digits. The code is read only with its whole number after it — « 216 000
+ * dinars », « 2160 m² » and « 1 216 000 TND » are a price and a surface — and
+ * with the number, so that nothing of it stays once it is taken out.
+ */
+const PHONE = /(?:(?:\+|00)\s*|(?<!\d))216[\s.-]*(?:\d[\s.-]?){7}\d|(?<!\d)[2-9]\d(?:[\s.-]?\d){6}(?!\d)/;
 const EMAIL = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
 const URL_LIKE = /(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+\.(?:com|tn|net|org|fr|io|me)\b/i;
 const MESSENGERS = /whats\s?app|wa\.me|viber|telegram|messenger|واتس|واتساب|فايبر|تيليغرام/i;

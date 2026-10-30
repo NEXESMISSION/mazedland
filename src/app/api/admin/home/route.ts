@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { revalidateTag } from "next/cache";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
 
-  const body = await req.json().catch(() => ({} as Record<string, unknown>));
+  const body = await jsonObject(req);
   // Accepts the old `propertyId` key as well: the client component sent it
   // until this route moved to `listings`, and a stale bundle in someone's tab
   // should curate a listing rather than 400.

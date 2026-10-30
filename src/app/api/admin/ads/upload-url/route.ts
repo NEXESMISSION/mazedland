@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
-  const body = (await req.json().catch(() => ({}))) as { ext?: unknown; size?: unknown };
+  const body = (await jsonObject(req)) as { ext?: unknown; size?: unknown };
   const t = await apiTranslator(req, "adminAds.api");
   const ext = adImageExt(String(body.ext ?? ""));
   if (!ext) return NextResponse.json({ error: "invalid", detail: t("imageType") }, { status: 400 });

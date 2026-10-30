@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { log } from "@/lib/log";
 import { logError } from "@/lib/activity";
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   if (rateLimited(ip)) return new NextResponse(null, { status: 204 });
   try {
-    const body = (await req.json().catch(() => ({}))) as {
+    const body = (await jsonObject(req)) as {
       message?: unknown;
       source?: unknown;
       stack?: unknown;

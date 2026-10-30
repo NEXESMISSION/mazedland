@@ -20,6 +20,8 @@ export type SavedItem = {
   coverPath: string | null;
   /** No longer published: kept in the list, marked « plus disponible ». */
   gone: boolean;
+  /** Taken down by the console: kept too, but with none of its words, price or photo. */
+  withheld: boolean;
 };
 
 /**
@@ -100,17 +102,27 @@ export function FavoritesList({ items }: { items: SavedItem[] }) {
                 </Link>
 
                 <div className="min-w-0 flex-1">
-                  <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted">{i.category}</span>
+                  {!i.withheld && (
+                    <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted">{i.category}</span>
+                  )}
                   <Link href={`/annonces/${i.id}` as never} className="block">
-                    <h2 className="mt-0.5 truncate text-[14.5px] font-bold text-foreground hover:text-gold">{i.title}</h2>
+                    <h2 className="mt-0.5 truncate text-[14.5px] font-bold text-foreground hover:text-gold">
+                      {i.withheld ? t("withheldTitle") : i.title}
+                    </h2>
                   </Link>
-                  <p className="mazed-tabular mt-0.5 text-[13.5px] font-extrabold text-foreground">
-                    {priceLabel(i, t("priceOnRequest"))}
-                  </p>
-                  <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
-                    <MapPin className="size-3" /> {i.place}
-                    {i.gone && <span className="ms-2 font-bold text-[var(--accent-deep)]">· {t("unavailable")}</span>}
-                  </p>
+                  {i.withheld ? (
+                    <p className="mt-0.5 text-[11px] font-bold text-[var(--accent-deep)]">{t("unavailable")}</p>
+                  ) : (
+                    <>
+                      <p className="mazed-tabular mt-0.5 text-[13.5px] font-extrabold text-foreground">
+                        {priceLabel(i, t("priceOnRequest"))}
+                      </p>
+                      <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
+                        <MapPin className="size-3" /> {i.place}
+                        {i.gone && <span className="ms-2 font-bold text-[var(--accent-deep)]">· {t("unavailable")}</span>}
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 <div className="self-start">
@@ -156,18 +168,24 @@ export function FavoritesList({ items }: { items: SavedItem[] }) {
                 </div>
 
                 <div className="p-3">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">{i.category}</span>
+                  {!i.withheld && (
+                    <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">{i.category}</span>
+                  )}
                   <Link href={`/annonces/${i.id}` as never} className="block">
                     <h2 className="mt-0.5 line-clamp-2 min-h-[2.5em] text-[13.5px] font-bold leading-snug text-foreground hover:text-gold">
-                      {i.title}
+                      {i.withheld ? t("withheldTitle") : i.title}
                     </h2>
                   </Link>
-                  <p className="mazed-tabular mt-1 text-[15px] font-extrabold text-foreground">
-                    {priceLabel(i, t("onRequest"))}
-                  </p>
-                  <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
-                    <MapPin className="size-3" /> {i.place}
-                  </p>
+                  {!i.withheld && (
+                    <>
+                      <p className="mazed-tabular mt-1 text-[15px] font-extrabold text-foreground">
+                        {priceLabel(i, t("onRequest"))}
+                      </p>
+                      <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
+                        <MapPin className="size-3" /> {i.place}
+                      </p>
+                    </>
+                  )}
                 </div>
               </article>
             ))}

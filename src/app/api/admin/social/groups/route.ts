@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { requireAdmin } from "@/lib/admin/guard";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { logAction } from "@/lib/activity";
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
-  const parsed = parseGroupInput((await req.json().catch(() => ({}))) as Record<string, unknown>);
+  const parsed = parseGroupInput(await jsonObject(req));
   const t = await apiTranslator(req, "adminSocial.errors");
   if (!parsed.ok) return NextResponse.json({ error: "invalid", detail: t(parsed.error) }, { status: 400 });
 

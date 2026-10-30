@@ -16,7 +16,7 @@
 // each is shortly followed by a real verdict (accepted / approved / rejected), so
 // SMSing the ack too made the user get TWO SMS for one thing. Acks stay in-app +
 // email; SMS carries the verdict only.
-// The per-user daily cap (CAPPED_KINDS) still bounds an outbid storm.
+// The per-user daily cap (CAPPED_KINDS) bounds what arrives in bulk.
 export const SMS_KINDS = new Set<string>([
   // KYC / identity
   "kyc_verified", "kyc_rejected", "kyc_pending_reminder",
@@ -58,11 +58,78 @@ export const SMS_KINDS = new Set<string>([
   "visit_requested", "visit_confirmed", "visit_declined", "visit_cancelled",
 ]);
 
-// The per-user daily cap applies ONLY to these higher-frequency kinds (so an
-// "outbid storm" can't burn credit). Every other kind — the money/outcome/
-// account-critical ones (won, payment/KYC/payout verdicts, final-payment,
-// deposit refunded, …) — BYPASSES the cap and is never suppressed.
-export const CAPPED_KINDS = new Set<string>([
-  "outbid", "auction_outbid", "sixth_offer_outbid",
-  "auction_ending_soon", "auction_live", "auction_live_seller",
+// The kinds the per-user daily cap (`sms_daily_cap` in the console) never
+// suppresses: a verdict on money or on a thing the person asked for, and a
+// date in their diary. Each arrives once per thing and never in bulk, and
+// each is something the person must act on — so it goes out even when the
+// day's quota is spent on the rest.
+//
+// The cap used to name the kinds it throttled instead — six auction kinds,
+// none produced since the product was dropped — so for every SMS the site
+// really sends (thirty annonces approved at once, twenty visit requests on
+// a popular annonce) it never fired. It is defined the other way round now:
+// everything is capped except this list, and a kind added to SMS_KINDS is
+// capped the day it is added.
+export const UNCAPPED_KINDS = new Set<string>([
+  // Money verdicts
+  "payment_accepted", "payment_rejected", "deposit_refunded",
+  // The verdict on an annonce or an agence the person submitted; the plan
+  // that keeps an agence's annonces online.
+  "listing_rejected", "listing_payment_rejected",
+  "shop_approved", "shop_rejected",
+  "plan_expiring",
+  // The buyer must turn up: the day and half-day of a visit.
+  "visit_confirmed",
+  // Retired with the auction product and the identity checks; a row of one
+  // of these, should any remain, still bypasses the cap as it always did.
+  "kyc_verified", "kyc_rejected",
+  "auction_won", "auction_lost", "sixth_offer_awarded",
+  "auction_sold_seller", "auction_finalized_seller", "auction_cancelled",
+  "final_payment_due_soon", "final_payment_due_tomorrow", "final_payment_overdue",
+  "final_payment_overdue_seller", "final_payment_defaulted",
+  "payout_processing", "payout_paid", "payout_rejected",
+  "inspector_approved",
 ]);
+
+// The per-user daily cap applies to every other SMS kind: once over it, the
+// notification stays in the bell and the e-mail, as the console's hint says.
+export const CAPPED_KINDS = new Set<string>([...SMS_KINDS].filter((k) => !UNCAPPED_KINDS.has(k)));
+
+/** What a notification carries under `payload.vars`, if anything. */
+type Vars = Record<string, unknown>;
+
+export type SmsSource = {
+  kind: string;
+  title: string;
+  body: string | null;
+  payload?: unknown;
+};
+
+/**
+ * The notification as an SMS may say it. An SMS leaves under the platform's
+ * sender name, so free text typed by another user must not be its first
+ * line: a buyer's name on a visit request could read « Appelez le 20 123 456
+ * urgent », a seller's note could ask the buyer for a deposit. The bell and
+ * the e-mail keep the name and the note (the recipient opens them inside the
+ * site); the SMS names the buyer with `visitor` (« Un acheteur ») and drops
+ * the seller's note, which the link shows. A row from before payloads carried
+ * variables keeps the name in its stored body, so that body is not sent.
+ */
+export function forSms<T extends SmsSource>(row: T, visitor: string): T {
+  const payload = row.payload && typeof row.payload === "object" ? (row.payload as Record<string, unknown>) : null;
+  const vars = payload?.vars && typeof payload.vars === "object" ? (payload.vars as Vars) : null;
+  switch (row.kind) {
+    case "visit_requested":
+    case "visit_cancelled":
+      return vars
+        ? { ...row, payload: { ...payload, vars: { ...vars, name: visitor } } }
+        : { ...row, body: null };
+    case "visit_confirmed":
+    case "visit_declined":
+      return vars && typeof vars.note === "string" && vars.note !== ""
+        ? { ...row, payload: { ...payload, vars: { ...vars, note: "", variant: "plain" } } }
+        : row;
+    default:
+      return row;
+  }
+}

@@ -105,6 +105,8 @@ export const SETTINGS = {
   social_auto_approve: { group: "social", type: "bool", default: false },
   social_daily_limit: { group: "social", type: "int", default: 10, min: 1, max: 100, unit: "per_day" },
   ai_daily_budget_usd: { group: "social", type: "number", default: 2, min: 0, max: 100, step: 0.5 },
+  // One account's share of it: at about 4 cents a call, half a dollar is a dozen conversations.
+  ai_user_daily_budget_usd: { group: "social", type: "number", default: 0.5, min: 0, max: 100, step: 0.1 },
 
   // ── Where sellers pay (manual transfer / D17). Secret: the checkout reads
   //    them on the server, for a payer with an open payment only.
@@ -128,6 +130,8 @@ export const SETTINGS = {
   limit_phone_reveals_per_hour: { group: "limits", type: "int", default: 40, min: 1, max: 1000, unit: "per_hour" },
   limit_suggestions_per_day: { group: "limits", type: "int", default: 30, min: 1, max: 500, unit: "per_day" },
   limit_shop_create_per_hour: { group: "limits", type: "int", default: 5, min: 1, max: 50, unit: "per_hour" },
+  // Adding to an agence's team says whether a phone number has an account (the members route).
+  limit_member_adds_per_hour: { group: "limits", type: "int", default: 20, min: 1, max: 200, unit: "per_hour" },
   sms_daily_cap: { group: "limits", type: "int", default: 6, min: 0, max: 50, unit: "per_day" },
   // One alert per error per this many hours (0185 reads it with the same default).
   error_alert_hours: { group: "limits", type: "int", default: 6, min: 1, max: 24, unit: "hours", choices: [1, 6, 24] },
@@ -145,6 +149,10 @@ export const SETTINGS = {
   // The scheduled jobs' run log (0188): technical, no personal data, and it
   // grew to half the database. Always pruned — no 0 here.
   cron_history_days: { group: "privacy", type: "int", default: 7, min: 1, max: 90, unit: "days", choices: [3, 7, 14, 30, 90] },
+  // Uploads no row names (0197): the photos of a wizard never sent, the
+  // receipts of a payment never made. Swept nightly once older than this; the
+  // delay keeps an upload still in flight out of the sweep.
+  uploads_prune_days: { group: "privacy", type: "int", default: 2, min: 1, max: 30, unit: "days", choices: [1, 2, 3, 7, 14, 30] },
 } as const satisfies Record<string, SettingDef>;
 
 export type SettingKey = keyof typeof SETTINGS;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
@@ -26,7 +27,7 @@ async function target(req: NextRequest) {
   if (gate instanceof NextResponse) return { res: gate };
   const admin = getServiceSupabase();
   if (!admin) return { res: fail("server_misconfigured", 500) };
-  const body = (await req.json().catch(() => ({}))) as Body;
+  const body = (await jsonObject(req)) as Body;
   const userId = typeof body.userId === "string" ? body.userId : "";
   const t = await apiTranslator(req, "adminTeam.api");
   if (!userId) return { res: NextResponse.json({ error: "invalid" }, { status: 400 }) };
@@ -86,6 +87,10 @@ export async function DELETE(req: NextRequest) {
   // Back to an ordinary account; their annonces and their agence stay theirs.
   const { error } = await admin.from("profiles").update({ role: "individual", admin_scopes: null }).eq("id", profile.id);
   if (error) return fail("team_update_failed", 500, error);
+  // The auth record's claim goes too. is_admin() reads the profile since
+  // 0195, so the claim decides nothing any more; it is cleared so nothing
+  // ever trusts it again.
+  await admin.auth.admin.updateUserById(profile.id, { app_metadata: { role: null } }).then(() => {}, () => {});
 
   logAction(req, gate.user, "admin.team.remove", { id: profile.id });
   await audit(admin, gate.user.id, {

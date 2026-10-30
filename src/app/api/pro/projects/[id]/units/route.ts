@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { projectGate } from "@/lib/pro/api";
 import { parseUnitPatch, parseUnitPlan, planUnits, unitPlanSize } from "@/lib/pro/projects";
 import { featureOff } from "@/lib/settings/gate";
@@ -6,6 +7,7 @@ import { getSettings } from "@/lib/settings/server";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
+import { isUuid } from "@/lib/uuid";
 
 /**
  * The units of a project (0179).
@@ -16,10 +18,9 @@ import { apiTranslator } from "@/lib/i18n/server";
  *   DELETE { unitIds }                         → remove them.
  */
 
+// Real uuids only: 36 hyphens passed the old check and were a 500 in Postgres.
 const ids = (v: unknown): string[] | null =>
-  Array.isArray(v) && v.length > 0 && v.length <= 500 && v.every((x) => typeof x === "string" && /^[0-9a-f-]{36}$/i.test(x))
-    ? (v as string[])
-    : null;
+  Array.isArray(v) && v.length > 0 && v.length <= 500 && v.every((x) => isUuid(x)) ? (v as string[]) : null;
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const off = await featureOff("feature_projects");
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { user, admin } = gate;
   const t = await apiTranslator(req, "proApi.projects");
 
-  const plan = parseUnitPlan((await req.json().catch(() => ({}))) as Record<string, unknown>);
+  const plan = parseUnitPlan(await jsonObject(req));
   if (!plan) return NextResponse.json({ error: "invalid", detail: t("badPlan") }, { status: 400 });
 
   const [{ data: last }, { count: existing }, settings] = await Promise.all([
@@ -61,7 +62,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (gate instanceof NextResponse) return gate;
   const { user, admin } = gate;
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = await jsonObject(req);
   const unitIds = ids(body.unitIds);
   const { unitIds: _drop, ...rest } = body;
   void _drop;
@@ -85,7 +86,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (gate instanceof NextResponse) return gate;
   const { user, admin } = gate;
 
-  const unitIds = ids(((await req.json().catch(() => ({}))) as Record<string, unknown>).unitIds);
+  const unitIds = ids((await jsonObject(req)).unitIds);
   if (!unitIds) return NextResponse.json({ error: "invalid" }, { status: 400 });
   const { data: gone, error } = await admin.from("project_units").delete().eq("project_id", id).in("id", unitIds).select("id");
   if (error) return fail("units_delete_failed", 500, error);

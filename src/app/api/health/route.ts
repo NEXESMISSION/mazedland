@@ -35,8 +35,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const secret = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization") ?? "";
-  const key = req.nextUrl.searchParams.get("key") ?? "";
-  const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : key;
+  // The header only: a key in the URL ended up in every request log.
+  const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
   const authorized = !!secret && secretMatches(provided, secret);
 
   const body = authorized

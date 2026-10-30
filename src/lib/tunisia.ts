@@ -35,6 +35,22 @@ export const TUNISIAN_GOVERNORATES = [
 export type TunisianGovernorate = (typeof TUNISIAN_GOVERNORATES)[number];
 
 /**
+ * What a form sent for a governorate that may be left blank: a name from the
+ * list, the empty choice ('' or null), or no choice at all — a name off the
+ * list, a number, an object. The last kind used to be read as the empty
+ * choice, and a client bug erased the stored governorate with a 200.
+ */
+export function governorateChoice(v: unknown): { ok: true; value: TunisianGovernorate | null } | { ok: false } {
+  if (v === null || v === "") return { ok: true, value: null };
+  if (typeof v !== "string") return { ok: false };
+  const name = v.trim();
+  if (!name) return { ok: true, value: null };
+  return (TUNISIAN_GOVERNORATES as readonly string[]).includes(name)
+    ? { ok: true, value: name as TunisianGovernorate }
+    : { ok: false };
+}
+
+/**
  * Arabic names of the 24 governorates. The French name stays the stored value
  * (listings.governorate, profiles.governorate, URL filters); this is display
  * only.

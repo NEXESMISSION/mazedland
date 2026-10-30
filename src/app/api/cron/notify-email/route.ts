@@ -27,7 +27,7 @@ const cLog = log.scope("cron-mail");
  * notification source — SQL triggers and TS routes alike — because they all
  * land in that one table.
  *
- * Auth: shared `CRON_SECRET` (Bearer or ?key=), same as the tick cron.
+ * Auth: shared `CRON_SECRET`, as a Bearer header (the Vault sends it, 0200).
  * Schedule: Vercel Cron (see vercel.json). Safe before email is configured —
  * it no-ops and leaves rows untouched, so adding the key later only sends the
  * recent backlog (last 24h), never the whole history.
@@ -110,8 +110,7 @@ async function run(req: NextRequest) {
     return NextResponse.json({ error: "cron_secret_not_set" }, { status: 503 });
   }
   const auth = req.headers.get("authorization") ?? "";
-  const key = req.nextUrl.searchParams.get("key") ?? "";
-  const provided = auth.startsWith("Bearer ") ? auth.slice(7) : key;
+  const provided = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   if (!secretMatches(provided, secret)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }

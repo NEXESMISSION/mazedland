@@ -37,17 +37,23 @@ export async function publicationDays(admin: Admin, feePaymentId: string | null)
  * review state and send the same notification. `reviewerId` is the admin, or
  * null when the rules published it. Runs on the service-role client, which is
  * what `_listings_guard_publish` (0146) lets through.
+ *
+ * `from` is the statuses the caller may publish from, tested in the same
+ * statement as the write. An admin's approval used to read the status, then
+ * write: two approvals a moment apart (a double click, two moderators) both
+ * went through, and the seller was told twice. When nothing is in one of
+ * those statuses any more, nothing is written and `wrongStatus` says so.
  */
 export async function publishListing(
   admin: Admin,
   listing: { id: string; seller_id: string; title: string; fee_payment_id: string | null },
-  opts: { reviewerId: string | null; days?: number; extra?: Record<string, unknown> },
-): Promise<{ ok: true; expiresAt: Date } | { ok: false; error: unknown }> {
+  opts: { reviewerId: string | null; days?: number; extra?: Record<string, unknown>; from?: readonly string[] },
+): Promise<{ ok: true; expiresAt: Date } | { ok: false; error: unknown; wrongStatus?: boolean }> {
   const d = opts.days ?? (await publicationDays(admin, listing.fee_payment_id));
   const now = new Date();
   const expires = new Date(now.getTime() + d * 86_400_000);
 
-  const { error } = await admin
+  let update = admin
     .from("listings")
     .update({
       ...opts.extra,
@@ -65,7 +71,12 @@ export async function publishListing(
       review_flags: [],
     })
     .eq("id", listing.id);
+  if (opts.from) update = update.in("status", [...opts.from]);
+  const { data: moved, error } = await update.select("id");
   if (error) return { ok: false, error };
+  if (opts.from && (moved ?? []).length === 0) {
+    return { ok: false, error: new Error("listing_not_in_status"), wrongStatus: true };
+  }
 
   // Reports that were waiting on this annonce have been dealt with: a later
   // wave counts from zero.

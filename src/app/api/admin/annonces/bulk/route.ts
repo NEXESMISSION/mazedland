@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { publishListing } from "@/lib/listings/publish";
+import { takeDownListing } from "@/lib/listings/takedown";
 import { missingPhotos } from "@/lib/listings/storage";
 import { isUuid } from "@/lib/uuid";
 import { getServiceSupabase } from "@/lib/supabase/admin";
@@ -11,7 +13,10 @@ import { apiTranslator } from "@/lib/i18n/server";
 /**
  * The same moderation actions, applied to a selection.
  *
- *   POST { ids: [...], action: "approve" | "archive" | "extend", days? }
+ *   POST { ids: [...], action: "approve" | "archive" | "extend", days?, reason? }
+ *
+ * `reason` goes with `archive`: one motif for the batch, sent to every seller
+ * like the single action's.
  *
  * Why this exists as its own route rather than the client looping over the
  * single-id one: sixty-six annonces today, several hundred a month if this
@@ -40,15 +45,18 @@ export async function POST(req: NextRequest) {
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
-  const body = (await req.json().catch(() => ({}))) as {
+  const body = (await jsonObject(req)) as {
     ids?: unknown;
     action?: unknown;
     days?: unknown;
+    reason?: unknown;
   };
   const action = typeof body.action === "string" ? body.action : "";
   // `detail` and each skipped row's `why` are shown to the moderator as-is,
   // in the language of the page that asked.
   const t = await apiTranslator(req, "adminApi.bulk");
+  const tStatus = await apiTranslator(req, "publishApi.statuses");
+  const statusWord = (s: unknown) => (tStatus.has(String(s)) ? tStatus(String(s)) : String(s));
   const ids = Array.isArray(body.ids)
     ? body.ids.filter((v): v is string => typeof v === "string").slice(0, MAX)
     : [];
@@ -79,7 +87,7 @@ export async function POST(req: NextRequest) {
   if (action === "approve") {
     for (const r of found) {
       if (r.status !== "pending_review") {
-        skipped.push({ id: r.id, title: r.title, why: t("skipStatus", { status: r.status }) });
+        skipped.push({ id: r.id, title: r.title, why: t("skipStatus", { status: statusWord(r.status) }) });
         continue;
       }
       if (!r.contact_phone) {
@@ -99,14 +107,16 @@ export async function POST(req: NextRequest) {
       // The same path as a single approval and the automatic publication
       // (src/lib/listings/publish.ts): the dates, the review state, the
       // reports, the seller's notification — and the buyers whose demande
-      // this annonce answers, whom this loop used to skip.
+      // this annonce answers, whom this loop used to skip. `from` makes the
+      // status part of the write: a row another moderator just published is
+      // reported, not published again.
       const published = await publishListing(
         admin,
         { id: r.id, seller_id: r.seller_id, title: r.title, fee_payment_id: (r.fee_payment_id as string | null) ?? null },
-        { reviewerId: user.id },
+        { reviewerId: user.id, from: ["pending_review"] },
       );
       if (!published.ok) {
-        skipped.push({ id: r.id, title: r.title, why: t("skipServerError") });
+        skipped.push({ id: r.id, title: r.title, why: published.wrongStatus ? t("skipChanged") : t("skipServerError") });
         continue;
       }
       ok.push(r.id);
@@ -114,28 +124,25 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === "archive") {
-    const movable = found.filter((r) => r.status !== "archived");
+    const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
     for (const r of found) {
       if (r.status === "archived") {
         skipped.push({ id: r.id, title: r.title, why: t("skipAlreadyArchived") });
+        continue;
       }
-    }
-    if (movable.length > 0) {
-      // An admin's takedown (0190), like the single action: the seller cannot
-      // relist what the console took down.
-      const now = new Date().toISOString();
-      const { error } = await admin
-        .from("listings")
-        .update({
-          status: "archived",
-          reviewed_by: user.id,
-          reviewed_at: now,
-          taken_down_at: now,
-          taken_down_by: user.id,
-        })
-        .in("id", movable.map((r) => r.id));
-      if (error) return fail("bulk_archive_failed", 500, error);
-      ok.push(...movable.map((r) => r.id));
+      // An admin's takedown (0190), through the same helper as the single
+      // action: the seller cannot relist what the console took down, and is
+      // told so, with the motif — this path used to leave them wondering.
+      const out = await takeDownListing(
+        admin,
+        { id: r.id, seller_id: r.seller_id, title: r.title },
+        { byId: user.id, reason: reason || null },
+      );
+      if (!out.ok) {
+        skipped.push({ id: r.id, title: r.title, why: out.already ? t("skipAlreadyArchived") : t("skipServerError") });
+        continue;
+      }
+      ok.push(r.id);
     }
   }
 

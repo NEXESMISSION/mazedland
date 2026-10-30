@@ -17,7 +17,8 @@
 // Bumping VERSION makes `activate` delete the v4 caches, including every RSC
 // and API response the old branch had stored.
 
-const VERSION = "mazed-v5";
+// v6 (2026-10-30): the private pages v5 had cached (Pro dashboard, invoices) go with it.
+const VERSION = "mazed-v6";
 const RUNTIME_CACHE = `${VERSION}-pages`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const IMAGE_CACHE = `${VERSION}-images`;
@@ -37,7 +38,10 @@ const PRECACHE = [
 // Pages that describe ONE signed-in person. They are never written to the
 // cache: on a shared device, the offline copy of someone's account or payments
 // page must not outlive their session.
-const PRIVATE_PREFIX = /^\/[a-z]{2}\/(account|admin|payment|annonces\/nouvelle)(\/|$)/;
+// Every page that shows one person's own things: never served from a cache
+// another person at the same device could open (the QA tour found the Pro
+// dashboard with its leads, and invoices, cached).
+const PRIVATE_PREFIX = /^\/[a-z]{2}\/(account|admin|payment|pro|factures|watchlist|demandes\/nouvelle|annonces\/nouvelle)(\/|$)/;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

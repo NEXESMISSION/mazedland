@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { isUuid } from "@/lib/uuid";
+import { isIsoInstant } from "@/lib/isoInstant";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
@@ -22,7 +24,7 @@ export async function POST(req: NextRequest) {
   if (gate instanceof NextResponse) return gate;
   const { user, supabase } = gate;
 
-  const body = (await req.json().catch(() => ({}))) as {
+  const body = (await jsonObject(req)) as {
     ids?: string[];
     filters?: {
       kind?: string;
@@ -50,6 +52,14 @@ export async function POST(req: NextRequest) {
     del = del.in("id", ids);
   } else if (body.filters && typeof body.filters === "object") {
     const f = body.filters;
+    // The same checks as the list route: a value Postgres cannot cast came
+    // back from « Supprimer tout (filtré) » as a 500.
+    if ([f.user_id, f.broadcast, f.created_by].some((v) => v && !isUuid(v))) {
+      return NextResponse.json({ error: "invalid_id" }, { status: 400 });
+    }
+    if (f.since && !isIsoInstant(f.since)) {
+      return NextResponse.json({ error: "invalid_since" }, { status: 400 });
+    }
     if (f.kind) del = del.eq("kind", String(f.kind));
     if (f.user_id) del = del.eq("user_id", String(f.user_id));
     if (f.broadcast) del = del.eq("broadcast_id", String(f.broadcast));

@@ -13,6 +13,7 @@ import { PaymentDetail, type PaymentDetailData } from "./PaymentDetail";
 import { formatRelativeTime, formatTND } from "@/lib/utils";
 import { productName } from "@/lib/products";
 import { loadInvoiceLines } from "@/lib/payments/invoiceLinesServer";
+import { parsePaymentSearch } from "@/lib/payments/search";
 import { Receipt } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -87,11 +88,32 @@ export default async function AdminPaiementsPage({
     payer:profiles!payments_user_id_fkey (full_name, phone)
   `;
 
+  // What is typed is the reference on the bank statement (the id's first eight
+  // characters — a range on `id`, src/lib/payments/search.ts), the payer's
+  // name or number, or a motif. The reference used to be looked for in
+  // `provider_ref`, which nothing writes: every customer who quoted theirs
+  // got « aucun résultat ».
+  const search = q ? parsePaymentSearch(q) : null;
+  const payerIds: string[] = [];
+  if (search?.text) {
+    const { data: payers } = await admin
+      .from("profiles")
+      .select("id")
+      .or(`full_name.ilike.%${search.text}%,phone.ilike.%${search.text}%`)
+      .limit(50);
+    for (const p of (payers ?? []) as { id: string }[]) payerIds.push(p.id);
+  }
+
   const listQuery = () => {
     let query = admin.from("payments").select(SELECT, { count: "exact" }).in("kind", V3_KINDS);
     const statuses = TAB_STATUSES[tab];
     if (statuses) query = query.in("status", statuses);
-    if (q) query = query.or(`provider_ref.ilike.%${q}%,admin_notes.ilike.%${q}%`);
+    if (search) {
+      const clauses = [`provider_ref.ilike.%${search.text}%`, `admin_notes.ilike.%${search.text}%`];
+      if (search.idRange) clauses.push(`and(id.gte.${search.idRange[0]},id.lte.${search.idRange[1]})`);
+      if (payerIds.length) clauses.push(`user_id.in.(${payerIds.join(",")})`);
+      query = query.or(clauses.join(","));
+    }
     return query.order("created_at", { ascending: false }).range(from, from + PAGE_SIZE - 1);
   };
 

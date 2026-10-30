@@ -1,7 +1,29 @@
 import { describe, it, expect } from "vitest";
-import { nextStatus, parseSlots, pickSlot, stageAfterVisit, tunisDay } from "./visits";
+import { nextStatus, parseSlots, personName, pickSlot, stageAfterVisit, tunisDay } from "./visits";
 
 const TODAY = "2026-10-26";
+
+describe("personName", () => {
+  it("keeps a name, in any script, with its spaces collapsed", () => {
+    expect(personName("  Mohamed   Ali Ben Salah ")).toBe("Mohamed Ali Ben Salah");
+    expect(personName("Jean-Pierre O'Neil")).toBe("Jean-Pierre O'Neil");
+    expect(personName("محمد بن علي")).toBe("محمد بن علي");
+    expect(personName("Mme K.")).toBe("Mme K.");
+  });
+
+  it("refuses what is not a name: numbers, symbols, a message, the empty, the endless", () => {
+    // The name reaches the seller under the platform's name, so a phone
+    // number or an instruction in it is refused, not relayed.
+    expect(personName("Appelez le 20123456 urgent")).toBeNull();
+    expect(personName("Karim (agence)")).toBeNull();
+    expect(personName("http://evil.example")).toBeNull();
+    expect(personName("K")).toBeNull();
+    expect(personName("---")).toBeNull();
+    expect(personName("a".repeat(61))).toBeNull();
+    expect(personName(42)).toBeNull();
+    expect(personName(undefined)).toBeNull();
+  });
+});
 
 describe("parseSlots", () => {
   it("keeps one to three distinct half-days in the next 30 days", () => {

@@ -1,6 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { asPendingEdit, changedKeys, isEditable, newFlags } from "./edit";
-import { MAX_PHOTOS, listingFields, listingPhotos } from "./input";
+import { MAX_PHOTOS, listingFields, listingPhotos, titleTooShort } from "./input";
+
+describe("titleTooShort", () => {
+  it("counts characters the way the database does, not UTF-16 units", () => {
+    // Two emoji: four code units, two characters — refused by the database.
+    expect(titleTooShort("🏠🏠")).toBe(true);
+    expect(titleTooShort("🏠🏠🏠")).toBe(false);
+    expect(titleTooShort("ab")).toBe(true);
+    expect(titleTooShort("  abc  ")).toBe(false);
+    expect(titleTooShort("  a b  ")).toBe(false);
+    expect(titleTooShort("   ")).toBe(true);
+  });
+});
 
 describe("newFlags", () => {
   it("holds back only what the edit itself trips", () => {
