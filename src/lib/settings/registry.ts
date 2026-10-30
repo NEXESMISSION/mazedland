@@ -128,6 +128,8 @@ export const SETTINGS = {
   limit_phone_reveals_per_hour: { group: "limits", type: "int", default: 40, min: 1, max: 1000, unit: "per_hour" },
   limit_suggestions_per_day: { group: "limits", type: "int", default: 30, min: 1, max: 500, unit: "per_day" },
   limit_shop_create_per_hour: { group: "limits", type: "int", default: 5, min: 1, max: 50, unit: "per_hour" },
+  // Adding to an agence's team says whether a phone number has an account (the members route).
+  limit_member_adds_per_hour: { group: "limits", type: "int", default: 20, min: 1, max: 200, unit: "per_hour" },
   sms_daily_cap: { group: "limits", type: "int", default: 6, min: 0, max: 50, unit: "per_day" },
   // One alert per error per this many hours (0185 reads it with the same default).
   error_alert_hours: { group: "limits", type: "int", default: 6, min: 1, max: 24, unit: "hours", choices: [1, 6, 24] },

@@ -67,7 +67,22 @@ describe("planUnits", () => {
     expect(parseUnitPlan({ mode: "floors", kind: "land", block: "A", floorFrom: 0, floorTo: 1, perFloor: 2 })).toBeNull();
     expect(parseUnitPlan({ mode: "floors", kind: "apartment", block: "Z9", floorFrom: 0, floorTo: 1, perFloor: 2 })).toBeNull();
     expect(parseUnitPlan({ mode: "lots", kind: "land", count: 0 })).toBeNull();
-    expect(parseUnitPlan({ mode: "lots", kind: "land", count: 3, price: -5 })).toMatchObject({ price: null });
+  });
+
+  it("refuses a figure typed and wrong, as the unit editor does, instead of dropping it", () => {
+    expect(parseUnitPlan({ mode: "lots", kind: "land", count: 3, price: -5 })).toBeNull();
+    expect(parseUnitPlan({ mode: "lots", kind: "parking", from: 1, count: 2, price: "250 000" })).toBeNull();
+    expect(parseUnitPlan({ mode: "lots", kind: "parking", from: 1, count: 2, area: "abc" })).toBeNull();
+    expect(parseUnitPlan({ mode: "floors", kind: "apartment", block: "A", floorFrom: 0, floorTo: 2, perFloor: 2, rooms: 21 })).toBeNull();
+    // Left empty is fine: the units get no figure.
+    expect(parseUnitPlan({ mode: "lots", kind: "land", count: 3, price: "", area: null })).toMatchObject({ price: null, area: null });
+  });
+
+  it("stops one below the price column's own ceiling, which would be a 500", () => {
+    expect(parseUnitPlan({ mode: "lots", kind: "land", count: 1, price: 99_999_999_999 })).toMatchObject({ price: 99_999_999_999 });
+    expect(parseUnitPlan({ mode: "lots", kind: "land", count: 1, price: 100_000_000_000 })).toBeNull();
+    expect(parseUnitPatch({ price: 99_999_999_999 })).toEqual({ ok: true, value: { price: 99_999_999_999 } });
+    expect(parseUnitPatch({ price: 100_000_000_000 })).toEqual({ ok: false });
   });
 });
 

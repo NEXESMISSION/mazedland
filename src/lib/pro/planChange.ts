@@ -13,6 +13,15 @@
  *    — except in the last days before it ends (Réglages, plan_renew_days),
  *    when it is renewed from that end.
  *
+ * « What is paid for » is what is paid for at that level or above: a smaller
+ * plan queued behind the running one neither pushes the start of the next
+ * period back nor counts as « until » (the QA tour, 2026-10-30: Pro to the
+ * 30th, Starter queued for a month after it, and the Pro card said « until
+ * 30 dec. »). Whatever starts replaces the smaller periods still ahead of its
+ * start, as an upgrade does: they end when it starts, or are cancelled, and
+ * their unused time is the discount — so the owner who queued Starter behind
+ * Pro can keep Pro after all, at once, and the Starter month comes off.
+ *
  * A period given by an admin, not paid, gives no discount. The discount is in
  * whole dinars, rounded down, and never more than the new price.
  */
@@ -33,22 +42,23 @@ export type PlanTarget = { quota: number; price: number; months: number };
 export type CreditLine = { periodId: string; days: number; amount: number };
 
 export type PlanQuote =
-  | { kind: "new"; price: number; amount: number; startsAt: Date; endsAt: Date }
   | {
-      kind: "upgrade";
+      kind: "new" | "upgrade" | "downgrade" | "renew";
       price: number;
+      /** What the replaced periods take off the price; 0 when nothing is replaced. */
       credit: number;
       amount: number;
       lines: CreditLine[];
-      /** Periods the upgrade replaces: ended today if running, cancelled if ahead. */
+      /** The smaller periods still ahead when this one starts: ended then if running, cancelled if wholly ahead. */
       replaces: string[];
       startsAt: Date;
       endsAt: Date;
     }
-  | { kind: "downgrade"; price: number; amount: number; startsAt: Date; endsAt: Date }
-  | { kind: "renew"; price: number; amount: number; startsAt: Date; endsAt: Date }
   /** The same plan, still running and not yet in its renewal days. */
   | { kind: "same"; until: Date; renewFrom: Date };
+
+/** Every answer but « same »: a period to pay for. */
+export type PlanPurchase = Exclude<PlanQuote, { kind: "same" }>;
 
 const DAY = 86_400_000;
 
@@ -82,21 +92,21 @@ export function quotePlanChange(input: {
   const running = ahead
     .filter((p) => p.startsAt.getTime() <= t)
     .sort((a, b) => b.quota - a.quota || b.endsAt.getTime() - a.endsAt.getTime())[0];
-  const paidUntil = ahead.reduce<Date | null>((m, p) => (!m || p.endsAt > m ? p.endsAt : m), null);
+  // What is paid for at this level or above; a smaller plan queued behind does not count.
+  const paidUntil = ahead
+    .filter((p) => p.quota >= target.quota)
+    .reduce<Date | null>((m, p) => (!m || p.endsAt > m ? p.endsAt : m), null);
 
-  if (!running) {
-    // Nothing runs today; a period paid ahead (rare) is followed.
-    const startsAt = paidUntil ?? now;
-    return { kind: "new", price: target.price, amount: target.price, startsAt, endsAt: addMonths(startsAt, target.months) };
-  }
-
-  if (target.quota > running.quota) {
+  // A period starting at `startsAt`, and the smaller periods still ahead of
+  // that moment, which it replaces: their time after it is the discount.
+  const quote = (kind: PlanPurchase["kind"], startsAt: Date): PlanPurchase => {
+    const s = startsAt.getTime();
     const lines: CreditLine[] = [];
     const replaces: string[] = [];
     for (const p of ahead) {
-      if (p.quota >= target.quota) continue;
+      if (p.quota >= target.quota || p.endsAt.getTime() <= s) continue;
       replaces.push(p.id);
-      const start = Math.max(p.startsAt.getTime(), t);
+      const start = Math.max(p.startsAt.getTime(), s);
       const whole = p.endsAt.getTime() - p.startsAt.getTime();
       const left = p.endsAt.getTime() - start;
       if (!p.paid || whole <= 0 || p.price <= 0) continue;
@@ -104,23 +114,28 @@ export function quotePlanChange(input: {
     }
     const credit = Math.min(target.price, Math.floor(lines.reduce((n, l) => n + l.amount, 0)));
     return {
-      kind: "upgrade",
+      kind,
       price: target.price,
       credit,
       amount: target.price - credit,
       lines: lines.map((l) => ({ ...l, amount: Math.floor(l.amount) })),
       replaces,
-      startsAt: now,
-      endsAt: addMonths(now, target.months),
+      startsAt,
+      endsAt: addMonths(startsAt, target.months),
     };
-  }
+  };
+
+  // Nothing runs today; a period of this plan or a bigger one paid ahead (rare) is followed.
+  if (!running) return quote("new", paidUntil ?? now);
+  if (target.quota > running.quota) return quote("upgrade", now);
 
   const from = paidUntil ?? running.endsAt;
-  if (target.quota < running.quota) {
-    return { kind: "downgrade", price: target.price, amount: target.price, startsAt: from, endsAt: addMonths(from, target.months) };
-  }
+  if (target.quota < running.quota) return quote("downgrade", from);
 
+  // The same plan: renewed from its end in its last days — or at once when a
+  // smaller plan is queued behind it, since renewing is how that one is replaced.
+  const renewal = quote("renew", from);
   const renewFrom = new Date(from.getTime() - Math.max(0, input.renewDays) * DAY);
-  if (t < renewFrom.getTime()) return { kind: "same", until: from, renewFrom };
-  return { kind: "renew", price: target.price, amount: target.price, startsAt: from, endsAt: addMonths(from, target.months) };
+  if (t < renewFrom.getTime() && renewal.replaces.length === 0) return { kind: "same", until: from, renewFrom };
+  return renewal;
 }

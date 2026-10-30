@@ -1266,7 +1266,7 @@
     },
     "shop_member_added": {
       "title": "Vous faites partie d'une agence",
-      "body": "Vous avez été ajouté à « {name} ». Retrouvez-la dans votre Espace Pro."
+      "body": "Vous avez été ajouté à « {name} ». Retrouvez-la dans votre Espace Pro ; vous pouvez la quitter depuis l'onglet Équipe."
     },
     "admin_shop_pending": {
       "title": "Agence à examiner",
@@ -1274,6 +1274,10 @@
       "paid": {
         "title": "Agence payée — à ouvrir",
         "body": "« {name} » a payé son abonnement {plan} : ouvrez-la."
+      },
+      "reverify": {
+        "title": "Agence à revérifier",
+        "body": "« {name} » a changé d'identité ({fields}) : le badge « vérifié » est retiré, contrôlez-la de nouveau."
       }
     },
     "visitor": "Un acheteur",
@@ -3231,10 +3235,12 @@
     "request_renew": "Demande renouvelée",
     "shop_create": "Agence demandée",
     "shop_update": "Agence modifiée",
+    "shop_reverify": "Agence à revérifier (identité modifiée)",
     "shop_document": "Document d'agence envoyé",
     "shop_member_add": "Membre ajouté à une agence",
     "shop_member_role": "Rôle d'un membre changé",
     "shop_member_remove": "Membre retiré d'une agence",
+    "shop_member_leave": "Membre parti d'une agence",
     "shop_subscribe": "Abonnement Pro choisi",
     "social_request": "Promotion réseaux demandée",
     "social_withdraw": "Promotion réseaux retirée",
@@ -3958,6 +3964,7 @@
       "saveFailed": "Enregistrement impossible. Réessayez.",
       "created": "Agence envoyée à la vérification.",
       "saved": "Agence enregistrée.",
+      "savedReverify": "Agence enregistrée. Son nom ou son identité légale a changé : le badge « vérifié » reviendra après un nouveau contrôle de l'équipe Mazed Immo.",
       "logo": "Logo",
       "cover": "Bannière",
       "imagesHint": "Logo carré et bannière large (3:1). JPG, PNG ou WebP.",
@@ -4053,6 +4060,7 @@
       "noName": "Sans nom",
       "planRunning": "Abonnement {name} en cours jusqu'au {date}. Un abonnement plus grand démarre dès que son paiement est validé : ce qui reste de celui-ci est déduit de son prix. Un plus petit prend la suite à cette date.",
       "planNone": "Aucun abonnement en cours : vos annonces suivent les règles d'un particulier (annonces gratuites en nombre limité, sans frais par annonce).",
+      "planThen": "Ensuite : {name} du {from} au {to}.",
       "perMonthTnd": "DT / mois",
       "planQuota": "{count, plural, one {# annonce en ligne} other {# annonces en ligne}}",
       "renewWith": "Prolonger avec celui-ci",
@@ -4072,6 +4080,9 @@
       "removeConfirm": "Retirer ce membre de l'agence ?",
       "memberRemoved": "Membre retiré.",
       "removeMember": "Retirer",
+      "leaveShop": "Quitter l'agence",
+      "leaveConfirm": "Quitter « {name} » ? Vous n'y publierez plus et ne verrez plus ses clients.",
+      "leftShop": "Vous avez quitté l'agence.",
       "fileTooBig": "Fichier trop lourd (10 Mo au maximum).",
       "documentSent": "Document envoyé.",
       "documentKind": "Type de document",
@@ -4350,7 +4361,8 @@
       "alreadyRejected": "Cette agence est déjà refusée.",
       "alreadySuspended": "Cette agence est déjà suspendue.",
       "reinstateOnlySuspended": "Seule une agence suspendue se rouvre ici : une agence en attente s'ouvre avec « Ouvrir », une fois son abonnement réglé.",
-      "wrongStatus": "Cette décision ne s'applique pas à l'état actuel de l'agence : rechargez la page."
+      "wrongStatus": "Cette décision ne s'applique pas à l'état actuel de l'agence : rechargez la page.",
+      "choiceInFlight": "Un autre choix d'abonnement vient d'être enregistré pour cette agence. Rechargez la page."
     },
     "leadErrors": {
       "name": "Indiquez un nom (2 lettres au moins).",
@@ -4948,6 +4960,10 @@
     "limit_shop_create_per_hour": {
       "label": "Créations d'agence par personne",
       "hint": "Contre les inscriptions en série."
+    },
+    "limit_member_adds_per_hour": {
+      "label": "Ajouts à l'équipe d'une agence par personne",
+      "hint": "Chaque ajout dit si un numéro a un compte : la limite empêche d'en tester en série."
     },
     "sms_daily_cap": {
       "label": "SMS par personne",

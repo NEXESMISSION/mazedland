@@ -88,4 +88,19 @@ describe("agence reports", () => {
     expect(head).toBe('"Réf";"Annonce";"V";"N";"F";"Vi";"C"');
     expect(line).toBe('"MZ-a";"Villa ""S+4"" à Sfax";"3";"0";"0";"0";"0"');
   });
+
+  it("keeps a title that starts like a formula as text (spreadsheet injection)", () => {
+    const listings = [
+      L("a", "u", "published", '=HYPERLINK("http://evil.example","clic")'),
+      L("b", "u", "published", "-20 % cette semaine"),
+      L("c", "u", "published", "Villa +4 à Sfax"),
+    ];
+    const raw: RawReport = { visitors: [["a", "2026-10-27", 3], ["b", "2026-10-27", 2], ["c", "2026-10-27", 1]] };
+    const r = buildReport({ raw, days: 7, today: "2026-10-27", listings, members: [], byAgent: false, tracesKeptDays: 0 });
+    const lines = reportCsv(r, { reference: "Réf", title: "Annonce", visitors: "V", reveals: "N", favourites: "F", visits: "Vi", leads: "C" }).slice(1).split("\r\n");
+    expect(lines[1]).toBe('"MZ-a";"\'=HYPERLINK(""http://evil.example"",""clic"")";"3";"0";"0";"0";"0"');
+    expect(lines[2]).toBe('"MZ-b";"\'-20 % cette semaine";"2";"0";"0";"0";"0"');
+    // A sign inside the text is not a formula.
+    expect(lines[3]).toBe('"MZ-c";"Villa +4 à Sfax";"1";"0";"0";"0";"0"');
+  });
 });

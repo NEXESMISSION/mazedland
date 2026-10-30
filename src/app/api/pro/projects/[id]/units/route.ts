@@ -6,6 +6,7 @@ import { getSettings } from "@/lib/settings/server";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
+import { isUuid } from "@/lib/uuid";
 
 /**
  * The units of a project (0179).
@@ -16,10 +17,9 @@ import { apiTranslator } from "@/lib/i18n/server";
  *   DELETE { unitIds }                         → remove them.
  */
 
+// Real uuids only: 36 hyphens passed the old check and were a 500 in Postgres.
 const ids = (v: unknown): string[] | null =>
-  Array.isArray(v) && v.length > 0 && v.length <= 500 && v.every((x) => typeof x === "string" && /^[0-9a-f-]{36}$/i.test(x))
-    ? (v as string[])
-    : null;
+  Array.isArray(v) && v.length > 0 && v.length <= 500 && v.every((x) => isUuid(x)) ? (v as string[]) : null;
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const off = await featureOff("feature_projects");

@@ -106,4 +106,45 @@ describe("changing an agence's plan", () => {
     const q = quotePlanChange({ now: d("2026-12-01"), target: target(PRO), periods: [period("old", STARTER, "2026-10-01", "2026-11-01")], renewDays: 5 });
     expect(q.kind).toBe("new");
   });
+
+  // The QA tour (2026-10-30): Pro to the 30th, a Starter month queued behind
+  // it — the Pro card said « until 30 dec. » and Pro could not be kept.
+  const PRO_THEN_STARTER = [period("p", PRO, "2026-10-30", "2026-11-30"), period("s", STARTER, "2026-11-30", "2026-12-30")];
+
+  it("a smaller plan queued behind: Pro ends where it ends, and renewing it at once replaces the Starter month", () => {
+    const q = quotePlanChange({ now: d("2026-11-05"), target: target(PRO), periods: PRO_THEN_STARTER, renewDays: 5 });
+    if (q.kind !== "renew") throw new Error(q.kind);
+    expect(q.startsAt.toISOString().slice(0, 10)).toBe("2026-11-30");
+    expect(q.endsAt.toISOString().slice(0, 10)).toBe("2026-12-30");
+    expect(q.replaces).toEqual(["s"]);
+    expect(q.lines).toEqual([{ periodId: "s", days: 30, amount: 29 }]);
+    expect(q.credit).toBe(29);
+    expect(q.amount).toBe(30);
+  });
+
+  it("the queued smaller plan chosen again follows itself, nothing replaced", () => {
+    const q = quotePlanChange({ now: d("2026-11-05"), target: target(STARTER), periods: PRO_THEN_STARTER, renewDays: 5 });
+    if (q.kind !== "downgrade") throw new Error(q.kind);
+    expect(q.startsAt.toISOString().slice(0, 10)).toBe("2026-12-30");
+    expect(q.replaces).toEqual([]);
+    expect(q.amount).toBe(29);
+  });
+
+  it("a plan between the running one and a smaller one queued behind follows the running one and replaces the queued one", () => {
+    const periods = [period("b", BUSINESS, "2026-10-20", "2026-11-20"), period("s", STARTER, "2026-11-20", "2026-12-20")];
+    const q = quotePlanChange({ now: d("2026-10-28"), target: target(PRO), periods, renewDays: 5 });
+    if (q.kind !== "downgrade") throw new Error(q.kind);
+    expect(q.startsAt.toISOString().slice(0, 10)).toBe("2026-11-20");
+    expect(q.replaces).toEqual(["s"]);
+    expect(q.credit).toBe(29);
+    expect(q.amount).toBe(30);
+  });
+
+  it("a renewal with nothing queued behind replaces nothing and costs the full price", () => {
+    const q = quotePlanChange({ now: d("2026-11-17"), target: target(PRO), periods: [period("p", PRO, "2026-10-20", "2026-11-20")], renewDays: 5 });
+    if (q.kind !== "renew") throw new Error(q.kind);
+    expect(q.replaces).toEqual([]);
+    expect(q.credit).toBe(0);
+    expect(q.amount).toBe(59);
+  });
 });

@@ -15,6 +15,11 @@ describe("rights in a shop", () => {
     expect(can("agent", "manage_listings")).toBe(false);
     expect(can(null, "publish")).toBe(false);
   });
+  it("lets anyone but the owner leave the agence", () => {
+    expect(can("agent", "leave")).toBe(true);
+    expect(can("admin", "leave")).toBe(true);
+    expect(can("owner", "leave")).toBe(false);
+  });
   it("never makes a second owner, and an admin only adds agents", () => {
     expect(canAssign("owner", "admin")).toBe(true);
     expect(canAssign("owner", "owner")).toBe(false);
