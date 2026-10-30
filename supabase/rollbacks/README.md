@@ -10,6 +10,7 @@ node scripts/backup-db.mjs
 
 | Migration | Rollback | What is lost |
 |---|---|---|
+| 0202 photos create-only | `0202_photos_create_only.down.sql` | the owner may delete (and so swap) their photos again; the activity-only member loses the names |
 | 0201 social job secret in header | `0201_social_job_secret_in_header.down.sql` | the social job carries the key in its URL again (only with code that accepts ?key=) |
 | 0200 cron secret in the Vault | `0200_cron_secret_in_vault.down.sql` | the Vault forgets the secret — only once the jobs carry it in their URL again |
 | 0199 deletion passes the guard | `0199_deletion_passes_the_profile_guard.down.sql` | request_account_deletion() without the bypass — every deletion fails again while 0195's guard stands |

@@ -28,7 +28,8 @@ async function requestLocale(): Promise<"fr" | "ar"> {
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await requestLocale();
-  return { title: locale === "ar" ? "الصفحة غير موجودة — Mazed Immo" : "Page introuvable — Mazed Immo" };
+  // Absolute: the layout's template (« %s · Mazed Immo ») would name the brand twice.
+  return { title: { absolute: locale === "ar" ? "الصفحة غير موجودة — Mazed Immo" : "Page introuvable — Mazed Immo" } };
 }
 
 function French({ secondary }: { secondary: boolean }) {

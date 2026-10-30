@@ -17,7 +17,8 @@
 // Bumping VERSION makes `activate` delete the v4 caches, including every RSC
 // and API response the old branch had stored.
 
-const VERSION = "mazed-v5";
+// v6 (2026-10-30): the private pages v5 had cached (Pro dashboard, invoices) go with it.
+const VERSION = "mazed-v6";
 const RUNTIME_CACHE = `${VERSION}-pages`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const IMAGE_CACHE = `${VERSION}-images`;

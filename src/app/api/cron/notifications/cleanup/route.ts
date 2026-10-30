@@ -20,8 +20,7 @@ export async function GET(req: NextRequest) {
   }
 
   const auth = req.headers.get("authorization") ?? "";
-  const key = req.nextUrl.searchParams.get("key") ?? "";
-  const provided = auth.startsWith("Bearer ") ? auth.slice(7) : key;
+  const provided = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   if (!secretMatches(provided, secret)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
