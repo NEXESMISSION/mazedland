@@ -4655,7 +4655,8 @@
     "bestNote": "Le trophée marque le prix et le prix au m² les plus bas, la plus grande surface et le plus de chambres — quand au moins deux annonces les indiquent. Un loyer ne se compare pas à un prix de vente : entre une vente et une location, les deux lignes de prix n'ont pas de trophée.",
     "perSqmSale": "{amount} TND/m²",
     "perSqmRent": "{amount} TND/m²/mois",
-    "scrollHint": "Faites glisser le tableau pour voir toutes les annonces."
+    "scrollHint": "Faites glisser le tableau pour voir toutes les annonces.",
+    "criterion": "Critère"
   },
   "whatsapp": {
     "help": "Une question ? Écrivez-nous sur WhatsApp :",
@@ -4874,7 +4875,7 @@
     },
     "catalogue_page_size": {
       "label": "Annonces par page de recherche",
-      "hint": "Le catalogue en montre autant avant « page suivante »."
+      "hint": "Le catalogue et la page d'une agence en montrent autant avant « page suivante »."
     },
     "visits_max_slots": {
       "label": "Créneaux par demande de visite",

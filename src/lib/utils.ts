@@ -33,9 +33,14 @@ export function formatTND(
  * A whole number grouped with a space — 13 000 in French and in Tunisian
  * Arabic alike (Latin digits either way) — for surfaces and counts. A dot
  * would read as a decimal: « 1.200 م² » looks like one square metre.
+ * `maxDecimals` keeps a fraction that means something, a lot of 120,5 m².
  */
-export function formatNumber(value: number, locale: string = "fr"): string {
-  return groupForTunisia(intlTag(locale), new Intl.NumberFormat(intlTag(locale), { maximumFractionDigits: 0 }), value);
+export function formatNumber(value: number, locale: string = "fr", options: { maxDecimals?: number } = {}): string {
+  return groupForTunisia(
+    intlTag(locale),
+    new Intl.NumberFormat(intlTag(locale), { maximumFractionDigits: options.maxDecimals ?? 0 }),
+    value,
+  );
 }
 
 /**

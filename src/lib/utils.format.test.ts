@@ -8,6 +8,13 @@ describe("number formatting", () => {
     expect(formatNumber(950)).toBe("950");
   });
 
+  it("keeps a fraction only when asked, in the reader's notation", () => {
+    expect(formatNumber(120.5)).toBe("121");
+    expect(formatNumber(120.5, "fr", { maxDecimals: 1 })).toBe("120,5");
+    expect(formatNumber(120.5, "ar", { maxDecimals: 1 })).toBe("120,5");
+    expect(formatNumber(1200, "ar", { maxDecimals: 1 })).toBe("1\u00a0200");
+  });
+
   it("never emits the narrow no-break space the font draws invisibly", () => {
     expect(formatTND(1234567)).not.toContain("\u202f");
     expect(formatNumber(1234567)).not.toContain("\u202f");

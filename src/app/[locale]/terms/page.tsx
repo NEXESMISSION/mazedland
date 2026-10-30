@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { pageAlternates } from "@/lib/seo";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LegalPage } from "@/components/legal/LegalPage";
-import { TermsContent } from "@/components/legal/LegalContent";
+import { LEGAL_UPDATED_AT, TermsContent } from "@/components/legal/LegalContent";
+import { formatDate } from "@/lib/utils";
 
 export async function generateMetadata({
   params,
@@ -29,7 +30,7 @@ export default async function TermsPage({
   setRequestLocale(locale);
   const t = await getTranslations("legal");
   return (
-    <LegalPage eyebrow={t("eyebrow")} title={t("terms.title")} updated="2026">
+    <LegalPage eyebrow={t("eyebrow")} title={t("terms.title")} updated={formatDate(LEGAL_UPDATED_AT, locale, "long")}>
       <TermsContent />
     </LegalPage>
   );

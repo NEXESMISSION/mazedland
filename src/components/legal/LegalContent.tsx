@@ -42,10 +42,26 @@ const PRIVACY_SECTIONS = [
   "cookies",
 ] as const;
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/**
+ * The day the text was last changed, shown under the title of /terms and
+ * /privacy. A year alone told nobody whether the text had changed since they
+ * accepted it. Move it — and `legal_version` in the settings registry — with
+ * the text.
+ */
+export const LEGAL_UPDATED_AT = "2026-10-06";
+
+/**
+ * The sections' heading level. Under the page's h1 they are h2 — heading
+ * order is how screen-reader users jump through a legal text, and the pages
+ * went from h1 straight to h3. Under the signup modal's h3 title they are h4.
+ */
+type Level = 2 | 4;
+
+function Section({ title, level, children }: { title: string; level: Level; children: React.ReactNode }) {
+  const Heading = level === 4 ? "h4" : "h2";
   return (
     <section className="mt-5 first:mt-0">
-      <h3 className="text-[15px] font-bold text-foreground">{title}</h3>
+      <Heading className="text-[15px] font-bold text-foreground">{title}</Heading>
       <div className="mt-1.5 space-y-2 text-[13.5px] leading-relaxed text-foreground/80">
         {children}
       </div>
@@ -53,12 +69,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export function TermsContent() {
+export function TermsContent({ level = 2 }: { level?: Level }) {
   const t = useTranslations("legal.terms.sections");
   return (
     <div>
       {TERMS_SECTIONS.map((key) => (
-        <Section key={key} title={t(`${key}.title`)}>
+        <Section key={key} title={t(`${key}.title`)} level={level}>
           <p>{t(`${key}.body`)}</p>
         </Section>
       ))}
@@ -66,12 +82,12 @@ export function TermsContent() {
   );
 }
 
-export function PrivacyContent() {
+export function PrivacyContent({ level = 2 }: { level?: Level }) {
   const t = useTranslations("legal.privacy.sections");
   return (
     <div>
       {PRIVACY_SECTIONS.map((key) => (
-        <Section key={key} title={t(`${key}.title`)}>
+        <Section key={key} title={t(`${key}.title`)} level={level}>
           <p>{t(`${key}.body`)}</p>
         </Section>
       ))}
