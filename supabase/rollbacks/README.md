@@ -10,6 +10,7 @@ node scripts/backup-db.mjs
 
 | Migration | Rollback | What is lost |
 |---|---|---|
+| 0190 legacy phones | `0190_legacy_phones_e164.down.sql` | nothing (the two admin profiles go back to their bare 8-digit number; sign-in by phone then fails again for them) |
 | 0189 admin backup | `0189_admin_backup.down.sql` | the console's « Sauvegarde » stops; the `backups` bucket and its files stay (remove them from the dashboard) |
 | 0188 prune cron history | `0188_prune_cron_history.down.sql` | nothing (the run log deleted by 0188 stays deleted; it held no business data) |
 | 0177 ads | `0177_ads.down.sql` | every ad and its daily figures (images stay in storage) |
