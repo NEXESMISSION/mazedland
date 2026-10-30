@@ -3773,8 +3773,9 @@
       "denied": "La connexion a été refusée sur Facebook.",
       "state": "La connexion a expiré. Recommencez.",
       "not_configured": "L'application Meta n'est pas configurée.",
-      "no_page": "Aucune page Facebook trouvée sur ce compte.",
-      "failed": "La connexion a échoué. Réessayez."
+      "no_page": "Facebook n'a renvoyé aucune page pour ce compte. Dans la fenêtre Facebook, cochez la page à connecter ; le compte doit avoir un rôle sur cette page.",
+      "failed": "La connexion a échoué. Réessayez.",
+      "other_page": "Facebook a trouvé des pages sur ce compte, mais pas celle attendue (voir le détail)."
     },
     "accountStatus": {
       "connected": "Connecté",
@@ -3832,7 +3833,8 @@
     },
     "test": "Tester la connexion",
     "testOk": "Connexion OK : {name}.",
-    "testOkQuota": "Connexion OK : {name} — {used}/{total} publications sur 24 h."
+    "testOkQuota": "Connexion OK : {name} — {used}/{total} publications sur 24 h.",
+    "connectDetail": "Détail : {text}"
   },
   "pro": {
     "kinds": {

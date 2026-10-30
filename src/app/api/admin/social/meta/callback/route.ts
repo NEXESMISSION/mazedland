@@ -5,7 +5,7 @@ import { canOpen } from "@/lib/admin/sections";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { logAction } from "@/lib/activity";
 import { log } from "@/lib/log";
-import { callbackUrl, metaConfig, saveConnectedPages, STATE_COOKIE } from "@/lib/social/connect";
+import { callbackUrl, connectDiagnostic, metaConfig, saveConnectedPages, STATE_COOKIE } from "@/lib/social/connect";
 import { graphClient, inspectToken, managedPages, userTokenFromCode } from "@/lib/social/meta";
 
 export const dynamic = "force-dynamic";
@@ -52,9 +52,20 @@ export async function GET(req: NextRequest) {
     });
     const info = await inspectToken({ appId: config.appId, appSecret: config.appSecret, token });
     const pages = await managedPages(graphClient(token, { appSecret: config.appSecret }));
-    if (pages.length === 0) return back("error=no_page");
+    // « No page » has three causes that look alike — a permission refused, no
+    // Page ticked in Facebook's dialog, a Page that is not the expected one —
+    // so the answer carries what was granted and found (2026-10-30: the first
+    // real connection answered « no page » with nothing to tell them apart).
+    const detail = connectDiagnostic({ scopes: info.scopes, pageTargets: info.pageTargets, pages, wanted: config.pageId });
+    if (pages.length === 0) {
+      sLog.warn("meta connect: no page", { detail });
+      return back(`error=no_page&d=${encodeURIComponent(detail)}`);
+    }
     const saved = await saveConnectedPages(admin, pages, { adminId: user.id, scopes: info.scopes, pageId: config.pageId });
-    if (saved === 0) return back("error=no_page");
+    if (saved === 0) {
+      sLog.warn("meta connect: not the expected page", { detail });
+      return back(`error=other_page&d=${encodeURIComponent(detail)}`);
+    }
     logAction(req, user, "social.account_connect", { pages: saved });
     return back(`connected=${saved}`);
   } catch (err) {

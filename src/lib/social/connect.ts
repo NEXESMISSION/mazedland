@@ -58,6 +58,29 @@ export function callbackUrl(requestOrigin: string): string {
   return `${requestOrigin.replace(/\/+$/, "")}/api/admin/social/meta/callback`;
 }
 
+/**
+ * What the console says when « Connecter Facebook » comes back without a page:
+ * the permissions Facebook granted, the Pages the person ticked, the Pages the
+ * token reaches, and the one expected. Nothing secret — ids, names, scopes — so
+ * the admin (and whoever helps them) can see which of the three is missing.
+ */
+export function connectDiagnostic(opts: {
+  scopes: string[];
+  pageTargets: string[];
+  pages: Pick<ManagedPage, "id" | "name">[];
+  wanted: string | null;
+}): string {
+  const list = (xs: string[]) => (xs.length ? xs.join(", ") : "—");
+  return [
+    `permissions : ${list(opts.scopes)}`,
+    `pages cochées : ${list(opts.pageTargets)}`,
+    `pages trouvées : ${list(opts.pages.map((p) => `${p.name} (${p.id})`))}`,
+    `attendue : ${opts.wanted ?? "toutes"}`,
+  ]
+    .join(" · ")
+    .slice(0, 480);
+}
+
 /** Whether a managed page is the one META_PAGE_ID names (id or username). */
 export function isWantedPage(page: Pick<ManagedPage, "id" | "username">, wanted: string | null): boolean {
   if (!wanted) return true;
