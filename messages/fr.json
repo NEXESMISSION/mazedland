@@ -1117,7 +1117,7 @@
     },
     "admin_receipt_pending": {
       "title": "Nouveau reçu à vérifier",
-      "body": "Un reçu de {what} ({amount} TND) attend votre validation."
+      "body": "Un reçu {ofWhat} ({amount} TND) attend votre validation."
     },
     "promo_expired": {
       "title": "Mise en avant terminée",
@@ -1139,6 +1139,24 @@
       "renewal": "renouvellement",
       "subscription": "abonnement",
       "other": "paiement"
+    },
+    "paymentKindsOf": {
+      "listing_fee": "de frais d'annonce",
+      "listing_pack": "de forfait",
+      "badge": "de badge vendeur",
+      "promo": "de mise en avant",
+      "renewal": "de renouvellement",
+      "subscription": "d'abonnement",
+      "other": "de paiement"
+    },
+    "paymentKindsFor": {
+      "listing_fee": "pour vos frais d'annonce",
+      "listing_pack": "pour votre forfait",
+      "badge": "pour votre badge vendeur",
+      "promo": "pour votre mise en avant",
+      "renewal": "pour votre renouvellement",
+      "subscription": "pour votre abonnement",
+      "other": "pour ce service"
     },
     "listing_submitted": {
       "paid": {
@@ -1252,6 +1270,7 @@
         "body": "« {name} » a payé son abonnement {plan} : ouvrez-la."
       }
     },
+    "visitor": "Un acheteur",
     "visitParts": {
       "morning": "le matin",
       "afternoon": "l'après-midi",
@@ -1292,7 +1311,7 @@
     "payment_accepted": {
       "plain": {
         "title": "Paiement validé",
-        "body": "Votre paiement de {amount} pour {what} est validé."
+        "body": "Votre paiement de {amount} TND {forWhat} est validé."
       },
       "promo": {
         "title": "Mise en avant active",
@@ -1300,7 +1319,7 @@
       },
       "invoice": {
         "title": "Paiement validé — facture {number}",
-        "body": "Votre paiement de {amount} pour {what} est validé. Votre facture {number} est prête : ouvrez-la pour l'imprimer."
+        "body": "Votre paiement de {amount} TND {forWhat} est validé. Votre facture {number} est prête : ouvrez-la pour l'imprimer."
       }
     },
     "admin_site_error": {
@@ -2113,6 +2132,17 @@
       "yes": "Oui",
       "payload": "Payload",
       "previewTitle": "Titre de la notification"
+    },
+    "fields": {
+      "title_ar": {
+        "label": "Titre en arabe",
+        "placeholder": "Le même titre, pour les lecteurs du site en arabe"
+      },
+      "body_ar": {
+        "label": "Message en arabe",
+        "placeholder": "Le même message, en arabe.",
+        "helper": "Les lecteurs du site en arabe voient ce texte ; les autres, le français. Vide : tout le monde voit le français."
+      }
     },
     "kinds": {
       "announcement": {
@@ -4521,6 +4551,7 @@
     "slots": "Choisissez de 1 à {max} moments, d'aujourd'hui à {days} jours.",
     "phone": "Numéro de téléphone invalide.",
     "name": "Indiquez votre nom.",
+    "nameLetters": "Votre nom, en lettres seulement (2 à 60 caractères).",
     "notOnline": "Cette annonce n'est plus en ligne.",
     "own": "C'est votre annonce.",
     "alreadyOpen": "Vous avez déjà une demande en cours pour cette annonce.",
@@ -4895,7 +4926,7 @@
     },
     "sms_daily_cap": {
       "label": "SMS par personne",
-      "hint": "Au-delà, les avis suivants restent dans le site. 0 : aucun SMS."
+      "hint": "Au-delà, les avis suivants restent dans le site ; un verdict (paiement, annonce refusée, visite confirmée) part toujours. 0 : aucun SMS."
     },
     "units": {
       "days": "jours",

@@ -39,6 +39,34 @@ describe("renderNotification", () => {
     };
     expect(renderNotification(n, tr("fr"), "fr").body).toBe("Un reçu de frais d'annonce (15 TND) attend votre validation.");
     expect(renderNotification(n, tr("ar"), "ar").body).toBe("وصل معلوم نشر إعلان (15 د.ت) في انتظار المصادقة.");
+    const sub = { ...n, payload: { vars: { amount: 59, paymentKind: "subscription" } } };
+    expect(renderNotification(sub, tr("fr"), "fr").body).toBe("Un reçu d'abonnement (59 TND) attend votre validation.");
+  });
+
+  it("says the currency and what was paid for when a payment is accepted", () => {
+    // « Votre paiement de 59 pour abonnement » : no unit, no article.
+    const plain = { kind: "payment_accepted", title: "x", body: "x", payload: { vars: { variant: "plain", amount: 59, paymentKind: "subscription" } } };
+    expect(renderNotification(plain, tr("fr"), "fr").body).toBe("Votre paiement de 59 TND pour votre abonnement est validé.");
+    expect(renderNotification(plain, tr("ar"), "ar").body).toBe("خلاصك متاع 59 د.ت على الاشتراك تقبل.");
+    const invoice = { ...plain, payload: { vars: { variant: "invoice", amount: 1200, paymentKind: "listing_fee", number: "F-2026-0012" } } };
+    expect(renderNotification(invoice, tr("fr"), "fr")).toEqual({
+      title: "Paiement validé — facture F-2026-0012",
+      body: "Votre paiement de 1 200 TND pour vos frais d'annonce est validé. Votre facture F-2026-0012 est prête : ouvrez-la pour l'imprimer.",
+    });
+  });
+
+  it("shows a broadcast in the language the admin typed it in for the reader", () => {
+    const broadcast = {
+      kind: "maintenance",
+      title: "Maintenance ce soir",
+      body: "Le site sera indisponible de 23h à minuit.",
+      payload: { scheduled_at: "2026-11-02T22:00:00.000Z", i18n: { ar: { title: "صيانة الليلة", body: "السيت ما يخدمش من 23 لنص الليل." } } },
+    };
+    expect(renderNotification(broadcast, tr("fr"), "fr")).toEqual({ title: broadcast.title, body: broadcast.body });
+    expect(renderNotification(broadcast, tr("ar"), "ar")).toEqual({ title: "صيانة الليلة", body: "السيت ما يخدمش من 23 لنص الليل." });
+    // Only the title typed in Arabic: the body stays the French one.
+    const titleOnly = { ...broadcast, payload: { i18n: { ar: { title: "صيانة الليلة", body: " " } } } };
+    expect(renderNotification(titleOnly, tr("ar"), "ar")).toEqual({ title: "صيانة الليلة", body: broadcast.body });
   });
 
   it("tells the admins about the QA tour, in their language, with real plurals", () => {

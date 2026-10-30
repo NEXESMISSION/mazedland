@@ -23,6 +23,24 @@ export const OPEN_VISIT_STATUSES: readonly VisitStatus[] = ["requested", "confir
 export type SlotRules = { maxSlots: number; horizonDays: number };
 export const DEFAULT_SLOT_RULES: SlotRules = { maxSlots: 3, horizonDays: 30 };
 
+/** The longest name a buyer may give: the API's rule, and the form's maxLength. */
+export const VISIT_NAME_MAX = 60;
+
+/**
+ * The buyer's name as the seller will see it, or null when it is not one.
+ * Letters of any script, their marks, spaces, apostrophes, hyphens and dots —
+ * 2 to VISIT_NAME_MAX characters once spaces are collapsed — and nothing
+ * else. The name is relayed to the seller under the platform's name, in the
+ * bell and the e-mail, so « Appelez le 20 123 456 urgent » is refused here
+ * rather than delivered.
+ */
+export function personName(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const name = input.trim().replace(/\s+/g, " ");
+  if (name.length < 2 || name.length > VISIT_NAME_MAX) return null;
+  return /^[\p{L}\p{M} .'’-]+$/u.test(name) && /\p{L}/u.test(name) ? name : null;
+}
+
 /** Today in Tunisia, as YYYY-MM-DD — the day a slot is compared with. */
 export function tunisDay(now: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Tunis" }).format(now);
