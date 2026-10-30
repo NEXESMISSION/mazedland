@@ -172,17 +172,29 @@ const positive = (v: unknown, max: number): number | null => {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 && n <= max ? Math.round(n * 1000) / 1000 : null;
 };
+/** A field the form sent with something in it — as opposed to left empty. */
+const given = (v: unknown): boolean => v !== null && v !== undefined && v !== "";
+/** The most project_units.price (numeric(14,3)) holds: its own ceiling, 100 000 000 000, is an overflow turned 500. */
+const PRICE_MAX = 99_999_999_999;
 
+/**
+ * The generator's form. A figure left empty is fine (the units get none); a
+ * figure typed and wrong — « 250 000 » with a space, 21 rooms, a negative
+ * price — refuses the plan, as the unit editor refuses it, instead of making
+ * the units without it (the QA tour, 2026-10-30).
+ */
 export function parseUnitPlan(body: Record<string, unknown>): UnitPlan | null {
   const area = positive(body.area, 100_000);
-  const price = positive(body.price, 1e11);
+  const price = positive(body.price, PRICE_MAX);
+  if ((given(body.area) && area === null) || (given(body.price) && price === null)) return null;
   if (body.mode === "floors") {
     if (!isOneOf(FLOOR_KINDS, body.kind) || !isOneOf(BLOCKS as readonly string[], body.block)) return null;
     const floorFrom = int(body.floorFrom, 0, 60);
     const floorTo = int(body.floorTo, 0, 60);
     const perFloor = int(body.perFloor, 1, 20);
     if (floorFrom === null || floorTo === null || perFloor === null || floorTo < floorFrom) return null;
-    const rooms = body.rooms === null || body.rooms === undefined || body.rooms === "" ? null : int(body.rooms, 0, 20);
+    const rooms = given(body.rooms) ? int(body.rooms, 0, 20) : null;
+    if (given(body.rooms) && rooms === null) return null;
     return { mode: "floors", kind: body.kind, block: body.block as string, floorFrom, floorTo, perFloor, rooms, area, price };
   }
   if (body.mode === "lots") {
@@ -249,7 +261,7 @@ export function parseUnitPatch(
     v.status = body.status;
   }
   if ("price" in body) {
-    const p = positive(body.price, 1e11);
+    const p = positive(body.price, PRICE_MAX);
     if (body.price !== null && body.price !== "" && p === null) return { ok: false };
     v.price = p;
   }

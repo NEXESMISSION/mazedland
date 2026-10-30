@@ -5,10 +5,19 @@ import { apiTranslator } from "@/lib/i18n/server";
 import { proGate } from "@/lib/pro/api";
 import { parseShopInput } from "@/lib/pro/shops";
 
+/** What « vérifié » vouches for: the business behind the agence, as its papers name it. */
+const IDENTITY = ["name", "legal_name", "legal_id"] as const;
+
 /**
  * PATCH /api/pro/shops/:id — the shop's page and contacts, by its owner or an
  * admin of it. `slug` may change too (a free one): the old address stops
  * working, so the form says so.
+ *
+ * « Vérifié » means an admin checked who they are. A verified agence that
+ * changes its name, its legal name or its registration number is another
+ * business until an admin looks again: the mark comes off and the admins
+ * are told (the QA tour, 2026-10-30, kept the badge through a change of
+ * both). Contacts and the page's text change freely.
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,6 +35,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!update.logo_path) delete update.logo_path;
   if (!update.cover_path) delete update.cover_path;
 
+  const { data: stored } = await admin.from("shops").select("name, legal_name, legal_id, verified_at").eq("id", id).maybeSingle();
+  const changed = stored?.verified_at ? IDENTITY.filter((k) => (stored[k] ?? null) !== (parsed.value[k] ?? null)) : [];
+  if (changed.length > 0) {
+    update.verified_at = null;
+    update.verified_by = null;
+  }
+
   if (typeof body.slug === "string" && body.slug.trim()) {
     const slug = body.slug.trim().toLowerCase();
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length < 3 || slug.length > 60) {
@@ -39,5 +55,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { error } = await admin.from("shops").update(update).eq("id", id);
   if (error) return fail("shop_update_failed", 500, error);
   logAction(req, user, "shop.update", { id });
-  return NextResponse.json({ ok: true });
+  if (changed.length > 0) {
+    const was = stored?.name ?? "";
+    await admin
+      .rpc("_notify_admins", {
+        p_kind: "admin_shop_pending",
+        p_title: "Agence à revérifier",
+        p_body: `« ${was} » a changé d'identité (${changed.join(", ")}) : le badge « vérifié » est retiré, contrôlez-la de nouveau.`,
+        p_link: `/admin/agences?id=${id}`,
+        p_payload: { vars: { variant: "reverify", name: was, fields: changed.join(", ") } },
+      })
+      .then(() => {}, () => {});
+    logAction(req, user, "shop.reverify", { id, changed });
+  }
+  return NextResponse.json({ ok: true, reverify: changed.length > 0 });
 }

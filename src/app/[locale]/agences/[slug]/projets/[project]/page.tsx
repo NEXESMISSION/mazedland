@@ -7,6 +7,7 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { governorateLabel } from "@/lib/tunisia";
 import { delegationLabel } from "@/lib/delegations";
 import { absoluteUrl } from "@/lib/siteUrl";
+import { listingDescription } from "@/lib/seo";
 import { cn, formatTND } from "@/lib/utils";
 import { Ltr } from "@/components/ui/Ltr";
 import { publicProject, type PublicProject } from "@/lib/pro/projectsServer";
@@ -38,14 +39,30 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { shop, project } = found;
   const locale = await getLocale();
   const path = `/agences/${shop.slug}/projets/${project.slug}`;
+  const title = `${project.name} · ${shop.name}`;
+  const description = listingDescription(project.description, `${project.name} — ${shop.name}`);
+  // The picture a shared link shows: the project's cover, else the agence's logo.
+  const image = project.cover_path || shop.logo_path;
   return {
-    title: `${project.name} · ${shop.name}`,
-    description: project.description?.slice(0, 160) ?? `${project.name} — ${shop.name}`,
+    title,
+    description,
     alternates: {
       canonical: `/${locale}${path}`,
       languages: { fr: `/fr${path}`, ar: `/ar${path}`, "x-default": `/fr${path}` },
     },
-    openGraph: project.cover_path ? { images: [propertyPhotoUrl(project.cover_path)] } : undefined,
+    // `openGraph` replaces the layout's block whole, so a project link shared
+    // into WhatsApp or Facebook showed no name and no text (the QA tour,
+    // 2026-10-30): the name and the description are restated here, as on the
+    // agence's page.
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: "Mazed Immo",
+      locale: locale === "ar" ? "ar_TN" : "fr_TN",
+      url: `/${locale}${path}`,
+      ...(image ? { images: [{ url: propertyPhotoUrl(image), alt: project.name }] } : {}),
+    },
   };
 }
 

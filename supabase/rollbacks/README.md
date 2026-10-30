@@ -10,6 +10,7 @@ node scripts/backup-db.mjs
 
 | Migration | Rollback | What is lost |
 |---|---|---|
+| 0193 credit note restores periods | `0193_credit_note_restores_periods.down.sql` | which payment replaced each plan period and the end it had (roll the code back first: grantPlanPeriod writes them); a credit note on an upgrade cancels its own period only again, the replaced plan stays cut short |
 | 0191 QA tour, wave 2 | `0191_qa_tour_2.down.sql` | the unique indexes, the bucket limits, the admin alerts to every admin, a person's full update right on their notifications, the self-insert of payments come back; claim_listing_place returns to 0190 (roll the code back first); buyer_phone stays nullable |
 | 0190 QA tour | `0190_qa_tour.down.sql` | the takedown marks on annonces; claim_listing_place (roll the code back first); the deletion cascade for accounts deleted after it stays applied; bucket limits |
 | 0189 admin backup | `0189_admin_backup.down.sql` | the console's « Sauvegarde » stops; the `backups` bucket and its files stay (remove them from the dashboard) |

@@ -12,7 +12,7 @@ import { monthsOf, quotePlanChange } from "@/lib/pro/planChange";
 import { planUsage } from "@/lib/places/server";
 import { PLACE_STATUSES } from "@/lib/places/model";
 import { ShopForm } from "@/components/pro/ShopForm";
-import { AddMember, ChoosePlan, RemoveMember, SendDocument } from "./ProActions";
+import { AddMember, ChoosePlan, LeaveShop, RemoveMember, SendDocument } from "./ProActions";
 import { ProClients, type ClientRow } from "./ProClients";
 import { SuggestListing } from "./SuggestListing";
 import { ProjectsTab } from "./ProjectsTab";
@@ -436,6 +436,9 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
           {members.map((m) => {
             const p = Array.isArray(m.person) ? m.person[0] : m.person;
             const removable = can(actor, "manage_members") && m.role !== "owner" && (actor === "owner" || m.role === "agent") && m.user_id !== user!.id;
+            // Anyone added to an agence can walk out of it (the QA tour, 2026-10-30:
+            // a member added without asking could not).
+            const me = m.user_id === user!.id && can(actor, "leave");
             return (
               <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
                 <div>
@@ -443,6 +446,7 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
                   <p className="text-[11.5px] text-muted">{tRoles(m.role)}</p>
                 </div>
                 {removable && <RemoveMember shopId={shopId} userId={m.user_id} />}
+                {me && <LeaveShop shopId={shopId} userId={m.user_id} shopName={shop.name} />}
               </li>
             );
           })}
@@ -476,6 +480,12 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
     const now = new Date();
     const day = (d: Date) => formatDate(d.toISOString(), locale, "medium");
     const money = (n: number) => `${formatTND(n, locale)} ${t("tnd")}`;
+    const planName = (p: { name_fr: string; name_ar: string | null }) => (locale === "ar" && p.name_ar ? p.name_ar : p.name_fr);
+    // A plan queued behind the running one (a smaller one chosen for after
+    // it): the banner says so, since the running plan's card ends where it ends.
+    const runningEnd = running ? new Date(running.endsAt).getTime() : 0;
+    const queued = running ? ahead.filter((p) => p.startsAt.getTime() >= runningEnd).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())[0] : undefined;
+    const queuedPlan = queued ? plans.find((p) => p.listing_quota === queued.quota) : undefined;
     // With no payee to pay, « Choisir » created a payment and only the checkout
     // then said « indisponible ». The tab says it first, in place of the buttons.
     // An agence waiting to be opened chooses and pays here too (2026-10-28):
@@ -485,13 +495,14 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
       <section className="mt-5 space-y-5">
         <p className="rounded-2xl bg-surface-2 px-4 py-3 text-[12.5px] leading-relaxed text-foreground ring-1 ring-border">
           {running ? t("planRunning", { name: running.name, date: formatDate(running.endsAt, locale, "medium") }) : t("planNone")}
+          {queued && queuedPlan && <span className="mt-1 block font-semibold">{t("planThen", { name: planName(queuedPlan), from: day(queued.startsAt), to: day(queued.endsAt) })}</span>}
         </p>
         {mayBuy && !open && (
           <PaymentsClosedNotice title={t("closed.title")} body={t("closed.body")} contactLabel={t("closed.contact")} />
         )}
         <div className="grid gap-3 md:grid-cols-3">
           {plans.map((p) => {
-            const name = locale === "ar" && p.name_ar ? p.name_ar : p.name_fr;
+            const name = planName(p);
             const q = quotePlanChange({
               now,
               target: { quota: p.listing_quota, price: Number(p.price), months: monthsOf(Number(p.duration_days)) },
@@ -520,8 +531,10 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
                   <p className="mt-3 rounded-xl bg-gold-faint px-3 py-2 text-[12px] leading-snug text-foreground">
                     {t("planYours", { date: day(q.until) })} {t("planRenewFrom", { date: day(q.renewFrom) })}
                   </p>
-                ) : q.kind === "upgrade" ? (
-                  // The calculator: the new price, what is left of the current plan, the total.
+                ) : q.kind === "upgrade" || q.credit > 0 ? (
+                  // The calculator: the new price, what is left of the plan it
+                  // replaces (the running one for an upgrade, a smaller one
+                  // queued behind for a renewal), the total.
                   <dl className="mt-3 space-y-1 rounded-xl bg-surface-2 px-3 py-2.5 text-[12px] ring-1 ring-border">
                     <div className="flex justify-between gap-2"><dt className="text-muted">{t("calcPrice", { plan: name })}</dt><dd className="mazed-tabular font-semibold text-foreground">{money(q.price)}</dd></div>
                     {/* A plan given by an admin leaves nothing to take off: no « − 0 » line. */}
@@ -535,7 +548,9 @@ export default async function ProDashboardPage({ searchParams }: { searchParams:
                       <dt className="font-extrabold text-foreground">{t("calcTotal")}</dt>
                       <dd className="mazed-tabular font-extrabold text-foreground">{money(q.amount)}</dd>
                     </div>
-                    <p className="pt-0.5 text-[11px] text-muted">{t("planDates", { from: day(q.startsAt), to: day(q.endsAt) })}</p>
+                    <p className="pt-0.5 text-[11px] text-muted">
+                      {q.kind === "downgrade" ? t("planStartsLater", { from: day(q.startsAt), to: day(q.endsAt) }) : t("planDates", { from: day(q.startsAt), to: day(q.endsAt) })}
+                    </p>
                   </dl>
                 ) : (
                   <p className="mt-3 text-[11.5px] leading-snug text-muted">

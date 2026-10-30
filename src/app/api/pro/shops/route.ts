@@ -41,6 +41,12 @@ export async function POST(req: NextRequest) {
     .insert({ ...parsed.value, slug, owner_id: user.id, status: "pending" })
     .select("id, slug, name")
     .single();
+  // Two requests at the same moment both passed the check above (the QA
+  // tour, 2026-10-30: three agences for one owner); the table allows one
+  // (shops_one_live_per_owner, 0191) and the second is the same 409.
+  if (error?.code === "23505" && error.message.includes("shops_one_live_per_owner")) {
+    return NextResponse.json({ error: "conflict", detail: t("oneShop") }, { status: 409 });
+  }
   if (error || !shop) return fail("shop_create_failed", 500, error);
 
   const { error: mErr } = await admin.from("shop_members").insert({ shop_id: shop.id, user_id: user.id, role: "owner", invited_by: user.id });
