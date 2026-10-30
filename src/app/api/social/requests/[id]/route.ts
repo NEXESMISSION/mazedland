@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -26,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!admin) return fail("server_misconfigured", 500);
 
   const { id } = await params;
-  const body = (await req.json().catch(() => ({}))) as { action?: unknown };
+  const body = (await jsonObject(req)) as { action?: unknown };
   if (body.action !== "withdraw") return NextResponse.json({ error: "unknown_action" }, { status: 400 });
 
   const result = await withdrawSocialRequest(admin, id, user.id);

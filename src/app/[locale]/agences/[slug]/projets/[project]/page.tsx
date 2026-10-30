@@ -8,7 +8,7 @@ import { governorateLabel } from "@/lib/tunisia";
 import { delegationLabel } from "@/lib/delegations";
 import { absoluteUrl } from "@/lib/siteUrl";
 import { listingDescription } from "@/lib/seo";
-import { cn, formatTND } from "@/lib/utils";
+import { cn, formatNumber, formatTND } from "@/lib/utils";
 import { Ltr } from "@/components/ui/Ltr";
 import { publicProject, type PublicProject } from "@/lib/pro/projectsServer";
 import { deliveryParts, priceFrom, unitCounts } from "@/lib/pro/projects";
@@ -92,6 +92,12 @@ export default async function ProjectPage({
   const t = await getTranslations("shops.projects");
   const tp = await getTranslations("pro.projects");
   const tShops = await getTranslations("shops");
+  const tRoot = await getTranslations();
+  // A price and a surface read like everywhere else on the site: « 350 000
+  // TND » / « 350 000 د.ت », « 120,5 m² » / « م² » — the table showed bare
+  // numbers and a Latin « m² » on the Arabic page (the QA tour, 2026-10-30).
+  const money = (v: number) => `${formatTND(v, locale)} ${tRoot("common.tnd")}`;
+  const area = (v: number) => `${formatNumber(v, locale, { maxDecimals: 1 })} ${tRoot("common.sqm")}`;
 
   const counts = unitCounts(project.units);
   const from = priceFrom(project.units);
@@ -189,8 +195,8 @@ export default async function ProjectPage({
                           <td className="px-3 py-2">{tp(`unitKinds.${u.kind}`)}</td>
                           <td className="px-3 py-2">{floorName(u.floor)}</td>
                           <td className="px-3 py-2">{u.rooms ?? "—"}</td>
-                          <td className="px-3 py-2">{u.area_sqm ? <Ltr>{`${u.area_sqm} m²`}</Ltr> : "—"}</td>
-                          <td className="px-3 py-2">{u.status === "sold" ? "—" : u.price ? formatTND(u.price, locale) : t("onRequest")}</td>
+                          <td className="px-3 py-2">{u.area_sqm ? area(u.area_sqm) : "—"}</td>
+                          <td className="px-3 py-2">{u.status === "sold" ? "—" : u.price ? money(u.price) : t("onRequest")}</td>
                           <td className="px-3 py-2">
                             <span className={cn("rounded-full px-2 py-0.5 text-[11.5px] font-bold", STATUS_TONE[u.status])}>{tp(`unitStatus.${u.status}`)}</span>
                           </td>
@@ -209,7 +215,7 @@ export default async function ProjectPage({
                 {t("available", { count: counts.available })} <span className="text-[13px] font-normal text-muted">{t("ofTotal", { total: counts.total })}</span>
               </p>
               <p className="mt-1 text-[12.5px] text-muted">{tp("counts", counts)}</p>
-              {from !== null && <p className="mt-2 text-[14px] font-extrabold text-gold">{tp("priceFrom", { price: formatTND(from, locale) })}</p>}
+              {from !== null && <p className="mt-2 text-[14px] font-extrabold text-gold">{tp("priceFrom", { price: money(from) })}</p>}
             </div>
             <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
               <p className="text-[13px] font-bold text-foreground">{t("contact")}</p>

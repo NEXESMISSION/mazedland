@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "not_editable", detail: t(held ? "editHeldReported" : "editOnlyLive") }, { status: 409 });
   }
 
-  const body = (await req.json().catch(() => ({}))) as ListingBody;
+  const body = (await jsonObject(req)) as ListingBody;
   const fields = listingFields(body);
   const photos = listingPhotos(body, settings.listing_max_photos);
 

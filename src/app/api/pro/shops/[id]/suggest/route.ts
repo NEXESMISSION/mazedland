@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { user, admin } = gate;
   const t = await apiTranslator(req, "proApi");
 
-  const body = (await req.json().catch(() => ({}))) as { requestId?: unknown; listingId?: unknown };
+  const body = (await jsonObject(req)) as { requestId?: unknown; listingId?: unknown };
   const requestId = typeof body.requestId === "string" && /^[0-9a-f-]{36}$/i.test(body.requestId) ? body.requestId : null;
   const listingId = typeof body.listingId === "string" && /^[0-9a-f-]{36}$/i.test(body.listingId) ? body.listingId : null;
   if (!requestId || !listingId) return NextResponse.json({ error: "invalid" }, { status: 400 });

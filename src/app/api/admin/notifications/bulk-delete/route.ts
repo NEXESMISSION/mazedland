@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { isUuid } from "@/lib/uuid";
 import { isIsoInstant } from "@/lib/isoInstant";
 import { requireAdmin } from "@/lib/admin/guard";
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
   if (gate instanceof NextResponse) return gate;
   const { user, supabase } = gate;
 
-  const body = (await req.json().catch(() => ({}))) as {
+  const body = (await jsonObject(req)) as {
     ids?: string[];
     filters?: {
       kind?: string;

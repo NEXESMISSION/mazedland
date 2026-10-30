@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
   if (gate instanceof NextResponse) return gate;
   const { user, supabase } = gate;
 
-  const body = await req.json().catch(() => ({} as Record<string, unknown>));
+  const body = await jsonObject(req);
   const kind = typeof body.kind === "string" ? body.kind.trim().slice(0, 64) : "";
   const title = typeof body.title === "string" ? body.title.trim().slice(0, 200) : "";
   const text = typeof body.body === "string" ? body.body.trim().slice(0, 1000) : "";

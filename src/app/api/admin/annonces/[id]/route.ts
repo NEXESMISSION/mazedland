@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
@@ -74,7 +75,7 @@ export async function POST(
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
-  const body = (await req.json().catch(() => ({}))) as {
+  const body = (await jsonObject(req)) as {
     action?: unknown;
     reason?: unknown;
     days?: unknown;

@@ -49,6 +49,7 @@ export async function ProjectsTab({
   hasPlan: boolean;
 }) {
   const t = await getTranslations("pro.projects");
+  const tRoot = await getTranslations();
   const locale = await getLocale();
   const admin = getServiceSupabase()!;
   const settings = await getSettings();
@@ -175,7 +176,7 @@ export async function ProjectsTab({
                     </span>
                     <span className="block text-[12px] text-muted">{t(`kinds.${p.kind}`)} · {place(p)} · {delivery(p.delivery)}</span>
                     <span className="mt-1 block text-[12px] text-foreground">{t("counts", counts)}</span>
-                    {from !== null && <span className="block text-[12px] font-bold text-gold">{t("priceFrom", { price: formatTND(from, locale) })}</span>}
+                    {from !== null && <span className="block text-[12px] font-bold text-gold">{t("priceFrom", { price: `${formatTND(from, locale)} ${tRoot("common.tnd")}` })}</span>}
                   </span>
                 </Link>
               </li>

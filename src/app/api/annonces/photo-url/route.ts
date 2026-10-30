@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { suspendedResponse } from "@/lib/moderation/ban";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
 
-  const body = (await req.json().catch(() => ({}))) as { exts?: unknown };
+  const body = (await jsonObject(req)) as { exts?: unknown };
   const rawExts: unknown[] = Array.isArray(body.exts) ? body.exts : [];
   // Never more URLs in one call than an annonce may hold photos.
   const { listing_max_photos } = await getSettings();

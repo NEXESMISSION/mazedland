@@ -149,6 +149,10 @@ export const SETTINGS = {
   // The scheduled jobs' run log (0188): technical, no personal data, and it
   // grew to half the database. Always pruned — no 0 here.
   cron_history_days: { group: "privacy", type: "int", default: 7, min: 1, max: 90, unit: "days", choices: [3, 7, 14, 30, 90] },
+  // Uploads no row names (0197): the photos of a wizard never sent, the
+  // receipts of a payment never made. Swept nightly once older than this; the
+  // delay keeps an upload still in flight out of the sweep.
+  uploads_prune_days: { group: "privacy", type: "int", default: 2, min: 1, max: 30, unit: "days", choices: [1, 2, 3, 7, 14, 30] },
 } as const satisfies Record<string, SettingDef>;
 
 export type SettingKey = keyof typeof SETTINGS;

@@ -14,6 +14,7 @@ node scripts/backup-db.mjs
 | 0198 replaced_by without FK | `0198_replaced_by_without_fk.down.sql` | the second foreign key to payments comes back; only safe with code that names the relationship it embeds |
 | 0195 QA tour, wave 3 | `0195_qa_tour_3.down.sql` | the client may write listings again and read the audit columns; is_admin() trusts the JWT claim again; every policy and the two gates answer to any admin; the profile guard, the photo-overwrite and legacy bucket policies and listing_reference_next() return to before; the plan descriptions keep « agence » |
 | 0196 rate limit lock | `0196_rate_limit_lock.down.sql` | nothing: requests arriving at the same moment may again pass a cap together (the count and the hit are two steps again) |
+| 0197 prune uploads | `0197_prune_uploads.down.sql` | nothing: the nightly sweep of abandoned uploads stops (what it already removed does not come back) |
 | 0194 broadcast guard | `0194_notifications.down.sql` | nothing: a broadcast may again carry any kind (one the SMS and e-mail drains send) and any link |
 | 0193 credit note restores periods | `0193_credit_note_restores_periods.down.sql` | which payment replaced each plan period and the end it had (roll the code back first: grantPlanPeriod writes them); a credit note on an upgrade cancels its own period only again, the replaced plan stays cut short |
 | 0192 credit note stops promo and badge | `0192_credit_note_stops_promo_badge.down.sql` | a credit note no longer stops the placement or revokes the badge it refunds (those already stopped stay stopped) |

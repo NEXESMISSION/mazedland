@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -44,7 +45,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const o = await owned(req, id);
   if ("res" in o) return o.res;
 
-  const body = (await req.json().catch(() => ({}))) as { action?: string };
+  const body = (await jsonObject(req)) as { action?: string };
   const action = body.action as Action | undefined;
   if (action === "resume" || action === "renew") {
     const off = await featureOff("feature_requests");

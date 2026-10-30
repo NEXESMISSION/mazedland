@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { randomBytes } from "node:crypto";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   const { data: owned } = await admin.from("shops").select("id").eq("owner_id", user.id).limit(1);
   if (owned && owned.length > 0) return NextResponse.json({ error: "conflict", detail: t("oneShop") }, { status: 409 });
 
-  const parsed = parseShopInput((await req.json().catch(() => ({}))) as Record<string, unknown>, user.id);
+  const parsed = parseShopInput(await jsonObject(req), user.id);
   if (!parsed.ok) return NextResponse.json({ error: "invalid", detail: t(`errors.${parsed.error}`) }, { status: 400 });
 
   // A free address: the name's, or the name's with a short suffix.

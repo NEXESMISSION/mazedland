@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
@@ -26,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { user, admin } = gate;
   const t = await apiTranslator(req, "proApi");
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = await jsonObject(req);
   const parsed = parseShopInput(body, user.id);
   if (!parsed.ok) return NextResponse.json({ error: "invalid", detail: t(`errors.${parsed.error}`) }, { status: 400 });
 

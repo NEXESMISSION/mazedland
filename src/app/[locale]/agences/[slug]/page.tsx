@@ -13,7 +13,9 @@ import { Ltr } from "@/components/ui/Ltr";
 import { formatTND } from "@/lib/utils";
 import { publishedProjects } from "@/lib/pro/projectsServer";
 import { deliveryParts, priceFrom, unitCounts } from "@/lib/pro/projects";
-import { BadgeCheck, Building2, Clock, Globe, Mail, MapPin, Phone, Store } from "lucide-react";
+import { getSettings } from "@/lib/settings/server";
+import { pageNumber } from "@/lib/paging";
+import { BadgeCheck, Building2, ChevronLeft, ChevronRight, Clock, Globe, Mail, MapPin, Phone, Store } from "lucide-react";
 import { listingDescription } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -36,8 +38,8 @@ async function loadShop(slug: string): Promise<Shop | null> {
   return (data as Shop | null) ?? null;
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ page?: string }> }): Promise<Metadata> {
+  const [{ slug }, sp] = await Promise.all([params, searchParams]);
   const shop = await loadShop(slug);
   if (!shop) return {};
   const t = await getTranslations("shops");
@@ -45,13 +47,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const locale = await getLocale();
   // « pro immo » alone said nothing in a result: what it is and where.
   const where = shop.governorate ? governorateLabel(shop.governorate, locale) : null;
+  // Page 2 and beyond are addresses of their own, as in the catalogue.
+  const page = pageNumber(sp.page);
+  const path = `/agences/${shop.slug}${page > 1 ? `?page=${page}` : ""}`;
   return {
     title: `${shop.name} — ${tKinds(shop.kind)}${where ? ` · ${where}` : ""} · Mazed Immo`,
     description: listingDescription(shop.description, t("shopMetaDescription", { name: shop.name })),
     // With the locale: « /agences/x » redirects, and a canonical must not.
     alternates: {
-      canonical: `/${locale}/agences/${shop.slug}`,
-      languages: { fr: `/fr/agences/${shop.slug}`, ar: `/ar/agences/${shop.slug}`, "x-default": `/fr/agences/${shop.slug}` },
+      canonical: `/${locale}${path}`,
+      languages: { fr: `/fr${path}`, ar: `/ar${path}`, "x-default": `/fr${path}` },
     },
     // Shared into WhatsApp or Messenger, the link showed no name and no
     // picture: `openGraph` replaces the layout's block, so the name and the
@@ -79,11 +84,11 @@ const LISTING_SELECT = `
 
 /**
  * A shop's page (0173): who they are, how to reach them, and their annonces —
- * the same rows as the marketplace, filtered by shop, for sale or for rent.
- * Only an approved shop has a page; « vérifié » shows only when an admin
- * checked their papers.
+ * the same rows as the marketplace, filtered by shop, for sale or for rent,
+ * paged like the catalogue. Only an approved shop has a page; « vérifié »
+ * shows only when an admin checked their papers.
  */
-export default async function ShopPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ deal?: string }> }) {
+export default async function ShopPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ deal?: string; page?: string }> }) {
   const { slug } = await params;
   const sp = await searchParams;
   const shop = await loadShop(slug);
@@ -91,6 +96,10 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
   const locale = await getLocale();
   const t = await getTranslations("shops");
   const tKinds = await getTranslations("pro.kinds");
+  // The pager's words are the catalogue's.
+  const tc = await getTranslations("catalogue");
+  const tRoot = await getTranslations();
+  const settings = await getSettings();
   const admin = getServiceSupabase()!;
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
@@ -105,10 +114,35 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
   };
 
   const deal = sp.deal === "sale" || sp.deal === "rent" ? sp.deal : null;
-  let q = admin.from("listings").select(LISTING_SELECT).eq("shop_id", shop.id).eq("status", "published").order("published_at", { ascending: false }).limit(60);
+  // Paged on the catalogue's page size. This was a `.limit(60)` with no pager:
+  // an agence on the Business plan has 120 annonces online, and its page
+  // showed the first sixty with nothing to say the rest existed, while the
+  // directory counted them all. The id is the unique last key — a batch
+  // approved together shares its published_at, and without it an annonce
+  // could sit on two pages, or on none.
+  const pageSize = settings.catalogue_page_size;
+  let page = pageNumber(sp.page);
+  let q = admin.from("listings").select(LISTING_SELECT, { count: "exact" }).eq("shop_id", shop.id).eq("status", "published");
   if (deal) q = q.eq("deal_type", deal);
-  const { data: rows } = await q;
-  const listings = (rows ?? []) as unknown as AnnonceCardRow[];
+  q = q.order("published_at", { ascending: false }).order("id", { ascending: true });
+  const from = (page - 1) * pageSize;
+  let res = await q.range(from, from + pageSize - 1);
+  // A page past the end — a stale link, annonces expired since — makes
+  // PostgREST refuse the range: the first page, not an empty one.
+  if (res.error && page > 1) {
+    page = 1;
+    res = await q.range(0, pageSize - 1);
+  }
+  const listings = (res.data ?? []) as unknown as AnnonceCardRow[];
+  const total = res.count ?? listings.length;
+  const lastPage = Math.max(1, Math.ceil(total / pageSize));
+  // The deal tab and the page in one address; changing the tab returns to page 1.
+  const href = (d: "sale" | "rent" | null, p = 1) => {
+    const s = new URLSearchParams();
+    if (d) s.set("deal", d);
+    if (p > 1) s.set("page", String(p));
+    return `/agences/${shop.slug}${s.size ? `?${s}` : ""}`;
+  };
 
   const place = `${shop.city ? `${delegationLabel(shop.city, locale)}, ` : ""}${governorateLabel(shop.governorate, locale)}`;
   const jsonLd = {
@@ -186,7 +220,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
                             <span className="mt-1 text-[12.5px] font-bold text-foreground">
                               {tShopProjects("available", { count: counts.available })} <span className="font-normal text-muted">{tShopProjects("ofTotal", { total: counts.total })}</span>
                             </span>
-                            {from !== null && <span className="text-[12.5px] font-bold text-gold">{tp("priceFrom", { price: formatTND(from, locale) })}</span>}
+                            {from !== null && <span className="text-[12.5px] font-bold text-gold">{tp("priceFrom", { price: `${formatTND(from, locale)} ${tRoot("common.tnd")}` })}</span>}
                           </span>
                         </Link>
                       </li>
@@ -199,7 +233,7 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
               {([null, "sale", "rent"] as const).map((d) => (
                 <Link
                   key={d ?? "all"}
-                  href={(d ? `/agences/${shop.slug}?deal=${d}` : `/agences/${shop.slug}`) as never}
+                  href={href(d) as never}
                   aria-current={deal === d ? "page" : undefined}
                   className={`rounded-full px-3 py-1.5 text-[12.5px] font-bold ring-1 ${deal === d ? "bg-gold-faint text-foreground ring-gold-soft" : "text-muted ring-border"}`}
                 >
@@ -207,16 +241,45 @@ export default async function ShopPage({ params, searchParams }: { params: Promi
                 </Link>
               ))}
             </nav>
+            {/* The same count the directory's card shows, so the two agree. */}
+            <p className="mt-4 text-[12.5px] text-muted">{t("listingsCount", { count: total })}</p>
             {listings.length === 0 ? (
-              <p className="mt-6 rounded-2xl border border-dashed border-border p-8 text-center text-[13px] text-muted">{t("noListings")}</p>
+              <p className="mt-3 rounded-2xl border border-dashed border-border p-8 text-center text-[13px] text-muted">{t("noListings")}</p>
             ) : (
-              <ul className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:gap-5">
+              <ul className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 lg:gap-5">
                 {listings.map((l) => (
                   <li key={l.id}>
                     <AnnonceCard listing={l} loggedIn={!!user} />
                   </li>
                 ))}
               </ul>
+            )}
+            {lastPage > 1 && (
+              <nav className="mt-6 flex items-center justify-center gap-2" aria-label={tc("pagination")}>
+                {page > 1 ? (
+                  <Link
+                    href={href(deal, page - 1) as never}
+                    className="tap-target inline-flex items-center gap-1 rounded-full bg-surface-2 px-4 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-border transition hover:ring-foreground/30"
+                  >
+                    <ChevronLeft className="size-4 rtl:-scale-x-100" /> {tc("previous")}
+                  </Link>
+                ) : (
+                  <span aria-hidden className="w-[108px]" />
+                )}
+                <span className="mazed-tabular px-2 text-[12.5px] font-semibold text-muted">
+                  {page} / {lastPage}
+                </span>
+                {page < lastPage ? (
+                  <Link
+                    href={href(deal, page + 1) as never}
+                    className="tap-target inline-flex items-center gap-1 rounded-full bg-surface-2 px-4 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-border transition hover:ring-foreground/30"
+                  >
+                    {tc("next")} <ChevronRight className="size-4 rtl:-scale-x-100" />
+                  </Link>
+                ) : (
+                  <span aria-hidden className="w-[108px]" />
+                )}
+              </nav>
             )}
           </div>
 

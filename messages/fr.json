@@ -4661,7 +4661,8 @@
     "bestNote": "Le trophée marque le prix et le prix au m² les plus bas, la plus grande surface et le plus de chambres — quand au moins deux annonces les indiquent. Un loyer ne se compare pas à un prix de vente : entre une vente et une location, les deux lignes de prix n'ont pas de trophée.",
     "perSqmSale": "{amount} TND/m²",
     "perSqmRent": "{amount} TND/m²/mois",
-    "scrollHint": "Faites glisser le tableau pour voir toutes les annonces."
+    "scrollHint": "Faites glisser le tableau pour voir toutes les annonces.",
+    "criterion": "Critère"
   },
   "whatsapp": {
     "help": "Une question ? Écrivez-nous sur WhatsApp :",
@@ -4880,7 +4881,7 @@
     },
     "catalogue_page_size": {
       "label": "Annonces par page de recherche",
-      "hint": "Le catalogue en montre autant avant « page suivante »."
+      "hint": "Le catalogue et la page d'une agence en montrent autant avant « page suivante »."
     },
     "visits_max_slots": {
       "label": "Créneaux par demande de visite",
@@ -5144,6 +5145,10 @@
     "cron_history_days": {
       "label": "Historique des tâches planifiées",
       "hint": "Le journal technique des tâches automatiques (SMS, e-mails, publications, expirations) : gardé ce nombre de jours, puis effacé chaque nuit. Aucune donnée personnelle ni de paiement dedans."
+    },
+    "uploads_prune_days": {
+      "label": "Photos et reçus abandonnés",
+      "hint": "Une photo envoyée sans finir l'annonce, un reçu sans paiement envoyé : effacés chaque nuit une fois plus vieux que ce délai. Rien de ce qu'une annonce, une agence, une publicité ou un paiement utilise n'est touché."
     },
     "feature_pro_reports": {
       "label": "Rapports des agences",

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { requireAdmin } from "@/lib/admin/guard";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { logAction } from "@/lib/activity";
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!admin) return fail("server_misconfigured", 500);
 
   const { id } = await params;
-  const body = (await req.json().catch(() => ({}))) as { action?: unknown; url?: unknown };
+  const body = (await jsonObject(req)) as { action?: unknown; url?: unknown };
   const { data: job } = await admin.from("social_publication_jobs").select("*").eq("id", id).maybeSingle();
   if (!job) return NextResponse.json({ error: "not_found" }, { status: 404 });
 

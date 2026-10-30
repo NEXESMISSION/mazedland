@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { user, admin, role: actor } = gate;
   const t = await apiTranslator(req, "proApi");
 
-  const body = (await req.json().catch(() => ({}))) as { phone?: unknown; role?: unknown };
+  const body = (await jsonObject(req)) as { phone?: unknown; role?: unknown };
   const role = asRole(body.role);
   if (!role || !actor || !canAssign(actor, role)) return NextResponse.json({ error: "forbidden", detail: t("errors.role") }, { status: 403 });
   const phone = anyPhoneToE164(body.phone);
@@ -73,7 +74,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { user, admin, role: actor } = gate;
   const t = await apiTranslator(req, "proApi");
 
-  const body = (await req.json().catch(() => ({}))) as { userId?: unknown; role?: unknown };
+  const body = (await jsonObject(req)) as { userId?: unknown; role?: unknown };
   const role = asRole(body.role);
   const userId = typeof body.userId === "string" ? body.userId : "";
   if (!isUuid(userId)) return NextResponse.json({ error: "not_found" }, { status: 404 });
@@ -97,7 +98,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { user, admin } = gate;
   const t = await apiTranslator(req, "proApi");
 
-  const body = (await req.json().catch(() => ({}))) as { userId?: unknown };
+  const body = (await jsonObject(req)) as { userId?: unknown };
   const userId = typeof body.userId === "string" ? body.userId : "";
   if (!isUuid(userId)) return NextResponse.json({ error: "not_found" }, { status: 404 });
   // Removing oneself is leaving: a right of every member but the owner,

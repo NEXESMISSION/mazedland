@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -74,7 +75,7 @@ export async function PATCH(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
 
-  const body = await req.json().catch(() => ({}));
+  const body = await jsonObject(req);
   const now = new Date().toISOString();
 
   let update = supabase
@@ -128,7 +129,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "auth" }, { status: 401 });
   }
 
-  const body = await req.json().catch(() => ({}));
+  const body = await jsonObject(req);
 
   let del = supabase
     .from("notifications")

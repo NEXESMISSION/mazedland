@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
   const banned = await suspendedResponse(admin, req, user.id);
   if (banned) return banned;
 
-  const body = (await req.json().catch(() => ({}))) as ListingBody;
+  const body = (await jsonObject(req)) as ListingBody;
 
   const categoryId = text(body.category_id, 40);
   const title = text(body.title, 140);

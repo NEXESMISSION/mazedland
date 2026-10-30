@@ -15,8 +15,8 @@ import { BellRing, ChevronDown, ChevronLeft, ChevronRight, Home, ImageOff, MapPi
 import { FURNISHED, isoDay, type Furnished } from "@/lib/listings/deal";
 import { CompareToggle } from "@/components/compare/CompareToggle";
 import { redirect } from "next/navigation";
-import { understand, understoodSomething } from "@/lib/search/understand";
-import { isMostlyArabic } from "@/lib/search/script";
+import { catalogueRedirect, pastEndRedirect } from "@/lib/catalog/redirects";
+import { pageNumber } from "@/lib/paging";
 import { Sparkles } from "lucide-react";
 import { getSettings } from "@/lib/settings/server";
 import { usableRange } from "@/lib/range";
@@ -145,17 +145,32 @@ export async function generateMetadata({
   const sp = firstValues(rawSp);
   const t = await getTranslations({ locale, namespace: "catalogue" });
   const admin = getServiceSupabase();
+  const settings = await getSettings();
+
+  // The categories, once: the title reads the one asked by its slug, the
+  // redirects below need the live ones — what the page filters on.
+  const { data: catRows } = admin
+    ? await admin.from("categories").select("id, slug, label_fr, label_ar, kind, parent_id, is_active").order("sort_order")
+    : { data: null };
+  const allCats = (catRows ?? []) as (Cat & { is_active: boolean })[];
+  const leaves = allCats.filter((c) => c.is_active && c.parent_id);
+
+  // Where this address goes instead — the search box's marker, a search typed
+  // the way people talk, a category named by its id — settled here, which
+  // Next waits for before the first byte (src/lib/catalog/redirects.ts). From
+  // the page body, under the streamed loading shell, the same redirect()
+  // arrived as a 200 with a one-second meta refresh.
+  const flags = { arabicRedirect: settings.feature_arabic_redirect, naturalSearch: settings.feature_natural_search };
+  const target = catalogueRedirect(sp, locale, flags, leaves);
+  if (target) redirect(target);
+
   const deal = dealOf(sp.deal);
   let what = t(deal === "rent" ? "metaTitleRent" : deal === "sale" ? "metaTitleSale" : "metaTitleDefault");
   let categoryId: string | null = null;
-  if (sp.cat && admin) {
-    const { data } = await admin
-      .from("categories")
-      .select("id, label_fr, label_ar")
-      .eq("slug", sp.cat)
-      .maybeSingle();
-    if (data?.label_fr) what = categoryLabel(data as { label_fr: string; label_ar: string | null }, locale);
-    categoryId = (data?.id as string | undefined) ?? null;
+  if (sp.cat) {
+    const data = allCats.find((c) => c.slug === sp.cat) ?? null;
+    if (data?.label_fr) what = categoryLabel(data, locale);
+    categoryId = data?.id ?? null;
   }
   const gov = sp.gov?.trim();
   const title = gov
@@ -176,6 +191,13 @@ export async function generateMetadata({
     const del = gov ? canonicalDelegation(gov, sp.del) : null;
     if (del) c = c.eq("delegation", del);
     count = (await c).count ?? null;
+    // A page past the last one is not an address of its own: it goes to the
+    // first page, which is what the body shows for it anyway. Only where this
+    // count is the page's — a landing page, filtered on the same category.
+    if (index && count !== null && (findCategory(sp.cat, leaves)?.id ?? null) === categoryId) {
+      const past = pastEndRedirect(sp, locale, pageNumber(sp.page), count, settings.catalogue_page_size);
+      if (past) redirect(past);
+    }
   } else if (sp.cat && !categoryId) {
     count = 0;
   }
@@ -214,51 +236,6 @@ export default async function AnnoncesPage({
   // Annonces per page (/admin/settings → Publication).
   const pageSize = settings.catalogue_page_size;
 
-  // The catalogue's own search box (via=search) typed in Arabic on the French
-  // site: the same search, in Arabic. The /ar page sets the language cookie.
-  // With the switch off, it stays on the French site.
-  if (sp.via === "search") {
-    const next = new URLSearchParams();
-    for (const [k, v] of Object.entries(sp)) if (v != null && k !== "via" && k !== "page") next.set(k, v);
-    if (locale === "fr" && settings.feature_arabic_redirect && isMostlyArabic(sp.q)) redirect(`/ar/annonces?${next.toString()}`);
-    redirect(`/${locale}/annonces?${next.toString()}`);
-  }
-
-  // A search typed the way people talk (P3): « S+2 meublé à louer Tunis
-  // 1200 dt » becomes the filters below — once, through a redirect, so every
-  // control on the page shows what was understood and can be changed. What
-  // was not understood stays the keyword; ?nl=0 searches the words as typed,
-  // and `nlq` (the original words) marks a search already read. Switched off,
-  // every search is the plain keyword search.
-  if (settings.feature_natural_search && sp.q?.trim() && sp.nl !== "0" && !sp.nlq) {
-    const u = understand(sp.q);
-    if (understoodSomething(u)) {
-      const next = new URLSearchParams();
-      for (const [k, v] of Object.entries(sp)) if (v != null && k !== "page" && k !== "q") next.set(k, v);
-      // What was just typed wins over the chip already in the URL: a visitor
-      // on Sfax who types « villa Tunis » is looking in Tunis. A place or a
-      // budget replaces the whole of the old one (its délégation, its other
-      // bound), so nothing stale is left to contradict it.
-      const put = (k: string, v: string | number | undefined) => {
-        if (v != null) next.set(k, String(v));
-      };
-      if (u.gov) for (const k of ["gov", "del"]) next.delete(k);
-      if (u.min != null || u.max != null) for (const k of ["min", "max", "min_price", "max_price"]) next.delete(k);
-      put("deal", u.deal);
-      put("cat", u.cat);
-      put("gov", u.gov);
-      put("del", u.del);
-      put("rooms", u.rooms);
-      put("surface", u.surface);
-      put("min", u.min);
-      put("max", u.max);
-      put("furnished", u.furnished);
-      if (u.rest) next.set("q", u.rest);
-      next.set("nlq", sp.q.trim().slice(0, 200));
-      redirect(`/${locale}/annonces?${next.toString()}`);
-    }
-  }
-
   const sort = (SORTS.find((s) => s === sp.sort) ?? "recent") as string;
   const deal = dealOf(sp.deal);
   // A rent is a monthly figure: its brackets are in hundreds, not thousands.
@@ -291,7 +268,7 @@ export default async function AnnoncesPage({
       : null;
   const availBy = deal === "rent" ? isoDay(sp.avail) : null;
   const moreActive = Boolean(surface || roomsMin || furnished || availBy);
-  const requestedPage = Math.max(1, Math.floor(Number(sp.page)) || 1);
+  const requestedPage = pageNumber(sp.page);
 
   if (!admin) {
     return (
@@ -308,16 +285,19 @@ export default async function AnnoncesPage({
     .order("sort_order");
   const cats = (catRows ?? []) as Cat[];
   const leaves = cats.filter((c) => c.parent_id);
+  // The search box's marker, a search typed the way people talk, a category
+  // named by its id: settled in generateMetadata before the first byte
+  // (src/lib/catalog/redirects.ts). Decided again here only so the address
+  // still moves if that ever stops running first — then as it used to, a 200
+  // with a meta refresh.
+  const target = catalogueRedirect(
+    sp,
+    locale,
+    { arabicRedirect: settings.feature_arabic_redirect, naturalSearch: settings.feature_natural_search },
+    leaves,
+  );
+  if (target) redirect(target);
   const active = findCategory(sp.cat, leaves);
-  // A category named by its id (the old « Tout voir » links) goes to the same
-  // search written with the slug, so a filter has one address and every chip
-  // and link below reads it the same way.
-  if (active && sp.cat !== active.slug) {
-    const next = new URLSearchParams();
-    for (const [k, v] of Object.entries(sp)) if (v != null) next.set(k, v);
-    next.set("cat", active.slug);
-    redirect(`/${locale}/annonces?${next.toString()}`);
-  }
 
   // A demande with several types or governorates (src/lib/requests/model.ts)
   // opens here with all of them: `cats` and `govs` are lists, used only

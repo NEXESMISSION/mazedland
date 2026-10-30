@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { createHash } from "node:crypto";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
@@ -48,7 +49,7 @@ export async function POST(
   if (!admin) return fail("server_misconfigured", 500);
   const settings = await getSettings();
 
-  const body = (await req.json().catch(() => ({}))) as { reason?: unknown; note?: unknown };
+  const body = (await jsonObject(req)) as { reason?: unknown; note?: unknown };
   const reason = REASONS.includes(body.reason as Reason) ? (body.reason as Reason) : null;
   if (!reason) {
     const t = await apiTranslator(req, "listingApi");
