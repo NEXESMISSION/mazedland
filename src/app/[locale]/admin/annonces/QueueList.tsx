@@ -6,7 +6,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { useApiError } from "@/lib/useApiError";
 import { AdminButton } from "@/components/admin/AdminButton";
-import { StatusPill } from "@/components/admin/kit";
+import { Confirm, StatusPill } from "@/components/admin/kit";
 import { ROW_BASE, ROW_IDLE, ROW_SELECTED, ROW_FOCUS, FLAG } from "@/components/admin/kit/surface";
 import { Check, X, Archive, CalendarPlus, ListChecks } from "lucide-react";
 
@@ -55,10 +55,13 @@ export function QueueList({
   const router = useRouter();
   const { toast } = useToast();
   const t = useTranslations("adminListings.queue");
+  // The motif field reads as it does on the single action's dialog.
+  const tDetail = useTranslations("adminListings.detail");
   const apiError = useApiError();
   const [picking, setPicking] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
+  const [confirmArchive, setConfirmArchive] = useState(false);
 
   // A selection that outlives the rows it was made from would act on rows the
   // operator can no longer see, so it clears whenever the page's rows change.
@@ -72,6 +75,7 @@ export function QueueList({
   if (prevKey !== key) {
     setPrevKey(key);
     setSelected(new Set());
+    setConfirmArchive(false);
   }
 
   const toggle = (id: string) =>
@@ -84,13 +88,14 @@ export function QueueList({
 
   const allOn = rows.length > 0 && selected.size === rows.length;
 
-  async function bulk(action: "approve" | "archive" | "extend") {
+  /** `reason` goes with `archive`: one motif for the batch, sent to every seller. */
+  async function bulk(action: "approve" | "archive" | "extend", reason?: string) {
     setBusy(action);
     try {
       const res = await fetch("/api/admin/annonces/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: [...selected], action }),
+        body: JSON.stringify({ ids: [...selected], action, ...(reason ? { reason } : {}) }),
       });
       const data: {
         applied?: number;
@@ -300,7 +305,7 @@ export function QueueList({
             <AdminButton
               pending={busy === "archive"}
               icon={<Archive className="size-3.5" strokeWidth={2.4} />}
-              onClick={() => bulk("archive")}
+              onClick={() => setConfirmArchive(true)}
             >
               {t("archive")}
             </AdminButton>
@@ -315,6 +320,23 @@ export function QueueList({
           </div>
         </div>
       )}
+
+      {/* A takedown the sellers cannot undo: like the single action, it asks
+          for a motif they will read, one for the whole batch. */}
+      <Confirm
+        open={confirmArchive}
+        title={t("archiveTitle", { count: selected.size })}
+        body={t("archiveBody", { count: selected.size })}
+        confirmLabel={t("archive")}
+        variant="default"
+        pending={busy === "archive"}
+        reason={{ label: tDetail("archiveReasonLabel"), placeholder: tDetail("archiveReasonPlaceholder"), required: false }}
+        onCancel={() => setConfirmArchive(false)}
+        onConfirm={async (reason) => {
+          setConfirmArchive(false);
+          await bulk("archive", reason.trim() || undefined);
+        }}
+      />
     </div>
   );
 }

@@ -107,6 +107,13 @@ export function PopupForm({
     dismissible, forceAction,
   ]);
 
+  // The API's code as a sentence when there is one (adminPopups.form.errors).
+  // The raw code is the last resort: « slug_taken » told the admin nothing.
+  const errorText = (code: string | undefined) => {
+    if (!code || code === "save_failed") return t("form.unknownError");
+    return ERROR_CODES.has(code) ? t(`form.errors.${code}`) : code;
+  };
+
   async function onSave() {
     setError(null);
     startSaving(async () => {
@@ -126,7 +133,7 @@ export function PopupForm({
       };
       if (!res.ok) {
         setError(data.error ?? "save_failed");
-        toast(data.error ?? t("form.unknownError"), "error");
+        toast(errorText(data.error), "error");
         return;
       }
       toast(initial ? t("form.updated") : t("form.created"), "success");
@@ -143,8 +150,8 @@ export function PopupForm({
       cache: "no-store",
     });
     if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      toast((d as { error?: string }).error ?? t("form.deleteFailed"), "error");
+      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      toast(d.error && ERROR_CODES.has(d.error) ? t(`form.errors.${d.error}`) : t("form.deleteFailed"), "error");
       return;
     }
     toast(t("form.deleted"), "success");
@@ -193,7 +200,7 @@ export function PopupForm({
       {error && (
         <div className="mb-5 flex items-center gap-2 rounded-xl bg-red-500/10 px-4 py-3 text-[12.5px] font-semibold text-red-700 ring-1 ring-red-500/30">
           <AlertCircle className="size-4" strokeWidth={2.2} />
-          {ERROR_CODES.has(error) ? t(`form.errors.${error}`) : error}
+          {errorText(error)}
         </div>
       )}
 
@@ -273,6 +280,7 @@ export function PopupForm({
             fr={bodyFr} setFr={setBodyFr}
             ar={bodyAr} setAr={setBodyAr}
             en={bodyEn} setEn={setBodyEn}
+            required
             multiline
           />
         </div>
@@ -583,12 +591,18 @@ function localToIso(local: string): string | null {
  *  (adminPopups.form.errors.<code>); any other code is shown as-is. */
 const ERROR_CODES = new Set([
   "slug_invalid",
+  "slug_taken",
   "title_required",
   "body_invalid",
+  "body_required",
   "mode_invalid",
   "variant_invalid",
   "audience_invalid",
+  "dates_invalid",
+  "cta_href_invalid",
+  "popup_not_found",
   "forbidden",
+  "forbidden_section",
   "auth",
 ]);
 

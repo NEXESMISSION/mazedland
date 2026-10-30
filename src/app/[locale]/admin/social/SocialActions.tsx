@@ -82,6 +82,7 @@ export function VariantEditor({ variantId, body, edited }: { variantId: string; 
   return (
     <div>
       <textarea
+        aria-label={t("postText")}
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={Math.min(14, Math.max(6, text.split("\n").length + 1))}
@@ -169,6 +170,7 @@ export function JobActions({
         <div className="flex flex-wrap items-center gap-1.5">
           <input
             type="url"
+            aria-label={t("postUrlPlaceholder")}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder={t("postUrlPlaceholder")}
@@ -281,8 +283,8 @@ export function GroupForm() {
     >
       <p className="text-[13px] font-bold text-foreground">{t("addGroup")}</p>
       <div className="grid gap-2 sm:grid-cols-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("groupName")} className={field} required />
-        <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.facebook.com/groups/…" dir="ltr" className={field} required />
+        <input aria-label={t("groupName")} value={name} onChange={(e) => setName(e.target.value)} placeholder={t("groupName")} className={field} required />
+        <input aria-label={t("groupUrl")} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.facebook.com/groups/…" dir="ltr" className={field} required />
       </div>
       <div>
         <p className="mb-1 text-[11.5px] font-semibold text-muted">{t("groupDeals")}</p>
@@ -312,8 +314,8 @@ export function GroupForm() {
         <p className="mt-1 text-[11px] text-muted">{t("groupGovernoratesHint")}</p>
       </div>
       <div className="grid gap-2 sm:grid-cols-[140px_1fr]">
-        <input value={members} onChange={(e) => setMembers(e.target.value)} placeholder={t("groupMembers")} inputMode="numeric" className={field} />
-        <input value={rules} onChange={(e) => setRules(e.target.value)} placeholder={t("groupRules")} className={field} />
+        <input aria-label={t("groupMembers")} value={members} onChange={(e) => setMembers(e.target.value)} placeholder={t("groupMembers")} inputMode="numeric" className={field} />
+        <input aria-label={t("groupRules")} value={rules} onChange={(e) => setRules(e.target.value)} placeholder={t("groupRules")} className={field} />
       </div>
       <label className="flex items-center gap-2 text-[12px] text-foreground">
         <input type="checkbox" checked={allowsLinks} onChange={(e) => setAllowsLinks(e.target.checked)} />

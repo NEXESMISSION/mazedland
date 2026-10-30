@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSupabase } from "@/lib/supabase/server";
-import { isSameOrigin } from "@/lib/sameOrigin";
+import { requireAdmin } from "@/lib/admin/guard";
+import { isIsoInstant } from "@/lib/isoInstant";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
-import { canOpen, scopesFromRow } from "@/lib/admin/sections";
 
 /**
  * Admin popup CRUD — list + create.
@@ -11,8 +10,10 @@ import { canOpen, scopesFromRow } from "@/lib/admin/sections";
  * GET  /api/admin/popups          → all popups, newest first
  * POST /api/admin/popups          → create a new popup
  *
- * Both endpoints require admin role; the underlying `popups` RLS
- * policies double-check the same condition (defense in depth).
+ * Both endpoints go through the shared guard (src/lib/admin/guard.ts): same
+ * origin, an admin with the « popups » section, and a suspended member
+ * refused — the local copy this route kept did not look at `banned_at`. The
+ * underlying `popups` RLS policies double-check the role (defense in depth).
  */
 
 // The auction roles (bank, bailiff, inspector) are retired (0171).
@@ -27,26 +28,11 @@ const FREQUENCIES = [
 ] as const;
 const DEVICES = ["mobile", "desktop", "both"] as const;
 
-async function requireAdmin() {
-  const supabase = await getServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "auth", status: 401 as const, supabase: null };
-  const { data: profile } = await supabase
-    .from("profiles").select("role, admin_scopes").eq("id", user.id).single();
-  if (profile?.role !== "admin") {
-    return { error: "forbidden", status: 403 as const, supabase: null };
-  }
-  if (!canOpen(scopesFromRow(profile.admin_scopes), "popups")) {
-    return { error: "forbidden_section", status: 403 as const, supabase: null };
-  }
-  return { error: null, status: 200 as const, supabase, user };
-}
+export async function GET(req: NextRequest) {
+  const gate = await requireAdmin(req, "popups");
+  if (gate instanceof NextResponse) return gate;
 
-export async function GET() {
-  const g = await requireAdmin();
-  if (!g.supabase) return NextResponse.json({ error: g.error }, { status: g.status });
-
-  const { data, error } = await g.supabase
+  const { data, error } = await gate.supabase
     .from("popups")
     .select("*")
     .order("created_at", { ascending: false });
@@ -55,11 +41,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  if (!isSameOrigin(req)) {
-    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
-  }
-  const g = await requireAdmin();
-  if (!g.supabase) return NextResponse.json({ error: g.error }, { status: g.status });
+  const gate = await requireAdmin(req, "popups");
+  if (gate instanceof NextResponse) return gate;
+  const { user, supabase } = gate;
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const payload = sanitizePopupBody(body);
@@ -67,9 +51,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: payload }, { status: 400 });
   }
 
-  const { data, error } = await g.supabase
+  const { data, error } = await supabase
     .from("popups")
-    .insert({ ...payload, created_by: g.user!.id })
+    .insert({ ...payload, created_by: user.id })
     .select("*")
     .single();
   // 23505: the slug is taken — a 409 the form can say, not a 500.
@@ -77,7 +61,7 @@ export async function POST(req: NextRequest) {
     if (error.code === "23505") return NextResponse.json({ error: "slug_taken" }, { status: 409 });
     return fail("popup_create_failed", 500, error);
   }
-  logAction(req, g.user!, "popup.create", { slug: payload.slug });
+  logAction(req, user, "popup.create", { slug: payload.slug });
   return NextResponse.json({ item: data });
 }
 
@@ -106,6 +90,8 @@ export function sanitizePopupBody(
   if (!title || !title.fr) return "title_required";
   const bodyText = sanitizeLocalised(body.body);
   if (!bodyText) return "body_invalid";
+  // `{}` went through and was stored: a popup with nothing to say.
+  if (Object.keys(bodyText).length === 0) return "body_required";
 
   const image_url =
     typeof body.image_url === "string" ? body.image_url.slice(0, 500) : null;
@@ -137,9 +123,11 @@ export function sanitizePopupBody(
     devices && DEVICES.includes(devices as typeof DEVICES[number]) ? devices : "both";
 
   // A date Postgres cannot read, or an end before the start, used to be a 500.
+  // `Date.parse` was not the test: it takes « 2026-02-30 » and slides it to
+  // March, and the database refused what it had let through.
   const starts_at = typeof body.starts_at === "string" && body.starts_at.trim() ? body.starts_at.trim() : null;
   const ends_at = typeof body.ends_at === "string" && body.ends_at.trim() ? body.ends_at.trim() : null;
-  if ((starts_at && Number.isNaN(Date.parse(starts_at))) || (ends_at && Number.isNaN(Date.parse(ends_at)))) {
+  if ((starts_at && !isIsoInstant(starts_at)) || (ends_at && !isIsoInstant(ends_at))) {
     return "dates_invalid";
   }
   if (starts_at && ends_at && Date.parse(ends_at) < Date.parse(starts_at)) return "dates_invalid";
