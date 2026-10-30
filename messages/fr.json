@@ -5136,6 +5136,10 @@
       "label": "Historique des tâches planifiées",
       "hint": "Le journal technique des tâches automatiques (SMS, e-mails, publications, expirations) : gardé ce nombre de jours, puis effacé chaque nuit. Aucune donnée personnelle ni de paiement dedans."
     },
+    "uploads_prune_days": {
+      "label": "Photos et reçus abandonnés",
+      "hint": "Une photo envoyée sans finir l'annonce, un reçu sans paiement envoyé : effacés chaque nuit une fois plus vieux que ce délai. Rien de ce qu'une annonce, une agence, une publicité ou un paiement utilise n'est touché."
+    },
     "feature_pro_reports": {
       "label": "Rapports des agences",
       "hint": "L'onglet « Rapports » de l'espace Pro : visiteurs, numéros affichés, favoris, visites et clients par période, par annonce et par agent. Coupé : l'onglet disparaît ; rien n'est effacé."
