@@ -8,7 +8,7 @@ import { apiTranslator } from "@/lib/i18n/server";
 import { asDealType, closedStatus } from "@/lib/listings/deal";
 import { moderationSettings } from "@/lib/moderation/server";
 import { takePlace } from "@/lib/places/server";
-import { placeRefusal } from "@/lib/places/refusal";
+import { placeRefusal, planFullResponse } from "@/lib/places/refusal";
 import { suspendedResponse } from "@/lib/moderation/ban";
 
 /**
@@ -131,7 +131,11 @@ export async function POST(
       { from: ALLOWED.relist, to: "published" },
     );
     if (!taken.ok) {
-      if (taken.reason !== "free_limit_reached") return placeRefusal(req, taken.reason);
+      if (taken.reason === "not_submittable" || taken.reason === "taken_down") return placeRefusal(req, taken.reason);
+      if (taken.reason === "plan_full") {
+        logAction(req, user, "listing.relist.plan_full", { id, limit: taken.limit });
+        return planFullResponse(req, taken.limit);
+      }
       const t = await apiTranslator(req, "publishApi");
       logAction(req, user, "listing.relist.free_limit", { id, limit: settings.freeLimit });
       return NextResponse.json(

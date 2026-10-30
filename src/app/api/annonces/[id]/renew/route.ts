@@ -8,7 +8,7 @@ import { apiTranslator } from "@/lib/i18n/server";
 import { moderationSettings, publishOrQueue } from "@/lib/moderation/server";
 import { suspendedResponse } from "@/lib/moderation/ban";
 import { takePlace } from "@/lib/places/server";
-import { placeRefusal } from "@/lib/places/refusal";
+import { placeRefusal, planFullResponse } from "@/lib/places/refusal";
 
 /**
  * POST /api/annonces/[id]/renew — put an expired annonce back online.
@@ -104,7 +104,11 @@ export async function POST(
   );
   if (taken.ok && taken.cover.via === "free_quota") return settle("free_quota", { freeLeft: taken.cover.left });
   if (taken.ok) return settle(taken.cover.via, { remaining: taken.cover.left });
-  if (taken.reason !== "free_limit_reached") return placeRefusal(req, taken.reason);
+  if (taken.reason === "not_submittable" || taken.reason === "taken_down") return placeRefusal(req, taken.reason);
+  if (taken.reason === "plan_full") {
+    logAction(req, user, "listing.renew.plan_full", { id, limit: taken.limit });
+    return planFullResponse(req, taken.limit);
+  }
 
   // ── Nothing covers it ─────────────────────────────────────────────────────
   const t = await apiTranslator(req, "publishApi");

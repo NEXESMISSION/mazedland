@@ -8,7 +8,7 @@ import { apiTranslator } from "@/lib/i18n/server";
 import { moderationSettings, publishOrQueue } from "@/lib/moderation/server";
 import { suspendedResponse } from "@/lib/moderation/ban";
 import { takePlace } from "@/lib/places/server";
-import { placeRefusal } from "@/lib/places/refusal";
+import { placeRefusal, planFullResponse } from "@/lib/places/refusal";
 import { attributeOutOfBounds } from "@/lib/listings/input";
 import { missingPhotos } from "@/lib/listings/storage";
 import { asDealType } from "@/lib/listings/deal";
@@ -199,7 +199,11 @@ export async function POST(
       claim,
     );
     if (!taken.ok) {
-      if (taken.reason !== "free_limit_reached") return placeRefusal(req, taken.reason);
+      if (taken.reason === "not_submittable" || taken.reason === "taken_down") return placeRefusal(req, taken.reason);
+      if (taken.reason === "plan_full") {
+        logAction(req, user, "listing.submit.plan_full", { id, limit: taken.limit });
+        return planFullResponse(req, taken.limit);
+      }
       // ── 4. Nothing covers it ──────────────────────────────────────────────
       const t = await apiTranslator(req, "publishApi");
       logAction(req, user, "listing.submit.free_limit", { id, limit: settings.freeLimit });

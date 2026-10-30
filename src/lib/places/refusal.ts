@@ -14,3 +14,13 @@ export async function placeRefusal(req: NextRequest, reason: "not_submittable" |
   }
   return NextResponse.json({ error: "not_submittable", detail: t("refusal.relist") }, { status: 409 });
 }
+
+/**
+ * The agence's plan has no place left. Said as such: an agence told « vos 2
+ * annonces gratuites sont déjà en ligne » and sent to the Pro marketing page
+ * was the QA tour's finding.
+ */
+export async function planFullResponse(req: NextRequest, limit: number): Promise<NextResponse> {
+  const t = await apiTranslator(req, "publishApi");
+  return NextResponse.json({ error: "plan_full", limit, detail: t("planFull", { limit }) }, { status: 402 });
+}
