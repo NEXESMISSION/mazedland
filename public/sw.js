@@ -37,7 +37,10 @@ const PRECACHE = [
 // Pages that describe ONE signed-in person. They are never written to the
 // cache: on a shared device, the offline copy of someone's account or payments
 // page must not outlive their session.
-const PRIVATE_PREFIX = /^\/[a-z]{2}\/(account|admin|payment|annonces\/nouvelle)(\/|$)/;
+// Every page that shows one person's own things: never served from a cache
+// another person at the same device could open (the QA tour found the Pro
+// dashboard with its leads, and invoices, cached).
+const PRIVATE_PREFIX = /^\/[a-z]{2}\/(account|admin|payment|pro|factures|watchlist|demandes\/nouvelle|annonces\/nouvelle)(\/|$)/;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

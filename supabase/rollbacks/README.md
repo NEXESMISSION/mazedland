@@ -10,6 +10,7 @@ node scripts/backup-db.mjs
 
 | Migration | Rollback | What is lost |
 |---|---|---|
+| 0195 QA tour, wave 3 | `0195_qa_tour_3.down.sql` | the client may write listings again and read the audit columns; is_admin() trusts the JWT claim again; every policy and the two gates answer to any admin; the profile guard, the photo-overwrite and legacy bucket policies and listing_reference_next() return to before; the plan descriptions keep « agence » |
 | 0194 broadcast guard | `0194_notifications.down.sql` | nothing: a broadcast may again carry any kind (one the SMS and e-mail drains send) and any link |
 | 0193 credit note restores periods | `0193_credit_note_restores_periods.down.sql` | which payment replaced each plan period and the end it had (roll the code back first: grantPlanPeriod writes them); a credit note on an upgrade cancels its own period only again, the replaced plan stays cut short |
 | 0192 credit note stops promo and badge | `0192_credit_note_stops_promo_badge.down.sql` | a credit note no longer stops the placement or revokes the badge it refunds (those already stopped stay stopped) |

@@ -3344,6 +3344,7 @@
       "badPrice": "Prix invalide.",
       "titleTooShort": "Le titre doit faire au moins 3 caractères.",
       "photoMissing": "Une photo de l'annonce est introuvable dans le stockage : demandez au vendeur de la renvoyer.",
+      "shopClosed": "L'agence de cette annonce est fermée : elle attend sa réouverture.",
       "reasonRequired": "Dites au vendeur ce qui ne va pas — sinon il renverra la même annonce.",
       "creditsNotSupported": "Cette annonce a été payée avec un forfait, et le remboursement de forfait n'existe pas encore ici. Traitez-la à la main.",
       "notPublished": "Seule une annonce en ligne peut être prolongée.",

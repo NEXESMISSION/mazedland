@@ -86,6 +86,10 @@ export async function DELETE(req: NextRequest) {
   // Back to an ordinary account; their annonces and their agence stay theirs.
   const { error } = await admin.from("profiles").update({ role: "individual", admin_scopes: null }).eq("id", profile.id);
   if (error) return fail("team_update_failed", 500, error);
+  // The auth record's claim goes too. is_admin() reads the profile since
+  // 0195, so the claim decides nothing any more; it is cleared so nothing
+  // ever trusts it again.
+  await admin.auth.admin.updateUserById(profile.id, { app_metadata: { role: null } }).then(() => {}, () => {});
 
   logAction(req, gate.user, "admin.team.remove", { id: profile.id });
   await audit(admin, gate.user.id, {

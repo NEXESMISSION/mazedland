@@ -34,6 +34,9 @@ function refusal(action: string, status: string): { error: string; key: string }
   return { error: "wrong_status", key: "wrongStatus" };
 }
 
+/** The takedown reason an agence's annonces carry while it is closed; « Rouvrir » lifts exactly these. */
+const SHOP_CLOSED = "Agence suspendue";
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const gate = await requireAdmin(req, "agences");
   if (gate instanceof NextResponse) return gate;
@@ -103,6 +106,38 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // owner — told by whoever got there first — is not told again.
   if (from && (moved ?? []).length === 0) {
     return NextResponse.json({ error: "wrong_status", detail: t("errors.wrongStatus") }, { status: 409 });
+  }
+
+  // The agence's annonces follow it: the dashboard promises « sa page et ses
+  // annonces ne sont plus visibles », and every annonce stayed online (the QA
+  // tour). Down as a takedown the owner cannot relist, and back up — still
+  // within their time — when the agence reopens. A queued one stays in the
+  // queue, where approve refuses while the agence is closed.
+  if (action === "suspend" || action === "reject") {
+    await admin
+      .from("listings")
+      .update({ status: "archived", taken_down_at: now, taken_down_by: by, taken_down_reason: `${SHOP_CLOSED} : ${reason}`.slice(0, 500) })
+      .eq("shop_id", id)
+      .eq("status", "published")
+      .is("taken_down_at", null)
+      .then(() => {}, () => {});
+  }
+  if (action === "reinstate") {
+    const lifted = { taken_down_at: null, taken_down_by: null, taken_down_reason: null };
+    await admin
+      .from("listings")
+      .update({ status: "published", ...lifted })
+      .eq("shop_id", id)
+      .like("taken_down_reason", `${SHOP_CLOSED}%`)
+      .gt("expires_at", now)
+      .then(() => {}, () => {});
+    await admin
+      .from("listings")
+      .update({ status: "expired", ...lifted })
+      .eq("shop_id", id)
+      .like("taken_down_reason", `${SHOP_CLOSED}%`)
+      .lte("expires_at", now)
+      .then(() => {}, () => {});
   }
   if (notice) {
     await admin

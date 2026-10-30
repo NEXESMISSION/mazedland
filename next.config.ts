@@ -23,6 +23,8 @@ const nextConfig: NextConfig = {
   // waiting for generateMetadata before the first byte — and on the one route
   // with a real one, /annonces/[id], it shares a cached query with the page.
   htmlLimitedBots: /.*/,
+  // The framework's name is nobody's business.
+  poweredByHeader: false,
   // lucide-react is named-imported across ~125 files. This rewrites those
   // named imports to per-icon deep imports at build time, guaranteeing only
   // the icons actually used are bundled (insurance against the barrel
@@ -270,6 +272,12 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
+      // The brand files and the app icons: not fingerprinted, so a day with a
+      // week's grace rather than a year — they were revalidated on every view.
+      ...["/icons/:path*", "/logo.:ext", "/logo-mark.:ext", "/logo-stamp.:ext", "/logo-square.:ext", "/logo-watermark.:ext", "/og.png", "/favicon.ico", "/favicon-64.png", "/auth-hero.:ext", "/auth-hero.:size.:ext"].map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
+      })),
     ];
   },
 };

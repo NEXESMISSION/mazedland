@@ -11,6 +11,7 @@ import { takePlace } from "@/lib/places/server";
 import { placeRefusal, planFullResponse } from "@/lib/places/refusal";
 import { attributeOutOfBounds } from "@/lib/listings/input";
 import { missingPhotos } from "@/lib/listings/storage";
+import { can, roleIn } from "@/lib/pro/shops";
 import { asDealType } from "@/lib/listings/deal";
 
 /**
@@ -73,6 +74,21 @@ export async function POST(
   // A suspended seller publishes nothing (src/lib/moderation/ban.ts).
   const banned = await suspendedResponse(admin, req, user.id);
   if (banned) return banned;
+
+  // The agence named on the row must be one the seller may publish for. A
+  // draft's shop_id used to be writable through PostgREST (0195 revoked the
+  // client's writes) and the submit never looked again: an annonce under
+  // another agence's name, logo and badge.
+  const rowShop = (listing.shop_id as string | null) ?? null;
+  if (rowShop) {
+    const [role, { data: shop }] = await Promise.all([
+      roleIn(admin, rowShop, user.id),
+      admin.from("shops").select("status").eq("id", rowShop).maybeSingle(),
+    ]);
+    if (!can(role, "publish") || shop?.status !== "approved") {
+      return NextResponse.json({ error: "not_owner" }, { status: 403 });
+    }
+  }
 
   // Only a draft (or a listing that came back rejected, or one whose payment
   // was abandoned) may be submitted. Re-submitting something already in the
@@ -162,14 +178,22 @@ export async function POST(
   // ── 0. A fee that was already captured ────────────────────────────────────
   // A rejected annonce keeps its `fee_payment_id`. Re-submitting it ran the
   // pricing path again and created a SECOND payment for one publication.
+  // The captured payment must be this seller's, for a publication, and for
+  // this annonce when it says which: a fee_payment_id pointed at someone
+  // else's captured payment used to be a free place.
   let alreadyPaid = false;
   if (listing.fee_payment_id) {
     const { data: paid } = await admin
       .from("payments")
-      .select("status")
+      .select("status, user_id, kind, metadata")
       .eq("id", listing.fee_payment_id as string)
       .maybeSingle();
-    alreadyPaid = paid?.status === "captured";
+    const forListing = (paid?.metadata as { listing_id?: unknown } | null)?.listing_id;
+    alreadyPaid =
+      paid?.status === "captured" &&
+      paid.user_id === user.id &&
+      (paid.kind === "listing_fee" || paid.kind === "renewal") &&
+      (forListing == null || forListing === id);
   }
 
   // From here the annonce is « pending_review »: the place is counted and the

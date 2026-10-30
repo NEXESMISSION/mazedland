@@ -88,7 +88,7 @@ export async function POST(
   const { data: listing } = await admin
     .from("listings")
     .select(
-      "id, seller_id, title, status, seller_credit_id, fee_payment_id, contact_phone, expires_at, deal_type, pending_edit, taken_down_at",
+      "id, seller_id, title, status, seller_credit_id, fee_payment_id, contact_phone, expires_at, deal_type, pending_edit, taken_down_at, shop_id",
     )
     .eq("id", id)
     .maybeSingle();
@@ -199,6 +199,13 @@ export async function POST(
     // arrived would go online as a broken image.
     if ((await missingPhotos(admin, id)).length > 0) {
       return NextResponse.json({ error: "photo_missing", detail: t("photoMissing") }, { status: 400 });
+    }
+    // An annonce of a closed agence waits: its page is gone with the agence.
+    if (listing.shop_id) {
+      const { data: shop } = await admin.from("shops").select("status").eq("id", listing.shop_id as string).maybeSingle();
+      if (shop?.status !== "approved") {
+        return NextResponse.json({ error: "shop_closed", detail: t("shopClosed") }, { status: 409 });
+      }
     }
 
     // The same path the automatic publication takes (src/lib/listings/publish.ts):
