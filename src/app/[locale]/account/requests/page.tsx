@@ -42,6 +42,12 @@ type Row = {
  * prolong, edit or delete it. With demandes switched off in the console the
  * list stays, to pause or delete from, without the ways to make or edit one.
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("requests");
+  return { title: t("listTitle") };
+}
+
 export default async function MyRequestsPage() {
   const locale = await getLocale();
   const t = await getTranslations("requests");

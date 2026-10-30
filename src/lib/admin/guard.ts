@@ -48,10 +48,11 @@ export async function requireAdmin(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, admin_scopes")
+    .select("role, admin_scopes, banned_at")
     .eq("id", user.id)
     .single();
-  if (profile?.role !== "admin") {
+  // A suspended member (banned_at) is a non-admin until reinstated.
+  if (profile?.role !== "admin" || profile.banned_at) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
   const scopes = scopesFromRow(profile.admin_scopes);

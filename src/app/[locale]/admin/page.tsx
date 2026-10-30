@@ -45,6 +45,12 @@ const CONSOLE_PAYMENT_KINDS = [
   "listing_fee", "listing_pack", "subscription", "promo", "badge", "renewal",
 ];
 
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminDashboard");
+  return { title: t("title") };
+}
+
 export default async function AdminDashboard() {
   const { scopes } = await requireAdmin();
   // A team member sees the queues, warnings and journal of their own sections.

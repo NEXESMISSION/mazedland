@@ -17,6 +17,12 @@ import { getTranslations } from "next-intl/server";
  * and live refreshes after sending. RLS + same-origin checks on the
  * /api/admin/notifications/* routes block non-admin access.
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminNotifications");
+  return { title: t("title") };
+}
+
 export default async function AdminNotificationsPage() {
   await requireAdmin("notifications");
   const t = await getTranslations("adminNotifications");

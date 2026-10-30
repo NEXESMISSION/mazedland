@@ -83,11 +83,26 @@ export async function POST(
     return NextResponse.json({ error: "own_listing", detail: t("reportOwnListing") }, { status: 403 });
   }
 
-  // One report per person: a second one from the same reporter changes nothing.
-  const { error: insErr } = await admin.from("listing_reports").upsert(
-    { listing_id: id, reporter_id: user?.id ?? null, reporter_key: reporterKey, reason, note },
-    { onConflict: "listing_id,reporter_key", ignoreDuplicates: true },
-  );
+  // One report per person per wave: a second one from the same reporter
+  // changes nothing — unless the first was resolved by a moderator since, in
+  // which case this is a new report in a new wave (« a later wave counts from
+  // zero »), and the row is reopened rather than dropped.
+  const { data: prior } = await admin
+    .from("listing_reports")
+    .select("id, resolved_at")
+    .eq("listing_id", id)
+    .eq("reporter_key", reporterKey)
+    .maybeSingle();
+  const { error: insErr } = prior
+    ? prior.resolved_at
+      ? await admin
+          .from("listing_reports")
+          .update({ resolved_at: null, reason, note, reporter_id: user?.id ?? null, created_at: new Date().toISOString() })
+          .eq("id", prior.id)
+      : { error: null }
+    : await admin
+        .from("listing_reports")
+        .insert({ listing_id: id, reporter_id: user?.id ?? null, reporter_key: reporterKey, reason, note });
   if (insErr) return fail("report_failed", 500, insErr);
 
   const { count } = await admin

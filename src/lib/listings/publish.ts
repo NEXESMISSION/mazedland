@@ -52,6 +52,11 @@ export async function publishListing(
     .update({
       ...opts.extra,
       status: "published",
+      // Put online by an admin's hand or by the rules: an earlier takedown
+      // (0190) is over. A seller's relist never reaches here while one is set.
+      taken_down_at: null,
+      taken_down_by: null,
+      taken_down_reason: null,
       published_at: now.toISOString(),
       expires_at: expires.toISOString(),
       reviewed_by: opts.reviewerId,

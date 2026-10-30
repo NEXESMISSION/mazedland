@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
+import { activePlan } from "@/lib/pro/shops";
 
 /**
  * POST /api/admin/boutiques/:id — the console's decisions on a shop (0173).
@@ -32,6 +33,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   let notice: { kind: string; title: string; body: string; vars: Record<string, string> } | null = null;
   switch (action) {
     case "approve":
+      // A pending agence pays its plan before the console opens it (the
+      // owner's rule, 2026-10-28): with no running plan there is nothing to
+      // open, and the button used to open it anyway.
+      if (!(await activePlan(admin, id))) {
+        return NextResponse.json({ error: "plan_required", detail: t("errors.planRequired") }, { status: 409 });
+      }
       update = { status: "approved", rejection_reason: null, reviewed_by: by, reviewed_at: now };
       notice = { kind: "shop_approved", title: "Boutique ouverte", body: `« ${shop.name} » est ouverte sur Mazed Immo.`, vars: { name: shop.name } };
       break;

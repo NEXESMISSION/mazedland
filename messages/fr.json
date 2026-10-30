@@ -363,6 +363,7 @@
         "refunded": "Remboursé"
       },
       "receivedTitle": "Paiement reçu",
+      "failedTitle": "Paiement non validé",
       "receivedBody": "Nous avons enregistré votre paiement. Vous serez notifié dès que tout est confirmé.",
       "notFoundTitle": "Reçu introuvable",
       "notFoundBody": "Nous n'avons pas trouvé ce paiement. Si la somme a été débitée, contactez le support avec le numéro de référence ci-dessus.",
@@ -488,7 +489,8 @@
       "refusal": {
         "mark_sold": "Seule une annonce en ligne peut être marquée vendue.",
         "withdraw": "Cette annonce n'est pas en ligne.",
-        "relist": "Cette annonce est déjà en ligne ou en cours de traitement."
+        "relist": "Cette annonce est déjà en ligne ou en cours de traitement.",
+        "takenDown": "Cette annonce a été retirée par l'équipe Mazed Immo. Contactez-nous pour la remettre en ligne."
       },
       "windowClosed": "Votre période de publication est terminée — renouvelez l'annonce.",
       "contactRequired": "Ajoutez un numéro joignable avant de republier."
@@ -1305,6 +1307,16 @@
       "title": "Erreur sur le site",
       "body": "{place} — « {message} ». Les visiteurs voient une page d'erreur."
     },
+    "listing_archived": {
+      "plain": {
+        "title": "Annonce retirée",
+        "body": "« {title} » a été retirée par l'équipe Mazed Immo. Contactez-nous pour en savoir plus."
+      },
+      "withReason": {
+        "title": "Annonce retirée",
+        "body": "« {title} » a été retirée par l'équipe Mazed Immo. Motif : {reason}"
+      }
+    },
     "qa_report": {
       "found": {
         "title": "Tour de contrôle du site",
@@ -1677,6 +1689,10 @@
     "photoRateLimited": "Trop d'envois de photos. Réessayez dans une heure.",
     "notSubmittable": "Cette annonce est déjà « {status} ».",
     "freeLimitReached": "{limit, plural, one {Votre annonce gratuite est déjà en ligne.} other {Vos # annonces gratuites sont déjà en ligne.}} Pour en publier plus, passez à Mazed Immo Pro, ou retirez une annonce pour libérer une place.",
+    "accountSuspended": "Votre compte est suspendu : vous ne pouvez plus publier d'annonces. Contactez-nous si vous pensez qu'il s'agit d'une erreur.",
+    "titleTooShort": "Le titre doit faire au moins 3 caractères.",
+    "photoMissing": "Une des photos n'a pas été reçue : renvoyez-la avant de publier.",
+    "tooManyDrafts": "Vous avez trop de brouillons en attente ({limit}). Publiez-en ou supprimez-en avant d'en créer un autre.",
     "statuses": {
       "pending_review": "en vérification",
       "published": "en ligne",
@@ -2933,6 +2949,8 @@
       "rejectReasonPlaceholder": "Photos floues, prix incohérent, doublon…",
       "archiveTitle": "Archiver cette annonce ?",
       "archiveBody": "Elle disparaît du site. Rien n'est remboursé, et vous pourrez la remettre en ligne.",
+      "archiveReasonLabel": "Motif (facultatif, envoyé au vendeur)",
+      "archiveReasonPlaceholder": "Ex. : bien déjà vendu, annonce en double…",
       "soldTitle": "Marquer vendue ?",
       "soldBody": "L'annonce quitte le catalogue mais reste dans l'historique du vendeur.",
       "soldConfirm": "Marquer vendue",
@@ -3221,6 +3239,7 @@
       "unsupported": "Le refus et la suppression se font une annonce à la fois.",
       "skipStatus": "statut « {status} »",
       "skipNoPhone": "aucun numéro",
+      "skipPhotoMissing": "une photo est introuvable dans le stockage",
       "skipServerError": "erreur serveur",
       "skipAlreadyArchived": "déjà archivée",
       "skipNotPublished": "pas en ligne",
@@ -3232,6 +3251,13 @@
       "noPayment": "Aucun paiement n'est rattaché à cette annonce.",
       "noPhone": "Cette annonce n'a pas de numéro : elle ne peut pas être publiée.",
       "alreadyPublished": "Cette annonce est déjà en ligne.",
+      "alreadyRejected": "Cette annonce est déjà refusée.",
+      "alreadyArchived": "Cette annonce est déjà retirée.",
+      "badGovernorate": "Gouvernorat inconnu.",
+      "badPhone": "Numéro de téléphone invalide.",
+      "badPrice": "Prix invalide.",
+      "titleTooShort": "Le titre doit faire au moins 3 caractères.",
+      "photoMissing": "Une photo de l'annonce est introuvable dans le stockage : demandez au vendeur de la renvoyer.",
       "reasonRequired": "Dites au vendeur ce qui ne va pas — sinon il renverra la même annonce.",
       "creditsNotSupported": "Cette annonce a été payée avec un forfait, et le remboursement de forfait n'existe pas encore ici. Traitez-la à la main.",
       "notPublished": "Seule une annonce en ligne peut être prolongée.",
@@ -3476,6 +3502,7 @@
     "saved": "Profil enregistré.",
     "saveFailed": "Impossible d'enregistrer le profil.",
     "nameInvalid": "Le nom doit faire entre 2 et 80 caractères.",
+    "governorateInvalid": "Choisissez un gouvernorat dans la liste.",
     "notificationsTitle": "Notifications",
     "requestAlerts": "Les alertes de mes demandes",
     "privacyTitle": "Ce que le site montre de vous",
@@ -4259,6 +4286,7 @@
       "slugTaken": "Cette adresse est déjà prise.",
       "notApproved": "Une agence refusée ou suspendue ne peut pas souscrire d'abonnement.",
       "plan": "Abonnement inconnu.",
+      "planRequired": "L'agence n'a pas encore réglé son abonnement : elle s'ouvre une fois le paiement validé.",
       "reason": "Indiquez un motif.",
       "planAlready": "Vous avez déjà cet abonnement jusqu'au {date}. Vous pourrez le renouveler à partir du {from}."
     },
@@ -4834,6 +4862,10 @@
       "label": "Demandes de visite par acheteur",
       "hint": "Au-delà, il attend le lendemain."
     },
+    "limit_drafts_per_account": {
+      "label": "Brouillons par compte",
+      "hint": "Au-delà, il faut en publier ou en supprimer avant d'en créer un autre."
+    },
     "limit_reports_per_hour": {
       "label": "Signalements par personne",
       "hint": "Freine ceux qui signalent en masse."
@@ -5202,6 +5234,7 @@
       "link": "Ce lien n'est pas une adresse web (http ou https).",
       "placement": "Choisissez un emplacement.",
       "dates": "Les dates ne vont pas : le dernier jour doit venir après le début.",
+      "active": "« Actif » doit être oui ou non.",
       "imageType": "JPG, PNG ou WebP seulement.",
       "imageSize": "Image trop lourde : {max} Mo au plus."
     }

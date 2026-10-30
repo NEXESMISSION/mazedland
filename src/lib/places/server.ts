@@ -158,3 +158,81 @@ export async function coverPlace(
   if (credited?.ok === true) return { via: "credit", left: credited.remaining as number };
   return null;
 }
+
+export type Claim = { from: readonly string[]; to: "pending_review" | "published" };
+export type Taken =
+  | { ok: true; cover: Cover }
+  | { ok: false; reason: "not_submittable" | "taken_down" | "free_limit_reached" };
+
+/**
+ * coverPlace, with the place taken in the same breath. The count of free
+ * places and the flip of the status happen in one transaction under a lock
+ * (claim_listing_place, 0190): two submits sent at the same moment cannot
+ * both pass the count, a double tap on « Publier » is one publication, not
+ * two, and an annonce an admin took down (`taken_down_at`) is refused before
+ * anything is spent. A credit is spent only once the status is held; when
+ * there is none to spend, the status goes back to `fromStatus`.
+ */
+export async function takePlace(
+  admin: Admin,
+  { userId, listingId, shopId, fromStatus }: { userId: string; listingId: string; shopId: string | null; fromStatus: string },
+  freeLimit: number,
+  claim: Claim,
+): Promise<Taken> {
+  const flip = async (limit: number | null) => {
+    const { data, error } = await admin.rpc("claim_listing_place", {
+      p_listing: listingId,
+      p_seller: userId,
+      p_from: [...claim.from],
+      p_to: claim.to,
+      p_limit: limit,
+    });
+    if (error) throw error;
+    return data as "ok" | "not_submittable" | "taken_down" | "full";
+  };
+  const deny = (r: "not_submittable" | "taken_down" | "full"): Taken => ({
+    ok: false,
+    reason: r === "full" ? "free_limit_reached" : r,
+  });
+
+  const shopPlan = shopId ? await planCovers(admin, shopId, userId, listingId) : null;
+  const owned = shopPlan?.ok ? null : await ownedPlan(admin, userId, listingId);
+  const accountUsed = shopPlan?.ok || owned ? 0 : await accountUsage(admin, userId, listingId);
+  const way = placeFor({
+    forShop: Boolean(shopId),
+    shopPlanHasRoom: Boolean(shopPlan?.ok),
+    ownedPlan: owned,
+    accountUsed,
+    freeLimit,
+  });
+
+  if (way === "shop_plan" && shopPlan?.ok) {
+    const r = await flip(null);
+    return r === "ok" ? { ok: true, cover: { via: "subscription", left: shopPlan.left, shopId: shopId! } } : deny(r);
+  }
+  if (way === "own_plan" && owned) {
+    const r = await flip(null);
+    return r === "ok"
+      ? { ok: true, cover: { via: "subscription", left: owned.quota - owned.used - 1, shopId: owned.shopId } }
+      : deny(r);
+  }
+  if (way === "free_quota") {
+    const r = await flip(freeLimit);
+    if (r === "ok") return { ok: true, cover: { via: "free_quota", left: freeLimit - accountUsed - 1 } };
+    if (r !== "full") return deny(r);
+    // A place went to another annonce between the count and the lock: a
+    // credit, if the seller holds one.
+  }
+
+  // A credit — the status first, so a double tap cannot spend two.
+  const r = await flip(null);
+  if (r !== "ok") return deny(r);
+  const { data: credited } = await admin.rpc("consume_listing_credit", {
+    p_seller: userId,
+    p_listing: listingId,
+    p_actor: userId,
+  });
+  if (credited?.ok === true) return { ok: true, cover: { via: "credit", left: credited.remaining as number } };
+  await admin.from("listings").update({ status: fromStatus }).eq("id", listingId).eq("status", claim.to);
+  return { ok: false, reason: "free_limit_reached" };
+}

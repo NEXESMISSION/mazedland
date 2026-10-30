@@ -7,6 +7,12 @@ export const dynamic = "force-dynamic";
 /**
  * /admin/popups/new — blank form. Auth is enforced by the admin layout.
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminPopups");
+  return { title: t("title") };
+}
+
 export default async function NewPopupPage() {
   await requireAdmin("popups");
   const t = await getTranslations("adminPopups");

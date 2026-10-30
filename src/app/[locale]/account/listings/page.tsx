@@ -81,6 +81,12 @@ const RENEWABLE = ["expired", "archived", "sold", "rented"];
 /** The title PublishWizard stores for a draft with none (a marker, not copy). */
 const UNTITLED_DRAFT = "Brouillon";
 
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("account.listings");
+  return { title: t("title") };
+}
+
 export default async function MyListingsPage({
   searchParams,
 }: {
@@ -482,6 +488,7 @@ export default async function MyListingsPage({
               <div className="flex gap-3">
                 <Link
                   href={`/annonces/${l.id}` as never}
+                  aria-label={l.title || tAccount("untitledDraft")}
                   className="relative size-[74px] shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
                 >
                   {cover ? (
@@ -564,6 +571,7 @@ export default async function MyListingsPage({
                     <div className="flex items-center gap-3.5">
                       <Link
                         href={`/annonces/${l.id}` as never}
+                        aria-label={l.title || tAccount("untitledDraft")}
                         className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
                       >
                         {cover ? (

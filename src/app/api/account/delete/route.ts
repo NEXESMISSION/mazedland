@@ -64,11 +64,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       if (rmErr) dLog.warn(`kyc purge partial for ${user.id}: ${rmErr.message}`);
     }
     // Anonymise auth PII + permanently ban so the login is dead and no email
-    // / phone remains in auth.users. ~100-year ban.
+    // / phone remains in auth.users. ~100-year ban. GoTrue MERGES
+    // user_metadata, so `{}` erased nothing and the name, phone and
+    // governorate written at signup stayed: every key is set to null instead.
+    const { data: before } = await admin.auth.admin.getUserById(user.id);
+    const wipe = Object.fromEntries(Object.keys(before?.user?.user_metadata ?? {}).map((k) => [k, null]));
     const { error: authErr } = await admin.auth.admin.updateUserById(user.id, {
       email: `deleted+${user.id}@deleted.invalid`,
       phone: "",
-      user_metadata: {},
+      user_metadata: wipe,
       ban_duration: "876000h",
     });
     if (authErr) dLog.warn(`auth anonymise failed for ${user.id}: ${authErr.message}`);

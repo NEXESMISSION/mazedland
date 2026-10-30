@@ -7,6 +7,7 @@ import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { listingFields, listingPhotos, type ListingBody } from "@/lib/listings/input";
 import { dropEdit, editWaiting, isEditable, proposeEdit } from "@/lib/listings/edit";
+import { suspendedResponse } from "@/lib/moderation/ban";
 import { featureOff } from "@/lib/settings/gate";
 import { getSettings } from "@/lib/settings/server";
 
@@ -48,6 +49,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const t = await apiTranslator(req, "publishApi");
   const settings = await getSettings();
 
+  // A suspended seller changes nothing online (src/lib/moderation/ban.ts).
+  const banned = await suspendedResponse(admin, req, user.id);
+  if (banned) return banned;
+
   const { data: over } = await admin.rpc("check_rate_limit", {
     p_key: `listing-edit:${user.id}`,
     p_max: settings.limit_edits_per_hour,
@@ -74,6 +79,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // demande »), a way to call, a photo.
   if (("title" in body && !fields.title) || ("governorate" in body && !fields.governorate)) {
     return NextResponse.json({ error: "incomplete", detail: t("incomplete") }, { status: 400 });
+  }
+  // A two-character title left the annonce offline: the edit was accepted
+  // here and refused by the database when the moderator approved it.
+  if (typeof fields.title === "string" && fields.title.length < 3) {
+    return NextResponse.json({ error: "title_too_short", detail: t("titleTooShort") }, { status: 400 });
   }
   if ("price" in fields && fields.price == null && fields.price_on_request !== true) {
     return NextResponse.json({ error: "price_required", detail: t("priceRequired") }, { status: 400 });

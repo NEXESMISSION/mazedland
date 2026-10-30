@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isUuid } from "@/lib/uuid";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
@@ -42,6 +43,9 @@ export async function POST(req: NextRequest) {
       .slice(0, 2000);
     if (ids.length === 0) {
       return NextResponse.json({ error: "ids_required" }, { status: 400 });
+    }
+    if (ids.some((x) => !isUuid(x))) {
+      return NextResponse.json({ error: "invalid_ids" }, { status: 400 });
     }
     del = del.in("id", ids);
   } else if (body.filters && typeof body.filters === "object") {

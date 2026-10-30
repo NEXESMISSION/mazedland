@@ -34,10 +34,6 @@ export async function POST(req: NextRequest) {
   if (!admin) return fail("server_misconfigured", 500);
   const t = await apiTranslator(req, "visitsApi");
 
-  // Ten a day (the default) is a buyer who is looking hard; more is someone filling sellers' diaries.
-  const { data: over } = await admin.rpc("check_rate_limit", { p_key: `visit:${user.id}`, p_max: settings.limit_visits_per_day, p_window_secs: 86_400 });
-  if (over === true) return NextResponse.json({ error: "rate_limited", detail: t("tooMany") }, { status: 429 });
-
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const listingId = typeof body.listingId === "string" && /^[0-9a-f-]{36}$/i.test(body.listingId) ? body.listingId : null;
   const rules = { maxSlots: settings.visits_max_slots, horizonDays: settings.visits_horizon_days };
@@ -54,6 +50,12 @@ export async function POST(req: NextRequest) {
     : { data: null };
   if (!listing || listing.status !== "published") return NextResponse.json({ error: "not_found", detail: t("notOnline") }, { status: 404 });
   if (listing.seller_id === user.id) return NextResponse.json({ error: "invalid", detail: t("own") }, { status: 400 });
+
+  // Ten a day (the default) is a buyer who is looking hard; more is someone
+  // filling sellers' diaries. Counted here, after the checks: a mistyped form
+  // or a client retrying a 400 used to spend the day's requests.
+  const { data: over } = await admin.rpc("check_rate_limit", { p_key: `visit:${user.id}`, p_max: settings.limit_visits_per_day, p_window_secs: 86_400 });
+  if (over === true) return NextResponse.json({ error: "rate_limited", detail: t("tooMany") }, { status: 429 });
 
   const { data: created, error } = await admin
     .from("visit_requests")

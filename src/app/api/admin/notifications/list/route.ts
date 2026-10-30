@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isUuid } from "@/lib/uuid";
 import { requireAdmin } from "@/lib/admin/guard";
 import { fail } from "@/lib/http/errors";
 
@@ -39,6 +40,14 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(Math.max(Number.isFinite(limitRaw) ? limitRaw : 50, 1), 200);
   const offsetRaw = Number(sp.get("offset") ?? 0);
   const offset = Math.max(Number.isFinite(offsetRaw) ? offsetRaw : 0, 0);
+
+  // A value Postgres cannot cast used to come back as a 500.
+  if ([userId, broadcastId, createdBy].some((v) => v && !isUuid(v))) {
+    return NextResponse.json({ error: "invalid_id" }, { status: 400 });
+  }
+  if (since && Number.isNaN(Date.parse(since))) {
+    return NextResponse.json({ error: "invalid_since" }, { status: 400 });
+  }
 
   // Recipient + sender profile joins so the queue row can show "à
   // Jean Dupont (individual) — envoyé par Admin Y" instead of two

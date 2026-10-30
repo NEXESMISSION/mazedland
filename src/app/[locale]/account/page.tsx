@@ -32,6 +32,12 @@ export const dynamic = "force-dynamic";
  * hairline, the same recipe used across the redesigned public pages,
  * so the user lands here and sees the same visual system continuing.
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("accountPage");
+  return { title: t("mySpace") };
+}
+
 export default async function AccountPage() {
   const t = await getTranslations("accountPage");
   const locale = await getLocale();

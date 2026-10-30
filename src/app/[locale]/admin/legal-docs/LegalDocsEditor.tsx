@@ -273,6 +273,7 @@ export function LegalDocsEditor({
                       type="text"
                       value={row.label}
                       placeholder={t("labelPlaceholder")}
+                      aria-label={t("labelPlaceholder")}
                       onChange={(e) => update(i, { label: e.target.value })}
                       className="w-full rounded-lg border border-mazed-gold/25 bg-mazed-surface px-3 py-2 text-sm font-semibold text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
                     />
@@ -280,6 +281,7 @@ export function LegalDocsEditor({
                       rows={2}
                       value={row.description}
                       placeholder={t("descriptionPlaceholder")}
+                      aria-label={t("descriptionPlaceholder")}
                       onChange={(e) => update(i, { description: e.target.value })}
                       className="w-full rounded-lg border border-mazed-gold/25 bg-mazed-surface px-3 py-2 text-[12px] text-mazed-cream focus:border-mazed-gold focus:outline-none focus:ring-1 focus:ring-mazed-gold/40"
                     />

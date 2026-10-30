@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { coverPhoto } from "@/lib/listingCover";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { categoryLabel } from "@/lib/i18n";
@@ -47,6 +47,14 @@ type Row = { listing_id: string; listing: ListingRow | ListingRow[] | null };
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
 
+/** Never public, or no longer: a draft or a taken-down annonce could be saved by id and read from here. */
+const HIDDEN = new Set(["draft", "pending_payment", "pending_review", "rejected", "archived"]);
+
+export async function generateMetadata() {
+  const t = await getTranslations("account.favorites");
+  return { title: t("title") };
+}
+
 export default async function ActivityPage() {
   const locale = await getLocale();
   const supabase = await getServerSupabase();
@@ -74,7 +82,7 @@ export default async function ActivityPage() {
 
   const items: SavedItem[] = ((data ?? []) as unknown as Row[])
     .map((r) => one<ListingRow>(r.listing))
-    .filter((l): l is ListingRow => l !== null)
+    .filter((l): l is ListingRow => l !== null && !HIDDEN.has(l.status))
     .map((l) => ({
       id: l.id,
       title: l.title,

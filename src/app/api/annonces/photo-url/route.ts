@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { suspendedResponse } from "@/lib/moderation/ban";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -61,6 +62,10 @@ export async function POST(req: NextRequest) {
   if (!admin) {
     return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
   }
+
+  // A suspended seller uploads nothing (src/lib/moderation/ban.ts).
+  const banned = await suspendedResponse(admin, req, user.id);
+  if (banned) return banned;
 
   // A per-seller ceiling on signed upload URLs — every one is a write into the
   // public `properties` bucket, and without a cap an account could fill storage

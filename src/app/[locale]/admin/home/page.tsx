@@ -28,6 +28,12 @@ type Raw = {
   photos: { storage_path: string; sort_order: number }[];
 };
 
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminHome");
+  return { title: t("title") };
+}
+
 export default async function AdminHomePage({
   searchParams,
 }: {
@@ -102,6 +108,7 @@ export default async function AdminHomePage({
             name="q"
             defaultValue={q}
             placeholder={t("searchPlaceholder")}
+            aria-label={t("searchPlaceholder")}
             className="h-9 w-full rounded-lg border border-border bg-surface ps-8 pe-3 text-[12px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
           />
         </div>

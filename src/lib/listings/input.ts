@@ -46,9 +46,15 @@ export function text(v: unknown, max: number): string | null {
   return s ? s.slice(0, max) : null;
 }
 
+/** The widest price an annonce may carry, in TND: wider than any property, narrower than the column. */
+export const MAX_PRICE = 1_000_000_000;
+
 export function num(v: unknown): number | null {
+  // Number(null), Number(""), Number(false) and Number([]) are all 0: a blank
+  // price used to become a 0 TND annonce. Only a number, or a string of one.
+  if (typeof v !== "number" && !(typeof v === "string" && v.trim() !== "")) return null;
   const n = Number(v);
-  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+  return Number.isFinite(n) && n >= 0 && n <= MAX_PRICE ? Math.round(n * 100) / 100 : null;
 }
 
 /** Tunisian mobile/landline, loosely: +216 XX XXX XXX or 8 local digits. */
@@ -151,9 +157,17 @@ export function attributeOutOfBounds(key: string, value: unknown): boolean {
   return !Number.isFinite(n) || n < bounds[0] || n > bounds[1];
 }
 
+/** Keys and text an annonce may carry: the forms send a few dozen short answers, not a payload. */
+const MAX_ATTRIBUTE_KEYS = 60;
+const MAX_ATTRIBUTE_TEXT = 200;
+
 export function saneAttributes(attrs: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(attrs)) {
+  for (const [k, v] of Object.entries(attrs).slice(0, MAX_ATTRIBUTE_KEYS)) {
+    if (k.length > 64) continue;
+    // Only what a form field holds: a number, a yes/no, a short text.
+    if (!(typeof v === "number" || typeof v === "boolean" || typeof v === "string" || v === null)) continue;
+    if (typeof v === "string" && v.length > MAX_ATTRIBUTE_TEXT) continue;
     const bounds = ATTRIBUTE_BOUNDS[k];
     if (bounds && v !== null && v !== "") {
       const n = Number(v);

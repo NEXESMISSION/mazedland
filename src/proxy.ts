@@ -155,8 +155,9 @@ export async function proxy(req: NextRequest) {
   // is deliberately excluded: Supabase's recovery link establishes a
   // temporary session, so the user IS "logged in" while legitimately
   // setting a new password there, and gating it would break recovery.
-  const authPageMatch = pathname.match(
-    /^\/(fr|ar|en)\/(login|signup|forgot-password)\/?$/,
+  // On the decoded path, like the console gate: /fr/%6cogin is /fr/login.
+  const authPageMatch = decodedPath.match(
+    /^\/(fr|ar|en)\/(login|signup|forgot-password)\/?$/i,
   );
   if (authPageMatch && authUserId) {
     const target = new URL(`/${authPageMatch[1]}`, req.url);
@@ -167,7 +168,13 @@ export async function proxy(req: NextRequest) {
   // Private-area gate. Every /account page needs a session — an anonymous
   // visitor (e.g. tapping the account icon while signed out) is sent
   // straight to login with a `next` param so they return here afterwards.
-  const accountMatch = pathname.match(/^\/(fr|ar|en)\/account(?:\/.*)?$/);
+  // The watchlist, the demande form and the publish form need one too; their
+  // own redirect() ran after the response had started (a 200 with a meta
+  // refresh), so they are gated here as well. On the decoded path: the raw
+  // one let /fr/%61ccount through.
+  const accountMatch = decodedPath.match(
+    /^\/(fr|ar|en)\/(?:account(?:\/.*)?|watchlist|demandes\/nouvelle|annonces\/nouvelle(?:\/.*)?)\/?$/i,
+  );
   if (accountMatch && !authUserId) {
     const next = `${pathname}${search}`;
     const target = new URL(

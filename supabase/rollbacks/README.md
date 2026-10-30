@@ -10,6 +10,7 @@ node scripts/backup-db.mjs
 
 | Migration | Rollback | What is lost |
 |---|---|---|
+| 0190 QA tour | `0190_qa_tour.down.sql` | the takedown marks on annonces; claim_listing_place (roll the code back first); the deletion cascade for accounts deleted after it stays applied; bucket limits |
 | 0189 admin backup | `0189_admin_backup.down.sql` | the console's « Sauvegarde » stops; the `backups` bucket and its files stay (remove them from the dashboard) |
 | 0188 prune cron history | `0188_prune_cron_history.down.sql` | nothing (the run log deleted by 0188 stays deleted; it held no business data) |
 | 0177 ads | `0177_ads.down.sql` | every ad and its daily figures (images stay in storage) |

@@ -25,6 +25,12 @@ const ICON: Record<PromoColumn, typeof Search> = {
  * where each shows, for how long, at what price — and what runs now. Paid
  * through the usual checkout; it starts when an admin accepts the receipt.
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("promo");
+  return { title: t("title") };
+}
+
 export default async function BoostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const locale = await getLocale();

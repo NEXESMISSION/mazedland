@@ -28,10 +28,13 @@ export async function POST(req: NextRequest) {
     const t = await apiTranslator(req, "accountSettings");
     return NextResponse.json({ ok: false, error: "bad_name", detail: t("nameInvalid") }, { status: 400 });
   }
-  const gov =
-    typeof body.governorate === "string" && (TUNISIAN_GOVERNORATES as readonly string[]).includes(body.governorate)
-      ? body.governorate
-      : null;
+  // An unknown name is refused: a client bug used to erase the stored one.
+  const rawGov = typeof body.governorate === "string" ? body.governorate.trim() : "";
+  if (rawGov && !(TUNISIAN_GOVERNORATES as readonly string[]).includes(rawGov)) {
+    const t = await apiTranslator(req, "accountSettings");
+    return NextResponse.json({ ok: false, error: "bad_governorate", detail: t("governorateInvalid") }, { status: 400 });
+  }
+  const gov = rawGov || null;
 
   const admin = getServiceSupabase();
   if (!admin) return NextResponse.json({ ok: false, error: "not_configured" }, { status: 503 });

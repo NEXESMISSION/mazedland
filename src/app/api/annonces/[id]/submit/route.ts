@@ -6,8 +6,11 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { moderationSettings, publishOrQueue } from "@/lib/moderation/server";
-import { coverPlace } from "@/lib/places/server";
+import { suspendedResponse } from "@/lib/moderation/ban";
+import { takePlace } from "@/lib/places/server";
+import { placeRefusal } from "@/lib/places/refusal";
 import { attributeOutOfBounds } from "@/lib/listings/input";
+import { missingPhotos } from "@/lib/listings/storage";
 import { asDealType } from "@/lib/listings/deal";
 
 /**
@@ -25,8 +28,9 @@ import { asDealType } from "@/lib/listings/deal";
  *   3. The seller holds a pack with quota left  → spend one credit.
  *   4. Otherwise                                → refused, `free_limit_reached`.
  *
- * Steps 1–3 are coverPlace (src/lib/places/server.ts), shared with renew and
- * relist so that every way back online counts places the same way.
+ * Steps 1–3 are takePlace (src/lib/places/server.ts), shared with renew and
+ * relist so that every way back online counts places the same way — and
+ * takes the place in the same transaction as the count (0190).
  *
  * There is no fee per annonce any more. Every account publishes its free
  * places, and more than that is what Mazed Immo Pro is for: a shop and its
@@ -66,6 +70,9 @@ export async function POST(
   if (listing.seller_id !== user.id) {
     return NextResponse.json({ error: "not_owner" }, { status: 403 });
   }
+  // A suspended seller publishes nothing (src/lib/moderation/ban.ts).
+  const banned = await suspendedResponse(admin, req, user.id);
+  if (banned) return banned;
 
   // Only a draft (or a listing that came back rejected, or one whose payment
   // was abandoned) may be submitted. Re-submitting something already in the
@@ -107,6 +114,15 @@ export async function POST(
     const t = await apiTranslator(req, "publishApi");
     return NextResponse.json(
       { error: "photo_required", detail: t("photoRequired") },
+      { status: 400 },
+    );
+  }
+  // A row in listing_photos is not a photo: the upload may have failed after
+  // the row was written, and the annonce went online with a broken image.
+  if ((await missingPhotos(admin, id)).length > 0) {
+    const t = await apiTranslator(req, "publishApi");
+    return NextResponse.json(
+      { error: "photo_missing", detail: t("photoMissing") },
       { status: 400 },
     );
   }
@@ -156,19 +172,34 @@ export async function POST(
     alreadyPaid = paid?.status === "captured";
   }
 
+  // From here the annonce is « pending_review »: the place is counted and the
+  // status flipped in one transaction (claim_listing_place, 0190), so two
+  // submits sent at the same moment — of this draft, or of two drafts — cannot
+  // both pass, and publishOrQueue below decides from a place already held.
+  const claim = { from: submittable, to: "pending_review" as const };
   if (alreadyPaid) {
     paidWith = "already_paid";
+    const { data: held } = await admin.rpc("claim_listing_place", {
+      p_listing: id,
+      p_seller: user.id,
+      p_from: submittable,
+      p_to: claim.to,
+      p_limit: null,
+    });
+    if (held !== "ok") return placeRefusal(req, held === "taken_down" ? "taken_down" : "not_submittable");
   } else {
     // An agence's plan, the free places, or a credit (src/lib/places): every
     // account publishes for free while it has fewer than `free_listing_limit`
     // annonces live — which is how an agency with thirty annonces ends up on a
     // Pro plan without anyone deciding who is an agency.
-    const cover = await coverPlace(
+    const taken = await takePlace(
       admin,
-      { userId: user.id, listingId: id, shopId: (listing.shop_id as string | null) ?? null },
+      { userId: user.id, listingId: id, shopId: (listing.shop_id as string | null) ?? null, fromStatus: String(listing.status) },
       settings.freeLimit,
+      claim,
     );
-    if (!cover) {
+    if (!taken.ok) {
+      if (taken.reason !== "free_limit_reached") return placeRefusal(req, taken.reason);
       // ── 4. Nothing covers it ──────────────────────────────────────────────
       const t = await apiTranslator(req, "publishApi");
       logAction(req, user, "listing.submit.free_limit", { id, limit: settings.freeLimit });
@@ -181,9 +212,9 @@ export async function POST(
         { status: 402 },
       );
     }
-    paidWith = cover.via;
-    if (cover.via === "free_quota") freeLeft = cover.left;
-    else remaining = cover.left;
+    paidWith = taken.cover.via;
+    if (taken.cover.via === "free_quota") freeLeft = taken.cover.left;
+    else remaining = taken.cover.left;
   }
 
   // ── The moderation decision ────────────────────────────────────────────────

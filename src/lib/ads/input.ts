@@ -31,7 +31,7 @@ export type AdWrite = Partial<
 >;
 
 /** The field that is wrong — each has a sentence in `adminAds.api`. */
-export type AdInputError = "advertiser" | "title" | "image" | "imageMobile" | "link" | "placement" | "dates";
+export type AdInputError = "advertiser" | "title" | "image" | "imageMobile" | "link" | "placement" | "dates" | "active";
 
 export type AdInputResult = { ok: true; value: AdWrite } | { ok: false; error: AdInputError };
 
@@ -87,7 +87,18 @@ export function parseAdInput(body: Record<string, unknown>, { partial }: { parti
     out.starts_at = win.starts_at;
     out.ends_at = win.ends_at;
   }
-  if (has("active")) out.active = body.active !== false;
+  // Only a boolean: anything else (« "false" », 0, null) used to switch the ad ON.
+  if (has("active")) {
+    // Left out of a full form: on, as before. Sent as anything but a boolean
+    // (« "false" », 0, null): refused — it used to switch the ad ON.
+    if (body.active === undefined) {
+      if (!partial) out.active = true;
+    } else if (typeof body.active !== "boolean") {
+      return { ok: false, error: "active" };
+    } else {
+      out.active = body.active;
+    }
+  }
   if (has("sort_order")) {
     const n = Math.floor(Number(body.sort_order));
     out.sort_order = Number.isFinite(n) ? Math.max(0, Math.min(MAX_SORT, n)) : 0;

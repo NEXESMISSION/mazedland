@@ -122,6 +122,7 @@ export const SETTINGS = {
 
   // ── Abuse limits: how often one person may do a thing.
   limit_visits_per_day: { group: "limits", type: "int", default: 10, min: 1, max: 200, unit: "per_day" },
+  limit_drafts_per_account: { group: "limits", type: "int", default: 30, min: 1, max: 500 },
   limit_reports_per_hour: { group: "limits", type: "int", default: 10, min: 1, max: 200, unit: "per_hour" },
   limit_edits_per_hour: { group: "limits", type: "int", default: 20, min: 1, max: 200, unit: "per_hour" },
   limit_phone_reveals_per_hour: { group: "limits", type: "int", default: 40, min: 1, max: 1000, unit: "per_hour" },

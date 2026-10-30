@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { fail } from "@/lib/http/errors";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { isUuid } from "@/lib/uuid";
 
 /**
  * Favourites for annonces.
@@ -28,6 +30,20 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
 
+  // Only what a visitor can see is worth saving: an unknown id used to come
+  // back as a 500, and a draft or a taken-down annonce could be saved by id
+  // and then read from « Mes favoris ».
+  if (!isUuid(id)) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
+  const admin = getServiceSupabase();
+  if (!admin) return fail("server_misconfigured", 500);
+  const { data: listing } = await admin
+    .from("listings")
+    .select("id")
+    .eq("id", id)
+    .eq("status", "published")
+    .maybeSingle();
+  if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
+
   const { error } = await supabase
     .from("watchlist")
     .insert({ user_id: user.id, listing_id: id });
@@ -53,6 +69,7 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
 
+  if (!isUuid(id)) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
   const { error } = await supabase
     .from("watchlist")
     .delete()

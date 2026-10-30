@@ -14,6 +14,12 @@ export const dynamic = "force-dynamic";
  * the id isn't a popup the caller can see (RLS combined with the row
  * existing).
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminPopups");
+  return { title: t("editTitle") };
+}
+
 export default async function EditPopupPage({
   params,
 }: {

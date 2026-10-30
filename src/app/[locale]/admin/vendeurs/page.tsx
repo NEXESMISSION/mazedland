@@ -31,6 +31,12 @@ type TabKey = "all" | "agency" | "verified" | "banned";
 
 const TAB_ORDER: TabKey[] = ["all", "agency", "verified", "banned"];
 
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminSellers");
+  return { title: t("title") };
+}
+
 export default async function AdminVendeursPage({
   searchParams,
 }: {

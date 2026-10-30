@@ -22,6 +22,12 @@ export const dynamic = "force-dynamic";
  * accepted and how long each trace is kept (« Mes données », with the
  * download of everything), and the way out (deleting the account) at the end.
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("accountSettings");
+  return { title: t("title") };
+}
+
 export default async function AccountSettingsPage() {
   const locale = await getLocale();
   const t = await getTranslations("accountSettings");

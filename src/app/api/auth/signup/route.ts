@@ -108,17 +108,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
   }
 
-  // One account per phone — friendly pre-check. (The unique synthetic email
-  // below is the actual race-safe guard at the auth layer.)
-  const { data: existing } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("phone", phone)
-    .maybeSingle();
-  if (existing?.id) {
-    return NextResponse.json({ ok: false, error: "phone_taken" }, { status: 409 });
-  }
-
   // Fail CLOSED when SMS is configured: require a recent phone-verification
   // proof (audit #2 — the OTP gate was client-only + fail-open, so a script
   // could POST here and register any phone). When SMS is OFF (today), skip —
@@ -138,6 +127,19 @@ export async function POST(req: NextRequest) {
     if (!verifiedMs || Date.now() - verifiedMs > 15 * 60 * 1000) {
       return NextResponse.json({ ok: false, error: "phone_not_verified" }, { status: 403 });
     }
+  }
+
+  // One account per phone — friendly pre-check, AFTER the proof: answered
+  // before it, « phone_taken » told anyone which numbers have an account, one
+  // request each. (The unique synthetic email below is the race-safe guard at
+  // the auth layer.)
+  const { data: existing } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("phone", phone)
+    .maybeSingle();
+  if (existing?.id) {
+    return NextResponse.json({ ok: false, error: "phone_taken" }, { status: 409 });
   }
 
   const email = `${phone.replace(/\D/g, "")}@${PHONE_EMAIL_DOMAIN}`;

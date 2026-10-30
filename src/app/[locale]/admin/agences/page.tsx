@@ -23,6 +23,12 @@ type TabKey = (typeof TABS)[number];
  * a shop and verifying it are two decisions: the first lets its page show,
  * the second says an admin read its papers.
  */
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminShops");
+  return { title: t("title") };
+}
+
 export default async function AdminShopsPage({ searchParams }: { searchParams: Promise<{ status?: string; id?: string }> }) {
   await requireAdmin("agences");
   const sp = await searchParams;

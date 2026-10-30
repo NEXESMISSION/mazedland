@@ -50,6 +50,12 @@ type Month = {
 
 const dealOf = (v: unknown): Deal => (v === "rent" ? "rent" : "sale");
 
+/** The tab's title: every page of this section used to carry the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("adminResults");
+  return { title: t("title") };
+}
+
 export default async function AdminResults() {
   await requireAdmin("resultats");
   const t = await getTranslations("adminResults");

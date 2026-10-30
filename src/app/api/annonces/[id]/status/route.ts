@@ -7,7 +7,9 @@ import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { asDealType, closedStatus } from "@/lib/listings/deal";
 import { moderationSettings } from "@/lib/moderation/server";
-import { coverPlace } from "@/lib/places/server";
+import { takePlace } from "@/lib/places/server";
+import { placeRefusal } from "@/lib/places/refusal";
+import { suspendedResponse } from "@/lib/moderation/ban";
 
 /**
  * POST /api/annonces/[id]/status - what a seller can do to their own annonce
@@ -109,18 +111,27 @@ export async function POST(
       );
     }
 
+    // A suspended seller puts nothing back online (src/lib/moderation/ban.ts).
+    const banned = await suspendedResponse(admin, req, user.id);
+    if (banned) return banned;
+
     // Back online takes a place, like any publication. Withdrawing annonces
     // to free places, publishing new ones, then relisting the withdrawn ones
     // got round the free limit: two free annonces became as many as one
     // liked. The agence's plan, a free place, or a credit (src/lib/places) —
-    // else refused.
+    // else refused. The place is counted and the status flipped to
+    // « published » in one transaction (0190), and an annonce an admin took
+    // down (`taken_down_at`) is refused there: « Remettre en ligne » used to
+    // undo the admin's decision with no moderation at all.
     const settings = await moderationSettings(admin);
-    const covered = await coverPlace(
+    const taken = await takePlace(
       admin,
-      { userId: user.id, listingId: id, shopId: (listing.shop_id as string | null) ?? null },
+      { userId: user.id, listingId: id, shopId: (listing.shop_id as string | null) ?? null, fromStatus: status },
       settings.freeLimit,
+      { from: ALLOWED.relist, to: "published" },
     );
-    if (!covered) {
+    if (!taken.ok) {
+      if (taken.reason !== "free_limit_reached") return placeRefusal(req, taken.reason);
       const t = await apiTranslator(req, "publishApi");
       logAction(req, user, "listing.relist.free_limit", { id, limit: settings.freeLimit });
       return NextResponse.json(
@@ -133,7 +144,7 @@ export async function POST(
     // the catalogue instead of jumping to the top of the newest rail.
     const { error } = await admin
       .from("listings")
-      .update({ status: "published", rejection_reason: null, availability: "available" })
+      .update({ rejection_reason: null, availability: "available" })
       .eq("id", id);
     if (error) return fail("listing_relist_failed", 500, error);
 
