@@ -31,6 +31,12 @@ import { BadgeCheck, ExternalLink, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+/** The tab's title: the page carried the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("pro.dashboard");
+  return { title: t("eyebrow") };
+}
+
 const TABS = ["apercu", "annonces", "rapports", "projets", "visites", "clients", "demandes", "equipe", "abonnement", "agence", "documents"] as const;
 type TabKey = (typeof TABS)[number];
 

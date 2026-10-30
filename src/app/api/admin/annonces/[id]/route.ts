@@ -8,8 +8,9 @@ import { publishListing } from "@/lib/listings/publish";
 import { asDealType, closedStatus } from "@/lib/listings/deal";
 import { applyEdit, asPendingEdit, dropEdit } from "@/lib/listings/edit";
 import { getSettings } from "@/lib/settings/server";
-import { missingPhotos } from "@/lib/listings/storage";
-import { MAX_PRICE, phone } from "@/lib/listings/input";
+import { missingObjects, missingPhotos } from "@/lib/listings/storage";
+import { takeDownListing } from "@/lib/listings/takedown";
+import { MAX_PRICE, phone, titleTooShort } from "@/lib/listings/input";
 import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
 
 /**
@@ -271,33 +272,13 @@ export async function POST(
     if (listing.taken_down_at) {
       return NextResponse.json({ error: "already_archived", detail: t("alreadyArchived") }, { status: 409 });
     }
-    const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
-    const now = new Date().toISOString();
-    const { error } = await admin
-      .from("listings")
-      .update({
-        status: "archived",
-        reviewed_by: user.id,
-        reviewed_at: now,
-        taken_down_at: now,
-        taken_down_by: user.id,
-        taken_down_reason: reason || null,
-      })
-      .eq("id", id);
-    if (error) return fail("listing_archive_failed", 500, error);
-
-    await admin
-      .rpc("enqueue_notification", {
-        p_user_id: listing.seller_id,
-        p_kind: "listing_archived",
-        p_title: "Annonce retirée",
-        p_body: reason
-          ? `« ${listing.title} » a été retirée par l'équipe Mazed Immo. Motif : ${reason}`
-          : `« ${listing.title} » a été retirée par l'équipe Mazed Immo. Contactez-nous pour en savoir plus.`,
-        p_link: "/account/listings",
-        p_payload: { vars: { title: listing.title, variant: reason ? "withReason" : "plain", ...(reason ? { reason } : {}) } },
-      })
-      .then(() => {}, () => {});
+    const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+    const down = await takeDownListing(
+      admin,
+      { id, seller_id: listing.seller_id as string, title: listing.title as string },
+      { adminId: user.id, reason },
+    );
+    if (!down.ok) return fail("listing_archive_failed", 500, down.error);
 
     logAction(req, user, "admin.listing.archive", { id, withReason: Boolean(reason) });
     return NextResponse.json({ ok: true, status: "archived" });
@@ -368,7 +349,7 @@ export async function POST(
     // governorate or a phone that is not one went online as typed.
     if (typeof f.title === "string" && f.title.trim()) {
       const title = f.title.trim().slice(0, 140);
-      if (title.length < 3) return NextResponse.json({ error: "title_too_short", detail: t("titleTooShort") }, { status: 400 });
+      if (titleTooShort(title)) return NextResponse.json({ error: "title_too_short", detail: t("titleTooShort") }, { status: 400 });
       patch.title = title;
     }
     if (typeof f.description === "string") patch.description = f.description.trim().slice(0, 5000) || null;
@@ -429,6 +410,14 @@ export async function POST(
     if (action === "approve_edit") {
       if (listing.status !== "published" && listing.status !== "pending_review") {
         return NextResponse.json({ error: "not_published", detail: t("editNotLive") }, { status: 409 });
+      }
+      // The gallery that goes online with the approval — the edit's, or the
+      // one already there — has to be made of files, the same rule as approve.
+      const gone = edit.photos
+        ? await missingObjects(admin, "properties", edit.photos.map((p) => p.storage_path))
+        : await missingPhotos(admin, id);
+      if (gone.length > 0) {
+        return NextResponse.json({ error: "photo_missing", detail: t("photoMissing") }, { status: 400 });
       }
       const out = await applyEdit(admin, id, edit, user.id);
       if (!out.ok) return fail("listing_edit_failed", 500, out.error);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { publishListing } from "@/lib/listings/publish";
 import { missingPhotos } from "@/lib/listings/storage";
+import { takeDownListing } from "@/lib/listings/takedown";
 import { isUuid } from "@/lib/uuid";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
@@ -11,7 +12,7 @@ import { apiTranslator } from "@/lib/i18n/server";
 /**
  * The same moderation actions, applied to a selection.
  *
- *   POST { ids: [...], action: "approve" | "archive" | "extend", days? }
+ *   POST { ids: [...], action: "approve" | "archive" | "extend", days?, reason? }
  *
  * Why this exists as its own route rather than the client looping over the
  * single-id one: sixty-six annonces today, several hundred a month if this
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
     ids?: unknown;
     action?: unknown;
     days?: unknown;
+    reason?: unknown;
   };
   const action = typeof body.action === "string" ? body.action : "";
   // `detail` and each skipped row's `why` are shown to the moderator as-is,
@@ -114,28 +116,23 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === "archive") {
-    const movable = found.filter((r) => r.status !== "archived");
+    // One reason for the whole selection, when the console gives one.
+    const reason = typeof body.reason === "string" ? body.reason.trim() : "";
     for (const r of found) {
       if (r.status === "archived") {
         skipped.push({ id: r.id, title: r.title, why: t("skipAlreadyArchived") });
+        continue;
       }
-    }
-    if (movable.length > 0) {
-      // An admin's takedown (0190), like the single action: the seller cannot
-      // relist what the console took down.
-      const now = new Date().toISOString();
-      const { error } = await admin
-        .from("listings")
-        .update({
-          status: "archived",
-          reviewed_by: user.id,
-          reviewed_at: now,
-          taken_down_at: now,
-          taken_down_by: user.id,
-        })
-        .in("id", movable.map((r) => r.id));
-      if (error) return fail("bulk_archive_failed", 500, error);
-      ok.push(...movable.map((r) => r.id));
+      // An admin's takedown (0190), the same as the single action: the seller
+      // cannot relist what the console took down — and is told it happened,
+      // which one click on twenty rows used to skip.
+      const down = await takeDownListing(
+        admin,
+        { id: r.id, seller_id: r.seller_id as string, title: r.title as string },
+        { adminId: user.id, reason },
+      );
+      if (!down.ok) skipped.push({ id: r.id, title: r.title, why: t("skipServerError") });
+      else ok.push(r.id);
     }
   }
 

@@ -117,14 +117,17 @@
         "sold": "مُباع",
         "archived": "مسحوب",
         "reserved": "محجوز",
-        "rented": "مُؤجَّر"
+        "rented": "مُؤجَّر",
+        "takenDown": "تنحّى من طرف الفريق"
       },
       "statusHint": {
         "draft": "مازال ما تبعثش: كمّلو باش تنشرو.",
         "pending_payment": "ادفع معلوم النشر لبدء المراجعة.",
         "pending_review": "فريقنا يراجعه — في أقل من 24 ساعة.",
         "expired": "جدّده لإعادة نشره.",
-        "rejected": "فريقنا رفضو: صلّحو وابعثو من جديد."
+        "rejected": "فريقنا رفضو: صلّحو وابعثو من جديد.",
+        "takenDown": "تنحّى من طرف فريق Mazed Immo. اتصل بينا باش تعرف أكثر.",
+        "takenDownReason": "تنحّى من طرف فريق Mazed Immo. السبب: {reason}"
       },
       "receiptInReview": "الوصل قيد المراجعة",
       "receiptInReviewHint": "نحن بصدد مراجعة وصلك — في أقل من 24 ساعة.",
@@ -165,7 +168,8 @@
       "rejectedPrefix": "مرفوض:",
       "promoteHint": "ننشروه على صفحاتنا في فيسبوك وإنستغرام",
       "boostHint": "بلاصة بالخلاص في السيت: الصفحة الرئيسية وأوّل البحث",
-      "planPlaces": "{used}/{limit} إعلان مستعمل · اشتراك {plan}"
+      "planPlaces": "{used}/{limit} إعلان مستعمل · اشتراك {plan}",
+      "contactUs": "اتصل بينا"
     },
     "listingActions": {
       "mark_sold": {
@@ -305,7 +309,8 @@
       "onRequest": "عند الطلب",
       "price": "{amount} د.ت",
       "unavailable": "لم يعد متاحًا",
-      "pricePerMonth": "{amount} د.ت في الشهر"
+      "pricePerMonth": "{amount} د.ت في الشهر",
+      "withheldTitle": "إعلان تنحّى"
     },
     "deleteAccount": {
       "blockers": {
@@ -341,6 +346,7 @@
       "networkError": "خطأ في الشبكة."
     },
     "success": {
+      "pageTitle": "تأكيد الخلاص",
       "kind": {
         "listing_fee": "تمّ دفع معلوم النشر",
         "renewal": "تمّ دفع التجديد",

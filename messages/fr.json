@@ -117,14 +117,17 @@
         "sold": "Vendue",
         "archived": "Retirée",
         "reserved": "Réservée",
-        "rented": "Louée"
+        "rented": "Louée",
+        "takenDown": "Retirée par l'équipe"
       },
       "statusHint": {
         "draft": "Jamais envoyée : reprenez-la pour la publier.",
         "pending_payment": "Réglez les frais pour lancer la vérification.",
         "pending_review": "Notre équipe la contrôle — moins de 24 h.",
         "expired": "Renouvelez-la pour la remettre en ligne.",
-        "rejected": "Refusée par notre équipe : corrigez-la, puis renvoyez-la."
+        "rejected": "Refusée par notre équipe : corrigez-la, puis renvoyez-la.",
+        "takenDown": "Retirée par l'équipe Mazed Immo. Contactez-nous pour en savoir plus.",
+        "takenDownReason": "Retirée par l'équipe Mazed Immo. Motif : {reason}"
       },
       "receiptInReview": "Reçu en vérification",
       "receiptInReviewHint": "Nous validons votre reçu — moins de 24 h.",
@@ -165,7 +168,8 @@
       "rejectedPrefix": "Refusée :",
       "promoteHint": "Partagée sur nos réseaux : Facebook, Instagram",
       "boostHint": "Placement payant sur le site : accueil, haut des résultats",
-      "planPlaces": "{used}/{limit} annonces utilisées · abonnement {plan}"
+      "planPlaces": "{used}/{limit} annonces utilisées · abonnement {plan}",
+      "contactUs": "Nous contacter"
     },
     "listingActions": {
       "mark_sold": {
@@ -305,7 +309,8 @@
       "onRequest": "Sur demande",
       "price": "{amount} TND",
       "unavailable": "plus disponible",
-      "pricePerMonth": "{amount} TND / mois"
+      "pricePerMonth": "{amount} TND / mois",
+      "withheldTitle": "Annonce retirée"
     },
     "deleteAccount": {
       "blockers": {
@@ -341,6 +346,7 @@
       "networkError": "Erreur réseau."
     },
     "success": {
+      "pageTitle": "Confirmation de paiement",
       "kind": {
         "listing_fee": "Frais de publication réglés",
         "renewal": "Renouvellement réglé",

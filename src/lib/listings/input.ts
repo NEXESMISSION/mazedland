@@ -46,6 +46,19 @@ export function text(v: unknown, max: number): string | null {
   return s ? s.slice(0, max) : null;
 }
 
+/** The shortest title the database takes (0146: length(btrim(title)) between 3 and 140). */
+export const MIN_TITLE_CHARS = 3;
+
+/**
+ * Too short for the database, counted the way Postgres counts: in characters.
+ * `.length` counts UTF-16 units, so a title of two emoji read as four and went
+ * through — to a 500 on a draft, and on a live annonce to an edit that took it
+ * offline and that no admin could approve.
+ */
+export function titleTooShort(title: string): boolean {
+  return Array.from(title.trim()).length < MIN_TITLE_CHARS;
+}
+
 /** The widest price an annonce may carry, in TND: wider than any property, narrower than the column. */
 export const MAX_PRICE = 1_000_000_000;
 
