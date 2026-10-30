@@ -45,7 +45,7 @@ export async function generateMetadata() {
 export default async function AdminSocialPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; connected?: string; error?: string }>;
+  searchParams: Promise<{ tab?: string; connected?: string; error?: string; d?: string }>;
 }) {
   await requireAdmin("social");
   const sp = await searchParams;
@@ -354,7 +354,13 @@ export default async function AdminSocialPage({
     return (
       <div className="mt-4 space-y-4">
         {sp.connected && <p className="rounded-xl mazed-tone-ok px-4 py-3 text-[12.5px] font-semibold">{t("connectedOk", { count: Number(sp.connected) || 1 })}</p>}
-        {sp.error && <p className="rounded-xl mazed-tone-bad px-4 py-3 text-[12.5px] font-semibold">{t(`connectError.${["denied", "state", "not_configured", "no_page"].includes(sp.error) ? sp.error : "failed"}`)}</p>}
+        {sp.error && (
+          <div className="rounded-xl mazed-tone-bad px-4 py-3 text-[12.5px]">
+            <p className="font-semibold">{t(`connectError.${["denied", "state", "not_configured", "no_page", "other_page"].includes(sp.error) ? sp.error : "failed"}`)}</p>
+            {/* What Facebook granted and found — ids, names, scopes; text, never markup. */}
+            {sp.d && <p dir="ltr" className="mt-1.5 break-words font-mono text-[11px] opacity-80">{t("connectDetail", { text: sp.d.slice(0, 500) })}</p>}
+          </div>
+        )}
 
         <section className="rounded-2xl bg-surface p-4 ring-1 ring-border">
           <div className="flex flex-wrap items-center justify-between gap-3">

@@ -352,15 +352,27 @@ export async function managedPages(g: GraphClient): Promise<ManagedPage[]> {
 export async function inspectToken(
   opts: { appId: string; appSecret: string; token: string },
   doFetch: Fetch = fetch,
-): Promise<{ valid: boolean; expiresAt: Date | null; scopes: string[] }> {
+): Promise<{ valid: boolean; expiresAt: Date | null; scopes: string[]; pageTargets: string[] }> {
   const q = new URLSearchParams({ input_token: opts.token, access_token: `${opts.appId}|${opts.appSecret}` });
   const res = await doFetch(`${GRAPH}/debug_token?${q}`, { cache: "no-store", signal: AbortSignal.timeout(20_000) });
-  const json = (await res.json().catch(() => ({}))) as { data?: { is_valid?: boolean; expires_at?: number; scopes?: string[] } };
+  const json = (await res.json().catch(() => ({}))) as {
+    data?: { is_valid?: boolean; expires_at?: number; scopes?: string[]; granular_scopes?: { scope?: string; target_ids?: string[] }[] };
+  };
   const d = json.data ?? {};
+  // The Pages the person ticked in Facebook's dialog: a token can carry a
+  // permission and yet reach no Page when none was chosen.
+  const pageTargets = [
+    ...new Set(
+      (d.granular_scopes ?? [])
+        .filter((g) => (g.scope ?? "").startsWith("pages_"))
+        .flatMap((g) => g.target_ids ?? []),
+    ),
+  ];
   return {
     valid: d.is_valid === true,
     // 0 means « never ».
     expiresAt: d.expires_at ? new Date(d.expires_at * 1000) : null,
     scopes: d.scopes ?? [],
+    pageTargets,
   };
 }
