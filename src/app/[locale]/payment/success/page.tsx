@@ -11,6 +11,12 @@ import { safeInternalPath } from "@/lib/safePath";
 
 export const dynamic = "force-dynamic";
 
+/** The tab's title: the page carried the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("payment.success");
+  return { title: t("pageTitle") };
+}
+
 // The kinds a payment can have today (DB enum payment_kind). The labels this
 // map used to hold — caution, achat finalisé, paiement final, inspection —
 // described the auction product, and none of the five kinds below was in it:

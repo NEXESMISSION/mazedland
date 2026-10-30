@@ -103,7 +103,9 @@ export async function POST(
     : await admin
         .from("listing_reports")
         .insert({ listing_id: id, reporter_id: user?.id ?? null, reporter_key: reporterKey, reason, note });
-  if (insErr) return fail("report_failed", 500, insErr);
+  // Two taps at once both read « no prior report » and both insert: the one
+  // the unique key refuses is the same report, already recorded — not an error.
+  if (insErr && insErr.code !== "23505") return fail("report_failed", 500, insErr);
 
   const { count } = await admin
     .from("listing_reports")

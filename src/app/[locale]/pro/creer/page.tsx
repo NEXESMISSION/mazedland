@@ -8,6 +8,12 @@ import { phoneForField, readableEmail } from "@/lib/pro/shopForm";
 
 export const dynamic = "force-dynamic";
 
+/** The tab's title: the page carried the site's home title. */
+export async function generateMetadata() {
+  const t = await getTranslations("pro.create");
+  return { title: t("title") };
+}
+
 /**
  * Open a shop (0173): the form, with what the account already knows in it —
  * the owner's phone, e-mail and governorate — and their name one tap away.

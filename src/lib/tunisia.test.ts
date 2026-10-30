@@ -1,5 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { anyPhoneToE164, normalizeE164, validatePhone, splitE164, TUNISIAN_GOVERNORATES } from "./tunisia";
+import { anyPhoneToE164, governorateChoice, normalizeE164, validatePhone, splitE164, TUNISIAN_GOVERNORATES } from "./tunisia";
+
+describe("governorateChoice", () => {
+  it("takes a name from the list, trimmed", () => {
+    expect(governorateChoice("Sfax")).toEqual({ ok: true, value: "Sfax" });
+    expect(governorateChoice("Sfax ")).toEqual({ ok: true, value: "Sfax" });
+  });
+  it("reads '' and null as the empty choice", () => {
+    expect(governorateChoice("")).toEqual({ ok: true, value: null });
+    expect(governorateChoice("   ")).toEqual({ ok: true, value: null });
+    expect(governorateChoice(null)).toEqual({ ok: true, value: null });
+  });
+  it("refuses a name off the list and anything that is not a string", () => {
+    for (const v of ["Atlantis", "sfax", "Gabes", "صفاقس", "Sfax2", 5, true, { a: 1 }, ["Sfax"]]) {
+      expect(governorateChoice(v)).toEqual({ ok: false });
+    }
+  });
+});
 
 describe("normalizeE164", () => {
   it("accepts an 8-digit Tunisian number and strips leading zeros/spaces", () => {

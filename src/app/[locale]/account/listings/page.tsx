@@ -11,7 +11,7 @@ import { isEditable } from "@/lib/listings/edit";
 import { categoryLabel } from "@/lib/i18n";
 import {
   Plus, Ticket, ImageOff, Clock, CreditCard, PencilLine,
-  ArrowRight, AlertTriangle, Inbox, Megaphone, Sparkles,
+  ArrowRight, AlertTriangle, Inbox, Megaphone, Sparkles, MessageCircle,
 } from "lucide-react";
 import { RenewButton } from "./RenewButton";
 import { DeleteDraftButton } from "./DeleteDraftButton";
@@ -110,7 +110,7 @@ export default async function MyListingsPage({
       .from("listings")
       .select(
         `id, title, price, price_on_request, status, rejection_reason, published_at,
-         deal_type, availability, pending_edit_at, review_flags,
+         deal_type, availability, pending_edit_at, review_flags, taken_down_at, taken_down_reason,
          expires_at, created_at, category_id, category:categories (label_fr, label_ar),
          photos:listing_photos (storage_path, sort_order, is_cover)`,
       )
@@ -175,6 +175,7 @@ export default async function MyListingsPage({
     expires_at: string | null; created_at: string;
     deal_type: string | null; availability: string | null; pending_edit_at: string | null;
     review_flags: string[] | null;
+    taken_down_at: string | null; taken_down_reason: string | null;
     category: Category | Category[] | null;
     category_id: string;
     photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
@@ -252,6 +253,18 @@ export default async function MyListingsPage({
         hint: t("receiptInReviewHint"),
       };
     }
+    // Taken down by the console (0190): not « Retirée » like one the seller
+    // withdrew — « Remettre en ligne » would be refused — so the card says
+    // who took it down, and why when the moderator said.
+    if (l.status === "archived" && l.taken_down_at) {
+      return {
+        label: t("status.takenDown"),
+        tone: "mazed-tone-bad",
+        hint: l.taken_down_reason
+          ? t("statusHint.takenDownReason", { reason: l.taken_down_reason })
+          : t("statusHint.takenDown"),
+      };
+    }
     const known = STATUS[l.status];
     if (!known) return { label: l.status, tone: "bg-surface-2 text-muted", hint: undefined };
     return {
@@ -307,6 +320,22 @@ export default async function MyListingsPage({
       );
     }
     if (RENEWABLE.includes(l.status)) {
+      // Taken down by the console: « Remettre en ligne » and « Renouveler »
+      // are refused while it stands (0190). The way back is to write to us.
+      if (l.taken_down_at) {
+        return (
+          <Link
+            href={"/contact" as never}
+            className={
+              block
+                ? "mt-2.5 flex w-full items-center justify-center gap-1 rounded-xl border border-border px-3 py-2.5 text-[12.5px] font-bold text-foreground hover:border-gold-soft hover:text-gold"
+                : "inline-flex items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
+            }
+          >
+            <MessageCircle className="size-3.5" /> {t("contactUs")}
+          </Link>
+        );
+      }
       if (withinPaidWindow(l)) {
         return <ListingStatusActions listingId={l.id} actions={["relist"]} block={block} primary />;
       }

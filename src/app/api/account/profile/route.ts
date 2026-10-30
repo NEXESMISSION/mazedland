@@ -3,10 +3,10 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { apiTranslator } from "@/lib/i18n/server";
-import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
+import { governorateChoice } from "@/lib/tunisia";
 
 /**
- * POST /api/account/profile  { full_name, governorate }
+ * POST /api/account/profile  { full_name, governorate? }
  *
  * The two things a person may change about themselves after signup: the name
  * an annonce shows by default, and the governorate the publish form starts
@@ -28,18 +28,23 @@ export async function POST(req: NextRequest) {
     const t = await apiTranslator(req, "accountSettings");
     return NextResponse.json({ ok: false, error: "bad_name", detail: t("nameInvalid") }, { status: 400 });
   }
-  // An unknown name is refused: a client bug used to erase the stored one.
-  const rawGov = typeof body.governorate === "string" ? body.governorate.trim() : "";
-  if (rawGov && !(TUNISIAN_GOVERNORATES as readonly string[]).includes(rawGov)) {
-    const t = await apiTranslator(req, "accountSettings");
-    return NextResponse.json({ ok: false, error: "bad_governorate", detail: t("governorateInvalid") }, { status: 400 });
+  // Only what was sent is written. A name-only body, or a governorate of the
+  // wrong type, used to be read as « none » and erased the stored one; only
+  // the empty choice ('' or null) clears it, and an unknown name is refused.
+  const patch: { full_name: string; governorate?: string | null } = { full_name: name };
+  if (body.governorate !== undefined) {
+    const choice = governorateChoice(body.governorate);
+    if (!choice.ok) {
+      const t = await apiTranslator(req, "accountSettings");
+      return NextResponse.json({ ok: false, error: "bad_governorate", detail: t("governorateInvalid") }, { status: 400 });
+    }
+    patch.governorate = choice.value;
   }
-  const gov = rawGov || null;
 
   const admin = getServiceSupabase();
   if (!admin) return NextResponse.json({ ok: false, error: "not_configured" }, { status: 503 });
 
-  const { error } = await admin.from("profiles").update({ full_name: name, governorate: gov }).eq("id", user.id);
+  const { error } = await admin.from("profiles").update(patch).eq("id", user.id);
   if (error) return NextResponse.json({ ok: false, error: "update_failed" }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

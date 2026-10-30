@@ -5,8 +5,9 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
-import { listingFields, listingPhotos, type ListingBody } from "@/lib/listings/input";
+import { listingFields, listingPhotos, titleTooShort, type ListingBody } from "@/lib/listings/input";
 import { dropEdit, editWaiting, isEditable, proposeEdit } from "@/lib/listings/edit";
+import { missingObjects } from "@/lib/listings/storage";
 import { suspendedResponse } from "@/lib/moderation/ban";
 import { featureOff } from "@/lib/settings/gate";
 import { getSettings } from "@/lib/settings/server";
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   // A two-character title left the annonce offline: the edit was accepted
   // here and refused by the database when the moderator approved it.
-  if (typeof fields.title === "string" && fields.title.length < 3) {
+  if (typeof fields.title === "string" && titleTooShort(fields.title)) {
     return NextResponse.json({ error: "title_too_short", detail: t("titleTooShort") }, { status: 400 });
   }
   if ("price" in fields && fields.price == null && fields.price_on_request !== true) {
@@ -93,6 +94,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   if (photos && photos.length === 0) {
     return NextResponse.json({ error: "photo_required", detail: t("photoRequired") }, { status: 400 });
+  }
+  // The same rule as the submit: a path whose upload failed or never happened
+  // replaced a live annonce's real photos with broken images once approved.
+  if (photos && (await missingObjects(admin, "properties", photos.map((p) => p.storage_path))).length > 0) {
+    return NextResponse.json({ error: "photo_missing", detail: t("photoMissing") }, { status: 400 });
   }
   if (typeof fields.category_id === "string") {
     const { data: cat } = await admin.from("categories").select("parent_id, is_active").eq("id", fields.category_id).maybeSingle();

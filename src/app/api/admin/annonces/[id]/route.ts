@@ -9,8 +9,8 @@ import { takeDownListing } from "@/lib/listings/takedown";
 import { asDealType, closedStatus } from "@/lib/listings/deal";
 import { applyEdit, asPendingEdit, dropEdit } from "@/lib/listings/edit";
 import { getSettings } from "@/lib/settings/server";
-import { missingPhotos } from "@/lib/listings/storage";
-import { MAX_PRICE, phone } from "@/lib/listings/input";
+import { missingObjects, missingPhotos } from "@/lib/listings/storage";
+import { MAX_PRICE, phone, titleTooShort } from "@/lib/listings/input";
 import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
 
 /**
@@ -391,7 +391,7 @@ export async function POST(
     // governorate or a phone that is not one went online as typed.
     if (typeof f.title === "string" && f.title.trim()) {
       const title = f.title.trim().slice(0, 140);
-      if (title.length < 3) return NextResponse.json({ error: "title_too_short", detail: t("titleTooShort") }, { status: 400 });
+      if (titleTooShort(title)) return NextResponse.json({ error: "title_too_short", detail: t("titleTooShort") }, { status: 400 });
       patch.title = title;
     }
     if (typeof f.description === "string") patch.description = f.description.trim().slice(0, 5000) || null;
@@ -452,6 +452,14 @@ export async function POST(
     if (action === "approve_edit") {
       if (listing.status !== "published" && listing.status !== "pending_review") {
         return NextResponse.json({ error: "not_published", detail: t("editNotLive") }, { status: 409 });
+      }
+      // The gallery that goes online with the approval — the edit's, or the
+      // one already there — has to be made of files, the same rule as approve.
+      const gone = edit.photos
+        ? await missingObjects(admin, "properties", edit.photos.map((p) => p.storage_path))
+        : await missingPhotos(admin, id);
+      if (gone.length > 0) {
+        return NextResponse.json({ error: "photo_missing", detail: t("photoMissing") }, { status: 400 });
       }
       const out = await applyEdit(admin, id, edit, user.id);
       if (!out.ok) return fail("listing_edit_failed", 500, out.error);
