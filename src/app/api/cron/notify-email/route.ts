@@ -27,7 +27,7 @@ const cLog = log.scope("cron-mail");
  * notification source — SQL triggers and TS routes alike — because they all
  * land in that one table.
  *
- * Auth: shared `CRON_SECRET` (Bearer or ?key=), same as the tick cron.
+ * Auth: shared `CRON_SECRET`, as a Bearer header (the Vault sends it, 0200).
  * Schedule: Vercel Cron (see vercel.json). Safe before email is configured —
  * it no-ops and leaves rows untouched, so adding the key later only sends the
  * recent backlog (last 24h), never the whole history.

@@ -24,7 +24,7 @@ const cLog = log.scope("cron-sms");
  * skips opted-out / phoneless recipients), sends via WinSMS, and stamps
  * sms_sent_at. Twin of /api/cron/notify-email.
  *
- * Auth: shared CRON_SECRET (Bearer or ?key=). Safe before WinSMS is configured —
+ * Auth: shared CRON_SECRET as a Bearer header. Safe before WinSMS is configured —
  * it no-ops and leaves rows untouched, so enabling it later only sends the
  * recent backlog (LOOKBACK_DAYS), never the whole history.
  */
