@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isUuid } from "@/lib/uuid";
+import { isIsoInstant } from "@/lib/isoInstant";
 import { requireAdmin } from "@/lib/admin/guard";
 import { fail } from "@/lib/http/errors";
 
@@ -41,11 +42,12 @@ export async function GET(req: NextRequest) {
   const offsetRaw = Number(sp.get("offset") ?? 0);
   const offset = Math.max(Number.isFinite(offsetRaw) ? offsetRaw : 0, 0);
 
-  // A value Postgres cannot cast used to come back as a 500.
+  // A value Postgres cannot cast used to come back as a 500 — a date such as
+  // « 2026-02-30 » included, which `Date.parse` takes and the database does not.
   if ([userId, broadcastId, createdBy].some((v) => v && !isUuid(v))) {
     return NextResponse.json({ error: "invalid_id" }, { status: 400 });
   }
-  if (since && Number.isNaN(Date.parse(since))) {
+  if (since && !isIsoInstant(since)) {
     return NextResponse.json({ error: "invalid_since" }, { status: 400 });
   }
 

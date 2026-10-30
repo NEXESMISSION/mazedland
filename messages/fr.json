@@ -2436,7 +2436,13 @@
         "variant_invalid": "Variante inconnue.",
         "audience_invalid": "Audience invalide.",
         "forbidden": "Accès refusé.",
-        "auth": "Veuillez vous reconnecter."
+        "auth": "Veuillez vous reconnecter.",
+        "forbidden_section": "Cette rubrique n'est pas dans vos accès.",
+        "slug_taken": "Ce slug est déjà pris par un autre popup.",
+        "body_required": "Le texte du popup est requis, dans au moins une langue.",
+        "dates_invalid": "Dates invalides : vérifiez le début et la fin (la fin ne peut pas précéder le début).",
+        "cta_href_invalid": "Lien du bouton non autorisé : une page du site (/…), une adresse https://, mailto: ou tel:.",
+        "popup_not_found": "Ce popup n'existe plus."
       }
     }
   },
@@ -2917,7 +2923,9 @@
       "publish": "Publier",
       "extend30": "+30 j",
       "archive": "Archiver",
-      "cancelSelection": "Annuler la sélection"
+      "cancelSelection": "Annuler la sélection",
+      "archiveTitle": "{count, plural, one {Archiver cette annonce ?} other {Archiver ces # annonces ?}}",
+      "archiveBody": "{count, plural, one {Elle disparaît du site et son vendeur est prévenu} other {Elles disparaissent du site et leurs vendeurs sont prévenus}}, avec le motif s'il y en a un. Rien n'est remboursé."
     },
     "detail": {
       "back": "File",
@@ -3281,7 +3289,8 @@
       "skipAlreadyArchived": "déjà archivée",
       "skipNotPublished": "pas en ligne",
       "skipNotFound": "introuvable",
-      "skipEditWaiting": "modification à valider depuis sa fiche"
+      "skipEditWaiting": "modification à valider depuis sa fiche",
+      "skipChanged": "a changé d'état entre-temps"
     },
     "listing": {
       "notAwaitingPayment": "Cette annonce est « {status} ».",
@@ -3290,6 +3299,9 @@
       "alreadyPublished": "Cette annonce est déjà en ligne.",
       "alreadyRejected": "Cette annonce est déjà refusée.",
       "alreadyArchived": "Cette annonce est déjà retirée.",
+      "notSubmitted": "Cette annonce est un brouillon : le vendeur ne l'a pas encore envoyée.",
+      "notAwaitingReview": "Cette annonce est « {status} » : elle n'attend pas de validation.",
+      "statusChanged": "L'annonce a changé d'état entre-temps : rechargez la page.",
       "badGovernorate": "Gouvernorat inconnu.",
       "badPhone": "Numéro de téléphone invalide.",
       "badPrice": "Prix invalide.",
@@ -3766,6 +3778,7 @@
     "copied": "Copié",
     "openGroup": "Ouvrir le groupe",
     "postUrlPlaceholder": "Lien de la publication (facultatif)",
+    "postText": "Texte de la publication",
     "markDone": "Marquer comme fait",
     "markedDone": "Noté comme fait.",
     "noLinks": "Ce groupe refuse les liens : le texte est copié sans lien.",
@@ -3821,6 +3834,7 @@
     "disconnected": "Compte déconnecté.",
     "addGroup": "Ajouter le groupe",
     "groupName": "Nom du groupe",
+    "groupUrl": "Lien du groupe",
     "groupDeals": "Annonces acceptées",
     "groupKindsHint": "Sans type coché : tous les biens.",
     "groupGovernorates": "Gouvernorats",
@@ -4325,7 +4339,12 @@
       "plan": "Abonnement inconnu.",
       "planRequired": "L'agence n'a pas encore réglé son abonnement : elle s'ouvre une fois le paiement validé.",
       "reason": "Indiquez un motif.",
-      "planAlready": "Vous avez déjà cet abonnement jusqu'au {date}. Vous pourrez le renouveler à partir du {from}."
+      "planAlready": "Vous avez déjà cet abonnement jusqu'au {date}. Vous pourrez le renouveler à partir du {from}.",
+      "alreadyOpen": "Cette agence est déjà ouverte.",
+      "alreadyRejected": "Cette agence est déjà refusée.",
+      "alreadySuspended": "Cette agence est déjà suspendue.",
+      "reinstateOnlySuspended": "Seule une agence suspendue se rouvre ici : une agence en attente s'ouvre avec « Ouvrir », une fois son abonnement réglé.",
+      "wrongStatus": "Cette décision ne s'applique pas à l'état actuel de l'agence : rechargez la page."
     },
     "leadErrors": {
       "name": "Indiquez un nom (2 lettres au moins).",

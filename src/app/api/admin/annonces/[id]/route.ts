@@ -5,6 +5,7 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslator } from "@/lib/i18n/server";
 import { publishListing } from "@/lib/listings/publish";
+import { takeDownListing } from "@/lib/listings/takedown";
 import { asDealType, closedStatus } from "@/lib/listings/deal";
 import { applyEdit, asPendingEdit, dropEdit } from "@/lib/listings/edit";
 import { getSettings } from "@/lib/settings/server";
@@ -44,6 +45,14 @@ import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
  *   below refuses loudly rather than pretending, so the day packs ship this
  *   fails visibly instead of quietly keeping a seller's publication.
  */
+
+/** Where an approval may start: what the seller sent, its fee settled or
+ *  not. A draft is the seller's until they submit it — approving one put
+ *  online what nobody had asked to publish. */
+const APPROVE_FROM: readonly string[] = ["pending_review", "pending_payment"];
+/** `republish` reaches further back, to an annonce that left the catalogue —
+ *  never into a draft either. */
+const REPUBLISH_FROM: readonly string[] = [...APPROVE_FROM, "expired", "archived", "rejected"];
 
 /** Clamp a caller-supplied day count. Unbounded input here would let a typo
  *  put an annonce online until 2124. */
@@ -176,6 +185,16 @@ export async function POST(
         { status: 409 },
       );
     }
+    if (listing.status === "draft") {
+      return NextResponse.json({ error: "not_submitted", detail: t("notSubmitted") }, { status: 409 });
+    }
+    const from = action === "approve" ? APPROVE_FROM : REPUBLISH_FROM;
+    if (!from.includes(listing.status)) {
+      return NextResponse.json(
+        { error: "wrong_status", detail: t("notAwaitingReview", { status: listing.status }) },
+        { status: 409 },
+      );
+    }
     // The same rule as the seller's submit: a photo row whose file never
     // arrived would go online as a broken image.
     if ((await missingPhotos(admin, id)).length > 0) {
@@ -184,6 +203,8 @@ export async function POST(
 
     // The same path the automatic publication takes (src/lib/listings/publish.ts):
     // dates, review state cleared, pending reports resolved, seller notified.
+    // `from` makes the status test part of the write, so of two approvals a
+    // moment apart only one publishes and the seller is told once.
     const published = await publishListing(
       admin,
       {
@@ -192,9 +213,17 @@ export async function POST(
         title: listing.title as string,
         fee_payment_id: (listing.fee_payment_id as string | null) ?? null,
       },
-      { reviewerId: user.id },
+      { reviewerId: user.id, from },
     );
-    if (!published.ok) return fail("listing_publish_failed", 500, published.error);
+    if (!published.ok) {
+      if (!published.wrongStatus) return fail("listing_publish_failed", 500, published.error);
+      // Moved between the read above and the write — by a second click, or a
+      // second moderator. Nothing was written; say what it is now.
+      const { data: current } = await admin.from("listings").select("status").eq("id", id).maybeSingle();
+      return current?.status === "published"
+        ? NextResponse.json({ error: "already_published", detail: t("alreadyPublished") }, { status: 409 })
+        : NextResponse.json({ error: "wrong_status", detail: t("statusChanged") }, { status: 409 });
+    }
     const expires = published.expiresAt;
 
     logAction(req, user, `admin.listing.${action}`, { id, expires_at: expires.toISOString() });
@@ -235,7 +264,9 @@ export async function POST(
     }
     const creditReturned = false;
 
-    const { error } = await admin
+    // The status test is part of the write: refused a moment ago by a second
+    // click or a second moderator, the seller has already been told.
+    const { data: moved, error } = await admin
       .from("listings")
       .update({
         status: "rejected",
@@ -243,8 +274,13 @@ export async function POST(
         reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
       })
-      .eq("id", id);
+      .eq("id", id)
+      .neq("status", "rejected")
+      .select("id");
     if (error) return fail("listing_reject_failed", 500, error);
+    if (!moved || moved.length === 0) {
+      return NextResponse.json({ error: "already_rejected", detail: t("alreadyRejected") }, { status: 409 });
+    }
 
     await admin
       .rpc("enqueue_notification", {
@@ -272,32 +308,19 @@ export async function POST(
       return NextResponse.json({ error: "already_archived", detail: t("alreadyArchived") }, { status: 409 });
     }
     const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
-    const now = new Date().toISOString();
-    const { error } = await admin
-      .from("listings")
-      .update({
-        status: "archived",
-        reviewed_by: user.id,
-        reviewed_at: now,
-        taken_down_at: now,
-        taken_down_by: user.id,
-        taken_down_reason: reason || null,
-      })
-      .eq("id", id);
-    if (error) return fail("listing_archive_failed", 500, error);
-
-    await admin
-      .rpc("enqueue_notification", {
-        p_user_id: listing.seller_id,
-        p_kind: "listing_archived",
-        p_title: "Annonce retirée",
-        p_body: reason
-          ? `« ${listing.title} » a été retirée par l'équipe Mazed Immo. Motif : ${reason}`
-          : `« ${listing.title} » a été retirée par l'équipe Mazed Immo. Contactez-nous pour en savoir plus.`,
-        p_link: "/account/listings",
-        p_payload: { vars: { title: listing.title, variant: reason ? "withReason" : "plain", ...(reason ? { reason } : {}) } },
-      })
-      .then(() => {}, () => {});
+    // The same marks and the same word to the seller as the bulk action
+    // (src/lib/listings/takedown.ts) — and one takedown, however many clicks.
+    const out = await takeDownListing(
+      admin,
+      { id, seller_id: listing.seller_id as string, title: listing.title as string },
+      { byId: user.id, reason: reason || null },
+    );
+    if (!out.ok) {
+      if (out.already) {
+        return NextResponse.json({ error: "already_archived", detail: t("alreadyArchived") }, { status: 409 });
+      }
+      return fail("listing_archive_failed", 500, out.error);
+    }
 
     logAction(req, user, "admin.listing.archive", { id, withReason: Boolean(reason) });
     return NextResponse.json({ ok: true, status: "archived" });

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isUuid } from "@/lib/uuid";
-import { getServerSupabase } from "@/lib/supabase/server";
-import { isSameOrigin } from "@/lib/sameOrigin";
+import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
-import { canOpen, scopesFromRow } from "@/lib/admin/sections";
 import { sanitizePopupBody } from "../route";
 
 /**
@@ -13,33 +11,22 @@ import { sanitizePopupBody } from "../route";
  * GET    /api/admin/popups/[id]   → fetch one (for the edit form)
  * PATCH  /api/admin/popups/[id]   → update (full replacement except slug)
  * DELETE /api/admin/popups/[id]   → hard delete; popup_views cascades
+ *
+ * All three go through the shared guard (src/lib/admin/guard.ts), which
+ * refuses a suspended member — the local copy this route kept did not look
+ * at `banned_at`.
  */
 
-async function requireAdmin() {
-  const supabase = await getServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "auth", status: 401 as const, supabase: null };
-  const { data: profile } = await supabase
-    .from("profiles").select("role, admin_scopes").eq("id", user.id).single();
-  if (profile?.role !== "admin") {
-    return { error: "forbidden", status: 403 as const, supabase: null };
-  }
-  if (!canOpen(scopesFromRow(profile.admin_scopes), "popups")) {
-    return { error: "forbidden_section", status: 403 as const, supabase: null };
-  }
-  return { error: null, status: 200 as const, supabase, user };
-}
-
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const g = await requireAdmin();
-  if (!g.supabase) return NextResponse.json({ error: g.error }, { status: g.status });
+  const gate = await requireAdmin(req, "popups");
+  if (gate instanceof NextResponse) return gate;
   if (!isUuid(id)) return NextResponse.json({ error: "popup_not_found" }, { status: 404 });
 
-  const { data, error } = await g.supabase
+  const { data, error } = await gate.supabase
     .from("popups").select("*").eq("id", id).single();
   if (error) return fail("popup_not_found", 404, error);
   return NextResponse.json({ item: data });
@@ -49,12 +36,10 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!isSameOrigin(req)) {
-    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
-  }
   const { id } = await params;
-  const g = await requireAdmin();
-  if (!g.supabase) return NextResponse.json({ error: g.error }, { status: g.status });
+  const gate = await requireAdmin(req, "popups");
+  if (gate instanceof NextResponse) return gate;
+  const { user, supabase } = gate;
   if (!isUuid(id)) return NextResponse.json({ error: "popup_not_found" }, { status: 404 });
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
@@ -63,7 +48,7 @@ export async function PATCH(
     return NextResponse.json({ error: payload }, { status: 400 });
   }
 
-  const { data, error } = await g.supabase
+  const { data, error } = await supabase
     .from("popups")
     .update(payload)
     .eq("id", id)
@@ -75,7 +60,7 @@ export async function PATCH(
     if (error.code === "23505") return NextResponse.json({ error: "slug_taken" }, { status: 409 });
     return fail("popup_update_failed", 500, error);
   }
-  logAction(req, g.user!, "popup.update", { popupId: id });
+  logAction(req, user, "popup.update", { popupId: id });
   return NextResponse.json({ item: data });
 }
 
@@ -83,16 +68,14 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!isSameOrigin(req)) {
-    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
-  }
   const { id } = await params;
-  const g = await requireAdmin();
-  if (!g.supabase) return NextResponse.json({ error: g.error }, { status: g.status });
+  const gate = await requireAdmin(req, "popups");
+  if (gate instanceof NextResponse) return gate;
+  const { user, supabase } = gate;
   if (!isUuid(id)) return NextResponse.json({ error: "popup_not_found" }, { status: 404 });
 
-  const { error } = await g.supabase.from("popups").delete().eq("id", id);
+  const { error } = await supabase.from("popups").delete().eq("id", id);
   if (error) return fail("popup_delete_failed", 500, error);
-  logAction(req, g.user!, "popup.delete", { popupId: id });
+  logAction(req, user, "popup.delete", { popupId: id });
   return NextResponse.json({ ok: true });
 }
