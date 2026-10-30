@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { proGate } from "@/lib/pro/api";
 import { slugify } from "@/lib/pro/shops";
 import { parseProjectInput } from "@/lib/pro/projects";
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { user, admin } = gate;
   const t = await apiTranslator(req, "proApi.projects");
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = await jsonObject(req);
   const parsed = parseProjectInput(body);
   if (!parsed.ok) {
     return NextResponse.json({ error: "invalid", field: parsed.field, detail: t(`field.${parsed.field}`) }, { status: 400 });

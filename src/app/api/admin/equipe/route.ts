@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
@@ -26,7 +27,7 @@ async function target(req: NextRequest) {
   if (gate instanceof NextResponse) return { res: gate };
   const admin = getServiceSupabase();
   if (!admin) return { res: fail("server_misconfigured", 500) };
-  const body = (await req.json().catch(() => ({}))) as Body;
+  const body = (await jsonObject(req)) as Body;
   const userId = typeof body.userId === "string" ? body.userId : "";
   const t = await apiTranslator(req, "adminTeam.api");
   if (!userId) return { res: NextResponse.json({ error: "invalid" }, { status: 400 }) };

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { requireAdmin } from "@/lib/admin/guard";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { logAction } from "@/lib/activity";
@@ -16,7 +17,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
   const { id } = await params;
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = await jsonObject(req);
   const t = await apiTranslator(req, "adminSocial.errors");
 
   let update: Record<string, unknown>;

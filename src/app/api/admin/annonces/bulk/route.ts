@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { publishListing } from "@/lib/listings/publish";
 import { takeDownListing } from "@/lib/listings/takedown";
 import { missingPhotos } from "@/lib/listings/storage";
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
-  const body = (await req.json().catch(() => ({}))) as {
+  const body = (await jsonObject(req)) as {
     ids?: unknown;
     action?: unknown;
     days?: unknown;

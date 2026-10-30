@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { matchPath, type Popup } from "@/lib/popups/schema";
 
@@ -23,7 +24,7 @@ import { matchPath, type Popup } from "@/lib/popups/schema";
  * extra round-trip on every navigation.
  */
 export async function POST(req: NextRequest) {
-  const body = (await req.json().catch(() => ({}))) as {
+  const body = (await jsonObject(req)) as {
     path?: string;
     locale?: string;
     device?: "mobile" | "desktop" | "both";

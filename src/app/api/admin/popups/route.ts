@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { requireAdmin } from "@/lib/admin/guard";
 import { isIsoInstant } from "@/lib/isoInstant";
 import { logAction } from "@/lib/activity";
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
   if (gate instanceof NextResponse) return gate;
   const { user, supabase } = gate;
 
-  const body = await req.json().catch(() => ({} as Record<string, unknown>));
+  const body = await jsonObject(req);
   const payload = sanitizePopupBody(body);
   if (typeof payload === "string") {
     return NextResponse.json({ error: payload }, { status: 400 });

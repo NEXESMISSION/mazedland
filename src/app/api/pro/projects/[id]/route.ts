@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { projectGate } from "@/lib/pro/api";
 import { activePlan } from "@/lib/pro/shops";
 import { PROJECT_STATUSES, parseProjectInput, type ProjectStatus } from "@/lib/pro/projects";
@@ -25,7 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { user, admin, project } = gate;
   const t = await apiTranslator(req, "proApi.projects");
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = await jsonObject(req);
   const { status: wanted, ...sent } = body;
   // A délégation sent without its governorate is checked against the project's.
   let fields = sent;

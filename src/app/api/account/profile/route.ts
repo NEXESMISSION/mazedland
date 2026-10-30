@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "auth" }, { status: 401 });
 
-  const body = (await req.json().catch(() => ({}))) as { full_name?: unknown; governorate?: unknown };
+  const body = (await jsonObject(req)) as { full_name?: unknown; governorate?: unknown };
   const name = typeof body.full_name === "string" ? body.full_name.trim().replace(/\s+/g, " ") : "";
   if (name.length < 2 || name.length > 80) {
     const t = await apiTranslator(req, "accountSettings");

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   if (!admin) return fail("server_misconfigured", 500);
   const t = await apiTranslator(req, "visitsApi");
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = await jsonObject(req);
   const listingId = typeof body.listingId === "string" && /^[0-9a-f-]{36}$/i.test(body.listingId) ? body.listingId : null;
   const rules = { maxSlots: settings.visits_max_slots, horizonDays: settings.visits_horizon_days };
   const slots = parseSlots(body.slots, tunisDay(), rules);

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
@@ -37,7 +38,7 @@ export async function PUT(req: NextRequest) {
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
 
-  const body = await req.json().catch(() => ({} as Record<string, unknown>));
+  const body = await jsonObject(req);
   const propertyType = body.property_type as PropertyType | undefined;
   const rawItems = body.items;
 

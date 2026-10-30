@@ -232,8 +232,12 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Skip Next internals, API routes, and any path with a file extension
-  // (static assets). Everything else routes through the i18n + auth
-  // refresh pipeline.
-  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
+  // Skip Next internals, API routes and static files — told by their
+  // extension, not by « any dot in the path »: that skipped
+  // /fr/admin/popups/a.b/edit too, so the gates above never ran for a dotted
+  // segment and an anonymous request got the page shell with the layout's
+  // late redirect inside it (the QA tour, 2026-10-30). Everything else routes
+  // through the i18n + auth refresh pipeline. src/proxy.test.ts reads this
+  // literal: a page must never match the extension list.
+  matcher: ["/((?!api|_next|_vercel|.*\\.(?:ico|png|jpe?g|gif|webp|avif|svg|css|js|mjs|map|json|txt|xml|webmanifest|woff2?|ttf|otf|bin|wasm|mp4|webm|pdf|zip)$).*)"],
 };

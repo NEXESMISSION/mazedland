@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "payments_closed" }, { status: 503 });
   }
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = await jsonObject(req);
   const listingId = typeof body.listingId === "string" ? body.listingId : "";
   const channels = Array.isArray(body.channels) ? body.channels.filter(isSocialChannel) : [];
   const language = isSocialLanguage(body.language) ? body.language : "both";

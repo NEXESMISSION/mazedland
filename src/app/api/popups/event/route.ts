@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { fail } from "@/lib/http/errors";
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
   }
-  const body = (await req.json().catch(() => ({}))) as {
+  const body = (await jsonObject(req)) as {
     popup_id?: string;
     kind?: string;
   };

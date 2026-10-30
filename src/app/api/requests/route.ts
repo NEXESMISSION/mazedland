@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonObject } from "@/lib/http/body";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = await jsonObject(req);
   const parsed = parseRequestInput(body);
   if (!parsed.ok) {
     const t = await apiTranslator(req, "requestsApi");
