@@ -94,6 +94,35 @@ export type ChatTurn = { role: "seller" | "assistant"; text: string };
 /** How much of the conversation the model reads back: the last turns, each bounded. */
 export const CHAT_MAX_TURNS = 24;
 export const CHAT_MAX_TURN_CHARS = 800;
+/**
+ * The most one message carries — about four minutes of speech. The
+ * microphone stops there and sends, so the seller goes on in a new message
+ * and nothing they said is lost.
+ */
+export const CHAT_MAX_MESSAGE_CHARS = 4 * CHAT_MAX_TURN_CHARS;
+
+/**
+ * A message longer than a turn, cut into turns at the end of a sentence —
+ * failing that, at a space. Dictation runs for as long as the seller talks
+ * and the price is usually said last: all of it is read, in order, where a
+ * single turn used to keep the first 800 characters and drop the rest.
+ */
+export function splitTurn(text: string, max = CHAT_MAX_TURN_CHARS): string[] {
+  const parts: string[] = [];
+  let rest = text.trim();
+  while (rest.length > max) {
+    const head = rest.slice(0, max + 1);
+    // The last sentence end, else the last space — past a third of the turn,
+    // so a turn is never a few words.
+    const atSentence = Math.max(...[...head.matchAll(/[.!?؟،,;]\s/g)].map((m) => (m.index ?? 0) + 1));
+    const atSpace = head.lastIndexOf(" ");
+    const cut = atSentence > max / 3 ? atSentence : atSpace > max / 3 ? atSpace : max;
+    parts.push(rest.slice(0, cut).trim());
+    rest = rest.slice(cut).trim();
+  }
+  if (rest) parts.push(rest);
+  return parts;
+}
 
 /**
  * The same reading as the one-sentence assistant, held as a conversation: the

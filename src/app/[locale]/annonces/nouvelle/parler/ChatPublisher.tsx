@@ -14,7 +14,7 @@ import { speechLang } from "@/components/search/speech";
 import { appliesTo } from "@/lib/listings/deal";
 import { governorateLabel } from "@/lib/tunisia";
 import { formatTND, cn } from "@/lib/utils";
-import { CHAT_MAX_TURN_CHARS, type ChatTurn, type ListingDraft } from "@/lib/ai/listing";
+import { CHAT_MAX_MESSAGE_CHARS, CHAT_MAX_TURN_CHARS, type ChatTurn, type ListingDraft } from "@/lib/ai/listing";
 import { SELLER_ATTESTATION_VERSION, typedAttributes, type AttributeDef } from "../PublishWizard";
 
 export type ChatCategory = { id: string; slug: string; label: string };
@@ -136,7 +136,9 @@ export function ChatPublisher({
 
   // ── The conversation ────────────────────────────────────────────────────────
   async function send(text: string) {
-    const words = text.trim().slice(0, CHAT_MAX_TURN_CHARS);
+    // A message is several turns long (the server cuts it at sentence ends);
+    // the microphone stops at this length, so nothing dictated is dropped.
+    const words = text.trim().slice(0, CHAT_MAX_MESSAGE_CHARS);
     if (!words) return;
     const next: Line[] = [...linesRef.current, { role: "seller", text: words }];
     linesRef.current = next;
@@ -168,8 +170,18 @@ export function ChatPublisher({
   function toggleMic() {
     if (listening) return stop();
     setInterim("");
+    let full = false;
     start(lang, {
-      onText: setInterim,
+      onText: (heard) => {
+        setInterim(heard);
+        // The most one message carries: the microphone stops and sends it,
+        // the seller goes on in a new one — said once, and nothing is cut.
+        if (heard.length >= CHAT_MAX_MESSAGE_CHARS && !full) {
+          full = true;
+          stop();
+          toast(t("messageFull"), "info");
+        }
+      },
       onEnd: (heard) => {
         setInterim("");
         if (heard.trim()) void send(heard);
@@ -460,7 +472,16 @@ export function ChatPublisher({
             </button>
           </div>
           <p role="status" className="mt-1.5 text-center text-[11.5px] text-muted">
-            {listening ? t("listening") : busy ? t("thinking") : canSpeak ? t("tapToSpeak") : ""}
+            {listening
+              ? // Past one turn's worth, the count says how much room a message has left.
+                interim.length > CHAT_MAX_TURN_CHARS
+                ? t("listeningLong", { count: interim.length, max: CHAT_MAX_MESSAGE_CHARS })
+                : t("listening")
+              : busy
+                ? t("thinking")
+                : canSpeak
+                  ? t("tapToSpeak")
+                  : ""}
           </p>
           {(typing || !canSpeak) && (
             <form onSubmit={sendTyped} className="mt-2 flex items-center gap-2">

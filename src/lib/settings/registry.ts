@@ -105,6 +105,8 @@ export const SETTINGS = {
   social_auto_approve: { group: "social", type: "bool", default: false },
   social_daily_limit: { group: "social", type: "int", default: 10, min: 1, max: 100, unit: "per_day" },
   ai_daily_budget_usd: { group: "social", type: "number", default: 2, min: 0, max: 100, step: 0.5 },
+  // One account's share of it: at about 4 cents a call, half a dollar is a dozen conversations.
+  ai_user_daily_budget_usd: { group: "social", type: "number", default: 0.5, min: 0, max: 100, step: 0.1 },
 
   // ── Where sellers pay (manual transfer / D17). Secret: the checkout reads
   //    them on the server, for a payer with an open payment only.

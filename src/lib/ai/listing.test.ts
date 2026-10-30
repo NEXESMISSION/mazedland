@@ -104,6 +104,15 @@ describe("normalizeListingDraft", () => {
     expect(d.description).toBe("دار مزيانة في صفاقس.");
   });
 
+  it("keeps a title and a sentence whose figure merely starts with 216", () => {
+    const d = normalizeListingDraft(
+      answer({ title: "Terrain 2160 m2 · Sousse", description: "Terrain de 2160 m2 a Sousse. Belle vue. Prix 216 000 dinars." }),
+      { categories: CATS, sourceText: SOURCE },
+    );
+    expect(d.title).toBe("Terrain 2160 m2 · Sousse");
+    expect(d.description).toBe("Terrain de 2160 m2 a Sousse. Belle vue. Prix 216 000 dinars.");
+  });
+
   it("survives an answer that is not an object at all", () => {
     const d = normalizeListingDraft(null, { categories: CATS, sourceText: SOURCE });
     expect(d.deal).toBe("sale");

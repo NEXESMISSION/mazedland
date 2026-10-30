@@ -1659,6 +1659,8 @@
     "offline": "Connexion perdue. Réessayez.",
     "thinking": "Je lis…",
     "listening": "Je vous écoute… Appuyez à nouveau pour envoyer.",
+    "listeningLong": "Je vous écoute… {count} / {max} caractères. Appuyez pour envoyer.",
+    "messageFull": "C'est le maximum pour un message : il est envoyé. Continuez dans un nouveau message.",
     "tapToSpeak": "Appuyez sur le micro et parlez",
     "speak": "Parler",
     "stop": "Arrêter et envoyer",
@@ -4923,6 +4925,10 @@
     "ai_daily_budget_usd": {
       "label": "Budget IA par jour (USD)",
       "hint": "Une fois dépensé, l'assistant s'arrête jusqu'au lendemain."
+    },
+    "ai_user_daily_budget_usd": {
+      "label": "Budget IA par jour et par compte (USD)",
+      "hint": "Un seul compte ne peut pas dépenser tout le budget du jour : au-delà, l'assistant lui répond « indisponible » jusqu'au lendemain."
     },
     "payee_name": {
       "label": "Bénéficiaire",
