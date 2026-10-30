@@ -1,0 +1,38 @@
+name: Deploy
+
+# Ships main to production on Vercel. The Vercel project lives in the
+# lassadmazed-2177 account and the repo on lassadmazed-oss; Vercel's own Git
+# integration can't link the two, so the deploy runs from here with the CLI.
+# It uploads the checkout and Vercel builds it with the project's production
+# env vars, the same build a Git-triggered deploy would run.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# One production deploy at a time, in merge order; never cancel one midway.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Vercel (production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERCEL_ORG_ID: team_DNguYjDcPZfEF2PCrJH5zowJ
+      VERCEL_PROJECT_ID: prj_OSokO1HZGeSV65w1IjyYujIRGqOZ
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Deploy
+        run: npx --yes vercel@65.8.0 deploy --prod --yes --token "$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
