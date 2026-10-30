@@ -51,9 +51,15 @@ export function catalogueRedirect(
     if (understoodSomething(u)) {
       const next = new URLSearchParams();
       for (const [k, v] of Object.entries(sp)) if (v != null && k !== "page" && k !== "q") next.set(k, v);
+      // What was just typed wins over the chip already in the URL: a visitor
+      // on Sfax who types « villa Tunis » is looking in Tunis. A place or a
+      // budget replaces the whole of the old one (its délégation, its other
+      // bound), so nothing stale is left to contradict it.
       const put = (k: string, v: string | number | undefined) => {
-        if (v != null && !next.has(k)) next.set(k, String(v));
+        if (v != null) next.set(k, String(v));
       };
+      if (u.gov) for (const k of ["gov", "del"]) next.delete(k);
+      if (u.min != null || u.max != null) for (const k of ["min", "max", "min_price", "max_price"]) next.delete(k);
       put("deal", u.deal);
       put("cat", u.cat);
       put("gov", u.gov);

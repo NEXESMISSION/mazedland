@@ -47,12 +47,24 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   const locale = await getLocale();
   // « pro immo » alone said nothing in a result: what it is and where.
   const where = shop.governorate ? governorateLabel(shop.governorate, locale) : null;
-  // Page 2 and beyond are addresses of their own, as in the catalogue.
+  // Page 2 and beyond are addresses of their own, as in the catalogue — and a
+  // page past the last one is not: it shows page 1 and must not be indexed as
+  // a page of its own (the QA tour found ?page=9999 with a canonical).
   const page = pageNumber(sp.page);
-  const path = `/agences/${shop.slug}${page > 1 ? `?page=${page}` : ""}`;
+  let beyond = false;
+  if (page > 1) {
+    const admin = getServiceSupabase();
+    const { count } = admin
+      ? await admin.from("listings").select("id", { count: "exact", head: true }).eq("shop_id", shop.id).eq("status", "published")
+      : { count: null };
+    const pageSize = (await getSettings()).catalogue_page_size;
+    beyond = page > Math.max(1, Math.ceil((count ?? 0) / pageSize));
+  }
+  const path = `/agences/${shop.slug}${page > 1 && !beyond ? `?page=${page}` : ""}`;
   return {
     title: `${shop.name} — ${tKinds(shop.kind)}${where ? ` · ${where}` : ""} · Mazed Immo`,
     description: listingDescription(shop.description, t("shopMetaDescription", { name: shop.name })),
+    ...(beyond ? { robots: { index: false, follow: true } } : {}),
     // With the locale: « /agences/x » redirects, and a canonical must not.
     alternates: {
       canonical: `/${locale}${path}`,

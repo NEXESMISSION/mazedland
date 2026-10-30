@@ -77,7 +77,7 @@ const STOP_WORDS = [
   "a", "à", "au", "aux", "de", "des", "du", "d", "l", "la", "le", "les", "un", "une", "et", "ou", "en", "dans", "pour", "avec", "sur",
   "par", "je", "cherche", "recherche", "besoin", "veux", "voudrais", "prix", "budget", "dt", "tnd", "dinars", "dinar",
   // The words of a bound (« moins de », « au moins ») never make a keyword, even when the figure beside them was not one.
-  "moins", "plus", "max", "maximum", "min", "minimum", "pas", "entre", "jusqu", "jusqua", "partir", "dessus", "dessous", "environ",
+  "moins", "plus", "max", "maximum", "min", "minimum", "pas", "que", "entre", "jusqu", "jusqua", "partir", "dessus", "dessous", "environ",
   "في", "على", "ب", "متاع", "و", "نحب", "نلوج", "عندي", "يلزمني", "بسوم", "سوم", "دينار", "د",
   "من", "حتى", "إلى", "ل", "أقل", "أكثر", "الأقل", "الأكثر", "موش", "مش", "تقريبا", "حوالي",
 ];
@@ -202,7 +202,7 @@ const AREA = new RegExp(`${B}(\\d{2,6})\\s*(m2|m²|metres?\\s*carres?|metres?|mc
 const UNFURNISHED = new RegExp(`${B}(non\\s*meublee?s?|vide|غير\\s*مفروش[ةه]?|فارغ[ةه]?)${E}`);
 const FURNISHED = new RegExp(`${B}(meublee?s?|مفروش[ةه]?)${E}`);
 // « entre 100 et 200 mille », « de 100 à 200 mille », « 100-200 mille ».
-const RANGE = new RegExp(`${B}(?:(?:entre|de|بين|من)\\s+)?${NUM}\\s*${UNIT}\\s+(?:et|a|و|ل|حتى)\\s+${NUM}\\s*${UNIT}${E}`);
+const RANGE = new RegExp(`${B}(?:(?:entre|de|بين|من)\\s+)?${NUM}\\s*${UNIT}\\s+(?:et|a|و|ل|حتى|الى|الي)\\s+${NUM}\\s*${UNIT}${E}`);
 const CAPPED = new RegExp(`${B}${NOT_NEGATED}(?:${alt(CAP_BEFORE)})\\s*${NUM}\\s*${UNIT}${E}`);
 const FLOOR = new RegExp(`${B}${NOT_NEGATED}(?:${alt(FLOOR_BEFORE)})\\s*${NUM}\\s*${UNIT}${E}`);
 const CAPPED_AFTER = new RegExp(`${B}${NUM}\\s*${UNIT}\\s+(?:${alt(CAP_AFTER_WORDS)})${E}`);
@@ -237,7 +237,9 @@ export function understand(input: string): Understood {
   // Digits grouped by three are one figure: « 300 000 », « 1 200 dt »,
   // « 350.000 » — the site prints its prices that way and so does dictation.
   // « 1,5 » and « 1.2 » keep their decimal.
-  s = s.replace(/(?<=\d)[ .,](?=\d{3}(?!\d))/g, "");
+  // Only a figure that stands on its own joins: the « 2 » of « 95 m2 » or
+  // « 120m2 » must not swallow the price after it.
+  s = s.replace(/(?<=(?:^|[^\p{L}\d])\d{1,3})[ .,](?=\d{3}(?!\d))/gu, "");
 
   const area = s.match(AREA);
   if (area) {
@@ -268,6 +270,18 @@ export function understand(input: string): Understood {
     if (v != null) take(re);
     return v;
   };
+  // A lone figure is the budget — the biggest one: « 3 chambres 2 salles de
+  // bain 250 mille » used to read the 2 and leave « mille » as a keyword.
+  const grabLargest = (re: RegExp): number | null => {
+    let best: { v: number; index: number; length: number } | null = null;
+    for (const m of s.matchAll(new RegExp(re.source, re.flags.includes("g") ? re.flags : `${re.flags}g`))) {
+      const v = amount(m[1], m[2]);
+      if (v != null && (!best || v > best.v)) best = { v, index: m.index ?? 0, length: m[0].length };
+    }
+    if (!best) return null;
+    s = `${s.slice(0, best.index)} ${s.slice(best.index + best.length)}`;
+    return best.v;
+  };
   const r = s.match(RANGE);
   if (r) {
     const lo = amount(r[1], r[2] || r[4]);
@@ -285,7 +299,7 @@ export function understand(input: string): Understood {
     if (floor != null) out.min = floor;
     // A lone figure is a ceiling: what the person can pay.
     if (out.max == null && out.min == null) {
-      const plain = grab(PLAIN);
+      const plain = grabLargest(PLAIN);
       if (plain != null) out.max = plain;
     }
   }

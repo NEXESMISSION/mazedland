@@ -10,6 +10,7 @@ node scripts/backup-db.mjs
 
 | Migration | Rollback | What is lost |
 |---|---|---|
+| 0200 cron secret in the Vault | `0200_cron_secret_in_vault.down.sql` | the Vault forgets the secret — only once the jobs carry it in their URL again |
 | 0199 deletion passes the guard | `0199_deletion_passes_the_profile_guard.down.sql` | request_account_deletion() without the bypass — every deletion fails again while 0195's guard stands |
 | 0198 replaced_by without FK | `0198_replaced_by_without_fk.down.sql` | the second foreign key to payments comes back; only safe with code that names the relationship it embeds |
 | 0195 QA tour, wave 3 | `0195_qa_tour_3.down.sql` | the client may write listings again and read the audit columns; is_admin() trusts the JWT claim again; every policy and the two gates answer to any admin; the profile guard, the photo-overwrite and legacy bucket policies and listing_reference_next() return to before; the plan descriptions keep « agence » |

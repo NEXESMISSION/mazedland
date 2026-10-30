@@ -48,7 +48,11 @@ const PRIVACY_SECTIONS = [
  * accepted it. Move it — and `legal_version` in the settings registry — with
  * the text.
  */
-export const LEGAL_UPDATED_AT = "2026-10-06";
+export const LEGAL_UPDATED_AT = {
+  terms: "2026-10-06",
+  // « Qui voit une demande » was rewritten on 2026-10-26 (417bce7).
+  privacy: "2026-10-26",
+} as const;
 
 /**
  * The sections' heading level. Under the page's h1 they are h2 — heading

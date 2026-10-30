@@ -29,7 +29,7 @@ export default async function PrivacyPage({
   setRequestLocale(locale);
   const t = await getTranslations("legal");
   return (
-    <LegalPage eyebrow={t("eyebrow")} title={t("privacy.title")} updated={formatDate(LEGAL_UPDATED_AT, locale, "long")}>
+    <LegalPage eyebrow={t("eyebrow")} title={t("privacy.title")} updated={formatDate(LEGAL_UPDATED_AT.privacy, locale, "long")}>
       <PrivacyContent />
     </LegalPage>
   );

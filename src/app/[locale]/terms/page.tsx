@@ -30,7 +30,7 @@ export default async function TermsPage({
   setRequestLocale(locale);
   const t = await getTranslations("legal");
   return (
-    <LegalPage eyebrow={t("eyebrow")} title={t("terms.title")} updated={formatDate(LEGAL_UPDATED_AT, locale, "long")}>
+    <LegalPage eyebrow={t("eyebrow")} title={t("terms.title")} updated={formatDate(LEGAL_UPDATED_AT.terms, locale, "long")}>
       <TermsContent />
     </LegalPage>
   );
