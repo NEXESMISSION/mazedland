@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { compressImage } from "@/lib/imageCompress";
 import { drawWatermark, loadMark, watermarkImage } from "@/lib/watermark";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { runPool } from "@/lib/pool";
+import { settleUpload, trackUpload } from "@/lib/uploadsInFlight";
 import { useToast } from "@/components/ui/Toast";
 import { useSetting } from "@/components/settings/SettingsProvider";
 import {
@@ -57,6 +58,14 @@ const IN_FLIGHT = 3;
 
 /** Bigger files get longer: a 20 MB photo on 3G is not a stalled one. */
 const timeoutFor = (bytes: number) => Math.min(180_000, 30_000 + (bytes / 1e6) * 15_000);
+
+/** Asking the server for an upload URL. */
+const MINT_TIMEOUT_MS = 20_000;
+
+/** Waiting for the logo before a photo goes up without it. */
+const MARK_WAIT_MS = 8_000;
+
+const wait = (ms: number) => new Promise<void>((resolve) => { window.setTimeout(resolve, ms); });
 
 export function PhotoUploader({
   photos,
@@ -141,19 +150,11 @@ export function PhotoUploader({
     [onChange],
   );
 
-  // Report the in-flight count from an EFFECT, not from inside the state
-  // updater. It used to be done in the `setPending` callback, which React is
-  // free to run during render — so telling the parent from there was a
-  // setState during another component's render, and React said so:
-  //
-  //   Cannot update a component (PublishWizard) while rendering a different
-  //   component (PhotoUploader)
-  //
-  // Updater functions have to be pure. This one only computes the next list;
-  // the parent hears about it afterwards.
-  useEffect(() => {
-    onPendingChange?.(pending.filter((x) => x.phase !== "failed").length);
-  }, [pending, onPendingChange]);
+  // The parent hears the in-flight count from src/lib/uploadsInFlight, told
+  // when each photo starts and settles — not from this component's state. The
+  // seller may move to the next step, or close the photo box, while photos are
+  // still going: this component is unmounted then, its photos are not, and a
+  // count kept here froze at its last value and held « Publier » for good.
 
   const room = max - photos.length - pending.length;
 
@@ -196,7 +197,9 @@ export function PhotoUploader({
       // re-encode that grew): those are stamped on their own, as before.
       // Switched off in /admin/settings, new photos go up clean; those
       // already sent keep theirs.
-      const stamp = watermark ? await loadMark() : null;
+      // The logo is a small same-origin file, normally cached. On a network
+      // that never answers, the photo goes up without it rather than waiting.
+      const stamp = watermark ? await Promise.race([loadMark(), wait(MARK_WAIT_MS).then(() => null)]) : null;
       let out = file;
       try {
         out = await compressImage(file, {
@@ -208,16 +211,18 @@ export function PhotoUploader({
       } catch {
         out = file; // compression is an optimisation, not a gate
       }
-      if (watermark && out === file) out = await watermarkImage(out);
+      if (stamp && out === file) out = await watermarkImage(out);
 
       mark({ phase: "sending" });
 
       const ext = out.name.split(".").pop()?.toLowerCase() || "webp";
       try {
-        await reservation;
+        // The batch's URL request has no timer of its own; past this, the
+        // photo asks for its own URL, which has one.
+        await Promise.race([reservation, wait(MINT_TIMEOUT_MS)]);
         let target: Target | undefined = ext === "webp" ? reserved.current.shift() : undefined;
         if (!target) {
-          arm(20_000);
+          arm(MINT_TIMEOUT_MS);
           target = (await mint([ext], ac.signal))[0];
           disarm();
         }
@@ -302,6 +307,10 @@ export function PhotoUploader({
         return { id: url, file: f, preview: url, phase: "preparing" as const };
       });
       setPending((p) => [...p, ...marks]);
+      // Counted by the form until each one settles — even if this uploader is
+      // gone by then (see src/lib/uploadsInFlight).
+      const report = onPendingChange;
+      for (const m of marks) trackUpload(report, m.id);
 
       // The batch's upload URLs, asked for now — the round trip runs under
       // the first photo's encoding. A refusal is not reported here: each
@@ -326,13 +335,17 @@ export function PhotoUploader({
         }
       };
       await runPool(marks, IN_FLIGHT, async (m, i) => {
-        // Cancelled while it was still queued behind another photo: never send
-        // it at all.
-        landed[i] = cancelled.current.delete(m.id) ? null : await send(m.file, m.id, reservation);
-        flush();
+        try {
+          // Cancelled while it was still queued behind another photo: never
+          // send it at all.
+          landed[i] = cancelled.current.delete(m.id) ? null : await send(m.file, m.id, reservation);
+          flush();
+        } finally {
+          settleUpload(report, m.id);
+        }
       });
     },
-    [disabled, room, max, toast, send, settle, mint, t],
+    [disabled, room, max, toast, send, settle, mint, t, onPendingChange],
   );
 
   function retry(id: string) {
@@ -341,8 +354,14 @@ export function PhotoUploader({
     setPending((p) =>
       p.map((x) => (x.id === id ? { ...x, phase: "preparing", error: undefined } : x)),
     );
+    const report = onPendingChange;
+    trackUpload(report, item.id);
     void (async () => {
-      settle(item.id, await send(item.file, item.id));
+      try {
+        settle(item.id, await send(item.file, item.id));
+      } finally {
+        settleUpload(report, item.id);
+      }
     })();
   }
 
