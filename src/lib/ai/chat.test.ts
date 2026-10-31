@@ -72,8 +72,9 @@ describe("publish by talking (version B)", () => {
     expect(CHAT_MAX_MESSAGE_CHARS % CHAT_MAX_TURN_CHARS).toBe(0);
   });
 
-  it("can be switched off, or made the way in, from the console", () => {
-    expect(SETTINGS.feature_publish_chat).toMatchObject({ type: "bool", default: true, client: true });
+  it("can be switched on, or made the way in, from the console", () => {
+    // Off until the owner turns it on (asked 2026-10-31).
+    expect(SETTINGS.feature_publish_chat).toMatchObject({ type: "bool", default: false, client: true });
     expect(SETTINGS.publish_chat_default).toMatchObject({ type: "bool", default: false });
   });
 

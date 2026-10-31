@@ -5172,6 +5172,10 @@
       "label": "Bouton « Partager »",
       "hint": "Sur chaque annonce : le menu de partage du téléphone, sinon WhatsApp, Facebook et « Copier le lien »."
     },
+    "feature_publish_ai_fill": {
+      "label": "Remplir le formulaire depuis une phrase",
+      "hint": "Le cadre « Décrivez votre bien en une phrase » en haut du formulaire : le vendeur écrit une phrase, l'assistant remplit les étapes et le vendeur vérifie. Éteint, le cadre n'apparaît pas. Il a besoin de l'assistant IA (clé, interrupteur et budget)."
+    },
     "feature_ai_voice": {
       "label": "Micro de « Publier en parlant »",
       "hint": "Le micro de la version B : le vendeur parle au lieu d'écrire, dans la langue de la page (tunisien sur le site arabe, français sur le site français). Éteint, la conversation se fait au clavier. Seulement dans les navigateurs qui savent écouter (Chrome, Edge, Safari)."

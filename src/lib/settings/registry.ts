@@ -24,10 +24,15 @@ export const SETTINGS = {
   feature_promos: { group: "features", type: "bool", default: true, client: true, href: "/admin/offres" },
   social_enabled: { group: "features", type: "bool", default: true, href: "/admin/social" },
   ai_enabled: { group: "features", type: "bool", default: true },
+  // « Décrivez votre bien en une phrase » at the top of the form: the assistant
+  // fills the steps from one sentence. Off until the owner turns it on
+  // (asked 2026-10-31).
+  feature_publish_ai_fill: { group: "features", type: "bool", default: false, client: true },
   // The microphone of « Publier en parlant », in the page's language.
   feature_ai_voice: { group: "features", type: "bool", default: true, client: true },
-  // « Publier en parlant » (version B): an annonce made in a conversation, voice first.
-  feature_publish_chat: { group: "features", type: "bool", default: true, client: true },
+  // « Publier en parlant » (version B): an annonce made in a conversation, voice
+  // first. Off until the owner turns it on (asked 2026-10-31).
+  feature_publish_chat: { group: "features", type: "bool", default: false, client: true },
   // « Vendre » opens version B instead of the form (the form stays one tap away).
   publish_chat_default: { group: "features", type: "bool", default: false },
   feature_listing_edit: { group: "features", type: "bool", default: true, client: true, href: "/admin/annonces?status=edits" },

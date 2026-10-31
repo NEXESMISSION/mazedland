@@ -268,6 +268,8 @@ export function PublishWizard({
   const canEdit = useSetting("feature_listing_edit");
   // Version B, « Publier en parlant »: offered here while the assistant can answer.
   const chatOn = useSetting("feature_publish_chat");
+  // « Décrivez votre bien en une phrase », switched in /admin/settings.
+  const aiFillOn = useSetting("feature_publish_ai_fill");
 
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<"idle" | "saving" | "ok">("idle");
@@ -1454,7 +1456,7 @@ export function PublishWizard({
             <>
               {/* Say it in a sentence — the assistant fills the steps, the
                   seller checks them. Only offered when it can answer. */}
-              {aiAvailable && (
+              {aiAvailable && aiFillOn && (
                 <section className="rounded-2xl border border-gold-soft bg-gold-faint p-4 sm:p-5">
                   <SectionHead id="f-ai-title" icon={Sparkles} title={t("aiTitle")} />
                   <p id="f-ai-hint" className="mt-1 text-[12.5px] leading-relaxed text-muted">{t("aiHint")}</p>

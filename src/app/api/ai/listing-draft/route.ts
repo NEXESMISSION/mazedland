@@ -8,6 +8,7 @@ import { apiTranslator } from "@/lib/i18n/server";
 import { categoryLabel } from "@/lib/i18n";
 import { redactContacts } from "@/lib/moderation/rules";
 import { callJson } from "@/lib/ai/server";
+import { featureOff } from "@/lib/settings/gate";
 import { buildSystemPrompt, LISTING_DRAFT_SCHEMA, normalizeListingDraft, type DraftCategory } from "@/lib/ai/listing";
 
 /**
@@ -24,6 +25,8 @@ export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
   }
+  const off = await featureOff("feature_publish_ai_fill");
+  if (off) return off;
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
