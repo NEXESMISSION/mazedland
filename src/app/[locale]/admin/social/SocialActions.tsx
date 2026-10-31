@@ -231,7 +231,18 @@ export function AccountTest({ accountId }: { accountId: string }) {
           method: "POST",
           success: null,
           onSuccess: (data) => {
-            const d = data as { name?: string; quota?: { used: number; total: number } | null };
+            const d = data as {
+              name?: string;
+              quota?: { used: number; total: number } | null;
+              instagram?: { username: string | null; added: boolean } | null;
+            };
+            if (d.instagram?.added) {
+              // The page's Instagram account was just adopted: the list of
+              // accounts and the queue are stale, so the page reloads.
+              toast(t("testOkInstagram", { name: d.name ?? "", username: d.instagram.username ?? "" }), "success");
+              setTimeout(() => window.location.reload(), 1800);
+              return;
+            }
             toast(d.quota ? t("testOkQuota", { name: d.name ?? "", used: d.quota.used, total: d.quota.total }) : t("testOk", { name: d.name ?? "" }), "success");
           },
         })

@@ -3924,6 +3924,7 @@
     "test": "Tester la connexion",
     "testOk": "Connexion OK : {name}.",
     "testOkQuota": "Connexion OK : {name} — {used}/{total} publications sur 24 h.",
+    "testOkInstagram": "« {name} » répond. Compte Instagram @{username} trouvé et relié : les publications Instagram en attente repartent.",
     "connectDetail": "Détail : {text}"
   },
   "pro": {

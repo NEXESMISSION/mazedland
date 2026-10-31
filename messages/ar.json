@@ -3924,6 +3924,7 @@
     "test": "جرّب الربط",
     "testOk": "الربط يخدم: {name}.",
     "testOkQuota": "الربط يخدم: {name} — {used}/{total} منشور في 24 ساعة.",
+    "testOkInstagram": "« {name} » يجاوب. لقينا حساب إنستغرام @{username} وربطناه: منشورات إنستغرام اللي كانت تستنّى ترجع تطلع.",
     "connectDetail": "التفاصيل : {text}"
   },
   "pro": {
