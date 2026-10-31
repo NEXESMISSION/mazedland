@@ -30,3 +30,6 @@ kyc-export-*/
 
 # Local copies of the live data (scripts/backup-db.mjs) — personal data, never committed.
 /backups/
+
+# QA tour work folder (scripts/qa/README.md): agent scripts, logs and findings, with [TEST] ids and cookies.
+scripts/qa/work/
