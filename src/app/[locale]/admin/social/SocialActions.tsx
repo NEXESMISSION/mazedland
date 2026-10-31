@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Check, Copy, ExternalLink, Play, RotateCcw } from "lucide-react";
+import { Check, Copy, ExternalLink, Link2, Play, RotateCcw } from "lucide-react";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { Confirm } from "@/components/admin/kit";
 import { useAdminAction } from "@/components/admin/kit/useAdminAction";
@@ -117,17 +117,21 @@ export function JobActions({
   manual,
   copyText,
   groupUrl,
+  link = null,
 }: {
   jobId: string;
   canRun: boolean;
   manual: boolean;
   copyText: string | null;
   groupUrl: string | null;
+  /** The annonce's Mazed Immo link, for a post made by hand (Instagram's bio or sticker, the page's text). */
+  link?: string | null;
 }) {
   const t = useTranslations("adminSocial");
   const { run, pending } = useAdminAction();
   const [url, setUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const call = (action: string, extra: Record<string, unknown> = {}, success?: string) =>
     run({ url: `/api/admin/social/jobs/${jobId}`, method: "POST", body: { action, ...extra }, success });
@@ -157,6 +161,23 @@ export function JobActions({
             <ExternalLink className="size-3.5" /> {t("openGroup")}
           </a>
         )}
+        {link && (
+          <AdminButton
+            icon={linkCopied ? <Check className="size-3.5" /> : <Link2 className="size-3.5" />}
+            onClick={async () => {
+              await navigator.clipboard.writeText(link).catch(() => {});
+              setLinkCopied(true);
+              setTimeout(() => setLinkCopied(false), 1600);
+            }}
+          >
+            {linkCopied ? t("linkCopied") : t("copyLink")}
+          </AdminButton>
+        )}
+        {link && (
+          <a href={link} target="_blank" rel="noreferrer" className="inline-flex h-7 items-center gap-1.5 rounded border border-border px-2.5 text-[12px] font-semibold text-foreground hover:border-[var(--gold-soft)]">
+            <ExternalLink className="size-3.5" /> {t("openListing")}
+          </a>
+        )}
         {!manual && !canRun && (
           <AdminButton icon={<RotateCcw className="size-3.5" />} pending={pending} onClick={() => call("retry", {}, t("requeued"))}>
             {t("retry")}
@@ -166,6 +187,11 @@ export function JobActions({
           {t("cancelJob")}
         </AdminButton>
       </div>
+      {manual && link && (
+        <p className="truncate font-mono text-[11px] text-muted" dir="ltr" title={link}>
+          {link}
+        </p>
+      )}
       {manual && (
         <div className="flex flex-wrap items-center gap-1.5">
           <input

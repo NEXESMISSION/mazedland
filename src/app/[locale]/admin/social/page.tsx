@@ -12,7 +12,7 @@ import { governorateLabel } from "@/lib/tunisia";
 import { formatDate, formatNumber } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
 import type { SocialChannel, SocialLanguage } from "@/lib/social/channels";
-import { trackedUrl } from "@/lib/social/content";
+import { shortUrl, trackedUrl } from "@/lib/social/content";
 import { callbackUrl, missingMetaConfig } from "@/lib/social/connect";
 import { socialOrigin, socialSettings } from "@/lib/social/server";
 import { AccountActions, AccountTest, GroupActions, GroupForm, JobActions, ReviewActions, VariantEditor } from "./SocialActions";
@@ -192,12 +192,17 @@ export default async function AdminSocialPage({
     const jobs = (data ?? []) as unknown as J[];
     if (jobs.length === 0) return <Empty text={t("emptyQueue")} />;
 
-    // The groups' text, with each group's own link (or none where links are refused).
-    const requestIds = [...new Set(jobs.filter((j) => j.channel === "facebook_groups").map((j) => j.request_id))];
+    // The text a person posts by hand: a group's (with the group's own link,
+    // or none where links are refused), and — when no account is connected
+    // — the page's or Instagram's, which carry the annonce's Mazed Immo link.
+    // An Instagram job to do by hand showed neither text nor link (2026-10-31).
+    const requestIds = [...new Set(jobs.filter((j) => j.channel === "facebook_groups" || j.status === "manual_action_required").map((j) => j.request_id))];
     const { data: vrows } = requestIds.length
-      ? await admin!.from("social_content_variants").select("request_id, body, link_url").eq("channel", "facebook_groups").in("request_id", requestIds)
+      ? await admin!.from("social_content_variants").select("request_id, channel, body, link_url").in("request_id", requestIds)
       : { data: [] };
-    const groupText = new Map(((vrows ?? []) as { request_id: string; body: string; link_url: string | null }[]).map((v) => [v.request_id, v]));
+    const variantText = new Map(
+      ((vrows ?? []) as { request_id: string; channel: string; body: string; link_url: string | null }[]).map((v) => [`${v.request_id}:${v.channel}`, v]),
+    );
     const origin = socialOrigin();
 
     return (
@@ -208,14 +213,22 @@ export default async function AdminSocialPage({
           const g = one(j.group);
           const manual = j.status === "manual_action_required";
           let copyText: string | null = null;
+          let link: string | null = null;
           if (j.channel === "facebook_groups" && j.action === "publish" && q && l) {
-            const v = groupText.get(j.request_id);
+            const v = variantText.get(`${j.request_id}:facebook_groups`);
             if (v) {
               const own = trackedUrl(origin, l.id, { ref: q.ref, channel: "facebook_groups", language: q.language, group: j.group_id });
               copyText = g && !g.allows_links
                 ? v.body.split("\n").filter((line) => !(v.link_url && line.includes(v.link_url))).join("\n")
                 : v.link_url ? v.body.split(v.link_url).join(own) : v.body;
             }
+          } else if (manual && j.action === "publish" && q && l) {
+            // Instagram cannot carry a link in a caption: the short one goes
+            // in the bio or a sticker. The page takes the full tracked address.
+            copyText = variantText.get(`${j.request_id}:${j.channel}`)?.body ?? null;
+            link = j.channel === "instagram"
+              ? `https://${shortUrl(origin, q.ref)}`
+              : trackedUrl(origin, l.id, { ref: q.ref, channel: j.channel, language: q.language });
           }
           return (
             <li key={j.id} className="rounded-2xl bg-surface p-3.5 ring-1 ring-border">
@@ -248,6 +261,7 @@ export default async function AdminSocialPage({
                     manual={manual}
                     copyText={copyText}
                     groupUrl={g?.url ?? null}
+                    link={link}
                   />
                 </div>
               </div>
