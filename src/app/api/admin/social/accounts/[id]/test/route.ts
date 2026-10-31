@@ -25,5 +25,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const key = r.error === "expired" ? "testExpired" : r.error === "no_key" ? "testNoKey" : "testFailed";
     return NextResponse.json({ error: "conflict", detail: t(key) }, { status: 409 });
   }
-  return NextResponse.json({ ok: true, name: r.name, quota: r.quota });
+  return NextResponse.json({ ok: true, name: r.name, quota: r.quota, instagram: r.instagram ?? null });
 }

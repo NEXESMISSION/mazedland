@@ -142,7 +142,16 @@ export async function saveConnectedPages(
     }
   }
 
-  // Jobs blocked on a missing or expired connection go back to the engine.
+  await requeueWaitingJobs(admin);
+  return keep.length;
+}
+
+/**
+ * Jobs blocked on a missing or expired connection go back to the engine —
+ * after a (re)connection, and after « Tester la connexion » finds the
+ * Instagram account a page has been given since (checkSocialAccount).
+ */
+export async function requeueWaitingJobs(admin: Admin): Promise<void> {
   const { data: accounts } = await admin
     .from("social_accounts")
     .select("id, platform")
@@ -158,5 +167,4 @@ export async function saveConnectedPages(
       .eq("status", "manual_action_required")
       .in("manual_reason", ["no_account", "account_expired"]);
   }
-  return keep.length;
 }

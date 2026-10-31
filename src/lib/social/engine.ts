@@ -20,6 +20,7 @@ import { log } from "@/lib/log";
 import type { JobAction, JobStatus, SocialChannel, SocialLanguage } from "./channels";
 import { closedNotice, referenceCode } from "./content";
 import { openToken } from "./crypto";
+import { requeueWaitingJobs } from "./connect";
 import {
   createIgContainer, deletePagePost, editPagePost, findIgMedia, findPagePost, graphClient, GraphError,
   igContainerStatus, igPermalink, igPublishingLimit, publishIgContainer, publishPagePost,
@@ -406,8 +407,11 @@ export async function checkSocialAccount(
   admin: Admin,
   accountId: string,
   deps: EngineDeps = {},
-): Promise<{ ok: true; name: string; quota: { used: number; total: number } | null } | { ok: false; error: string }> {
-  const { data: acc } = await admin.from("social_accounts").select("platform").eq("id", accountId).maybeSingle();
+): Promise<
+  | { ok: true; name: string; quota: { used: number; total: number } | null; instagram?: { username: string | null; added: boolean } }
+  | { ok: false; error: string }
+> {
+  const { data: acc } = await admin.from("social_accounts").select("platform, name, scopes, connected_by").eq("id", accountId).maybeSingle();
   if (!acc) return { ok: false, error: "missing" };
   const client = await clientFor(admin, accountId, deps);
   if ("error" in client) return { ok: false, error: client.error };
@@ -419,9 +423,43 @@ export async function checkSocialAccount(
       await admin.from("social_accounts").update({ last_checked_at: now, last_error: null }).eq("id", accountId);
       return { ok: true, name: ig.username ? `@${ig.username}` : client.externalId, quota };
     }
-    const page = await client.g.get<{ name?: string }>(`/${client.externalId}`, { fields: "name" });
+    // The page, and the Instagram account linked to it — which may have been
+    // linked since the page was connected. Facebook Login is not needed for
+    // it: the page's token already carries the Instagram permissions, so the
+    // check adopts the account and releases the Instagram posts that were
+    // left to a person for want of one (2026-10-31).
+    const page = await client.g.get<{ name?: string; instagram_business_account?: { id: string; username?: string } }>(
+      `/${client.externalId}`,
+      { fields: "name,instagram_business_account{id,username}" },
+    );
     await admin.from("social_accounts").update({ last_checked_at: now, last_error: null }).eq("id", accountId);
-    return { ok: true, name: page.name ?? client.externalId, quota: null };
+    let instagram: { username: string | null; added: boolean } | undefined;
+    const ig = page.instagram_business_account;
+    if (ig?.id) {
+      const { data: known } = await admin.from("social_accounts").select("id, status").eq("platform", "instagram").eq("external_id", ig.id).maybeSingle();
+      const added = !known || known.status !== "connected";
+      await admin.from("social_accounts").upsert(
+        {
+          platform: "instagram",
+          external_id: ig.id,
+          name: page.name ?? acc.name,
+          username: ig.username ?? null,
+          parent_account_id: accountId,
+          token_sealed: null,
+          token_expires_at: null,
+          scopes: acc.scopes ?? [],
+          status: "connected",
+          last_error: null,
+          last_checked_at: now,
+          connected_by: acc.connected_by,
+          connected_at: now,
+        },
+        { onConflict: "platform,external_id" },
+      );
+      if (added) await requeueWaitingJobs(admin);
+      instagram = { username: ig.username ?? null, added };
+    }
+    return { ok: true, name: page.name ?? client.externalId, quota: null, instagram };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const expired = err instanceof GraphError && err.kind === "auth";
